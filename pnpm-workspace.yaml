@@ -1,0 +1,17 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+  - "apps/vscode/*"
+  - "examples/*"
+allowBuilds:
+  '@sentry/cli': true
+  '@swc/core': true
+  aws-sdk: true
+  core-js: true
+  electron: true
+  esbuild: true
+  keytar: true
+  protobufjs: true
+linkWorkspacePackages: true
+pmOnFail: ignore
+shamefullyHoist: true
