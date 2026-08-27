@@ -11,6 +11,10 @@ workspaces + Turborepo monorepo. Full onboarding docs:
 - **[guides/documentation.md](guides/documentation.md)** — `<Tldraw>` props / data model /
   `TldrawApp` imperative API reference (pre-existing).
 
+Product/architecture review for building an AI slide builder on this repo:
+**[reviews/README.md](reviews/README.md)** — current-state audit, style system, Next.js control
+API, custom component blocks, AI/templates/animation, and a prioritized feature backlog.
+
 Key things not to relearn the hard way:
 - `@tlslides/tldraw` / `@tlslides/core` are **not published to npm** — only usable by building
   this repo from source.
