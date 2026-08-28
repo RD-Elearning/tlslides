@@ -124,7 +124,9 @@ export function useZoomEvents<T extends HTMLElement>(zoom: number, ref: React.Re
       target: ref,
       eventOptions: { passive: false },
       pinch: {
-        from: zoom,
+        // @use-gesture v10 types `from` as a [scale, angle] pair; passing a bare number is a
+        // leftover from an older version and was the one type error this package still emitted.
+        from: () => [zoom, 0],
         scaleBounds: () => ({ from: inputs.zoom, max: 5, min: 0.1 }),
       },
     }

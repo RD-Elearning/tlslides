@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import type { ArrowShape, PagePartial, TldrawCommand, TDShape } from '~types'
+import type { PagePartial, TDHandle, TldrawCommand, TDShape } from '~types'
 import type { TldrawApp } from '../../internal'
 import { TLDR } from '~state/TLDR'
 import { Utils, TLBounds } from '@tlslides/core'
@@ -125,14 +125,15 @@ export function moveShapesToPage(
 
           // Remove the handle from the shape on the toPage
 
-          const handleId = handle.id as keyof ArrowShape['handles']
+          const handleId = handle.id
 
           const toPageShape = toPage.after.shapes[fromShape.id]!
+          const toPageHandles = toPageShape.handles as Record<string, TDHandle> | undefined
 
           toPageShape.handles = {
-            ...toPageShape.handles,
+            ...toPageHandles,
             [handleId]: {
-              ...toPageShape.handles![handleId],
+              ...toPageHandles?.[handleId],
               bindingId: undefined,
             },
           }

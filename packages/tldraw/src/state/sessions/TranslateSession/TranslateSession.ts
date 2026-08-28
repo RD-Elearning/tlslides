@@ -13,7 +13,7 @@ import {
   TDBinding,
   TldrawCommand,
   TDStatus,
-  ArrowShape,
+  TDHandle,
   Patch,
   GroupShape,
   SessionType,
@@ -557,12 +557,12 @@ export class TranslateSession extends BaseSession {
             // There should be before and after shapes
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            beforeShapes[id]!.handles![handle.id as keyof ArrowShape['handles']] = {
+            ;(beforeShapes[id]!.handles as Record<string, Partial<TDHandle>>)[handle.id] = {
               bindingId: binding.id,
             }
 
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            afterShapes[id]!.handles![handle.id as keyof ArrowShape['handles']] = {
+            ;(afterShapes[id]!.handles as Record<string, Partial<TDHandle>>)[handle.id] = {
               bindingId: undefined,
             }
           })
@@ -688,11 +688,10 @@ export class TranslateSession extends BaseSession {
     // Assign new binding ids to clones (or delete them!)
     clones.forEach((clone) => {
       if (clone.handles) {
-        if (clone.handles) {
-          for (const id in clone.handles) {
-            const handle = clone.handles[id as keyof ArrowShape['handles']]
-            handle.bindingId = handle.bindingId ? clonedBindingsMap[handle.bindingId] : undefined
-          }
+        const handles = clone.handles as Record<string, TDHandle>
+        for (const id in handles) {
+          const handle = handles[id]
+          handle.bindingId = handle.bindingId ? clonedBindingsMap[handle.bindingId] : undefined
         }
       }
     })

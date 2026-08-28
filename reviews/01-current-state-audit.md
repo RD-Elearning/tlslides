@@ -190,6 +190,10 @@ document 6.
 
 These were found incidentally while auditing. None are blockers, but all are real.
 
+> **All fourteen are now fixed** — B-06 in Phase 1, B-14 in Phase 2, B-01/B-03/B-04/B-12/B-13 in
+> Phase 3, B-07 in Phase 6, and B-02/B-05/B-08/B-09/B-10 in Phase 7. The table is kept as the
+> record of what was found and where.
+
 | ID | Bug | Location |
 |---|---|---|
 | B-01 | `FontStyle.Serif = 'erif'` — typo, missing leading `s`. The persisted string is literally `"erif"`. | `types.ts:456` |

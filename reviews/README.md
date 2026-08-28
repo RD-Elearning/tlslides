@@ -230,8 +230,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 4 | **F-01** slide frame / artboard | ✅ done |
 | 5 | **F-02** `ComponentShape` + `components` registry prop | ✅ done |
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen · B-07 | ✅ done |
-| 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ⏳ next |
-| 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⬜ pending |
+| 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ✅ done |
+| 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⏳ next |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
 
 #### Phase 1 notes
@@ -467,6 +467,43 @@ absence of the API degrades gracefully, and a real `fullscreenchange` event resy
 
 **Verified:** 70/70 suites (335 passing, up from 306) · `build:packages` 9/9 · all four visual
 scenarios pass — `reorder` reports `[A,B,C] → [B,C,A]` with the drop indicator visible mid-drag.
+
+#### Phase 7 notes — bug sweep
+
+Every bug from the audit's table (§1.9 of
+[01-current-state-audit.md](01-current-state-audit.md)) is now closed.
+
+- **B-02.** The PDF branch responded and then fell through, writing the response twice. It returns
+  now, with `501 Not Implemented` rather than `500` — it is not an error, it does not exist. The
+  export menu no longer offers PDF either; a UI that lets you pick a format that cannot work is
+  the larger half of this bug. PDF export itself remains a backlog item.
+- **B-05.** There is a real `LineUtil` now, and `LineTool` no longer fakes a line with a
+  decoration-less arrow. A line deliberately does **not** inherit binding, the bend handle, or
+  labels — it is geometry, not a connector. It reuses only `ArrowUtil`'s freehand shaft renderer,
+  where the geometry is genuinely identical. Existing arrow-shaped "lines" in old documents are
+  untouched and keep working.
+  Two ripples were needed: `SelectTool` routed *any* non-`bend` handle drag through `ArrowSession`
+  (which casts to `ArrowShape`), so it now dispatches on shape type; and `HandleSession` gained an
+  `isCreate` flag so cancelling mid-draw deletes the shape instead of leaving a stub, matching
+  what the other creation sessions already do.
+- **B-08.** `patchAssets` wrote `this.document.assets` directly, bypassing the store. It goes
+  through `patchState` now. A test asserts the `document` reference actually changes — a direct
+  mutation would pass a naive "the asset is there" assertion.
+- **B-09.** The example called `app.patchShapes`, which does not exist; `updateShapes` is the real
+  API. Verified by building the example, not by reading it.
+- **B-10.** **Dead, not a live bug** — settled by evidence: `appState.pages` was removed from
+  `TDSnapshot` in `0685ca38` (Nov 2021) and the write site was never updated, with zero readers
+  anywhere in the repo since. Removed.
+
+**Also fixed: the last type error in the build.** `@tlslides/core` had been emitting
+`useZoomEvents.ts:127 — Type 'number' is not assignable to type 'Vector2 | …'` on every build.
+`@use-gesture` v10 types `pinch.from` as a `[scale, angle]` pair; a bare number was a leftover
+from an older version. **`build:packages` is now completely clean**, which matters more than it
+sounds: the build tool does not fail on type errors, so a real error hiding in expected noise is
+exactly how the `Patch<T>` breakage in Phase 5 would have shipped.
+
+**Verified:** 71/71 suites (345 passing, up from 335) · `build:packages` 9/9 with zero errors ·
+example builds · all five visual scenarios pass.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

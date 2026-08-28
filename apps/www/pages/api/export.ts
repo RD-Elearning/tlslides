@@ -43,7 +43,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     size: [width, height],
     type,
   } = body
-  if (type === TDExportTypes.PDF) res.status(500).send('Not implemented yet.')
+  // PDF export is not implemented; 501 is the correct status for a feature that does not exist
+  // (as opposed to 500, which implies something went wrong while attempting it). The UI never
+  // offers PDF (see Menu.tsx), but this guard stays as a safety net for direct API callers.
+  if (type === TDExportTypes.PDF) {
+    res.status(501).send('Not implemented yet.')
+    return
+  }
   try {
     const browser = await chromium.puppeteer.launch({
       slowMo: 50,

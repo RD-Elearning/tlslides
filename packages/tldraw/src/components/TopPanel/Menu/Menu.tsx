@@ -56,10 +56,6 @@ export const Menu = React.memo(function Menu({ showSponsorLink, readOnly }: Menu
     await app.exportAllShapesAs(TDExportTypes.WEBP)
   }, [app])
 
-  const handleExportPDF = React.useCallback(async () => {
-    await app.exportAllShapesAs(TDExportTypes.PDF)
-  }, [app])
-
   const handleExportSVG = React.useCallback(async () => {
     await app.exportAllShapesAs(TDExportTypes.SVG)
   }, [app])
@@ -170,9 +166,9 @@ export const Menu = React.memo(function Menu({ showSponsorLink, readOnly }: Menu
                   <DMItem onClick={handleExportJSON} id="TD-MenuItem-File-Export-JSON">
                     JSON
                   </DMItem>
-                  <DMItem onClick={handleExportPDF} id="TD-MenuItem-File-Export-PDF">
-                    PDF
-                  </DMItem>
+                  {/* PDF is intentionally not offered here: the server endpoint
+                      (apps/www/pages/api/export.ts) returns 501 Not Implemented. Re-add once
+                      PDF export is actually implemented (separate backlog item). */}
                 </DMSubMenu>
               </>
             )}

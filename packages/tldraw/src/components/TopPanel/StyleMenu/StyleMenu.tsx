@@ -91,9 +91,7 @@ const optionsSelector = (s: TDSnapshot) => {
     case TDShapeType.Arrow: {
       return 'label'
     }
-    case TDShapeType.Line: {
-      return 'label'
-    }
+    // Lines have no label, unlike arrows, so no text-style controls are shown for the line tool.
   }
 
   return false

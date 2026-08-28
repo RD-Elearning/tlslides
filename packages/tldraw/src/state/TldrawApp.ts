@@ -1343,16 +1343,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const currentPageStates = { ...this.document.pageStates }
 
     // Update the app state's current page id if needed
+    //
+    // B-10: this used to also write a `pages` summary array onto `nextAppState`, but
+    // `TDSnapshot['appState']` has had no `pages` field since upstream commit 0685ca38
+    // ("[feature] fonts (#308)", 2021-11-20) removed it from the type. Nothing in the codebase
+    // reads `appState.pages` (confirmed by grep), so the write was inert dead code left behind
+    // by that type change — not a live bug — and is removed here rather than fixed.
     const nextAppState = {
       ...this.appState,
       currentPageId: document.pages[this.currentPageId]
         ? this.currentPageId
         : Object.keys(document.pages)[0],
-      pages: Object.values(document.pages).map((page, i) => ({
-        id: page.id,
-        name: page.name,
-        childIndex: page.childIndex || i,
-      })),
     }
 
     // Reset the history (for now)
@@ -3821,10 +3822,15 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   patchAssets(assets: TDAssets) {
-    this.document.assets = {
-      ...this.document.assets,
-      ...assets,
-    }
+    // Go through the state manager (as every other mutation does) rather than writing
+    // `this.document.assets` directly, which bypassed the store and never triggered a
+    // re-render or persistence for shapes that reference the new assets.
+    this.patchState({
+      document: {
+        assets,
+      },
+    })
+    return this
   }
 
   async exportAllShapesAs(type: TDExportTypes) {

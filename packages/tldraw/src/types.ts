@@ -382,6 +382,16 @@ export interface ArrowShape extends TDBaseShape {
   labelPoint?: number[]
 }
 
+// A straight two-point line. Unlike ArrowShape it has no bend handle, no decorations
+// (arrowheads), no label, and cannot bind to or be bound from other shapes.
+export interface LineShape extends TDBaseShape {
+  type: TDShapeType.Line
+  handles: {
+    start: TDHandle
+    end: TDHandle
+  }
+}
+
 export interface ArrowBinding extends TLBinding {
   handleId: keyof ArrowShape['handles']
   distance: number
@@ -444,6 +454,7 @@ export type TDShape =
   | TriangleShape
   | DrawShape
   | ArrowShape
+  | LineShape
   | TextShape
   | GroupShape
   | StickyShape

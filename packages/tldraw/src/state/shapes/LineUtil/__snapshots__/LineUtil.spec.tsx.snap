@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Line shape Creates a shape: line 1`] = `
+Object {
+  "childIndex": 1,
+  "handles": Object {
+    "end": Object {
+      "id": "end",
+      "index": 1,
+      "point": Array [
+        1,
+        1,
+      ],
+    },
+    "start": Object {
+      "id": "start",
+      "index": 0,
+      "point": Array [
+        0,
+        0,
+      ],
+    },
+  },
+  "id": "line",
+  "name": "Line",
+  "parentId": "page",
+  "point": Array [
+    0,
+    0,
+  ],
+  "rotation": 0,
+  "style": Object {
+    "color": "black",
+    "dash": "solid",
+    "isFilled": false,
+    "scale": 1,
+    "size": "small",
+  },
+  "type": "line",
+}
+`;

@@ -310,7 +310,10 @@ export class SelectTool extends BaseTool<Status> {
           this.setStatus(Status.TranslatingHandle)
           const selectedShape = this.app.getShape(this.app.selectedIds[0])
           if (selectedShape) {
-            if (this.pointedHandleId === 'bend') {
+            // Only arrows have bindings and a bend handle, so only route arrows through
+            // ArrowSession. Other handled shapes (e.g. lines) use the generic HandleSession,
+            // which just calls the shape util's onHandleChange with no binding search.
+            if (this.pointedHandleId === 'bend' || selectedShape.type !== TDShapeType.Arrow) {
               this.app.startSession(SessionType.Handle, selectedShape.id, this.pointedHandleId)
               this.app.updateSession()
             } else {

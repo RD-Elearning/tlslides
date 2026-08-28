@@ -47,7 +47,7 @@ export default function Imperative(): JSX.Element {
 
       const color = i % 2 ? ColorStyle.Red : ColorStyle.Blue
 
-      app.patchShapes({
+      app.updateShapes({
         id: 'rect1',
         style: {
           ...rect1.style,

@@ -14,14 +14,26 @@ export class HandleSession extends BaseSession {
   shiftKey = false
   initialShape: ShapesWithProp<'handles'>
   handleId: string
+  // True when this session is dragging out the handle of a shape that was just created (e.g. a
+  // line's end point right after the line tool placed it). Mirrors the isCreate flag on the
+  // other creation sessions (TransformSingleSession, ArrowSession) so that cancelling mid-drag
+  // removes the shape instead of leaving a stub behind.
+  isCreate: boolean
 
-  constructor(app: TldrawApp, shapeId: string, handleId: string, commandId = 'move_handle') {
+  constructor(
+    app: TldrawApp,
+    shapeId: string,
+    handleId: string,
+    commandId = 'move_handle',
+    isCreate = false
+  ) {
     super(app)
     const { originPoint } = app
     this.topLeft = [...originPoint]
     this.handleId = handleId
     this.initialShape = this.app.getShape(shapeId)
     this.commandId = commandId
+    this.isCreate = isCreate
   }
 
   start = (): TldrawPatch | undefined => void null
@@ -78,7 +90,7 @@ export class HandleSession extends BaseSession {
         pages: {
           [currentPageId]: {
             shapes: {
-              [initialShape.id]: initialShape,
+              [initialShape.id]: this.isCreate ? undefined : initialShape,
             },
           },
         },

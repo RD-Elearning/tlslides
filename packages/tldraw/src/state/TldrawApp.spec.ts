@@ -859,6 +859,20 @@ describe('TldrawTestApp', () => {
       .movePointer([50, 51])
       .expectSelectedIdsToBe(['box1'])
   })
+
+  describe('mergeDocument', () => {
+    // B-10: `mergeDocument` used to also write a `pages` summary array onto `nextAppState`, but
+    // `TDSnapshot['appState']` has had no `pages` field since it was removed from the type in
+    // 2021 — nothing in the codebase reads `appState.pages`, so the write was dead and has been
+    // removed rather than "fixed". This test guards against it quietly coming back.
+    it('does not write a stray `pages` field onto appState', () => {
+      const app = new TldrawTestApp().loadDocument(mockDocument)
+      app.mergeDocument(deepCopy(mockDocument))
+      expect(app.appState).not.toHaveProperty('pages')
+      // currentPageId still gets set correctly, unaffected by removing the dead write.
+      expect(app.currentPageId).toBe('page1')
+    })
+  })
 })
 
 describe('When adding an image', () => {
@@ -869,6 +883,29 @@ describe('When adding an image', () => {
 describe('When adding a video', () => {
   it.todo('Adds the video to the assets table')
   it.todo('Does not add the video if that video already exists as an asset')
+})
+
+describe('patchAssets', () => {
+  it('adds the assets to the document', () => {
+    const app = new TldrawTestApp()
+    app.patchAssets({
+      asset1: { id: 'asset1', type: TDAssetType.Image, src: 'asset1.png', size: [100, 100] },
+    })
+    expect(app.document.assets.asset1).toMatchObject({ id: 'asset1', src: 'asset1.png' })
+  })
+
+  it('goes through the state manager, so the change is observable on the store (B-08)', () => {
+    const app = new TldrawTestApp()
+    // Direct mutation (the pre-fix behavior) would keep this same `document` object reference,
+    // since it wrote into `document.assets` in place rather than replacing state. Going through
+    // `patchState` replaces `document` with a new object, which is what makes the store notify
+    // subscribers (and React re-render) of the change.
+    const documentBefore = app.document
+    app.patchAssets({
+      asset1: { id: 'asset1', type: TDAssetType.Image, src: 'asset1.png', size: [100, 100] },
+    })
+    expect(app.document).not.toBe(documentBefore)
+  })
 })
 
 describe('When space panning', () => {
