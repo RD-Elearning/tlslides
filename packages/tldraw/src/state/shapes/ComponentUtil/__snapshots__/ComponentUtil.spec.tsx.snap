@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Component shape Creates a shape: component 1`] = `
+Object {
+  "childIndex": 1,
+  "componentId": "",
+  "id": "component",
+  "name": "Component",
+  "parentId": "page",
+  "point": Array [
+    0,
+    0,
+  ],
+  "props": Object {},
+  "rotation": 0,
+  "size": Array [
+    320,
+    200,
+  ],
+  "style": Object {
+    "color": "black",
+    "dash": "solid",
+    "isFilled": false,
+    "scale": 1,
+    "size": "small",
+  },
+  "type": "component",
+}
+`;

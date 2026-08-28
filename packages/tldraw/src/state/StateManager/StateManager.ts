@@ -208,7 +208,11 @@ export class StateManager<T extends Record<string, any>> {
    * @param id An id for this change.
    */
   protected replaceState = (state: T, id?: string): this => {
-    const final = this.cleanup(state, this._state, state, id)
+    // `cleanup`'s third parameter is `Patch<T>`, which is a fully-populated match for a complete
+    // replacement state — but `Patch<T>` is a conditional type keyed on the naked `T`, so this
+    // doesn't fall out of assignability automatically for a still-generic `T` (only for each
+    // concrete `T` this class ends up instantiated with, e.g. `TDDocument`). Safe to assert here.
+    const final = this.cleanup(state, this._state, state as Patch<T>, id)
     if (this.onStateWillChange) {
       this.onStateWillChange(final, 'replace')
     }

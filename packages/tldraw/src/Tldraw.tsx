@@ -3,7 +3,14 @@ import { Renderer } from '@tlslides/core'
 import { styled, dark } from '~styles'
 import { TDDocument, TDStatus } from '~types'
 import { TldrawApp, TDCallbacks } from '~state'
-import { TldrawContext, useStylesheet, useKeyboardShortcuts, useTldrawApp } from '~hooks'
+import {
+  TldrawContext,
+  useStylesheet,
+  useKeyboardShortcuts,
+  useTldrawApp,
+  TldrawComponentsContext,
+  TldrawComponentsRegistry,
+} from '~hooks'
 import { shapeUtils } from '~state/shapes'
 import { ToolsPanel } from '~components/ToolsPanel'
 import { TopPanel } from '~components/TopPanel'
@@ -14,6 +21,10 @@ import { GRID_SIZE } from '~constants'
 import { Loading } from '~components/Loading'
 import { Deck } from '~components/Deck'
 import { BottomPanel } from '~components/BottomPanel'
+
+// Stable default so a host that never passes `components` doesn't hand ComponentUtil a "new"
+// empty object every render.
+const EMPTY_COMPONENTS: TldrawComponentsRegistry = {}
 
 export interface TldrawProps extends TDCallbacks {
   /**
@@ -92,6 +103,16 @@ export interface TldrawProps extends TDCallbacks {
    * bucket based solution will cause massive base64 string to be written to the liveblocks room.
    */
   disableAssets?: boolean
+
+  /**
+   * (optional) A registry of React components, keyed by the `componentId` a document's
+   * `ComponentShape`s reference. This is how a host app renders its own React/Next.js components
+   * (charts, KPI tiles, rich text blocks, branded elements, ...) as slide content, without the
+   * document ever storing React itself — see reviews/04-custom-component-blocks.md. A
+   * `componentId` with no entry here renders a placeholder instead of crashing, so a document can
+   * safely outlive, or be opened by, an app with a smaller registry.
+   */
+  components?: TldrawComponentsRegistry
 }
 
 export function Tldraw({
@@ -109,6 +130,7 @@ export function Tldraw({
   readOnly = false,
   showSponsorLink = false,
   disableAssets = false,
+  components = EMPTY_COMPONENTS,
   onMount,
   onChange,
   onChangePresence,
@@ -288,20 +310,22 @@ export function Tldraw({
   // Use the `key` to ensure that new selector hooks are made when the id changes
   return (
     <TldrawContext.Provider value={app}>
-      <InnerTldraw
-        key={sId || 'Tldraw'}
-        id={sId}
-        autofocus={autofocus}
-        showPages={showPages}
-        showMenu={showMenu}
-        showMultiplayerMenu={showMultiplayerMenu}
-        showStyles={showStyles}
-        showZoom={showZoom}
-        showTools={showTools}
-        showUI={showUI}
-        showSponsorLink={showSponsorLink}
-        readOnly={readOnly}
-      />
+      <TldrawComponentsContext.Provider value={components}>
+        <InnerTldraw
+          key={sId || 'Tldraw'}
+          id={sId}
+          autofocus={autofocus}
+          showPages={showPages}
+          showMenu={showMenu}
+          showMultiplayerMenu={showMultiplayerMenu}
+          showStyles={showStyles}
+          showZoom={showZoom}
+          showTools={showTools}
+          showUI={showUI}
+          showSponsorLink={showSponsorLink}
+          readOnly={readOnly}
+        />
+      </TldrawComponentsContext.Provider>
     </TldrawContext.Provider>
   )
 }

@@ -5,6 +5,12 @@ Your question: *"can I add custom Next.js block components to show on the UI?"*
 **Answer: not today, but the underlying mechanism already exists and is proven. The fix is a
 small, contained change to the fork — roughly one new shape type plus one new prop.**
 
+> **Implemented in Phase 5.** `ComponentShape` and the `components` registry prop now exist; see
+> the progress notes in [README.md](README.md). The analysis below is retained as the design
+> record. Two things landed differently: an error boundary wraps each block (a *registered but
+> crashing* block degrades to a card instead of taking down the document), and SVG export emits a
+> labelled placeholder rather than the block's real content.
+
 ## 4.1 The mechanism is already there
 
 ### `HTMLContainer` renders arbitrary React children into canvas space

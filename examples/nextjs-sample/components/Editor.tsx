@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { ColorStyle, TDShapeType, Tldraw, TldrawApp } from '@tlslides/tldraw'
 import type { TDDocument } from '@tlslides/tldraw'
+import { blockComponents } from './blocks'
 
 // No `id` prop is passed to <Tldraw> below, which disables its built-in IndexedDB persistence.
 // `onPersist` still fires on every persistable change, so it is the hook a host app uses to save
@@ -51,6 +52,41 @@ export default function Editor() {
     })
   }, [])
 
+  // Both buttons below insert a ComponentShape (F-02): the document only ever stores
+  // `{ componentId, props }`, never React itself. `blockComponents` (components/blocks.tsx) is
+  // this host app's registry, passed to <Tldraw components={...}> below.
+  const addKpiTile = React.useCallback(() => {
+    const app = appRef.current
+    if (!app) return
+    app.createShapes({
+      id: `kpi-${Date.now()}`,
+      type: TDShapeType.Component,
+      // Fixed, non-overlapping placement (rather than addRectangle's random point above) so two
+      // blocks added back to back land side by side instead of stacking on top of each other.
+      point: [80, 120],
+      size: [260, 160],
+      componentId: 'kpi-tile',
+      props: { label: 'Monthly active users', value: '128.4K', delta: 12, deltaLabel: 'vs last month' },
+    })
+  }, [])
+
+  const addBarChart = React.useCallback(() => {
+    const app = appRef.current
+    if (!app) return
+    app.createShapes({
+      id: `chart-${Date.now()}`,
+      type: TDShapeType.Component,
+      point: [400, 120],
+      size: [360, 240],
+      componentId: 'bar-chart',
+      props: {
+        title: 'Quarterly revenue ($K)',
+        categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+        values: [42, 58, 51, 73],
+      },
+    })
+  }, [])
+
   const addSlide = React.useCallback(() => {
     appRef.current?.createPage()
   }, [])
@@ -81,6 +117,12 @@ export default function Editor() {
         <button id="add-rectangle" data-testid="add-rectangle" onClick={addRectangle}>
           Add rectangle
         </button>
+        <button id="add-kpi-tile" data-testid="add-kpi-tile" onClick={addKpiTile}>
+          Add KPI tile
+        </button>
+        <button id="add-bar-chart" data-testid="add-bar-chart" onClick={addBarChart}>
+          Add bar chart
+        </button>
         <button id="add-slide" data-testid="add-slide" onClick={addSlide}>
           Add slide
         </button>
@@ -95,7 +137,7 @@ export default function Editor() {
         </button>
       </div>
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        <Tldraw onMount={onMount} onPersist={onPersist} />
+        <Tldraw onMount={onMount} onPersist={onPersist} components={blockComponents} />
       </div>
     </div>
   )

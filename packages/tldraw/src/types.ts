@@ -294,6 +294,7 @@ export enum TDShapeType {
   Group = 'group',
   Image = 'image',
   Video = 'video',
+  Component = 'component',
 }
 
 export enum Decoration {
@@ -405,6 +406,17 @@ export interface VideoShape extends TDBaseShape {
   alt?: string
 }
 
+// A shape that renders a host-app-registered React component (F-02). Only a serializable
+// `componentId` and `props` bag live in the document — the actual React component is supplied at
+// runtime via the `components` prop on <Tldraw>, so the document stays plain JSON and survives
+// persistence, .tldr files, and multiplayer sync unchanged. See reviews/04-custom-component-blocks.md.
+export interface ComponentShape extends TDBaseShape {
+  type: TDShapeType.Component
+  size: number[]
+  componentId: string
+  props: Record<string, unknown>
+}
+
 // The shape created by the text tool
 export interface TextShape extends TDBaseShape {
   type: TDShapeType.Text
@@ -437,6 +449,7 @@ export type TDShape =
   | StickyShape
   | ImageShape
   | VideoShape
+  | ComponentShape
 
 /* ------------------ Shape Styles ------------------ */
 
@@ -581,7 +594,23 @@ export type MappedByType<U extends string, T extends { type: U }> = {
 
 export type ShapesWithProp<U> = MembersWithRequiredKey<MappedByType<TDShapeType, TDShape>, U>
 
-export type Patch<T> = Partial<{ [P in keyof T]: Patch<T[P]> }>
+// `T extends object` stops the recursion at primitives (string, number, boolean, enums) AND at
+// `unknown`/`any` (neither of which extends `object`). Without this guard, `Patch<unknown>` used
+// to expand to `Partial<{ [P in keyof unknown]: ... }>`, and since `keyof unknown` is `never`,
+// that collapsed to `{}` — a type `unknown` is not assignable to. That made
+// `Patch<Record<string, unknown>>` (needed for `ComponentShape['props']`, which is intentionally
+// untyped per-block data) unusable: no value could ever satisfy it. Stopping at `unknown`/`any`
+// leaves the property typed `unknown`, which round-trips correctly.
+//
+// Gating at the top like this (rather than gating each `T[P]` inside a plain, ungated
+// `Partial<{ [P in keyof T] : ... }>`) matters for a second reason: `T extends X ? A : B` with a
+// *naked* generic `T` as the checked type distributes over unions, so `Patch<TDShape>` correctly
+// expands to a union of each shape variant's own patch shape (preserving the `type` discriminant
+// per branch) instead of collapsing `TDShape`'s members down to their common keys the way a
+// mapped type over a union does. `StateManager.replaceState` passing a concrete `T` where
+// `Patch<T>` is expected relies on this distribution too; the one place it does not fall out for
+// free is an unresolved *generic* `T` (see the cast in `StateManager.patchState`).
+export type Patch<T> = T extends object ? Partial<{ [P in keyof T]: Patch<T[P]> }> : T
 
 export interface Command<T extends { [key: string]: any }> {
   id?: string

@@ -228,8 +228,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ✅ done |
 | 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12, B-13 | ✅ done |
 | 4 | **F-01** slide frame / artboard | ✅ done |
-| 5 | **F-02** `ComponentShape` + `components` registry prop | ⏳ next |
-| 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen + auto zoom-to-fit | ⬜ pending |
+| 5 | **F-02** `ComponentShape` + `components` registry prop | ✅ done |
+| 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen | ⏳ next |
 | 7 | Bug sweep — B-02, B-05, B-07, B-08, B-09, B-10 | ⬜ pending |
 | 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
@@ -392,6 +392,44 @@ matches Figma rather than Canva, and is a deliberate, documented choice rather t
 
 **Verified:** 65/65 suites (296 passing, up from 284) · `build:packages` 9/9 · visual scenario
 exits 0 in both themes.
+
+#### Phase 5 notes — F-02, component blocks
+
+**A React component written in the host Next.js app now renders as a slide element.** The document
+stores only `{ componentId, props }`, never React, so it stays JSON-serializable and persistence,
+`.tldr` files and multiplayer are unaffected. An AI can emit that pair without emitting React.
+
+- `ComponentShape` + `ComponentUtil`, registered like any other shape util. No version bump — this
+  is an addition to a union, not a schema change.
+- `<Tldraw components={...}>` delivers the registry through React context (`useTldrawComponents`),
+  with a stable empty default so hosts that never pass it do not thrash renders.
+- **Two failure modes, both non-fatal.** An unregistered `componentId` renders a labelled
+  placeholder; a registered block that *throws during render* is caught by an error boundary and
+  degrades to a card. A document outlives the app that defined its blocks, so neither may take the
+  document down.
+- `isStateful = true`, so a block keeps its state, timers and subscriptions when scrolled
+  off-screen. Blocks are `pointerEvents: 'all'` and click-to-select by default; host components
+  with their own controls should `stopPropagation`, the same pattern `StickyUtil` uses.
+- **SVG export shows a labelled placeholder, not the block.** HTML shapes have no `#{id}_svg` node
+  to clone. PNG export goes through headless Chrome and does capture the real DOM — the screenshot
+  below is direct evidence. Caveat: the export page must be given the *same* registry as the
+  editor, or blocks resolve to placeholders there.
+- Demonstrated end to end in `examples/nextjs-sample`: a KPI tile and a hand-rolled bar chart (no
+  charting dependency), inserted from the control strip, rendering as finished slide content.
+
+**`Patch<T>` had to change.** Adding `props: Record<string, unknown>` broke the repo's recursive
+patch type: `Patch<unknown>` collapsed to `{}`, which `unknown` is not assignable to, producing
+~40 type errors. Gating the recursion on `T extends object` stops it at primitives and at
+`unknown`/`any`, and — because the check is on a naked generic — keeps distributing over the
+`TDShape` union so each variant keeps its own discriminant. The build tool does not fail on type
+errors, so this would have shipped as broken types with a green build.
+
+**Caught in review: loading a document did not fit the slide.** The reference app opened at 100%
+zoom with the frame off-screen, because `loadDocument` restored the camera the document was saved
+at. A deck is opened to be looked at, so it now fits, guarded the same way `changePage` is.
+
+**Verified:** 67/67 suites (306 passing, up from 296) · `build:packages` 9/9 · `next build` clean ·
+`blocks` scenario exits 0, screenshot inspected.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

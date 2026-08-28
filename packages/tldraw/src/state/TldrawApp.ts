@@ -1418,6 +1418,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     )
     const { point, zoom } = this.pageState.camera
     this.updateViewport(point, zoom)
+
+    // Fit the loaded slide rather than restoring whatever camera the document was saved at. A
+    // deck is opened to be looked at, so landing on the slide is the useful default; the saved
+    // per-page pan/zoom is an artefact users do not think about. Guarded the same way as
+    // `changePage`, so a load that happens before the renderer has reported its bounds is
+    // picked up by the fit in `updateBounds` instead.
+    if (this.hasKnownViewport) this.zoomToFit()
     return this
   }
 
