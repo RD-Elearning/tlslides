@@ -1,6 +1,7 @@
 import { mockDocument, TldrawTestApp } from '~test'
 import { TDExport, TDExportTypes, TDDocument } from '~types'
 import { SLIDE_ASPECT_PRESETS, FIT_TO_SCREEN_PADDING } from '~constants'
+import { TLDR } from '~state/TLDR'
 
 // `loadDocument`/`migrate` mutate the document object they're given in place (and `migrate`
 // stamps `document.version`, which then short-circuits its own defaulting logic on a second
@@ -126,6 +127,20 @@ describe('Frame-aware export', () => {
 
     const svgString = app.copySvg(['rect1'])
     expect(svgString).not.toContain('viewBox="0 0 1920 1080"')
+  })
+
+  it('copySvg only writes to the clipboard when asked to (Phase 14 — Deck.getThumbnail relies on this)', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    const spy = jest.spyOn(TLDR, 'copyStringToClipboard').mockImplementation(() => undefined)
+
+    app.copySvg(['rect1'], app.page.id, true, false)
+    expect(spy).not.toHaveBeenCalled()
+
+    app.copySvg(['rect1'], app.page.id, true)
+    expect(spy).toHaveBeenCalledTimes(1)
+
+    spy.mockRestore()
   })
 
   it('exportAllShapesAs sizes the export to the frame', async () => {

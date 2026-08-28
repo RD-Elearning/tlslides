@@ -12,6 +12,8 @@
  * type-level plumbing (covered by packages/tldraw's jest suite instead).
  */
 module.exports = {
+  // Served by examples/nextjs-sample, not the tldraw-example harness.
+  base: 'http://localhost:5433',
   // See tools/visual/scenarios/nextjs.js for why this warning is tolerated here too.
   known: [/Accessing element\.ref was removed in React 19/],
   route: '/',

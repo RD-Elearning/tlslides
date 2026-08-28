@@ -2,13 +2,14 @@
 
 import * as React from 'react'
 import { ColorStyle, TDShapeType, Tldraw, TldrawApp } from '@tlslides/tldraw'
-import type { TDDocument } from '@tlslides/tldraw'
+import type { DeckSlide, DeckTheme, TDDocument, Template } from '@tlslides/tldraw'
 import { blockComponents } from './blocks'
+import { SlideManager } from './SlideManager'
 
 // No `id` prop is passed to <Tldraw> below, which disables its built-in IndexedDB persistence.
 // `onPersist` still fires on every persistable change, so it is the hook a host app uses to save
 // to its own backend instead. Here it writes to localStorage, purely to make that contract
-// observable — see reviews/03-nextjs-control-api.md section 3.4.
+// observable — see guides/nextjs-integration.md.
 const STORAGE_KEY = 'tlslides-nextjs-sample-document'
 
 // A fresh, uniquely-identified copy of the built-in default document, used to seed the editor
@@ -19,17 +20,72 @@ function createSeedDocument(): TDDocument {
   ) as TDDocument
 }
 
+// Phase 14 — every action in this file that mutates the document goes through `app.deck.*`,
+// including shape authoring: `addRectangle` uses `app.deck.insertContent` (the general escape
+// hatch for a host's own shape JSON) and `addKpiTile`/`addBarChart` use `app.deck.addBlock` (the
+// `ComponentShape` convenience) — see the review that closed this gap in reviews/README.md's
+// Phase 14 notes. What's left touching `TldrawApp` directly is read-only property access
+// (`app.currentPageId`, `app.appState.currentStyle`, `app.document` for the `onPersist` save) and
+// `toggleDarkMode()`, which is UI chrome, not slide/content management, and so was never in this
+// facade's scope to begin with.
 export default function Editor() {
   const appRef = React.useRef<TldrawApp | null>(null)
+  const unsubscribeRef = React.useRef<(() => void) | null>(null)
 
-  const onMount = React.useCallback((app: TldrawApp) => {
-    appRef.current = app
+  const [slides, setSlides] = React.useState<DeckSlide[]>([])
+  const [currentSlideId, setCurrentSlideId] = React.useState<string | undefined>()
+  const [theme, setThemeState] = React.useState<DeckTheme | undefined>()
+  const [thumbnail, setThumbnail] = React.useState<string | undefined>()
+  const [themes, setThemes] = React.useState<DeckTheme[]>([])
+  const [templates, setTemplates] = React.useState<Template[]>([])
 
-    // Exposed for the tools/visual Playwright harness (tools/visual/scenarios/nextjs.js) to
-    // drive the editor imperatively from a headless browser, mirroring how a host app would.
-    ;(window as unknown as { tlapp: TldrawApp }).tlapp = app
+  // The slide-manager panel's entire sync story: re-read the facade's own read methods whenever
+  // one of its typed events fires (wired up in onMount below). No polling `onPersist` here — see
+  // guides/nextjs-integration.md's "Keeping a host panel in sync" section.
+  const refresh = React.useCallback(() => {
+    const app = appRef.current
+    if (!app) return
+    setSlides(app.deck.listSlides())
+    setCurrentSlideId(app.currentPageId)
+    setThemeState(app.deck.getTheme())
+    setThumbnail(app.deck.getThumbnail(app.currentPageId))
+  }, [])
 
-    app.loadDocument(createSeedDocument())
+  const onMount = React.useCallback(
+    (app: TldrawApp) => {
+      appRef.current = app
+
+      // Exposed for the tools/visual Playwright harness (tools/visual/scenarios/nextjs.js and
+      // deckapi.js) to drive the editor imperatively from a headless browser, mirroring how a
+      // host app would.
+      ;(window as unknown as { tlapp: TldrawApp }).tlapp = app
+
+      app.deck.loadDeck(createSeedDocument())
+      setThemes(app.deck.listThemes())
+      setTemplates(app.deck.listTemplates())
+
+      const offAdded = app.deck.on('slideAdded', refresh)
+      const offRemoved = app.deck.on('slideRemoved', refresh)
+      const offReordered = app.deck.on('slideReordered', refresh)
+      const offSelection = app.deck.on('selectionChanged', refresh)
+      // Catches everything else a slide-manager panel cares about that isn't a page add/remove/
+      // reorder/selection change — a background or theme update, in this app's case.
+      const offDeckChange = app.deck.onDeckChange(refresh)
+      unsubscribeRef.current = () => {
+        offAdded()
+        offRemoved()
+        offReordered()
+        offSelection()
+        offDeckChange()
+      }
+
+      refresh()
+    },
+    [refresh]
+  )
+
+  React.useEffect(() => {
+    return () => unsubscribeRef.current?.()
   }, [])
 
   const onPersist = React.useCallback((app: TldrawApp) => {
@@ -40,68 +96,114 @@ export default function Editor() {
     }
   }, [])
 
+  // The general `insertContent` escape hatch (Phase 14): a host with its own full shape JSON,
+  // not just a ComponentShape block. `id`/`name`/`parentId`/`childIndex` below are placeholders —
+  // `insertContent` always remaps the id (collision-safety, see `Deck.insertContent`'s own doc
+  // comment) and overwrites `parentId`/`childIndex` to land on the target slide — only `type`,
+  // `point`, `size`, and `style` are actually honored. `center: false` keeps the explicit
+  // `point` instead of recentering against the current viewport.
   const addRectangle = React.useCallback(() => {
     const app = appRef.current
     if (!app) return
-    app.createShapes({
-      id: `rect-${Date.now()}`,
-      type: TDShapeType.Rectangle,
-      point: [100 + Math.random() * 400, 100 + Math.random() * 300],
-      size: [200, 150],
-      style: { ...app.appState.currentStyle, color: ColorStyle.Blue },
-    })
+    app.deck.insertContent(
+      app.currentPageId,
+      {
+        shapes: [
+          {
+            id: `rect-${Date.now()}`,
+            type: TDShapeType.Rectangle,
+            name: 'Rectangle',
+            parentId: app.currentPageId,
+            childIndex: 1,
+            point: [100 + Math.random() * 400, 100 + Math.random() * 300],
+            size: [200, 150],
+            style: { ...app.appState.currentStyle, color: ColorStyle.Blue },
+          },
+        ],
+      },
+      { center: false }
+    )
   }, [])
 
-  // Both buttons below insert a ComponentShape (F-02): the document only ever stores
-  // `{ componentId, props }`, never React itself. `blockComponents` (components/blocks.tsx) is
-  // this host app's registry, passed to <Tldraw components={...}> below.
+  // Both buttons below insert a ComponentShape (F-02) via `app.deck.addBlock` — the document only
+  // ever stores `{ componentId, props }`, never React itself. `blockComponents`
+  // (components/blocks.tsx) is this host app's registry, passed to <Tldraw components={...}>
+  // below. This is the facade's headline "render your own React as a slide element" capability —
+  // see `Deck.addBlock`'s own doc comment.
   const addKpiTile = React.useCallback(() => {
     const app = appRef.current
     if (!app) return
-    app.createShapes({
-      id: `kpi-${Date.now()}`,
-      type: TDShapeType.Component,
+    app.deck.addBlock(
+      app.currentPageId,
+      {
+        componentId: 'kpi-tile',
+        props: { label: 'Monthly active users', value: '128.4K', delta: 12, deltaLabel: 'vs last month' },
+      },
       // Fixed, non-overlapping placement (rather than addRectangle's random point above) so two
       // blocks added back to back land side by side instead of stacking on top of each other.
-      point: [80, 120],
-      size: [260, 160],
-      componentId: 'kpi-tile',
-      props: { label: 'Monthly active users', value: '128.4K', delta: 12, deltaLabel: 'vs last month' },
-    })
+      { point: [80, 120], size: [260, 160] }
+    )
   }, [])
 
   const addBarChart = React.useCallback(() => {
     const app = appRef.current
     if (!app) return
-    app.createShapes({
-      id: `chart-${Date.now()}`,
-      type: TDShapeType.Component,
-      point: [400, 120],
-      size: [360, 240],
-      componentId: 'bar-chart',
-      props: {
-        title: 'Quarterly revenue ($K)',
-        categories: ['Q1', 'Q2', 'Q3', 'Q4'],
-        values: [42, 58, 51, 73],
+    app.deck.addBlock(
+      app.currentPageId,
+      {
+        componentId: 'bar-chart',
+        props: {
+          title: 'Quarterly revenue ($K)',
+          categories: ['Q1', 'Q2', 'Q3', 'Q4'],
+          values: [42, 58, 51, 73],
+        },
       },
-    })
+      { point: [400, 120], size: [360, 240] }
+    )
   }, [])
 
   const addSlide = React.useCallback(() => {
-    appRef.current?.createPage()
+    appRef.current?.deck.addSlide()
   }, [])
 
-  const previousSlide = React.useCallback(() => {
-    appRef.current?.previousPage()
+  // `app.deck` has no `previousSlide`/`nextSlide` of its own (the roadmap's method list doesn't
+  // ask for one) — `listSlides` + `goToSlide` already compose into it, so this stays host-side
+  // rather than becoming two more facade methods for a one-line convenience.
+  const goRelative = React.useCallback((delta: number) => {
+    const app = appRef.current
+    if (!app) return
+    const list = app.deck.listSlides()
+    const index = list.findIndex((s) => s.id === app.currentPageId)
+    const target = list[index + delta]
+    if (target) app.deck.goToSlide(target.id)
   }, [])
-
-  const nextSlide = React.useCallback(() => {
-    appRef.current?.nextPage()
-  }, [])
+  const previousSlide = React.useCallback(() => goRelative(-1), [goRelative])
+  const nextSlide = React.useCallback(() => goRelative(1), [goRelative])
 
   const toggleDarkMode = React.useCallback(() => {
     appRef.current?.toggleDarkMode()
   }, [])
+
+  const handleAddFromTemplate = React.useCallback((templateId: string) => {
+    if (templateId) appRef.current?.deck.addSlideFromTemplate(templateId)
+  }, [])
+
+  const handleSetTheme = React.useCallback((themeId: string) => {
+    const app = appRef.current
+    if (!app) return
+    app.deck.setTheme(themeId ? app.deck.listThemes().find((t) => t.id === themeId) : undefined)
+  }, [])
+
+  const handleSetBackgroundColor = React.useCallback(
+    (color: string) => {
+      if (currentSlideId) appRef.current?.deck.setSlideBackground(currentSlideId, { type: 'solid', color })
+    },
+    [currentSlideId]
+  )
+
+  const handleClearBackground = React.useCallback(() => {
+    if (currentSlideId) appRef.current?.deck.setSlideBackground(currentSlideId, undefined)
+  }, [currentSlideId])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw' }}>
@@ -136,8 +238,26 @@ export default function Editor() {
           Toggle dark mode
         </button>
       </div>
-      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-        <Tldraw onMount={onMount} onPersist={onPersist} components={blockComponents} />
+      <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex' }}>
+        <SlideManager
+          slides={slides}
+          currentSlideId={currentSlideId}
+          thumbnail={thumbnail}
+          themes={themes}
+          activeThemeId={theme?.id}
+          templates={templates}
+          onSelectSlide={(id) => appRef.current?.deck.goToSlide(id)}
+          onAddSlide={addSlide}
+          onAddFromTemplate={handleAddFromTemplate}
+          onMoveSlide={(id, toIndex) => appRef.current?.deck.moveSlide(id, toIndex)}
+          onDeleteSlide={(id) => appRef.current?.deck.deleteSlide(id)}
+          onSetTheme={handleSetTheme}
+          onSetBackgroundColor={handleSetBackgroundColor}
+          onClearBackground={handleClearBackground}
+        />
+        <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+          <Tldraw onMount={onMount} onPersist={onPersist} components={blockComponents} />
+        </div>
       </div>
     </div>
   )

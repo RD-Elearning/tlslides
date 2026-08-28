@@ -697,6 +697,16 @@ export interface TDInsertContentOpts {
    * are meaningful relative to the slide frame. Defaults to `true`.
    */
   center?: boolean
+  /**
+   * Which slide to insert into. Defaults to the current slide. Phase 14 — lets a host target a
+   * slide that isn't currently open (e.g. `Deck.insertContent`/`Deck.addBlock`) without an extra
+   * `changePage` call, which would both move the user's viewport and cost a second undo step.
+   * Note: `center: true` (the default) centers against *this page's own stored camera*, which is
+   * only meaningful if the page is, or recently was, the current one — pass an explicit `point`,
+   * or `center: false` with the content's own authored coordinates, when targeting a slide the
+   * user isn't looking at.
+   */
+  pageId?: string
 }
 
 /* -------------------------------------------------- */

@@ -1,4 +1,5 @@
 import { mockDocument, TldrawTestApp } from '~test'
+import { FontStyle } from '~types'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { getTemplate } from '~state/templates'
 
@@ -79,6 +80,38 @@ describe('Add slide from template command', () => {
     app.addSlideFromTemplate(template)
 
     expect(app.page.name).toBe('Closing')
+  })
+
+  it('accepts a caller-supplied id for the new slide (Phase 14)', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(mockDocument)
+
+    app.addSlideFromTemplate('title', undefined, 'host-chosen-id')
+
+    expect(app.currentPageId).toBe('host-chosen-id')
+    expect(app.document.pages['host-chosen-id']).toBeDefined()
+  })
+
+  // A template's colours resolve lazily at render time, so they pick up the read-side default
+  // theme on their own. Its fonts do not — `buildTemplateShapes` bakes them into the shapes once,
+  // here — so this command has to apply the same default itself. Without it every template landed
+  // on a themeless deck with no `font` set at all, falling back to `FontStyle.Script`, a
+  // handwriting face none of the built-in themes ask for.
+  it('applies the default theme font pairing to a deck that has no theme set', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(mockDocument)
+    expect(app.document.theme).toBeUndefined()
+
+    app.addSlideFromTemplate('title')
+
+    const texts = Object.values(app.page.shapes).filter((s) => 'text' in s)
+    expect(texts.length).toBeGreaterThan(0)
+    for (const shape of texts) {
+      expect(shape.style.font).toBeDefined()
+      expect(shape.style.font).not.toBe(FontStyle.Script)
+    }
+    // Nothing was written to the document to achieve it.
+    expect(app.document.theme).toBeUndefined()
   })
 
   it('does nothing in readOnly mode', () => {

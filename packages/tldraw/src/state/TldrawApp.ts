@@ -66,6 +66,7 @@ import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { resolveSlideBackground, appendBackgroundDefs } from '~state/shapes/shared/background'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { getTemplate } from '~state/templates'
+import { Deck } from './deck'
 import * as Commands from './commands'
 import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
@@ -194,6 +195,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   currentTool: BaseTool = this.tools.select
+
+  // Phase 14 — `app.deck`, the host-facing slide-management facade. A thin, stable wrapper over
+  // the page/command methods just above (`createPage`, `movePage`, `setPageBackground`, ...) —
+  // see `state/deck/Deck.ts` for the full rationale. Constructed here (a class field, not in the
+  // constructor body) so it exists before `onReady`'s initial `loadDocument` call ever fires; its
+  // own constructor only reads `this.document.pages`, which `StateManager`'s `super()` call has
+  // already populated by the time class fields below it initialize.
+  readonly deck: Deck = new Deck(this)
 
   session?: TldrawSession
 
@@ -556,6 +565,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       this.broadcastPageChanges()
     }
     this.callbacks.onPersist?.(this)
+
+    // Phase 14 — `persist()` only runs after a committed `Command` (see `StateManager.setState`),
+    // never for a transient `patchState` (camera pans, in-progress drags, ...). That's exactly
+    // the cadence `app.deck`'s `slideAdded`/`slideRemoved`/`slideReordered`/`deckChanged` events
+    // want: one notification per undoable change, not a flood of per-frame updates.
+    this.deck._onCommitted()
   }
 
   private prevSelectedIds = this.selectedIds
@@ -567,6 +582,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    */
   protected onStateDidChange = (_state: TDSnapshot, id?: string): void => {
     this.callbacks.onChange?.(this, id)
+
+    // Phase 14 — selection can change via a transient `patchState` (an ordinary click doesn't
+    // create an undo entry), so `app.deck`'s `selectionChanged` event has to hook this lifecycle
+    // method rather than `onPersist` above, unlike the page-list events.
+    this.deck._onSelectionMaybeChanged()
 
     if (this.room && this.selectedIds !== this.prevSelectedIds) {
       this.callbacks.onChangePresence?.(this, {
@@ -1526,6 +1546,15 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     // per-page pan/zoom is an artefact users do not think about. A load that happens before the
     // renderer has reported its bounds is picked up by the fit in `updateBounds` instead.
     this.fitCurrentPage()
+
+    // Phase 14 — a whole-document swap, not an incremental page add/remove: resync `app.deck`'s
+    // baseline (so the very next real command doesn't diff against a now-stale page list and
+    // misreport every page in the new document as `slideAdded`) and fire one `deckChanged`
+    // rather than replaying the new document's pages as a flood of individual events. Runs for
+    // every caller of `loadDocument` — `Deck.loadDeck` included, since it just forwards here —
+    // not only ones that go through the facade, which matters for the initial IndexedDB-restore
+    // call `onReady` makes before `deck.loadDeck` is ever reachable.
+    this.deck._resync()
     return this
   }
 
@@ -1888,6 +1917,18 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * Set (or clear) a page's speaker notes (Phase 14/16). Reserved on `TDPage` since Phase 3;
+   * this is the first command to actually write it. A presenter view that reads it back is
+   * Phase 16's job — for now this just makes the field a normal, undoable piece of page data.
+   * @param pageId The id of the page to update.
+   * @param notes The new notes, or `undefined` to clear them.
+   */
+  setPageNotes = (pageId: string, notes: string | undefined): this => {
+    if (this.readOnly) return this
+    return this.setState(Commands.setPageNotes(this, pageId, notes))
+  }
+
+  /**
    * Set (or clear) the deck's active theme — a named brand palette, font pairing, and default
    * shape style (Phase 12). Document-scoped: this restyles every shape/background whose
    * `stroke`/`fill`/`fillGradient`/background colour is a theme token (`'theme:accent1'`, see
@@ -1910,12 +1951,20 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * unknown id is a no-op (no page is created) rather than a thrown error, matching this app's
    * existing convention for a bad id elsewhere (e.g. `deletePage`).
    * @param content Maps a template's `slot` names to replacement text — see `TDBaseShape.slot`.
+   * @param pageId (optional, Phase 14) A caller-supplied id for the new slide, e.g. so a host can
+   * key its own database row to it before the command even runs. Defaults to a fresh generated
+   * id. Colliding with an existing page id is the caller's responsibility to avoid — see
+   * `Deck.addSlideFromTemplate`, which guards this for the `app.deck` facade.
    */
-  addSlideFromTemplate = (template: Template | string, content?: Record<string, string>): this => {
+  addSlideFromTemplate = (
+    template: Template | string,
+    content?: Record<string, string>,
+    pageId?: string
+  ): this => {
     if (this.readOnly) return this
     const resolved = typeof template === 'string' ? getTemplate(template) : template
     if (!resolved) return this
-    this.setState(Commands.addSlideFromTemplate(this, resolved, content))
+    this.setState(Commands.addSlideFromTemplate(this, resolved, content, pageId))
     this.fitCurrentPage()
     return this
   }
@@ -1923,10 +1972,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   /**
    * Duplicate a page.
    * @param pageId The id of the page to duplicate.
+   * @param newId (optional, Phase 14) A caller-supplied id for the duplicate. Defaults to a
+   * fresh generated id. See the equivalent note on `addSlideFromTemplate`.
    */
-  duplicatePage = (pageId: string): this => {
+  duplicatePage = (pageId: string, newId?: string): this => {
     if (this.readOnly) return this
-    this.setState(Commands.duplicatePage(this, pageId))
+    this.setState(Commands.duplicatePage(this, pageId, newId))
     this.fitCurrentPage()
     return this
   }
@@ -2049,13 +2100,18 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const { shapes, bindings = [], assets = [] } = content
     if (shapes.length === 0) return this
 
-    const { point, select = true, center = true } = opts
+    const { point, select = true, center = true, pageId = this.currentPageId } = opts
+    // Phase 14 — `pageId` may name a slide other than the current one (`Deck.insertContent`/
+    // `Deck.addBlock`). Guard against a bad id here rather than letting `getPageState` below
+    // throw, matching this app's existing convention for a bad id elsewhere (`deletePage`,
+    // `addSlideFromTemplate`'s unknown template): a no-op, not an exception.
+    if (!this.document.pages[pageId]) return this
 
     const idsMap: Record<string, string> = {}
     shapes.forEach((shape) => (idsMap[shape.id] = Utils.uniqueId()))
     bindings.forEach((binding) => (idsMap[binding.id] = Utils.uniqueId()))
 
-    let startIndex = TLDR.getTopChildIndex(this.state, this.currentPageId)
+    let startIndex = TLDR.getTopChildIndex(this.state, pageId)
 
     const shapesToInsert = shapes
       .sort((a, b) => a.childIndex - b.childIndex)
@@ -2064,7 +2120,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         const copy = {
           ...shape,
           id: idsMap[shape.id],
-          parentId: parentShapeId || this.currentPageId,
+          parentId: parentShapeId || pageId,
         }
         if (shape.children) {
           copy.children = shape.children.map((id) => idsMap[id])
@@ -2094,8 +2150,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     let delta = [0, 0]
     if (center) {
+      // `getPagePoint(..., pageId)` resolves against *that page's own* stored camera — well
+      // defined even when `pageId` isn't the current page, but only meaningful (i.e. matches
+      // what a user would actually see as "centered") if that page is, or recently was, current.
+      // See `TDInsertContentOpts.pageId`'s own doc comment.
       const commonBounds = Utils.getCommonBounds(shapesToInsert.map(TLDR.getBounds))
-      const targetPoint = Vec.toFixed(this.getPagePoint(point ?? this.centerPoint))
+      const targetPoint = Vec.toFixed(this.getPagePoint(point ?? this.centerPoint, pageId))
       const centeredBounds = Utils.centerBounds(commonBounds, targetPoint)
       delta = Vec.sub(Utils.getBoundsCenter(centeredBounds), Utils.getBoundsCenter(commonBounds))
     }
@@ -2109,7 +2169,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     )
 
     return this.setState(
-      Commands.insertContent(this, finalShapes, bindingsToInsert, newAssets, select)
+      Commands.insertContent(this, finalShapes, bindingsToInsert, newAssets, select, pageId)
     )
   }
 
@@ -2191,9 +2251,19 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * shapes' own bounding box) as the SVG's viewport. Used for whole-slide export, where every
    * slide should come out at the same size and aspect ratio; left off by default so that copying
    * an arbitrary selection to SVG keeps cropping tightly to that selection.
+   * @param copyToClipboard (optional, Phase 14) Whether to also write the result to the system
+   * clipboard, as every existing "Copy as SVG" call site wants. Defaults to `true` so none of
+   * those call sites had to change; `Deck.getThumbnail` is the one caller that passes `false` —
+   * generating a preview should never have the side effect of clobbering whatever the user last
+   * copied.
    * @returns A string containing the JSON.
    */
-  copySvg = (ids = this.selectedIds, pageId = this.currentPageId, useFrame = false) => {
+  copySvg = (
+    ids = this.selectedIds,
+    pageId = this.currentPageId,
+    useFrame = false,
+    copyToClipboard = true
+  ) => {
     if (ids.length === 0) ids = Object.keys(this.page.shapes)
     if (ids.length === 0) return
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -2303,7 +2373,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       .replaceAll('&#10;      ', '')
       .replaceAll(/((\s|")[0-9]*\.[0-9]{2})([0-9]*)(\b|"|\))/g, '$1')
     // Copy the string to the clipboard
-    TLDR.copyStringToClipboard(svgString)
+    if (copyToClipboard) TLDR.copyStringToClipboard(svgString)
     return svgString
   }
 

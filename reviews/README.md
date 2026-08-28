@@ -238,6 +238,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 11 | Background system — structured `SlideBackground`, SVG `<defs>` gradients on slides and shapes, `BackgroundMenu` UI, curated presets (see `reviews/roadmap-slides.md`) | ✅ done |
 | 12 | Deck theme / brand kit — `TDDocument.theme`, five built-in palettes, `'theme:accent1'` sentinel tokens, `ThemeMenu` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 | 13 | Template system — `slot?` field, twelve theme-aware starter layouts, `addSlideFromTemplate`, `TemplatePicker` UI (see `reviews/roadmap-slides.md`) | ✅ done |
+| 14 | Host control API — `app.deck.*` facade, typed event stream, caller-supplied slide ids, `DeckViewer` read-only entry point, `getThumbnail` (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -1009,6 +1010,208 @@ applied via the real `ThemeMenu` · the `theme` scenario's divider fix and defau
 re-verified after this phase's own divider bug fix, with the fixed selector passing three runs in a
 row · all eight other scenarios re-verified with no regression — screenshots inspected, not just
 asserted on.
+
+#### Phase 14 notes — host control API (`app.deck.*`)
+
+Shipped as the roadmap specced it: a `Deck` class (`state/deck/Deck.ts`) instantiated once as
+`app.deck`, wrapping `TldrawApp`'s existing page/command methods rather than adding a second
+document-mutation path, plus a typed event stream and every "suggested extra" the roadmap called
+out as non-optional (return values, caller-supplied ids, a read-only viewer). This is the phase the
+whole plan was building towards, so the notes below are longer than usual — every design call here
+is one the Next.js sample app (`examples/nextjs-sample`) actually had to survive, not a hypothetical.
+
+- **The facade is genuinely narrow — twelve methods across slides, two for content, four across
+  theme/templates, two across the whole deck, plus `on`/`onDeckChange`.** Every method's
+  parameters and return values are `DeckSlide`, `SlideBackground`, `DeckTheme`, `Template`,
+  `TDDocument`, `DeckContent` (a facade-local name for `TDInsertableContent` — see below),
+  primitives, or facade-only option/event types (`deck-types.ts`) — never `TldrawApp`,
+  `TLPageState`, a session object, or anything else canvas-shaped. `DeckSlide` itself is a
+  deliberately thin projection of `TDPage`: no `shapes`/`bindings`/`childIndex`, since per-shape
+  *editing* was never this facade's job (a host that needs to read shape data still reads
+  `getDeck().pages[id]` — `TDDocument` is a shared type, not a hidden one, exactly as the brief
+  allowed).
+- **`insertContent`/`addBlock` — added on review, not in the first cut, and the fix went into the
+  facade rather than around it, per the reviewer's own instruction.** The first version of this
+  phase left `app.createShapes` as the sample app's only way to add a rectangle or a
+  `ComponentShape` block — its three most-clicked buttons reaching straight around the facade,
+  directly contradicting "the only surface a host is expected to touch." Rejected fix: exposing
+  `createShapes` itself, which gives a host none of `TldrawApp.insertContent`'s placement handling
+  or single-undo-step guarantee. Shipped instead: `Deck.insertContent(slideId, content, opts)`
+  (the general escape hatch for a host's own shape JSON) and `Deck.addBlock(slideId, {
+  componentId, props }, opts)` (a `ComponentShape` convenience over it — the fork's actual
+  headline capability, "render your own React as a slide element," now reachable through the
+  facade). Both wrap `TldrawApp.insertContent` (Phase 6), never `createShapes`.
+  - **`slideId` vs. the current page, decided explicitly, not left implicit.**
+    `TldrawApp.insertContent` only ever operated on `app.currentPageId` — no parameter existed to
+    aim it elsewhere. Rejected: switching pages first (`changePage` then insert) — two undo steps
+    instead of one, and it moves the user's own viewport just to answer what should be a
+    background write, the same class of side effect `getThumbnail` was already designed to avoid.
+    Shipped: `TDInsertContentOpts` gained an optional `pageId` (default `app.currentPageId`,
+    every existing call site unaffected), threaded through `Commands.insertContent` and
+    `TldrawApp.insertContent` so the whole operation — id remapping, placement, the undo/redo
+    patch — targets that page directly, in one command, without ever touching `appState.
+    currentPageId`. `Deck.insertContent`/`Deck.addBlock` always pass `slideId` through as this
+    `pageId`, and return `[]`/`undefined` (not a throw) for an unknown one.
+  - **A real, narrowly-scoped bug this change would have introduced, caught before it shipped:**
+    `Commands.insertContent`'s before/after `selectedIds` patch read `app.selectedIds` — always
+    the *current* page's selection — regardless of which page it was actually patching. Insignificant
+    while `pageId` was always `app.currentPageId` (the two were the same thing), but the moment
+    `pageId` could differ, this would have silently written the current page's selection into a
+    different page's `pageState`, and restored it there again on undo — a different slide's
+    selection corrupted by an insert into a slide the user isn't even looking at. Fixed by reading
+    `app.getPageState(pageId).selectedIds` instead, which already existed and does exactly what's
+    needed; caught by writing the "insert into a non-current slide" test before assuming the
+    existing command just worked unmodified, not by any pre-existing coverage (there was none for
+    this parameter, because the parameter didn't exist yet).
+  - **Neither method takes a caller-supplied shape id, unlike every page-level method above — a
+    deliberate, narrower design, not an oversight.** `TldrawApp.insertContent` unconditionally
+    remaps every shape/binding id it's given, the same collision-safety `paste` already relies on;
+    threading a caller-id bypass through it would be a materially bigger, riskier change (making
+    remapping conditional, retesting paste/dedup) for a benefit nobody asked for here. Both
+    methods instead diff the target slide's shape ids before/after the underlying call and return
+    whichever ids actually appeared — `insertContent` returns all of them (`string[]`, one call can
+    insert a whole batch), `addBlock` returns the single one it created.
+- **Every mutation returns the id/state it produced — checked as a design rule, not an
+  afterthought, at every method.** `addSlide`/`duplicateSlide`/`addSlideFromTemplate` return the
+  new id (or `undefined` for a bad/unknown input); `moveSlide` returns the deck's full resulting
+  order; `setSlideBackground`/`setSlideNotes` return the updated `DeckSlide`; `deleteSlide`/
+  `goToSlide` return a `boolean`; `loadDeck`/`setTheme` return the resulting `TDDocument`.
+- **Caller-supplied ids: an optional trailing parameter on the two commands that didn't already
+  have one, plus a collision guard in the facade, not the command layer.**
+  `Commands.duplicatePage`/`TldrawApp.duplicatePage` gained an optional `newId` and
+  `Commands.addSlideFromTemplate`/`TldrawApp.addSlideFromTemplate` gained an optional `pageId`
+  (both default to `Utils.uniqueId()`, so every existing call site — UI menus, other tests — is
+  unaffected). `createPage`/`TldrawApp.createPage` already accepted a custom id before this phase
+  (used internally for e.g. deterministic test fixtures), so `addSlide` needed no `TldrawApp`
+  change at all. The facade is where uniqueness is enforced: `addSlide`/`duplicateSlide`/
+  `addSlideFromTemplate` all throw if the supplied id already names a page, rather than silently
+  overwriting or renaming it — the same guarantee any primary key gives you, checked before the
+  command runs so a bad id never touches the document. This was a deliberate split: the command
+  layer stays permissive (it's also the internal implementation for `createPage`'s own long-
+  standing custom-id support), and the one place a *host*-facing contract needs to be strict is the
+  facade that hosts actually call.
+- **The event stream's hook points are three different `TldrawApp` lifecycle methods, not one,
+  because "a change" isn't a single concept in this codebase.** `slideAdded`/`slideRemoved`/
+  `slideReordered`/`deckChanged` hook `onPersist` (fires once per *committed* `Command`, via
+  `StateManager.setState` — never for an in-progress drag's `patchState` calls), diffing
+  `document.pages` against a baseline `Deck` keeps between calls. `selectionChanged` hooks
+  `onStateDidChange` instead, because selection is set via `patchState` (`setSelectedIds`, id
+  `'selected'`), which never reaches `onPersist` — an ordinary click would never fire the event if
+  it only hooked the commit path. `loadDeck`/`app.loadDocument` hook a third point directly (the
+  end of `loadDocument` itself, not `Deck.loadDeck`) so the baseline resyncs for *every* caller,
+  including the initial IndexedDB-restore `onReady` performs before a host's own `loadDeck` call
+  is ever reachable — resyncing only inside `Deck.loadDeck` would have left the baseline stale for
+  that one call, and the next real command would have misreported the freshly-restored document's
+  entire page list as `slideAdded`. A whole-document swap fires exactly one `deckChanged`, not a
+  replay of every page as an individual event — checked directly in `Deck.spec.ts`.
+- **The event map's storage is a `Map`, not the `{ [K in DeckEventName]?: Set<...> }` record the
+  first draft used — a real TypeScript limitation, not a style choice.** A mapped optional-property
+  type can't express "the `Set`'s element type co-varies with whichever key was just read or
+  written" through a single indexed access with a generic key `E`; every phrasing tried produced a
+  build error (`build:packages` catching a genuine type error, exactly as the toolchain notes
+  warn it will). A `Map<DeckEventName, Set<(payload: never) => void>>` sidesteps the whole
+  category of error, with the type erasure confined to one `as` cast inside `on`/`emit` rather than
+  leaking into every call site.
+- **`getThumbnail` reuses `copySvg`'s exact export path — not a new renderer — and is honest about
+  what that buys and what it doesn't.** `TldrawApp.copySvg` gained a fourth, optional
+  `copyToClipboard` parameter (default `true`, so all four existing call sites — two menu items,
+  one keyboard shortcut, one internal `exportAllShapesAs` caller — are unaffected); `getThumbnail`
+  calls it with `false`, since a preview request should never have the side effect of overwriting
+  the user's clipboard. The real limitation, confirmed by reading `TDShapeUtil.getSvgElement`, not
+  assumed: most shapes' SVG export clones `document.getElementById(shape.id + '_svg')` — a *live,
+  currently-mounted* DOM node — so it only works for whichever page is actually rendered on screen.
+  `getThumbnail` therefore refuses any `id` other than `app.currentPageId`, returning `undefined`
+  rather than attempting it and risking a blank-but-plausible-looking image; it deliberately does
+  **not** switch pages to route around this, since `changePage` is itself a `Command` and doing so
+  would move the user's viewport and add an undo-stack entry just to answer a read. It also returns
+  `undefined` (never throws) when `document` doesn't exist, so a server-side call site fails softly
+  instead of crashing — the honest boundary the brief asked for, clearly written into both the
+  method's own doc comment and `guides/documentation.md`, not left for a caller to discover. Phase
+  15's `renderPageToSvg` is the real fix; this is what's achievable without it.
+- **The read-only viewer is a new export, `DeckViewer`, wrapping `<Tldraw readOnly
+  showUI={false}>` — deliberately not built on `ReadOnlyEditor`.** `ReadOnlyEditor` (Phase 11's
+  thumbnail component) calls `useTldrawApp()`, meaning it requires an *already-mounted* editor's
+  own store/context to sit inside, and its click handler exists to switch *that* editor's current
+  page — it's the Deck panel's thumbnail strip, not a standalone viewer. A host page with no editor
+  at all would have to hand-build the Provider/store plumbing `<Tldraw>` already encapsulates just
+  to satisfy that dependency. `<Tldraw>` mounts its own self-contained `TldrawApp`, so wrapping it
+  costs nothing and reuses the exact `Frame`/background/theme rendering path Phases 11-13 already
+  verified against screenshots; `DeckViewer` just fixes `readOnly`/every `show*` prop and narrows
+  the surface to `document`/`slideId`/`darkMode`/`onMount`.
+- **`<Tldraw darkMode>` was a dead prop — found while writing `DeckViewer`, fixed on review rather
+  than left as a documented workaround.** Declared in `TldrawProps`, never destructured or read
+  anywhere in `Tldraw.tsx`; nothing in this repo (`apps/www` included) ever passed it, so nothing
+  depended on the broken behaviour. The first version of this phase worked around it in
+  `DeckViewer` alone (`app.setSetting('isDarkMode', darkMode)` in its own effect) and left the
+  underlying prop broken — flagged, on review, as exactly the kind of trap this phase's own host
+  audience shouldn't be handed: a declared prop that silently does nothing is worse than no prop
+  at all, since it looks like it should work. Fixed at the source instead: `Tldraw.tsx` now
+  destructures `darkMode` and applies it via `app.setSetting('isDarkMode', darkMode)` in a
+  `useEffect` alongside the existing `readOnly` one, reactive to prop changes, a no-op when the
+  prop is omitted (so a host that never sets it keeps today's default/toggle-driven behaviour
+  unchanged). `DeckViewer` was simplified back down to a plain pass-through (`darkMode={darkMode}`)
+  now that the prop it forwards actually works. Covered directly in `Tldraw.spec.tsx` (forces the
+  mode, stays reactive across a rerender, and does nothing when omitted).
+- **`TDPage.notes` (reserved since Phase 3) got its first writer: `Commands.setPageNotes` /
+  `TldrawApp.setPageNotes` / `Deck.setSlideNotes`, modeled directly on `setPageBackground`.** No
+  presenter view reads it yet — that's Phase 16 — this phase only makes it a normal, undoable piece
+  of page data instead of a reserved-but-inert field.
+- **A gap the sample app surfaced, and fixed in the facade rather than worked around in host
+  code, exactly per the brief.** Building the Next.js sample's "add from template"/"switch theme"
+  controls needed a way to list the built-in templates/themes — and neither `BUILT_IN_TEMPLATES`
+  nor `BUILT_IN_DECK_THEMES` was reachable from the package's public root before this phase (both
+  lived under `state/templates.ts`/`state/shapes/shared/deck-theme.ts`, internal paths a host has
+  no supported way to import). Closed by adding `Deck.listTemplates()`/`Deck.listThemes()` (backed
+  by those same arrays) and exporting the arrays directly from the package root too, for a host
+  that wants them before an editor is even mounted (e.g. to render a picker on a page with no
+  `<Tldraw>` yet). The same review pass found `stopKeyPropagationUnlessEscape` — required by this
+  phase's own hard rules for the sample's free-typed hex-colour field — was equally unreachable
+  from outside the package; now exported from the root for exactly that reason, since any host
+  building its own slide-manager UI next to a mounted editor faces the identical Tab-clones-the-
+  selection trap this fork's own style panel already had to solve.
+- **The Next.js sample's rewrite is a real acceptance test, not a facade smoke test — and it
+  caught the `createShapes` gap above precisely because it is one.** `examples/nextjs-sample/
+  components/Editor.tsx` + `SlideManager.tsx` drive every slide-management action — add blank, add
+  from template, reorder (↑/↓), delete, switch theme, set a background (both a preset swatch and a
+  free-typed hex field) — through `app.deck.*` alone, and keep the panel in sync via `app.deck.
+  on(...)`/`onDeckChange`, never by polling `onPersist`. The first version of this phase left the
+  three shape-level demo buttons (`add-rectangle`/`add-kpi-tile`/`add-bar-chart`) calling `app.
+  createShapes` directly, reasoning that shape authoring was outside this facade's scope — true in
+  general, but wrong for these three specifically, since they're the sample's most-clicked buttons
+  and a host reaching for "add a component block" is exactly the headline use case this facade
+  exists to serve. All three now go through `app.deck.insertContent`/`app.deck.addBlock` instead
+  (see the bullet above) — the only things left touching `TldrawApp` directly in this file are
+  read-only property access (`app.currentPageId`, `app.appState.currentStyle`, `app.document` for
+  the `onPersist` save) and `toggleDarkMode()`, which is UI chrome, not slide/content management,
+  and was never in scope. `previous-slide`/`next-slide` still compose `listSlides()` +
+  `goToSlide()` host-side rather than becoming two more facade methods, since the roadmap's own
+  method list didn't ask for them and a one-line composition didn't earn a new permanent surface —
+  a deliberate omission, not the same category of gap as `createShapes` (nothing about it *forces*
+  a host around the facade; it's a convenience either way).
+- **`tools/visual/scenarios/deckapi.js`** drives the rewritten sidebar end to end against the
+  live Next.js app (port 5433, not the 5431 harness) — add-blank, add-from-template, reorder,
+  both background paths, theme switch, and delete — and specifically confirms the free-typed hex
+  field's Tab keypress does not clone a shape (comparing the current page's shape count immediately
+  before and after), the concrete failure mode `stopKeyPropagationUnlessEscape` exists to prevent.
+  The pre-existing `nextjs.js`/`blocks.js` scenarios were kept passing unmodified — the toolbar
+  buttons they click (`#add-slide`, `#previous-slide`, `#next-slide`) kept their ids and observable
+  behaviour, only their implementation moved onto `app.deck`.
+
+**Verified:** 80/80 suites, 478 tests passing (up from 434; 44 new tests total — `Deck.spec.ts`
+(33: every method including `insertContent`/`addBlock`, the event stream, and `loadDeck` resync),
+`setPageNotes.spec.ts` (3), `insertContent.spec.ts` (+3, for `pageId` targeting, the selection-
+isolation fix, and an unknown-slide no-op), one each added to `duplicatePage.spec.ts`/
+`addSlideFromTemplate.spec.ts` for the caller-supplied-id parameter, one to `TldrawApp.
+frame.spec.ts` for `copySvg`'s new `copyToClipboard` flag, and two to `Tldraw.spec.tsx` for the
+`darkMode` fix) · `build:packages` 9/9 with zero type errors (including the `Deck.ts` mapped-type
+error caught and fixed during this phase, not shipped) · the new `deckapi` visual scenario exits 0
+against the live Next.js sample with every assertion passing and no unexpected console errors,
+re-run and re-inspected after the `createShapes` → `insertContent`/`addBlock` rewrite with
+byte-for-byte identical results · `nextjs` and `blocks` (the pre-existing Next.js scenarios)
+re-verified with no regression · all nine `tools/visual/scenarios` harness scenarios (`templates`,
+`theme`, `background`, `stylepanel`, `styles`, `shapes`, `frame`, `line`, `reorder`) re-verified
+with no regression — every screenshot inspected, not just asserted on, including the rewritten
+sample app's own sidebar and its KPI-tile/bar-chart/rectangle buttons after the rewrite.
 
 ### Suggested order
 

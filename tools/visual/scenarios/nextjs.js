@@ -19,6 +19,8 @@ const drag = async (page, x1, y1, x2, y2) => {
 }
 
 module.exports = {
+  // Served by examples/nextjs-sample, not the tldraw-example harness.
+  base: 'http://localhost:5433',
   route: '/',
   // @radix-ui/react-slot@0.1.2 (pinned by packages/tldraw, 2021-era) reads `element.ref`, which
   // React 19 warns about on every `asChild` render. It is cosmetic — the value still resolves via

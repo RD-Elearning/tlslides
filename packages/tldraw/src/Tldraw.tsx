@@ -93,7 +93,9 @@ export interface TldrawProps extends TDCallbacks {
   readOnly?: boolean
 
   /**
-   * (optional) Whether to to show the app's dark mode UI.
+   * (optional) Force the app's dark mode on or off. Omit to leave it alone (the app's own
+   * default, or whatever the user has toggled via `toggleDarkMode`/the menu) — this only takes
+   * effect when explicitly set to `true` or `false`, and stays reactive to prop changes.
    */
   darkMode?: boolean
 
@@ -129,6 +131,7 @@ export function Tldraw({
   showStyles = true,
   showUI = true,
   readOnly = false,
+  darkMode,
   showSponsorLink = false,
   disableAssets = false,
   components = EMPTY_COMPONENTS,
@@ -249,6 +252,17 @@ export function Tldraw({
   React.useEffect(() => {
     app.readOnly = readOnly
   }, [app, readOnly])
+
+  // Phase 14 — `darkMode` used to be declared here but never read anywhere in this component, a
+  // silent no-op for any caller that passed it (found while building `DeckViewer`, which needs
+  // exactly this). `undefined` (the default — no prop passed) deliberately does nothing, so a
+  // host that never sets it keeps today's behaviour (the app's own persisted/toggled state);
+  // passing an explicit `true`/`false` now actually forces it, and stays reactive to prop changes
+  // the same way `readOnly` above does.
+  React.useEffect(() => {
+    if (darkMode === undefined) return
+    app.setSetting('isDarkMode', darkMode)
+  }, [app, darkMode])
 
   // Keep presentation mode in sync with the browser's actual fullscreen state. The user can
   // leave fullscreen without going through `togglePresentationMode` at all — Esc (handled

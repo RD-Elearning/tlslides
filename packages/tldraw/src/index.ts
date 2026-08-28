@@ -3,3 +3,40 @@ export * from './types'
 export * from './state/shapes'
 export { TldrawApp } from './state'
 export { useFileSystem } from './hooks'
+
+// Phase 14 — the host control API. `Deck` is the class behind `app.deck`; the rest are the
+// facade's own request/event types (never `TldrawApp`/`TLPageState`/session internals — see the
+// `Deck` class doc comment). `BUILT_IN_DECK_THEMES` and `BUILT_IN_TEMPLATES` are exported here too
+// (via `Deck.listThemes()`/`Deck.listTemplates()`, but also directly, for a host that wants them
+// before an editor is even mounted, e.g. to render a picker on a page with no `<Tldraw>` yet).
+export { Deck } from './state/deck'
+export type {
+  DeckSlide,
+  AddSlideOptions,
+  NewSlideOptions,
+  ThumbnailOptions,
+  PresentOptions,
+  DeckEventMap,
+  DeckEventName,
+  DeckEventListener,
+  DeckInsertContentOptions,
+  DeckContent,
+  AddBlockOptions,
+} from './state/deck'
+export { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from './state/shapes/shared/deck-theme'
+export { BUILT_IN_TEMPLATES, getTemplate } from './state/templates'
+
+// Phase 14 — a standalone, read-only deck display for host pages that only need to show a deck,
+// not edit it. See the component's own doc comment for why this wraps `<Tldraw>` rather than
+// `ReadOnlyEditor`.
+export { DeckViewer } from './components/DeckViewer'
+export type { DeckViewerProps } from './components/DeckViewer'
+
+// Phase 14 — exported for a host, not just for this package's own internal panels. Any free-typed
+// input a host renders on the same page as a mounted `<Tldraw>` (a rename field, a hex colour box
+// in its own slide-manager UI, ...) needs this on `onKeyDown`/`onKeyUp`, for the same reason every
+// such field inside the editor's own UI already carries it — see the function's own doc comment.
+// `@tlslides/core`'s global keydown listener is attached to `window`, so it fires on a keystroke
+// in *any* DOM element on the page the editor shares, not only ones inside the editor's own React
+// tree; Tab is the dramatic case (it clones the current selection) but not the only one.
+export { stopKeyPropagationUnlessEscape } from './components/preventEvent'

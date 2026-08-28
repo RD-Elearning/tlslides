@@ -156,25 +156,78 @@ would need its own design pass — probably a new page-level or document-level f
 `TDDocument.theme`, resolved at render time the same way. Left as a named follow-up, not folded into
 this phase or quietly dropped.
 
-### Phase 14 — Host control API (`app.deck.*`)
+### Phase 14 — Host control API (`app.deck.*`) ✅ done
 
-The narrow surface, and the deliverable the Next.js integration actually depends on:
+Shipped exactly the specced surface, plus every "suggested extra" (none were optional in practice —
+see below), plus two additions the plan didn't anticipate. Full detail in `reviews/README.md`'s
+Phase 14 notes; the short version of what differed from the plan:
 
 ```
-listSlides()            addSlide(opts)         addSlideFromTemplate(id, content?)
-duplicateSlide(id)      deleteSlide(id)        moveSlide(id, toIndex)
+listSlides()            addSlide(opts)         addSlideFromTemplate(id, content?, opts?)
+duplicateSlide(id, opts?)  deleteSlide(id)      moveSlide(id, toIndex)
 getSlide(id)            setSlideBackground(id, bg)     setSlideNotes(id, notes)
 getThumbnail(id, opts)  goToSlide(id)          present(opts)
-loadDeck(doc)           getDeck()              onDeckChange(cb)
+loadDeck(doc)           getDeck()              onDeckChange(cb)      on(event, cb)
+getTheme()  setTheme(theme)  listThemes()  listTemplates()
+insertContent(slideId, content, opts?)         addBlock(slideId, block, opts?)
 ```
 
-Plus a typed event stream (`slideAdded`, `slideRemoved`, `slideReordered`, `selectionChanged`,
-`deckChanged`) so a host's slide-manager panel stays in sync without polling `onPersist`.
-
-**Suggested extras:** every mutation returns the new id / resulting state rather than `void`, so
-hosts can chain without re-querying; a `readOnly` deck viewer entry point separate from the editor,
-since most host pages only display; and stable, caller-supplied slide ids so the host's own
-database rows can key to slides directly.
+- **Every method in the plan's list shipped with that exact name and shape**, each an `opts?`
+  richer than specced only where a caller-supplied id needed somewhere to live (`addSlide`,
+  `duplicateSlide`, `addSlideFromTemplate`) — see the caller-supplied-ids note below.
+- **The typed event stream shipped exactly as named** (`slideAdded`, `slideRemoved`,
+  `slideReordered`, `selectionChanged`, `deckChanged`), plus a general-purpose `on(event, listener)`
+  underneath `onDeckChange` (which is sugar for `on('deckChanged', ...)`) rather than five
+  bespoke subscribe methods.
+- **All three "suggested extras" shipped as non-optional, exactly as this plan called them out to
+  be** — return values on every mutation, caller-supplied ids with a collision guard, and a
+  read-only viewer (`DeckViewer`, wrapping `<Tldraw readOnly showUI={false}>`, not the existing
+  `ReadOnlyEditor` — see the README notes for why).
+- **Three additions the plan didn't list, all forced by actually building the Next.js sample app
+  against the facade**, per this phase's own "fix the facade, not the sample" rule:
+  1. `getTheme`/`setTheme`/`listThemes`/`listTemplates` — the plan's own "Further requirements"
+     named `setDeckTheme` as one of the pre-existing `TldrawApp` methods the facade should wrap,
+     but the headline method list above didn't carry a theme/template entry point at all. The
+     sample app's theme-switcher and template picker needed one, so these four shipped.
+  2. `BUILT_IN_DECK_THEMES`/`BUILT_IN_TEMPLATES`/`stopKeyPropagationUnlessEscape` are now exported
+     from the package root, not just reachable via `Deck` — none of the three were reachable from
+     outside the package at all before this phase (all three lived under internal `state/*` paths),
+     which would have made a host-side template/theme picker and a host-side free-typed field
+     both impossible to build correctly. See the README notes' "gap the sample app surfaced" entry.
+  3. **`insertContent`/`addBlock` — not a gap this phase found on its own, but a real one flagged
+     on review of the first cut, and closed the way the review asked: in the facade, not around
+     it.** The plan's method list never mentioned content insertion at all, and the first version
+     of this phase left it out on the (correct in general, wrong for these three call sites)
+     reasoning that shape authoring wasn't the facade's job — leaving the sample app's three
+     most-visible buttons (add rectangle / KPI tile / bar chart) calling `app.createShapes`
+     directly. `Deck.insertContent`/`Deck.addBlock`, built on `TldrawApp.insertContent` (Phase 6),
+     close that: one general escape hatch for a host's own shape JSON, one `ComponentShape`
+     convenience over it for the fork's actual headline capability. Required threading an optional
+     `pageId` through `TDInsertContentOpts`/`Commands.insertContent`/`TldrawApp.insertContent`
+     (which previously only ever targeted `app.currentPageId`), and, while doing that, catching and
+     fixing a real bug the change would otherwise have introduced — `Commands.insertContent`'s
+     selection patch read `app.selectedIds` (always the *current* page's) regardless of which page
+     it was patching, which would have silently corrupted a different slide's selection the moment
+     `pageId` could differ from the current page. Full detail in the README notes.
+- **`getThumbnail` is real, but scoped to exactly what's honestly achievable without Phase 15**:
+  it works only for `app.currentPageId` (most shapes' SVG export clones a live, currently-mounted
+  DOM node) and only in a browser (`document`/`XMLSerializer`), returning `undefined` rather than
+  a wrong-looking image or a throw in either case. A full thumbnail grid without mounting an editor
+  per slide still needs Phase 15's `renderPageToSvg`, unchanged from the original plan's reasoning.
+- **A pre-existing, unrelated bug fixed on review, not left as a documented workaround: `<Tldraw
+  darkMode>` was a dead prop** (declared, never read anywhere in `Tldraw.tsx`; found while
+  building `DeckViewer`, which needed it). The first cut worked around it inside `DeckViewer`
+  alone; flagged on review as exactly the kind of trap this phase's host audience shouldn't be
+  handed, so it's now wired up at the source (`app.setSetting('isDarkMode', ...)` in `Tldraw.tsx`
+  itself) and `DeckViewer` simplified back to a plain pass-through. Not part of the original plan
+  at all — an incidental find, fixed because leaving a public prop silently broken is worse than
+  not having it.
+- **Not built, and out of scope on purpose:** `previousSlide`/`nextSlide` convenience methods (the
+  plan's own list didn't ask for them either; `listSlides()` + `goToSlide()` compose into the same
+  thing host-side, demonstrated in the sample app's `goRelative` helper) and any batching primitive
+  for a multi-option call like `addSlide({ name, background })` — each option beyond `id` is its
+  own undo step, documented rather than solved, since no such primitive exists anywhere in the
+  command stack today and inventing one was well outside this phase's scope.
 
 ### Phase 15 — Headless render + export
 
@@ -202,6 +255,14 @@ built-in fonts and single text block are the weakest part of the editor for this
 
 Worth doing, in rough order of value per effort:
 
+- **Make a theme switch restyle fonts, not just colours.** Theme colours resolve lazily at render
+  time (through `resolveThemeColor`), so switching a theme repaints an existing deck. The font
+  pairing does not: `buildTemplateShapes` bakes `style.font` into each shape once, at
+  instantiation. A host that switches theme therefore sees colours change and typography stay put,
+  which reads as a bug even though each half is behaving as designed. Either resolve fonts lazily
+  too (a `theme:heading` token, mirroring the colour tokens) or have `setDeckTheme` rewrite the
+  font of every shape that still carries the outgoing theme's pairing — the first is more
+  consistent, the second is less invasive.
 - **Alignment & distribute + smart guides** — check what tldraw 1.9 already ships before building.
 - **Locked / background layer** — shapes that can't be selected by a click, only from the layers
   panel. Pairs with the master slide.

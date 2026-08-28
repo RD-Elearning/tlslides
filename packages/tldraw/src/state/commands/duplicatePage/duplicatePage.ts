@@ -3,8 +3,21 @@ import { Utils } from '@tlslides/core'
 import type { TldrawApp } from '../../internal'
 import { getNextChildIndex } from '../shared/getNextChildIndex'
 
-export function duplicatePage(app: TldrawApp, pageId: string): TldrawCommand {
-  const newId = Utils.uniqueId()
+/**
+ * Duplicate a page.
+ * @param app The app instance.
+ * @param pageId The id of the page to duplicate.
+ * @param newId (optional) The duplicate's id — Phase 14 lets a host mint its own (e.g. to key a
+ * database row to the new slide before it exists). Defaults to a fresh generated id, exactly as
+ * before this parameter existed. The caller is responsible for uniqueness: nothing here checks
+ * whether `newId` already names a page, since a colliding id would mean two different callers'
+ * "new" pages silently landing on the same key.
+ */
+export function duplicatePage(
+  app: TldrawApp,
+  pageId: string,
+  newId = Utils.uniqueId()
+): TldrawCommand {
   const { currentPageId } = app
 
   const page = app.getPage(pageId)

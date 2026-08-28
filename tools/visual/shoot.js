@@ -29,7 +29,11 @@ if (!name) {
   process.exit(2)
 }
 
-const base = flag('base', 'http://localhost:5431')
+// A scenario may declare its own `base` (the Next.js sample app serves on 5433, the tldraw-example
+// harness on 5431). An explicit --base still wins, but without this a scenario silently ran against
+// the wrong server and failed on a missing #canvas, which reads like a broken app rather than a
+// mistyped command.
+const baseFlag = flag('base', null)
 // Resolved against this script, not the caller's cwd, so the harness works from any directory.
 const outDir = path.resolve(flag('out', path.join(__dirname, 'shots')))
 const width = Number(flag('width', 1440))
@@ -53,6 +57,7 @@ const scenario = require(scenarioPath)
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 200)}`))
   page.on('console', (m) => m.type() === 'error' && errors.push(`console: ${m.text().slice(0, 200)}`))
 
+  const base = baseFlag || scenario.base || 'http://localhost:5431'
   const url = base + (scenario.route || '/')
   await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
   // The editor mounts asynchronously and measures itself with a resize observer; nothing renders

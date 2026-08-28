@@ -17,6 +17,45 @@ describe('Tldraw', () => {
     await waitFor(onMount)
   })
 
+  describe('darkMode prop (Phase 14 — was declared but never read)', () => {
+    test('forces isDarkMode when explicitly set, and stays reactive to prop changes', async () => {
+      let app: TldrawApp | undefined
+      const { rerender } = render(
+        <Tldraw
+          darkMode
+          onMount={(a) => {
+            app = a
+          }}
+        />
+      )
+      await waitFor(() => expect(app).toBeDefined())
+      await waitFor(() => expect(app!.settings.isDarkMode).toBe(true))
+
+      rerender(
+        <Tldraw
+          darkMode={false}
+          onMount={() => {
+            // already mounted
+          }}
+        />
+      )
+      await waitFor(() => expect(app!.settings.isDarkMode).toBe(false))
+    })
+
+    test('leaves isDarkMode alone when the prop is omitted', async () => {
+      let app: TldrawApp | undefined
+      render(
+        <Tldraw
+          onMount={(a) => {
+            app = a
+          }}
+        />
+      )
+      await waitFor(() => expect(app).toBeDefined())
+      expect(app!.settings.isDarkMode).toBe(false)
+    })
+  })
+
   describe('fullscreen / presentation mode sync (B-07, T6.3)', () => {
     afterEach(() => {
       delete (document as Partial<Document>).fullscreenElement

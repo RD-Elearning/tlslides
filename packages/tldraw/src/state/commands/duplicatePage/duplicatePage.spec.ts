@@ -57,4 +57,13 @@ describe('Duplicate page command', () => {
     expect(duplicate.size).toEqual(source.size)
     expect(duplicate.size).not.toBe(source.size)
   })
+
+  it('accepts a caller-supplied id for the duplicate (Phase 14)', () => {
+    app.loadDocument(mockDocument)
+
+    app.duplicatePage(app.currentPageId, 'host-chosen-id')
+
+    expect(app.page.id).toBe('host-chosen-id')
+    expect(app.document.pages['host-chosen-id']).toBeDefined()
+  })
 })

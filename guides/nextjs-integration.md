@@ -97,6 +97,199 @@ export default function Editor() {
 No environment variables are required for the editor to render — see `guides/development.md` for
 which features (sign-in, multiplayer) need which optional env vars.
 
+## Driving slides from the host: `app.deck.*` (Phase 14)
+
+The minimal example above only mounts the editor. A real host app — a "my presentations"
+dashboard, a slide-manager sidebar, a save-to-your-own-backend flow — drives slide management
+imperatively, and **`app.deck` is the only surface built for that.** Don't reach into `TldrawApp`
+directly for page/slide operations (`createPage`, `movePage`, `setPageBackground`, ...) from host
+code — those exist so `app.deck` can be implemented as a thin wrapper over them, not so a host has
+two ways to do the same thing. `guides/documentation.md` has the full method-by-method reference;
+this section is the walkthrough. The reference implementation is
+`examples/nextjs-sample/components/Editor.tsx` + `SlideManager.tsx` — copy-pasteable, and exercised
+end to end by `tools/visual/scenarios/deckapi.js`.
+
+### 1. Get the `app` reference, the same way as before
+
+```tsx
+'use client'
+import * as React from 'react'
+import { Tldraw, TldrawApp } from '@tlslides/tldraw'
+import type { TDDocument } from '@tlslides/tldraw'
+
+export default function Editor({ initialDocument }: { initialDocument: TDDocument }) {
+  const appRef = React.useRef<TldrawApp | null>(null)
+
+  const onMount = React.useCallback((app: TldrawApp) => {
+    appRef.current = app
+    app.deck.loadDeck(initialDocument) // not app.loadDocument — see below
+  }, [initialDocument])
+
+  return (
+    <div style={{ position: 'relative', height: '100%' }}>
+      <Tldraw onMount={onMount} />
+    </div>
+  )
+}
+```
+
+`app.deck.loadDeck(document)` is preferred over `app.loadDocument(document)` for one concrete
+reason: it's the call that resets the event-stream baseline described below, so the *next* real
+change is reported correctly. (`app.loadDocument` still works underneath — `loadDeck` just calls
+it — so nothing breaks if some other code path calls it directly, e.g. the editor's own
+IndexedDB-restore-on-mount; that path is resynced too, from the `TldrawApp` side, precisely so
+this isn't a trap for a host that forgets to use `loadDeck`.)
+
+### 2. Slide CRUD — list, add, duplicate, delete, reorder
+
+```tsx
+const id = app.deck.addSlide({ name: 'New slide' }) // -> new slide id, and switches to it
+app.deck.addSlideFromTemplate('bullets', { title: 'Q3 Review' }) // starter-pack layout, filled in
+app.deck.duplicateSlide(id)
+app.deck.moveSlide(id, 0) // move to the front
+app.deck.deleteSlide(id)
+app.deck.listSlides() // DeckSlide[], in current order — the read side of all of the above
+```
+
+Every one of these returns the id/state it produced (never `void`), so you can chain without a
+follow-up `listSlides()` call. `addSlide`/`duplicateSlide`/`addSlideFromTemplate` all accept an
+optional `id` in their options — mint your own (e.g. your database's primary key for a new slide
+row) instead of taking the generated one:
+
+```tsx
+const dbRow = await createSlideRow() // your own backend, returns { id: 'row_123', ... }
+app.deck.addSlide({ id: dbRow.id, name: dbRow.title })
+```
+
+A colliding id throws, rather than silently overwriting a different slide — uniqueness within the
+deck is the caller's responsibility, the same as any other primary key.
+
+### 3. Adding content — your own React components, or raw shape data
+
+Rendering a host's own React component as a slide element is this fork's headline capability
+(Phase 5's `ComponentShape` + `components` registry). `app.deck.addBlock` is how a host reaches it
+without touching anything below the facade:
+
+```tsx
+app.deck.addBlock(
+  slideId,
+  { componentId: 'kpi-tile', props: { label: 'Monthly active users', value: '128.4K' } },
+  { point: [80, 120], size: [260, 160] }
+)
+```
+
+`componentId` must match an entry in the `components` registry passed to `<Tldraw components=
+{...}>` (see the F-02/custom-component-blocks material this repo already has) — an unregistered
+id renders a placeholder instead of crashing, so a document can outlive a smaller registry.
+
+For anything that isn't a single component block — a host's own full shape JSON, a paste, a
+future AI-generated slide — `app.deck.insertContent` is the general escape hatch `addBlock` itself
+is built on:
+
+```tsx
+const insertedIds = app.deck.insertContent(
+  slideId,
+  { shapes: myShapeArray }, // TDInsertableContent — shapes[, bindings, assets]
+  { center: false } // keep each shape's own authored coordinates
+)
+```
+
+Both matter for the same reason a hidden slide matters: **`slideId` never has to be the slide
+currently open in the editor, and calling either never switches to it or moves the viewport** —
+content lands on the requested slide even if the user is looking at a different one. Two things
+that are *not* true of the page-level methods above, though:
+- **Neither takes a caller-supplied shape id.** The underlying command always mints a fresh id for
+  collision safety (the same reason pasting the same content twice never collides). `insertContent`
+  returns every id it actually assigned (`string[]`); `addBlock` returns the one it created.
+- **`opts.center` defaults to `true`, and that default only makes sense for the slide currently
+  open.** It centers against *that slide's own stored camera* — pass `center: false` (what
+  `addBlock` always does internally) with explicit coordinates when targeting a slide the user
+  isn't looking at.
+
+### 4. Keeping a host panel in sync — events, not polling
+
+A slide-manager sidebar needs to know when the deck changes underneath it. Don't poll
+`app.document` from `onPersist`; subscribe to the typed event stream instead, and unsubscribe on
+unmount:
+
+```tsx
+React.useEffect(() => {
+  const app = appRef.current
+  if (!app) return
+  const refresh = () => setSlides(app.deck.listSlides())
+  const offAdded = app.deck.on('slideAdded', refresh)
+  const offRemoved = app.deck.on('slideRemoved', refresh)
+  const offReordered = app.deck.on('slideReordered', refresh)
+  const offChanged = app.deck.onDeckChange(refresh) // catches background/notes/theme updates too
+  refresh()
+  return () => {
+    offAdded()
+    offRemoved()
+    offReordered()
+    offChanged()
+  }
+}, [])
+```
+
+`selectionChanged` (slide/shape selection) is the other event, useful for highlighting whichever
+slide is currently open in your sidebar.
+
+### 5. Backgrounds, theme, and templates
+
+```tsx
+app.deck.setSlideBackground(id, { type: 'solid', color: '#0f172a' })
+app.deck.setTheme(app.deck.listThemes().find((t) => t.id === 'mono-grid'))
+app.deck.listTemplates() // built-in layout pack, for a template picker
+```
+
+`listThemes()`/`listTemplates()` return the built-in palettes/layouts (also exported directly as
+`BUILT_IN_DECK_THEMES`/`BUILT_IN_TEMPLATES`, for a picker rendered before an editor even mounts) —
+`setTheme`/`addSlideFromTemplate` happily accept your own `DeckTheme`/`Template` object instead.
+
+### 6. A thumbnail — and its real limitation
+
+```tsx
+const dataUrl = app.deck.getThumbnail(app.currentPageId) // only the current slide
+```
+
+There is no headless renderer yet (Phase 15 — `renderPageToSvg`). `getThumbnail` reuses the
+editor's own SVG export path, which needs the target slide to be the one currently mounted on
+screen (`id === app.currentPageId`); asking for any other slide returns `undefined` rather than a
+blank/incorrect image. It also needs a real browser (`document`/`XMLSerializer`), so it returns
+`undefined`, not a throw, if called somewhere without a DOM. Full-deck thumbnail grids without
+mounting N editors are exactly what Phase 15 is for.
+
+### 7. A read-only view: `<DeckViewer>`
+
+For a page that only displays a deck (a share link, a "preview" pane) rather than editing it:
+
+```tsx
+import { DeckViewer } from '@tlslides/tldraw'
+
+<DeckViewer document={deck} slideId={currentSlideId} style={{ height: 480 }} />
+```
+
+It's a real, self-contained `<Tldraw readOnly showUI={false}>` instance — not the internal
+`ReadOnlyEditor` component, which requires an already-mounted editor's own context (see
+`guides/documentation.md`'s `DeckViewer` section for why).
+
+### 8. Free-typed fields in your own UI need `stopKeyPropagationUnlessEscape`
+
+If your slide-manager panel has any text input (rename, a hex colour box, ...), wire this up on
+`onKeyDown`/`onKeyUp`:
+
+```tsx
+import { stopKeyPropagationUnlessEscape } from '@tlslides/tldraw'
+
+<input onKeyDown={stopKeyPropagationUnlessEscape} onKeyUp={stopKeyPropagationUnlessEscape} ... />
+```
+
+Without it, pressing Tab in that field — even though it's outside the editor's own React tree —
+bubbles up to the editor's global keyboard shortcut listener and clones whatever shape is
+currently selected on the canvas. `examples/nextjs-sample/components/SlideManager.tsx`'s hex
+colour field is a working example, and `tools/visual/scenarios/deckapi.js` asserts the shape count
+doesn't change after pressing Tab in it.
+
 ## Assessing this repo against "build a Canva-style slide maker"
 
 **What you get for free from this fork:**
