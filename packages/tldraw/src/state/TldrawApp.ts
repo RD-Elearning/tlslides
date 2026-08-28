@@ -67,6 +67,7 @@ import {
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
   SVG_EXPORT_PADDING,
+  DEFAULT_SLIDE_SIZE,
 } from '~constants'
 import type { BaseTool } from './tools/BaseTool'
 import { SelectTool } from './tools/SelectTool'
@@ -3716,24 +3717,27 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   getShapeUtil = TLDR.getShapeUtil
 
-  static version = 15.3
+  static version = 16
 
   static defaultDocument: TDDocument = {
     id: 'doc',
     name: 'New Document',
     version: TldrawApp.version,
+    defaultPageSize: [...DEFAULT_SLIDE_SIZE],
     pages: {
       slide1: {
         id: 'slide1',
         name: 'Slide 1',
         childIndex: 1,
+        size: [...DEFAULT_SLIDE_SIZE],
         shapes: {},
         bindings: {},
       },
       slide2: {
         id: 'slide2',
         name: 'Slide 2',
-        childIndex: 1,
+        childIndex: 2,
+        size: [...DEFAULT_SLIDE_SIZE],
         shapes: {},
         bindings: {},
       },

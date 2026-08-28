@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Decoration, FontStyle, TDDocument, TDShapeType, TextShape } from '~types'
+import { DEFAULT_SLIDE_SIZE } from '~constants'
 
 export function migrate(document: TDDocument, newVersion: number): TDDocument {
   const { version = 0 } = document
@@ -48,7 +49,7 @@ export function migrate(document: TDDocument, newVersion: number): TDDocument {
     Object.values(document.pages).forEach((page) => {
       Object.values(page.shapes)
         .filter((shape) => shape.type === TDShapeType.Text)
-        .forEach((shape) => (shape as TextShape).style.font === FontStyle.Script)
+        .forEach((shape) => ((shape as TextShape).style.font = FontStyle.Script))
     })
   }
 
@@ -114,6 +115,35 @@ export function migrate(document: TDDocument, newVersion: number): TDDocument {
       }
     })
   })
+
+  if (version < 16) {
+    if (!document.defaultPageSize) {
+      document.defaultPageSize = [...DEFAULT_SLIDE_SIZE]
+    }
+
+    Object.values(document.pages).forEach((page) => {
+      if (!page.size) {
+        page.size = [...DEFAULT_SLIDE_SIZE]
+      }
+
+      Object.values(page.shapes).forEach((shape) => {
+        // The 'erif' string literal is not a typo: it's the exact value that was
+        // persisted by the old (buggy) FontStyle.Serif enum member. Comparing
+        // against the fixed 'serif' constant here would silently skip old documents.
+        if ((shape.style.font as string) === 'erif') {
+          shape.style.font = FontStyle.Serif
+        }
+      })
+    })
+
+    // Repair documents saved with the B-04 childIndex collision by reassigning
+    // stable, distinct indices based on the current (possibly colliding) order.
+    Object.values(document.pages)
+      .sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
+      .forEach((page, index) => {
+        page.childIndex = index + 1
+      })
+  }
 
   // Cleanup
   Object.values(document.pageStates).forEach((pageState) => {

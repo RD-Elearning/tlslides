@@ -13,6 +13,10 @@ export const VERY_SLOW_SPEED = 2.5
 export const GHOSTED_OPACITY = 0.3
 export const DEAD_ZONE = 3
 export const LABEL_POINT = [0.5, 0.5]
+// 16:9, exports at full HD. Copy this before assigning it onto a document or page: it is a
+// module-level array, so assigning it by reference would let an in-place resize corrupt the
+// default for every other slide in the process.
+export const DEFAULT_SLIDE_SIZE = [1920, 1080]
 import type { Easing } from '~types'
 
 export const PI2 = Math.PI * 2

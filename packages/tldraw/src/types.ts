@@ -138,10 +138,16 @@ export interface TDDocument {
   pages: Record<string, TDPage>
   pageStates: Record<string, TLPageState>
   assets: TDAssets
+  defaultPageSize?: number[]
 }
 
 // The shape of a single page in the Tldraw document
-export type TDPage = TLPage<TDShape, TDBinding>
+export interface TDPage extends TLPage<TDShape, TDBinding> {
+  size?: number[] // [width, height] of the slide frame
+  background?: string // slide background fill
+  notes?: string // speaker notes
+  skipInPresentation?: boolean // skip this slide when presenting
+}
 
 // A partial of a TDPage, used for commands / patches
 export type PagePartial = {
@@ -299,6 +305,29 @@ export interface TDBaseShape extends TLShape {
   type: TDShapeType
   label?: string
   handles?: Record<string, TDHandle>
+  animation?: ShapeAnimation
+}
+
+// Per-shape build animation, driven from presentation mode (F-06)
+export enum AnimationEffect {
+  FadeIn = 'fadeIn',
+  SlideIn = 'slideIn',
+  ZoomIn = 'zoomIn',
+  Wipe = 'wipe',
+}
+
+export enum AnimationTrigger {
+  OnClick = 'onClick',
+  WithPrevious = 'withPrevious',
+  AfterPrevious = 'afterPrevious',
+}
+
+export interface ShapeAnimation {
+  effect: AnimationEffect
+  trigger: AnimationTrigger
+  order: number // build order within the slide
+  durationMs: number
+  delayMs: number
 }
 
 export interface DrawShape extends TDBaseShape {
@@ -364,6 +393,7 @@ export interface ImageShape extends TDBaseShape {
   type: TDShapeType.Image
   size: number[]
   assetId: string
+  alt?: string
 }
 
 export interface VideoShape extends TDBaseShape {
@@ -372,6 +402,7 @@ export interface VideoShape extends TDBaseShape {
   assetId: string
   isPlaying: boolean
   currentTime: number
+  alt?: string
 }
 
 // The shape created by the text tool
@@ -454,7 +485,7 @@ export enum AlignStyle {
 export enum FontStyle {
   Script = 'script',
   Sans = 'sans',
-  Serif = 'erif',
+  Serif = 'serif',
   Mono = 'mono',
 }
 

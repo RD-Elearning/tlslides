@@ -30,4 +30,13 @@ describe('Create page command', () => {
     expect(app.page.id).toBe(nextId)
     expect(app.pageState).toEqual(nextPageState)
   })
+
+  it('gives a new slide the document default size, copied not aliased', () => {
+    app.loadDocument(mockDocument)
+
+    app.createPage()
+
+    expect(app.page.size).toEqual(app.document.defaultPageSize)
+    expect(app.page.size).not.toBe(app.document.defaultPageSize)
+  })
 })

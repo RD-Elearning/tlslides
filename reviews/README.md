@@ -226,8 +226,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 |---|---|---|
 | 1 | Tier 1 quick wins — solid/sans defaults, B-06 endpoints, example dev server, deck rename | ✅ done |
 | 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ✅ done |
-| 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12 | ⏳ next |
-| 4 | **F-01** slide frame / artboard | ⬜ pending |
+| 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12, B-13 | ✅ done |
+| 4 | **F-01** slide frame / artboard | ⏳ next |
 | 5 | **F-02** `ComponentShape` + `components` registry prop | ⬜ pending |
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen + auto zoom-to-fit | ⬜ pending |
 | 7 | Bug sweep — B-02, B-05, B-07, B-08, B-09, B-10 | ⬜ pending |
@@ -315,6 +315,38 @@ have something to assert against.
 
 **Verified:** 63/63 jest · `build:packages` 9/9 · `next build` clean · `next dev` + `next start`
 serve 200 · `node tools/visual/shoot.js nextjs --base=http://localhost:5433` exits 0.
+
+#### Phase 3 notes
+
+One version bump, `15.3 → 16`, carrying every schema change the roadmap needs.
+
+**Reserved now, used later.** `TDPage` became an interface extending `TLPage` (no fallout — it
+compiled everywhere unchanged) and gained `size`, `background`, `notes`, `skipInPresentation`.
+`TDDocument` gained `defaultPageSize`. `TDBaseShape` gained an optional `animation`, with
+`AnimationEffect` / `AnimationTrigger` / `ShapeAnimation` defined so F-06 has a fixed contract.
+`ImageShape` and `VideoShape` gained `alt`. Only `size` is populated this phase; the rest exist so
+no later phase has to bump the version again.
+
+`DEFAULT_SLIDE_SIZE = [1920, 1080]` — canonical 16:9, exports 1:1 at full HD.
+
+**Bugs fixed:** B-01 (`FontStyle.Serif` was `'erif'`; the migration matches the *string literal*,
+since the enum constant is correct by then), B-03 and B-04 (`childIndex` collisions — `createPage`
+and `duplicatePage` now share one `getNextChildIndex` helper, and the migration repairs documents
+already saved with colliding indices), B-12 (`duplicatePage` built its page state by spreading the
+whole *page*), B-13 (the `version < 14` block compared where it meant to assign).
+
+**Array aliasing, caught in review.** `DEFAULT_SLIDE_SIZE` is a module-level array and was being
+assigned by reference to the document, to every page, and to both default pages — so a single
+in-place `page.size[0] = …` would have corrupted the default for every slide in the process.
+F-01 is about to start resizing frames, so this would have surfaced as a baffling bug. Every
+assignment now copies, and `duplicatePage` copies the source page's `size` instead of aliasing it.
+Both are covered by tests asserting `not.toBe` alongside `toEqual`.
+
+Also closed a consistency gap: `createPage` now stamps new slides with the document's
+`defaultPageSize`, so a slide created after migration matches one that was migrated.
+
+**Verified:** 63/63 suites (284 passing, up from 274) · `build:packages` 9/9 · visual harness
+exits 0.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

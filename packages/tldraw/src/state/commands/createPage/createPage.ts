@@ -1,6 +1,8 @@
 import type { TldrawCommand, TDPage } from '~types'
 import { Utils, TLPageState } from '@tlslides/core'
 import type { TldrawApp } from '~state'
+import { DEFAULT_SLIDE_SIZE } from '~constants'
+import { getNextChildIndex } from '../shared/getNextChildIndex'
 
 export function createPage(
   app: TldrawApp,
@@ -9,11 +11,7 @@ export function createPage(
 ): TldrawCommand {
   const { currentPageId } = app
 
-  const topPage = Object.values(app.state.document.pages).sort(
-    (a, b) => (b.childIndex || 0) - (a.childIndex || 0)
-  )[0]
-
-  const nextChildIndex = topPage?.childIndex ? topPage?.childIndex + 1 : 1
+  const nextChildIndex = getNextChildIndex(app.state.document.pages)
 
   // TODO: Iterate the name better
   const nextName = `Slide ${nextChildIndex}`
@@ -22,6 +20,7 @@ export function createPage(
     id: pageId,
     name: nextName,
     childIndex: nextChildIndex,
+    size: [...(app.state.document.defaultPageSize ?? DEFAULT_SLIDE_SIZE)],
     shapes: {},
     bindings: {},
   }
