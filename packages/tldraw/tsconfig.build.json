@@ -16,6 +16,14 @@
     "incremental": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    // tsconfig.base.json sets "jsx": "preserve" (needed so apps/www's own Next/webpack
+    // pipeline can apply its own JSX transform to *app* source). lask's esbuild step honours
+    // the nearest tsconfig for every input file, including this package's own src — so without
+    // this override the production dist ships raw, un-transpiled JSX (see
+    // guides/architecture.md and examples/tldraw-example's identical fix for the same esbuild
+    // behaviour). "react" (not "react-jsx") because every source file already does
+    // `import * as React from 'react'`, matching the classic transform's expectations.
+    "jsx": "react"
   }
 }

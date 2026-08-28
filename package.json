@@ -13,7 +13,8 @@
     "packages/*",
     "apps/*",
     "apps/vscode/*",
-    "examples/*"
+    "examples/*",
+    "!examples/consumer-smoke"
   ],
   "scripts": {
     "build": "turbo run build",

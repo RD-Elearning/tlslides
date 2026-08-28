@@ -3,6 +3,11 @@ packages:
   - "apps/*"
   - "apps/vscode/*"
   - "examples/*"
+  # NOT a workspace member, deliberately: examples/consumer-smoke exists to prove @tlslides/tldraw
+  # is consumable from a plain `npm install` of its built dist, with none of the workspace links
+  # or shared tsconfig paths every other in-repo example gets for free (see its own run.sh and
+  # guides/development.md). Letting pnpm hoist/link it in here would silently defeat that.
+  - "!examples/consumer-smoke"
 allowBuilds:
   '@sentry/cli': true
   '@swc/core': true

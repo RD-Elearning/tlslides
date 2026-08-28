@@ -22,5 +22,9 @@ Key things not to relearn the hard way:
   this repo from source.
 - The repo is pinned to `yarn@1.22.17` via `packageManager` in `package.json`; using pnpm instead
   requires the workarounds in `guides/development.md`.
-- `packages/tldraw/dist` ships un-transpiled JSX — any consumer must run it through a JSX-aware
-  bundler step (`next-transpile-modules` / `transpilePackages` for Next.js).
+- `packages/tldraw/dist` ships **transpiled** JS as of Phase 9 (`React.createElement`, no JSX), so
+  a consumer no longer needs `transpilePackages` / `next-transpile-modules` — `examples/nextjs-
+  sample` deliberately has no such config, which is what proves it. Before Phase 9 it shipped raw
+  JSX, because esbuild inherited the workspace's `"jsx": "preserve"`; missing the transpile step
+  then produced a cryptic runtime `Unexpected token '<'` rather than a build error. That is still
+  the failure mode for a *pre-Phase-9* build, or for a host vendoring the `.tsx` source directly.

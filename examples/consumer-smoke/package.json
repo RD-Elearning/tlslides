@@ -1,0 +1,28 @@
+{
+  "name": "consumer-smoke",
+  "private": true,
+  "version": "0.0.0",
+  "description": "A minimal outside-project Vite app that imports @tlslides/tldraw from its BUILT dist, exactly as a real downstream consumer would (see run.sh). Not a workspace member — see the root package.json/pnpm-workspace.yaml exclusion — so it gets none of the monorepo's workspace links or shared tsconfig paths that let the in-repo examples succeed even when the published package is broken.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4998 --strictPort"
+  },
+  "dependencies": {
+    "@tlslides/core": "file:./vendor/tlslides-core-1.9.1.tgz",
+    "@tlslides/intersect": "file:./vendor/tlslides-intersect-1.7.1.tgz",
+    "@tlslides/tldraw": "file:./vendor/tlslides-tldraw-1.9.3.tgz",
+    "@tlslides/vec": "file:./vendor/tlslides-vec-1.7.0.tgz",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

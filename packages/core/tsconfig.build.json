@@ -15,6 +15,9 @@
     "incremental": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    // See packages/tldraw/tsconfig.build.json for why this override exists: without it, lask's
+    // esbuild step inherits tsconfig.base.json's "jsx": "preserve" and ships raw JSX in dist.
+    "jsx": "react"
   }
 }

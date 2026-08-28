@@ -16,6 +16,9 @@
     "incremental": false,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    // Keep dev (watch-mode) output transpiled the same way as the production build — see the
+    // comment in tsconfig.build.json for why this override exists at all.
+    "jsx": "react"
   }
 }
