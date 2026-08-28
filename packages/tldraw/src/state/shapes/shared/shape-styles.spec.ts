@@ -2,9 +2,12 @@ import { ColorStyle, DashStyle, SizeStyle, ShapeStyles } from '~types'
 import {
   clampCornerRadius,
   defaultStyle,
+  fills,
   getEffectiveStrokeWidth,
   getShapeOpacity,
+  getShapeStyle,
   getStrokeWidth,
+  strokes,
 } from './shape-styles'
 
 const baseStyle: ShapeStyles = {
@@ -81,5 +84,47 @@ describe('clampCornerRadius', () => {
 
   it('degenerates a square to a full circle at the maximum radius', () => {
     expect(clampCornerRadius(1000, [80, 80])).toBe(40)
+  })
+})
+
+describe('getShapeStyle — Phase 8b arbitrary hex colour', () => {
+  it('falls back to the theme palette when style.stroke/fill are undefined', () => {
+    const filled = { ...baseStyle, isFilled: true }
+    expect(getShapeStyle(filled, false).stroke).toBe(strokes.light[ColorStyle.Black])
+    expect(getShapeStyle(filled, false).fill).toBe(fills.light[ColorStyle.Black])
+    expect(getShapeStyle(filled, true).stroke).toBe(strokes.dark[ColorStyle.Black])
+    expect(getShapeStyle(filled, true).fill).toBe(fills.dark[ColorStyle.Black])
+  })
+
+  it('an explicit stroke override wins over the color enum', () => {
+    const style = { ...baseStyle, stroke: '#3a7bd5' }
+    expect(getShapeStyle(style, false).stroke).toBe('#3a7bd5')
+  })
+
+  it('an explicit fill override wins over the color enum, but only when isFilled is true', () => {
+    const filled = { ...baseStyle, isFilled: true, fill: '#f5a623' }
+    expect(getShapeStyle(filled, false).fill).toBe('#f5a623')
+
+    // Unfilled shapes still resolve to 'none', exactly as before this field existed — a fill
+    // override sitting unused on an unfilled shape must not leak into the render.
+    const unfilled = { ...baseStyle, isFilled: false, fill: '#f5a623' }
+    expect(getShapeStyle(unfilled, false).fill).toBe('none')
+  })
+
+  it('does NOT flip an explicit stroke/fill override with the UI theme, unlike the enum', () => {
+    // This is the deliberate semantic decision documented on getShapeStyle: an absolute hex is
+    // presented to the user as "this exact colour" and must not shift when the app's own UI
+    // theme is toggled, unlike the theme-dependent enum palette.
+    const style = { ...baseStyle, isFilled: true, stroke: '#3a7bd5', fill: '#f5a623' }
+    const light = getShapeStyle(style, false)
+    const dark = getShapeStyle(style, true)
+    expect(light.stroke).toBe('#3a7bd5')
+    expect(dark.stroke).toBe('#3a7bd5')
+    expect(light.fill).toBe('#f5a623')
+    expect(dark.fill).toBe('#f5a623')
+
+    // Sanity check that the enum path (no override) really does differ across themes — otherwise
+    // the assertions above wouldn't prove anything.
+    expect(getShapeStyle(baseStyle, false).stroke).not.toBe(getShapeStyle(baseStyle, true).stroke)
   })
 })

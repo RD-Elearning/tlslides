@@ -530,6 +530,26 @@ export type ShapeStyles = {
   strokeWidth?: number
   /** Pixel radius, currently consumed by Rectangle and ComponentShape only. */
   cornerRadius?: number
+  // Phase 8b — arbitrary hex colour. `color` stays the `ColorStyle` enum (and keeps resolving
+  // through the theme-dependent `strokes`/`fills` palettes in shape-styles.ts) so every existing
+  // document keeps rendering exactly as before. `stroke`/`fill` are optional absolute overrides —
+  // named after the two keys `getShapeStyle` already returns, since that's exactly what they
+  // replace. Two independent fields, not one "color" override, because the enum itself already
+  // resolves to two independent palette lookups (`strokes[color]` vs `fills[color]`, different
+  // lightness per theme) — a brand kit needs the same independence to pin an exact stroke hex and
+  // an exact fill hex separately. **Deliberately theme-invariant**: unlike the enum, which flips
+  // with `isDarkMode` (see the `strokes`/`fills` tables), a hex the user typed in is an absolute
+  // value and must render identically in both UI themes — see `getShapeStyle`'s comment for where
+  // this is enforced. This is a first, narrow step against the open issue (flagged in
+  // reviews/README.md, Phase 4 notes) that shape colours flip with the *UI* theme rather than
+  // being a property of the slide.
+  /** Absolute hex override for stroke colour (and, on shapes without a separate fill, text/line
+   *  colour too, since they all read `getShapeStyle().stroke`). Undefined falls back to the
+   *  `color` enum, exactly as before this field existed. */
+  stroke?: string
+  /** Absolute hex override for fill colour. Only takes effect when `isFilled` is true, mirroring
+   *  how the resolved `fill` value already works. Undefined falls back to the `color` enum. */
+  fill?: string
 }
 
 export enum TDAssetType {

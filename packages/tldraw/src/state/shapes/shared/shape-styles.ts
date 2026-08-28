@@ -179,6 +179,16 @@ export function getStickyShapeStyle(style: ShapeStyles, isDarkMode = false) {
   }
 }
 
+// T8b.2 — arbitrary hex colour. `style.stroke`/`style.fill`, when set, win outright over the
+// `color` enum's theme-dependent palette lookup, and — this is the important, easy-to-get-wrong
+// part — they do NOT get themed: `theme` is only consulted in the `??` fallback branch, never
+// applied to an explicit hex. That is deliberate, not an oversight. The enum palette flips with
+// `isDarkMode` because it exists to keep whiteboard *ink* legible against a whiteboard background
+// that itself flips; but an arbitrary hex is presented to the user as "this exact colour", the way
+// a brand kit or a design import would supply it, and silently shifting it when someone toggles
+// the app's own UI theme would be surprising and undermine the whole point of pinning a value.
+// Every shape util already renders through this function, so the override is picked up everywhere
+// for free — see the Phase 8a report for the full call-site list.
 export function getShapeStyle(
   style: ShapeStyles,
   isDarkMode?: boolean
@@ -194,8 +204,8 @@ export function getShapeStyle(
   const theme: Theme = isDarkMode ? 'dark' : 'light'
 
   return {
-    stroke: strokes[theme][color],
-    fill: isFilled ? fills[theme][color] : 'none',
+    stroke: style.stroke ?? strokes[theme][color],
+    fill: isFilled ? style.fill ?? fills[theme][color] : 'none',
     strokeWidth,
   }
 }

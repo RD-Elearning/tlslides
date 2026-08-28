@@ -232,7 +232,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen · B-07 | ✅ done |
 | 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ✅ done |
 | 8a | Tier 3, data/render layer — opacity, arbitrary stroke width, corner radius (no UI yet) | ✅ done |
-| 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ⬜ pending |
+| 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ✅ done |
 | 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
 
@@ -565,6 +565,99 @@ render correctly everywhere; a user still cannot set them from the app.
 helpers) · `build:packages` 9/9 with zero type errors · new `styles` visual scenario exits 0 with
 no console errors, and all four pre-existing scenarios (`shapes`, `line`, `frame`, `reorder`)
 re-verified with no regression — screenshots inspected, not just asserted on.
+
+#### Phase 8b notes — style panel UI, arbitrary hex colour
+
+Everything 8a wired into data/render is now settable from the app: an opacity slider, a
+stroke-width number field, a corner-radius number field (Rectangle/Component only), and a new
+arbitrary-hex colour picker with independent Stroke/Fill overrides. All four go through
+`app.style(...)` → `Commands.styleShapes` exactly like the pre-existing Color/Fill/Dash/Size
+controls — no new command-layer code was needed; the generic patch already round-trips any
+`Partial<ShapeStyles>` through undo/redo.
+
+- **Colour data model: `stroke?: string` / `fill?: string`, not one `color` override.** The enum
+  already resolves to *two* independent, differently-toned palette lookups
+  (`strokes[theme][color]` vs `fills[theme][color]`) — a brand kit needs the same independence to
+  pin an exact stroke hex and an exact fill hex separately (e.g. a white-stroke, brand-orange-fill
+  shape). Naming them `stroke`/`fill` (not `customStroke`/`customFill`) mirrors the two keys
+  `getShapeStyle` already returns, since that's exactly what they replace. Resolved in
+  `getShapeStyle` as `style.stroke ?? strokes[theme][color]` / `isFilled ? style.fill ??
+  fills[theme][color] : 'none'` — every shape util already renders through this function, so the
+  override is picked up everywhere for free, same as 8a's `getEffectiveStrokeWidth`. `getStickyShapeStyle`
+  (StickyUtil's own palette, which remaps white/black to yellow) is deliberately left untouched —
+  an arbitrary hex bypassing that remap would stop looking like a sticky note.
+- **Theme semantics, decided explicitly: an arbitrary hex does NOT flip with the UI theme.** The
+  enum palette flips with `isDarkMode` because it exists to keep whiteboard ink legible against a
+  background that itself flips; an arbitrary hex is presented to the user as "this exact colour"
+  (the way a brand kit or design import would supply it), and silently shifting it when someone
+  toggles the *app's own* UI theme would undermine the entire point of pinning a value. In
+  `getShapeStyle`, `theme` is consulted only in the `??` fallback branch, never applied to an
+  explicit `style.stroke`/`style.fill`. This is a first, narrow step against the open issue
+  flagged in the Phase 4 notes above (shape colours flipping with UI theme is a whiteboard
+  assumption that doesn't fit a slide product) — the full fix (slide colours keyed off
+  `TDPage.background` instead of UI theme) is still open.
+- **Size-enum vs. arbitrary-stroke-width, and color-enum vs. custom-hex: the same coherence rule,
+  applied twice.** An explicit override otherwise wins forever (`getEffectiveStrokeWidth` and the
+  `stroke ?? enum` fallback both prefer the override unconditionally), which would make the S/M/L
+  buttons and the colour swatches look permanently broken once a shape had ever been customized.
+  Resolved by making the *discrete* control the one that clears the override, in the same
+  `app.style()` call, so one undo step restores both together: `handleSizeChange` calls
+  `app.style({ size, strokeWidth: undefined })`; `handleColorChange` calls
+  `app.style({ color, stroke: undefined, fill: undefined })`. This relies on
+  `Utils.deepMerge` treating an explicit `undefined` in a patch as "clear this field" rather than
+  a no-op (verified directly in `styleShapes.spec.ts`) — the same mechanism 8a's optional fields
+  already depend on for falling back to today's behaviour.
+- **No slider primitive existed anywhere in this repo** (no `@radix-ui/react-slider` dependency, no
+  `type="range"` input, nothing under `components/Primitives/`) — contrary to the phase brief's
+  assumption. Added one (`components/Primitives/Slider/`) wrapping a native `<input type="range">`
+  rather than pulling in a new Radix package for a single control. It fires `onValueChange`
+  continuously (for the live "NN%" label) but only calls `onValueCommit` once per gesture — on
+  pointer-up, key-up, or blur — so dragging the opacity slider produces one undo step, not one per
+  pixel.
+- **A real interaction bug, found only once the browser scenario drove the actual UI, not by any
+  test:** typing into the new stroke-width/corner-radius/hex fields and pressing Tab to move to the
+  next field **cloned the selected shape**. `SelectTool.onKeyDown`'s `case 'Tab'` (a pre-existing,
+  legitimate "duplicate shape to the right" shortcut) is wired through `@tlslides/core`'s
+  `useKeyEvents`, which listens on `window` unconditionally — it has no notion of "a form field has
+  focus" the way `useKeyboardShortcuts.tsx`'s `canHandleEvent()` checks do. Every text-editing
+  keystroke inside the style panel was therefore also live canvas input, and a debugging session
+  confirmed it: after Tab, `window.app.selectedIds` pointed at a *brand-new* cloned shape, so every
+  style change after that point was silently landing on the clone instead of the shape being
+  edited. Fixed with `stopKeyPropagationUnlessEscape` (new, in `components/preventEvent.ts`),
+  wired to `onKeyDown`/`onKeyUp` on every free-typed control (the two number fields, the hex text
+  fields, the native colour swatches) and baked into the `Slider` primitive itself. It stops
+  propagation for every key except Escape, so Escape still closes the menu / cancels the tool, but
+  nothing else typed into these fields ever reaches the canvas's global shortcut system. This
+  works because React 17 changed event delegation to use real native bubbling from the target up
+  to the app's root container, so a React `stopPropagation()` call now genuinely stops the event
+  before it reaches a plain `window.addEventListener` — this fix would not have worked against
+  React 17's own delegation model pre-17. This class of bug will recur for any future on-canvas
+  form field (Phase 8c's numeric X/Y/W/H inspector is exactly that), so it's documented prominently
+  on the helper itself, not just here.
+- **A second, smaller bug caught by comparing the screenshot to the live shape:** the "Styles"
+  trigger button's swatch preview read `strokes[theme][displayedStyle.color]` directly, ignoring a
+  custom `stroke`/`fill` override entirely — so after picking a brand-blue custom stroke, the
+  trigger button kept showing the old enum colour (initially red, in the scenario) while the shape
+  itself was correctly blue. Fixed to fall back through the override the same way `getShapeStyle`
+  does: `displayedStyle.stroke ?? strokes[theme][color]`.
+- **Corner radius is conditionally shown**, not always-on like Color/Fill/Dash/Size: a
+  `cornerRadiusVisibleSelector` shows the row when the Rectangle tool is active, or when any
+  currently selected shape is a Rectangle or Component (`TDShapeType`), since a radius on e.g. a
+  selected Ellipse or Line would be silently inert.
+- **`tools/visual/scenarios/stylepanel.js`** is the one scenario in this repo that drives the
+  actual UI rather than `window.app`'s imperative API for the thing under test: it clicks a real
+  shape to select it, clicks the real `#TD-Styles` trigger, drags the opacity slider via a real
+  mouse click on its track, and types into the real number/hex fields — `window.app` is only used
+  to seed one deterministic shape and to read back document/render state for assertions. It
+  exercises both coherence rules above through real clicks on the Large size button and the Red
+  swatch, and checks the corner-radius row's conditional visibility.
+
+**Verified:** 72/72 suites (364 passing, up from 357; 7 new tests covering `getShapeStyle`'s
+stroke/fill resolution and theme-invariance, and the style command's undo/redo + coherence rules
+for the new fields) · `build:packages` 9/9 with zero type errors · new `stylepanel` visual scenario
+exits 0 with no console errors and confirms every field round-trips through both the document and
+the rendered SVG attributes · all five pre-existing scenarios (`styles`, `shapes`, `frame`, `line`,
+`reorder`) re-verified with no regression — screenshots inspected, not just asserted on.
 
 ### Suggested order
 
