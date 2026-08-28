@@ -3,6 +3,7 @@ import React from 'react'
 import { Tldraw } from '../../Tldraw'
 import { useTldrawApp } from '~hooks'
 import { shapeUtils } from '~state/shapes'
+import { resolveSlideBackground } from '~state/shapes/shared'
 import { styled } from '~styles'
 import { TDPage } from '~types'
 import { TldrawApp } from '~state'
@@ -16,12 +17,20 @@ export function ReadOnlyEditor({ page, pageState }: ReadOnlyEditorProps) {
   const app = useTldrawApp()
   const state = app.useStore()
 
-  const { settings, appState } = state
+  const { settings, appState, document } = state
 
   // Custom rendering meta, with dark mode for shapes
   const meta = React.useMemo(() => {
     return { isDarkMode: settings.isDarkMode }
   }, [settings.isDarkMode])
+
+  // Phase 11 — Deck thumbnails render through this same component, so a slide's background must
+  // resolve here too, not just in the main `Tldraw.tsx` canvas — see the Phase 11 report for how
+  // this was verified.
+  const frameBackground = React.useMemo(
+    () => resolveSlideBackground(page.background, page.id, document.assets),
+    [page.background, page.id, document.assets]
+  )
 
   // Custom theme, based on darkmode
   const theme = React.useMemo(() => {
@@ -83,6 +92,7 @@ export function ReadOnlyEditor({ page, pageState }: ReadOnlyEditorProps) {
         theme={theme}
         meta={meta}
         frame={page.size}
+        frameBackground={frameBackground}
       />
     </StyledLayout>
   )

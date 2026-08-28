@@ -12,6 +12,7 @@ import {
 } from '~hooks'
 import type {
   TLAssets,
+  TLBackgroundFill,
   TLBinding,
   TLBounds,
   TLPage,
@@ -44,6 +45,13 @@ interface CanvasProps<T extends TLShape, M extends Record<string, unknown>> {
    * a "slide", just an optional rectangle to frame.
    */
   frame?: number[]
+  /**
+   * (optional) A resolved paint spec for the `frame` background — see `Frame` and
+   * `@tlslides/tldraw`'s `SlideBackground`/`resolveSlideBackground`. Has no effect without
+   * `frame` also being set. Generic on purpose, same reasoning as `frame` itself: core renders
+   * whatever paint it's handed and has no opinion on where it came from.
+   */
+  frameBackground?: TLBackgroundFill
   users?: TLUsers<T>
   userId?: string
   hideBounds: boolean
@@ -73,6 +81,7 @@ export const Canvas = observer(function _Canvas<
   snapLines,
   grid,
   frame,
+  frameBackground,
   users,
   userId,
   meta,
@@ -115,7 +124,9 @@ export const Canvas = observer(function _Canvas<
     <div id={id} className="tl-container" ref={rContainer}>
       <div id="canvas" className="tl-absolute tl-canvas" ref={rCanvas} {...events}>
         {!hideGrid && grid && <Grid grid={grid} camera={pageState.camera} />}
-        {frame && <Frame frame={frame} camera={pageState.camera} />}
+        {frame && (
+          <Frame frame={frame} camera={pageState.camera} background={frameBackground} />
+        )}
         <div ref={rLayer} className="tl-absolute tl-layer" data-testid="layer">
           <Page
             page={page}

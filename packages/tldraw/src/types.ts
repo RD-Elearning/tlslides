@@ -144,10 +144,39 @@ export interface TDDocument {
 // The shape of a single page in the Tldraw document
 export interface TDPage extends TLPage<TDShape, TDBinding> {
   size?: number[] // [width, height] of the slide frame
-  background?: string // slide background fill
+  // Phase 11 — widened from a reserved, never-rendered `string` to a structured union. No
+  // migration and no `TldrawApp.version` bump: every document that predates this field simply
+  // lacks a `background` (the old field was reserved and nothing ever wrote or read it — verified
+  // before this phase), and the one shape it *could* have taken, a bare string, still parses: see
+  // `resolveSlideBackground`, which treats it as `{ type: 'solid', color: <string> }`.
+  background?: SlideBackground | string
   notes?: string // speaker notes
   skipInPresentation?: boolean // skip this slide when presenting
 }
+
+/** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`
+ *  and CSS gradient stop percentages (just expressed as a fraction instead of a percentage). */
+export interface TDGradientStop {
+  color: string
+  at: number
+}
+
+// Phase 11 — background system. Multi-stop, arbitrary-angle linear gradients are the headline
+// feature; radial gradients and image backgrounds share the same shape of data so the whole union
+// resolves through one function (`resolveSlideBackground`, in
+// `state/shapes/shared/background.ts`) into the generic paint spec `@tlslides/core`'s `Frame`
+// actually renders. See that module for the angle convention and the SVG-vs-CSS gradient decision.
+export type SlideBackground =
+  | { type: 'solid'; color: string }
+  | { type: 'linearGradient'; angle: number; stops: TDGradientStop[] }
+  | { type: 'radialGradient'; cx: number; cy: number; stops: TDGradientStop[] }
+  | { type: 'image'; assetId: string; fit: 'cover' | 'contain' | 'tile'; opacity?: number }
+
+// The subset of `SlideBackground` that also makes sense as a *shape* fill (T11.3): a shape has no
+// use for 'solid' (that's just `style.fill`) or 'image' (not asked for on shapes in this phase),
+// but the gradient variants are shared verbatim with the page background so one angle convention,
+// one resolver shape, and one preset list serve both.
+export type ShapeGradientFill = Extract<SlideBackground, { type: 'linearGradient' | 'radialGradient' }>
 
 // A partial of a TDPage, used for commands / patches
 export type PagePartial = {
@@ -550,6 +579,14 @@ export type ShapeStyles = {
   /** Absolute hex override for fill colour. Only takes effect when `isFilled` is true, mirroring
    *  how the resolved `fill` value already works. Undefined falls back to the `color` enum. */
   fill?: string
+  // Phase 11 — gradient fill. Only takes effect when `isFilled` is true, same guard as `fill`.
+  // Coherence rule (same precedent as size/strokeWidth and color/stroke/fill in Phase 8b): a
+  // gradient is the *more specific* control, so setting one clears `fill` in the same
+  // `app.style()` call, and picking a flat fill (swatch or hex) clears `fillGradient` — see
+  // `getShapeStyle` for the resolution order and BackgroundMenu/StyleMenu for the call sites that
+  // enforce it. Currently consumed by RectangleUtil and EllipseUtil only (see the Phase 11
+  // report for what was left out of scope).
+  fillGradient?: ShapeGradientFill
 }
 
 export enum TDAssetType {

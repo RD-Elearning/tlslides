@@ -44,6 +44,7 @@ import {
   ArrowShape,
   TDInsertableContent,
   TDInsertContentOpts,
+  SlideBackground,
 } from '~types'
 import {
   migrate,
@@ -60,6 +61,7 @@ import {
 import { TLDR } from './TLDR'
 import { shapeUtils } from '~state/shapes'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
+import { resolveSlideBackground, appendBackgroundDefs } from '~state/shapes/shared/background'
 import * as Commands from './commands'
 import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
@@ -1871,6 +1873,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * Set (or clear) a page's background — a solid color, gradient, or image. See `SlideBackground`
+   * and `resolveSlideBackground` in `state/shapes/shared/background.ts`.
+   * @param pageId The id of the page to update.
+   * @param background The new background, or `undefined` to clear it.
+   */
+  setPageBackground = (pageId: string, background: SlideBackground | undefined): this => {
+    if (this.readOnly) return this
+    return this.setState(Commands.setPageBackground(this, pageId, background))
+  }
+
+  /**
    * Duplicate a page.
    * @param pageId The id of the page to duplicate.
    */
@@ -2168,6 +2181,31 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const originY = frame ? 0 : commonBounds.minY - SVG_EXPORT_PADDING
     const viewBoxWidth = frame ? frame[0] : commonBounds.width + SVG_EXPORT_PADDING * 2
     const viewBoxHeight = frame ? frame[1] : commonBounds.height + SVG_EXPORT_PADDING * 2
+    // Phase 11 — paint the slide's own background behind its shapes, but only for a whole-frame
+    // export: an arbitrary-selection SVG copy has no "slide" to speak of, and cropping tightly to
+    // the selection with a background rect added on top would just paint over the crop margin
+    // with a colour the user never selected. This is the actual proof that the background system
+    // survives export: `resolveSlideBackground` produces the exact same generic paint spec `Frame`
+    // renders in the live editor, and `appendBackgroundDefs` emits it as real `<defs>` nodes (never
+    // a CSS gradient) into this hand-built SVG document, the same discipline `Frame`'s own comment
+    // documents.
+    if (frame) {
+      const resolvedBackground = resolveSlideBackground(
+        this.getPage(pageId).background,
+        pageId,
+        this.document.assets
+      )
+      if (resolvedBackground) {
+        const fill = appendBackgroundDefs(defs, resolvedBackground)
+        const backgroundRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        backgroundRect.setAttribute('x', '0')
+        backgroundRect.setAttribute('y', '0')
+        backgroundRect.setAttribute('width', String(frame[0]))
+        backgroundRect.setAttribute('height', String(frame[1]))
+        backgroundRect.setAttribute('fill', fill)
+        svg.appendChild(backgroundRect)
+      }
+    }
     // A quick routine to get an SVG element for each shape
     const getSvgElementForShape = (shape: TDShape) => {
       const util = TLDR.getShapeUtil(shape)

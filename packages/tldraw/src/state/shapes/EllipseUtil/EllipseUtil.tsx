@@ -1,7 +1,13 @@
 import * as React from 'react'
 import { Utils, SVGContainer, TLBounds } from '@tlslides/core'
 import { Vec } from '@tlslides/vec'
-import { defaultStyle, getShapeStyle, getShapeOpacity, getFontStyle } from '~state/shapes/shared'
+import {
+  defaultStyle,
+  getShapeStyle,
+  getShapeOpacity,
+  getFontStyle,
+  GradientDef,
+} from '~state/shapes/shared'
 import { EllipseShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
 import { LABEL_POINT } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
@@ -66,7 +72,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
     ) => {
       const { id, radius, style, label = '', labelPoint = LABEL_POINT } = shape
       const font = getFontStyle(shape.style)
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, id)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
       const rx = Math.max(0, radius[0] - sw / 2)
@@ -96,6 +102,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
               export. Opacity on the outer element would look right live but vanish on export. */}
           <SVGContainer id={shape.id + '_svg'}>
             <g opacity={opacity}>
+              {styles.fillGradientDef && <GradientDef gradient={styles.fillGradientDef} />}
               {isBinding && (
                 <ellipse
                   className="tl-binding-indicator"

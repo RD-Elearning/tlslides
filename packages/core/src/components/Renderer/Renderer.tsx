@@ -13,6 +13,7 @@ import type {
   TLUsers,
   TLAssets,
   TLPerformanceMode,
+  TLBackgroundFill,
 } from '../../types'
 import { Canvas } from '../Canvas'
 import { Inputs } from '../../inputs'
@@ -61,6 +62,12 @@ export interface RendererProps<T extends TLShape, M = any> extends Partial<TLCal
    * page's shapes, dimming everything outside of it.
    */
   frame?: number[]
+  /**
+   * (optional) A resolved paint spec for the `frame` background. See `Canvas`'s `frameBackground`
+   * prop and `Frame` for how it's rendered (an SVG `<defs>` gradient/pattern, never CSS, so it
+   * survives SVG/PNG export unchanged).
+   */
+  frameBackground?: TLBackgroundFill
   /**
    * (optional) The current user's id, used to identify the user.
    */
@@ -148,6 +155,7 @@ export const Renderer = observer(function _Renderer<
   snapLines,
   grid,
   frame,
+  frameBackground,
   containerRef,
   performanceMode,
   hideHandles = false,
@@ -204,6 +212,7 @@ export const Renderer = observer(function _Renderer<
         snapLines={snapLines}
         grid={grid}
         frame={frame}
+        frameBackground={frameBackground}
         users={users}
         userId={userId}
         externalContainerRef={containerRef}

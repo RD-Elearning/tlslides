@@ -18,7 +18,7 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   isSelected,
   isDarkMode,
 }: EllipseSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
   const innerPath = getEllipsePath(id, radius, style)
 
   return (

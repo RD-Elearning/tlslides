@@ -1,6 +1,7 @@
-import { Utils } from '@tlslides/core'
+import { Utils, TLBackgroundFill } from '@tlslides/core'
 import { Theme, ColorStyle, DashStyle, ShapeStyles, SizeStyle, FontStyle, AlignStyle } from '~types'
 import { GHOSTED_OPACITY } from '~constants'
+import { resolveShapeGradientFill } from './background'
 
 const canvasLight = '#fafafa'
 
@@ -189,22 +190,47 @@ export function getStickyShapeStyle(style: ShapeStyles, isDarkMode = false) {
 // the app's own UI theme would be surprising and undermine the whole point of pinning a value.
 // Every shape util already renders through this function, so the override is picked up everywhere
 // for free — see the Phase 8a report for the full call-site list.
+// T11.3 — gradient fill. `shapeId` is optional and only needed to resolve `style.fillGradient`:
+// the gradient becomes a `<defs>` element the caller renders (see `GradientDef`), whose id must be
+// unique per shape so that two gradient-filled shapes on the same slide (or the same Deck
+// thumbnail strip) never collide — see `TLBackgroundFill`'s doc comment for why that matters.
+// Without a `shapeId`, a `fillGradient` is silently ignored and `fill` falls back to the flat
+// hex/enum, rather than emitting an unresolvable `url(#undefined-...)`. Every call site that can
+// render a `<defs>` (RectangleUtil, EllipseUtil) passes `shape.id`; call sites that only need
+// `stroke`/`strokeWidth` (most of them — see the Phase 8a/8b reports for the full list) are
+// unaffected since they never look at `fill` at all.
+//
+// Coherence rule, same precedent as size/strokeWidth (Phase 8a) and color/stroke/fill (Phase 8b):
+// a gradient is the more specific control, so it wins outright over `fill`/the color enum when
+// both are present — see StyleMenu/BackgroundMenu's handlers for where the *other* half of the
+// rule (picking a flat fill clears `fillGradient`, and vice versa) is enforced.
 export function getShapeStyle(
   style: ShapeStyles,
-  isDarkMode?: boolean
+  isDarkMode?: boolean,
+  shapeId?: string
 ): {
   stroke: string
   fill: string
   strokeWidth: number
+  /** Present only when `style.fillGradient` actually resolved (isFilled and a shapeId were both
+   *  given): render this into an SVG `<defs>` in the same subtree as the shape's own `fill`
+   *  attribute, or the `url(#id)` reference above will point at nothing. */
+  fillGradientDef?: TLBackgroundFill
 } {
   const { color, isFilled } = style
 
   const strokeWidth = getEffectiveStrokeWidth(style)
 
   const theme: Theme = isDarkMode ? 'dark' : 'light'
+  const stroke = style.stroke ?? strokes[theme][color]
+
+  if (isFilled && style.fillGradient && shapeId) {
+    const fillGradientDef = resolveShapeGradientFill(style.fillGradient, shapeId)
+    return { stroke, fill: `url(#${fillGradientDef.id})`, strokeWidth, fillGradientDef }
+  }
 
   return {
-    stroke: style.stroke ?? strokes[theme][color],
+    stroke,
     fill: isFilled ? style.fill ?? fills[theme][color] : 'none',
     strokeWidth,
   }

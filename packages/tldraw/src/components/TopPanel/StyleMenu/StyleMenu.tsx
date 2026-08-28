@@ -6,6 +6,7 @@ import {
   defaultTextStyle,
   getEffectiveStrokeWidth,
 } from '~state/shapes/shared/shape-styles'
+import { GRADIENT_PRESETS } from '~state/shapes/shared/background'
 import { useTldrawApp } from '~hooks'
 import { DMCheckboxItem, DMContent, DMRadioItem } from '~components/Primitives/DropdownMenu'
 import {
@@ -57,6 +58,7 @@ const STYLE_KEYS = [
   'cornerRadius',
   'stroke',
   'fill',
+  'fillGradient',
 ] as (keyof ShapeStyles)[]
 
 // Corner radius is only meaningful for shapes with a rectangular outline (Rectangle and the
@@ -226,8 +228,10 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
   // picking a swatch is the discrete "go back to the enum" action, so it clears both custom hex
   // overrides. Without this, a shape with a custom stroke would stop responding to the swatch
   // grid entirely, which would look like the grid was broken rather than being overridden.
+  // Phase 11 extends the same rule to `fillGradient`: the enum is the least specific of the three
+  // fill controls, so picking it clears both.
   const handleColorChange = React.useCallback((value: ColorStyle) => {
-    app.style({ color: value, stroke: undefined, fill: undefined })
+    app.style({ color: value, stroke: undefined, fill: undefined, fillGradient: undefined })
   }, [])
 
   // --- Opacity (T8b.1) --------------------------------------------------------------------
@@ -308,7 +312,11 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
     []
   )
   const handleFillColorPicker = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => app.style({ fill: e.target.value }),
+    // Phase 11 — a flat fill hex is more specific than the enum but less specific than a gradient,
+    // so picking one clears `fillGradient` in the same call (see the "Gradient fill" section's
+    // own handlers for the reverse direction).
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      app.style({ fill: e.target.value, fillGradient: undefined }),
     []
   )
   const handleStrokeHexInput = React.useCallback(
@@ -327,7 +335,9 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
   }, [])
   const commitFillHex = React.useCallback(() => {
     setFillHexDraft((draft) => {
-      if (draft !== undefined && isValidHex(draft)) app.style({ fill: draft.trim() })
+      if (draft !== undefined && isValidHex(draft)) {
+        app.style({ fill: draft.trim(), fillGradient: undefined })
+      }
       return undefined
     })
   }, [])
@@ -342,6 +352,23 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
   const handleClearFill = React.useCallback(() => {
     setFillHexDraft(undefined)
     app.style({ fill: undefined })
+  }, [])
+
+  // --- Gradient fill (T11.3) --------------------------------------------------------------
+  // Presets only, deliberately — a full custom-stop editor per shape (angle field, add/remove
+  // stop rows) would roughly double this panel's size for a feature whose headline use case
+  // (per the Phase 11 brief) is the *page* background, not individual shapes; see BackgroundMenu
+  // for that full editor. `app.style` still accepts an arbitrary `fillGradient` object from any
+  // other caller (a template, a future custom-stop UI), `getShapeStyle` renders whatever it's
+  // given — this is a UI scope decision, not a data-model limitation.
+  const handleFillGradientPreset = React.useCallback(
+    (background: (typeof GRADIENT_PRESETS)[number]['background']) => {
+      app.style({ fillGradient: background, fill: undefined })
+    },
+    []
+  )
+  const handleClearFillGradient = React.useCallback(() => {
+    app.style({ fillGradient: undefined })
   }, [])
 
   const handleMenuOpenChange = React.useCallback(
@@ -448,6 +475,42 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
         >
           Fill
         </DMCheckboxItem>
+        {displayedStyle.isFilled && (
+          <StyledRow variant="tall" id="TD-Styles-FillGradient-Container">
+            <span>Gradient</span>
+            <GradientPresetGroup>
+              {GRADIENT_PRESETS.slice(0, 8).map((p) => (
+                <DropdownMenu.Item key={p.id} onSelect={preventEvent} asChild>
+                  <GradientPresetButton
+                    id={`TD-Styles-FillGradient-${p.id}`}
+                    title={p.name}
+                    isActive={
+                      displayedStyle.fillGradient?.type === 'linearGradient' &&
+                      displayedStyle.fillGradient.angle === p.background.angle &&
+                      JSON.stringify(displayedStyle.fillGradient.stops) ===
+                        JSON.stringify(p.background.stops)
+                    }
+                    style={{
+                      background: `linear-gradient(${p.background.angle}deg, ${p.background.stops
+                        .map((s) => `${s.color} ${Math.round(s.at * 100)}%`)
+                        .join(', ')})`,
+                    }}
+                    onClick={() => handleFillGradientPreset(p.background)}
+                  />
+                </DropdownMenu.Item>
+              ))}
+            </GradientPresetGroup>
+            {displayedStyle.fillGradient !== undefined && (
+              <ToolButton
+                variant="icon"
+                onClick={handleClearFillGradient}
+                id="TD-Styles-FillGradient-Reset"
+              >
+                <Cross2Icon />
+              </ToolButton>
+            )}
+          </StyledRow>
+        )}
         <StyledRow id="TD-Styles-Dash-Container">
           Dash
           <StyledGroup dir="ltr" value={displayedStyle.dash} onValueChange={handleDashChange}>
@@ -843,3 +906,26 @@ function HexColorField({
     </CustomColorField>
   )
 }
+
+/* -------------------- Phase 11 -------------------- */
+
+const GradientPresetGroup = styled('div', {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(4, 20px)',
+  gap: '$1',
+})
+
+const GradientPresetButton = styled('button', {
+  width: 20,
+  height: 20,
+  padding: 0,
+  border: '1px solid $hover',
+  borderRadius: '$0',
+  cursor: 'pointer',
+  variants: {
+    isActive: {
+      true: { outline: '2px solid $selected', outlineOffset: 1 },
+      false: {},
+    },
+  },
+})

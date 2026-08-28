@@ -128,3 +128,43 @@ describe('getShapeStyle — Phase 8b arbitrary hex colour', () => {
     expect(getShapeStyle(baseStyle, false).stroke).not.toBe(getShapeStyle(baseStyle, true).stroke)
   })
 })
+
+describe('getShapeStyle — Phase 11 gradient fill', () => {
+  const gradient = {
+    type: 'linearGradient' as const,
+    angle: 90,
+    stops: [
+      { color: '#ff0000', at: 0 },
+      { color: '#0000ff', at: 1 },
+    ],
+  }
+
+  it('a gradient fill wins over a flat fill hex and the color enum, when a shapeId is given', () => {
+    const style = { ...baseStyle, isFilled: true, fill: '#f5a623', fillGradient: gradient }
+    const resolved = getShapeStyle(style, false, 'shape1')
+    expect(resolved.fill).toBe('url(#shape1-fill-gradient)')
+    expect(resolved.fillGradientDef).toBeDefined()
+    expect(resolved.fillGradientDef?.id).toBe('shape1-fill-gradient')
+  })
+
+  it('two shapes with the same gradient style still resolve two distinct <defs> ids', () => {
+    const style = { ...baseStyle, isFilled: true, fillGradient: gradient }
+    const a = getShapeStyle(style, false, 'shape-a')
+    const b = getShapeStyle(style, false, 'shape-b')
+    expect(a.fill).not.toBe(b.fill)
+  })
+
+  it('falls back to the flat fill/enum when no shapeId is given, rather than an unresolvable url()', () => {
+    const style = { ...baseStyle, isFilled: true, fill: '#f5a623', fillGradient: gradient }
+    const resolved = getShapeStyle(style, false)
+    expect(resolved.fill).toBe('#f5a623')
+    expect(resolved.fillGradientDef).toBeUndefined()
+  })
+
+  it('a gradient fill on an unfilled shape has no effect, exactly like a flat fill override', () => {
+    const style = { ...baseStyle, isFilled: false, fillGradient: gradient }
+    const resolved = getShapeStyle(style, false, 'shape1')
+    expect(resolved.fill).toBe('none')
+    expect(resolved.fillGradientDef).toBeUndefined()
+  })
+})

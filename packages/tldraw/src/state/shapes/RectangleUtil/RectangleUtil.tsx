@@ -12,6 +12,7 @@ import {
   transformRectangle,
   getFontStyle,
   transformSingleRectangle,
+  GradientDef,
 } from '~state/shapes/shared'
 import { TextLabel } from '../shared/TextLabel'
 import { getRectangleIndicatorPathTDSnapshot } from './rectangleHelpers'
@@ -69,7 +70,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
     ) => {
       const { id, size, style, label = '', labelPoint = LABEL_POINT } = shape
       const font = getFontStyle(style)
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, id)
       const Component = style.dash === DashStyle.Draw ? DrawRectangle : DashedRectangle
       const handleLabelChange = React.useCallback(
         (label: string) => onShapeChange?.({ id, label }),
@@ -95,6 +96,9 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
               the outer element would look right live but silently vanish on export. */}
           <SVGContainer id={shape.id + '_svg'}>
             <g opacity={opacity}>
+              {/* Must live inside this `_svg`-suffixed <g>, not outside it — see GradientDef's
+                  comment for why the export path only clones this subtree. */}
+              {styles.fillGradientDef && <GradientDef gradient={styles.fillGradientDef} />}
               {isBinding && <BindingIndicator strokeWidth={styles.strokeWidth} size={size} />}
               <Component
                 id={id}

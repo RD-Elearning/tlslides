@@ -235,6 +235,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ✅ done |
 | 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
+| 11 | Background system — structured `SlideBackground`, SVG `<defs>` gradients on slides and shapes, `BackgroundMenu` UI, curated presets (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -658,6 +659,145 @@ for the new fields) · `build:packages` 9/9 with zero type errors · new `stylep
 exits 0 with no console errors and confirms every field round-trips through both the document and
 the rendered SVG attributes · all five pre-existing scenarios (`styles`, `shapes`, `frame`, `line`,
 `reorder`) re-verified with no regression — screenshots inspected, not just asserted on.
+
+#### Phase 11 notes — background system
+
+Widened `TDPage.background` from a reserved, unrendered `string` into a structured
+`SlideBackground` union (solid / linear gradient / radial gradient / image), rendered it in
+`packages/core/src/components/Frame/Frame.tsx`, and extended `ShapeStyles` with a matching
+gradient fill for shapes. No migration, no `TldrawApp.version` bump — document version stays 16,
+per the roadmap's own reasoning: nothing ever rendered the old field.
+
+- **The angle convention is CSS's, not math's, and it's documented at the one place it's
+  converted.** `angle` is degrees, clockwise, 0° = "to top" — exactly `linear-gradient()`'s own
+  convention — picked purely so users don't have to learn a second one. The conversion lives in
+  one function, `gradientAngleToVector` (`state/shapes/shared/background.ts`): it rotates the
+  "pointing up" unit vector by the angle and scales it out from the center by
+  `(|dx| + |dy|) / 2`, which reaches a corner of a unit `objectBoundingBox` square at
+  45/135/225/315° and an edge midpoint at 0/90/180/270° — exact for a 1:1 box, a close and
+  standard approximation for a 16:9 slide. Both the page background and shape fills call through
+  this one function, so the convention only has to be right once. Tested directly in
+  `background.spec.ts` (the four cardinal angles, plus 45° hitting the exact corner).
+- **Gradients are SVG `<defs>`, never CSS, end to end — and this is the one thing a screenshot
+  caught that no type check or unit test could.** The plan was: `Frame` renders `<defs>` +
+  `<linearGradient>`/`<radialGradient>` and points the paper rect's `fill` attribute at
+  `url(#id)`. That's exactly what shipped — and it looked completely broken live: the paper
+  stayed the plain theme grey no matter what background was set, while every assertion (the
+  `<defs>` node existed, the `fill` attribute was correctly `url(#...)`) passed. The cause:
+  `useStyle.tsx`'s `.tl-frame-paper { fill: var(--tl-frameFill) }` is a CSS class rule, and an
+  SVG *presentation attribute* (`fill="..."` written directly on the element) carries effectively
+  zero specificity — any stylesheet rule for the element, however unrelated-looking, wins over it
+  outright. This is the same family of bug as Phase 8a's `<SVGContainer opacity>` trap (something
+  that looks like the right attribute in the right place, silently overridden by a sibling
+  concern), just one layer further down the cascade. Fixed by setting the override as an inline
+  `style={{ fill: paperFill }}` instead of a `fill` attribute — inline style beats any external
+  stylesheet rule short of `!important`. `tools/visual/scenarios/background.js` exists specifically
+  to keep this rendering, not just resolving, since the bug was invisible to every non-visual
+  check.
+- **Where the `<defs>` live, and why that survives export.** Page backgrounds: inside `Frame`'s own
+  `<svg className="tl-frame">`, live, and separately re-emitted into `TldrawApp.copySvg`'s
+  hand-built export document (`appendBackgroundDefs`, DOM-API version of the same resolved spec) —
+  `copySvg` builds its own SVG from scratch and never touches `Frame`'s DOM, so the export path
+  needed its own copy of "turn a resolved background into `<defs>` + a fill value", not a shared
+  React component. Shape fills: inside the *same* `<g id={shape.id + '_svg'}>` that `SVGContainer`
+  creates for the shape's own content (`GradientDef`, rendered by `RectangleUtil`/`EllipseUtil`
+  right alongside the shape's own draw calls) — `TDShapeUtil.getSvgElement`'s base implementation
+  clones exactly that `<g>` for export and nothing else, so a `<defs>` rendered anywhere outside it
+  (e.g. hoisted to a page-level `<defs>`, which would have been less code) would be live-correct
+  and silently absent from every SVG/PNG export, the precise failure mode this phase exists to
+  avoid. Proven in `background.js`: it calls `window.app.copySvg([], pageId, true)` — the same
+  path "Copy as SVG"/PNG export use — and confirms the returned *string* contains both a
+  `<linearGradient>` node and a reference to the shape's own gradient id.
+- **Gradient ids are derived, not random, and from two different namespaces.** A page background's
+  `<defs>` id is `${pageId}-bg-gradient`; a shape fill's is `${shapeId}-fill-gradient`. Both
+  `pageId` and `shapeId` are already document-unique, so two gradients never collide — which
+  matters concretely here, not just in the abstract: `url(#id)` resolves via `getElementById`
+  against the *whole document*, and Deck renders every slide's thumbnail as its own `<Frame>` in
+  the same DOM at once (so does the main canvas, simultaneously, for the current slide). A fixed
+  id like `"bg-gradient"` would have made every thumbnail render whichever slide's gradient
+  happened to register first. `background.spec.ts` asserts two different pages/shapes resolve to
+  two different ids for the same gradient content.
+- **Flat fill and gradient fill: the gradient is the more specific control, same precedent as
+  Phase 8a/8b.** `getShapeStyle` prefers `style.fillGradient` outright over `style.fill`/the color
+  enum when both are set (mirroring `getEffectiveStrokeWidth` preferring an explicit width over
+  the size enum, and `stroke`/`fill` preferring a hex over the enum). The *other* half of the rule
+  — the less-specific control clearing the more-specific one when a user picks it — is enforced at
+  every UI call site that sets `fill`: `StyleMenu`'s color-swatch click, its native fill-hex
+  picker, and its fill-hex text field commit all now pass `fillGradient: undefined` in the same
+  `app.style()` call. The reverse (picking a gradient preset clears `fill`) is enforced where
+  gradients are actually set. One undo step restores both together, exactly like the size/color
+  rules before it. Tested in `shape-styles.spec.ts` (gradient wins when both are present; falls
+  back to flat fill when no `shapeId` is supplied — see below; has no effect when `isFilled` is
+  false, matching `fill`'s existing behavior) and exercised end-to-end through real UI clicks in
+  `background.js`.
+- **`getShapeStyle` needed a third, optional parameter — `shapeId` — and a defined fallback for its
+  absence.** Resolving `style.fillGradient` into a paintable `fill: url(#id)` needs an id to point
+  at, and the only sane, stable choice is the shape's own id. Rather than requiring every one of
+  `getShapeStyle`'s ~20 existing call sites (see the Phase 8a/8b reports) to start passing one,
+  the function treats a missing `shapeId` as "can't resolve a gradient here" and quietly falls back
+  to the flat `fill`/enum — never an unresolvable `url(#undefined-...)`. Only the call sites that
+  actually render fill (`RectangleUtil`/`EllipseUtil` and their `Dashed*`/`Draw*` sub-components)
+  were updated to pass `shape.id`; call sites that only ever read `stroke`/`strokeWidth`
+  (`TriangleUtil`, `ArrowUtil`, `LineUtil`, `DrawUtil`, indicators, `getSvgElement`'s label color,
+  …) are untouched.
+- **Scoped down, deliberately: shape gradient fill is presets-only in the UI; radial gradients and
+  image backgrounds have no UI at all.** The data model and render path support arbitrary
+  custom-stop gradients on shapes and a full `radialGradient`/`image` background (all four
+  `SlideBackground` variants resolve and render correctly, and are covered in
+  `background.spec.ts`), but `StyleMenu`'s new "Gradient" row is eight preset swatches plus a
+  clear button, not a full angle/stop editor — the brief's headline ask was gradients on the
+  *page* background (which does get the full editor, see below), and a shape-level custom-stop UI
+  would roughly double the panel's size for what the brief itself frames as "table stakes," not
+  the main feature. Anything else — a template, a future custom-stop-per-shape control, a
+  programmatic import — can still set an arbitrary `fillGradient` through `app.style()` directly;
+  `getShapeStyle` renders whatever it's given. Radial/image backgrounds are reachable only through
+  `app.setPageBackground()` directly, not `BackgroundMenu`, matching T11.4's own scope (solid,
+  linear gradient, presets).
+- **`BackgroundMenu`, new, lives in `TopPanel` next to `PageMenu`.** A slide's background is exactly
+  as page-scoped a property as its name (`PageMenu`) or its size (`PageOptionsDialog`), and — unlike
+  `StyleMenu` — needs to be reachable without a shape selected. It commits every change immediately
+  through `app.setPageBackground` (a new command, `state/commands/setPageBackground/`, modeled
+  directly on the existing `setPageSize`: same before/after page patch shape, same defensive
+  array-copy so undo/redo never aliases a live `stops` array), so Solid/Gradient tab switches,
+  angle edits, per-stop color/position edits, add/remove-stop, and preset clicks are all
+  individually undoable — there is no separate "apply" step. Every free-typed field (the angle
+  number input, the stop position fields, the solid/stop hex fields) is wired through
+  `stopKeyPropagationUnlessEscape`, reusing Phase 8b's fix for the Tab-clones-the-shape bug rather
+  than re-discovering it.
+- **24 hand-picked gradient presets** (`GRADIENT_PRESETS` in `background.ts`), in the tradition of
+  collections like uiGradients — real, recognizable two-color combinations (Sunset Vibes, Ocean
+  Breeze, Northern Lights, …) with genuine contrast and a pleasant hue transition, not generated by
+  pairing random hex values. Defaulted to a 135° diagonal (the most broadly flattering angle for a
+  full-bleed background) with a handful varied to 90/100/120/160/180° so the preset list itself
+  demonstrates that the angle control does something. `StyleMenu`'s shape-fill row reuses the same
+  list (its first eight), rather than maintaining a second curated set.
+- **Dark mode: gradients render identically in both themes, by construction, and that's a
+  deliberate continuation of Phase 8b's decision, not a new one made here.** A gradient's stops are
+  absolute hex values (`stops[].color`), resolved through the exact same "an explicit hex is not
+  themed" path Phase 8b established for `stroke`/`fill` — `getShapeStyle` never touches `isDarkMode`
+  once a gradient is present. Checked directly in a dark-mode screenshot (background + shape fill
+  both survive `toggleDarkMode()` pixel-for-pixel); the open issue flagged since Phase 4 (the
+  *enum* palette flipping with UI theme, arguably a whiteboard assumption that doesn't fit a slide
+  product) is unaffected either way by this phase — gradients simply don't participate in it.
+- **`tools/visual/scenarios/background.js`** drives the real UI for both halves of the feature (a
+  gradient shape fill via `StyleMenu`'s new row, then a page background via `BackgroundMenu`'s tabs,
+  angle field, stop editor, add-stop button, and a preset click) and is the only scenario in this
+  phase whose assertions are the actual point of the phase rather than a nice-to-have: it reads the
+  live DOM's `<defs>`/`fill` attributes, confirms the Deck thumbnail for the current slide picked up
+  the background too, and — the one that would have caught a CSS-gradient regression outright —
+  calls `window.app.copySvg(...)` and checks the *returned string* for a `<linearGradient>` node and
+  a reference to the shape's gradient id.
+
+**Verified:** 74/74 suites (387 passing, up from 364; 23 new tests across `background.spec.ts`
+(angle convention, all four `SlideBackground` variants, preset distinctness), the gradient/flat-fill
+coherence rules in `shape-styles.spec.ts`, and `setPageBackground`'s undo/redo + array-copy safety)
+· `build:packages` 9/9 with zero type errors · new `background` visual scenario exits 0 with no
+console errors, confirms the gradient survives `copySvg` export, and confirms the Deck thumbnail
+renders it · all six pre-existing scenarios (`stylepanel`, `styles`, `shapes`, `frame`, `line`,
+`reorder`) re-verified with no regression — screenshots inspected, not just asserted on. (`@tlslides/
+core`'s own Jest suite was already failing before this phase, on an unrelated pre-existing
+`setupTests.ts` ESM/transform error — not something this phase touched or introduced, and out of
+scope to fix here.)
 
 ### Suggested order
 

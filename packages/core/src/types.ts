@@ -135,6 +135,53 @@ export interface TLTheme {
   frameDim?: string
 }
 
+/**
+ * Phase 11 — a resolved, renderer-ready paint spec for the optional `frame`'s background (see
+ * `Canvas`/`Renderer`'s `frame` prop, and `Frame` itself). Core has no concept of a "slide" or a
+ * document-level background field — the host package owns that data model (`SlideBackground` in
+ * `@tlslides/tldraw`, angle convention and all) and resolves it down to this generic union before
+ * handing it to `Renderer`, the same way it already resolves theme tokens instead of passing a
+ * `TDPage` in directly.
+ *
+ * Every gradient/image variant carries its own `id`: it becomes an SVG `<defs>` element's id, and
+ * the paper rect references it as `fill="url(#id)"`. IRI references like `url(#id)` resolve via
+ * `getElementById` against the *whole document*, not just the local `<svg>` subtree, so if two
+ * `Frame`s in the same document (e.g. several Deck slide thumbnails, each its own `Frame`) reused
+ * the same id, one would silently render using the other's colors. The caller is responsible for
+ * making `id` unique — `resolveSlideBackground` derives it from the page id.
+ *
+ * `x1/y1/x2/y2` and `cx/cy/r` are already-resolved fractions in `objectBoundingBox` units (SVG
+ * gradients' default `gradientUnits`), i.e. plain 0–1 coordinates independent of the frame's
+ * pixel size — the host package converts its own angle/position convention into these before
+ * calling in, so `Frame` never needs to know the frame's dimensions to place a gradient vector.
+ */
+export type TLBackgroundFill =
+  | { type: 'solid'; color: string }
+  | {
+      type: 'linearGradient'
+      id: string
+      x1: number
+      y1: number
+      x2: number
+      y2: number
+      stops: { color: string; offset: number }[]
+    }
+  | {
+      type: 'radialGradient'
+      id: string
+      cx: number
+      cy: number
+      r: number
+      stops: { color: string; offset: number }[]
+    }
+  | {
+      type: 'image'
+      id: string
+      href: string
+      fit: 'cover' | 'contain' | 'tile'
+      opacity?: number
+    }
+
 export type TLWheelEventHandler = (
   info: TLPointerInfo<string>,
   e: React.WheelEvent<Element> | WheelEvent

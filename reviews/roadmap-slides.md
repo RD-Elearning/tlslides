@@ -36,10 +36,12 @@ templates on top of it from day one.
 
 ## Phases
 
-### Phase 11 — Background system
+### Phase 11 — Background system ✅ done
 
-`TDPage.background` is currently a reserved `string` that **nothing renders**, so it can be widened
-to a structured type with no migration and no version bump.
+`TDPage.background` was a reserved `string` that **nothing rendered**, so it was widened to a
+structured type with no migration and no version bump, exactly as this plan assumed — confirmed
+before writing code, and still true: no document produced by this fork ever wrote a non-`undefined`
+value into it.
 
 ```ts
 type SlideBackground =
@@ -49,20 +51,37 @@ type SlideBackground =
   | { type: 'image'; assetId: string; fit: 'cover' | 'contain' | 'tile'; opacity?: number }
 ```
 
-Multi-stop linear gradients at an arbitrary angle are the headline ask. Notes:
+Shipped exactly as specced above (see `packages/tldraw/src/types.ts`) — no shape changes needed.
+The angle convention (an open question in the original brief) is CSS's own: degrees, clockwise,
+0° = "to top". Full detail in `reviews/README.md`'s Phase 11 notes; the short version of what
+differed from the plan:
 
-- Rendered inside `packages/core/src/components/Frame/Frame.tsx`, which already owns the slide
-  paper rect and does its own camera math. Core stays slide-agnostic: it receives a resolved paint
-  spec, not a `TDPage`.
-- Must be an **SVG `<defs>` gradient**, not a CSS one, so the same definition survives SVG/PNG
-  export and headless rendering unchanged. A CSS-only gradient would look right in the editor and
-  vanish from every export — the same class of bug Phase 8a hit with opacity.
-- Also needed on *shapes*, not just pages (a gradient-filled rectangle is table stakes for a
-  slide deck). Same union, resolved in `getShapeStyle`, reusing Phase 8b's arbitrary-colour work.
-- Deck thumbnails must pick it up — they render through the same `Frame`.
-
-**Suggested extras:** a curated preset list (~24 gradients that actually look good) so users are
-not colour-picking from scratch; a mesh/blob decorative layer is *not* worth it yet.
+- Rendered inside `packages/core/src/components/Frame/Frame.tsx`, as planned, via a new generic
+  `TLBackgroundFill` type core owns (not `SlideBackground` itself — core still never learns what a
+  "slide" is; `resolveSlideBackground` in `packages/tldraw` does the angle-to-vector conversion and
+  hands core a plain `x1/y1/x2/y2` gradient vector).
+- **Is** an SVG `<defs>` gradient, not CSS, and this caught exactly the bug this plan predicted —
+  just one layer deeper than expected. The `<defs>`/`fill="url(#id)"` wiring was correct on the
+  first try; what broke was a *pre-existing* CSS class rule (`.tl-frame-paper`'s themed fill)
+  silently overriding the `fill` attribute, since SVG presentation attributes lose to any
+  stylesheet rule regardless of specificity. Only visible in a screenshot, exactly as flagged above
+  ("the same class of bug Phase 8a hit with opacity"). Fixed by setting the override via inline
+  `style` instead of the `fill` attribute.
+- Shipped on shapes too (`ShapeStyles.fillGradient`), resolved in `getShapeStyle` reusing Phase 8b's
+  work, but scoped to `RectangleUtil`/`EllipseUtil` and to *presets* in the UI rather than a full
+  custom-stop editor per shape — the full editor exists for the page background (the brief's
+  actual headline ask), not duplicated per-shape. `app.style()` still accepts an arbitrary
+  `fillGradient` from any other caller.
+- Deck thumbnails pick it up, confirmed directly (`tools/visual/scenarios/background.js`) rather
+  than assumed from "renders through the same `Frame`".
+- The curated preset list was built as suggested — 24 hand-picked two-color gradients
+  (`GRADIENT_PRESETS` in `state/shapes/shared/background.ts`) — and reused for both the page
+  background picker and the shape-fill preset row, rather than maintained twice. A mesh/blob
+  decorative layer remains out of scope, per the original suggestion.
+- Not built, and explicitly out of scope for this phase: UI for `radialGradient` or `image`
+  backgrounds (both resolve and render correctly, and are unit-tested, but are only reachable via
+  `app.setPageBackground()` directly — `BackgroundMenu` only exposes solid + linear gradient, per
+  T11.4's own ask).
 
 ### Phase 12 — Deck theme / brand kit
 

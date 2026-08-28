@@ -19,7 +19,7 @@ export const DrawRectangle = React.memo(function DrawRectangle({
   isDarkMode,
 }: RectangleSvgProps) {
   const { isFilled } = style
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
   const pathTDSnapshot = getRectanglePath(id, style, size)
   const innerPath = getRectangleIndicatorPathTDSnapshot(id, style, size)
 

@@ -12,6 +12,7 @@ import {
   TldrawComponentsRegistry,
 } from '~hooks'
 import { shapeUtils } from '~state/shapes'
+import { resolveSlideBackground } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
 import { TopPanel } from '~components/TopPanel'
 import { ContextMenu } from '~components/ContextMenu'
@@ -397,6 +398,15 @@ const InnerTldraw = React.memo(function InnerTldraw({
   const assets = document.assets
   const { selectedIds } = pageState
 
+  // Phase 11 — resolve the page's `background` (the document's own data model, angle convention
+  // and all) into the generic paint spec `@tlslides/core`'s `Frame` renders. Recomputed only when
+  // the background or the asset table actually changes, not on every render (a gradient's `stops`
+  // array would otherwise get a fresh `<defs>` id-stable-but-object-unstable prop each frame).
+  const frameBackground = React.useMemo(
+    () => resolveSlideBackground(page.background, page.id, assets),
+    [page.background, page.id, assets]
+  )
+
   const isHideBoundsShape =
     selectedIds.length === 1 &&
     page.shapes[selectedIds[0]] &&
@@ -489,6 +499,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
           snapLines={appState.snapLines}
           grid={GRID_SIZE}
           frame={page.size}
+          frameBackground={frameBackground}
           users={room?.users}
           userId={room?.userId}
           theme={theme}
