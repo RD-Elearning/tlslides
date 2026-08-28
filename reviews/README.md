@@ -1,8 +1,12 @@
 # Product & Architecture Review — tlslides as an AI Slide Builder
 
-**Date:** 2026-08-27
+**Date:** 2026-08-27 · **scope decision added 2026-08-28**
 **Reviewed commit:** `1f9eeb4a` (branch `main`)
 **Scope:** Can this repo become a Canva-style, AI-assisted slide product?
+
+> **Current working scope:** Next.js integration and the AI pipeline are deferred; work is
+> editor-only for now. See [Current scope decision](#current-scope-decision--editor-only-phase)
+> below for what is in and out, and which module each item lands in.
 
 Every claim in these documents was verified by reading source in this repo. Statements are
 cited as `path:line`. Where something does **not** exist, that is stated explicitly — absence
@@ -111,7 +115,119 @@ tldraw (v2/v3)**, which has first-class custom-shape APIs, rich text, and React 
 at the cost of losing this fork's Deck layer and requiring a licensing review. Document 6 frames
 that decision.
 
+## Current scope decision — editor-only phase
+
+**Updated 2026-08-28.** Next.js integration and the AI pipeline are **deferred**. All work in
+this phase stays inside this repo's editor packages. The goal is twofold:
+
+1. Make the editor good **standalone**.
+2. **Freeze the seams** so folding it into an existing Next.js app later is cheap.
+
+Everything below re-prioritises [06-feature-backlog.md](06-feature-backlog.md) under that
+constraint. The backlog itself is unchanged and remains the reference for effort estimates.
+
+### Deferred (not this phase)
+
+AI ingestion pipeline · semantic schema → `TDDocument` compiler · AI rewrite/expand · AI image
+generation · product shell (accounts, dashboard, sharing, billing) · public present links ·
+comments · version history · multi-slide multiplayer fan-out · PPTX export · PDF/DOCX import ·
+stock photos · background removal.
+
+**One exception worth pulling forward:** F-05 (templates with slots). It is not AI work, but the
+slot format *is* the interface the AI will later target — it can emit
+`{ templateId, slots: { title, bullets } }` instead of shapes. Designing it now makes the AI
+phase materially smaller. It depends on F-01 and F-04, so it naturally lands at the end of this
+phase.
+
+### Gate — decide before writing code
+
+**R-03 (build vs adopt) is more urgent in a preparation phase, not less.** This is the cheapest
+moment to decide. Every week of work on this fork raises the cost of later migrating to current
+tldraw (v2/v3), which already ships a frame concept, custom-shape APIs, rich text, and React
+18/19 — i.e. F-01, F-02, F-03 and R-01 largely for free.
+
+- **R-03 spike (~1 week):** build one 16:9-framed slide with a custom React block and rich text
+  on current tldraw; measure against the F-01/F-02/F-03 estimates in document 6. Verify licensing
+  directly with tldraw — recent SDK versions are not plain MIT.
+- **R-01 spike (parallel):** mount `<Tldraw>` in React 19 / Next 15 and stress-test drag,
+  multi-select, and undo for store tearing.
+
+Do not start section "In scope" below until these return.
+
+### The one-migration rule
+
+Every persisted-schema change needs a `version < N` block in
+`packages/tldraw/src/state/data/migrate.ts` (currently `15.3`, set at `TldrawApp.ts:3716`).
+Right now there is effectively no user data, so migrations are free; after launch each one is a
+risk.
+
+**Therefore: batch every schema change into a single version bump now, and reserve fields even
+where the UI ships later.**
+
+| Field / fix | For | UI can come later? |
+|---|---|---|
+| `TDPage.size` + document-level default | F-01 slide frame | ❌ needed immediately |
+| `TDPage.background` | Per-slide background | ✅ reserve now |
+| `TDPage.notes` | Speaker notes | ✅ reserve now |
+| `TDPage.skipInPresentation` | Skip slide when presenting | ✅ reserve now |
+| `TDShape.animation?` | F-06 animation | ✅ optional field — no migration, but define the type now |
+| `ImageShape.alt` | Accessibility | ✅ reserve now |
+| `FontStyle.Serif = 'erif'` → `'serif'` | **B-01** | ❌ needs migration — fold in here |
+| `childIndex` collisions | **B-03**, **B-04** | ❌ fold in here |
+
+### In scope this phase, by module
+
+**Tier 1 — quick wins (first week, near-zero risk)**
+
+| Work | Module / path | Effort |
+|---|---|---|
+| Change sketchy defaults (`dash: Draw → Solid`, `font: Script → Sans`) | `packages/tldraw/src/state/shapes/shared/shape-styles.ts:174-186` | XS |
+| Fix hardcoded `tldraw.com` export endpoints (**B-06**) | `apps/www/utils/export.ts`, `apps/www/pages/api/export.ts` | XS |
+| Fix example dev server (`jsxFactory`/`jsxFragment`, **E-02**) | `examples/tldraw-example/scripts/dev.mjs` | XS |
+| Rename slide from the deck panel | `packages/tldraw/src/components/DeckContextMenu/` | XS |
+
+**Tier 2 — foundation**
+
+| ID | Work | Module / path | Effort |
+|---|---|---|---|
+| **F-01** | Slide frame / artboard + the batched migration above | `state/data/migrate.ts`, `types.ts`, `state/TldrawApp.ts`, `components/Deck/Deck.tsx`, new frame renderer | L |
+| **F-02** | `ComponentShape` + `components` registry prop | new `state/shapes/ComponentUtil/`, `state/shapes/index.ts`, `types.ts`, `Tldraw.tsx`, `hooks/useTldrawApp.tsx` | M |
+| **F-04** | `insertContent()` public API (lift out of `paste`) | `state/TldrawApp.ts:1805-1877` | S |
+| — | Reorder slides (`movePage` + drag-and-drop) | new `state/commands/movePage/`, `components/Deck/Deck.tsx` | M |
+| — | Fullscreen present + auto zoom-to-fit on slide change | `components/BottomPanel/`, `state/commands/changePage/` | S |
+| — | Fix B-02, B-05, B-07, B-08, B-09, B-10 | as cited in document 1 §1.9 | S total |
+
+**Tier 3 — style & shapes (independent, parallelisable)**
+
+Opacity (S) · true line shape, **B-05** (S) · corner radius (S) · numeric X/Y/W/H inspector (S) ·
+format painter (S) · layers panel (M) · star / polygon / speech bubble (M) · arbitrary hex colour
++ picker (L) · arbitrary stroke width (M).
+Modules: `packages/tldraw/src/state/shapes/`, `components/TopPanel/StyleMenu/`.
+
+**Tier 4 — consumability prep (de-risks integration without writing any Next.js)**
+
+| Work | Module / path |
+|---|---|
+| Decide: ship transpiled JS from `dist`, or require consumers to transpile | `packages/tldraw/package.json`, the `lask` build config |
+| Widen React peer dep to `^17 \|\| ^18 \|\| ^19` (after R-01) | `packages/tldraw/package.json`, `packages/core/package.json` |
+| Add a ~20-line throwaway Vite consumer importing from `dist`, so packaging regressions surface immediately | new `examples/consumer-smoke/` |
+| Freeze and document the control contract: seed with `loadDocument` → drive imperatively → persist from `onPersist` (omitting the `id` prop disables IndexedDB) | [03-nextjs-control-api.md](03-nextjs-control-api.md) |
+
+### Suggested order
+
+```
+Week 1-2   R-01 + R-03 spikes ──▶ GATE: stay on this fork, or migrate?
+Week 2-3   Tier 1 quick wins + the single batched schema migration
+Week 3-8   F-01 · F-02 · F-04 · reorder slides · fullscreen + auto-fit · bug sweep
+Parallel   Tier 4 consumability prep
+Then       Tier 3 style & shapes, then F-05 templates
+```
+
+**Rough estimate for this phase: ~2-3 engineer-months**, excluding the two spikes and excluding
+everything deferred above.
+
 ## Reading order
 
-If you have 10 minutes, read this page and [06-feature-backlog.md](06-feature-backlog.md).
+If you have 10 minutes, read this page — the executive summary plus **Current scope decision**
+is enough to know what is being built next and where it lands.
 If you are scoping engineering work, read 2 → 3 → 4 → 5 in order, then 6.

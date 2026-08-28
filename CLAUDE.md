@@ -13,7 +13,9 @@ workspaces + Turborepo monorepo. Full onboarding docs:
 
 Product/architecture review for building an AI slide builder on this repo:
 **[reviews/README.md](reviews/README.md)** — current-state audit, style system, Next.js control
-API, custom component blocks, AI/templates/animation, and a prioritized feature backlog.
+API, custom component blocks, AI/templates/animation, and a prioritized feature backlog. Its
+**Current scope decision** section is the live plan: Next.js integration and the AI pipeline are
+deferred, work is editor-only, and each item is mapped to the module it lands in.
 
 Key things not to relearn the hard way:
 - `@tlslides/tldraw` / `@tlslides/core` are **not published to npm** — only usable by building
