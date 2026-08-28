@@ -9,7 +9,6 @@ import {
   intersectLineSegmentBounds,
   intersectLineSegmentLineSegment,
 } from '@tlslides/intersect'
-import { GHOSTED_OPACITY } from '~constants'
 import {
   getArcLength,
   getArcPoints,
@@ -19,7 +18,7 @@ import {
   isAngleBetween,
 } from './arrowHelpers'
 import { styled } from '~styles'
-import { TextLabel, getFontStyle, getShapeStyle } from '../shared'
+import { TextLabel, getFontStyle, getShapeStyle, getShapeOpacity } from '../shared'
 import { getTextLabelSize } from '../shared/getTextSize'
 import { StraightArrow } from './components/StraightArrow'
 import { CurvedArrow } from './components/CurvedArrow.tsx'
@@ -125,6 +124,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
         [onShapeChange]
       )
       const Component = isStraightLine ? StraightArrow : CurvedArrow
+      const opacity = getShapeOpacity(style, isGhost)
       return (
         <FullWrapper ref={ref} {...events}>
           <TextLabel
@@ -137,6 +137,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
             isEditing={isEditing}
             onChange={handleLabelChange}
             onBlur={onShapeBlur}
+            opacity={opacity}
           />
           <SVGContainer id={shape.id + '_svg'}>
             <defs>
@@ -162,7 +163,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
             </defs>
             <g
               pointerEvents="none"
-              opacity={isGhost ? GHOSTED_OPACITY : 1}
+              opacity={opacity}
               mask={label || isEditing ? `url(#${shape.id}_clip)` : ``}
             >
               <Component

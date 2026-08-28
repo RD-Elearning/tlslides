@@ -5,7 +5,7 @@ import { defaultTextStyle } from '../shared/shape-styles'
 import { AlignStyle, StickyShape, TDMeta, TDShapeType, TransformInfo } from '~types'
 import { getBoundsRectangle, TextAreaUtils } from '../shared'
 import { TDShapeUtil } from '../TDShapeUtil'
-import { getStickyFontStyle, getStickyShapeStyle } from '../shared/shape-styles'
+import { getStickyFontStyle, getStickyShapeStyle, getShapeOpacity } from '../shared/shape-styles'
 import { styled } from '~styles'
 import { Vec } from '@tlslides/vec'
 import { GHOSTED_OPACITY } from '~constants'
@@ -188,13 +188,19 @@ export class StickyUtil extends TDShapeUtil<T, E> {
           : `0.5px 0.5px 2px rgba(255, 255, 255,.5)`,
       }
 
+      // Opacity is set inline (via `style`, below) rather than through the `isGhost` styled-
+      // component variant on StyledStickyContainer: the variant only knows two states (ghosted /
+      // not), while `shape.style.opacity` is an arbitrary user value. Inline style wins over the
+      // class either way, so the variant is kept only for its `transition` declaration.
+      const opacity = getShapeOpacity(shape.style, isGhost)
+
       return (
         <HTMLContainer ref={ref} {...events}>
           <StyledStickyContainer
             ref={rContainer}
             isDarkMode={meta.isDarkMode}
             isGhost={isGhost}
-            style={{ backgroundColor: fill, ...style }}
+            style={{ backgroundColor: fill, opacity, ...style }}
           >
             {isBinding && (
               <div

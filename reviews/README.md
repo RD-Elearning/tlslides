@@ -231,7 +231,9 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 5 | **F-02** `ComponentShape` + `components` registry prop | ✅ done |
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen · B-07 | ✅ done |
 | 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ✅ done |
-| 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⏳ next |
+| 8a | Tier 3, data/render layer — opacity, arbitrary stroke width, corner radius (no UI yet) | ✅ done |
+| 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ⬜ pending |
+| 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
 
 #### Phase 1 notes
@@ -507,6 +509,62 @@ example builds · all five visual scenarios pass.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.
+
+#### Phase 8a notes — style expressiveness, data/render layer only
+
+Tier 3's opacity, arbitrary stroke width, and corner radius, but deliberately **data and render
+plumbing only** — no style-panel UI. That is 8b: this phase makes the fields exist, persist, and
+render correctly everywhere; a user still cannot set them from the app.
+
+- **Three new optional `ShapeStyles` fields** — `opacity?`, `strokeWidth?`, `cornerRadius?` — each
+  falls back to today's exact behaviour when absent, so **no migration and no `TldrawApp.version`
+  bump** (document version stays 16). Three helpers in `shared/shape-styles.ts` are the single
+  source of truth: `getShapeOpacity(style, isGhost)` (multiplies the persisted opacity by the
+  transient ghost-drag dim, rather than one replacing the other), `getEffectiveStrokeWidth(style)`
+  (already the one place `getShapeStyle` turns a style into a pixel stroke width, so every
+  downstream multiplier — dash spacing, hand-drawn outline thickness, arrowhead length — follows
+  an arbitrary width for free), and `clampCornerRadius(radius, size)` (degrades an over-large
+  request to a stadium/circle instead of inverted geometry).
+- **Opacity wired into every shape util.** SVG shapes (`Rectangle`, `Ellipse`, `Triangle`, `Draw`,
+  `Line`, `Arrow`, `Group`) put the opacity on an inner `<g>`, never on `<SVGContainer>` itself —
+  the one real trap here. `SVGContainer` spreads unknown props (opacity included) onto the outer,
+  *uncloned* `<svg>`, while `getSvgElement` clones the inner `<g id="{id}_svg">` for SVG export.
+  Opacity on the outer element looks correct live and then silently vanishes from an export — a
+  bug that existed in `Rectangle`/`Ellipse`/`Triangle` (each had `<SVGContainer opacity={...}>`)
+  before this phase. HTML shapes (`Sticky`, `Text`, `Image`, `Video`, `Component`) instead set
+  opacity as an inline style, since their existing `isGhost` stitches variant only knows two
+  states and an inline style wins over it anyway — the variant is kept only for its `transition`.
+  `Image`/`Video` also copy the opacity onto the fresh `<image>` element their `getSvgElement`
+  builds (there is no live node to clone there). `Component`'s SVG export stays an honest,
+  fixed-style dashed-rect placeholder — see Phase 5 — so opacity/corner-radius are deliberately
+  **not** threaded into it.
+- **A real bug, caught by looking at the screenshot, not by any test.** Feeding a large explicit
+  `cornerRadius` into the hand-drawn (`DashStyle.Draw`) rectangle's existing algorithm rendered a
+  **hexagon**, not a rounded rectangle: the algorithm trims each of the four straight edges short
+  of the corner and had always left perfect-freehand to connect the gap on its own, which reads as
+  a small, natural-looking round at the tiny implicit radius (`min(w/2, sw*2)`, a few px) but is a
+  visibly straight chord at a 100+px explicit radius. Fixed in `rectangleHelpers.ts` by generating
+  real quarter-ellipse arc points to bridge each gap whenever `cornerRadius` is explicit; the
+  default (no `cornerRadius`) path is untouched byte-for-byte. `tools/visual/scenarios/styles.js`
+  exists specifically to keep this class of bug visible going forward.
+- **`DashedRectangle.tsx`** (the solid/dashed/dotted path) switches from four independent
+  `<line>` segments (each individually dash-centered via `getPerfectDashProps`) to a single
+  `<rect rx ry>` when a corner radius is set, since rounding needs one continuous outline. The
+  trade-off: dash spacing is computed once against the straight-edge perimeter (ignoring the small
+  length the corner arcs add), so the pattern is very slightly out of phase right at a rounded
+  corner instead of perfectly centered on every straight run — judged acceptable for a cosmetic
+  feature, and documented in the code rather than silently accepted.
+- **`ComponentShape` corner radius** is applied as a CSS `border-radius` set imperatively (same
+  `useLayoutEffect` that already drives width/height from live shape size), so a host React block
+  clips to the same radius as any other shape.
+- **`TextLabel` gained an `opacity` prop**, applied as an inline style rather than fighting its own
+  pre-existing `isGhost` stitches variant (which, it turns out, was already dead code — no caller
+  had ever passed it `isGhost`).
+
+**Verified:** 72/72 suites (357 passing, up from 345; 12 new tests for the three `shape-styles.ts`
+helpers) · `build:packages` 9/9 with zero type errors · new `styles` visual scenario exits 0 with
+no console errors, and all four pre-existing scenarios (`shapes`, `line`, `frame`, `reorder`)
+re-verified with no regression — screenshots inspected, not just asserted on.
 
 ### Suggested order
 

@@ -15,12 +15,12 @@ import {
   intersectRayLineSegment,
 } from '@tlslides/intersect'
 import Vec from '@tlslides/vec'
-import { BINDING_DISTANCE, GHOSTED_OPACITY, LABEL_POINT } from '~constants'
+import { BINDING_DISTANCE, LABEL_POINT } from '~constants'
 import { getTriangleCentroid, getTrianglePoints } from './triangleHelpers'
 import { styled } from '~styles'
 import { DrawTriangle } from './components/DrawTriangle'
 import { DashedTriangle } from './components/DashedTriangle'
-import { TextLabel, getShapeStyle } from '../shared'
+import { TextLabel, getShapeStyle, getShapeOpacity } from '../shared'
 import { TriangleBindingIndicator } from './components/TriangleBindingIndicator'
 
 type T = TriangleShape
@@ -83,6 +83,7 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
         const centroid = getTriangleCentroid(size)
         return (centroid[1] - center[1]) * 0.72
       }, [size])
+      const opacity = getShapeOpacity(style, isGhost)
       return (
         <FullWrapper ref={ref} {...events}>
           <TextLabel
@@ -94,16 +95,23 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
             isEditing={isEditing}
             onChange={handleLabelChange}
             onBlur={onShapeBlur}
+            opacity={opacity}
           />
-          <SVGContainer id={shape.id + '_svg'} opacity={isGhost ? GHOSTED_OPACITY : 1}>
-            {isBinding && <TriangleBindingIndicator size={size} />}
-            <Component
-              id={id}
-              style={style}
-              size={size}
-              isSelected={isSelected}
-              isDarkMode={meta.isDarkMode}
-            />
+          {/* Opacity goes on this inner <g>, not on <SVGContainer> — see the comment in
+              RectangleUtil.tsx for why: SVGContainer spreads unknown props onto the outer,
+              uncloned <svg>, while `getSvgElement` clones the inner `<g id="..._svg">` for SVG
+              export. Opacity on the outer element would look right live but vanish on export. */}
+          <SVGContainer id={shape.id + '_svg'}>
+            <g opacity={opacity}>
+              {isBinding && <TriangleBindingIndicator size={size} />}
+              <Component
+                id={id}
+                style={style}
+                size={size}
+                isSelected={isSelected}
+                isDarkMode={meta.isDarkMode}
+              />
+            </g>
           </SVGContainer>
         </FullWrapper>
       )

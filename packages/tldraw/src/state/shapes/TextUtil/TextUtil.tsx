@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as React from 'react'
 import { Utils, HTMLContainer, TLBounds } from '@tlslides/core'
-import { defaultTextStyle, getShapeStyle, getFontStyle } from '../shared/shape-styles'
+import { defaultTextStyle, getShapeStyle, getShapeOpacity, getFontStyle } from '../shared/shape-styles'
 import { TextShape, TDMeta, TDShapeType, TransformInfo, AlignStyle } from '~types'
 import { BINDING_DISTANCE, GHOSTED_OPACITY, LETTER_SPACING } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
@@ -142,7 +142,16 @@ export class TextUtil extends TDShapeUtil<T, E> {
 
       return (
         <HTMLContainer ref={ref} {...events}>
-          <Wrapper isGhost={isGhost} isEditing={isEditing} onPointerDown={handlePointerDown}>
+          {/* Opacity is set inline rather than through the `isGhost` variant below: that variant
+              only knows two states (ghosted / not), while `style.opacity` is an arbitrary user
+              value. Inline style wins over the class regardless, so the variant is kept only for
+              its `transition` declaration. */}
+          <Wrapper
+            isGhost={isGhost}
+            isEditing={isEditing}
+            onPointerDown={handlePointerDown}
+            style={{ opacity: getShapeOpacity(style, isGhost) }}
+          >
             <InnerWrapper
               style={{
                 font,

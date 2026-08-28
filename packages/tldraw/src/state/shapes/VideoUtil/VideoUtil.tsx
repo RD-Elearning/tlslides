@@ -6,6 +6,7 @@ import { TDShapeUtil } from '../TDShapeUtil'
 import {
   defaultStyle,
   getBoundsRectangle,
+  getShapeOpacity,
   transformRectangle,
   transformSingleRectangle,
 } from '~state/shapes/shared'
@@ -108,11 +109,16 @@ export class VideoUtil extends TDShapeUtil<T, E> {
               }}
             />
           )}
+          {/* Opacity is set inline rather than through the `isGhost` variant below: that variant
+              only knows two states (ghosted / not), while `style.opacity` is an arbitrary user
+              value. Inline style wins over the class regardless, so the variant is kept only for
+              its `transition` declaration. */}
           <Wrapper
             ref={rWrapper}
             isDarkMode={meta.isDarkMode}
             isGhost={isGhost}
             isFilled={style.isFilled}
+            style={{ opacity: getShapeOpacity(style, isGhost) }}
           >
             <VideoElement
               ref={rVideo}
@@ -160,6 +166,9 @@ export class VideoUtil extends TDShapeUtil<T, E> {
     elm.setAttribute('width', `${bounds.width}`)
     elm.setAttribute('height', `${bounds.height}`)
     elm.setAttribute('xmlns:xlink', `http://www.w3.org/1999/xlink`)
+    // See the matching comment in ImageUtil.getSvgElement: this element is built fresh for
+    // export, so the user-set opacity has to be copied across explicitly.
+    elm.setAttribute('opacity', `${getShapeOpacity(shape.style)}`)
     return elm
   }
 

@@ -16,6 +16,11 @@ export interface TextLabelProps {
   offsetX?: number
   scale?: number
   isEditing?: boolean
+  /** T8a.1 — opacity. Undefined means fully opaque, matching every caller from before this field
+   * existed. Callers combine the persisted `style.opacity` and the transient ghost dim themselves
+   * (via `getShapeOpacity`) before passing this down — see the note on `TextWrapper` below for why
+   * that keeps this the single source of truth for the label's opacity. */
+  opacity?: number
 }
 
 export const TextLabel = React.memo(function TextLabel({
@@ -26,6 +31,7 @@ export const TextLabel = React.memo(function TextLabel({
   offsetY = 0,
   scale = 1,
   isEditing = false,
+  opacity,
   onBlur,
   onChange,
 }: TextLabelProps) {
@@ -101,7 +107,13 @@ export const TextLabel = React.memo(function TextLabel({
   }, [text, font, offsetY, offsetX, scale])
 
   return (
-    <TextWrapper>
+    // Opacity is applied here as an inline style rather than through the `isGhost` styled-component
+    // variant below: an inline `style` prop always wins over a class's declarations, so setting it
+    // here keeps this one numeric value as the single source of truth instead of fighting the
+    // variant for control of the same CSS property. (That `isGhost` variant is left in place as
+    // dead code — no caller has ever passed `isGhost` to this component — but if one someday does,
+    // an explicit `opacity` from a caller should still take precedence.)
+    <TextWrapper style={opacity === undefined ? undefined : { opacity }}>
       <InnerWrapper
         ref={rInnerWrapper}
         hasText={!!text}

@@ -1,5 +1,6 @@
 import { Utils } from '@tlslides/core'
 import { Theme, ColorStyle, DashStyle, ShapeStyles, SizeStyle, FontStyle, AlignStyle } from '~types'
+import { GHOSTED_OPACITY } from '~constants'
 
 const canvasLight = '#fafafa'
 
@@ -108,6 +109,34 @@ export function getStrokeWidth(size: SizeStyle): number {
   return strokeWidths[size]
 }
 
+// T8a.2 — arbitrary stroke width. This is the single place `SizeStyle` is turned into a pixel
+// stroke width for rendering. Every downstream multiplier (dash spacing, hand-drawn outline
+// thickness, arrowhead length, etc.) reads `getShapeStyle(...).strokeWidth`, so overriding it here
+// is enough to make all of them follow an arbitrary width — see the Phase 8a report for the full
+// list of call sites this affects.
+export function getEffectiveStrokeWidth(style: ShapeStyles): number {
+  return style.strokeWidth !== undefined
+    ? Math.max(0, style.strokeWidth)
+    : getStrokeWidth(style.size)
+}
+
+// T8a.1 — opacity. `style.opacity` is the persisted, user-set value (undefined = fully opaque,
+// matching every shape saved before this field existed). `isGhost` is the pre-existing transient
+// drag-preview dim (`GHOSTED_OPACITY`) — the two combine multiplicatively so a translucent shape
+// still visibly dims further while being ghosted, rather than one replacing the other.
+export function getShapeOpacity(style: ShapeStyles, isGhost?: boolean): number {
+  const base = style.opacity === undefined ? 1 : Utils.clamp(style.opacity, 0, 1)
+  return isGhost ? base * GHOSTED_OPACITY : base
+}
+
+// T8a.3 — corner radius. Shared clamp so a radius request larger than the shape can support
+// degenerates gracefully (down to a stadium/circle shape) instead of producing inverted geometry
+// (negative rect insets, self-intersecting paths). Used by both RectangleUtil (SVG) and
+// ComponentUtil (HTML, via CSS border-radius).
+export function clampCornerRadius(radius: number, size: number[]): number {
+  return Math.max(0, Math.min(radius, size[0] / 2, size[1] / 2))
+}
+
 export function getFontSize(size: SizeStyle, fontStyle: FontStyle = FontStyle.Script): number {
   return fontSizes[size] * fontSizeModifiers[fontStyle]
 }
@@ -158,9 +187,9 @@ export function getShapeStyle(
   fill: string
   strokeWidth: number
 } {
-  const { color, size, isFilled } = style
+  const { color, isFilled } = style
 
-  const strokeWidth = getStrokeWidth(size)
+  const strokeWidth = getEffectiveStrokeWidth(style)
 
   const theme: Theme = isDarkMode ? 'dark' : 'light'
 

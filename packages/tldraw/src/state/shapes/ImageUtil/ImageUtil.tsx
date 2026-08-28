@@ -6,6 +6,7 @@ import { TDShapeUtil } from '../TDShapeUtil'
 import {
   defaultStyle,
   getBoundsRectangle,
+  getShapeOpacity,
   transformRectangle,
   transformSingleRectangle,
 } from '~state/shapes/shared'
@@ -73,11 +74,16 @@ export class ImageUtil extends TDShapeUtil<T, E> {
               }}
             />
           )}
+          {/* Opacity is set inline rather than through the `isGhost` variant below: that variant
+              only knows two states (ghosted / not), while `style.opacity` is an arbitrary user
+              value. Inline style wins over the class regardless, so the variant is kept only for
+              its `transition` declaration. */}
           <Wrapper
             ref={rWrapper}
             isDarkMode={meta.isDarkMode} //
             isFilled={style.isFilled}
             isGhost={isGhost}
+            style={{ opacity: getShapeOpacity(style, isGhost) }}
           >
             <ImageElement
               id={shape.id + '_image'}
@@ -121,6 +127,10 @@ export class ImageUtil extends TDShapeUtil<T, E> {
     elm.setAttribute('width', `${bounds.width}`)
     elm.setAttribute('height', `${bounds.height}`)
     elm.setAttribute('xmlns:xlink', `http://www.w3.org/1999/xlink`)
+    // This element is built fresh for export (unlike the SVG shapes, there is no live "_svg" node
+    // to clone), so the user-set opacity has to be copied across explicitly or it is silently
+    // dropped. `isGhost` never applies here — export never runs mid-drag.
+    elm.setAttribute('opacity', `${getShapeOpacity(shape.style)}`)
     return elm
   }
 }

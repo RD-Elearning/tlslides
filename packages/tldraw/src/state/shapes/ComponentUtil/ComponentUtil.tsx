@@ -4,8 +4,10 @@ import { ComponentShape, TDMeta, TDShapeType } from '~types'
 import { GHOSTED_OPACITY } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
 import {
+  clampCornerRadius,
   defaultStyle,
   getBoundsRectangle,
+  getShapeOpacity,
   transformRectangle,
   transformSingleRectangle,
 } from '~state/shapes/shared'
@@ -57,7 +59,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, isGhost, isBinding, meta, events }, ref) => {
       const registry = useTldrawComponents()
-      const { size, componentId, props } = shape
+      const { size, style, componentId, props } = shape
 
       const rWrapper = React.useRef<HTMLDivElement>(null)
 
@@ -67,7 +69,15 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
         const [width, height] = size
         wrapper.style.width = `${width}px`
         wrapper.style.height = `${height}px`
-      }, [size])
+        // Corner radius is applied imperatively here (like width/height above) rather than
+        // through stitches, since it depends on the shape's live size, not just its style.
+        // `clampCornerRadius` degrades a too-large request to a stadium/circle instead of
+        // producing an invalid negative CSS value.
+        wrapper.style.borderRadius =
+          style.cornerRadius === undefined
+            ? '3px' // Wrapper's default, kept as the pre-8a fallback.
+            : `${clampCornerRadius(style.cornerRadius, size)}px`
+      }, [size, style.cornerRadius])
 
       const Registered = registry[componentId]
 
@@ -103,7 +113,16 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             from inside a single shape; host authors should portal overlays to `document.body` or
             avoid them inside a block.
           */}
-          <Wrapper ref={rWrapper} isGhost={isGhost} isDarkMode={meta.isDarkMode}>
+          {/* Opacity is set inline rather than through the `isGhost` variant below: that variant
+              only knows two states (ghosted / not), while `style.opacity` is an arbitrary user
+              value. Inline style wins over the class regardless, so the variant is kept only for
+              its `transition` declaration. */}
+          <Wrapper
+            ref={rWrapper}
+            isGhost={isGhost}
+            isDarkMode={meta.isDarkMode}
+            style={{ opacity: getShapeOpacity(style, isGhost) }}
+          >
             <BlockErrorBoundary componentId={componentId}>
               {Registered ? (
                 <Registered {...props} />

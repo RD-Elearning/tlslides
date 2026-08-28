@@ -1,11 +1,13 @@
 import * as React from 'react'
 import { Utils, SVGContainer } from '@tlslides/core'
 import { RectangleShape, DashStyle, TDShapeType, TDMeta } from '~types'
-import { GHOSTED_OPACITY, LABEL_POINT } from '~constants'
+import { LABEL_POINT } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
 import {
   defaultStyle,
   getShapeStyle,
+  getShapeOpacity,
+  clampCornerRadius,
   getBoundsRectangle,
   transformRectangle,
   getFontStyle,
@@ -73,6 +75,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
         (label: string) => onShapeChange?.({ id, label }),
         [onShapeChange]
       )
+      const opacity = getShapeOpacity(style, isGhost)
       return (
         <FullWrapper ref={ref} {...events}>
           <TextLabel
@@ -84,16 +87,23 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
             color={styles.stroke}
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
+            opacity={opacity}
           />
-          <SVGContainer id={shape.id + '_svg'} opacity={isGhost ? GHOSTED_OPACITY : 1}>
-            {isBinding && <BindingIndicator strokeWidth={styles.strokeWidth} size={size} />}
-            <Component
-              id={id}
-              style={style}
-              size={size}
-              isSelected={isSelected}
-              isDarkMode={meta.isDarkMode}
-            />
+          {/* Opacity is applied to this inner <g>, not to <SVGContainer> itself: SVGContainer
+              spreads unknown props (including `opacity`) onto the outer, uncloned <svg>, while
+              `getSvgElement` clones the inner `<g id="..._svg">` for SVG export. Opacity set on
+              the outer element would look right live but silently vanish on export. */}
+          <SVGContainer id={shape.id + '_svg'}>
+            <g opacity={opacity}>
+              {isBinding && <BindingIndicator strokeWidth={styles.strokeWidth} size={size} />}
+              <Component
+                id={id}
+                style={style}
+                size={size}
+                isSelected={isSelected}
+                isDarkMode={meta.isDarkMode}
+              />
+            </g>
           </SVGContainer>
         </FullWrapper>
       )
@@ -110,16 +120,12 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
       return <path d={getRectangleIndicatorPathTDSnapshot(id, style, size)} />
     }
 
-    return (
-      <rect
-        x={sw}
-        y={sw}
-        rx={1}
-        ry={1}
-        width={Math.max(1, size[0] - sw * 2)}
-        height={Math.max(1, size[1] - sw * 2)}
-      />
-    )
+    const width = Math.max(1, size[0] - sw * 2)
+    const height = Math.max(1, size[1] - sw * 2)
+    const cornerRadius =
+      style.cornerRadius !== undefined ? clampCornerRadius(style.cornerRadius, [width, height]) : 1
+
+    return <rect x={sw} y={sw} rx={cornerRadius} ry={cornerRadius} width={width} height={height} />
   })
 
   getBounds = (shape: T) => {

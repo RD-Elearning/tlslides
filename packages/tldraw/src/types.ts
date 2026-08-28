@@ -521,6 +521,15 @@ export type ShapeStyles = {
   textAlign?: AlignStyle
   isFilled?: boolean
   scale?: number
+  // Phase 8a — style expressiveness. All three are optional overrides: a document (or a shape)
+  // that lacks them falls back to today's behavior (fully opaque, size-enum-derived stroke width,
+  // the existing hardcoded corner radius), so no migration is needed for document version 16.
+  /** 0–1. Undefined means fully opaque, matching every shape drawn before this field existed. */
+  opacity?: number
+  /** Pixel width. When set, overrides the width derived from `size`. */
+  strokeWidth?: number
+  /** Pixel radius, currently consumed by Rectangle and ComponentShape only. */
+  cornerRadius?: number
 }
 
 export enum TDAssetType {

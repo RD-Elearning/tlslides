@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { Utils, SVGContainer, TLBounds } from '@tlslides/core'
 import { Vec } from '@tlslides/vec'
-import { defaultStyle, getShapeStyle, getFontStyle } from '~state/shapes/shared'
+import { defaultStyle, getShapeStyle, getShapeOpacity, getFontStyle } from '~state/shapes/shared'
 import { EllipseShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
-import { GHOSTED_OPACITY, LABEL_POINT } from '~constants'
+import { LABEL_POINT } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
 import {
   intersectEllipseBounds,
@@ -76,6 +76,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
         (label: string) => onShapeChange?.({ id, label }),
         [onShapeChange]
       )
+      const opacity = getShapeOpacity(style, isGhost)
       return (
         <FullWrapper ref={ref} {...events}>
           <TextLabel
@@ -87,25 +88,32 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
             color={styles.stroke}
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
+            opacity={opacity}
           />
-          <SVGContainer id={shape.id + '_svg'} opacity={isGhost ? GHOSTED_OPACITY : 1}>
-            {isBinding && (
-              <ellipse
-                className="tl-binding-indicator"
-                cx={radius[0]}
-                cy={radius[1]}
-                rx={rx}
-                ry={ry}
-                strokeWidth={this.bindingDistance}
+          {/* Opacity goes on this inner <g>, not on <SVGContainer> — see the comment in
+              RectangleUtil.tsx for why: SVGContainer spreads unknown props onto the outer,
+              uncloned <svg>, while `getSvgElement` clones the inner `<g id="..._svg">` for SVG
+              export. Opacity on the outer element would look right live but vanish on export. */}
+          <SVGContainer id={shape.id + '_svg'}>
+            <g opacity={opacity}>
+              {isBinding && (
+                <ellipse
+                  className="tl-binding-indicator"
+                  cx={radius[0]}
+                  cy={radius[1]}
+                  rx={rx}
+                  ry={ry}
+                  strokeWidth={this.bindingDistance}
+                />
+              )}
+              <Component
+                id={id}
+                radius={radius}
+                style={style}
+                isSelected={isSelected}
+                isDarkMode={meta.isDarkMode}
               />
-            )}
-            <Component
-              id={id}
-              radius={radius}
-              style={style}
-              isSelected={isSelected}
-              isDarkMode={meta.isDarkMode}
-            />
+            </g>
           </SVGContainer>
         </FullWrapper>
       )

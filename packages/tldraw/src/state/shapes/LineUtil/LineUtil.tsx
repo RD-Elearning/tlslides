@@ -2,10 +2,9 @@ import * as React from 'react'
 import { Utils, TLBounds, SVGContainer } from '@tlslides/core'
 import { Vec } from '@tlslides/vec'
 import { intersectLineSegmentBounds, intersectLineSegmentLineSegment } from '@tlslides/intersect'
-import { defaultStyle, getShapeStyle } from '../shared/shape-styles'
+import { defaultStyle, getShapeStyle, getShapeOpacity } from '../shared/shape-styles'
 import { LineShape, TransformInfo, TDShapeType, DashStyle, TDMeta, ShapeStyles } from '~types'
 import { TDShapeUtil } from '../TDShapeUtil'
-import { GHOSTED_OPACITY } from '~constants'
 import { renderFreehandArrowShaft } from '../ArrowUtil/arrowHelpers'
 import { styled } from '~styles'
 
@@ -68,7 +67,7 @@ export class LineUtil extends TDShapeUtil<T, E> {
     return (
       <FullWrapper ref={ref} {...events}>
         <SVGContainer id={shape.id + '_svg'}>
-          <g pointerEvents="none" opacity={isGhost ? GHOSTED_OPACITY : 1}>
+          <g pointerEvents="none" opacity={getShapeOpacity(style, isGhost)}>
             <LineShaft
               id={id}
               style={style}

@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Utils, SVGContainer, TLBounds } from '@tlslides/core'
 import { Vec } from '@tlslides/vec'
-import { defaultStyle, getShapeStyle } from '../shared/shape-styles'
+import { defaultStyle, getShapeStyle, getShapeOpacity } from '../shared/shape-styles'
 import { DrawShape, DashStyle, TDShapeType, TransformInfo, TDMeta } from '~types'
 import { TDShapeUtil } from '../TDShapeUtil'
 import {
@@ -15,8 +15,6 @@ import {
   getFillPath,
   getSolidStrokePathTDSnapshot,
 } from './drawHelpers'
-import { GHOSTED_OPACITY } from '~constants'
-
 type T = DrawShape
 type E = SVGSVGElement
 
@@ -67,6 +65,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
 
       const styles = getShapeStyle(style, meta.isDarkMode)
       const { stroke, fill, strokeWidth } = styles
+      const opacity = getShapeOpacity(style, isGhost)
 
       // For very short lines, draw a point instead of a line
       const bounds = this.getBounds(shape)
@@ -83,7 +82,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
               fill={stroke}
               stroke={stroke}
               pointerEvents="all"
-              opacity={isGhost ? GHOSTED_OPACITY : 1}
+              opacity={opacity}
             />
           </SVGContainer>
         )
@@ -97,7 +96,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
       if (shape.style.dash === DashStyle.Draw) {
         return (
           <SVGContainer ref={ref} id={shape.id + '_svg'} {...events}>
-            <g opacity={isGhost ? GHOSTED_OPACITY : 1}>
+            <g opacity={opacity}>
               <path
                 className={shouldFill || isSelected ? 'tl-fill-hitarea' : 'tl-stroke-hitarea'}
                 d={pathTDSnapshot}
@@ -146,7 +145,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
 
       return (
         <SVGContainer ref={ref} id={shape.id + '_svg'} {...events}>
-          <g opacity={isGhost ? GHOSTED_OPACITY : 1}>
+          <g opacity={opacity}>
             <path
               className={shouldFill && isSelected ? 'tl-fill-hitarea' : 'tl-stroke-hitarea'}
               d={pathTDSnapshot}

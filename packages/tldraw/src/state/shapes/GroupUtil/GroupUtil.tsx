@@ -1,9 +1,8 @@
 import * as React from 'react'
 import { styled } from '~styles'
 import { Utils, SVGContainer } from '@tlslides/core'
-import { defaultStyle } from '../shared/shape-styles'
+import { defaultStyle, getShapeOpacity } from '../shared/shape-styles'
 import { TDShapeType, GroupShape, ColorStyle, TDMeta } from '~types'
-import { GHOSTED_OPACITY } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
 import { getBoundsRectangle } from '../shared'
 
@@ -35,7 +34,7 @@ export class GroupUtil extends TDShapeUtil<T, E> {
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, isBinding, isGhost, isHovered, isSelected, events }, ref) => {
-      const { id, size } = shape
+      const { id, size, style } = shape
 
       const sw = 2
       const w = Math.max(0, size[0] - sw / 2)
@@ -57,7 +56,7 @@ export class GroupUtil extends TDShapeUtil<T, E> {
           {isBinding && (
             <rect className="tl-binding-indicator" strokeWidth={this.bindingDistance} />
           )}
-          <g opacity={isGhost ? GHOSTED_OPACITY : 1}>
+          <g opacity={getShapeOpacity(style, isGhost)}>
             <rect
               x={0}
               y={0}
