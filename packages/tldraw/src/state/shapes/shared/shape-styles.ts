@@ -175,12 +175,12 @@ export const defaultStyle: ShapeStyles = {
   color: ColorStyle.Black,
   size: SizeStyle.Small,
   isFilled: false,
-  dash: DashStyle.Draw,
+  dash: DashStyle.Solid,
   scale: 1,
 }
 
 export const defaultTextStyle: ShapeStyles = {
   ...defaultStyle,
-  font: FontStyle.Script,
+  font: FontStyle.Sans,
   textAlign: AlignStyle.Middle,
 }

@@ -13,8 +13,8 @@ Object {
   "rotation": 0,
   "style": Object {
     "color": "black",
-    "dash": "draw",
-    "font": "script",
+    "dash": "solid",
+    "font": "sans",
     "isFilled": false,
     "scale": 1,
     "size": "small",

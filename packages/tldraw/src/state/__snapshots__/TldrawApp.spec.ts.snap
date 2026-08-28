@@ -117,7 +117,7 @@ Array [
                 ],
                 "style": Object {
                   "color": "black",
-                  "dash": "draw",
+                  "dash": "solid",
                   "isFilled": false,
                   "scale": 1,
                   "size": "small",
@@ -183,7 +183,7 @@ Array [
                 ],
                 "style": Object {
                   "color": "black",
-                  "dash": "draw",
+                  "dash": "solid",
                   "isFilled": false,
                   "scale": 1,
                   "size": "small",

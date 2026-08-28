@@ -20,10 +20,15 @@ function runMiddleware(
   })
 }
 
-const FRONTEND_URL =
-  process.env.NODE_ENV === 'development'
-    ? 'http://localhost:3000/?exportMode'
-    : 'https://www.tldraw.com/?exportMode'
+// This is the URL the headless browser navigates to in order to render a slide for export. It
+// must resolve to this app's own frontend, never to tldraw.com. Prefer an explicit
+// NEXT_PUBLIC_BASE_URL, then Vercel's auto-provided VERCEL_URL (which comes without a scheme, so
+// we prefix it), and finally localhost as a last resort for local development.
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL ??
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+
+const FRONTEND_URL = `${BASE_URL}/?exportMode`
 
 declare global {
   interface Window {

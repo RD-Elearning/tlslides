@@ -42,6 +42,12 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur, page }: InnerContextMe
     app.duplicatePage(page.id)
   }, [app])
 
+  // TODO: Replace with text input
+  const handleRename = React.useCallback(() => {
+    const nextName = window.prompt('New name:', page.name)
+    app.renamePage(page.id, nextName || page.name || 'Page')
+  }, [app, page])
+
   const rContent = React.useRef<HTMLDivElement>(null)
 
   return (
@@ -55,6 +61,9 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur, page }: InnerContextMe
       className={theme === 'dark' ? dark : ''}
     >
       <MenuContent id="TD-ContextMenu">
+        <CMRowButton onClick={handleRename} id="TD-Deck-ContextMenu-Rename">
+          Rename
+        </CMRowButton>
         <CMRowButton onClick={handleDuplicate} id="TD-Deck-ContextMenu-Duplicate">
           Duplicate
         </CMRowButton>

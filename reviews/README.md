@@ -213,6 +213,70 @@ Modules: `packages/tldraw/src/state/shapes/`, `components/TopPanel/StyleMenu/`.
 | Add a ~20-line throwaway Vite consumer importing from `dist`, so packaging regressions surface immediately | new `examples/consumer-smoke/` |
 | Freeze and document the control contract: seed with `loadDocument` → drive imperatively → persist from `onPersist` (omitting the `id` prop disables IndexedDB) | [03-nextjs-control-api.md](03-nextjs-control-api.md) |
 
+### Implementation progress
+
+Live status of the editor-only phase. Updated after every phase; each phase is committed
+separately so work can be resumed later.
+
+**Harness:** a Next.js 15 / React 19 sample app under `examples/nextjs-sample/` doubles as the
+R-01 compatibility spike and as the surface for headless browser testing. Playwright (1.61.1,
+headless Chromium) is reused from a sibling checkout rather than installed here.
+
+| Phase | Contents | Status |
+|---|---|---|
+| 1 | Tier 1 quick wins — solid/sans defaults, B-06 endpoints, example dev server, deck rename | ✅ done |
+| 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ⏳ next |
+| 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04 | ⬜ pending |
+| 4 | **F-01** slide frame / artboard | ⬜ pending |
+| 5 | **F-02** `ComponentShape` + `components` registry prop | ⬜ pending |
+| 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen + auto zoom-to-fit | ⬜ pending |
+| 7 | Bug sweep — B-02, B-05, B-07, B-08, B-09, B-10 | ⬜ pending |
+| 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⬜ pending |
+| 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
+
+#### Phase 1 notes
+
+- **Defaults changed** in `packages/tldraw/src/state/shapes/shared/shape-styles.ts`:
+  `dash: Draw → Solid`, `font: Script → Sans`. 10 snapshot files regenerated; every diff was a
+  literal `"draw"` → `"solid"` / `"script"` → `"sans"` swap, no geometry changed. Verified in a
+  real browser, not only by snapshot — see `tools/visual/shots/shapes.png`.
+- **B-06 fixed.** `apps/www` no longer references `tldraw.com`. New env vars:
+  `NEXT_PUBLIC_EXPORT_ENDPOINT` (defaults to the same-origin `/api/export`) and
+  `NEXT_PUBLIC_BASE_URL` (falls back to `VERCEL_URL`, then localhost).
+- **E-02 was deeper than "a missing `jsxFactory`".** Three separate faults stacked up in
+  `examples/tldraw-example`, and only the last one is visible without a browser:
+  1. `dev.mjs` lacked `jsxFactory`/`jsxFragment` (the reported bug).
+  2. esbuild's default loader for `.js`/`.mjs` is plain JS, so it refused to parse the
+     JSX-shipping `dist` bundles at all → `loader: { '.js': 'jsx', '.mjs': 'jsx' }`.
+  3. **`tsconfig.base.json` sets `"jsx": "preserve"`.** esbuild honours the nearest tsconfig for
+     *every* input file — including files under `packages/*/dist` — and preserve beats
+     `jsxFactory`. So the build reported success while emitting raw JSX, and the page died at
+     runtime with `Unexpected token '<'`. Fixed with a dedicated `tsconfig.build.json`
+     (`"jsx": "react"`) passed explicitly to esbuild. The `jsx` build option would be the tidier
+     fix but does not exist in esbuild 0.14.
+  `scripts/build.mjs` had faults 2 and 3 too and was fixed identically.
+- **Deck rename** reuses `window.prompt`, matching the existing flow in `PageOptionsDialog.tsx`
+  (which carries the same `// TODO: Replace with text input`). The pinned Radix 0.1.x predates
+  reliable dialog-inside-context-menu composition. **Debt:** a real inline text input is wanted
+  before this is a shippable product surface.
+- **Jest was broken before this phase started** — all 63 suites failed. pnpm resolved
+  `@swc-node/register` 1.12 and `@swc/core` 1.16 (far newer than the `^1.4.3` the repo intends),
+  and modern `@swc/core` emits `require("@swc/helpers/_/…")` while the transitively-installed
+  `@swc/helpers` is 0.4.11, which predates that subpath layout. Fixed by declaring
+  `@swc/helpers: ^0.5.15` directly in `packages/tldraw` and passing `{ module: 'commonjs' }` to
+  the `@swc-node/jest` transform. No other package declares `@swc/helpers`, so `apps/www` keeps
+  its own 0.4.11 via Next 12.
+- **New: `tools/visual/`** — a headless Playwright harness. Jest cannot catch a canvas that
+  renders nothing; fault 3 above passed all 63 suites. Playwright is not added as a dependency
+  (it would pull a browser download into a 2021 dependency tree); the harness reuses an existing
+  installation and honours `PLAYWRIGHT_PATH`.
+
+**Verified:** 63/63 jest suites, 17/17 snapshots · `turbo run build:packages` 9/9 · eslint clean
+on touched files (2 pre-existing warnings) · example app renders and draws in headless Chromium.
+
+**Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
+decision spike, not implementation work, and is not tracked here.
+
 ### Suggested order
 
 ```

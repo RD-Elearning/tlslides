@@ -19,7 +19,14 @@ async function main() {
       target: 'es6',
       jsxFactory: 'React.createElement',
       jsxFragment: 'React.Fragment',
-      tsconfig: './tsconfig.json',
+      // tsconfig.build.json exists only to override tsconfig.base.json's
+      // "jsx": "preserve", which esbuild honours over jsxFactory/jsxFragment and
+      // which would otherwise leave raw JSX in the bundle.
+      tsconfig: './tsconfig.build.json',
+      // The @tlslides/tldraw and @tlslides/core dist bundles ship un-transpiled JSX in their
+      // .js/.mjs output (see guides/architecture.md); esbuild's default loader for those
+      // extensions is plain JS, so it must be told to parse them as JSX too.
+      loader: { '.js': 'jsx', '.mjs': 'jsx' },
       define: {
         'process.env.NODE_ENV': '"production"',
         'process.env.LIVEBLOCKS_PUBLIC_API_KEY': `"${process.env.LIVEBLOCKS_PUBLIC_API_KEY}"`,

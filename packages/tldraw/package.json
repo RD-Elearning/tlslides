@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@swc-node/jest": "^1.4.3",
+    "@swc/helpers": "^0.5.15",
     "@testing-library/jest-dom": "^5.16.2",
     "@testing-library/react": "^12.1.2",
     "@tlslides/core": "*",
@@ -83,7 +84,10 @@
       "<rootDir>/../../setupTests.ts"
     ],
     "transform": {
-      "^.+\\.(tsx|jsx|ts|js|mjs)?$": "@swc-node/jest"
+      "^.+\\.(tsx|jsx|ts|js|mjs)?$": [
+        "@swc-node/jest",
+        { "module": "commonjs" }
+      ]
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
     "moduleFileExtensions": [

@@ -1,9 +1,9 @@
 import { TDExport } from '@tlslides/tldraw'
 
-export const EXPORT_ENDPOINT =
-  process.env.NODE_ENV === 'development'
-    ? 'http://localhost:3000/api/export'
-    : 'https://www.tldraw.com/api/export'
+// NEXT_PUBLIC_EXPORT_ENDPOINT lets deployments point exports at a different host (e.g. a
+// dedicated export service). If unset, we fall back to a same-origin relative path, which works
+// correctly in both development and production without ever pointing at tldraw.com.
+export const EXPORT_ENDPOINT = process.env.NEXT_PUBLIC_EXPORT_ENDPOINT ?? '/api/export'
 
 export async function exportToImage(info: TDExport) {
   if (info.serialized) {
