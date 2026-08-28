@@ -30,7 +30,8 @@ if (!name) {
 }
 
 const base = flag('base', 'http://localhost:5431')
-const outDir = path.resolve(flag('out', 'tools/visual/shots'))
+// Resolved against this script, not the caller's cwd, so the harness works from any directory.
+const outDir = path.resolve(flag('out', path.join(__dirname, 'shots')))
 const width = Number(flag('width', 1440))
 const height = Number(flag('height', 900))
 

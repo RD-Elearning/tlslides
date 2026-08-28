@@ -148,7 +148,12 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
     'esc',
     (e) => {
       if (!canHandleEvent(true) || !app.settings.isPresentationMode) return
-      app.togglePresentationMode()
+      // `exitPresentationMode`, not `togglePresentationMode`: the browser may also be exiting
+      // fullscreen on its own in response to the same Escape press, which resyncs state via the
+      // `fullscreenchange` listener in Tldraw.tsx. Using the idempotent "turn off" here means
+      // whichever of the two runs first wins and the other is a no-op, instead of the second one
+      // toggling presentation mode back on.
+      app.exitPresentationMode()
       e.preventDefault()
     },
     undefined,

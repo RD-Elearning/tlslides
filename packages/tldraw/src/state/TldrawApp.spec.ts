@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { mockDocument, TldrawTestApp } from '~test'
-import { ArrowShape, ColorStyle, SessionType, TDShapeType } from '~types'
+import { ArrowShape, ColorStyle, DashStyle, SessionType, SizeStyle, TDAssetType, TDShapeType } from '~types'
 import { deepCopy } from './StateManager/copy'
 import type { SelectTool } from './tools/SelectTool'
 
@@ -44,7 +44,48 @@ describe('TldrawTestApp', () => {
       expect(Object.keys(app.page.shapes).length).toBe(1)
     })
 
-    it.todo('Copies and pastes a shape with an asset')
+    it('Copies and pastes a shape with an asset, and undo removes both', () => {
+      const docWithAsset = deepCopy(mockDocument)
+      docWithAsset.assets.asset1 = {
+        id: 'asset1',
+        type: TDAssetType.Image,
+        src: 'img.png',
+        size: [100, 100],
+      }
+      docWithAsset.pages.page1.shapes.image1 = {
+        id: 'image1',
+        parentId: 'page1',
+        name: 'Image',
+        childIndex: 4,
+        type: TDShapeType.Image,
+        point: [0, 0],
+        size: [100, 100],
+        assetId: 'asset1',
+        rotation: 0,
+        style: {
+          dash: DashStyle.Draw,
+          size: SizeStyle.Medium,
+          color: ColorStyle.Blue,
+        },
+      }
+
+      const app = new TldrawTestApp().loadDocument(docWithAsset)
+      const idsBeforePaste = new Set(app.shapes.map((s) => s.id))
+
+      app.select('image1').copy().paste()
+
+      expect(Object.keys(app.document.assets)).toEqual(['asset1'])
+
+      const newImage = app.shapes.find((shape) => !idsBeforePaste.has(shape.id))
+      expect(newImage).toBeTruthy()
+      expect(newImage!.type).toBe(TDShapeType.Image)
+
+      app.undo()
+
+      expect(app.shapes.map((s) => s.id).sort()).toEqual([...idsBeforePaste].sort())
+      // The pasted shape referenced an asset that already existed, so undo must not remove it.
+      expect(Object.keys(app.document.assets)).toEqual(['asset1'])
+    })
 
     it('Copies grouped shapes.', () => {
       const app = new TldrawTestApp()
@@ -130,6 +171,110 @@ describe('TldrawTestApp', () => {
       const newArrow = app.shapes.sort((a, b) => b.childIndex - a.childIndex)[0] as ArrowShape
 
       expect(newArrow.handles.start.bindingId).toBeUndefined()
+    })
+  })
+
+  describe('insertContent', () => {
+    it('inserts a shape into an empty page', () => {
+      const app = new TldrawTestApp()
+      const emptyDoc = deepCopy(mockDocument)
+      emptyDoc.pages.page1.shapes = {}
+      app.loadDocument(emptyDoc)
+
+      expect(app.shapes.length).toBe(0)
+
+      app.insertContent({ shapes: [{ ...mockDocument.pages.page1.shapes.rect1 }] })
+
+      expect(app.shapes.length).toBe(1)
+    })
+
+    it('inserts the same content twice without id collisions', () => {
+      const app = new TldrawTestApp().loadDocument(mockDocument)
+      const before = app.shapes.length
+
+      const content = { shapes: [{ ...mockDocument.pages.page1.shapes.rect1 }] }
+      app.insertContent(content)
+      app.insertContent(content)
+
+      expect(app.shapes.length).toBe(before + 2)
+      const ids = app.shapes.map((shape) => shape.id)
+      expect(new Set(ids).size).toBe(ids.length)
+    })
+
+    it('remaps bindings and rewrites handle references', () => {
+      const app = new TldrawTestApp()
+
+      app
+        .createShapes(
+          { type: TDShapeType.Rectangle, id: 'target1', point: [0, 0], size: [100, 100] },
+          { type: TDShapeType.Arrow, id: 'arrow1', point: [200, 200] }
+        )
+        .select('arrow1')
+        .movePointer([200, 200])
+        .startSession(SessionType.Arrow, 'arrow1', 'start')
+        .movePointer([55, 55])
+        .completeSession()
+
+      const { shapes, bindings } = app.document.pages[app.currentPageId]
+      const contentShapes = [shapes['target1'], shapes['arrow1']]
+      const contentBindings = Object.values(bindings)
+
+      const beforeIds = new Set(app.shapes.map((s) => s.id))
+
+      app.insertContent({ shapes: deepCopy(contentShapes), bindings: deepCopy(contentBindings) })
+
+      expect(app.bindings.length).toBe(2)
+
+      const newArrow = app.shapes.find(
+        (shape) => shape.type === TDShapeType.Arrow && !beforeIds.has(shape.id)
+      ) as ArrowShape
+      expect(newArrow).toBeTruthy()
+      expect(newArrow.handles.start.bindingId).toBeDefined()
+      expect(newArrow.handles.start.bindingId).not.toBe(
+        app.getShape<ArrowShape>('arrow1').handles.start.bindingId
+      )
+    })
+
+    it('undoing removes exactly what was inserted', () => {
+      const app = new TldrawTestApp().loadDocument(mockDocument)
+      const shapeIdsBefore = new Set(app.shapes.map((s) => s.id))
+
+      app.insertContent({
+        shapes: [
+          { ...mockDocument.pages.page1.shapes.rect1 },
+          { ...mockDocument.pages.page1.shapes.rect2 },
+        ],
+      })
+
+      expect(app.shapes.length).toBe(shapeIdsBefore.size + 2)
+
+      app.undo()
+
+      expect(app.shapes.map((s) => s.id).sort()).toEqual([...shapeIdsBefore].sort())
+
+      app.redo()
+
+      expect(app.shapes.length).toBe(shapeIdsBefore.size + 2)
+    })
+
+    it('places content at its own authored coordinates when center is false', () => {
+      const app = new TldrawTestApp().loadDocument(mockDocument)
+      const original = app.getShape('rect1')
+      const idsBefore = new Set(app.shapes.map((s) => s.id))
+
+      app.insertContent({ shapes: [{ ...original }] }, { center: false })
+
+      const inserted = app.shapes.find((shape) => !idsBefore.has(shape.id))!
+      expect(inserted.point).toEqual(original.point)
+    })
+
+    it('does nothing when there are no shapes to insert', () => {
+      const app = new TldrawTestApp().loadDocument(mockDocument)
+      const before = app.state
+
+      app.insertContent({ shapes: [] })
+
+      expect(app.state).toEqual(before)
     })
   })
 

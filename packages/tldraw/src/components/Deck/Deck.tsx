@@ -65,6 +65,54 @@ export const Deck = React.memo(function Deck(): JSX.Element {
 
   const sortedPages = app.useStore(sortedSelector)
 
+  // Drag-and-drop reordering. Plain HTML5 DnD (no dependency): `dragPageId` is the slide being
+  // dragged, `dropIndex` is where it would land if dropped now, expressed as an insertion index
+  // into `sortedPages` *as currently rendered* (i.e. including the dragged slide itself — 0 means
+  // "before the first slide", `sortedPages.length` means "after the last slide"). This gets
+  // converted to `movePage`'s post-removal index in `handleDrop`.
+  const [dragPageId, setDragPageId] = React.useState<string | null>(null)
+  const [dropIndex, setDropIndex] = React.useState<number | null>(null)
+
+  const handleDragStart = React.useCallback((pageId: string, e: React.DragEvent) => {
+    // Firefox requires data to be set for a drag to start at all.
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', pageId)
+    setDragPageId(pageId)
+  }, [])
+
+  const handleDragOver = React.useCallback((index: number, e: React.DragEvent) => {
+    if (!dragPageId) return
+    // Without this, the browser rejects the drop entirely.
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const rect = e.currentTarget.getBoundingClientRect()
+    const isBelowMidpoint = e.clientY - rect.top > rect.height / 2
+    setDropIndex(index + (isBelowMidpoint ? 1 : 0))
+  }, [dragPageId])
+
+  const handleDrop = React.useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      if (dragPageId && dropIndex !== null) {
+        const fromIndex = sortedPages.findIndex((page) => page.id === dragPageId)
+        // `dropIndex` was computed against the array that still includes the dragged slide;
+        // `movePage` expects an index into the array with it already removed.
+        const toIndex = dropIndex > fromIndex ? dropIndex - 1 : dropIndex
+        if (toIndex !== fromIndex) {
+          app.movePage(dragPageId, toIndex)
+        }
+      }
+      setDragPageId(null)
+      setDropIndex(null)
+    },
+    [app, dragPageId, dropIndex, sortedPages]
+  )
+
+  const handleDragEnd = React.useCallback(() => {
+    setDragPageId(null)
+    setDropIndex(null)
+  }, [])
+
   return (
     <StyledDeckContainer>
       <StyledCenterWrap id="TD-Deck">
@@ -74,16 +122,33 @@ export const Deck = React.memo(function Deck(): JSX.Element {
           <StyledScrollArea>
             <StyledViewport>
               <StyledSlideStripContainer>
-                {sortedPages.map((page) => (
+                {sortedPages.map((page, index) => (
                   // Slide Strip
-                  <StyledSlideContainer key={page.id} style={{ height: getSlideHeight(page) }}>
-                    <StyledSlideContainerInner active={page.id === app.currentPageId}>
-                      <DeckContextMenu page={page}>
-                        <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
-                      </DeckContextMenu>
-                    </StyledSlideContainerInner>
-                  </StyledSlideContainer>
+                  <React.Fragment key={page.id}>
+                    {dropIndex === index && <StyledDropIndicator data-drop-indicator="" />}
+                    <StyledSlideContainer
+                      style={{ height: getSlideHeight(page) }}
+                      draggable
+                      data-page-id={page.id}
+                      data-dragging={page.id === dragPageId || undefined}
+                      onDragStart={(e) => handleDragStart(page.id, e)}
+                      onDragOver={(e) => handleDragOver(index, e)}
+                      onDrop={handleDrop}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <StyledSlideContainerInner active={page.id === app.currentPageId}>
+                        <DeckContextMenu
+                          page={page}
+                          index={index}
+                          count={sortedPages.length}
+                        >
+                          <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                        </DeckContextMenu>
+                      </StyledSlideContainerInner>
+                    </StyledSlideContainer>
+                  </React.Fragment>
                 ))}
+                {dropIndex === sortedPages.length && <StyledDropIndicator data-drop-indicator="" />}
                 <StyledSlideContainer
                   style={{
                     height:
@@ -179,6 +244,19 @@ const StyledSlideContainer = styled('div', {
   // DECK_SLIDE_WIDTH (what getSlideHeight and boringPageState assume the rendered canvas width
   // to be).
   boxSizing: 'border-box',
+
+  '&[data-dragging]': {
+    opacity: 0.4,
+  },
+})
+
+// A thin highlighted bar shown between two slides while dragging, marking where the dragged
+// slide would land if dropped now.
+const StyledDropIndicator = styled('div', {
+  height: 3,
+  margin: `0 ${DECK_SLIDE_PADDING_X}px`,
+  borderRadius: '$1',
+  background: '$selected',
 })
 
 const StyledAddPage = styled(StyledSlideContainerInner, {

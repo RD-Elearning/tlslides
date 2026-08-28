@@ -229,8 +229,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12, B-13 | ✅ done |
 | 4 | **F-01** slide frame / artboard | ✅ done |
 | 5 | **F-02** `ComponentShape` + `components` registry prop | ✅ done |
-| 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen | ⏳ next |
-| 7 | Bug sweep — B-02, B-05, B-07, B-08, B-09, B-10 | ⬜ pending |
+| 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen · B-07 | ✅ done |
+| 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ⏳ next |
 | 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
 
@@ -430,6 +430,43 @@ at. A deck is opened to be looked at, so it now fits, guarded the same way `chan
 
 **Verified:** 67/67 suites (306 passing, up from 296) · `build:packages` 9/9 · `next build` clean ·
 `blocks` scenario exits 0, screenshot inspected.
+
+#### Phase 6 notes
+
+**`insertContent()` (F-04).** The id-remapping core is out of `paste`'s local closure and public:
+`insertContent(content, opts)`, where `center` (default true) places the content's bounding box at
+a point, and `center: false` keeps its authored coordinates — which is what templates need.
+`paste` now delegates to it and keeps only its own "fan out repeated pastes" bookkeeping. The
+refactor closed a latent bug: `paste` patched `document.assets` with a bare `patchState`, bypassing
+the undo stack, so undoing a paste left its asset behind. It is one command now.
+
+**Reorder (`movePage`).** `movePage(pageId, toIndex)` takes the target position in the deck's final
+order, which is what both drag-and-drop and "move up/down" want, and renumbers every `childIndex`
+to a clean `1..N` rather than inserting fractionally — so repeated moves cannot drift into a
+float collision. The deck gained native HTML5 drag-and-drop (no dependency) with a drop indicator,
+plus Move Up / Move Down in the context menu as the non-drag path. Dragging works over the live
+thumbnails because `.tl-canvas` inside them is already `pointer-events: none`.
+
+**Fullscreen + B-07.** Presenting now requests fullscreen, with the rejection swallowed so
+presentation mode works regardless — the API needs a user gesture, is absent in some browsers, and
+is blocked in cross-origin iframes. A `fullscreenchange` listener resyncs when the user leaves with
+Esc, and a separate idempotent `exitPresentationMode()` avoids the double-toggle race between the
+browser's Esc and ours. **B-07 is fixed by making `readOnly` derived** —
+`get readOnly() { return this._readOnly || this.settings.isPresentationMode }` — so the prop and
+presentation mode can no longer stomp each other in either write order, and a reload that restores
+`isPresentationMode: true` is read-only again instead of editable.
+
+**Caught in review: only `changePage` auto-fitted.** `createPage`, `duplicatePage` and
+`deletePage` all switch the current page by writing `currentPageId` directly, so creating a slide
+left the camera at 100% with the frame off-screen — visible in the first reorder screenshot. All
+five entry points (including `loadDocument`) now go through one `fitCurrentPage()` helper.
+
+Fullscreen cannot be exercised headlessly and is not claimed to be. What is tested: the calls are
+made at the right times against stubbed APIs, a rejected request leaves no inconsistent state, the
+absence of the API degrades gracefully, and a real `fullscreenchange` event resyncs the component.
+
+**Verified:** 70/70 suites (335 passing, up from 306) · `build:packages` 9/9 · all four visual
+scenarios pass — `reorder` reports `[A,B,C] → [B,C,A]` with the drop indicator visible mid-drag.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

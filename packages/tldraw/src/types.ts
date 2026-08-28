@@ -534,6 +534,36 @@ export type TDAsset = TDImageAsset | TDVideoAsset
 export type TDAssets = Record<string, TDAsset>
 
 /* -------------------------------------------------- */
+/*                   Insert content                   */
+/* -------------------------------------------------- */
+
+// A bundle of shapes (and the bindings/assets they reference) to add to the current page in one
+// go, e.g. from the clipboard, a template (F-05), or AI-generated slide content. Ids are
+// remapped on insertion — see `TldrawApp.insertContent` — so the same content can be inserted
+// more than once without colliding with itself or with the document.
+export interface TDInsertableContent {
+  shapes: TDShape[]
+  bindings?: TDBinding[]
+  assets?: TDAsset[]
+}
+
+export interface TDInsertContentOpts {
+  /**
+   * Where to place the center of the content's bounding box, in page space. Ignored when
+   * `center` is `false`. Defaults to the center of the current viewport.
+   */
+  point?: number[]
+  /** Whether to select the inserted shapes afterward. Defaults to `true`. */
+  select?: boolean
+  /**
+   * Whether to reposition the content at all. When `false`, shapes are inserted at their own
+   * authored coordinates and `point` is ignored — use this for templates, whose slot positions
+   * are meaningful relative to the slide frame. Defaults to `true`.
+   */
+  center?: boolean
+}
+
+/* -------------------------------------------------- */
 /*                    Export                          */
 /* -------------------------------------------------- */
 

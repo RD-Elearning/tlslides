@@ -42,6 +42,8 @@ import {
   TDExport,
   ImageShape,
   ArrowShape,
+  TDInsertableContent,
+  TDInsertContentOpts,
 } from '~types'
 import {
   migrate,
@@ -189,7 +191,21 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   session?: TldrawSession
 
-  readOnly = false
+  // The `readOnly` prop (Tldraw.tsx) and presentation mode (`togglePresentationMode`) both need
+  // to force the editor read-only, and neither is aware of the other (B-07). Rather than have
+  // both write the same field — which can leave `readOnly` out of sync with
+  // `settings.isPresentationMode` depending on write order, and does not recover if
+  // `isPresentationMode` is restored from persisted state on reload — `readOnly` is derived: true
+  // if either is true. `_readOnly` holds only the explicit (prop-driven) half.
+  private _readOnly = false
+
+  get readOnly(): boolean {
+    return this._readOnly || this.settings.isPresentationMode
+  }
+
+  set readOnly(readOnly: boolean) {
+    this._readOnly = readOnly
+  }
 
   isDirty = false
 
@@ -991,23 +1007,102 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
-   * Toggle presentation mode.
+   * Toggle presentation mode. Entering requests fullscreen; leaving exits it. Both are
+   * best-effort: the Fullscreen API needs a user gesture and isn't available everywhere (see
+   * `requestFullscreen`/`exitFullscreen`), so presentation mode itself always toggles regardless
+   * of whether fullscreen succeeds.
    */
   togglePresentationMode = (): this => {
     if (this.session) return this
+    const isEntering = !this.settings.isPresentationMode
     this.selectNoneAllPages()
     this.patchState(
       {
         settings: {
-          isPresentationMode: !this.settings.isPresentationMode,
-          isFocusMode: !this.settings.isPresentationMode,
+          isPresentationMode: isEntering,
+          isFocusMode: isEntering,
         },
       },
       `settings:toggled_presentation_mode`
     )
-    this.readOnly = this.settings.isPresentationMode
     this.persist()
+    if (isEntering) {
+      this.requestFullscreen()
+    } else {
+      this.exitFullscreen()
+    }
     return this
+  }
+
+  /**
+   * Leave presentation mode, if it's currently on; otherwise a no-op. Unlike
+   * `togglePresentationMode`, this never turns presentation mode *on* — which makes it safe to
+   * call from places that only ever want to make sure it's off and must not race a toggle
+   * happening at the same time: the Escape shortcut (which the browser may also be reacting to
+   * by exiting fullscreen on its own) and the `fullscreenchange` listener that resyncs state
+   * after the user leaves fullscreen outside of our code (Esc, F11, a mobile gesture). Both can
+   * fire for the same user action; if either already turned presentation mode off, the other is
+   * a no-op instead of toggling it back on.
+   */
+  exitPresentationMode = (): this => {
+    if (!this.settings.isPresentationMode) return this
+    this.patchState(
+      {
+        settings: {
+          isPresentationMode: false,
+          isFocusMode: false,
+        },
+      },
+      `settings:toggled_presentation_mode`
+    )
+    this.persist()
+    this.exitFullscreen()
+    return this
+  }
+
+  /**
+   * Request fullscreen for the presentation surface, best-effort. The Fullscreen API requires a
+   * user gesture (a request made programmatically, e.g. from a test or a non-click callback, is
+   * rejected), is unavailable or vendor-prefixed in some browsers, and is blocked in cross-origin
+   * iframes. All of that is expected and must not throw or leave a dangling unhandled rejection —
+   * presentation mode itself works fine without fullscreen, just without the browser chrome
+   * hidden.
+   */
+  private requestFullscreen = () => {
+    if (typeof document === 'undefined') return
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void
+    }
+    const request = el.requestFullscreen?.bind(el) ?? el.webkitRequestFullscreen?.bind(el)
+    if (!request) return
+    try {
+      Promise.resolve(request()).catch(() => {
+        // No user gesture, unsupported, or blocked (e.g. cross-origin iframe).
+      })
+    } catch {
+      // Some vendor-prefixed implementations throw synchronously instead of rejecting.
+    }
+  }
+
+  /**
+   * Exit fullscreen, best-effort, and only if the document is currently in it.
+   */
+  private exitFullscreen = () => {
+    if (typeof document === 'undefined') return
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => Promise<void> | void
+      webkitFullscreenElement?: Element | null
+    }
+    if (!doc.fullscreenElement && !doc.webkitFullscreenElement) return
+    const exit = doc.exitFullscreen?.bind(doc) ?? doc.webkitExitFullscreen?.bind(doc)
+    if (!exit) return
+    try {
+      Promise.resolve(exit()).catch(() => {
+        // Nothing sensible to do if the browser refuses to exit fullscreen.
+      })
+    } catch {
+      // ignore
+    }
   }
 
   /**
@@ -1421,10 +1516,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
     // Fit the loaded slide rather than restoring whatever camera the document was saved at. A
     // deck is opened to be looked at, so landing on the slide is the useful default; the saved
-    // per-page pan/zoom is an artefact users do not think about. Guarded the same way as
-    // `changePage`, so a load that happens before the renderer has reported its bounds is
-    // picked up by the fit in `updateBounds` instead.
-    if (this.hasKnownViewport) this.zoomToFit()
+    // per-page pan/zoom is an artefact users do not think about. A load that happens before the
+    // renderer has reported its bounds is picked up by the fit in `updateBounds` instead.
+    this.fitCurrentPage()
     return this
   }
 
@@ -1697,7 +1791,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   createPage = (id?: string): this => {
     if (this.readOnly) return this
     const { width, height } = this.rendererBounds
-    return this.setState(Commands.createPage(this, [-width / 2, -height / 2], id))
+    this.setState(Commands.createPage(this, [-width / 2, -height / 2], id))
+    this.fitCurrentPage()
+    return this
   }
 
   /**
@@ -1714,8 +1810,18 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    */
   changePage = (pageId: string): this => {
     this.setState(Commands.changePage(this, pageId))
-    if (this.hasKnownViewport) this.zoomToFit()
+    this.fitCurrentPage()
     return this
+  }
+
+  /**
+   * Fit the camera to the current slide's frame. Called wherever the current page changes, so a
+   * slide is always arrived at framed rather than at whatever camera it was left with. Skipped
+   * until the renderer has reported real bounds at least once (see `hasKnownViewport`), so it is
+   * a no-op for a `TldrawApp` that was never mounted.
+   */
+  private fitCurrentPage = (): void => {
+    if (this.hasKnownViewport) this.zoomToFit()
   }
 
   /**
@@ -1769,7 +1875,25 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    */
   duplicatePage = (pageId: string): this => {
     if (this.readOnly) return this
-    return this.setState(Commands.duplicatePage(this, pageId))
+    this.setState(Commands.duplicatePage(this, pageId))
+    this.fitCurrentPage()
+    return this
+  }
+
+  /**
+   * Move a page to a new position in the deck.
+   * @param pageId The id of the page to move.
+   * @param toIndex The page's target zero-based position in the deck's final order — the same
+   * semantics as removing the page and calling `Array.prototype.splice(toIndex, 0, page)` on
+   * what's left. See `Commands.movePage` for why an index (rather than e.g. swapping with a
+   * neighbor) is the shape of this API: it's the natural input for both a drag-and-drop deck
+   * panel (drop before slide N) and a "move up"/"move down" menu item (`currentIndex ± 1`), and
+   * it composes for a multi-slide move without ambiguity the way repeated swaps would not.
+   */
+  movePage = (pageId: string, toIndex: number): this => {
+    if (this.readOnly) return this
+    if (!this.document.pages[pageId]) return this
+    return this.setState(Commands.movePage(this, pageId, toIndex))
   }
 
   /**
@@ -1779,7 +1903,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   deletePage = (pageId?: string): this => {
     if (this.readOnly) return this
     if (Object.values(this.document.pages).length <= 1) return this
-    return this.setState(Commands.deletePage(this, pageId ? pageId : this.currentPageId))
+    this.setState(Commands.deletePage(this, pageId ? pageId : this.currentPageId))
+    this.fitCurrentPage()
+    return this
   }
 
   /* -------------------------------------------------- */
@@ -1847,56 +1973,109 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * Insert a bundle of shapes (and optional bindings/assets) into the current page, remapping
+   * ids so nothing collides with existing content. This is the id-remapping core that `paste`
+   * uses internally, lifted out so templates (F-05) and AI-generated slide content can reach it
+   * too — both need to add a whole slide's worth of shapes at once, the same way paste does.
+   *
+   * Id remapping: every shape and binding gets a fresh id, and `parentId`/`children`/handle
+   * `bindingId` references are rewritten to match. Asset ids are deliberately *not* remapped —
+   * if an asset with the same id already exists in the document, it's assumed to be the same
+   * asset and reused rather than duplicated (matching the original `paste` behavior of never
+   * duplicating an already-present asset); only genuinely new asset ids are added.
+   *
+   * Placement: by default the content's bounding box is centered at `opts.point` (or the current
+   * viewport center if `point` is omitted), same as `paste`. Pass `center: false` to keep the
+   * content's own authored coordinates instead — this is what a template applier should do,
+   * since a template's slot positions are meaningful relative to the slide frame.
+   *
+   * The whole insert (shapes, bindings, new assets, and the resulting selection) is a single
+   * undoable command.
+   */
+  insertContent = (content: TDInsertableContent, opts: TDInsertContentOpts = {}): this => {
+    if (this.readOnly) return this
+
+    const { shapes, bindings = [], assets = [] } = content
+    if (shapes.length === 0) return this
+
+    const { point, select = true, center = true } = opts
+
+    const idsMap: Record<string, string> = {}
+    shapes.forEach((shape) => (idsMap[shape.id] = Utils.uniqueId()))
+    bindings.forEach((binding) => (idsMap[binding.id] = Utils.uniqueId()))
+
+    let startIndex = TLDR.getTopChildIndex(this.state, this.currentPageId)
+
+    const shapesToInsert = shapes
+      .sort((a, b) => a.childIndex - b.childIndex)
+      .map((shape) => {
+        const parentShapeId = idsMap[shape.parentId]
+        const copy = {
+          ...shape,
+          id: idsMap[shape.id],
+          parentId: parentShapeId || this.currentPageId,
+        }
+        if (shape.children) {
+          copy.children = shape.children.map((id) => idsMap[id])
+        }
+        if (!parentShapeId) {
+          copy.childIndex = startIndex
+          startIndex++
+        }
+        if (copy.handles) {
+          Object.values(copy.handles).forEach((handle) => {
+            if (handle.bindingId) {
+              handle.bindingId = idsMap[handle.bindingId]
+            }
+          })
+        }
+        return copy
+      })
+
+    const bindingsToInsert = bindings.map((binding) => ({
+      ...binding,
+      id: idsMap[binding.id],
+      toId: idsMap[binding.toId],
+      fromId: idsMap[binding.fromId],
+    }))
+
+    const newAssets = assets.filter((asset) => this.document.assets[asset.id] === undefined)
+
+    let delta = [0, 0]
+    if (center) {
+      const commonBounds = Utils.getCommonBounds(shapesToInsert.map(TLDR.getBounds))
+      const targetPoint = Vec.toFixed(this.getPagePoint(point ?? this.centerPoint))
+      const centeredBounds = Utils.centerBounds(commonBounds, targetPoint)
+      delta = Vec.sub(Utils.getBoundsCenter(centeredBounds), Utils.getBoundsCenter(commonBounds))
+    }
+
+    const finalShapes = shapesToInsert.map((shape) =>
+      TLDR.getShapeUtil(shape.type).create({
+        ...shape,
+        point: Vec.toFixed(Vec.add(shape.point, delta)),
+        parentId: shape.parentId,
+      })
+    )
+
+    return this.setState(
+      Commands.insertContent(this, finalShapes, bindingsToInsert, newAssets, select)
+    )
+  }
+
+  /**
    * Paste shapes (or text) from clipboard to a certain point.
    * @param point
    */
   paste = (point?: number[]) => {
     if (this.readOnly) return
     const pasteInCurrentPage = (shapes: TDShape[], bindings: TDBinding[], assets: TDAsset[]) => {
-      const idsMap: Record<string, string> = {}
-      const newAssets = assets.filter((asset) => this.document.assets[asset.id] === undefined)
-      if (newAssets.length) {
-        this.patchState({
-          document: {
-            assets: Object.fromEntries(newAssets.map((asset) => [asset.id, asset])),
-          },
-        })
-      }
-      shapes.forEach((shape) => (idsMap[shape.id] = Utils.uniqueId()))
-      bindings.forEach((binding) => (idsMap[binding.id] = Utils.uniqueId()))
-      let startIndex = TLDR.getTopChildIndex(this.state, this.currentPageId)
-      const shapesToPaste = shapes
-        .sort((a, b) => a.childIndex - b.childIndex)
-        .map((shape) => {
-          const parentShapeId = idsMap[shape.parentId]
-          const copy = {
-            ...shape,
-            id: idsMap[shape.id],
-            parentId: parentShapeId || this.currentPageId,
-          }
-          if (shape.children) {
-            copy.children = shape.children.map((id) => idsMap[id])
-          }
-          if (!parentShapeId) {
-            copy.childIndex = startIndex
-            startIndex++
-          }
-          if (copy.handles) {
-            Object.values(copy.handles).forEach((handle) => {
-              if (handle.bindingId) {
-                handle.bindingId = idsMap[handle.bindingId]
-              }
-            })
-          }
-          return copy
-        })
-      const bindingsToPaste = bindings.map((binding) => ({
-        ...binding,
-        id: idsMap[binding.id],
-        toId: idsMap[binding.toId],
-        fromId: idsMap[binding.fromId],
-      }))
-      const commonBounds = Utils.getCommonBounds(shapesToPaste.map(TLDR.getBounds))
+      if (shapes.length === 0) return
+      // Repeated pastes at (roughly) the same spot fan out with a small offset instead of
+      // stacking exactly on top of each other; a paste at an explicit point, or the first paste
+      // at a new spot, lands exactly there. This bookkeeping is paste-specific UX (it depends on
+      // `pasteInfo`, mutable state that only makes sense for repeated interactive pastes) and
+      // deliberately isn't part of `insertContent`, which other callers use statelessly.
+      const commonBounds = Utils.getCommonBounds(shapes.map(TLDR.getBounds))
       let center = Vec.toFixed(this.getPagePoint(point || this.centerPoint))
       if (
         Vec.dist(center, this.pasteInfo.center) < 2 ||
@@ -1908,21 +2087,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         this.pasteInfo.center = center
         this.pasteInfo.offset = [0, 0]
       }
-      const centeredBounds = Utils.centerBounds(commonBounds, center)
-      const delta = Vec.sub(
-        Utils.getBoundsCenter(centeredBounds),
-        Utils.getBoundsCenter(commonBounds)
-      )
-      this.create(
-        shapesToPaste.map((shape) =>
-          TLDR.getShapeUtil(shape.type).create({
-            ...shape,
-            point: Vec.toFixed(Vec.add(shape.point, delta)),
-            parentId: shape.parentId || this.currentPageId,
-          })
-        ),
-        bindingsToPaste
-      )
+      this.insertContent({ shapes, bindings, assets }, { point: center })
     }
 
     if (!('clipboard' in navigator && navigator.clipboard.readText)) {

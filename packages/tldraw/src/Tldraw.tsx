@@ -249,6 +249,26 @@ export function Tldraw({
     app.readOnly = readOnly
   }, [app, readOnly])
 
+  // Keep presentation mode in sync with the browser's actual fullscreen state. The user can
+  // leave fullscreen without going through `togglePresentationMode` at all — Esc (handled
+  // natively by the browser, independent of our own Escape shortcut), F11, a mobile gesture, or
+  // another tab taking fullscreen — so this is the source of truth for "did we actually leave
+  // fullscreen", not just a mirror of our own toggle calls. `exitPresentationMode` is idempotent
+  // (a no-op if presentation mode is already off), so this can't race the Escape shortcut into
+  // toggling presentation mode back on.
+  React.useEffect(() => {
+    // `document` here is the `TDDocument` prop, not the DOM global — reach it via `window`.
+    if (typeof window === 'undefined') return
+    const doc = window.document
+    const handleFullscreenChange = () => {
+      if (!doc.fullscreenElement) {
+        app.exitPresentationMode()
+      }
+    }
+    doc.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => doc.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [app])
+
   // Update the app's callbacks when any callback changes.
   React.useEffect(() => {
     app.callbacks = {

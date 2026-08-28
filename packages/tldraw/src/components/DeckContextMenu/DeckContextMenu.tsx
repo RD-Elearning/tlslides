@@ -14,13 +14,23 @@ interface ContextMenuProps {
   onBlur?: React.FocusEventHandler
   children: React.ReactNode
   page: TDPage
+  /** The page's zero-based position among its siblings, sorted by childIndex. */
+  index: number
+  /** The total number of pages in the deck. */
+  count: number
 }
 
-export const DeckContextMenu = ({ onBlur, page, children }: ContextMenuProps): JSX.Element => {
+export const DeckContextMenu = ({
+  onBlur,
+  page,
+  index,
+  count,
+  children,
+}: ContextMenuProps): JSX.Element => {
   return (
     <RadixContextMenu.Root dir="ltr">
       <RadixContextMenu.Trigger dir="ltr">{children}</RadixContextMenu.Trigger>
-      <InnerMenu onBlur={onBlur} page={page} />
+      <InnerMenu onBlur={onBlur} page={page} index={index} count={count} />
     </RadixContextMenu.Root>
   )
 }
@@ -28,9 +38,16 @@ export const DeckContextMenu = ({ onBlur, page, children }: ContextMenuProps): J
 interface InnerContextMenuProps {
   onBlur?: React.FocusEventHandler
   page: TDPage
+  index: number
+  count: number
 }
 
-const InnerMenu = React.memo(function InnerMenu({ onBlur, page }: InnerContextMenuProps) {
+const InnerMenu = React.memo(function InnerMenu({
+  onBlur,
+  page,
+  index,
+  count,
+}: InnerContextMenuProps) {
   const app = useTldrawApp()
   const { theme } = useTheme()
 
@@ -47,6 +64,16 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur, page }: InnerContextMe
     const nextName = window.prompt('New name:', page.name)
     app.renamePage(page.id, nextName || page.name || 'Page')
   }, [app, page])
+
+  // Reordering reachable without dragging (see the deck panel's drag-and-drop) — keyboard/screen
+  // reader users and anyone who'd rather not drag a live canvas thumbnail can use these instead.
+  const handleMoveUp = React.useCallback(() => {
+    app.movePage(page.id, index - 1)
+  }, [app, page, index])
+
+  const handleMoveDown = React.useCallback(() => {
+    app.movePage(page.id, index + 1)
+  }, [app, page, index])
 
   const rContent = React.useRef<HTMLDivElement>(null)
 
@@ -66,6 +93,20 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur, page }: InnerContextMe
         </CMRowButton>
         <CMRowButton onClick={handleDuplicate} id="TD-Deck-ContextMenu-Duplicate">
           Duplicate
+        </CMRowButton>
+        <CMRowButton
+          onClick={handleMoveUp}
+          disabled={index === 0}
+          id="TD-Deck-ContextMenu-MoveUp"
+        >
+          Move Up
+        </CMRowButton>
+        <CMRowButton
+          onClick={handleMoveDown}
+          disabled={index === count - 1}
+          id="TD-Deck-ContextMenu-MoveDown"
+        >
+          Move Down
         </CMRowButton>
         <CMRowButton onClick={handleDelete} id="TD-Deck-ContextMenu-Delete">
           Delete
