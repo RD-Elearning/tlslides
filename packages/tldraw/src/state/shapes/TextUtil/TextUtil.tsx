@@ -2,7 +2,7 @@
 import * as React from 'react'
 import { Utils, HTMLContainer, TLBounds } from '@tlslides/core'
 import { defaultTextStyle, getShapeStyle, getShapeOpacity, getFontStyle } from '../shared/shape-styles'
-import { TextShape, TDMeta, TDShapeType, TransformInfo, AlignStyle } from '~types'
+import { TextShape, TDMeta, TDShapeType, TransformInfo, AlignStyle, DeckTheme } from '~types'
 import { BINDING_DISTANCE, GHOSTED_OPACITY, LETTER_SPACING } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
 import { styled } from '~styles'
@@ -51,7 +51,7 @@ export class TextUtil extends TDShapeUtil<T, E> {
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, isBinding, isGhost, isEditing, onShapeBlur, onShapeChange, meta, events }, ref) => {
       const { text, style } = shape
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
       const font = getFontStyle(shape.style)
       const rInput = React.useRef<HTMLTextAreaElement>(null)
       const rIsMounted = React.useRef(false)
@@ -312,10 +312,10 @@ export class TextUtil extends TDShapeUtil<T, E> {
     }
   }
 
-  getSvgElement = (shape: T): SVGElement | void => {
+  getSvgElement = (shape: T, deckTheme?: DeckTheme): SVGElement | void => {
     const bounds = this.getBounds(shape)
     const elm = getTextSvgElement(shape.text, shape.style, bounds)
-    elm.setAttribute('fill', getShapeStyle(shape.style).stroke)
+    elm.setAttribute('fill', getShapeStyle(shape.style, false, undefined, deckTheme).stroke)
     return elm
   }
 }

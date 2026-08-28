@@ -2,6 +2,7 @@ import { CopyIcon, PlusIcon } from '@radix-ui/react-icons'
 import { TLPageState } from '@tlslides/core'
 import * as React from 'react'
 import { DeckContextMenu } from '~components/DeckContextMenu'
+import { TemplatePicker } from './TemplatePicker'
 import { TrashIcon } from '~components/Primitives/icons'
 import { Panel } from '~components/Primitives/Panel'
 import { RowButton } from '~components/Primitives/RowButton'
@@ -34,10 +35,6 @@ function getSlideHeight(page: TDPage): number {
 
 export const Deck = React.memo(function Deck(): JSX.Element {
   const app = useTldrawApp()
-
-  const handleCreatePage = React.useCallback(() => {
-    app.createPage()
-  }, [app])
 
   const handleDuplicatePage = React.useCallback(() => {
     app.duplicatePage(app.currentPageId)
@@ -157,12 +154,11 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                   }}
                 >
                   <StyledAddPage>
-                    <IconButton
-                      onClick={handleCreatePage}
-                      css={{ height: '100%', width: '100%', borderRadius: 'inherit' }}
-                    >
-                      <PlusIcon />
-                    </IconButton>
+                    <TemplatePicker>
+                      <IconButton css={{ height: '100%', width: '100%', borderRadius: 'inherit' }}>
+                        <PlusIcon />
+                      </IconButton>
+                    </TemplatePicker>
                   </StyledAddPage>
                 </StyledSlideContainer>
               </StyledSlideStripContainer>

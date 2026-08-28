@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Utils } from '@tlslides/core'
 import { BINDING_DISTANCE } from '~constants'
-import type { ShapeStyles } from '~types'
+import type { DeckTheme, ShapeStyles } from '~types'
 import { getShapeStyle, clampCornerRadius } from '~state/shapes/shared'
 
 interface RectangleSvgProps {
@@ -10,6 +10,7 @@ interface RectangleSvgProps {
   isSelected: boolean
   size: number[]
   isDarkMode: boolean
+  deckTheme?: DeckTheme
 }
 
 export const DashedRectangle = React.memo(function DashedRectangle({
@@ -18,8 +19,9 @@ export const DashedRectangle = React.memo(function DashedRectangle({
   size,
   isSelected,
   isDarkMode,
+  deckTheme,
 }: RectangleSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id, deckTheme)
 
   const sw = 1 + strokeWidth * 1.618
 

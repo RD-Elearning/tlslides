@@ -70,7 +70,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
     ) => {
       const { id, size, style, label = '', labelPoint = LABEL_POINT } = shape
       const font = getFontStyle(style)
-      const styles = getShapeStyle(style, meta.isDarkMode, id)
+      const styles = getShapeStyle(style, meta.isDarkMode, id, meta.deckTheme)
       const Component = style.dash === DashStyle.Draw ? DrawRectangle : DashedRectangle
       const handleLabelChange = React.useCallback(
         (label: string) => onShapeChange?.({ id, label }),
@@ -106,6 +106,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
                 size={size}
                 isSelected={isSelected}
                 isDarkMode={meta.isDarkMode}
+                deckTheme={meta.deckTheme}
               />
             </g>
           </SVGContainer>

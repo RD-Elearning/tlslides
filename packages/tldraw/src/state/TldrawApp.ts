@@ -45,6 +45,8 @@ import {
   TDInsertableContent,
   TDInsertContentOpts,
   SlideBackground,
+  DeckTheme,
+  Template,
 } from '~types'
 import {
   migrate,
@@ -62,6 +64,8 @@ import { TLDR } from './TLDR'
 import { shapeUtils } from '~state/shapes'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { resolveSlideBackground, appendBackgroundDefs } from '~state/shapes/shared/background'
+import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
+import { getTemplate } from '~state/templates'
 import * as Commands from './commands'
 import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
@@ -1884,6 +1888,39 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * Set (or clear) the deck's active theme — a named brand palette, font pairing, and default
+   * shape style (Phase 12). Document-scoped: this restyles every shape/background whose
+   * `stroke`/`fill`/`fillGradient`/background colour is a theme token (`'theme:accent1'`, see
+   * `deck-theme.ts`), across every slide, in one undoable step. See `BUILT_IN_DECK_THEMES` for the
+   * shipped palettes, or pass a host's own custom `DeckTheme` — it doesn't need to be in that list.
+   * @param theme The new theme, or `undefined` to clear it back to no active theme (every token
+   * then falls back to the `color` enum, exactly as if it had never been set).
+   */
+  setDeckTheme = (theme: DeckTheme | undefined): this => {
+    if (this.readOnly) return this
+    return this.setState(Commands.setDeckTheme(this, theme))
+  }
+
+  /**
+   * Add a new slide built from a template (Phase 13), filling in any matching `content[slot]`
+   * values, and switch to it — the template-driven counterpart to `createPage`. See
+   * `BUILT_IN_TEMPLATES` (`state/templates.ts`) for the starter pack, or pass a host's own
+   * `Template` object directly — like `DeckTheme`, it doesn't need to be a built-in.
+   * @param template Either a `Template` object, or the `id` of one of `BUILT_IN_TEMPLATES`. An
+   * unknown id is a no-op (no page is created) rather than a thrown error, matching this app's
+   * existing convention for a bad id elsewhere (e.g. `deletePage`).
+   * @param content Maps a template's `slot` names to replacement text — see `TDBaseShape.slot`.
+   */
+  addSlideFromTemplate = (template: Template | string, content?: Record<string, string>): this => {
+    if (this.readOnly) return this
+    const resolved = typeof template === 'string' ? getTemplate(template) : template
+    if (!resolved) return this
+    this.setState(Commands.addSlideFromTemplate(this, resolved, content))
+    this.fitCurrentPage()
+    return this
+  }
+
+  /**
    * Duplicate a page.
    * @param pageId The id of the page to duplicate.
    */
@@ -2193,7 +2230,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       const resolvedBackground = resolveSlideBackground(
         this.getPage(pageId).background,
         pageId,
-        this.document.assets
+        this.document.assets,
+        activeDeckTheme(this.document.theme)
       )
       if (resolvedBackground) {
         const fill = appendBackgroundDefs(defs, resolvedBackground)
@@ -2210,7 +2248,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const getSvgElementForShape = (shape: TDShape) => {
       const util = TLDR.getShapeUtil(shape)
       const bounds = util.getBounds(shape)
-      const elm = util.getSvgElement(shape)
+      const elm = util.getSvgElement(shape, activeDeckTheme(this.document.theme))
       if (!elm) return
 
       // If the element is an image, set the asset src as the xlinkhref

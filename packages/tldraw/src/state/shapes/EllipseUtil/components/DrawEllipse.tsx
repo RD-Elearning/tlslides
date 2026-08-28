@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { ShapeStyles } from '~types'
+import type { DeckTheme, ShapeStyles } from '~types'
 import { getEllipseIndicatorPath, getEllipsePath } from '../ellipseHelpers'
 
 interface EllipseSvgProps {
@@ -9,6 +9,7 @@ interface EllipseSvgProps {
   style: ShapeStyles
   isSelected: boolean
   isDarkMode: boolean
+  deckTheme?: DeckTheme
 }
 
 export const DrawEllipse = React.memo(function DrawEllipse({
@@ -17,8 +18,9 @@ export const DrawEllipse = React.memo(function DrawEllipse({
   style,
   isSelected,
   isDarkMode,
+  deckTheme,
 }: EllipseSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id, deckTheme)
   const innerPath = getEllipsePath(id, radius, style)
 
   return (

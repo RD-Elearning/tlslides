@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { ShapeStyles } from '~types'
+import type { DeckTheme, ShapeStyles } from '~types'
 import { getRectangleIndicatorPathTDSnapshot, getRectanglePath } from '../rectangleHelpers'
 
 interface RectangleSvgProps {
@@ -8,6 +8,7 @@ interface RectangleSvgProps {
   style: ShapeStyles
   isSelected: boolean
   isDarkMode: boolean
+  deckTheme?: DeckTheme
   size: number[]
 }
 
@@ -17,9 +18,10 @@ export const DrawRectangle = React.memo(function DrawRectangle({
   size,
   isSelected,
   isDarkMode,
+  deckTheme,
 }: RectangleSvgProps) {
   const { isFilled } = style
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id, deckTheme)
   const pathTDSnapshot = getRectanglePath(id, style, size)
   const innerPath = getRectangleIndicatorPathTDSnapshot(id, style, size)
 

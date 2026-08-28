@@ -3,7 +3,7 @@ import { Utils, TLBounds, SVGContainer } from '@tlslides/core'
 import { Vec } from '@tlslides/vec'
 import { intersectLineSegmentBounds, intersectLineSegmentLineSegment } from '@tlslides/intersect'
 import { defaultStyle, getShapeStyle, getShapeOpacity } from '../shared/shape-styles'
-import { LineShape, TransformInfo, TDShapeType, DashStyle, TDMeta, ShapeStyles } from '~types'
+import { LineShape, TransformInfo, TDShapeType, DashStyle, TDMeta, ShapeStyles, DeckTheme } from '~types'
 import { TDShapeUtil } from '../TDShapeUtil'
 import { renderFreehandArrowShaft } from '../ArrowUtil/arrowHelpers'
 import { styled } from '~styles'
@@ -75,6 +75,7 @@ export class LineUtil extends TDShapeUtil<T, E> {
               end={end.point}
               isDraw={style.dash === DashStyle.Draw}
               isDarkMode={meta.isDarkMode}
+              deckTheme={meta.deckTheme}
             />
           </g>
         </SVGContainer>
@@ -213,6 +214,7 @@ const LineShaft = React.memo(function LineShaft({
   end,
   isDraw,
   isDarkMode,
+  deckTheme,
 }: {
   id: string
   style: ShapeStyles
@@ -220,10 +222,11 @@ const LineShaft = React.memo(function LineShaft({
   end: number[]
   isDraw: boolean
   isDarkMode: boolean
+  deckTheme?: DeckTheme
 }) {
   const dist = Vec.dist(start, end)
   if (dist < 2) return null
-  const styles = getShapeStyle(style, isDarkMode)
+  const styles = getShapeStyle(style, isDarkMode, undefined, deckTheme)
   const { strokeWidth } = styles
   const sw = 1 + strokeWidth * 1.618
   const path = isDraw

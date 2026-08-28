@@ -1,5 +1,13 @@
 import type { TLBackgroundFill } from '@tlslides/core'
-import type { SlideBackground, ShapeGradientFill, TDGradientStop, TDAssets } from '~types'
+import type { SlideBackground, ShapeGradientFill, TDGradientStop, TDAssets, DeckTheme } from '~types'
+import { resolveThemeColor } from './deck-theme'
+
+// T12.1 — a background has no `color` enum to fall back to the way `getShapeStyle` does, so an
+// unresolved token here (no active theme, or an unknown key) degrades to this neutral grey rather
+// than an invalid SVG paint value (`fill="theme:accent1"` would render as black in most browsers,
+// silently, which is worse than an obviously-neutral placeholder). Chosen to sit roughly in the
+// middle of every built-in theme's own light/dark spread, so it never reads as an alarming colour.
+const UNRESOLVED_TOKEN_FALLBACK = '#9AA1AB'
 
 // ---------------------------------------------------------------------------------------------
 // Angle convention (T11.1)
@@ -38,10 +46,16 @@ export function gradientAngleToVector(angleDeg: number): {
   }
 }
 
-function toSvgStops(stops: TDGradientStop[]): { color: string; offset: number }[] {
+function toSvgStops(
+  stops: TDGradientStop[],
+  deckTheme?: DeckTheme
+): { color: string; offset: number }[] {
   // Clamp defensively: a stop built from free-typed UI input (BackgroundMenu's position field)
   // could otherwise produce an out-of-range `offset`, which SVG accepts but renders confusingly.
-  return stops.map((stop) => ({ color: stop.color, offset: Math.max(0, Math.min(1, stop.at)) }))
+  return stops.map((stop) => ({
+    color: resolveThemeColor(stop.color, deckTheme) ?? UNRESOLVED_TOKEN_FALLBACK,
+    offset: Math.max(0, Math.min(1, stop.at)),
+  }))
 }
 
 /**
@@ -56,11 +70,14 @@ function toSvgStops(stops: TDGradientStop[]): { color: string; offset: number }[
  * matters at all).
  * @param assets The document's asset table, needed to resolve an `image` background's `assetId`
  * into an actual `src` URL.
+ * @param deckTheme The active `DeckTheme` (Phase 12), if any — resolves a theme token (see
+ * `deck-theme.ts`) that a template may have written into `color`/a gradient stop.
  */
 export function resolveSlideBackground(
   background: SlideBackground | string | undefined,
   id: string,
-  assets?: TDAssets
+  assets?: TDAssets,
+  deckTheme?: DeckTheme
 ): TLBackgroundFill | undefined {
   if (background === undefined) return undefined
 
@@ -72,14 +89,17 @@ export function resolveSlideBackground(
 
   switch (resolved.type) {
     case 'solid':
-      return { type: 'solid', color: resolved.color }
+      return {
+        type: 'solid',
+        color: resolveThemeColor(resolved.color, deckTheme) ?? UNRESOLVED_TOKEN_FALLBACK,
+      }
     case 'linearGradient': {
       const vector = gradientAngleToVector(resolved.angle)
       return {
         type: 'linearGradient',
         id: `${id}-bg-gradient`,
         ...vector,
-        stops: toSvgStops(resolved.stops),
+        stops: toSvgStops(resolved.stops, deckTheme),
       }
     }
     case 'radialGradient':
@@ -89,7 +109,7 @@ export function resolveSlideBackground(
         cx: resolved.cx,
         cy: resolved.cy,
         r: 0.75,
-        stops: toSvgStops(resolved.stops),
+        stops: toSvgStops(resolved.stops, deckTheme),
       }
     case 'image': {
       const src = assets?.[resolved.assetId]
@@ -114,12 +134,13 @@ export function resolveSlideBackground(
  */
 export function resolveShapeGradientFill(
   gradient: ShapeGradientFill,
-  shapeId: string
+  shapeId: string,
+  deckTheme?: DeckTheme
 ): Extract<TLBackgroundFill, { type: 'linearGradient' | 'radialGradient' }> {
   const id = `${shapeId}-fill-gradient`
   if (gradient.type === 'linearGradient') {
     const vector = gradientAngleToVector(gradient.angle)
-    return { type: 'linearGradient', id, ...vector, stops: toSvgStops(gradient.stops) }
+    return { type: 'linearGradient', id, ...vector, stops: toSvgStops(gradient.stops, deckTheme) }
   }
   return {
     type: 'radialGradient',
@@ -127,7 +148,7 @@ export function resolveShapeGradientFill(
     cx: gradient.cx,
     cy: gradient.cy,
     r: 0.75,
-    stops: toSvgStops(gradient.stops),
+    stops: toSvgStops(gradient.stops, deckTheme),
   }
 }
 

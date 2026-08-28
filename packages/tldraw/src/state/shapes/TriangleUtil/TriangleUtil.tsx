@@ -72,7 +72,7 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
     ) => {
       const { id, label = '', size, style, labelPoint = LABEL_POINT } = shape
       const font = getFontStyle(style)
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
       const Component = style.dash === DashStyle.Draw ? DrawTriangle : DashedTriangle
       const handleLabelChange = React.useCallback(
         (label: string) => onShapeChange?.({ id, label }),
@@ -110,6 +110,7 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
                 size={size}
                 isSelected={isSelected}
                 isDarkMode={meta.isDarkMode}
+                deckTheme={meta.deckTheme}
               />
             </g>
           </SVGContainer>

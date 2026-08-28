@@ -5,6 +5,7 @@ import { PageMenu } from './PageMenu'
 import { ZoomMenu } from './ZoomMenu'
 import { StyleMenu } from './StyleMenu'
 import { BackgroundMenu } from './BackgroundMenu'
+import { ThemeMenu } from './ThemeMenu'
 import { Panel } from '~components/Primitives/Panel'
 import { ToolButton, ToolButtonWithTooltip } from '~components/Primitives/ToolButton'
 import { RedoIcon, UndoIcon } from '~components/Primitives/icons'
@@ -65,6 +66,7 @@ export function TopPanel({
           </Tooltip>
           {showPages && <PageMenu />}
           {showPages && !readOnly && <BackgroundMenu />}
+          {showPages && !readOnly && <ThemeMenu />}
           <TopPanelToolButton label="Toggle deck" onClick={toggleDeckVisibility}>
             {app.settings.showDeck ? <DoubleArrowRightIcon /> : <DoubleArrowLeftIcon />}
           </TopPanelToolButton>

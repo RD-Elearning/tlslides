@@ -139,6 +139,46 @@ export interface TDDocument {
   pageStates: Record<string, TLPageState>
   assets: TDAssets
   defaultPageSize?: number[]
+  // Phase 12 — deck theme / brand kit. Optional, so a document that predates this field (every
+  // document so far) simply has no `theme` and renders exactly as it does today — no migration,
+  // no `TldrawApp.version` bump. Named `DeckTheme`, not `Theme`: `Theme` above is already taken by
+  // the editor's own light/dark *UI* chrome palette, an unrelated concept this must not collide
+  // with. See `state/shapes/shared/deck-theme.ts` for how a shape or background actually *uses*
+  // this (the token-reference design) and `BUILT_IN_DECK_THEMES` for the shipped palettes.
+  theme?: DeckTheme
+}
+
+/** One named brand palette. A shape or background never stores one of these hex values directly —
+ *  it stores a sentinel token string (`'theme:accent1'`, see `deck-theme.ts`) that resolves against
+ *  whichever `DeckTheme` is active, so switching `TDDocument.theme` restyles every shape/background
+ *  that references a token in one move. */
+export interface DeckThemeColors {
+  background: string
+  surface: string
+  text: string
+  textMuted: string
+  accent1: string
+  accent2: string
+}
+
+// Phase 12 — deck theme / brand kit. `fonts` is a *pairing*, not two arbitrary font names: this
+// fork's font system is still the four fixed `FontStyle` faces (see `fontFaces` in
+// `shape-styles.ts`) — arbitrary font families with a loading story are Phase 17's job, not this
+// one's — so a theme picks two of those four for its heading/body pairing rather than introducing
+// a second, incompatible font model. `shapeDefaults` is applied once, at template-instantiation
+// time (`addSlideFromTemplate`), as the base a template shape's own style patches on top of — it is
+// deliberately NOT re-applied to already-placed shapes on a later theme switch (unlike the colour
+// tokens), because a "default" is a starting point for new content, not a live constraint on
+// existing content; see the Phase 12 report for the full reasoning.
+export interface DeckTheme {
+  id: string
+  name: string
+  colors: DeckThemeColors
+  fonts: {
+    heading: FontStyle
+    body: FontStyle
+  }
+  shapeDefaults?: Partial<ShapeStyles>
 }
 
 // The shape of a single page in the Tldraw document
@@ -155,7 +195,9 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`
- *  and CSS gradient stop percentages (just expressed as a fraction instead of a percentage). */
+ *  and CSS gradient stop percentages (just expressed as a fraction instead of a percentage).
+ *  `color`, like `SlideBackground`'s `solid.color` and `ShapeStyles.stroke`/`fill` below, may be a
+ *  literal hex OR a Phase 12 theme token (`'theme:accent1'`) — see `deck-theme.ts`. */
 export interface TDGradientStop {
   color: string
   at: number
@@ -166,6 +208,8 @@ export interface TDGradientStop {
 // resolves through one function (`resolveSlideBackground`, in
 // `state/shapes/shared/background.ts`) into the generic paint spec `@tlslides/core`'s `Frame`
 // actually renders. See that module for the angle convention and the SVG-vs-CSS gradient decision.
+// Phase 12: every `color` string below (the solid case, and each gradient stop's `color`) may
+// also be a theme token — see `TDGradientStop`'s comment and `deck-theme.ts`.
 export type SlideBackground =
   | { type: 'solid'; color: string }
   | { type: 'linearGradient'; angle: number; stops: TDGradientStop[] }
@@ -187,6 +231,11 @@ export type PagePartial = {
 // The meta information passed to TDShapeUtil components
 export interface TDMeta {
   isDarkMode: boolean
+  // Phase 12 — threaded alongside `isDarkMode` (the closest existing precedent: a per-document
+  // render concern every shape util already receives via `meta`) rather than read from a global,
+  // so a shape component's colour resolution stays a pure function of its own props/meta, the same
+  // discipline `isDarkMode` already follows. See `getShapeStyle`'s `deckTheme` parameter.
+  deckTheme?: DeckTheme
 }
 
 // The type of info given to shapes when transforming
@@ -336,6 +385,12 @@ export interface TDBaseShape extends TLShape {
   label?: string
   handles?: Record<string, TDHandle>
   animation?: ShapeAnimation
+  // Phase 13 — templates. Names this shape as a fillable placeholder within a `Template` (e.g.
+  // 'title', 'body', 'image'): `TldrawApp.addSlideFromTemplate`'s `content` argument maps a slot
+  // name to a replacement value, so a user, a bulk import, or later the AI pipeline can all fill a
+  // template the same way, through the same field. Optional and otherwise inert — a shape with no
+  // `slot` behaves exactly as it does today — so this needs no migration. See `state/templates.ts`.
+  slot?: string
 }
 
 // Per-shape build animation, driven from presentation mode (F-06)
@@ -574,10 +629,14 @@ export type ShapeStyles = {
   // being a property of the slide.
   /** Absolute hex override for stroke colour (and, on shapes without a separate fill, text/line
    *  colour too, since they all read `getShapeStyle().stroke`). Undefined falls back to the
-   *  `color` enum, exactly as before this field existed. */
+   *  `color` enum, exactly as before this field existed.
+   *  Phase 12: this string may also be a theme token (`'theme:accent1'`, one of the keys of
+   *  `DeckThemeColors`) instead of a literal hex — same field, no type change, no migration. See
+   *  `resolveThemeColor` in `deck-theme.ts` for the one place that distinguishes the two. */
   stroke?: string
   /** Absolute hex override for fill colour. Only takes effect when `isFilled` is true, mirroring
-   *  how the resolved `fill` value already works. Undefined falls back to the `color` enum. */
+   *  how the resolved `fill` value already works. Undefined falls back to the `color` enum. May
+   *  also be a theme token — see `stroke` above. */
   fill?: string
   // Phase 11 — gradient fill. Only takes effect when `isFilled` is true, same guard as `fill`.
   // Coherence rule (same precedent as size/strokeWidth and color/stroke/fill in Phase 8b): a
@@ -638,6 +697,33 @@ export interface TDInsertContentOpts {
    * are meaningful relative to the slide frame. Defaults to `true`.
    */
   center?: boolean
+}
+
+/* -------------------------------------------------- */
+/*                      Templates                      */
+/* -------------------------------------------------- */
+
+// Phase 13 — template system. A template is plain, serializable JSON: no code, no closures, no
+// class instances — every field here is a string, number, or a `TDShape` (itself plain data), so
+// a whole template round-trips through `JSON.parse(JSON.stringify(...))` unchanged (enforced in
+// `templates.spec.ts`). That's deliberate, not incidental: it's what lets a template be authored,
+// stored, and fetched by a host app later, exactly like `TDInsertableContent` above.
+//
+// Shapes reference theme tokens (`'theme:accent1'`, see `deck-theme.ts`), not literal hex, so the
+// starter pack is `layouts × themes`, not a dozen fixed-color pictures — switching the active
+// `DeckTheme` restyles a slide built from a template the same way it restyles anything else.
+//
+// A fillable shape carries `slot` (see `TDBaseShape.slot`); `TldrawApp.addSlideFromTemplate`'s
+// `content` argument maps a slot name to its replacement text.
+export interface Template {
+  id: string
+  name: string
+  /** [width, height] of the slide this template produces — usually `DEFAULT_SLIDE_SIZE`, but a
+   *  template is free to target a different aspect ratio. */
+  size: number[]
+  /** Same shape as `TDPage.background` — may itself hold theme tokens (see `SlideBackground`). */
+  background?: SlideBackground
+  shapes: TDShape[]
 }
 
 /* -------------------------------------------------- */

@@ -63,7 +63,7 @@ export class DrawUtil extends TDShapeUtil<T, E> {
           : getSolidStrokePathTDSnapshot(shape)
       }, [points, style.size, style.dash, isComplete])
 
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
       const { stroke, fill, strokeWidth } = styles
       const opacity = getShapeOpacity(style, isGhost)
 

@@ -3,7 +3,7 @@ import Vec from '@tlslides/vec'
 import * as React from 'react'
 import { EASINGS } from '~constants'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { Decoration, ShapeStyles } from '~types'
+import type { Decoration, DeckTheme, ShapeStyles } from '~types'
 import {
   getArcLength,
   getArrowArcPath,
@@ -23,6 +23,7 @@ interface ArrowSvgProps {
   decorationStart: Decoration | undefined
   decorationEnd: Decoration | undefined
   isDarkMode: boolean
+  deckTheme?: DeckTheme
   isDraw: boolean
 }
 
@@ -37,10 +38,11 @@ export const CurvedArrow = React.memo(function CurvedArrow({
   decorationEnd,
   isDraw,
   isDarkMode,
+  deckTheme,
 }: ArrowSvgProps) {
   const arrowDist = Vec.dist(start, end)
   if (arrowDist < 2) return null
-  const styles = getShapeStyle(style, isDarkMode)
+  const styles = getShapeStyle(style, isDarkMode, undefined, deckTheme)
   const { strokeWidth } = styles
   const sw = 1 + strokeWidth * 1.618
   // Calculate a path as a segment of a circle passing through the three points start, bend, and end

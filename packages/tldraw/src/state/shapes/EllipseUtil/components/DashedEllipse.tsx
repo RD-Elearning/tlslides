@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Utils } from '@tlslides/core'
-import type { ShapeStyles } from '~types'
+import type { DeckTheme, ShapeStyles } from '~types'
 import { getShapeStyle } from '~state/shapes/shared'
 
 interface EllipseSvgProps {
@@ -9,6 +9,7 @@ interface EllipseSvgProps {
   style: ShapeStyles
   isSelected: boolean
   isDarkMode: boolean
+  deckTheme?: DeckTheme
 }
 
 export const DashedEllipse = React.memo(function DashedEllipse({
@@ -17,8 +18,9 @@ export const DashedEllipse = React.memo(function DashedEllipse({
   style,
   isSelected,
   isDarkMode,
+  deckTheme,
 }: EllipseSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, id, deckTheme)
   const sw = 1 + strokeWidth * 1.618
   const rx = Math.max(0, radius[0] - sw / 2)
   const ry = Math.max(0, radius[1] - sw / 2)

@@ -12,7 +12,7 @@ import {
   TldrawComponentsRegistry,
 } from '~hooks'
 import { shapeUtils } from '~state/shapes'
-import { resolveSlideBackground } from '~state/shapes/shared'
+import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
 import { TopPanel } from '~components/TopPanel'
 import { ContextMenu } from '~components/ContextMenu'
@@ -403,8 +403,8 @@ const InnerTldraw = React.memo(function InnerTldraw({
   // the background or the asset table actually changes, not on every render (a gradient's `stops`
   // array would otherwise get a fresh `<defs>` id-stable-but-object-unstable prop each frame).
   const frameBackground = React.useMemo(
-    () => resolveSlideBackground(page.background, page.id, assets),
-    [page.background, page.id, assets]
+    () => resolveSlideBackground(page.background, page.id, assets, activeDeckTheme(document.theme)),
+    [page.background, page.id, assets, document.theme]
   )
 
   const isHideBoundsShape =
@@ -417,10 +417,13 @@ const InnerTldraw = React.memo(function InnerTldraw({
     page.shapes[selectedIds[0]] &&
     TLDR.getShapeUtil(page.shapes[selectedIds[0]].type).hideResizeHandles
 
-  // Custom rendering meta, with dark mode for shapes
+  // Custom rendering meta, with dark mode for shapes. Phase 12 — `deckTheme` rides along here too,
+  // the same way `isDarkMode` already does: every shape util already receives `meta`, so this is
+  // the one place a document-level theme needs to be threaded for every shape to resolve its own
+  // colour tokens (see `getShapeStyle`'s `deckTheme` parameter).
   const meta = React.useMemo(() => {
-    return { isDarkMode: settings.isDarkMode }
-  }, [settings.isDarkMode])
+    return { isDarkMode: settings.isDarkMode, deckTheme: activeDeckTheme(document.theme) }
+  }, [settings.isDarkMode, document.theme])
 
   const showDashedBrush = settings.isCadSelectMode
     ? !appState.selectByContain

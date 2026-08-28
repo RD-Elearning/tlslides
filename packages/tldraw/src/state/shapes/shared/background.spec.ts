@@ -6,6 +6,7 @@ import {
   resolveShapeGradientFill,
   GRADIENT_PRESETS,
 } from './background'
+import { BUILT_IN_DECK_THEMES, themeToken } from './deck-theme'
 
 describe('gradientAngleToVector — CSS linear-gradient angle convention', () => {
   it('0deg points to top: the line runs from bottom-center to top-center', () => {
@@ -159,6 +160,42 @@ describe('resolveShapeGradientFill', () => {
     const a = resolveShapeGradientFill(gradient, 'shape-a')
     const b = resolveShapeGradientFill(gradient, 'shape-b')
     expect(a.id).not.toBe(b.id)
+  })
+})
+
+describe('resolveSlideBackground — Phase 12 theme tokens', () => {
+  const theme = BUILT_IN_DECK_THEMES[0]
+
+  it('resolves a solid background token against the active theme', () => {
+    const resolved = resolveSlideBackground({ type: 'solid', color: themeToken('background') }, 'p1', undefined, theme)
+    expect(resolved).toEqual({ type: 'solid', color: theme.colors.background })
+  })
+
+  it('resolves a gradient stop token against the active theme', () => {
+    const bg: SlideBackground = {
+      type: 'linearGradient',
+      angle: 90,
+      stops: [
+        { color: themeToken('accent1'), at: 0 },
+        { color: themeToken('accent2'), at: 1 },
+      ],
+    }
+    const resolved = resolveSlideBackground(bg, 'p1', undefined, theme)
+    expect(resolved?.type).toBe('linearGradient')
+    if (resolved?.type === 'linearGradient') {
+      expect(resolved.stops[0].color).toBe(theme.colors.accent1)
+      expect(resolved.stops[1].color).toBe(theme.colors.accent2)
+    }
+  })
+
+  it('degrades an unresolvable token to a neutral fallback, not an invalid paint value', () => {
+    const resolved = resolveSlideBackground({ type: 'solid', color: themeToken('accent1') }, 'p1')
+    expect(resolved).toEqual({ type: 'solid', color: expect.stringMatching(/^#[0-9a-fA-F]{6}$/) })
+  })
+
+  it('a literal hex background is unaffected by an active theme', () => {
+    const resolved = resolveSlideBackground({ type: 'solid', color: '#43CEA2' }, 'p1', undefined, theme)
+    expect(resolved).toEqual({ type: 'solid', color: '#43CEA2' })
   })
 })
 

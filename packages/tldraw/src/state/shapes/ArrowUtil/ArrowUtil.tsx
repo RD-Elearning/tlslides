@@ -93,7 +93,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
       } = shape
       const isStraightLine = Vec.dist(bend.point, Vec.toFixed(Vec.med(start.point, end.point))) < 1
       const font = getFontStyle(style)
-      const styles = getShapeStyle(style, meta.isDarkMode)
+      const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
       const labelSize = label || isEditing ? getTextLabelSize(label, font) : [0, 0]
       const bounds = this.getBounds(shape)
       const dist = React.useMemo(() => {
@@ -177,6 +177,7 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
                 decorationEnd={decorations?.end}
                 isDraw={style.dash === DashStyle.Draw}
                 isDarkMode={meta.isDarkMode}
+                deckTheme={meta.deckTheme}
               />
             </g>
           </SVGContainer>

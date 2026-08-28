@@ -8,7 +8,7 @@ import {
   intersectRayBounds,
 } from '@tlslides/intersect'
 import { Vec } from '@tlslides/vec'
-import type { ShapesWithProp, TDBinding, TDMeta, TDShape, TransformInfo } from '~types'
+import type { DeckTheme, ShapesWithProp, TDBinding, TDMeta, TDShape, TransformInfo } from '~types'
 import * as React from 'react'
 import { BINDING_DISTANCE } from '~constants'
 import { getTextSvgElement } from './shared/getTextSvgElement'
@@ -177,7 +177,12 @@ export abstract class TDShapeUtil<T extends TDShape, E extends Element = any> ex
 
   onSessionComplete?: (shape: T) => Partial<T> | void
 
-  getSvgElement = (shape: T): SVGElement | void => {
+  // `deckTheme` (Phase 12) is only needed for the label-fill line below: the shape's own body is
+  // cloned straight from the live, already-rendered DOM node (`getElementById(...).cloneNode`),
+  // which baked in the resolved colour at render time — see `deck-theme.ts`'s "survives export"
+  // point. The label text is the one part of this method that computes a colour fresh rather than
+  // cloning it, so it's the one call here that needs the theme passed through explicitly.
+  getSvgElement = (shape: T, deckTheme?: DeckTheme): SVGElement | void => {
     const elm = document.getElementById(shape.id + '_svg')?.cloneNode(true) as SVGElement
     if (!elm) return // possibly in test mode
     if ('label' in shape && (shape as any).label !== undefined) {
@@ -185,7 +190,7 @@ export abstract class TDShapeUtil<T extends TDShape, E extends Element = any> ex
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
       const bounds = this.getBounds(shape)
       const labelElm = getTextSvgElement(s['label'], shape.style, bounds)
-      labelElm.setAttribute('fill', getShapeStyle(shape.style).stroke)
+      labelElm.setAttribute('fill', getShapeStyle(shape.style, false, undefined, deckTheme).stroke)
       const font = getFontStyle(shape.style)
       const size = getTextLabelSize(s['label'], font)
       labelElm.setAttribute('transform-origin', 'top left')

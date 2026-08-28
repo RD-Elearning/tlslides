@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { ShapeStyles } from '~types'
+import type { DeckTheme, ShapeStyles } from '~types'
 import { getTriangleIndicatorPathTDSnapshot, getTrianglePath } from '../triangleHelpers'
 
 interface TriangleSvgProps {
@@ -9,6 +9,7 @@ interface TriangleSvgProps {
   style: ShapeStyles
   isSelected: boolean
   isDarkMode: boolean
+  deckTheme?: DeckTheme
 }
 
 export const DrawTriangle = React.memo(function DrawTriangle({
@@ -17,8 +18,9 @@ export const DrawTriangle = React.memo(function DrawTriangle({
   style,
   isSelected,
   isDarkMode,
+  deckTheme,
 }: TriangleSvgProps) {
-  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode)
+  const { stroke, strokeWidth, fill } = getShapeStyle(style, isDarkMode, undefined, deckTheme)
   const pathTDSnapshot = getTrianglePath(id, size, style)
   const indicatorPath = getTriangleIndicatorPathTDSnapshot(id, size, style)
   return (

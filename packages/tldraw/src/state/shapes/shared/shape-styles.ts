@@ -1,7 +1,17 @@
 import { Utils, TLBackgroundFill } from '@tlslides/core'
-import { Theme, ColorStyle, DashStyle, ShapeStyles, SizeStyle, FontStyle, AlignStyle } from '~types'
+import {
+  Theme,
+  ColorStyle,
+  DashStyle,
+  ShapeStyles,
+  SizeStyle,
+  FontStyle,
+  AlignStyle,
+  DeckTheme,
+} from '~types'
 import { GHOSTED_OPACITY } from '~constants'
 import { resolveShapeGradientFill } from './background'
+import { resolveThemeColor } from './deck-theme'
 
 const canvasLight = '#fafafa'
 
@@ -204,10 +214,18 @@ export function getStickyShapeStyle(style: ShapeStyles, isDarkMode = false) {
 // a gradient is the more specific control, so it wins outright over `fill`/the color enum when
 // both are present — see StyleMenu/BackgroundMenu's handlers for where the *other* half of the
 // rule (picking a flat fill clears `fillGradient`, and vice versa) is enforced.
+//
+// T12.1 — `deckTheme`, optional and last, resolves a `'theme:accent1'`-style token in `style.stroke`
+// / `style.fill` into a real hex before it reaches the `?? enum` fallback below — see
+// `resolveThemeColor` in `deck-theme.ts` for the full design rationale (why a sentinel string, not
+// a new field; why an unresolved token falls back to the enum rather than a hardcoded colour).
+// This is the ONE place stroke/fill tokens resolve; every shape util already renders through this
+// function, so passing `deckTheme` through here is enough for every shape type to pick it up.
 export function getShapeStyle(
   style: ShapeStyles,
   isDarkMode?: boolean,
-  shapeId?: string
+  shapeId?: string,
+  deckTheme?: DeckTheme
 ): {
   stroke: string
   fill: string
@@ -222,16 +240,16 @@ export function getShapeStyle(
   const strokeWidth = getEffectiveStrokeWidth(style)
 
   const theme: Theme = isDarkMode ? 'dark' : 'light'
-  const stroke = style.stroke ?? strokes[theme][color]
+  const stroke = resolveThemeColor(style.stroke, deckTheme) ?? strokes[theme][color]
 
   if (isFilled && style.fillGradient && shapeId) {
-    const fillGradientDef = resolveShapeGradientFill(style.fillGradient, shapeId)
+    const fillGradientDef = resolveShapeGradientFill(style.fillGradient, shapeId, deckTheme)
     return { stroke, fill: `url(#${fillGradientDef.id})`, strokeWidth, fillGradientDef }
   }
 
   return {
     stroke,
-    fill: isFilled ? style.fill ?? fills[theme][color] : 'none',
+    fill: isFilled ? resolveThemeColor(style.fill, deckTheme) ?? fills[theme][color] : 'none',
     strokeWidth,
   }
 }

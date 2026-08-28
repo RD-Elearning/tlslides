@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import Vec from '@tlslides/vec'
 import * as React from 'react'
 import { getShapeStyle } from '~state/shapes/shared'
-import type { Decoration, ShapeStyles } from '~types'
+import type { Decoration, DeckTheme, ShapeStyles } from '~types'
 import { getStraightArrowHeadPoints, renderFreehandArrowShaft } from '../arrowHelpers'
 import { Arrowhead } from './ArrowHead'
 
@@ -16,6 +16,7 @@ interface ArrowSvgProps {
   decorationStart: Decoration | undefined
   decorationEnd: Decoration | undefined
   isDarkMode: boolean
+  deckTheme?: DeckTheme
   isDraw: boolean
 }
 
@@ -28,10 +29,11 @@ export const StraightArrow = React.memo(function StraightArrow({
   decorationEnd,
   isDraw,
   isDarkMode,
+  deckTheme,
 }: ArrowSvgProps) {
   const arrowDist = Vec.dist(start, end)
   if (arrowDist < 2) return null
-  const styles = getShapeStyle(style, isDarkMode)
+  const styles = getShapeStyle(style, isDarkMode, undefined, deckTheme)
   const { strokeWidth } = styles
   const sw = 1 + strokeWidth * 1.618
   // Path between start and end points

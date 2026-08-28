@@ -9,6 +9,7 @@ import {
   getStrokeWidth,
   strokes,
 } from './shape-styles'
+import { BUILT_IN_DECK_THEMES, themeToken } from './deck-theme'
 
 const baseStyle: ShapeStyles = {
   ...defaultStyle,
@@ -166,5 +167,40 @@ describe('getShapeStyle — Phase 11 gradient fill', () => {
     const resolved = getShapeStyle(style, false, 'shape1')
     expect(resolved.fill).toBe('none')
     expect(resolved.fillGradientDef).toBeUndefined()
+  })
+})
+
+describe('getShapeStyle — Phase 12 theme tokens', () => {
+  const theme = BUILT_IN_DECK_THEMES[0]
+
+  it('resolves a stroke token against the active deck theme', () => {
+    const style = { ...baseStyle, stroke: themeToken('accent1') }
+    const resolved = getShapeStyle(style, false, undefined, theme)
+    expect(resolved.stroke).toBe(theme.colors.accent1)
+  })
+
+  it('resolves a fill token against the active deck theme, only when isFilled', () => {
+    const filled = { ...baseStyle, isFilled: true, fill: themeToken('surface') }
+    expect(getShapeStyle(filled, false, undefined, theme).fill).toBe(theme.colors.surface)
+
+    const unfilled = { ...baseStyle, isFilled: false, fill: themeToken('surface') }
+    expect(getShapeStyle(unfilled, false, undefined, theme).fill).toBe('none')
+  })
+
+  it('falls back to the color enum — not a hardcoded colour — when no theme is active', () => {
+    const style = { ...baseStyle, stroke: themeToken('accent1') }
+    const resolved = getShapeStyle(style, false)
+    expect(resolved.stroke).toBe(strokes.light[baseStyle.color])
+  })
+
+  it('the same fallback applies to an unresolvable (unknown-key) token', () => {
+    const style = { ...baseStyle, stroke: 'theme:notAToken' }
+    const resolved = getShapeStyle(style, false, undefined, theme)
+    expect(resolved.stroke).toBe(strokes.light[baseStyle.color])
+  })
+
+  it('a plain hex override still works exactly as before — tokens are additive, not a replacement', () => {
+    const style = { ...baseStyle, stroke: '#43CEA2' }
+    expect(getShapeStyle(style, false, undefined, theme).stroke).toBe('#43CEA2')
   })
 })

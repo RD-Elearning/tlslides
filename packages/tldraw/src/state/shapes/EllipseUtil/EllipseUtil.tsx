@@ -72,7 +72,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
     ) => {
       const { id, radius, style, label = '', labelPoint = LABEL_POINT } = shape
       const font = getFontStyle(shape.style)
-      const styles = getShapeStyle(style, meta.isDarkMode, id)
+      const styles = getShapeStyle(style, meta.isDarkMode, id, meta.deckTheme)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
       const rx = Math.max(0, radius[0] - sw / 2)
@@ -119,6 +119,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
                 style={style}
                 isSelected={isSelected}
                 isDarkMode={meta.isDarkMode}
+                deckTheme={meta.deckTheme}
               />
             </g>
           </SVGContainer>
