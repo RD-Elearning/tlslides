@@ -83,13 +83,27 @@ function divider(
   end: number[],
   style: Partial<ShapeStyles>
 ): TDShape {
+  // `LineShape.handles` are local to `shape.point` (verified against a real LineTool-drawn shape:
+  // `start` is always `[0, 0]`, `end` is the offset, and `point` carries the absolute start) — NOT
+  // a pair of absolute page coordinates. Getting this backwards (an earlier version of this
+  // function passed `start`/`end` straight through as both `point: [0, 0]` and the handle points)
+  // still computed the *correct* absolute bounds — `getBounds` derives bounds from the handles and
+  // only then translates by `shape.point`, so a `[0, 0]` shape.point silently no-ops there — but it
+  // rendered those same absolute coordinates as the *local* SVG path inside a container sized and
+  // positioned to the (correct) bounds. For a perfectly vertical/horizontal divider (zero-width or
+  // zero-height bounds) that put the drawn path entirely outside the container's own clipped
+  // viewport, so the line was not merely faint, it was rendered completely off-screen inside its
+  // own box: `overflow: hidden` on `.tl-positioned-svg` (`useStyle.tsx`) discarded 100% of it.
+  // Diagonal lines mostly hid the same bug (their bounds have real width AND height, so the local
+  // coordinates land inside a large-enough box, even if not centered on it as intended); a
+  // perfectly straight divider is what exposed it.
   return Line.getShape({
     id,
-    point: [0, 0],
+    point: start,
     childIndex: 1,
     handles: {
-      start: { id: 'start', index: 0, point: start },
-      end: { id: 'end', index: 1, point: end },
+      start: { id: 'start', index: 0, point: [0, 0] },
+      end: { id: 'end', index: 1, point: [end[0] - start[0], end[1] - start[1]] },
     },
     style: { ...defaultStyle, isFilled: false, ...style },
   })

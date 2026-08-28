@@ -1,4 +1,4 @@
-import { BUILT_IN_DECK_THEMES, isThemeToken, resolveThemeColor, themeToken } from './deck-theme'
+import { DEFAULT_DECK_THEME, BUILT_IN_DECK_THEMES, isThemeToken, resolveThemeColor, themeToken } from './deck-theme'
 import type { DeckTheme } from '~types'
 
 const theme: DeckTheme = BUILT_IN_DECK_THEMES[0]
@@ -63,5 +63,22 @@ describe('BUILT_IN_DECK_THEMES', () => {
     for (const t of BUILT_IN_DECK_THEMES) {
       expect(JSON.parse(JSON.stringify(t))).toEqual(t)
     }
+  })
+
+  // `DEFAULT_DECK_THEME` looks its theme up by id and asserts the result is non-null. Nothing in
+  // the type system holds that up: delete or rename that theme and the constant quietly becomes
+  // `undefined` at runtime with a green build, which would make `activeDeckTheme` hand every
+  // untouched deck an undefined theme and send all of its tokens down the unresolved path — the
+  // exact grey-template failure this default exists to prevent.
+  it('resolves to a real built-in theme', () => {
+    expect(DEFAULT_DECK_THEME).toBeDefined()
+    expect(BUILT_IN_DECK_THEMES).toContain(DEFAULT_DECK_THEME)
+  })
+
+  it('defaults to a light surface — a blank deck should read as a blank page', () => {
+    const bg = DEFAULT_DECK_THEME.colors.background
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(bg.slice(i, i + 2), 16))
+    // Rec. 601 luma; anything above mid-grey is a light surface.
+    expect((0.299 * r + 0.587 * g + 0.114 * b) / 255).toBeGreaterThan(0.5)
   })
 })

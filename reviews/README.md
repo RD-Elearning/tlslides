@@ -236,6 +236,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
 | 11 | Background system — structured `SlideBackground`, SVG `<defs>` gradients on slides and shapes, `BackgroundMenu` UI, curated presets (see `reviews/roadmap-slides.md`) | ✅ done |
+| 12 | Deck theme / brand kit — `TDDocument.theme`, five built-in palettes, `'theme:accent1'` sentinel tokens, `ThemeMenu` UI (see `reviews/roadmap-slides.md`) | ✅ done |
+| 13 | Template system — `slot?` field, twelve theme-aware starter layouts, `addSlideFromTemplate`, `TemplatePicker` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -798,6 +800,215 @@ renders it · all six pre-existing scenarios (`stylepanel`, `styles`, `shapes`, 
 core`'s own Jest suite was already failing before this phase, on an unrelated pre-existing
 `setupTests.ts` ESM/transform error — not something this phase touched or introduced, and out of
 scope to fix here.)
+
+#### Phase 12 notes — deck theme / brand kit
+
+Adds `TDDocument.theme?: DeckTheme` — a named colour palette, a heading/body font pairing, and
+default shape styles — with five built-in palettes (`midnight`, `ivory-editorial`, `coral-pop`,
+`forest`, `mono-grid`), plus a document-scoped `setDeckTheme` command and a `ThemeMenu` UI next to
+`BackgroundMenu`. Combined with Phase 13 in one commit, because a template library that hard-codes
+hex is worthless the moment a second look is wanted — see that phase's notes for the template side.
+
+- **`DeckTheme`, not a second `Theme`, and the two must never collide.** `Theme = 'dark' | 'light'`
+  already exists (`types.ts:264`) as the editor's own UI chrome palette — the thing `isDarkMode`
+  drives. A brand kit is an unrelated concept that happens to also be "a set of named colours," and
+  giving it the same name would have made every future reference to "the theme" ambiguous (is this
+  the app's light/dark mode, or the deck's brand palette?) in code, in this document, and in any
+  host integration. `DeckTheme` costs nothing extra to spell out and removes the ambiguity
+  permanently. The two are also independent in practice: `getShapeStyle`'s existing `isDarkMode`
+  parameter and its new `deckTheme` parameter are resolved on separate branches (`isDarkMode` only
+  ever feeds the `??` fallback's `strokes[theme][color]` lookup; `deckTheme` only ever feeds
+  `resolveThemeColor`), so toggling the app's UI theme never touches a deck's brand colours and
+  vice versa — the same independence Phase 8b already established for an arbitrary hex.
+- **The token design: a sentinel string (`'theme:accent1'`), not a second field.** `style.stroke`/
+  `style.fill` (Phase 8b), `TDGradientStop.color`, and `SlideBackground`'s solid `color` (Phase 11)
+  are all already plain `string`. Rather than adding a parallel `strokeToken?`/`fillToken?` field —
+  which would need its own "which one wins when both are set" coherence rule (a fourth version of
+  the dance Phase 8a/8b/11 already do three times), a distinct code path through every one of the
+  ~20 `getShapeStyle` call sites, and a second migration-free optional field to document — a theme
+  token is just one more string those same fields can already hold, recognized by a `theme:` prefix
+  and resolved in exactly one function, `resolveThemeColor` (`state/shapes/shared/deck-theme.ts`).
+  Three things this buys, all load-bearing:
+  1. **No schema change, no migration.** A document written before this phase existed simply never
+     has a string starting with `theme:` in one of these fields, so reading or writing them is
+     unchanged.
+  2. **Survives SVG export for free.** Export either clones the live, already-rendered DOM node
+     (`TDShapeUtil.getSvgElement`'s `cloneNode`, which baked in the resolved colour at render time)
+     or calls the same resolver the live renderer used (background export, the one exception —
+     the label-text fill — that computes a colour fresh rather than cloning it, so `getSvgElement`
+     grew a `deckTheme` parameter specifically to feed that one call). By the time either path
+     runs, the token string itself is gone; nothing downstream ever has to know what a token *is*.
+     Same reasoning Phase 11 already established for gradients: resolve once, before anything
+     paints or exports.
+  3. **Works in Deck thumbnails for free.** A thumbnail is just another `<Frame>` render of the
+     same document through `ReadOnlyEditor` (see Phase 11's notes on this same component) — it
+     calls the exact same `getShapeStyle`/`resolveSlideBackground` this phase updates, with the
+     same `document.theme`, so a thumbnail never needs its own theme-resolution path.
+  An unresolvable token (no active theme, or a key the active theme doesn't have — a stale token
+  from a deck whose theme was later simplified, or a typo) **degrades to `undefined`, not a
+  hardcoded warning colour**, in `resolveThemeColor` itself. That is deliberate: every one of
+  `getShapeStyle`'s call sites already has a real `?? enum` fallback for "this field wasn't set" —
+  `resolveThemeColor(style.stroke, deckTheme) ?? strokes[theme][color]` — so an unresolvable token
+  just takes that same path, exactly as if the field had never been written. A background has no
+  colour enum to fall back to, so `background.ts` picks its own neutral `#9AA1AB` fallback there
+  instead (deliberately picked to sit mid-way between every built-in theme's light/dark spread, so
+  it never reads as an alarming colour) — the one place the two resolvers' fallback behaviour
+  genuinely differs, and it differs for a real reason, not an oversight.
+- **`activeDeckTheme()` is a read-side default, and it writes nothing.** This was added after the
+  first review pass: a document with no `theme` set is `TDDocument.theme === undefined`, which is
+  required (no migration), but it meant a template's shapes — all written as tokens — resolved
+  every token to `undefined` on a fresh deck and fell through to the plain colour enum. Templates
+  are the first thing a user touches; they landed on the canvas flat grey until the user happened
+  to open `ThemeMenu`, which defeats the entire point of a theme-aware starter pack.
+  `activeDeckTheme(theme)` (`theme ?? DEFAULT_DECK_THEME`) is called at every place the document's
+  theme is read for rendering — `Tldraw.tsx`'s background memo and shape `meta`, `ReadOnlyEditor`'s
+  equivalents (the thumbnail path), and both `TldrawApp.copySvg` export call sites (the background
+  `<defs>` and each shape's `getSvgElement`) — six call sites across three files, all funnelled
+  through the one function. It is never called anywhere a value gets *written*
+  (`setDeckTheme`/`Commands.setDeckTheme` still happily persist `undefined`), so an untouched deck
+  still round-trips with no `theme` field at all, and a shape storing a plain hex is unaffected
+  either way (`resolveThemeColor` passes non-token strings straight through regardless of which
+  theme is "active").
+- **Which theme is the default, revisited.** The first version of this phase took the obvious
+  shortcut — `DEFAULT_DECK_THEME = BUILT_IN_DECK_THEMES[0]`, and `[0]` was `midnight`, a dark navy
+  palette — which meant every brand-new deck, and every template dropped onto one, rendered dark
+  navy out of the box. Looked at directly in a screenshot (a fresh deck's "Title & Subtitle"
+  template under each of the five built-ins, `tools/visual/shots/` during review — not kept, since
+  these were throwaway comparisons, but reproducible with any of the five theme ids via `ThemeMenu`
+  on a fresh deck), that reads as a strong, specific opinion for an editor whose own baseline
+  defaults are otherwise deliberately plain (Phase 1's `Draw → Solid`, `Script → Sans` swap, for
+  exactly the same "don't impose a look" reasoning) — and it does not match how mainstream slide
+  tools start a new deck, which is uniformly a light, near-neutral surface. `mono-grid` is now the
+  default: of the four light themes, its palette is the only one that is functionally grayscale —
+  `accent1` is the same near-black as `text`, and `accent2` (a red) appears only as a small,
+  deliberate highlight — where `ivory-editorial` (cream, amber/green), `coral-pop` (coral/
+  turquoise), and `forest` (moss/rust) each commit to a specific hue mood the way a chosen brand kit
+  should, but a default before any choice has been made should not. `DEFAULT_DECK_THEME` is now a
+  named constant that looks the theme up by id (`BUILT_IN_DECK_THEMES.find(t => t.id ===
+  'mono-grid')!`) rather than indexing `[0]` — the array's order is *also* the order `ThemeMenu`
+  lists themes in (it maps `BUILT_IN_DECK_THEMES` directly), a pure UI-ordering concern with nothing
+  to do with which theme a new, untouched deck gets. Coupling the two meant reordering the menu
+  (promoting a theme, alphabetizing it) would have silently changed the appearance of every deck
+  that had never touched `ThemeMenu` — exactly the fragility a named constant removes. `midnight`
+  keeps its place first in the array/menu; only the default lookup changed.
+- **`BUILT_IN_DECK_THEMES`, five real palettes**, each in `state/shapes/shared/deck-theme.ts`: a
+  light/dark spread (`midnight` light-on-navy vs. the four light themes), a serif editorial look
+  (`ivory-editorial`), a vibrant consumer look (`coral-pop`), an earthy look (`forest`), and a
+  monochrome-plus-one-accent look (`mono-grid`) — each with a genuine text/background contrast
+  ratio and a heading/body pairing drawn from this fork's four existing `FontStyle` faces (arbitrary
+  font families are Phase 17's job, not this one's, so a theme picks two of the four rather than
+  introducing a second, incompatible font model). `shapeDefaults` (e.g. `cornerRadius`, `isFilled`)
+  is applied once, at template-instantiation time, as the base a template shape's own style patches
+  on top of — deliberately **not** re-applied to shapes already on the canvas when the theme
+  changes later, since a "default" is a starting point for new content, not a live constraint on
+  existing content, the same way changing the app's default stroke width never retroactively
+  resizes an existing shape.
+
+**Verified:** 78/78 suites, 432 tests passing (up from 387; 9 of the new tests are in this phase's
+own `deck-theme.spec.ts` and `setDeckTheme.spec.ts`, the rest in Phase 13's specs plus `resolveThemeColor`
+coverage added to the pre-existing `shape-styles.spec.ts`/`background.spec.ts`) · `build:packages`
+9/9 with zero type errors · the `theme` visual scenario exits 0 with no console errors and confirms
+a token-filled shape and the page background both re-resolve live across two real `ThemeMenu`
+clicks (not just on first load) · the deck thumbnail strip picks up the same theme change · all
+eight other scenarios re-verified with no regression.
+
+#### Phase 13 notes — template system
+
+- **`slot?: string` on `TDBaseShape`, optional and otherwise inert.** A shape with no `slot`
+  behaves exactly as it does today, so this needs no migration. `addSlideFromTemplate`'s `content`
+  argument maps a slot name to a replacement value, so a user picking a layout, a bulk import, and
+  later an AI pipeline can all fill a template through the same one field and the same one code
+  path (`applySlotContent` in `state/templates.ts`) — precisely the reason the roadmap called this
+  out as worth building in from day one rather than retrofitting.
+- **A template is plain, serializable JSON — `{ id, name, size, background, shapes[] }`** — no
+  code, no functions, nothing tldraw-specific beyond `TDShape[]` with some shapes carrying `slot`.
+  `BUILT_IN_TEMPLATES` (`state/templates.ts`) is a module-level array literal built through three
+  tiny local helpers (`textShape`/`panel`/`dot`/`divider`) that exist only to keep the twelve
+  layouts readable — they are not a public API, and a host authoring its own templates would just
+  write the shape objects directly, or fetch them from a server, exactly as the roadmap intended.
+  Every colour in the pack is a theme token (`themeToken('accent1')`), never a literal hex, for the
+  reason Phase 12 exists: hard-coded hex in a template can't be restyled by a theme switch.
+  `font` is deliberately left `undefined` on every template text shape — `buildTemplateShapes`
+  assigns it from the active theme's heading/body pairing at instantiation time (heuristically, by
+  slot name — see below) rather than baking in a face the way colours are baked in as tokens, since
+  unlike colour there is no "unresolved font" fallback state worth inventing; a template shape
+  either gets the theme's pairing or, with no active theme, `activeDeckTheme`'s default pairing.
+- **`addSlideFromTemplate(app, template, content?)`** (`state/commands/addSlideFromTemplate/`) is
+  modeled directly on `Commands.createPage`: the page and its `pageState` don't exist, then they
+  do, and `currentPageId` moves with them — one undoable command. The shape/id/theme work is
+  delegated to `buildTemplateShapes`, which deep-clones every template shape (`Utils.deepClone`,
+  not a shallow spread — `BUILT_IN_TEMPLATES` is a module-level constant reused on every call, so a
+  shallow copy would still alias nested arrays like `point`/`handles` with the template's own
+  definition, corrupting it for every future insert the moment one inserted slide's shape is
+  mutated in place), assigns each a fresh id, applies the active theme's font pairing and
+  `shapeDefaults`, and fills any matching `content[slot]`. `TldrawApp.addSlideFromTemplate` accepts
+  either a `Template` object or a built-in's string id (`getTemplate` looks it up); an unknown id is
+  a no-op, matching the existing convention for a bad id elsewhere (`deletePage`).
+- **The starter pack: twelve layouts** — title, title+subtitle, section break, bullets, two-column,
+  image-left, image-right, quote, stat row, comparison, timeline, closing — exactly the roadmap's
+  list. All twelve were screenshotted individually (`tools/visual/scenarios/templates.js`, one PNG
+  per layout under a real theme) and looked at directly, not just asserted to exist. Nine are
+  genuinely usable as shipped: title, title & subtitle, section break, bullets, image-left,
+  image-right, quote, timeline, and closing all read as a real slide someone would use, with correct
+  contrast and everything inside the 1920×1080 frame. Two are honest mediocrities, left as-is rather
+  than dressed up: **comparison**'s two panels leave roughly three-quarters of their own height
+  empty below three lines of body text, and **image-left/-right**'s text block is vertically
+  centered a little higher than the image placeholder's centered label, a small misalignment that
+  reads as slightly uncomposed side by side. Neither is broken — both render correctly, inside
+  bounds, on every theme — they are simply the two layouts in the pack that would benefit from a
+  human designer's second pass on spacing, not a rendering fix.
+- **A genuine rendering bug, found only by looking at the twelfth layout's cousins, not by any
+  test:** the `divider()` helper (used by `two-column`, `stat-row`, and `timeline`) built its `Line`
+  shape with `point: [0, 0]` and both handle points set to **absolute** page coordinates (e.g.
+  `[960, 280]`/`[960, 900]`). `LineShape.handles` are local to `shape.point` — confirmed against a
+  real `LineTool`-drawn shape, where `start.point` is always `[0, 0]`, `end.point` is the offset,
+  and `point` carries the absolute start — not a pair of absolute coordinates. `getBounds` derives
+  a line's bounds purely from its handle points and only *then* translates by `shape.point`, so a
+  `[0, 0]` shape.point silently no-oped there and the absolute bounds came out correct regardless —
+  the bug was invisible to any bounds-based check. But the shape's own render draws those same
+  handle points as the *local* SVG path coordinates inside a container sized and positioned to
+  those (correct) bounds; for a perfectly vertical or horizontal divider the bounds are zero-width
+  or zero-height, which put the drawn path entirely outside its own container's clipped viewport —
+  `overflow: hidden` on `.tl-positioned-svg` (`useStyle.tsx`) discarded 100% of the stroke, not just
+  clipped part of it. A diagonal line hides the same mistake (real width *and* height give the local
+  coordinates room to land inside a large-enough box, just not centered as intended), which is
+  presumably why no earlier line-related work caught it — this pack's dividers are the first
+  perfectly straight lines this fork has ever generated programmatically. Confirmed both broken
+  (`document.elementFromPoint` at the stroke's screen position hit the canvas background, not the
+  path) and fixed (same check now hits the path itself) before and after. Fixed in `divider()` by
+  setting `point: start` and expressing both handles relative to it (`start: [0, 0]`, `end: [end.x -
+  start.x, end.y - start.y]`) — the same convention every other shape in this pack, and every
+  hand-drawn line in this fork, already follows.
+- **Theme-aware font assignment is a naming heuristic, not a role field.** `isHeadingSlot` treats a
+  slot as a heading (gets `deckTheme.fonts.heading` instead of `.body`) purely because its name
+  contains "title"/"heading" or is exactly "quote" — every slot name in the starter pack already
+  fits this convention. A real per-shape role field was considered and rejected for this first pass:
+  it would be one more optional field to explain for a starter pack where a naming convention
+  already covers every case, and a host authoring its own templates that wants finer control can
+  still set `style.font` explicitly (the heuristic only fires when `font` is left `undefined`).
+- **A flaky selector, and why it matters beyond this one scenario.** The first version of
+  `tools/visual/scenarios/theme.js` looked up a shape's rendered fill with `` `#${shapeId}_svg` ``,
+  a CSS id selector built from a uuid. A uuid that happens to start with a digit (about 3 in 8 of
+  them, since 10 of the 16 hex digits are 0-9) makes that string an invalid CSS identifier —
+  `document.querySelector('#6c7f...')` throws `SyntaxError: '#6c7f...' is not a valid selector`
+  rather than returning null, so the scenario's pass/fail outcome depended entirely on the luck of
+  the generated id, not on anything the phase actually changed. Fixed by switching to an attribute
+  selector, `` `[id="${shapeId}_svg"]` ``, which has no such restriction since the value is a
+  string, not a token, and re-run three times to confirm it no longer depends on which ids happened
+  to be generated. Worth recording here, not just in the scenario's own comment, because the same
+  trap is available to any future scenario that builds a selector from a shape/page id — this fork
+  generates every id as a uuid (`Utils.uniqueId()`), so the failure mode is always latent, not
+  specific to this one shape.
+
+**Verified:** 78/78 suites, 432 tests passing (up from 387; 23 new tests across `templates.spec.ts`
+(slot filling, font pairing, deep-clone isolation) and `addSlideFromTemplate.spec.ts` (the command's
+undo/redo and page/pageState shape)) · `build:packages` 9/9 with zero type errors · the `templates`
+visual scenario exits 0 with no console errors, lists all twelve cards in the real `TemplatePicker`
+gallery, and screenshots each of the twelve resulting slides individually under a real theme,
+applied via the real `ThemeMenu` · the `theme` scenario's divider fix and default-theme change were
+re-verified after this phase's own divider bug fix, with the fixed selector passing three runs in a
+row · all eight other scenarios re-verified with no regression — screenshots inspected, not just
+asserted on.
 
 ### Suggested order
 

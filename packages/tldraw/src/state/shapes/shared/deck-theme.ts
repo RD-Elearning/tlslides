@@ -160,7 +160,33 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
   },
 ]
 
-export const DEFAULT_DECK_THEME = BUILT_IN_DECK_THEMES[0]
+// ---------------------------------------------------------------------------------------------
+// T1 (post-review) — which theme is the read-side default, and why
+// ---------------------------------------------------------------------------------------------
+// This was `BUILT_IN_DECK_THEMES[0]` (`midnight`, a dark navy theme) until this was reviewed
+// against a screenshot. That made every brand-new deck — and every template inserted into one —
+// render dark navy by default, which is a strong, specific opinion for an editor that otherwise
+// defaults to a plain, neutral canvas (Phase 1 deliberately chose `Solid`/`Sans` over the
+// hand-drawn `Draw`/`Script` for exactly this reason: a slide tool's untouched state should look
+// like a blank page, not a stylistic statement). Every mainstream slide tool's blank-deck default
+// is a light, near-neutral surface, not a dark one.
+// `mono-grid` was picked over the other four light themes by the same "look like a blank page,
+// not a brand" standard, checked directly against a screenshot of a fresh deck under all five
+// (see the Phase 12 report): its palette is functionally grayscale — `accent1` is the same
+// near-black as `text`, and `accent2` (a red) appears only as a small, deliberate highlight — so
+// it is the only one of the five that doesn't commit to a hue mood the way `ivory-editorial`
+// (warm cream, amber/green), `coral-pop` (coral/turquoise), and `forest` (moss/rust) each do.
+// `mono-grid`'s heading face is `FontStyle.Mono`, a specific look in isolation, but the least
+// *colour*-opinionated theme is what matters most for a first-touch default — a user who dislikes
+// the monospace heading is one `ThemeMenu` click from a different pairing, same as any other
+// theme choice.
+// This is a named constant, not `BUILT_IN_DECK_THEMES[<index>]`, on purpose: the array's order is
+// also the order the `ThemeMenu` list renders in, a UI concern that has nothing to do with which
+// theme new decks get. Coupling the two meant reordering the menu (e.g. alphabetizing it, or
+// promoting a new theme to the top) would silently change the appearance of every untouched deck
+// — exactly the fragility this constant exists to remove. `BUILT_IN_DECK_THEMES` itself is
+// untouched; `midnight` keeps its place as the first, most attention-grabbing entry in the menu.
+export const DEFAULT_DECK_THEME = BUILT_IN_DECK_THEMES.find((theme) => theme.id === 'mono-grid')!
 
 /**
  * The theme to render a document with. A document that has never had one set renders against
