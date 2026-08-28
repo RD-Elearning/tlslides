@@ -17,6 +17,15 @@ export const LABEL_POINT = [0.5, 0.5]
 // module-level array, so assigning it by reference would let an in-place resize corrupt the
 // default for every other slide in the process.
 export const DEFAULT_SLIDE_SIZE = [1920, 1080]
+
+// Common slide aspect presets, in the same [width, height] shape as `TDPage.size`. As with
+// DEFAULT_SLIDE_SIZE, copy an entry (`[...SLIDE_ASPECT_PRESETS.widescreen]`) before assigning it
+// onto a document or page.
+export const SLIDE_ASPECT_PRESETS = {
+  widescreen: [1920, 1080], // 16:9
+  standard: [1440, 1080], // 4:3
+  square: [1080, 1080], // 1:1
+} as const
 import type { Easing } from '~types'
 
 export const PI2 = Math.PI * 2

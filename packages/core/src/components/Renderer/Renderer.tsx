@@ -57,6 +57,11 @@ export interface RendererProps<T extends TLShape, M = any> extends Partial<TLCal
    */
   snapLines?: TLSnapLine[]
   /**
+   * (optional) The dimensions, [width, height], of a slide-shaped frame to render behind the
+   * page's shapes, dimming everything outside of it.
+   */
+  frame?: number[]
+  /**
    * (optional) The current user's id, used to identify the user.
    */
   userId?: string
@@ -142,6 +147,7 @@ export const Renderer = observer(function _Renderer<
   meta,
   snapLines,
   grid,
+  frame,
   containerRef,
   performanceMode,
   hideHandles = false,
@@ -197,6 +203,7 @@ export const Renderer = observer(function _Renderer<
         assets={assets}
         snapLines={snapLines}
         grid={grid}
+        frame={frame}
         users={users}
         userId={userId}
         externalContainerRef={containerRef}

@@ -128,6 +128,11 @@ export interface TLTheme {
   background?: string
   foreground?: string
   grid?: string
+  // Colors for the optional `frame` decoration (see `Canvas`/`Renderer`'s `frame` prop): the
+  // frame's own fill and border, and the scrim painted over everything outside of it.
+  frameFill?: string
+  frameBorder?: string
+  frameDim?: string
 }
 
 export type TLWheelEventHandler = (

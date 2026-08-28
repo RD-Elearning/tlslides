@@ -76,6 +76,10 @@ const defaultTheme: TLTheme = {
   background: 'rgb(248, 249, 250)',
   foreground: 'rgb(51, 51, 51)',
   grid: 'rgba(144, 144, 144, 1)',
+  // A slide's "paper" is white regardless of app theme, like a physical page would be.
+  frameFill: 'rgb(255, 255, 255)',
+  frameBorder: 'rgba(0, 0, 0, 0.15)',
+  frameDim: 'rgba(0, 0, 0, 0.06)',
 }
 
 const tlcss = css`
@@ -154,6 +158,25 @@ const tlcss = css`
     touch-action: none;
     pointer-events: none;
     user-select: none;
+  }
+
+  .tl-frame {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .tl-frame-dim {
+    fill: var(--tl-frameDim);
+  }
+
+  .tl-frame-paper {
+    fill: var(--tl-frameFill);
+    stroke: var(--tl-frameBorder);
+    stroke-width: 1px;
   }
 
   .tl-snap-line {

@@ -219,6 +219,15 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   fileSystemHandle: FileSystemHandle | null = null
 
+  // Tracks whether the renderer has ever reported its real (non-default, non-zero) bounds. Two
+  // uses: (1) guards the auto-fit in `updateBounds` so it only fires once, on the first real
+  // measurement — later renderer resizes (e.g. the browser window changing size) shouldn't keep
+  // resetting the camera out from under the user; (2) gates `changePage`'s auto-fit, since
+  // fitting against `rendererBounds`' 100x100 placeholder default (before the canvas has ever
+  // been measured, e.g. in unit tests that never mount a renderer) would produce a meaningless
+  // camera. Once true, it stays true for the app's lifetime.
+  private hasKnownViewport = false
+
   viewport = Utils.getBoundsFromPoints([
     [0, 0],
     [100, 100],
@@ -887,6 +896,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     this.rendererBounds = bounds
     const { point, zoom } = this.pageState.camera
     this.updateViewport(point, zoom)
+
+    // Auto-fit the camera once we know the real viewport size (skip degenerate 0x0 reports,
+    // e.g. before the container has been laid out, or in a jsdom test environment).
+    if (!this.hasKnownViewport && bounds.width > 0 && bounds.height > 0) {
+      this.hasKnownViewport = true
+      this.zoomToFit()
+    }
 
     if (!this.readOnly && this.session) {
       this.session.update()
@@ -1679,10 +1695,20 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   /**
    * Change the current page.
+   *
+   * Auto-fits the camera to the new page's slide frame as a side effect, deliberately kept out
+   * of the `changePage` command itself: the command's before/after only need to capture
+   * `currentPageId`, so undo/redo just moves between pages without also replaying old camera
+   * moves. `zoomToFit` only ever patches `pageStates[pageId].camera`, which (unlike
+   * `document.pages`) survives the read-only cleanup below, so this keeps working while
+   * presenting. Skipped until the renderer has reported its real bounds at least once (see
+   * `hasKnownViewport`), so this is a no-op for a `TldrawApp` that's never actually been mounted.
    * @param pageId The new current page's id.
    */
   changePage = (pageId: string): this => {
-    return this.setState(Commands.changePage(this, pageId))
+    this.setState(Commands.changePage(this, pageId))
+    if (this.hasKnownViewport) this.zoomToFit()
+    return this
   }
 
   /**
@@ -1717,6 +1743,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   renamePage = (pageId: string, name: string): this => {
     if (this.readOnly) return this
     return this.setState(Commands.renamePage(this, pageId, name))
+  }
+
+  /**
+   * Set a page's slide frame size, e.g. to switch between 16:9, 4:3, or a custom size.
+   * See `SLIDE_ASPECT_PRESETS` in `~constants` for common presets.
+   * @param pageId The id of the page to resize.
+   * @param size The new [width, height] of the slide frame.
+   */
+  setPageSize = (pageId: string, size: number[]): this => {
+    if (this.readOnly) return this
+    return this.setState(Commands.setPageSize(this, pageId, size))
   }
 
   /**
@@ -1927,9 +1964,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Copy one or more shapes as SVG.
    * @param ids The ids of the shapes to copy.
    * @param pageId The page from which to copy the shapes.
+   * @param useFrame When true and the page has a slide frame, use the frame (rather than the
+   * shapes' own bounding box) as the SVG's viewport. Used for whole-slide export, where every
+   * slide should come out at the same size and aspect ratio; left off by default so that copying
+   * an arbitrary selection to SVG keeps cropping tightly to that selection.
    * @returns A string containing the JSON.
    */
-  copySvg = (ids = this.selectedIds, pageId = this.currentPageId) => {
+  copySvg = (ids = this.selectedIds, pageId = this.currentPageId, useFrame = false) => {
     if (ids.length === 0) ids = Object.keys(this.page.shapes)
     if (ids.length === 0) return
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -1943,8 +1984,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const shapes = ids
       .map((id) => this.getShape(id, pageId))
       .sort((a, b) => a.childIndex - b.childIndex)
-    // Find their common bounding box. S hapes will be positioned relative to this box
+    // Find their common bounding box. Shapes will be positioned relative to this box, unless
+    // `useFrame` is set and the page has a slide frame, in which case the frame is the viewport
+    // instead: every slide then exports at the same size, with content positioned relative to
+    // the frame's origin, rather than each slide getting its own resolution and aspect ratio
+    // depending on its content.
     const commonBounds = Utils.getCommonBounds(shapes.map(TLDR.getRotatedBounds))
+    const frame = useFrame ? this.getPage(pageId).size : undefined
+    const originX = frame ? 0 : commonBounds.minX - SVG_EXPORT_PADDING
+    const originY = frame ? 0 : commonBounds.minY - SVG_EXPORT_PADDING
+    const viewBoxWidth = frame ? frame[0] : commonBounds.width + SVG_EXPORT_PADDING * 2
+    const viewBoxHeight = frame ? frame[1] : commonBounds.height + SVG_EXPORT_PADDING * 2
     // A quick routine to get an SVG element for each shape
     const getSvgElementForShape = (shape: TDShape) => {
       const util = TLDR.getShapeUtil(shape)
@@ -1958,11 +2008,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       } else if (shape.type === TDShapeType.Video) {
         elm.setAttribute('xlink:href', this.serializeVideo(shape.id))
       }
-      // Put the element in the correct position relative to the common bounds
+      // Put the element in the correct position relative to the viewport's origin
       elm.setAttribute(
         'transform',
-        `translate(${SVG_EXPORT_PADDING + shape.point[0] - commonBounds.minX}, ${
-          SVG_EXPORT_PADDING + shape.point[1] - commonBounds.minY
+        `translate(${shape.point[0] - originX}, ${
+          shape.point[1] - originY
         }) rotate(${((shape.rotation || 0) * 180) / Math.PI}, ${bounds.width / 2}, ${
           bounds.height / 2
         })`
@@ -1989,18 +2039,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       const elm = getSvgElementForShape(shape)
       if (elm) svg.appendChild(elm)
     })
-    // Resize the elm to the bounding box
-    svg.setAttribute(
-      'viewBox',
-      [
-        0,
-        0,
-        commonBounds.width + SVG_EXPORT_PADDING * 2,
-        commonBounds.height + SVG_EXPORT_PADDING * 2,
-      ].join(' ')
-    )
-    svg.setAttribute('width', String(commonBounds.width))
-    svg.setAttribute('height', String(commonBounds.height))
+    // Resize the elm to the viewport (the frame, if the page has one, else the bounding box)
+    svg.setAttribute('viewBox', [0, 0, viewBoxWidth, viewBoxHeight].join(' '))
+    svg.setAttribute('width', String(frame ? viewBoxWidth : commonBounds.width))
+    svg.setAttribute('height', String(frame ? viewBoxHeight : commonBounds.height))
     svg.setAttribute('fill', 'transparent')
     // Clean up the SVG by removing any hidden elements
     svg
@@ -2122,16 +2164,20 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
-   * Zoom to fit the page's shapes.
+   * Zoom to fit the page's slide frame (`page.size`), if it has one. Falls back to fitting the
+   * page's shapes, like `zoomToContent`, for a page with no frame.
    */
   zoomToFit = (): this => {
     const {
       shapes,
       pageState: { camera },
     } = this
-    if (shapes.length === 0) return this
+    const frame = this.page.size
+    if (!frame && shapes.length === 0) return this
     const { rendererBounds } = this
-    const commonBounds = Utils.getCommonBounds(shapes.map(TLDR.getBounds))
+    const commonBounds = frame
+      ? { minX: 0, minY: 0, maxX: frame[0], maxY: frame[1], width: frame[0], height: frame[1] }
+      : Utils.getCommonBounds(shapes.map(TLDR.getBounds))
     let zoom = TLDR.getCameraZoom(
       Math.min(
         (rendererBounds.width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
@@ -3612,14 +3658,21 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   async exportAllShapesAs(type: TDExportTypes) {
     const initialSelectedIds = [...this.selectedIds]
     this.selectAll()
-    const { width, height } = Utils.expandBounds(TLDR.getSelectedBounds(this.state), 64)
+    // When the page has a slide frame, export at the frame's dimensions rather than the content
+    // bounding box, so that every slide exports at the same size and aspect ratio regardless of
+    // its content. This also sidesteps `getSelectedBounds` on an empty page, which has no
+    // shapes to compute bounds from.
+    const frame = this.page.size
+    const { width, height } = frame
+      ? { width: frame[0], height: frame[1] }
+      : Utils.expandBounds(TLDR.getSelectedBounds(this.state), 64)
     const idsToExport = TLDR.getAllEffectedShapeIds(
       this.state,
       this.selectedIds,
       this.currentPageId
     )
     this.setSelectedIds(initialSelectedIds)
-    await this.exportShapesAs(idsToExport, [width, height], type)
+    await this.exportShapesAs(idsToExport, [width, height], type, !!frame)
   }
 
   async exportSelectedShapesAs(type: TDExportTypes) {
@@ -3632,7 +3685,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     await this.exportShapesAs(idsToExport, [width, height], type)
   }
 
-  async exportShapesAs(shapeIds: string[], size: number[], type: TDExportTypes) {
+  async exportShapesAs(
+    shapeIds: string[],
+    size: number[],
+    type: TDExportTypes,
+    useFrame = false
+  ) {
     if (!this.callbacks.onExport) return
     this.setIsLoading(true)
     try {
@@ -3660,7 +3718,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       // Create serialized data for JSON or SVGs
       let serialized: string | undefined
       if (type === TDExportTypes.SVG) {
-        serialized = this.copySvg(shapeIds)
+        serialized = this.copySvg(shapeIds, this.currentPageId, useFrame)
       } else if (type === TDExportTypes.JSON) {
         serialized = this.copyJson(shapeIds)
       }

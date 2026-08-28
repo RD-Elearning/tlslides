@@ -8,17 +8,29 @@ import { RowButton } from '~components/Primitives/RowButton'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { ReadOnlyEditor } from '~components/ReadOnlyEditor'
 import { useTldrawApp } from '~hooks'
-import { TLDR } from '~state/TLDR'
 import { styled } from '~styles'
-import { TDSnapshot } from '~types'
+import { TDPage, TDSnapshot } from '~types'
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
 import { IconButton } from '~components/Primitives/IconButton'
+import { DEFAULT_SLIDE_SIZE } from '~constants'
 
 const DECK_WIDTH = 200
-const SLIDE_HEIGHT = 115
+// Matches StyledSlideContainer's horizontal padding below: the two must agree so that the
+// thumbnail's aspect ratio (computed from this width) is the aspect ratio it's actually
+// rendered at.
+const DECK_SLIDE_PADDING_X = 20
+const DECK_SLIDE_PADDING_Y = 5
+const DECK_SLIDE_WIDTH = DECK_WIDTH - DECK_SLIDE_PADDING_X * 2
 
 const sortedSelector = (s: TDSnapshot) =>
   Object.values(s.document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
+
+// The container is border-box, so its height must include the vertical padding on top of the
+// thumbnail itself — otherwise the canvas is taller than its content box and gets clipped.
+function getSlideHeight(page: TDPage): number {
+  const [width, height] = page.size ?? DEFAULT_SLIDE_SIZE
+  return (DECK_SLIDE_WIDTH * height) / width + DECK_SLIDE_PADDING_Y * 2
+}
 
 export const Deck = React.memo(function Deck(): JSX.Element {
   const app = useTldrawApp()
@@ -35,20 +47,21 @@ export const Deck = React.memo(function Deck(): JSX.Element {
     app.deletePage(app.currentPageId)
   }, [app])
 
-  const boringPageState = React.useCallback(
-    (pageId: string): TLPageState => {
-      const camera = TLDR.getPageState(app.state, pageId).camera
-      return {
-        id: pageId,
-        camera: {
-          point: camera.point,
-          zoom: (camera.zoom * 100) / (DECK_WIDTH * 4),
-        },
-        selectedIds: [],
-      }
-    },
-    [app]
-  )
+  // Frame the slide rectangle itself, rather than scaling whatever camera the author happens to
+  // have left the page at (which used to make thumbnails show arbitrary, inconsistent framing).
+  // The camera is zoomed so that `page.size` exactly fills the thumbnail box, with its origin
+  // (top-left of the frame) pinned to the thumbnail's own top-left corner.
+  const boringPageState = React.useCallback((page: TDPage): TLPageState => {
+    const [frameWidth] = page.size ?? DEFAULT_SLIDE_SIZE
+    return {
+      id: page.id,
+      camera: {
+        point: [0, 0],
+        zoom: DECK_SLIDE_WIDTH / frameWidth,
+      },
+      selectedIds: [],
+    }
+  }, [])
 
   const sortedPages = app.useStore(sortedSelector)
 
@@ -63,15 +76,21 @@ export const Deck = React.memo(function Deck(): JSX.Element {
               <StyledSlideStripContainer>
                 {sortedPages.map((page) => (
                   // Slide Strip
-                  <StyledSlideContainer key={page.id}>
+                  <StyledSlideContainer key={page.id} style={{ height: getSlideHeight(page) }}>
                     <StyledSlideContainerInner active={page.id === app.currentPageId}>
                       <DeckContextMenu page={page}>
-                        <ReadOnlyEditor page={page} pageState={boringPageState(page.id)} />
+                        <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
                       </DeckContextMenu>
                     </StyledSlideContainerInner>
                   </StyledSlideContainer>
                 ))}
-                <StyledSlideContainer>
+                <StyledSlideContainer
+                  style={{
+                    height:
+                      (DECK_SLIDE_WIDTH * DEFAULT_SLIDE_SIZE[1]) / DEFAULT_SLIDE_SIZE[0] +
+                      DECK_SLIDE_PADDING_Y * 2,
+                  }}
+                >
                   <StyledAddPage>
                     <IconButton
                       onClick={handleCreatePage}
@@ -151,10 +170,15 @@ const StyledSlideContainerInner = styled('div', {
 const StyledSlideContainer = styled('div', {
   position: 'relative',
   width: '100%',
-  height: SLIDE_HEIGHT,
+  // Height is set inline per-page (see getSlideHeight), from the slide's own aspect ratio,
+  // rather than a fixed box that would crop or letterbox it.
   overflow: 'hidden',
   borderRadius: '$3',
-  padding: '5px 20px',
+  padding: `${DECK_SLIDE_PADDING_Y}px ${DECK_SLIDE_PADDING_X}px`,
+  // Needed so that `width: 100%` above already nets out the horizontal padding, matching
+  // DECK_SLIDE_WIDTH (what getSlideHeight and boringPageState assume the rendered canvas width
+  // to be).
+  boxSizing: 'border-box',
 })
 
 const StyledAddPage = styled(StyledSlideContainerInner, {

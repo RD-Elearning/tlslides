@@ -42,6 +42,13 @@ export function ReadOnlyEditor({ page, pageState }: ReadOnlyEditorProps) {
         selectFill: 'rgba(38, 150, 255, 0.05)',
         background: '#212529',
         foreground: '#49555f',
+        // The slide surface follows the app theme rather than staying paper-white. In dark mode
+        // the shape palette inverts (ColorStyle.Black strokes render as #cecece), so a white
+        // slide would make its own contents nearly invisible. Kept a step lighter than the
+        // canvas background so the slide still reads as a distinct surface.
+        frameFill: '#2b3035',
+        frameBorder: 'rgba(255, 255, 255, 0.13)',
+        frameDim: 'rgba(0, 0, 0, 0.35)',
       }
     }
 
@@ -75,6 +82,7 @@ export function ReadOnlyEditor({ page, pageState }: ReadOnlyEditorProps) {
         pageState={pageState}
         theme={theme}
         meta={meta}
+        frame={page.size}
       />
     </StyledLayout>
   )

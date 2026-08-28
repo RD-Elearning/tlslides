@@ -227,8 +227,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 1 | Tier 1 quick wins — solid/sans defaults, B-06 endpoints, example dev server, deck rename | ✅ done |
 | 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ✅ done |
 | 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12, B-13 | ✅ done |
-| 4 | **F-01** slide frame / artboard | ⏳ next |
-| 5 | **F-02** `ComponentShape` + `components` registry prop | ⬜ pending |
+| 4 | **F-01** slide frame / artboard | ✅ done |
+| 5 | **F-02** `ComponentShape` + `components` registry prop | ⏳ next |
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen + auto zoom-to-fit | ⬜ pending |
 | 7 | Bug sweep — B-02, B-05, B-07, B-08, B-09, B-10 | ⬜ pending |
 | 8 | Tier 3 — opacity, corner radius, numeric inspector, format painter, layers panel | ⬜ pending |
@@ -347,6 +347,51 @@ Also closed a consistency gap: `createPage` now stamps new slides with the docum
 
 **Verified:** 63/63 suites (284 passing, up from 274) · `build:packages` 9/9 · visual harness
 exits 0.
+
+#### Phase 4 notes — F-01, the slide frame
+
+A slide is now a bounded surface. `packages/core` gained a neutral `frame?: number[]` prop on
+`Renderer`/`Canvas` and a `Frame` component that paints a "paper" rectangle plus a dimming scrim
+over the pasteboard. Core still does not know what a slide is — it receives a rectangle and three
+theme tokens (`frameFill`, `frameBorder`, `frameDim`), the same way it already receives `grid`.
+The frame renders alongside `Grid`, outside `.tl-layer`, doing its own camera math, because the
+scrim has to cover the whole viewport rather than only the frame's own bounds.
+
+- **`zoomToFit` now fits the frame** when the page has a `size`; `zoomToContent` still fits
+  content — they are different operations.
+- **Slides auto-fit on change**, applied as a side effect *after* `changePage` rather than inside
+  the command, so undo/redo moves between slides without replaying camera moves. It survives
+  presentation mode, where `cleanup` reverts `document.pages` but not `pageStates`.
+- **A `hasKnownViewport` guard** was needed: `rendererBounds` starts as a 100×100 placeholder, and
+  fitting against it produces a nonsense camera. This surfaced as a genuine regression in
+  `moveShapesToPage.spec.ts`, whose setup changes pages with no renderer ever mounted.
+- **Thumbnails frame the slide**, not the author's camera. Verified numerically, not just by eye:
+  the scenario reports `thumbnailRatios: [1.78, 1.78, 1]` for two widescreen slides and one
+  square.
+- **Export uses frame dimensions** via a `useFrame` flag, so every slide exports at the same size.
+  "Copy as SVG" keeps its tight crop, and pages without a `size` keep the old behaviour exactly.
+- **`app.setPageSize(pageId, size)`** is a proper undoable command; `SLIDE_ASPECT_PRESETS` covers
+  widescreen, standard and square. **No UI yet** — nothing existing was a natural home for it.
+
+**Two bugs caught in review, both invisible to the test suite:**
+
+1. **Dark mode made slide contents nearly invisible.** The paper was white in both themes, on the
+   reasoning that paper is white. But `strokes.dark` maps `ColorStyle.Black` to `#cecece`, so
+   every default shape rendered near-white on a white slide. The frame surface now follows the
+   theme, a step lighter than the canvas background so it still reads as a distinct surface.
+   *The deeper issue remains open:* shape colours flip with the **UI** theme, which is a
+   whiteboard assumption. For a slide product the slide surface should come from
+   `TDPage.background` (reserved in Phase 3) and shape colours should be absolute. Worth doing
+   before the style work in Tier 3.
+2. **Thumbnails were clipped.** The container is `border-box` with `5px` vertical padding, but its
+   height was set to the thumbnail height alone, so the content box was 10px shorter than the
+   canvas inside it. Measured in the browser: paper 160×90 inside a 159×90 canvas after the fix.
+
+**Not dimmed:** shapes *outside* the frame render at full contrast; only the background dims. This
+matches Figma rather than Canva, and is a deliberate, documented choice rather than an oversight.
+
+**Verified:** 65/65 suites (296 passing, up from 284) · `build:packages` 9/9 · visual scenario
+exits 0 in both themes.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

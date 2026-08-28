@@ -391,6 +391,15 @@ const InnerTldraw = React.memo(function InnerTldraw({
         selectFill: 'rgba(38, 150, 255, 0.05)',
         background: '#212529',
         foreground: '#49555f',
+        // A stronger scrim than the light-mode default: the dark canvas background is already
+        // dim on its own, so a subtler scrim wouldn't read as a visible difference next to it.
+        // The slide surface follows the app theme rather than staying paper-white. In dark mode
+        // the shape palette inverts (ColorStyle.Black strokes render as #cecece), so a white
+        // slide would make its own contents nearly invisible. Kept a step lighter than the
+        // canvas background so the slide still reads as a distinct surface.
+        frameFill: '#2b3035',
+        frameBorder: 'rgba(255, 255, 255, 0.13)',
+        frameDim: 'rgba(0, 0, 0, 0.35)',
       }
     }
 
@@ -435,6 +444,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
           assets={assets}
           snapLines={appState.snapLines}
           grid={GRID_SIZE}
+          frame={page.size}
           users={room?.users}
           userId={room?.userId}
           theme={theme}

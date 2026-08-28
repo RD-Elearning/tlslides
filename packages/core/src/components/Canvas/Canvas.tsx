@@ -29,6 +29,7 @@ import { inputs } from '~inputs'
 import { UsersIndicators } from '~components/UsersIndicators'
 import { SnapLines } from '~components/SnapLines/SnapLines'
 import { Grid } from '~components/Grid'
+import { Frame } from '~components/Frame'
 import { Overlay } from '~components/Overlay'
 
 interface CanvasProps<T extends TLShape, M extends Record<string, unknown>> {
@@ -37,6 +38,12 @@ interface CanvasProps<T extends TLShape, M extends Record<string, unknown>> {
   assets: TLAssets
   snapLines?: TLSnapLine[]
   grid?: number
+  /**
+   * (optional) The dimensions, [width, height], of a slide-shaped frame to render behind the
+   * page's shapes, dimming everything outside of it. Generic on purpose: core has no concept of
+   * a "slide", just an optional rectangle to frame.
+   */
+  frame?: number[]
   users?: TLUsers<T>
   userId?: string
   hideBounds: boolean
@@ -65,6 +72,7 @@ export const Canvas = observer(function _Canvas<
   assets,
   snapLines,
   grid,
+  frame,
   users,
   userId,
   meta,
@@ -107,6 +115,7 @@ export const Canvas = observer(function _Canvas<
     <div id={id} className="tl-container" ref={rContainer}>
       <div id="canvas" className="tl-absolute tl-canvas" ref={rCanvas} {...events}>
         {!hideGrid && grid && <Grid grid={grid} camera={pageState.camera} />}
+        {frame && <Frame frame={frame} camera={pageState.camera} />}
         <div ref={rLayer} className="tl-absolute tl-layer" data-testid="layer">
           <Page
             page={page}
