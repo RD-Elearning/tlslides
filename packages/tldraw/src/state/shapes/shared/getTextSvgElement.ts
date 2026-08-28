@@ -5,7 +5,15 @@ import { getTextAlign } from './getTextAlign'
 import { LINE_HEIGHT } from '~constants'
 
 export function getTextSvgElement(text: string, style: ShapeStyles, bounds: TLBounds) {
-  const fontSize = getFontSize(style.size, style.font)
+  // Phase 15 fix, found by screenshotting `renderPageToSvg`'s output (see that module's report):
+  // this drew every line at the *unscaled* font size while centering/right-aligning it against
+  // `bounds`, which — for any shape whose live rendering measured/laid out text with `getFontStyle`
+  // (which does multiply by `scale`) — is a bounds computed for the *scaled* size. The starter
+  // templates (Phase 13) set `scale` on nearly every text shape (0.5–1.3), so this silently made
+  // "Copy as SVG"/PNG export (and any label on a scaled shape) render text noticeably too large,
+  // overflowing its centered box and, for adjacent shapes, overlapping — invisible until this
+  // phase actually rendered an export to a screenshot instead of only asserting on its markup.
+  const fontSize = getFontSize(style.size, style.font) * (style.scale ?? 1)
   const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
   const textLines = text.split('\n').map((line, i) => {
     const textElm = document.createElementNS('http://www.w3.org/2000/svg', 'text')

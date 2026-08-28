@@ -246,18 +246,24 @@ app.deck.listTemplates() // built-in layout pack, for a template picker
 `BUILT_IN_DECK_THEMES`/`BUILT_IN_TEMPLATES`, for a picker rendered before an editor even mounts) —
 `setTheme`/`addSlideFromTemplate` happily accept your own `DeckTheme`/`Template` object instead.
 
-### 6. A thumbnail — and its real limitation
+### 6. Thumbnails — now for any slide, in a browser or on the server (Phase 15)
 
 ```tsx
-const dataUrl = app.deck.getThumbnail(app.currentPageId) // only the current slide
+const dataUrl = app.deck.getThumbnail(secondSlideId) // any slide, not just app.currentPageId
 ```
 
-There is no headless renderer yet (Phase 15 — `renderPageToSvg`). `getThumbnail` reuses the
-editor's own SVG export path, which needs the target slide to be the one currently mounted on
-screen (`id === app.currentPageId`); asking for any other slide returns `undefined` rather than a
-blank/incorrect image. It also needs a real browser (`document`/`XMLSerializer`), so it returns
-`undefined`, not a throw, if called somewhere without a DOM. Full-deck thumbnail grids without
-mounting N editors are exactly what Phase 15 is for.
+`getThumbnail` is routed through `renderPageToSvg` — a pure function of the document, no mounted
+editor, no `document`/`window` required — so it works for every slide in the deck, from a browser
+or from Node, without switching the user's own view. A slide grid showing all N slides is just:
+
+```tsx
+{app.deck.listSlides().map((slide) => (
+  <img key={slide.id} src={app.deck.getThumbnail(slide.id)} alt={slide.name} />
+))}
+```
+
+See section 9 below for generating the same thumbnails **server-side**, with no `<Tldraw>`
+mounted at all.
 
 ### 7. A read-only view: `<DeckViewer>`
 
@@ -290,6 +296,103 @@ currently selected on the canvas. `examples/nextjs-sample/components/SlideManage
 colour field is a working example, and `tools/visual/scenarios/deckapi.js` asserts the shape count
 doesn't change after pressing Tab in it.
 
+### 9. Server-side thumbnails and PDF export (Phase 15)
+
+`renderPageToSvg` (`@tlslides/tldraw`'s package root) is a pure function of a `TDPage` — no React,
+no DOM, no mounted editor — so it runs in a Next.js API route / server action exactly as well as
+in the browser. This is what actually unblocks "generate a thumbnail without paying for a mounted
+canvas per slide," e.g. a Next.js Route Handler that thumbnails every slide of a stored deck:
+
+```ts
+// app/api/decks/[id]/thumbnails/route.ts
+import { renderPageToSvg } from '@tlslides/tldraw'
+import { loadDeckDocument } from '@/lib/decks' // however you persist a TDDocument
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const doc = await loadDeckDocument(params.id) // a plain TDDocument, from your DB/store
+  const thumbnails = Object.values(doc.pages)
+    .sort((a, b) => (a.childIndex ?? 0) - (b.childIndex ?? 0))
+    .map((page) => ({
+      id: page.id,
+      svg: renderPageToSvg(page, {
+        assets: doc.assets,
+        theme: doc.theme,
+        defaultPageSize: doc.defaultPageSize,
+      }),
+    }))
+  return Response.json({ thumbnails })
+}
+```
+
+No `<Tldraw>`, no `jsdom`, no headless browser — just the document you already have. Send the raw
+`<svg>` strings straight to the client (an `<img src="data:image/svg+xml;base64,...">`, or inline
+them directly) and let the browser do the rasterizing, exactly like `Deck.getThumbnail` does
+client-side.
+
+**What this cannot do, and why:** two things are honest limitations, not oversights — see
+`renderPageToSvg`'s own doc comment (`packages/tldraw/src/state/render/renderPageToSvg.ts`) for
+the full reasoning:
+- **Text layout is an approximation**, not a measurement — there is no headless DOM to measure
+  glyph widths against, so a label's centering or a bare text shape's own size is a hand-tuned
+  average-character-width heuristic. Good enough for a thumbnail; don't rely on it for pixel-exact
+  positioning.
+- **A `ComponentShape` block and a `VideoShape`'s live frame both render as an honest placeholder**
+  (a labelled dashed box; a neutral grey rect), never a fabricated image of your actual React
+  component or a captured video frame — neither can be serialized to static SVG from a server that
+  never mounted your component tree.
+
+**PNG is browser-only, deliberately.** `renderSvgToPng` (also exported from the package root)
+rasterizes via `<canvas>`, which doesn't exist in Node. Rather than pull in a native-binding
+dependency (`sharp`, the `canvas` npm package) or a full headless browser (`puppeteer`,
+`playwright`) just to cover a server-side PNG need this package can't predict, that decision is
+left to you — `renderPageToSvg`'s output is a plain, complete SVG string, so any of the following
+work against it unchanged:
+
+```ts
+// Option A — sharp (native binding, fast, no browser)
+import sharp from 'sharp'
+const png = await sharp(Buffer.from(svg)).png().toBuffer()
+
+// Option B — a headless browser you already run for other reasons (Puppeteer/Playwright)
+const page = await browser.newPage()
+await page.setContent(`<!doctype html><body style="margin:0">${svg}</body>`)
+await page.setViewportSize({ width, height })
+const png = await page.screenshot({ type: 'png' })
+```
+
+**PDF is not implemented in this package, and here's exactly what it would need.** The roadmap
+called PDF "the most-requested export... straightforward once headless SVG exists" — headless SVG
+existing was necessary but turned out not to be sufficient on its own: producing a real PDF still
+needs either (a) a vector SVG→PDF converter (nothing lightweight and dependency-free does this
+well — `svg2pdf.js` exists but pulls in `jsPDF` and expects a `DOMParser`/canvas for text
+measurement, i.e. it wants a browser-like environment anyway), or (b) rasterizing each slide to
+PNG first (using one of the two options above) and assembling a PDF of full-page images with a
+small, pure-JS, dependency-light library like `pdf-lib` (no native bindings, works in Node and the
+browser). Concretely, a whole-deck PDF is:
+
+```ts
+import { PDFDocument } from 'pdf-lib' // add this yourself — not a dependency of @tlslides/tldraw
+import { renderPageToSvg } from '@tlslides/tldraw'
+
+async function exportDeckPdf(doc: TDDocument, rasterize: (svg: string, w: number, h: number) => Promise<Uint8Array>) {
+  const pdf = await PDFDocument.create()
+  for (const page of Object.values(doc.pages)) {
+    const [w, h] = page.size ?? doc.defaultPageSize ?? [1920, 1080]
+    const svg = renderPageToSvg(page, { assets: doc.assets, theme: doc.theme })
+    const pngBytes = await rasterize(svg, w, h) // your sharp/Puppeteer call from above
+    const pdfPage = pdf.addPage([w, h])
+    const image = await pdf.embedPng(pngBytes)
+    pdfPage.drawImage(image, { x: 0, y: 0, width: w, height: h })
+  }
+  return pdf.save()
+}
+```
+
+This is deliberately left as a recipe, not a shipped `Deck.exportPdf()` method: which rasterizer
+you already have (or want) in your deployment is exactly the kind of "prefer something that works
+in both browser and Node, and don't force a heavyweight dependency on a caller who doesn't need
+it" decision this package can't make on your behalf.
+
 ## Assessing this repo against "build a Canva-style slide maker"
 
 **What you get for free from this fork:**
@@ -307,11 +410,11 @@ doesn't change after pressing Tab in it.
   in `apps/www` as reference wiring, not packaged as reusable library code.
 
 **What's genuinely missing for a Canva-like product** (i.e., what you'd be building yourselves on
-top of this): a template/theme library, brand kit (fonts/colors/logos), richer typography
-controls, slide transitions/animations, a presenter mode, a stock asset/stickers library,
-PDF/PPTX export (only PNG export exists today), comments, version history UI, and the actual
-product shell — accounts, projects/dashboard, billing. `apps/www` is a demo/marketing site for
-the editor, not a SaaS app shell.
+top of this): richer typography controls, slide transitions/animations, a presenter mode, a stock
+asset/stickers library, PPTX export, comments, version history UI, and the actual product shell —
+accounts, projects/dashboard, billing. (A template/theme library and headless SVG/PNG export do
+now exist, per Phases 12/13/15 — see section 9 above for what's still a recipe, not a shipped
+method: whole-deck PDF.) `apps/www` is a demo/marketing site for the editor, not a SaaS app shell.
 
 **Maintenance risk worth naming explicitly:** this fork sits on a `tldraw@1.9.1` snapshot from
 ~Nov 2021 (React 17, Next 12, TS 4.5) and was never published anywhere, so there's no upstream to

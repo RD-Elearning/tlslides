@@ -239,6 +239,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 12 | Deck theme / brand kit — `TDDocument.theme`, five built-in palettes, `'theme:accent1'` sentinel tokens, `ThemeMenu` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 | 13 | Template system — `slot?` field, twelve theme-aware starter layouts, `addSlideFromTemplate`, `TemplatePicker` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 | 14 | Host control API — `app.deck.*` facade, typed event stream, caller-supplied slide ids, `DeckViewer` read-only entry point, `getThumbnail` (see `reviews/roadmap-slides.md`) | ✅ done |
+| 15 | Headless render + export — pure `renderPageToSvg`, `getThumbnail` works for any slide with no DOM, browser-only PNG rasterization, deck JSON in/out, PDF scoped to a documented recipe (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -1212,6 +1213,165 @@ re-verified with no regression · all nine `tools/visual/scenarios` harness scen
 `theme`, `background`, `stylepanel`, `styles`, `shapes`, `frame`, `line`, `reorder`) re-verified
 with no regression — every screenshot inspected, not just asserted on, including the rewritten
 sample app's own sidebar and its KPI-tile/bar-chart/rectangle buttons after the rewrite.
+
+#### Phase 15 notes — headless render + export
+
+Shipped `renderPageToSvg` (`state/render/renderPageToSvg.ts`) — a pure function of a `TDPage`, no
+React, no DOM, no mounted editor — and routed `Deck.getThumbnail` through it, lifting exactly the
+limitation Phase 14 documented and deferred. Per-slide PNG and deck JSON in/out shipped too;
+whole-deck PDF did not, for a reason explained below rather than silently dropped.
+
+- **The crux, confirmed before writing code, was exactly what the roadmap predicted:**
+  `TDShapeUtil.getSvgElement`'s base implementation is `document.getElementById(shape.id +
+  '_svg')?.cloneNode(true)` — it clones a *live, currently-mounted* DOM node, which cannot exist
+  headlessly, no matter how the rest of the problem is solved. The fix wasn't "make cloning work
+  without a DOM" (impossible); it was reading every shape util end to end to find out how much of
+  what gets cloned was already computed by a plain function of shape data, not by React. The
+  answer, confirmed by actually reading each one, not assumed: almost all of it.
+  `getRectanglePath`/`getRectangleIndicatorPathTDSnapshot`, the `Ellipse`/`Triangle` equivalents,
+  every `DrawUtil`/`ArrowUtil` helper (including the circular-arc math for a *bent* arrow, and its
+  arrowhead geometry), and `getShapeStyle` itself are all pure — no `document`, no React, callable
+  from Node exactly as they're called from JSX today. `renderPageToSvg` imports every one of them
+  directly rather than reimplementing the geometry a second time; only the *assembly* into raw SVG
+  markup strings is new code, since there is no headless JSX-to-SVG-string bridge in use in this
+  codebase. That makes it a **third** renderer of concepts Phase 11 already established have more
+  than one (a resolved background/gradient fill): React (`GradientDef`, live), DOM-imperative
+  (`appendBackgroundDefs`, `TldrawApp.copySvg`), and now plain strings here — the same discipline
+  extended to shape bodies, not a new pattern invented for this phase.
+- **Node-safety was verified empirically before assuming it, not asserted after the fact.** The
+  first real risk considered was that `@tlslides/core`'s package barrel (which every geometry
+  helper imports transitively, for `Utils`) re-exports React *components* (`Frame`, `Canvas`, ...)
+  at module scope, and that `ArrowUtil/arrowHelpers.ts` imports `TLDR.ts`, which imports the whole
+  shapes barrel (styled-components, mobx-react, the lot) — either could plausibly throw in a
+  window-less environment. Checked directly, before writing `renderPageToSvg` itself: a throwaway
+  `@jest-environment node` spec importing `@tlslides/core`, `shape-styles.ts`, `background.ts`,
+  `deck-theme.ts`, every shape-geometry helper, `state/templates.ts`, and `ArrowUtil/arrowHelpers`
+  individually. All of it imported cleanly — none of this codebase's React/styled-component chain
+  touches a DOM global at *module load* time, only inside specific methods this phase never calls.
+  That result is what made reusing the geometry helpers directly (rather than a leaner,
+  hand-rolled duplicate set) a safe choice rather than a gamble.
+- **Text is the one real approximation, and it's narrower than it first looks.** Every shape's
+  on-canvas size is stored geometry (`size`, `radius`, handle points) *except* two cases that are
+  actually *measured* against a mounted, invisible DOM element: a bare `TextShape`'s own bounds
+  (`TextUtil.getBounds`'s `melm`) and a shape `label`'s centering box (`getTextLabelSize`). Neither
+  measurement is persisted anywhere for a headless reader to consult. `estimateTextSize` (also
+  exported) is a hand-tuned average-character-width heuristic standing in for both — good enough
+  for a thumbnail (line count and rough proportions are right), not pixel-exact. Every other text
+  concern — line splitting, alignment, `<text>` x/y — needed no measurement at all once bounds are
+  known, since that positioning is relative to `bounds.width`, not to the text's own natural size;
+  `renderTextLines` mirrors the pre-existing `getTextSvgElement` (DOM-imperative) exactly for that
+  part, a fourth small instance of the "reuse the resolved value, not the resolution" pattern.
+- **A real bug this phase's own screenshot found, in code Phase 15 didn't write.** The hard rule
+  ("assume yours has one bug and go find it") predicted a screenshot would catch something a type
+  check or assertion couldn't. It did, in `getTextSvgElement.ts` — a pre-existing shared helper
+  both the live `copySvg` export path and this phase's own `renderTextLines` are built on/mirror —
+  not in new Phase 15 code. It computed font size as `getFontSize(style.size, style.font)`,
+  **never multiplying by `style.scale`**, while the bounds it centers/right-aligns text against
+  (from `TextUtil.getBounds`'s DOM measurement, or now from `estimateTextSize`) *do* account for
+  scale, since the live measurement path (`getFontStyle`) always has. Every one of Phase 13's
+  twelve starter templates sets `scale` on nearly every text shape (0.5-1.3, to fit a title/number/
+  caption into its slot) — this bug has therefore been in "Copy as SVG"/PNG export since Phase 13
+  shipped, silently, because nobody had ever rendered an *export* to a screenshot before (only the
+  live canvas, which never calls this function — it measures with the DOM directly). Caught only
+  by literally screenshotting `renderPageToSvg`'s own output for a themed `stat-row` template: the
+  title rendered at roughly double its intended width, spilling off the left edge of the frame,
+  and the three stat captions — each correctly positioned at a different `point.x` per the
+  template's own data, confirmed by dumping the raw `<g transform>` values in a `@jest-environment
+  node` debug spec before touching any rendering code — rendered wide enough to overlap each
+  other. Fixed once, at the shared root cause (`getFontSize(...) * (style.scale ?? 1)`), not
+  independently in the headless path; `getTextSvgElement.spec.ts` (new — the function had no test
+  before this phase) locks in the scale multiplication and confirms centering still targets the
+  *given* bounds width regardless of scale.
+- **A correctness improvement over `TldrawApp.copySvg`'s own shape iteration, not a knowingly
+  copied behaviour.** `copySvg` walks every id in `page.shapes` — including group children — and,
+  for a group, *also* renders each child a second time via the group's own `children` array,
+  meaning a grouped shape can be double-rendered in "Copy as SVG" today. `renderPageToSvg` instead
+  renders only `parentId === page.id` shapes at the top level and recurses into a group's children
+  from there, so a grouped shape is emitted exactly once. Not reported as a `copySvg` bug fix
+  (out of scope — nothing asked for it, and `copySvg`'s own behaviour is unchanged) but deliberately
+  not reproduced in the new function either, and covered directly (`renderPageToSvg.spec.ts`'s
+  "never double-renders a grouped shape" case).
+- **Arrows ended up full-fidelity, not the scoped-down approximation first planned.** The initial
+  read of `ArrowUtil` looked like a fourth "this needs a live DOM clone and can't be replicated"
+  case, since it never overrides `getSvgElement` either. It doesn't need to be: every piece of its
+  rendering — straight and circular-arc-bend shafts, both dash styles, both arrowhead shapes — was
+  already factored into pure functions in `ArrowUtil/arrowHelpers.ts` for reuse between `Straight
+  Arrow`/`CurvedArrow` and `LineUtil` (a line already reuses the straight-shaft function). Once
+  Node-safety of that file was confirmed (see above), reusing the rest cost no more than any other
+  shape type and meant nothing had to be scoped down here at all.
+- **`ComponentShape` and `VideoShape`'s live-frame limitation are real and were not attempted.**
+  Neither can be rendered headlessly by any means (a host's own mounted React tree; a
+  currently-playing `<video>` element), so both render an honest placeholder instead of nothing or
+  a fabricated image — `ComponentShape`'s is pixel-identical to `ComponentUtil.getSvgElement`'s
+  own existing placeholder (necessarily duplicated as a string, since that function is also
+  DOM-imperative and equally uncallable headlessly), `VideoShape`'s is new (a neutral grey rect
+  plus a play-triangle glyph, since no still frame exists to substitute).
+- **`getThumbnail`'s Phase 14 limitations are both actually gone, not just relaxed.** It now works
+  for any slide id (not just `app.currentPageId`) and needs no `document` at all for the `svg`/
+  `dataUrl` formats — confirmed directly, not assumed: `Deck.spec.ts`'s thumbnail tests were
+  rewritten (the two that used to *lock in* "returns undefined for a non-current slide" and
+  "returns undefined outside a DOM environment" now assert the opposite). Base64-encoding the SVG
+  for the `dataUrl` format also had to become dual-environment (`toBase64Utf8`, `Buffer` in Node,
+  `btoa` in a browser) — the old code's `btoa(unescape(encodeURIComponent(svg)))` only worked
+  because it happened to always run in a browser before.
+- **PNG shipped as a new, explicitly async method — not folded into `getThumbnail` — because
+  rasterizing is unavoidably asynchronous and `getThumbnail`'s whole contract (Phase 14) is
+  synchronous.** There is no synchronous browser API for SVG→canvas decode (`Image.onload` is
+  inherently a callback/microtask). Rather than make `getThumbnail` sometimes return a `Promise`
+  depending on `opts.format` — a genuinely confusing, inconsistent signature — `Deck.exportSlidePng`
+  is new, always returns `Promise<string | undefined>`, and its own async-ness is the "this does
+  real work, in a specific environment" signal the brief asked for ("explicit in the API"), not a
+  runtime throw. `renderSvgToPng` (the underlying function, also exported) resolves `undefined` in
+  Node — the same convention `getThumbnail` already established — rather than throwing.
+- **No PNG/PDF dependency was added, and here's the actual reasoning, not just the conclusion.**
+  Browser PNG needs nothing extra: `<canvas>` + `Image` already do the whole job. Node PNG has no
+  dependency-free answer — every real option (`sharp`, the `canvas` npm package, both native
+  bindings; `puppeteer`/`playwright`, a full headless browser) is a meaningfully heavy addition to
+  a package that has no way to know which one, if any, a given host's deployment already carries —
+  so none was added; `guides/nextjs-integration.md` shows wiring either kind against
+  `renderPageToSvg`'s plain string output. PDF compounds the same problem: a real vector SVG→PDF
+  converter with no native/browser dependency doesn't exist (`svg2pdf.js`, the closest, still wants
+  a `DOMParser`/canvas for text measurement), so a whole-deck PDF needs rasterizing every slide to
+  PNG first (the same environment question as above) and assembling a PDF of full-page images —
+  `pdf-lib` (pure JS, no native bindings, Node **and** browser) can do that assembly step cheaply,
+  but the phase stops at documenting the recipe (`guides/nextjs-integration.md`, `guides/
+  documentation.md`) rather than shipping a `Deck.exportPdf()` that would have to silently pick a
+  rasterizer on a host's behalf. A correct, honestly-scoped SVG/PNG story was judged better than a
+  PDF method that either drags in Puppeteer for everyone or breaks for hosts that don't have it.
+- **`exportDeckJson`/`importDeckJson`** are deliberately thin (`JSON.stringify`/`JSON.parse` around
+  the pre-existing `getDeck`/`loadDeck`) — `TDDocument` was already exactly as serializable as JSON
+  gets; these exist only so a host that specifically wants text doesn't reach for
+  `JSON.stringify(deck.getDeck())` itself.
+- **`tools/visual/scenarios/export.js`**, new, is a drift detector between the two SVG-export
+  paths this fork now has (`TldrawApp.copySvg` and `renderPageToSvg`), not just a smoke test of the
+  new one: it builds one slide through the real UI/API (a themed `stat-row` template, a hand-added
+  gradient shape, a hand-set gradient page background — exercising both Phase 11 gradient paths and
+  Phase 12 theme tokens together), asks both export paths to render the *same* page, and asserts
+  they agree on every structural axis that should never diverge (gradient `<defs>`, resolved theme
+  colours, viewBox size, shape count) while *not* asserting byte-identical output (text layout is a
+  documented approximation). It also renders `renderPageToSvg`'s own output string to a second
+  screenshot (`export-headless.png`, next to the live editor's `export-live.png`) — not just a
+  programmatic pass/fail — which is exactly what caught the `getTextSvgElement` scale bug above:
+  every structural assertion passed on the first run, and the bug was only visible once the output
+  was actually looked at as a picture, precisely the failure mode this rule exists to catch.
+
+**Verified:** 84/84 suites, 510 tests passing (up from 80/80 · 479 at the start of this phase; 31
+new tests — `renderPageToSvg.spec.ts` (19, one per shape type plus backgrounds/gradients/groups/
+`resolvePageSize`), `renderPageToSvg.node.spec.ts` (4, run under a real `@jest-environment node`,
+the phase's actual headless-acceptance criterion), `renderSvgToPng.spec.ts` (2),
+`getTextSvgElement.spec.ts` (3, new — the function had no coverage before this phase, and now
+locks in the `scale` fix), and 3 more added to `Deck.spec.ts` for `exportSlidePng`/
+`exportDeckJson`/`importDeckJson` (its three thumbnail tests were rewritten, not added, to assert
+the lifted limitation instead of locking in the old one) · `build:packages` 9/9 with zero type
+errors · the new `export` visual
+scenario exits 0 with every structural drift-detector assertion passing against the live Next.js-
+example app, and both its screenshots (`export-live.png`, `export-headless.png`) were inspected
+side by side, not just asserted on — the first pass caught the `getTextSvgElement` bug above, the
+second (after the fix) matches the live rendering visually · all nine `tools/visual/scenarios`
+harness scenarios and all three Next.js-sample scenarios (`deckapi`, `nextjs`, `blocks`)
+re-verified with no regression, screenshots re-inspected, including `templates-stat-row.png` (the
+same template the bug was found in, confirmed unaffected live — the bug was export-only, since the
+live canvas never calls `getTextSvgElement`).
 
 ### Suggested order
 

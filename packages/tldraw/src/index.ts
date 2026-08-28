@@ -15,6 +15,7 @@ export type {
   AddSlideOptions,
   NewSlideOptions,
   ThumbnailOptions,
+  RenderSlidePngOptions,
   PresentOptions,
   DeckEventMap,
   DeckEventName,
@@ -25,6 +26,14 @@ export type {
 } from './state/deck'
 export { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from './state/shapes/shared/deck-theme'
 export { BUILT_IN_TEMPLATES, getTemplate } from './state/templates'
+
+// Phase 15 — headless render + export. `renderPageToSvg` is the pure, no-DOM function `Deck.
+// getThumbnail`/`exportSlidePng` are built on; exported directly too, for a host that wants to
+// render a whole preview grid (or a Node-side export worker) without going through a mounted
+// `TldrawApp` at all — see the module's own doc comment for what it does and does not reproduce,
+// and `renderSvgToPng`'s for why PNG rasterization is browser-only.
+export { renderPageToSvg, renderSvgToPng } from './state/render'
+export type { RenderPageToSvgOptions, RenderSvgToPngOptions } from './state/render'
 
 // Phase 14 — a standalone, read-only deck display for host pages that only need to show a deck,
 // not edit it. See the component's own doc comment for why this wraps `<Tldraw>` rather than

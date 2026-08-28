@@ -229,14 +229,73 @@ insertContent(slideId, content, opts?)         addBlock(slideId, block, opts?)
   own undo step, documented rather than solved, since no such primitive exists anywhere in the
   command stack today and inventing one was well outside this phase's scope.
 
-### Phase 15 — Headless render + export
+### Phase 15 — Headless render + export ✅ done
 
-- `renderPageToSvg(page, assets, opts)` — pure, no DOM. The foundation (see "three things" above).
-- Per-slide PNG/SVG, whole-deck PDF, deck JSON in/out.
-- Server-side thumbnail generation so a host slide grid does not mount N canvases.
+Shipped close to the plan's shape (`renderPageToSvg(page, opts)` — a single options bag rather
+than a separate `assets` positional parameter, since `assets`/`theme`/`defaultPageSize` are all
+the same kind of "document-level context a page can't resolve alone"), plus every item in the
+plan's list except whole-deck PDF, which shipped as a documented recipe instead of a method — the
+plan's own "PDF becomes straightforward once headless SVG exists" turned out to be half right: SVG
+being headless was necessary but not sufficient, since PDF still needs a rasterizer this package
+has no way to pick on a host's behalf (see below). Full detail in `reviews/README.md`'s Phase 15
+notes; the short version of what differed from the plan:
 
-PDF is the most-requested export and currently unimplemented; it becomes straightforward once
-headless SVG exists.
+- **The foundation shipped as planned, and turned out to need far less new geometry code than the
+  plan's own framing ("investigate what is genuinely reusable") worried it might.** Reading every
+  shape util end to end (not assumed from the outside) found that only the *assembly* into SVG
+  markup strings was genuinely new — the geometry itself (`getRectanglePath`, the `Ellipse`/
+  `Triangle` equivalents, every `DrawUtil`/`ArrowUtil` helper including a bent arrow's circular-arc
+  math, `getShapeStyle`) was already factored into plain, DOM-free functions the live `Component`s
+  and `Indicator`s both already call. Reused directly, not reimplemented, for every shape type
+  including `ArrowShape` — the plan's own text singled out text layout as "the hard part... where
+  I expect you to spend your thinking," which was correct, but arrows looked at first like a
+  second hard case (no `getSvgElement` override, same as Rectangle/Ellipse) and turned out not to
+  be one, once the same "is the geometry already pure?" question was actually asked of it.
+- **Text layout is exactly the honest approximation the plan asked for, scoped more narrowly than
+  it first appears.** Only two things are ever *measured* rather than stored: a bare `TextShape`'s
+  own bounds, and a shape `label`'s centering box. Everything else about text rendering (line
+  splitting, alignment, `<text>` positioning) needed no measurement at all, since it's relative to
+  a bounds value, not to the text's own natural size. `estimateTextSize`, a hand-tuned
+  average-character-width heuristic, stands in for the two real cases — documented in both
+  `renderPageToSvg.ts`'s own comment and `guides/documentation.md` as approximate, not exact.
+- **A real, previously-invisible bug was found via this phase's own screenshot, in pre-existing
+  code this phase didn't write** — `getTextSvgElement.ts` (the shared DOM-imperative helper both
+  the live `copySvg` export path and this phase's `renderTextLines` are built on) never multiplied
+  font size by `style.scale`, while the bounds it centers text against always assumed scale *was*
+  applied. Every one of Phase 13's twelve starter templates sets `scale` on its text, so this had
+  silently made "Copy as SVG"/PNG export of any template render oversized, overlapping text since
+  Phase 13 shipped — invisible until this phase rendered an export to an actual image and looked
+  at it, exactly the class of bug the roadmap's own "screenshot everything" rule exists to catch,
+  just one phase later than it was introduced. Fixed at the shared root cause, once, with a new
+  regression test (`getTextSvgElement.spec.ts` — the function had no coverage before this phase).
+- **`Deck.getThumbnail` lifted exactly the limitation Phase 14 documented**: works for any slide,
+  needs no browser, same method signature. Confirmed by rewriting the two `Deck.spec.ts` tests that
+  used to lock the old limitation in, not by only adding new passing tests alongside stale ones.
+- **PNG shipped as a new method, `Deck.exportSlidePng`, not a `getThumbnail` format option** —
+  rasterizing is unavoidably asynchronous (no synchronous browser SVG→canvas decode exists), and
+  `getThumbnail`'s Phase 14 contract is synchronous; a format flag that sometimes returns a
+  `Promise` would have been a confusing, inconsistent signature. Browser-only by necessity (needs
+  `<canvas>`), resolving `undefined` in Node per the same convention `getThumbnail` already set,
+  rather than throwing.
+- **No PNG or PDF dependency was added — a deliberate scope decision, reasoned through rather than
+  defaulted to "skip it."** Node has no dependency-free SVG rasterizer (every real option is a
+  native binding — `sharp`, `canvas` — or a full headless browser); which one, if any, a given
+  host's deployment already has isn't something this package can know. `renderPageToSvg`'s plain
+  string output works against any of them, so the choice is documented as a recipe
+  (`guides/nextjs-integration.md`) rather than forced as a dependency.
+- **Whole-deck PDF is the one plan item not built, named here as the explicit follow-up the plan's
+  own rules ask for, not silently dropped.** It needs a vector SVG→PDF converter (nothing
+  lightweight and dependency-free does this well) or rasterizing every slide to PNG first (the
+  same environment question as above) and assembling a PDF of full-page images with a small,
+  pure-JS library (`pdf-lib` — no native bindings, works in Node and the browser). A full worked
+  recipe for the second approach is in `guides/nextjs-integration.md`; shipping it as a real
+  `Deck.exportPdf()` would have meant either bundling a rasterizer for every consumer of this
+  package or silently failing for hosts that don't have one, and "a correct partial beats a broken
+  whole" (this phase's own instruction) argued for stopping at the documented recipe instead.
+- **Deck JSON in/out shipped as `Deck.exportDeckJson`/`importDeckJson`** — thin
+  `JSON.stringify`/`JSON.parse` wrappers, since `getDeck`/`loadDeck` (Phase 14) already moved a
+  `TDDocument` in and out as a plain, already-serializable object; these exist only for a host that
+  specifically wants text.
 
 ### Phase 16 — Presentation runtime
 
@@ -255,6 +314,14 @@ built-in fonts and single text block are the weakest part of the editor for this
 
 Worth doing, in rough order of value per effort:
 
+- **Theme colours are chosen against the theme's own background, but a slide can have any
+  background.** A theme picks `text`/`textMuted` for contrast against `colors.background`; Phase 11
+  then lets any slide override its background with an arbitrary solid or gradient. Put a
+  `mono-grid` stat-row on a teal gradient and the muted captions are very nearly illegible — see
+  `tools/visual/shots/export-headless.png`, where the three captions almost vanish. Nothing is
+  broken; the two features are simply unaware of each other. Worth either deriving muted text from
+  the *effective* background, or warning in the background picker when contrast drops below a
+  threshold.
 - **Make a theme switch restyle fonts, not just colours.** Theme colours resolve lazily at render
   time (through `resolveThemeColor`), so switching a theme repaints an existing deck. The font
   pairing does not: `buildTemplateShapes` bakes `style.font` into each shape once, at

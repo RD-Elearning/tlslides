@@ -44,15 +44,24 @@ export interface NewSlideOptions {
   id?: string
 }
 
-/** Options for `Deck.getThumbnail`. See the method's own doc comment for the (real) limitations
- *  this is working around — there is no headless renderer yet (that's Phase 15). */
+/** Options for `Deck.getThumbnail` — routed through Phase 15's `renderPageToSvg` since that
+ *  phase shipped, so this works for any slide, in a browser or in Node. See the method's own doc
+ *  comment for what changed and what didn't. */
 export interface ThumbnailOptions {
   /** `'dataUrl'` (default) returns a `data:image/svg+xml;base64,...` string, ready to drop
    *  straight into an `<img src>`. `'svg'` returns the raw `<svg>...</svg>` markup instead, for a
    *  host that wants to inline it (e.g. to let it inherit CSS, or to post-process it). Either way
    *  the result is vector, not a fixed-resolution raster — there is no pixel width/height option
-   *  here, since sizing a `<img>`/wrapper element is entirely the host's call. */
+   *  here, since sizing a `<img>`/wrapper element is entirely the host's call. For an actual
+   *  raster image, see `Deck.exportSlidePng` (browser-only — see its own doc comment for why). */
   format?: 'dataUrl' | 'svg'
+}
+
+/** Options for `Deck.exportSlidePng`. */
+export interface RenderSlidePngOptions {
+  /** Multiplies the slide's own pixel dimensions before rasterizing. Defaults to `2` (a
+   *  retina-sharp result), matching `TldrawApp.exportShapesAs`'s own PNG export. */
+  scale?: number
 }
 
 /** Options for `Deck.present`. */

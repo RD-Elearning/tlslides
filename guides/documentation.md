@@ -348,23 +348,89 @@ using either:
 See `examples/nextjs-sample/components/Editor.tsx` for both in real use (`addRectangle` uses
 `insertContent` directly; `addKpiTile`/`addBarChart` use `addBlock`).
 
-### Thumbnails
+### Thumbnails and export (Phase 15)
 
 `getThumbnail(id: string, opts?: { format?: 'dataUrl' | 'svg' })` → `string | undefined`.
 
-**Read this before using it — it is not a headless renderer** (that's Phase 15's
-`renderPageToSvg`, which doesn't exist yet):
-- It **only works for the current slide** (`id === app.currentPageId`). Most shapes' SVG export
-  clones a *live, currently-mounted* DOM node, which only exists for whichever page is actually
-  rendered on screen. Asking for a different slide returns `undefined` rather than risking a
-  blank/incomplete image that merely looks like a valid thumbnail — it deliberately does not
-  switch pages to work around this (that would move the user's viewport and add an undo-stack
-  entry just to answer a read).
-- It **requires a mounted editor in a browser** — it builds the SVG via `document.
-  createElementNS`/`XMLSerializer`, so it returns `undefined` (not a throw) when there's no
-  `document` global, i.e. a server/Node context.
-- It never touches the system clipboard (unlike `TldrawApp.copySvg`'s normal "Copy as SVG" use,
-  which this reuses internally).
+As of Phase 15, this is routed through `renderPageToSvg` (below) and works for **any slide in the
+deck, in a browser or in Node, with no mounted editor required** — the Phase 14-era limitation
+("only the current slide, only in a browser") is gone. It returns `undefined` only when `id`
+doesn't name a slide. It never touches the system clipboard.
+
+```tsx
+const dataUrl = app.deck.getThumbnail(anySlideId) // works even if anySlideId isn't current
+const raw = app.deck.getThumbnail(anySlideId, { format: 'svg' })
+```
+
+`exportSlidePng(id: string, opts?: { scale?: number })` → `Promise<string | undefined>` — the
+raster counterpart. **Browser-only**, and therefore async (real image decode has no synchronous
+browser API): resolves `undefined` in Node, or for an unknown `id`, rather than throwing. `scale`
+(default `2`) multiplies the slide's own pixel dimensions before rasterizing, matching
+`TldrawApp.exportShapesAs`'s own PNG export.
+
+`exportDeckJson()` → `string` / `importDeckJson(json: string)` → `TDDocument` — thin
+`JSON.stringify`/`JSON.parse` wrappers around `getDeck`/`loadDeck`, for a host that specifically
+wants the deck as text (a file, a wire payload) rather than a JS object it already had either way.
+
+#### `renderPageToSvg` — the headless renderer underneath all of the above
+
+Also exported from the package root, for a host that wants to render a whole preview grid (or run
+a Node-side export worker) without a mounted `TldrawApp` at all:
+
+```ts
+import { renderPageToSvg } from '@tlslides/tldraw'
+
+const svg = renderPageToSvg(page, { assets, theme, defaultPageSize })
+```
+
+`renderPageToSvg(page: TDPage, opts?)` → `string` (a complete `<svg>...</svg>` document).
+`opts`: `assets?: TDAssets`, `theme?: DeckTheme`, `defaultPageSize?: number[]`, `isDarkMode?:
+boolean` (all optional — see the function's own doc comment in `packages/tldraw/src/state/render/
+renderPageToSvg.ts` for each default). It is a **pure function of its arguments**: no React, no
+DOM, no `document`/`window` reference anywhere in the module — verified by a dedicated jest test
+that runs it under a real `@jest-environment node` (`renderPageToSvg.node.spec.ts`), not merely
+asserted.
+
+**What it reproduces exactly:** Phase 11 backgrounds and shape gradient fills (as real SVG
+`<defs>`, never CSS), Phase 12 theme token resolution (`'theme:accent1'` → a real hex, via the
+same `resolveThemeColor`/`activeDeckTheme` every other render path uses), Phase 8a
+opacity/stroke-width/corner-radius, and every shape's hand-drawn ("Draw" dash style) geometry —
+all reused directly from the same pure helper functions the live editor's own components call
+(`getRectanglePath`, `getEllipsePath`, the `ArrowUtil`/`DrawUtil` helpers, `getShapeStyle`), not
+reimplemented. Arrows get full fidelity too, straight and curved, arrowheads included.
+
+**What it does not, honestly:**
+- **Text layout is an approximation, not a measurement.** A bare `TextShape`'s own size, and a
+  `label`'s centering box on Rectangle/Ellipse/Triangle/Arrow, are sized live by measuring against
+  a mounted, invisible DOM element — there is no headless substitute for that. `estimateTextSize`
+  (also exported, for a host that wants the same heuristic) uses a hand-tuned average-character-
+  width table instead. Line count and rough proportions are right; exact pixel width/centering can
+  be off by a handful of pixels. Every other shape's size is stored geometry, not layout, so it
+  renders exactly, not approximately.
+- **A `ComponentShape` block renders as a placeholder** — a dashed box labelled with its
+  `componentId` — pixel-identical to what `ComponentUtil.getSvgElement` already renders for "Copy
+  as SVG" today. It's a host's own React component; there is no general way to serialize arbitrary
+  React to static SVG from a server that never mounted it.
+- **A `VideoShape` renders as a neutral placeholder**, never a captured frame — the live SVG export
+  path captures one from the currently-playing `<video>` element, and no poster frame is stored on
+  the shape or its asset to substitute headlessly.
+
+#### PNG and PDF: what's browser-only, what's Node-only, what isn't shipped
+
+`renderSvgToPng(svg: string, width: number, height: number, opts?: { scale? })` →
+`Promise<string | undefined>` (also exported from the package root) rasterizes via `<canvas>` —
+**browser-only**, resolving `undefined` in Node rather than throwing. There is no
+dependency-free way to rasterize SVG in Node (every real option is a native binding — `sharp`,
+the `canvas` package — or a full headless browser), so none was added as a dependency of this
+package; see `guides/nextjs-integration.md`'s "Server-side thumbnails and PDF export" section for
+wiring your own choice of rasterizer server-side against `renderPageToSvg`'s plain string output.
+
+**Whole-deck PDF is not implemented.** It needs either a vector SVG→PDF converter (nothing
+lightweight and dependency-free does this well) or rasterizing every slide to PNG first and
+assembling a PDF of full-page images (a small, pure-JS library like `pdf-lib` can do the assembly
+part with no native dependency) — a full worked recipe is in `guides/nextjs-integration.md`. Left
+as a follow-up rather than a shipped `Deck.exportPdf()` precisely because *which* rasterizer a host
+already has is not something this package can decide on a caller's behalf.
 
 ### Navigation & presentation
 
@@ -396,6 +462,8 @@ directly from the package root, for a host that wants them before an editor is m
 |---|---|---|
 | `loadDeck` | `(document: TDDocument)` | `TDDocument` |
 | `getDeck` | `()` | `TDDocument` |
+| `exportDeckJson` | `()` | `string` (`JSON.stringify(getDeck())`) |
+| `importDeckJson` | `(json: string)` | `TDDocument` (`loadDeck(JSON.parse(json))`) |
 | `on` | `(event, listener)` | `() => void` (unsubscribe) |
 | `onDeckChange` | `(listener: (document: TDDocument) => void)` | `() => void` (unsubscribe) |
 

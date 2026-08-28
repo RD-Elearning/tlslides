@@ -147,12 +147,22 @@ describe('Deck facade — slides', () => {
 })
 
 describe('Deck facade — thumbnails', () => {
-  it('returns undefined for a slide that is not the current one', () => {
+  // Phase 15 lifted the original (Phase 14) limitation this describe block used to lock in:
+  // `getThumbnail` no longer needs the slide to be `app.currentPageId`, and no longer needs a
+  // DOM at all — it's routed through the headless `renderPageToSvg` now. The two tests below
+  // replace the old "returns undefined for a non-current slide" / "returns undefined outside a
+  // DOM environment" cases, which asserted exactly the limitation this phase exists to remove.
+
+  it('works for a slide that is not the current one, without switching to it', () => {
     const app = freshApp()
     const secondId = app.deck.addSlide()
     app.deck.goToSlide('page1')
+    expect(app.currentPageId).toBe('page1')
 
-    expect(app.deck.getThumbnail(secondId)).toBeUndefined()
+    const svg = app.deck.getThumbnail(secondId, { format: 'svg' })
+    expect(svg).toContain('<svg')
+    // Never switched the user's own current slide just to answer a thumbnail request.
+    expect(app.currentPageId).toBe('page1')
   })
 
   it('returns a data URL for the current slide, and raw SVG when asked', () => {
@@ -167,13 +177,16 @@ describe('Deck facade — thumbnails', () => {
     expect(svg).toContain('viewBox="0 0 1920 1080"')
   })
 
-  it('returns undefined outside a DOM environment rather than throwing', () => {
+  it('returns undefined for an unknown slide id, and works outside a DOM environment', () => {
     const app = freshApp()
+    expect(app.deck.getThumbnail('not-a-real-page')).toBeUndefined()
+
     const realDocument = globalThis.document
     // @ts-expect-error — simulating a server/Node context on purpose for this one assertion.
     delete globalThis.document
     try {
-      expect(app.deck.getThumbnail('page1')).toBeUndefined()
+      const svg = app.deck.getThumbnail('page1', { format: 'svg' })
+      expect(svg).toContain('<svg')
     } finally {
       globalThis.document = realDocument
     }
@@ -326,6 +339,43 @@ describe('Deck facade — whole deck', () => {
 
     expect(fresh).toBe(app.deck.getDeck())
     expect(app.deck.listSlides()).toHaveLength(1)
+  })
+
+  it('exportDeckJson/importDeckJson round-trip the document as a plain string', () => {
+    const app = freshApp()
+    app.deck.addSlide({ name: 'Second' })
+
+    const json = app.deck.exportDeckJson()
+    expect(typeof json).toBe('string')
+    expect(JSON.parse(json)).toEqual(app.deck.getDeck())
+
+    const restored = app.deck.importDeckJson(json)
+    expect(restored).toEqual(app.deck.getDeck())
+    expect(app.deck.listSlides()).toHaveLength(2)
+  })
+})
+
+describe('Deck facade — PNG export', () => {
+  // `renderSvgToPng` needs a real `<canvas>` 2D context, which jsdom (this suite's test
+  // environment) never implements — `getContext('2d')` returns `null` here exactly as it would
+  // in Node, so this environment doubles as a stand-in for "no real rasterizer available" without
+  // needing a `@jest-environment node` file for it. It still proves the important thing: no
+  // throw, just `undefined`, per `renderSvgToPng`'s own documented convention.
+  it('exportSlidePng resolves undefined when no real canvas rasterizer is available', async () => {
+    const app = freshApp()
+    // jsdom logs a "not implemented" console.error for the attempted `getContext('2d')` call —
+    // expected (see the note above), silenced so it doesn't read as a real failure in CI output.
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await expect(app.deck.exportSlidePng('page1')).resolves.toBeUndefined()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('exportSlidePng resolves undefined for an unknown slide id', async () => {
+    const app = freshApp()
+    await expect(app.deck.exportSlidePng('not-a-real-page')).resolves.toBeUndefined()
   })
 })
 

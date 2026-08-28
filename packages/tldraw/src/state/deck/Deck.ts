@@ -1,8 +1,8 @@
 import { Utils } from '@tlslides/core'
-import { DEFAULT_SLIDE_SIZE } from '~constants'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
+import { renderPageToSvg, renderSvgToPng, resolvePageSize, toBase64Utf8 } from '~state/render'
 import { TDShapeType } from '~types'
 import type { ComponentShape, DeckTheme, SlideBackground, TDDocument, TDPage, Template } from '~types'
 import type { TldrawApp } from '../internal'
@@ -17,6 +17,7 @@ import type {
   DeckSlide,
   NewSlideOptions,
   PresentOptions,
+  RenderSlidePngOptions,
   ThumbnailOptions,
 } from './deck-types'
 
@@ -182,39 +183,58 @@ export class Deck {
   }
 
   /**
-   * Render a slide to an SVG image — the "honestly achievable now" stand-in for a real headless
-   * thumbnail renderer (Phase 15's `renderPageToSvg`, which doesn't exist yet).
+   * Render a slide to an SVG image. **Phase 15 lifted this method's original limitation**: it
+   * used to reuse `TldrawApp.copySvg`'s live-DOM-clone export path, which only worked for
+   * `app.currentPageId` and only in a browser. It's now routed through `renderPageToSvg` (a pure
+   * function of the document — see that module's own doc comment for the "most shapes clone a
+   * live DOM node" problem it solves) instead, so this works for **any slide in the deck,
+   * regardless of which one is current, in a browser or in Node**, with no mounted editor
+   * required at all — a host can call `deck.getThumbnail(id)` for every slide to build a preview
+   * grid without ever switching the user's own view, and a server can call it on a `TDDocument`
+   * it only just deserialized.
    *
-   * **What this can and cannot do, precisely:**
-   * - It reuses `TldrawApp.copySvg`'s export path (the same one "Copy as SVG" uses), which builds
-   *   most shapes' SVG by cloning `document.getElementById(shape.id + '_svg')` — the *live,
-   *   currently-mounted* DOM node for that shape. That only exists for the page that's actually
-   *   rendered on screen right now.
-   * - **This method therefore only works for the current slide** (`id === app.currentPageId`,
-   *   i.e. `listSlides()[i].index` matching wherever `goToSlide`/the editor currently is) — it
-   *   returns `undefined` for any other slide, rather than attempting it and risking a
-   *   blank/incomplete image that merely *looks* like a valid thumbnail. It does not switch pages
-   *   to get around this: that would make a "just get me a preview" call move the user's own
-   *   viewport and add an undo-stack entry (`changePage` is itself a `Command`), a destructive
-   *   side effect no thumbnail API should have.
-   * - **It requires a mounted editor in a browser.** It builds the SVG via `document.
-   *   createElementNS`/`XMLSerializer`, so it returns `undefined` (not a throw) when `document`
-   *   doesn't exist — a server/Node context, exactly the situation Phase 15's headless renderer is
-   *   for. It does not need the resulting image to *currently* be visible in the viewport — it
-   *   rebuilds from the document data, not a screen capture — only for that slide's shapes to be
-   *   the ones presently mounted, which is true for whichever slide is current.
-   * - Never touches the system clipboard (unlike `copySvg`'s normal "Copy as SVG" use).
-   * @returns A data URL or raw SVG markup (see `ThumbnailOptions.format`), or `undefined` per the
-   * two limitations above.
+   * The API shape is unchanged from Phase 14: same parameters, same `ThumbnailOptions`, same
+   * `dataUrl`/`svg` format choice, same `undefined` return for an unknown `id`. What actually
+   * changed is what's *inside* — see `renderPageToSvg`'s own doc comment for what it does and
+   * does not reproduce (in short: Phase 11 gradients and Phase 12 theme tokens resolve exactly as
+   * the live editor shows them; text layout is a documented best-effort approximation, since
+   * there is no headless DOM to measure against; a `ComponentShape` block and a `VideoShape`'s
+   * live frame both render as honest placeholders instead of nothing).
+   * @returns A data URL or raw SVG markup (see `ThumbnailOptions.format`), or `undefined` if `id`
+   * doesn't name a slide.
    */
   getThumbnail = (id: string, opts: ThumbnailOptions = {}): string | undefined => {
-    if (typeof document === 'undefined') return undefined
-    if (id !== this.app.currentPageId) return undefined
-    const svg = this.app.copySvg([], id, true, false)
-    if (!svg) return undefined
+    const page = this.app.document.pages[id]
+    if (!page) return undefined
+    const svg = renderPageToSvg(page, {
+      assets: this.app.document.assets,
+      theme: this.app.document.theme,
+      defaultPageSize: this.app.document.defaultPageSize,
+    })
     if (opts.format === 'svg') return svg
-    const base64 = btoa(unescape(encodeURIComponent(svg)))
-    return `data:image/svg+xml;base64,${base64}`
+    return `data:image/svg+xml;base64,${toBase64Utf8(svg)}`
+  }
+
+  /**
+   * Rasterize a slide to a PNG data URL — the raster counterpart to `getThumbnail`'s vector SVG,
+   * for a host that specifically needs pixels (e.g. handing an `<img>` to something that doesn't
+   * accept SVG, or a downstream image-processing step). **Browser-only, and necessarily async**:
+   * see `renderSvgToPng`'s own doc comment for exactly why (there is no dependency-free way to
+   * rasterize SVG in Node without adding a native binding or a headless browser as a dependency
+   * of this package — a deliberate scope decision, not an oversight). Resolves to `undefined` in
+   * Node, or if `id` doesn't name a slide, rather than throwing.
+   * @param opts `scale` — see `RenderSvgToPngOptions`.
+   */
+  exportSlidePng = async (id: string, opts: RenderSlidePngOptions = {}): Promise<string | undefined> => {
+    const page = this.app.document.pages[id]
+    if (!page) return undefined
+    const [width, height] = resolvePageSize(page, this.app.document.defaultPageSize)
+    const svg = renderPageToSvg(page, {
+      assets: this.app.document.assets,
+      theme: this.app.document.theme,
+      defaultPageSize: this.app.document.defaultPageSize,
+    })
+    return renderSvgToPng(svg, width, height, opts)
   }
 
   /* -------------------------------------------------- */
@@ -381,6 +401,22 @@ export class Deck {
   /** The current document. Shared, not facade-specific — see the class doc comment. */
   getDeck = (): TDDocument => this.app.document
 
+  /**
+   * Serialize the current deck to a JSON string — T15.3's "deck JSON in/out." `getDeck`/
+   * `loadDeck` already move a `TDDocument` in and out as a plain JS object (which is already
+   * exactly as serializable as JSON gets); these two are a thin, explicit convenience for a host
+   * that specifically wants text — persisting to a file, sending over the wire, pasting into a
+   * bug report — so it doesn't have to reach for `JSON.stringify(deck.getDeck())` itself.
+   */
+  exportDeckJson = (): string => JSON.stringify(this.app.document)
+
+  /**
+   * Load a deck from a JSON string previously produced by `exportDeckJson` (or any equivalent
+   * serialized `TDDocument`). Thin wrapper over `loadDeck` — same replace-the-whole-deck
+   * semantics, same `deckChanged` event.
+   */
+  importDeckJson = (json: string): TDDocument => this.loadDeck(JSON.parse(json))
+
   /* -------------------------------------------------- */
   /*                      Events                        */
   /* -------------------------------------------------- */
@@ -495,7 +531,10 @@ export class Deck {
   private sortedPageIds = (): string[] => this.sortedPages().map((page) => page.id)
 
   private toDeckSlide = (page: TDPage, index: number): DeckSlide => {
-    const size = page.size ?? this.app.document.defaultPageSize ?? DEFAULT_SLIDE_SIZE
+    // Phase 15 — `resolvePageSize` is the same fallback chain this method always used
+    // (`page.size ?? document.defaultPageSize ?? DEFAULT_SLIDE_SIZE`), pulled out so this and
+    // `renderPageToSvg` (which needs the identical answer to size its `viewBox`) can't drift.
+    const size = resolvePageSize(page, this.app.document.defaultPageSize)
     const background =
       typeof page.background === 'string'
         ? ({ type: 'solid', color: page.background } as const)
