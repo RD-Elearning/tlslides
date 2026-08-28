@@ -32,3 +32,29 @@ logged an error, so it works as a CI gate.
 Drop a file in `tools/visual/scenarios/` exporting `{ route, run(page) }`. `run` receives a
 Playwright page with `#canvas` already present and may return a plain object of facts to print
 alongside the screenshot path.
+
+## `nextjs` scenario
+
+Exercises `examples/nextjs-sample`, the Next.js 15 / React 19 reference integration of
+`@tlslides/tldraw`. Start its dev server, then shoot the scenario against it:
+
+```bash
+cd examples/nextjs-sample
+COREPACK_ENABLE_STRICT=0 pnpm exec next dev -p 5432
+
+cd ../..
+node tools/visual/shoot.js nextjs --base=http://localhost:5432
+```
+
+It draws a rectangle by hand, clicks the "Add rectangle" and "Add slide" buttons from the app's
+control strip, and reports shape/page counts plus whether `onPersist` wrote a document to
+`localStorage` (the app renders `<Tldraw>` with no `id` prop, so `localStorage` is its only
+persistence path — see `examples/nextjs-sample/components/Editor.tsx`).
+
+Note: this app ships with `reactStrictMode: false` (see the comment in
+`examples/nextjs-sample/next.config.js`) because of a real React 19 dev-mode bug found while
+building this scenario — with StrictMode on, `next dev` double-constructs the `TldrawApp`
+instance, and an imperative ref captured the normal way can end up pointing at the instance that
+is *not* the one rendered to the DOM, silently breaking every button in the control strip. See the
+Phase 2 report for the full repro; the bug is in `packages/tldraw`'s mount pattern, not something
+this harness or app can fix from the outside.

@@ -19,3 +19,4 @@ apps/www/public/sw.js.map
 firebase.config.*.turbo
 .turbo
 tools/visual/shots/
+examples/nextjs-sample/.next/

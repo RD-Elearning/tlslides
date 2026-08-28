@@ -225,8 +225,8 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | Phase | Contents | Status |
 |---|---|---|
 | 1 | Tier 1 quick wins — solid/sans defaults, B-06 endpoints, example dev server, deck rename | ✅ done |
-| 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ⏳ next |
-| 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04 | ⬜ pending |
+| 2 | Test harness — Next.js sample app + headless Playwright screenshot script | ✅ done |
+| 3 | Batched schema migration — reserve `TDPage.size`/`background`/`notes`/`skipInPresentation`, `TDShape.animation?`, `ImageShape.alt`; fix B-01, B-03, B-04, B-12 | ⏳ next |
 | 4 | **F-01** slide frame / artboard | ⬜ pending |
 | 5 | **F-02** `ComponentShape` + `components` registry prop | ⬜ pending |
 | 6 | **F-04** `insertContent()` · `movePage` + deck drag-and-drop · fullscreen + auto zoom-to-fit | ⬜ pending |
@@ -273,6 +273,48 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 
 **Verified:** 63/63 jest suites, 17/17 snapshots · `turbo run build:packages` 9/9 · eslint clean
 on touched files (2 pre-existing warnings) · example app renders and draws in headless Chromium.
+
+#### Phase 2 notes — and the R-01 answer
+
+`examples/nextjs-sample/` is a **Next.js 15.5 / React 19.2 / App Router** app embedding the editor.
+It is both the reference integration and the R-01 compatibility spike. It runs on port 5433
+(5432 is the Postgres port and was already bound on the dev machine).
+
+`components/Editor.tsx` implements exactly the architecture
+[03-nextjs-control-api.md](03-nextjs-control-api.md) recommends: no `id` prop, seed once via
+`loadDocument` in `onMount`, drive imperatively through a ref, persist from `onPersist`. It
+exposes `window.tlapp` for the harness and has a control strip with stable ids so later phases
+have something to assert against.
+
+**R-01 verdict: React 19 works — after one real fix.**
+
+- **Mount, draw, drag, multi-select, undo/redo × 6 all behave correctly.** No tearing, stale
+  render, or dropped update was observed despite `zustand@3` / `mobx-react-lite@3`. The feared
+  concurrent-rendering tearing did not materialise under real browser input. (Caveat: Playwright
+  drives genuine user input, not a synthetic scheduler-interruption stress test.)
+- **B-14, found and fixed.** `<Tldraw>` constructs its `TldrawApp` in a `useState` initializer.
+  React StrictMode invokes that initializer twice, so **two apps and two zustand stores** were
+  created, and `onMount` fired from `TldrawApp.onReady` for *both* — including the instance React
+  discarded. A host app's captured ref could therefore point at a detached store: direct mouse
+  input still worked, but every imperative call silently mutated nothing. Since StrictMode is on
+  by default in every modern Next.js app, this made the documented control API unreliable in
+  development. Fixed by moving the `onMount` call out of `TldrawApp.onReady` and into an effect in
+  `Tldraw.tsx` keyed on `app` — effects only run for the retained instance. Verified with
+  `reactStrictMode: true`: a hand-drawn shape and a button-created shape now land in the same
+  visible store.
+- **One unfixable-from-here React 19 warning.** `@radix-ui/react-slot@0.1.2` (pinned by
+  `packages/tldraw`'s 2021-era `@radix-ui/*@^0.1.x`) reads `element.ref`, which React 19 warns
+  about on every `asChild` render. Cosmetic, but it fires constantly and only a Radix upgrade
+  across the fork removes it. The harness records it as a declared known issue rather than
+  filtering it, so a *new* console error still fails the run.
+- **Two build-level gotchas worth keeping.** The React 17 hoisted at the workspace root must be
+  aliased away in `next.config.js`, but **only for the client compiler** — aliasing the server
+  compiler too collapses Next's RSC/SSR React layering and breaks prerendering of even
+  `/_not-found`. And `next build`'s type-check resolves `@types/react` through real (non-symlink)
+  ancestors into the root's 17.x, so the app pins `typeRoots`/`paths` to its own copies.
+
+**Verified:** 63/63 jest · `build:packages` 9/9 · `next build` clean · `next dev` + `next start`
+serve 200 · `node tools/visual/shoot.js nextjs --base=http://localhost:5433` exits 0.
 
 **Out of scope for this phase:** everything under "Deferred" above. **R-03 (build vs adopt)** is a
 decision spike, not implementation work, and is not tracked here.

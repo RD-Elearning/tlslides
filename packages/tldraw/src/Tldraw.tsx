@@ -185,6 +185,21 @@ export function Tldraw({
     setApp(newApp)
   }, [sId, id])
 
+  // Fire onMount for the instance React actually kept. Under StrictMode the `useState`
+  // initializer above runs twice and constructs two apps; only one is retained and rendered, but
+  // both would otherwise reach `onReady` and call back, leaving a host app's ref pointing at a
+  // detached store whose mutations never reach the DOM. Effects only run for the retained
+  // instance, so firing here is safe.
+  React.useEffect(() => {
+    let cancelled = false
+    app.ready.then(() => {
+      if (!cancelled) app.callbacks.onMount?.(app)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [app])
+
   // Update the document if the `document` prop changes but the ids,
   // are the same, or else load a new document if the ids are different.
   React.useEffect(() => {

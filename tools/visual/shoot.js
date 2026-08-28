@@ -61,12 +61,21 @@ const scenario = require(scenarioPath)
 
   const notes = (await scenario.run(page)) || {}
 
+  // A scenario may declare errors it knowingly tolerates (see the `known` field). They are
+  // reported separately rather than filtered out, so a regression that adds a NEW error still
+  // fails the run.
+  const known = scenario.known || []
+  const tolerated = errors.filter((e) => known.some((re) => re.test(e)))
+  const unexpected = errors.filter((e) => !tolerated.includes(e))
+
   const file = path.join(outDir, `${name}.png`)
   await page.screenshot({ path: file })
   await browser.close()
 
-  console.log(JSON.stringify({ scenario: name, url, file, notes, errors }, null, 2))
-  if (errors.length) process.exit(1)
+  console.log(
+    JSON.stringify({ scenario: name, url, file, notes, tolerated, errors: unexpected }, null, 2)
+  )
+  if (unexpected.length) process.exit(1)
 })().catch((e) => {
   console.error('FAILED:', e.message)
   process.exit(1)

@@ -203,3 +203,6 @@ These were found incidentally while auditing. None are blockers, but all are rea
 | B-09 | `examples/tldraw-example/src/api-control.tsx:50` calls `app.patchShapes`, which does not exist anywhere in `packages/`. The example will not compile. | as cited |
 | B-10 | `mergeDocument` writes `nextAppState.pages`, but `TDSnapshot['appState']` has no `pages` field — dead code. | `TldrawApp.ts:1236-1240` |
 | B-11 | `FontSize` enum is declared but entirely unused; `ShapeStyles` has no `fontSize` field. | `types.ts:440-445` |
+| B-12 | `duplicatePage` spreads the whole **page** (shapes, bindings, name) into the new **pageState**, which has none of those fields. | `duplicatePage.ts:52` |
+| B-13 | The `version < 14` migration block is a no-op: it writes `shape.style.font === FontStyle.Script`, a comparison, where an assignment was intended. | `migrate.ts:48-54` |
+| B-14 | `<Tldraw>` built its `TldrawApp` in a `useState` initializer, so React StrictMode constructed two apps and `onMount` fired for the discarded one too — leaving a host app's ref bound to a detached store. **Fixed in Phase 2.** | `Tldraw.tsx`, `TldrawApp.ts:295` |

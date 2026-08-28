@@ -292,7 +292,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       })
     }
 
-    this.callbacks.onMount?.(this)
+    // Note: onMount is deliberately NOT fired here. React StrictMode invokes the
+    // `useState` initializer in Tldraw.tsx twice, so two TldrawApps are constructed while only
+    // one is retained; firing from the constructor's ready path would call back for the
+    // discarded instance too. Tldraw.tsx fires it from an effect instead.
   }
 
   /**
