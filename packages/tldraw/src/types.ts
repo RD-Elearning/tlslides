@@ -91,6 +91,12 @@ export interface TDSnapshot {
     isFocusMode: boolean
     isSnapping: boolean
     showDeck: boolean
+    // Phase 8c — T8c.3, the layers panel. A local UI preference, same category as `showDeck`
+    // (not document data — nothing here needs a migration). Defaults `false`: unlike the deck
+    // panel, which every existing screenshot already assumes is visible and positioned for, a
+    // brand-new overlay defaulting to on would appear, unexpected, in every pre-existing visual
+    // scenario's screenshot.
+    showLayers: boolean
     showRotateHandles: boolean
     showBindingHandles: boolean
     showCloneHandles: boolean
@@ -327,6 +333,9 @@ export type TDToolType =
   | TDShapeType.Line
   | TDShapeType.Arrow
   | TDShapeType.Sticky
+  | TDShapeType.Polygon
+  | TDShapeType.Star
+  | TDShapeType.SpeechBubble
 
 export type Easing =
   | 'linear'
@@ -397,6 +406,14 @@ export enum TDShapeType {
   Image = 'image',
   Video = 'video',
   Component = 'component',
+  // Phase 8c — three new closed-polygon shapes. Additive members plus additive shape interfaces
+  // below (see PolygonShape/StarShape/SpeechBubbleShape): no existing document references these
+  // strings, so no migration/version bump is needed to introduce them (the same reasoning every
+  // optional `ShapeStyles` field in Phases 8a/11/17 already relied on, just applied to a new enum
+  // member instead of a new optional field).
+  Polygon = 'polygon',
+  Star = 'star',
+  SpeechBubble = 'speechBubble',
 }
 
 export enum Decoration {
@@ -467,6 +484,45 @@ export interface EllipseShape extends TDBaseShape {
 
 export interface TriangleShape extends TDBaseShape {
   type: TDShapeType.Triangle
+  size: number[]
+  label?: string
+  labelPoint?: number[]
+}
+
+// Phase 8c — a regular N-sided polygon, fit to a bounding box exactly like Rectangle/Triangle
+// (`size`, not a radius — see PolygonUtil for why `getBoundsRectangle`/`transformRectangle`, both
+// already generic over any `{ point, size, rotation }` shape, are reused unchanged). `sides` is a
+// per-shape field (not a `ShapeStyles` entry) because it's geometry, the same category as
+// Triangle's fixed "3" — it just isn't fixed here. There is deliberately no UI to change it after
+// creation (see the Phase 8c report's scoping decision); a document or template author can still
+// set any value 3–12 by constructing the shape directly.
+export interface PolygonShape extends TDBaseShape {
+  type: TDShapeType.Polygon
+  size: number[]
+  sides: number
+  label?: string
+  labelPoint?: number[]
+}
+
+// Phase 8c — a five-pointed (by default) star, alternating `sides` outer points with `sides` inner
+// points at `innerRadiusRatio` of the outer radius. Same "no per-instance UI, additive fields"
+// reasoning as PolygonShape above.
+export interface StarShape extends TDBaseShape {
+  type: TDShapeType.Star
+  size: number[]
+  points: number
+  innerRadiusRatio: number
+  label?: string
+  labelPoint?: number[]
+}
+
+// Phase 8c — a rectangle with a fixed triangular tail cut into the bottom edge. `size` is the
+// *full* bounding box, tail included (see `getSpeechBubblePoints`), so `getBoundsRectangle`'s
+// generic `{ point, size, rotation }` handling — and every selection/resize/rotate interaction
+// that depends on it — needs no shape-specific bounds override, unlike a design where the tail
+// were allowed to overflow the box.
+export interface SpeechBubbleShape extends TDBaseShape {
+  type: TDShapeType.SpeechBubble
   size: number[]
   label?: string
   labelPoint?: number[]
@@ -569,6 +625,9 @@ export type TDShape =
   | ImageShape
   | VideoShape
   | ComponentShape
+  | PolygonShape
+  | StarShape
+  | SpeechBubbleShape
 
 /* ------------------ Shape Styles ------------------ */
 

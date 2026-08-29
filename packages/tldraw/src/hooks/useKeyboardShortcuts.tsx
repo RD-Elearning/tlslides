@@ -116,6 +116,40 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
     [app]
   )
 
+  // Phase 8c — every single-letter mnemonic 0-9 above is already spoken for (see the digits'
+  // mapping just above), so these three fall back to an otherwise-unused bare letter each: 'h' for
+  // hexagon (PolygonUtil's default `sides`), 'j' for star (no free "s"-ish letter — sticky already
+  // owns it), 'b' for bubble.
+  useHotkeys(
+    'h',
+    () => {
+      if (!canHandleEvent(true)) return
+      app.selectTool(TDShapeType.Polygon)
+    },
+    undefined,
+    [app]
+  )
+
+  useHotkeys(
+    'j',
+    () => {
+      if (!canHandleEvent(true)) return
+      app.selectTool(TDShapeType.Star)
+    },
+    undefined,
+    [app]
+  )
+
+  useHotkeys(
+    'b',
+    () => {
+      if (!canHandleEvent(true)) return
+      app.selectTool(TDShapeType.SpeechBubble)
+    },
+    undefined,
+    [app]
+  )
+
   /* ---------------------- Misc ---------------------- */
 
   // Dark Mode

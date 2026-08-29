@@ -53,8 +53,11 @@ import {
   GroupShape,
   ImageShape,
   LineShape,
+  PolygonShape,
   RectangleShape,
   ShapeStyles,
+  SpeechBubbleShape,
+  StarShape,
   StickyShape,
   TDAssets,
   TDPage,
@@ -64,6 +67,10 @@ import {
   TriangleShape,
   VideoShape,
 } from '~types'
+import { getPolygonPoints } from '~state/shapes/PolygonUtil/polygonHelpers'
+import { getStarPoints } from '~state/shapes/StarUtil/starHelpers'
+import { getSpeechBubblePoints } from '~state/shapes/SpeechBubbleUtil/speechBubbleHelpers'
+import { getPolygonPath, getPolygonIndicatorPathTDSnapshot } from '~state/shapes/shared/polygonDrawPath'
 
 // ---------------------------------------------------------------------------------------------
 // Phase 15 — headless render. `renderPageToSvg` is a *pure function of the document*: given a
@@ -90,7 +97,12 @@ import {
 // React components for reuse between the live `Component` and the `Indicator`/selection-outline
 // render. None of them touch `document`. Reusing them here (imported directly, not
 // reimplemented) is what keeps this module from being a second, drifting copy of the geometry
-// Phases 1/8a/8b/11 already got right. What's genuinely new here is the *assembly*: turning those
+// Phases 1/8a/8b/11 already got right. Phase 8c's Polygon/Star/SpeechBubble fit the exact same
+// mold: `getPolygonPoints`/`getStarPoints`/`getSpeechBubblePoints` and the hand-drawn
+// `getPolygonPath`/`getPolygonIndicatorPathTDSnapshot` are the same pure, document-free functions
+// their own `PolygonBody.tsx` renders from live, so `renderPolygon`/`renderStar`/
+// `renderSpeechBubble` below import and reassemble them exactly like every shape above, rather
+// than approximating or skipping them. What's genuinely new here is the *assembly*: turning those
 // path strings and `getShapeStyle`'s resolved paint values into raw SVG markup, since there is no
 // headless JSX-to-SVG-string bridge in use in this codebase. That makes this a *third* renderer of
 // several already-resolved concepts (a shape's paint, a background fill, a gradient) — React
@@ -283,6 +295,12 @@ function renderShape(shape: TDShape, ctx: RenderCtx): ShapeRender {
       return renderVideoPlaceholder(shape)
     case TDShapeType.Component:
       return renderComponentPlaceholder(shape as ComponentShape)
+    case TDShapeType.Polygon:
+      return renderPolygon(shape, ctx)
+    case TDShapeType.Star:
+      return renderStar(shape, ctx)
+    case TDShapeType.SpeechBubble:
+      return renderSpeechBubble(shape, ctx)
     default:
       // GroupShape is handled by the caller; anything else is a shape type this fork doesn't
       // define. Rendering nothing (rather than throwing) matches `getSvgElement`'s own
@@ -714,6 +732,99 @@ function drawTriangleBody(
     (style.isFilled ? `<path d="${indicatorPath}" fill="${fill}" />` : '') +
     `<path d="${path}" fill="${stroke}" stroke="${stroke}" stroke-width="${strokeWidth}" />`
   )
+}
+
+/* -------------------------------------------------- */
+/*      Polygon / Star / SpeechBubble (Phase 8c)      */
+/* -------------------------------------------------- */
+
+// One shared body renderer for all three shapes below, mirroring `PolygonBody.tsx` (the live
+// React equivalent) — see that component's own comment for why one function against a plain
+// `vertices: number[][]` replaces what would otherwise be three near-identical copies of
+// `dashedTriangleBody`/`drawTriangleBody` above.
+function polygonBody(
+  id: string,
+  vertices: number[][],
+  style: ShapeStyles,
+  styles: { stroke: string; strokeWidth: number; fill: string }
+): string {
+  const { stroke, strokeWidth, fill } = styles
+  const pointsAttr = vertices.map((p) => p.join(',')).join(' ')
+
+  if (style.dash === DashStyle.Draw) {
+    const indicatorPath = getPolygonIndicatorPathTDSnapshot(id, style, vertices)
+    const path = getPolygonPath(id, style, vertices)
+    return (
+      (style.isFilled ? `<path d="${indicatorPath}" fill="${fill}" />` : '') +
+      `<path d="${path}" fill="${stroke}" stroke="${stroke}" stroke-width="${strokeWidth}" />`
+    )
+  }
+
+  const perimeter = vertices.reduce(
+    (sum, p, i) => sum + Vec.dist(p, vertices[(i + 1) % vertices.length]),
+    0
+  )
+  const sw = 1 + strokeWidth * 1.618
+  const { strokeDasharray, strokeDashoffset } = Utils.getPerfectDashProps(
+    perimeter,
+    strokeWidth * 1.618,
+    style.dash
+  )
+  return (
+    (style.isFilled ? `<polygon points="${pointsAttr}" fill="${fill}" />` : '') +
+    `<polygon points="${pointsAttr}" fill="none" stroke="${stroke}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="${strokeDasharray}" stroke-dashoffset="${strokeDashoffset}" />`
+  )
+}
+
+function renderPolygon(shape: PolygonShape, ctx: RenderCtx): ShapeRender {
+  const { id, size, sides, style, label = '' } = shape
+  const [w, h] = size
+  const styles = getShapeStyle(style, ctx.isDarkMode, id, ctx.theme)
+  const vertices = getPolygonPoints(size, sides)
+  const gradientDefs = styles.fillGradientDef ? renderFillDefs(styles.fillGradientDef).defs : ''
+  const body = polygonBody(id, vertices, style, styles)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h, ctx.theme)
+  return {
+    width: w,
+    height: h,
+    inner:
+      (gradientDefs ? `<defs>${gradientDefs}</defs>` : '') +
+      `<g opacity="${getShapeOpacity(style)}">${body}</g>${labelSvg}`,
+  }
+}
+
+function renderStar(shape: StarShape, ctx: RenderCtx): ShapeRender {
+  const { id, size, points, innerRadiusRatio, style, label = '' } = shape
+  const [w, h] = size
+  const styles = getShapeStyle(style, ctx.isDarkMode, id, ctx.theme)
+  const vertices = getStarPoints(size, points, innerRadiusRatio)
+  const gradientDefs = styles.fillGradientDef ? renderFillDefs(styles.fillGradientDef).defs : ''
+  const body = polygonBody(id, vertices, style, styles)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h, ctx.theme)
+  return {
+    width: w,
+    height: h,
+    inner:
+      (gradientDefs ? `<defs>${gradientDefs}</defs>` : '') +
+      `<g opacity="${getShapeOpacity(style)}">${body}</g>${labelSvg}`,
+  }
+}
+
+function renderSpeechBubble(shape: SpeechBubbleShape, ctx: RenderCtx): ShapeRender {
+  const { id, size, style, label = '' } = shape
+  const [w, h] = size
+  const styles = getShapeStyle(style, ctx.isDarkMode, id, ctx.theme)
+  const vertices = getSpeechBubblePoints(size)
+  const gradientDefs = styles.fillGradientDef ? renderFillDefs(styles.fillGradientDef).defs : ''
+  const body = polygonBody(id, vertices, style, styles)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h, ctx.theme)
+  return {
+    width: w,
+    height: h,
+    inner:
+      (gradientDefs ? `<defs>${gradientDefs}</defs>` : '') +
+      `<g opacity="${getShapeOpacity(style)}">${body}</g>${labelSvg}`,
+  }
 }
 
 /* -------------------------------------------------- */

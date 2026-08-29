@@ -21,6 +21,7 @@ import { TLDR } from '~state/TLDR'
 import { GRID_SIZE } from '~constants'
 import { Loading } from '~components/Loading'
 import { Deck } from '~components/Deck'
+import { LayersPanel } from '~components/LayersPanel'
 import { BottomPanel } from '~components/BottomPanel'
 import { PresentationRuntime } from '~components/Presentation'
 
@@ -614,6 +615,11 @@ const InnerTldraw = React.memo(function InnerTldraw({
             !settings.isPresentationMode &&
             settings.showDeck &&
             showPages && <Deck />}
+          {!settings.isFocusMode &&
+            !settings.isPresentationMode &&
+            settings.showLayers &&
+            showPages &&
+            !readOnly && <LayersPanel />}
           {settings.isPresentationMode && (
             <>
               {/* Phase 16 — mounted only while presenting, so a shape's `animation` and the

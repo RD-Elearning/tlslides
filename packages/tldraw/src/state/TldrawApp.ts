@@ -92,6 +92,9 @@ import { TriangleTool } from './tools/TriangleTool'
 import { LineTool } from './tools/LineTool'
 import { ArrowTool } from './tools/ArrowTool'
 import { StickyTool } from './tools/StickyTool'
+import { PolygonTool } from './tools/PolygonTool'
+import { StarTool } from './tools/StarTool'
+import { SpeechBubbleTool } from './tools/SpeechBubbleTool'
 import { StateManager } from './StateManager'
 import { clearPrevSize } from './shapes/shared/getTextSize'
 
@@ -195,6 +198,9 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     [TDShapeType.Line]: new LineTool(this),
     [TDShapeType.Arrow]: new ArrowTool(this),
     [TDShapeType.Sticky]: new StickyTool(this),
+    [TDShapeType.Polygon]: new PolygonTool(this),
+    [TDShapeType.Star]: new StarTool(this),
+    [TDShapeType.SpeechBubble]: new SpeechBubbleTool(this),
   }
 
   currentTool: BaseTool = this.tools.select
@@ -3330,6 +3336,19 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
+   * T8c.3 — move a top-level shape to a new z-order position, for the layers panel's
+   * drag-and-drop. See `Commands.moveShapeToIndex` for why this is a separate command from
+   * `reorderShapes` above rather than a new `MoveType`.
+   * @param shapeId The id of the (top-level) shape to move.
+   * @param toIndex The shape's target zero-based position in the page's final top-level order.
+   */
+  moveShapeToIndex = (shapeId: string, toIndex: number): this => {
+    if (this.readOnly) return this
+    if (!this.page.shapes[shapeId]) return this
+    return this.setState(Commands.moveShapeToIndex(this, shapeId, toIndex))
+  }
+
+  /**
    * Nudge one or more shapes in a direction.
    * @param delta The direction to nudge the shapes.
    * @param isMajor Whether this is a major (i.e. shift) nudge.
@@ -4322,6 +4341,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       nudgeDistanceLarge: 16,
       nudgeDistanceSmall: 1,
       showDeck: true,
+      showLayers: false,
       showRotateHandles: true,
       showBindingHandles: true,
       showCloneHandles: false,

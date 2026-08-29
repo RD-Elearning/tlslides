@@ -5,6 +5,8 @@ import { PageMenu } from './PageMenu'
 import { ZoomMenu } from './ZoomMenu'
 import { StyleMenu } from './StyleMenu'
 import { AnimateMenu } from './AnimateMenu'
+import { InspectorMenu } from './InspectorMenu'
+import { FormatPainter } from './FormatPainter'
 import { BackgroundMenu } from './BackgroundMenu'
 import { ThemeMenu } from './ThemeMenu'
 import { Panel } from '~components/Primitives/Panel'
@@ -13,7 +15,7 @@ import { RedoIcon, UndoIcon } from '~components/Primitives/icons'
 import { breakpoints } from '~components/breakpoints'
 import { useTldrawApp } from '~hooks'
 import { MultiplayerMenu } from './MultiplayerMenu'
-import { DoubleArrowLeftIcon, DoubleArrowRightIcon, PlayIcon } from '@radix-ui/react-icons'
+import { DoubleArrowLeftIcon, DoubleArrowRightIcon, LayersIcon, PlayIcon } from '@radix-ui/react-icons'
 import { Tooltip } from '~components/Primitives/Tooltip'
 
 interface TopPanelProps {
@@ -41,6 +43,11 @@ export function TopPanel({
     app.setSetting('showDeck', (v) => !v)
   }, [app])
 
+  // T8c.3 — the layers panel toggle, same idiom as `toggleDeckVisibility` above.
+  const toggleLayersVisibility = React.useCallback(() => {
+    app.setSetting('showLayers', (v) => !v)
+  }, [app])
+
   return (
     <StyledTopPanel>
       {(showMenu || showPages) && (
@@ -54,6 +61,8 @@ export function TopPanel({
             <RedoIcon />
           </TopPanelToolButton>
           {showStyles && !readOnly && <StyleMenu />}
+          {showStyles && !readOnly && <InspectorMenu />}
+          {showStyles && !readOnly && <FormatPainter />}
           {showStyles && !readOnly && <AnimateMenu />}
           {showZoom && <ZoomMenu />}
         </Panel>
@@ -69,6 +78,11 @@ export function TopPanel({
           {showPages && <PageMenu />}
           {showPages && !readOnly && <BackgroundMenu />}
           {showPages && !readOnly && <ThemeMenu />}
+          {showPages && !readOnly && (
+            <TopPanelToolButton label="Toggle layers panel" onClick={toggleLayersVisibility}>
+              <LayersIcon />
+            </TopPanelToolButton>
+          )}
           <TopPanelToolButton label="Toggle deck" onClick={toggleDeckVisibility}>
             {app.settings.showDeck ? <DoubleArrowRightIcon /> : <DoubleArrowLeftIcon />}
           </TopPanelToolButton>

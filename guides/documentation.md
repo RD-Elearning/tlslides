@@ -188,6 +188,28 @@ A sticky note.
 | -------- | -------- | ------------------------- |
 | `text`   | `string` | The shape's text content. |
 
+### `PolygonShape`, `StarShape`, `SpeechBubbleShape` (Phase 8c)
+
+Three additional closed-polygon shapes, additive like every field/type on this page since Phase 3
+— new `TDShapeType` members and new shape interfaces need no document migration.
+
+| Type                | Property          | Type       | Description                                                                 |
+| ------------------- | ----------------- | ---------- | ---------------------------------------------------------------------------- |
+| `PolygonShape`       | `size`            | `number[]` | The `[width, height]` bounding box.                                          |
+|                      | `sides`           | `number`   | Number of sides (clamped to a minimum of 3). Set at creation time only — there is no in-editor control to change it afterwards; the toolbar tool always creates a 6-sided polygon. |
+| `StarShape`          | `size`            | `number[]` | The `[width, height]` bounding box.                                          |
+|                      | `points`          | `number`   | Number of star points (clamped to a minimum of 3). Same "creation-time only" note as `sides` above; the toolbar tool always creates a 5-pointed star. |
+|                      | `innerRadiusRatio`| `number`   | Inner-vertex radius as a fraction of the outer radius (clamped to `0.05`–`0.95`). Default `0.5`. |
+| `SpeechBubbleShape`  | `size`            | `number[]` | The **full** `[width, height]` bounding box, tail included — the tail is carved out of the bottom edge, not appended below it, so this shape needs no bounds override for selection/resize/rotate to work like every other box shape. |
+
+All three support every `ShapeStyles` field a Rectangle does **except `cornerRadius`** (not
+meaningful for a polygon's non-right-angle vertices, or worth the extra geometry for the tail-
+bearing speech bubble — see each shape util's own comment) and render through `getShapeStyle`
+like every other shape, so opacity, arbitrary stroke width, hex/gradient fills, and the dash
+styles all work identically. They cannot bind arrows (`canBind = false`) — precise binding math
+against an arbitrary polygon outline was judged a separably-sized feature and left for later; an
+arrow released near one of these shapes lands as a free-floating point instead of binding.
+
 ### Typography (Phase 17)
 
 The `ShapeStyle` table above predates several phases' worth of style additions (opacity/stroke-
@@ -244,6 +266,34 @@ concrete consequences, stated rather than hidden:
 - No StyleMenu control binds a shape to a theme's `fontToken` interactively yet — only
   `buildTemplateShapes` sets it (on label-bearing content; see above). A host or future template
   author can still set it directly via `app.style({ fontToken: 'heading' })`.
+
+### Editor UI additions (Phase 8c)
+
+None of these introduce a persisted field beyond what's documented above — each reads and writes
+data that already existed (`point`/`rotation`, `ShapeStyles`, `isLocked`/`isHidden`, `childIndex`),
+so they need no migration either.
+
+- **Numeric inspector ("Position" in the top panel).** Shows and edits a selection's X/Y (`point`),
+  W/H (the shape's own dimension field — `size` or `radius`\*2, not the rotated on-screen bounding
+  box), and rotation (degrees, stored as radians). With more than one shape selected, X/Y edits
+  translate the whole selection by the same delta (preserving relative layout); W/H and rotation
+  are shown disabled — resizing/rotating a multi-shape selection to an exact number would need the
+  same per-shape-geometry math the interactive resize handles use, a separably-sized feature not
+  attempted here. Hidden entirely with no selection (matching `AnimateMenu`'s own precedent); W/H
+  is disabled (not hidden) for a shape with no independent size field, e.g. `TextShape`.
+- **Format painter (the wand icon next to "Position").** Copies every `ShapeStyles` field except
+  `scale` from one shape onto others: select the source, click the button to arm it, then click a
+  target (or select several) to apply — one undo step. `scale` is excluded because it's `ArrowUtil`'s
+  own internal auto-shrink-to-length factor, not an author-facing style choice. The copy is a *full*
+  replacement — a field the source never overrode is written as an explicit `undefined` in the
+  patch, clearing any pre-existing override on the target, so the target ends up looking exactly
+  like the source rather than merely gaining whatever the source happened to have set.
+- **Layers panel** (`app.setSetting('showLayers', ...)` to toggle, default off). Lists the current
+  slide's *top-level* shapes (`parentId === pageId`; a group's children aren't individually listed)
+  in z-order, front-most first. Supports click-to-select, drag-and-drop reordering (via a new
+  `moveShapeToIndex` command — the same "renumber to a gap-free 1..N sequence" design as the
+  pre-existing `movePage`, generalized from pages to shapes), and per-shape lock/hide toggles
+  (`app.toggleLocked`/`app.toggleHidden`, both pre-existing commands newly exposed in this panel).
 
 ## Bindings
 

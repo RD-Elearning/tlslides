@@ -359,3 +359,30 @@ export const defaultTextStyle: ShapeStyles = {
   font: FontStyle.Sans,
   textAlign: AlignStyle.Middle,
 }
+
+// T8c.2/StyleMenu — every key `ShapeStyles` defines, in one place. `defaultTextStyle`'s own keys
+// (`color`/`size`/`dash`/`scale`/`isFilled`/`font`/`textAlign`) cover everything that predates
+// Phase 8a; every field added since (opacity, strokeWidth, cornerRadius, stroke/fill/fillGradient,
+// the Phase 17 typography fields) has no entry in `defaultStyle`/`defaultTextStyle` (they're all
+// optional overrides with no default value to seed), so it's appended explicitly. Originally
+// StyleMenu's own local `STYLE_KEYS` constant (for its "common style across the selection" sync
+// effect); pulled out here, alongside the functions that already resolve these same fields, so
+// T8c.2's format painter can enumerate exactly the same set without a second, driftable copy —
+// the same "one place" discipline `getShapeStyle`/`resolveFont` already established for read-side
+// resolution, now applied to this list of *which fields exist* on the write side.
+export const ALL_STYLE_KEYS = [
+  ...Object.keys(defaultTextStyle),
+  'opacity',
+  'strokeWidth',
+  'cornerRadius',
+  'stroke',
+  'fill',
+  'fillGradient',
+  'lineHeight',
+  'letterSpacing',
+  'verticalAlign',
+  'list',
+  'fontFamily',
+  'fontToken',
+  'autoFit',
+] as (keyof ShapeStyles)[]

@@ -3,7 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import {
   strokes,
   fills,
-  defaultTextStyle,
+  ALL_STYLE_KEYS,
   getEffectiveStrokeWidth,
   getLetterSpacingEm,
   getLineHeight,
@@ -54,27 +54,11 @@ const currentStyleSelector = (s: TDSnapshot) => s.appState.currentStyle
 const selectedIdsSelector = (s: TDSnapshot) =>
   s.document.pageStates[s.appState.currentPageId].selectedIds
 
-// Phase 8b — `defaultTextStyle`'s keys drive the "common style across the current selection" sync
-// effect below. It has no entries for the Phase 8a/8b fields (they're all optional overrides with
-// no default), so they're appended explicitly — otherwise the panel would silently ignore a
-// selected shape's own opacity/strokeWidth/cornerRadius/stroke/fill and show stale/blank controls.
-const STYLE_KEYS = [
-  ...Object.keys(defaultTextStyle),
-  'opacity',
-  'strokeWidth',
-  'cornerRadius',
-  'stroke',
-  'fill',
-  'fillGradient',
-  // Phase 17
-  'lineHeight',
-  'letterSpacing',
-  'verticalAlign',
-  'list',
-  'fontFamily',
-  'fontToken',
-  'autoFit',
-] as (keyof ShapeStyles)[]
+// Phase 8b — drives the "common style across the current selection" sync effect below. Moved to
+// `shape-styles.ts` as `ALL_STYLE_KEYS` in Phase 8c so the format painter (`FormatPainter.tsx`)
+// can enumerate the exact same field list without a second, driftable copy — see that constant's
+// own comment for the full history.
+const STYLE_KEYS = ALL_STYLE_KEYS
 
 // Corner radius is only meaningful for shapes with a rectangular outline (Rectangle and the
 // host-component placeholder both consume it — see clampCornerRadius's call sites). Showing the

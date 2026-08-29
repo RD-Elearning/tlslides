@@ -12,6 +12,9 @@ import { ImageUtil } from './ImageUtil'
 import { TDShape, TDShapeType } from '~types'
 import { VideoUtil } from './VideoUtil'
 import { ComponentUtil } from './ComponentUtil'
+import { PolygonUtil } from './PolygonUtil'
+import { StarUtil } from './StarUtil'
+import { SpeechBubbleUtil } from './SpeechBubbleUtil'
 
 export const Rectangle = new RectangleUtil()
 export const Triangle = new TriangleUtil()
@@ -25,6 +28,9 @@ export const Sticky = new StickyUtil()
 export const Image = new ImageUtil()
 export const Video = new VideoUtil()
 export const Component = new ComponentUtil()
+export const Polygon = new PolygonUtil()
+export const Star = new StarUtil()
+export const SpeechBubble = new SpeechBubbleUtil()
 
 export const shapeUtils = {
   [TDShapeType.Rectangle]: Rectangle,
@@ -39,6 +45,9 @@ export const shapeUtils = {
   [TDShapeType.Image]: Image,
   [TDShapeType.Video]: Video,
   [TDShapeType.Component]: Component,
+  [TDShapeType.Polygon]: Polygon,
+  [TDShapeType.Star]: Star,
+  [TDShapeType.SpeechBubble]: SpeechBubble,
 }
 
 export const getShapeUtil = <T extends TDShape>(shape: T | T['type']) => {

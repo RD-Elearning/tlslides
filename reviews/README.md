@@ -233,7 +233,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 7 | Bug sweep — B-02, B-05, B-08, B-09, B-10 | ✅ done |
 | 8a | Tier 3, data/render layer — opacity, arbitrary stroke width, corner radius (no UI yet) | ✅ done |
 | 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ✅ done |
-| 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
+| 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ✅ done |
 | 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ✅ done |
 | 11 | Background system — structured `SlideBackground`, SVG `<defs>` gradients on slides and shapes, `BackgroundMenu` UI, curated presets (see `reviews/roadmap-slides.md`) | ✅ done |
 | 12 | Deck theme / brand kit — `TDDocument.theme`, five built-in palettes, `'theme:accent1'` sentinel tokens, `ThemeMenu` UI (see `reviews/roadmap-slides.md`) | ✅ done |
@@ -665,6 +665,157 @@ for the new fields) · `build:packages` 9/9 with zero type errors · new `stylep
 exits 0 with no console errors and confirms every field round-trips through both the document and
 the rendered SVG attributes · all five pre-existing scenarios (`styles`, `shapes`, `frame`, `line`,
 `reorder`) re-verified with no regression — screenshots inspected, not just asserted on.
+
+#### Phase 8c notes — numeric inspector, format painter, layers panel, three new shapes
+
+The last Tier 3 item, and the widest — four largely-independent features. Each is scoped
+individually below rather than as one blanket cut, since each hit a different kind of limit.
+
+- **T8c.1 — the numeric X/Y/W/H/rotation inspector ("Position" in the top panel, next to
+  `StyleMenu`).** Reads and writes `point`/rotation universally, and a shape's own **local**
+  dimension field (`size`, or `radius * 2` for an ellipse) for W/H — deliberately *not* the
+  rotated, axis-aligned bounding box `getBounds`/`getRotatedBounds` return for some shape utils,
+  since an inspector that showed a rotated shape's screen-space bbox under "W"/"H" would silently
+  change what a typed value round-trips to depending on rotation. Every commit goes through the
+  pre-existing, fully generic `app.updateShapes` — no new command needed, the same free ride
+  Phase 8a/17's fields got from `app.style`.
+  - **Multi-selection, decided explicitly**: X/Y is the selection's combined bounding box
+    (`TLDR.getSelectedBounds`, the same helper `zoomToSelection` already uses), and editing it
+    translates *every* selected shape by the same delta in one `app.updateShapes` call (one undo
+    step), preserving relative layout. W/H and rotation are shown, **disabled** — resizing or
+    rotating a multi-shape selection to an exact number would need to replicate the interactive
+    `TransformSession`'s per-shape-util resize math (each shape type's own `transform`, generally
+    anchored and sometimes aspect-ratio-locked) outside of a live pointer gesture: a separably-sized
+    feature, not a corollary of the single-shape case, so it's disabled rather than approximated.
+    Disabled, not hidden, so the reason ("select one shape to resize/rotate exactly") is visible.
+  - **W/H is disabled (not hidden) for a shape with no independent size field** — `TextShape`
+    (its box *is* its measured text), `DrawShape`/`LineShape`/`ArrowShape` (points/handles, not a
+    `size`) — same "visible but inert, not silently absent" precedent as the multi-select case.
+  - Every free-typed field carries `stopKeyPropagationUnlessEscape` — the exact trap
+    `preventEvent.ts`'s own comment named this phase as the next place it would apply. Verified,
+    not assumed: `inspector.js` types into every field via real `page.fill`/Tab and asserts the
+    shape count stays at 2 afterward (a Tab-clone would make it 3+).
+- **T8c.2 — format painter (a wand icon next to "Position").** Copies every `ShapeStyles` field
+  **except `scale`** from one shape onto others: select the source, click the button to arm it
+  (armed state is a small React ref + one boolean, not a new `SelectTool`/pointer-mode — arming
+  just watches `selectedIds` for the *next* change via a `useEffect`, so a plain click-to-select on
+  the target is enough to trigger the paint), then select a target — one `app.style(...)` call, one
+  undo step. `scale` is excluded because it isn't an author-facing style choice; it's `ArrowUtil`'s
+  own internal auto-shrink-to-the-arrow's-length factor, and copying it onto an unrelated shape
+  would look like a random resize with no visible cause. Every other field — including Phase 11's
+  `fillGradient` and every Phase 17 typography field — is included, since a "make this look like
+  that" tool is exactly what they're for.
+  - **The copy is a full replacement, not a sparse merge — the one subtlety worth getting
+    precisely right.** A naive `{ ...sourceShape.style }` only includes keys the source happens to
+    have *set*; a key merely absent on the source (because it never had an override) would leave
+    the target's own pre-existing override untouched, so the target would end up "additionally
+    styled" rather than actually matching the source — the exact "an explicit override wins
+    forever" coherence bug Phase 8b/17 already had to solve twice (size-vs-strokeWidth,
+    color-vs-hex). Fixed the same way: the patch enumerates the *full* field list (`ALL_STYLE_KEYS`,
+    pulled out of `StyleMenu.tsx` into `shape-styles.ts` in this same phase for exactly this reuse,
+    minus `scale`) and writes an explicit `undefined` for every key the source lacks, which
+    `Utils.deepMerge` treats as "clear this field" — the same mechanism every other coherence rule
+    in this fork already depends on. Covered by a unit test (`FormatPainter.spec.ts`) asserting a
+    target's own `stroke`/`strokeWidth` override gets cleared even though the source never had one,
+    and by `formatpainter.js` end to end through the real UI.
+- **T8c.3 — the layers panel** (`app.setSetting('showLayers', ...)`, default off — a new panel
+  defaulting to visible would appear, unannounced, in every pre-existing scenario's screenshot).
+  Lists the current slide's **top-level** shapes (`parentId === pageId`; a group's children are
+  not individually addressable rows — the same scope `moveShapeToIndex` below reorders) in
+  z-order, front-most first. Read `components/Deck/Deck.tsx` before writing this, per the brief,
+  and reused its drag-and-drop design exactly rather than inventing a second one: plain HTML5 DnD,
+  a `dragId`/`dropIndex` pair, the identical before/after index conversion in `handleDrop`.
+  Lock/hide toggles reuse the pre-existing `app.toggleLocked`/`app.toggleHidden` commands (already
+  implemented, simply never exposed in any panel before this phase).
+  - **New command: `Commands.moveShapeToIndex`.** The pre-existing `Commands.reorderShapes`
+    (`MoveType.Backward`/`Forward`/`ToFront`/`ToBack`) answers "nudge this selection by one step or
+    to an extreme" — the right shape for a context-menu action, wrong shape for a drag-and-drop
+    panel, which computes "the dragged row's target position among the currently-listed rows," an
+    *index*. That's exactly `Commands.movePage`'s own input shape, so `moveShapeToIndex` is
+    `movePage` generalized from pages to a page's top-level shapes — same index semantics, same
+    full-renumber-to-a-gap-free-1..N-sequence design (over `reorderShapes`'s fractional insertion),
+    for the same reason: a layers panel is dragged repeatedly at the same spot far more often than
+    `reorderShapes` is called, so avoiding float-collision drift outweighs the renumber cost, and a
+    slide's shape count is bounded.
+  - **A real, findable-only-by-driving-the-actual-UI bug**, exactly the kind the brief warned about:
+    the first draft's `layers.js` scenario clicked a target rectangle's screen-space center to
+    select it and got `selectedIds: []` back — clicking silently deselected instead. Not a layers
+    panel bug at all: the target shape was `isFilled: false`, and an unfilled shape's only hit area
+    is a thin band around its *stroke* (`tl-stroke-hitarea`), inset from the box edge by half its
+    (deliberately large, for the test) `strokeWidth` — a center click misses entirely. Pre-existing
+    `RectangleUtil` behavior, unrelated to this phase's own code, caught only because a scenario
+    happened to drive a real click against an unfilled shape for the first time in this repo.
+- **T8c.4 — three new closed-polygon shapes: `PolygonShape`, `StarShape`, `SpeechBubbleShape`.**
+  Additive `TDShapeType` members and shape interfaces — no migration, document stays at 16. All
+  three share one new geometry/rendering recipe rather than tripling `RectangleUtil`'s Dashed/Draw
+  split three times over:
+  - Per-shape vertex generators (`getPolygonPoints`, `getStarPoints`, `getSpeechBubblePoints`) turn
+    each shape's own dimensions (`size`+`sides`, `size`+`points`+`innerRadiusRatio`, `size` alone
+    with a fixed proportional tail) into a plain `number[][]`.
+  - One shared body renderer, `PolygonBody.tsx` (live) and `polygonDrawPath.ts` +
+    `renderPageToSvg.ts`'s own `polygonBody()` (headless), consumes that vertex list generically —
+    dash/fill/gradient exactly like `getShapeStyle` already resolves for every shape, and a
+    hand-drawn "Draw" outline via `getPolygonDrawPoints`, a straight generalization of
+    `getTriangleDrawPoints`'s jitter-and-wraparound recipe from a fixed 3 vertices to any N.
+  - **Render headlessly through `renderPageToSvg`**: yes, in full, including the hand-drawn Draw
+    variant and gradient fills — no approximation or placeholder, unlike `ComponentShape`/`VideoShape`.
+  - **Toolbar wiring**: a tool class each (`PolygonTool`/`StarTool`/`SpeechBubbleTool`, identical
+    in shape to `TriangleTool`), registered in `state/tools/index.ts` and `TldrawApp.ts`'s `tools`
+    map, added to `ShapesMenu`'s fly-out, and bound to bare-letter hotkeys `h`/`j`/`b` — every
+    digit 0–9 was already claimed by an existing tool, so `ShapesMenu`'s own kbd-tooltip logic
+    (previously `4 + arrayIndex`, which happened to equal the four original shapes' real digit
+    shortcuts) is now an explicit table covering all seven, rather than arithmetic for four with a
+    bolted-on special case for three.
+  - **Scope cuts, named rather than silent** (each shape util's own comment repeats these):
+    - `canBind = false` on all three — arrows cannot bind to them. Precise binding math against an
+      arbitrary polygon outline (what `RectangleUtil`/`TriangleUtil`/`EllipseUtil` each hand-roll
+      for their own exact shape) is roughly the size of everything else in one of these files
+      combined; the base class's *default* binding is bounds-only, which would bind to empty
+      corner space outside a hexagon's real outline — judged worse than no binding, so it's off.
+    - **No corner radius** — not meaningful for a regular polygon's non-right-angle vertices, and
+      for the tail-bearing speech bubble, rounding the body's corners while keeping the tail's own
+      notch square is a materially different computation from `clampCornerRadius`'s rectangle-arc
+      insertion.
+    - **No per-instance UI to change `sides`/`points`/`innerRadiusRatio` after creation** — the
+      toolbar tool always creates a hexagon / 5-point star / fixed-tail bubble. A document or
+      template author can still set any value directly.
+    - **Hit-testing matches `TriangleUtil`'s own precision, not more**: bounds-only for a click
+      (inherited default), real-outline (`intersectLineSegmentPolyline`/`intersectBoundsPolygon`)
+      for marquee/line-segment tests.
+    - **`SpeechBubbleShape`'s label centers on the full bounding box, tail included** — not the
+      body alone, unlike `TriangleUtil`'s centroid-correction for its own off-center shape. The
+      tail is capped at 25% of height/40px, so the resulting offset is minor; not worth a second
+      "effective label box" concept for one shape.
+  - **A visual scare that turned out to be parity, not a bug** — the "assume yours has one" rule,
+    honored by actually finding something and then correctly ruling it out. An early
+    `newshapes.js` draft gave a 7-sided polygon `isFilled: false`, `dash: 'draw'`, `strokeWidth: 24`
+    on a 200×200 box and got back a solid black "gear/donut" — alarming enough to look like exactly
+    the class of bug this phase was warned about (a rounded rectangle rendering as a hexagon, a
+    gradient rendering as a dot). Investigated rather than assumed away: the raw path coordinates
+    were geometrically sane (a heptagon inflated by roughly half the stroke width, nothing NaN or
+    wildly out of range), and giving the *pre-existing* `RectangleUtil` the identical treatment
+    (unfilled, Draw, `strokeWidth: 24`, same box size) produced an equally donut-shaped ring. An
+    unfilled shape's pen only ever traces the perimeter; at a stroke width that's a large fraction
+    of the shape's own size, "traces the perimeter" and "chunky ring with a hole" are the same
+    picture — true of Rectangle before this phase existed, not a defect in the new polygon
+    geometry. `newshapes.js` keeps both shapes at a more legible `strokeWidth: 8` as the permanent
+    regression check, with the investigation written into its own comment.
+
+**Verified:** 93/93 suites, 598 tests passing (up from 87/570 at the start of this phase; 28 new —
+`polygonHelpers.spec.ts`/`starHelpers.spec.ts`/`speechBubbleHelpers.spec.ts` for the three vertex
+generators, `renderPageToSvg.polygon.spec.ts` for headless rendering of all three including a
+gradient fill, `moveShapeToIndex.spec.ts` mirroring `movePage.spec.ts`'s own coverage, and
+`FormatPainter.spec.ts` for the copy/clear coherence rule and one-undo-step behavior) ·
+`build:packages` 9/9 with zero type errors · nineteen `tools/visual/scenarios` exit 0 with no
+unexpected console errors: the fifteen pre-existing scenarios re-verified with no regression, plus
+four new ones (`inspector.js`, `formatpainter.js`, `layers.js`, `newshapes.js`), all driving the
+real UI (real clicks, real drags, real typed input) rather than only the imperative API, per the
+brief. Every new screenshot inspected by eye, not just asserted on:
+`tools/visual/shots/inspector.png` (a rotated, translated rectangle plus a correctly-disabled
+multi-select state), `formatpainter.png` (both rectangles rendering identically green/dotted after
+one click-arm-click-apply), `layers.png` (a live-dragged row plus visibly toggled lock/hide icons),
+and `newshapes.png` (hexagon/star/speech-bubble in both solid and hand-drawn styles, plus the
+Rectangle-parity control described above) · `examples/consumer-smoke/run.sh` exits 0.
 
 #### Phase 9 notes — transpiled `dist`, a widened React range, and a real outside consumer
 

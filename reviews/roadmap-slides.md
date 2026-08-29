@@ -438,8 +438,15 @@ Worth doing, in rough order of value per effort:
   the outgoing theme's pairing (Phase 12's original "less invasive, less consistent" alternative)
   — the concrete next step, not a re-opening of Phase 17's own scope.
 - **Alignment & distribute + smart guides** — check what tldraw 1.9 already ships before building.
-- **Locked / background layer** — shapes that can't be selected by a click, only from the layers
-  panel. Pairs with the master slide.
+- ~~**Locked / background layer** — shapes that can't be selected by a click, only from the layers
+  panel.~~ **Closed by Phase 8c**, as a side effect rather than a dedicated feature: `SelectTool`
+  already refused to select a locked shape by clicking it (`isLocked` guards at
+  `SelectTool.ts:404`/`438`, pre-existing, not new), but nothing before Phase 8c's layers panel
+  offered an alternate way in — `app.select(...)` (the public API the panel's row click uses)
+  never checked `isLocked` at all. So a shape locked via the layers panel's own lock toggle is now
+  exactly "unselectable by a click, selectable only from the layers panel," without any new
+  guard code — the panel just exposes a pre-existing asymmetry. Pairing with a "master slide"
+  concept is still open.
 - **Icon & illustration library** — as `ComponentShape` blocks (Phase 5 already built the registry),
   so the host supplies them and the editor stays dependency-free.
 - **Tables** — the most common thing a slide tool lacks. Also a `ComponentShape`.

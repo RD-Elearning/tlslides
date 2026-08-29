@@ -9,6 +9,9 @@ import { SelectTool } from './SelectTool'
 import { StickyTool } from './StickyTool'
 import { TextTool } from './TextTool'
 import { EraseTool } from './EraseTool'
+import { PolygonTool } from './PolygonTool'
+import { StarTool } from './StarTool'
+import { SpeechBubbleTool } from './SpeechBubbleTool'
 
 export interface ToolsMap {
   select: typeof SelectTool
@@ -21,6 +24,9 @@ export interface ToolsMap {
   [TDShapeType.Line]: typeof LineTool
   [TDShapeType.Arrow]: typeof ArrowTool
   [TDShapeType.Sticky]: typeof StickyTool
+  [TDShapeType.Polygon]: typeof PolygonTool
+  [TDShapeType.Star]: typeof StarTool
+  [TDShapeType.SpeechBubble]: typeof SpeechBubbleTool
 }
 
 export type ToolOfType<K extends TDToolType> = ToolsMap[K]
@@ -38,4 +44,7 @@ export const tools: { [K in TDToolType]: ToolsMap[K] } = {
   [TDShapeType.Line]: LineTool,
   [TDShapeType.Arrow]: ArrowTool,
   [TDShapeType.Sticky]: StickyTool,
+  [TDShapeType.Polygon]: PolygonTool,
+  [TDShapeType.Star]: StarTool,
+  [TDShapeType.SpeechBubble]: SpeechBubbleTool,
 }
