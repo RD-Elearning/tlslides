@@ -147,6 +147,55 @@ investigated further since it's specific to `apps/www`'s Sentry/PWA wiring, not 
 — `examples/tldraw-example` (see above) is the clean way to exercise `<Tldraw>` while this is
 unresolved. If you need `apps/www` running, prefer the canonical Yarn Classic path.
 
+## Verifying the package is actually consumable (Phase 9)
+
+`examples/tldraw-example`, `examples/nextjs-sample`, and `apps/www` all resolve
+`@tlslides/tldraw`/`@tlslides/core` through this repo's own package-manager workspace — a
+workspace link plus (for the two esbuild/Next examples) a shared `tsconfig.base.json`. That lets
+a packaging regression in the *published* package (a missing `dependencies` entry, a broken
+`files` field, un-transpiled JSX in `dist`, ...) go completely unnoticed here while breaking every
+real downstream consumer.
+
+`examples/consumer-smoke/` exists to catch exactly that class of regression. It is a minimal Vite
++ React app that is deliberately **not** a workspace member (see the exclusion entries in
+`pnpm-workspace.yaml` and the root `package.json`'s `"workspaces"` array) and imports
+`@tlslides/tldraw` only from `npm pack` tarballs of the built `dist` — the same
+"vendor the tarball" recipe `guides/nextjs-integration.md`'s Option B describes for a real
+outside project. One command runs the whole check:
+
+```bash
+bash examples/consumer-smoke/run.sh
+```
+
+It (1) rebuilds `packages/*` fresh, (2) `npm pack`s `@tlslides/vec`, `@tlslides/intersect`,
+`@tlslides/core`, and `@tlslides/tldraw` into `examples/consumer-smoke/vendor/`, (3) does a
+from-scratch `npm install` of that project (a project-local npm cache, not the shared global one,
+to avoid an unrelated permissions issue with a shared machine's npm cache), (4) type-checks
+(`tsc --noEmit`, against a standalone `tsconfig.json` with no `paths`/`baseUrl` into the monorepo)
+and bundles it (`vite build`), and (5) serves the build and — if a Playwright installation is
+reachable via `tools/visual/playwright.js` — drives it headlessly to confirm `<Tldraw>` actually
+mounts, not just that the bundle parsed. It exits non-zero (via `set -euo pipefail`) at whichever
+step actually breaks.
+
+**What this caught, the first time it was run end to end (Phase 9):** two real bugs neither
+`build:packages` nor the Jest suite could see, because both only ever exercise the package from
+inside the workspace:
+
+1. `@tlslides/core`'s `dist` calls `require('mobx')` at runtime (`mobx-react-lite`'s peer), but
+   `mobx` was declared only in `devDependencies` — never installed for a consumer of the package,
+   only for this repo's own dev/test environment. Fixed by moving it to `dependencies`.
+2. The smoke test's own `tsconfig.json`, left with TypeScript's default (unrestricted) `types`
+   behaviour, failed with `TS2688: Cannot find type definition file for 'minimatch'` — not a bug
+   in `@tlslides/tldraw` at all, but TypeScript's automatic type-acquisition walking *up* the
+   directory tree from `examples/consumer-smoke` into the *monorepo root's* `node_modules/@types`
+   (which carries an unrelated, empty `@types/minimatch` stub some other tool pulled in) despite
+   this project not being a workspace member. Fixed with an explicit `"types": []` — the same
+   defensive setting a genuinely external project's tsconfig would ordinarily carry anyway.
+
+See `reviews/README.md`'s Phase 9 notes for the full account, including what the smoke test did
+*not* catch (nothing else — every public export from Phases 11-15 resolved correctly, both as a
+value and as a type, on the first run after those two fixes).
+
 ## Other scripts
 
 - Run `yarn test` to execute unit tests via [Jest](https://jestjs.io).

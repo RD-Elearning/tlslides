@@ -11,7 +11,21 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true
+    "strict": true,
+    // Explicit and empty, not left to TypeScript's default "include every @types/* package
+    // found by walking up every ancestor node_modules/@types" behaviour. This project lives
+    // physically inside the tlslides monorepo directory tree (even though it is deliberately
+    // NOT a package-manager workspace member — see run.sh and pnpm-workspace.yaml), and that
+    // default walks straight past this project's own node_modules up into the *monorepo root's*
+    // node_modules/@types, which carries a stub `@types/minimatch@6.0.0` (a real, empty
+    // "this package now ships its own types" placeholder some other tool in this repo pulled
+    // in) that TypeScript cannot resolve to an actual .d.ts. That produced `TS2688: Cannot find
+    // type definition file for 'minimatch'` — a real failure this smoke test caught, but one
+    // about the smoke test's own placement inside the repo, not about `@tlslides/tldraw`/
+    // `@tlslides/core` themselves. A genuinely external consumer, outside this directory tree
+    // entirely, would never see it; restricting `types` here is what any such consumer's own
+    // tsconfig would ordinarily do anyway, and is what makes this project behave like one.
+    "types": []
   },
   "include": ["src"]
 }

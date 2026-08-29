@@ -43,7 +43,10 @@ echo "==> [4/6] Type-checking + building the app (tsc --noEmit && vite build)"
 npm run build
 
 echo "==> [5/6] Booting the built app and checking it actually mounts"
-npm run preview -- --port 4998 --strictPort &
+# The local vite binary directly, not `npm run preview` — npm wraps the real process in a shell,
+# and killing that wrapper's PID does not reliably kill the vite server underneath it, which
+# leaked a listener on 4998 across runs when this used `npm run preview &`.
+node_modules/.bin/vite preview --port 4998 --strictPort &
 PREVIEW_PID=$!
 trap 'kill "$PREVIEW_PID" 2>/dev/null || true' EXIT
 

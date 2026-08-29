@@ -24,7 +24,18 @@ export type {
   DeckContent,
   AddBlockOptions,
 } from './state/deck'
-export { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from './state/shapes/shared/deck-theme'
+export {
+  BUILT_IN_DECK_THEMES,
+  DEFAULT_DECK_THEME,
+  // Phase 9 audit — found unreachable from outside the package, fixed here rather than just
+  // reported: a host resolving `TDDocument.theme` (optional, since it's a read-side default —
+  // see the function's own doc comment) had no supported way to reproduce this one-line
+  // fallback (`theme ?? DEFAULT_DECK_THEME`) other than duplicating it, which silently drifts
+  // if the default ever changes. `renderPageToSvg`'s own `opts.theme` and every internal
+  // rendering path already resolve through this function; a host embedding its own headless
+  // preview/thumbnail logic around `renderPageToSvg` should too.
+  activeDeckTheme,
+} from './state/shapes/shared/deck-theme'
 export { BUILT_IN_TEMPLATES, getTemplate } from './state/templates'
 
 // Phase 15 — headless render + export. `renderPageToSvg` is the pure, no-DOM function `Deck.

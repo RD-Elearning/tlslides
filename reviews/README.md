@@ -234,7 +234,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 8a | Tier 3, data/render layer — opacity, arbitrary stroke width, corner radius (no UI yet) | ✅ done |
 | 8b | Tier 3, UI — style panel controls for 8a's fields, arbitrary hex colour + picker | ✅ done |
 | 8c | Tier 3, remaining — numeric X/Y/W/H inspector, format painter, layers panel, star / polygon / speech bubble | ⬜ pending |
-| 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ⬜ pending |
+| 9 | Tier 4 — consumability: transpiled `dist`, React peer range, consumer smoke test | ✅ done |
 | 11 | Background system — structured `SlideBackground`, SVG `<defs>` gradients on slides and shapes, `BackgroundMenu` UI, curated presets (see `reviews/roadmap-slides.md`) | ✅ done |
 | 12 | Deck theme / brand kit — `TDDocument.theme`, five built-in palettes, `'theme:accent1'` sentinel tokens, `ThemeMenu` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 | 13 | Template system — `slot?` field, twelve theme-aware starter layouts, `addSlideFromTemplate`, `TemplatePicker` UI (see `reviews/roadmap-slides.md`) | ✅ done |
@@ -663,6 +663,132 @@ for the new fields) · `build:packages` 9/9 with zero type errors · new `stylep
 exits 0 with no console errors and confirms every field round-trips through both the document and
 the rendered SVG attributes · all five pre-existing scenarios (`styles`, `shapes`, `frame`, `line`,
 `reorder`) re-verified with no regression — screenshots inspected, not just asserted on.
+
+#### Phase 9 notes — transpiled `dist`, a widened React range, and a real outside consumer
+
+**T9.1 — ship transpiled JS from `dist`, not raw JSX.** The root cause was one missing line, and
+it took reading `lask`'s own source to find it. `lask` already defaults to building against each
+package's own `tsconfig.build.json`/`tsconfig.dev.json` (falling back to `tsconfig.json` only if
+those don't exist) — and `packages/tldraw`/`packages/core` already had both files, left over from
+whichever earlier setup created them. Neither ever overrode `jsx`, so both inherited
+`tsconfig.base.json`'s `"jsx": "preserve"` straight into the esbuild step that builds *the
+packages themselves* — the exact same failure mode Phase 1's `E-02` fix diagnosed and worked
+around one level up, in `examples/tldraw-example`'s own build scripts, without ever tracing it
+back to its source. Fixed at the source this time: `packages/tldraw` and `packages/core`'s
+`tsconfig.build.json`/`tsconfig.dev.json` now set `"jsx": "react"` (the classic transform, not
+`"react-jsx"` — every source file already does `import * as React from 'react'`). `dist/index.mjs`
+now contains `React.createElement(...)` calls; a `grep -c "return <"` across both packages' `dist`
+returns zero, both before and after a `--force` (no-cache) rebuild.
+
+- **Verified against all three real consumers, not just grepped.** `examples/tldraw-example`'s own
+  esbuild-based build/dev scripts no longer need the `.js`/`.mjs` → `jsx` loader override Phase 1
+  added specifically to parse the *old*, JSX-shipping `dist` — removed, and the build (and all ten
+  port-5431 visual scenarios) still passes. `examples/nextjs-sample`'s `next.config.js` had
+  `transpilePackages` deleted outright — verified with a from-scratch dev server (old ones killed
+  first, to rule out a stale process serving cached output) and all three of its scenarios
+  (`nextjs`, `blocks`, `deckapi`) passing against it. `apps/www` keeps `next-transpile-modules`
+  (Next 12/pages router has no built-in alternative, and transpiling already-transpiled JS is a
+  harmless no-op) — its own build was already broken under pnpm before this phase, for reasons
+  `guides/development.md` documents (`next.config.js`'s `withPWA(withTM(...))` composition,
+  Sentry/PWA version drift); confirmed that failure is unrelated and unchanged by running it: it
+  fails at an unrelated auth-route type error before webpack ever reaches `@tlslides/tldraw`.
+- **The `tsconfig.build.json`/`tsconfig.dev.json` split matters, not just the build one.** `yarn
+  start:packages` (watch mode, what `apps/www`'s dev flow drives) reads `tsconfig.dev.json`, which
+  needed the identical override — missing it would have left production consumable and dev-mode
+  consumers back on raw JSX, a gap a reviewer would have caught immediately and a worse trap than
+  shipping neither, since it would look fixed everywhere this repo's own examples are tested.
+
+**T9.2 — widened React peer range to `^17.0.0 || ^18.0.0 || ^19.0.0`, honestly, not aspirationally.**
+17 has been the baseline all along; 19 was the R-01 spike (Phase 2) and is what `examples/nextjs-
+sample` runs today. 18 sat in the middle, named in the original audit as the specific version of
+concern (`zustand@3`/`mobx-react-lite@3` "known to tear under React 18 concurrent rendering") —
+and, until this phase, never actually run against this fork at all. Rather than widen to it on
+inference alone, **T9.3's consumer-smoke app runs React 18.3.1**, deliberately, with
+`<React.StrictMode>` on (the same double-invoke behavior Phase 2's B-14 fix targeted): a real
+`npm install` of the built tarballs, a real `vite build`, a real headless mount. It mounted clean,
+zero console/page errors. That upgrades 18 from "inferred safe because 17 and 19 both work" to
+"independently verified," and closes the one version in the new range that had no direct evidence
+before this phase. `packages/core`'s peer range also silently claimed `>=16.8` before this
+phase — dropped rather than carried forward, since nothing in this fork's own history (tests,
+spikes, or otherwise) had ever verified React 16 against it either.
+
+**T9.3 — `examples/consumer-smoke/`, and it did exactly the job it was built for.** A minimal Vite
++ React 18 app, deliberately excluded from both `package.json`'s `"workspaces"` and
+`pnpm-workspace.yaml` (a `!examples/consumer-smoke` negation entry in both), so neither Yarn
+Classic nor pnpm ever links it to `packages/tldraw`'s source — it resolves `@tlslides/tldraw` and
+`@tlslides/core` only from `npm pack` tarballs of the built `dist`, installed with a plain `npm
+install` into its own isolated `node_modules`. One command (`bash examples/consumer-smoke/run.sh`)
+rebuilds the packages, packs the tarballs, installs, type-checks (`tsc --noEmit` against a
+standalone `tsconfig.json` with no monorepo `paths`), bundles (`vite build`), and — if a Playwright
+install is reachable — boots the build and drives it headlessly.
+
+It caught two real bugs on its very first end-to-end run, neither visible to `build:packages` or
+the Jest suite, because both only ever exercise these packages from inside the workspace:
+
+1. **`@tlslides/core`'s `dist` calls `require('mobx')` at runtime** (`mobx-react-lite`'s peer
+   dependency, used directly by `core`'s own observer wiring), but `mobx` was declared only in
+   `devDependencies` — installed for this repo's own dev/test environment, never for a consumer of
+   the published package. `lask`'s `external` option treats `dependencies`, `devDependencies`,
+   *and* `peerDependencies` alike (all excluded from the bundle, all left as a bare `require`), so
+   this shipped a `dist` with an unresolvable `require('mobx')` for anyone who actually installed
+   it standalone, and nothing inside the workspace could ever detect it, since the workspace's own
+   root `node_modules` always has `mobx` present for unrelated reasons. Fixed by moving `mobx` to
+   `dependencies` in `packages/core/package.json`. `packages/tldraw`'s own `dist` never calls
+   `require('mobx')` directly (confirmed by grep), so its identical devDependency listing was left
+   alone — genuinely inert there, not the same bug twice.
+2. **The smoke test's own `tsconfig.json` failed with `TS2688: Cannot find type definition file
+   for 'minimatch'`** — not a bug in either package. TypeScript's default (unrestricted) `types`
+   behavior walks *up* the physical directory tree from `examples/consumer-smoke` through every
+   ancestor's `node_modules/@types`, including the **monorepo root's**, despite this project
+   deliberately not being a workspace member — package-manager exclusion doesn't stop TypeScript's
+   own ancestor search. The root's `node_modules/@types/minimatch@6.0.0` is a real, empty "this
+   package now ships its own types" stub some unrelated dev tool pulled in, which TypeScript can't
+   resolve to an actual `.d.ts`. Fixed with an explicit `"types": []` — the same defensive setting
+   any genuinely external project's tsconfig would ordinarily carry, and what makes this project
+   behave like one rather than a nested part of the monorepo it's supposed to be independent of.
+3. **A bug in `run.sh` itself, caught only by checking the port after a full run, not by the run
+   exiting 0.** `npm run preview &` followed by `kill "$PREVIEW_PID"` on exit left a `vite preview`
+   process listening on 4998 after the script finished — npm wraps the real process in its own
+   shell, and killing that wrapper's PID doesn't reliably kill the process underneath it. Fixed by
+   invoking `node_modules/.bin/vite` directly, giving the trap a real, single PID to kill; verified
+   by checking `4998` is free immediately after three consecutive clean runs.
+
+Everything else was reachable on the first try: every value and type export named in the Phase 9
+brief (`Deck`, `DeckViewer`, `renderPageToSvg`, `renderSvgToPng`, `BUILT_IN_TEMPLATES`,
+`BUILT_IN_DECK_THEMES`, `DEFAULT_DECK_THEME`, `getTemplate`, `stopKeyPropagationUnlessEscape`,
+`SlideBackground`, `DeckTheme`, `ShapeStyles`, `Template`, `DeckSlide`, `TDInsertableContent`, and
+the rest of the Phase 14 facade's option/event types) resolved cleanly through `tsc --noEmit` and
+bundled cleanly through `vite build`, with a headless Playwright check confirming `<Tldraw>`
+actually mounts under the resulting bundle, not just that it parses.
+
+**T9.4 audit: one real gap, found and fixed rather than only reported.** `activeDeckTheme` — the
+one-line `theme ?? DEFAULT_DECK_THEME` fallback every internal rendering path (`Tldraw.tsx`,
+`ReadOnlyEditor`, `TldrawApp.copySvg`, `addSlideFromTemplate`, `renderPageToSvg` itself) already
+resolves a document's optional `TDDocument.theme` through — was never exported from the package
+root, even though `DEFAULT_DECK_THEME` (one of its two inputs) already was. A host building its own
+headless preview logic around the exported `renderPageToSvg` had no supported way to reproduce
+"what theme does an untouched deck actually render with" other than duplicating the fallback by
+hand, which silently drifts if the default ever changes. Low-impact (the logic is a single `??`),
+but free to fix and consistent with how Phase 14 closed an identical gap for
+`BUILT_IN_TEMPLATES`/`BUILT_IN_DECK_THEMES` — now exported directly from `index.ts`, and added to
+`consumer-smoke`'s own reachability check, which re-passed end to end after the change.
+`TDShapeUtil` (flagged as unexported in the original document-4 audit, pre-dating this phase's
+scope) was checked again and found **not** to be a gap: Phase 5's `ComponentShape` + `components`
+registry replaced subclassing `TDShapeUtil` as the supported extension point for host-authored
+shape types, so there is nothing for a host to do with the base class that the registry doesn't
+already cover.
+
+**Verified:** `build:packages` 9/9 with zero type errors (including a `--force`, no-cache rebuild)
+· 84/84 suites, 510 tests passing, 19 snapshots — unchanged from the pre-Phase-9 baseline · all
+thirteen visual scenarios exit 0 with no unexpected console/page errors (`shapes`, `templates`,
+`theme`, `background`, `stylepanel`, `styles`, `frame`, `line`, `reorder`, `export` against the
+tldraw-example harness; `nextjs`, `blocks`, `deckapi` against a from-scratch `next dev`, the latter
+three now running with no `transpilePackages` at all) — every screenshot inspected, not just
+asserted on · `examples/consumer-smoke/run.sh` exits 0 end to end (fresh package build → `npm
+pack` → isolated `npm install` → `tsc --noEmit` → `vite build` → headless mount check), confirmed
+three consecutive times with the port left clean after each run, and its own screenshot inspected
+showing a fully working editor rendered from nothing but a real npm install of the built tarballs.
+
 
 #### Phase 11 notes — background system
 

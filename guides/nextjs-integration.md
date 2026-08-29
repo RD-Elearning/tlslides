@@ -48,13 +48,25 @@ start customizing shapes/UI, which is the actual goal here.
 This repo's own `apps/www` is the reference implementation — `apps/www/components/Editor.tsx` +
 `apps/www/pages/index.tsx` + `apps/www/next.config.js`. The three things that matter:
 
-**1. `next.config.js` must transpile the package.** The build output in `packages/tldraw/dist`
-and `packages/core/dist` ships **un-transpiled JSX** (verified — `dist/index.mjs` literally
-contains raw `<TextWrapper>...` JSX syntax). Next's default webpack config does not run
-`node_modules` packages through its JS/JSX compiler, so without this step the build fails on the
-JSX syntax.
+**1. Nothing to transpile, as of Phase 9 — but check which build you have.** Before Phase 9,
+`packages/tldraw/dist` and `packages/core/dist` shipped **un-transpiled JSX** (`dist/index.mjs`
+literally contained raw `<TextWrapper>...` syntax), and Next's default webpack config does not
+run `node_modules` packages through its JS/JSX compiler — so the build failed on the JSX syntax
+unless you added a transpile step. As of Phase 9, both packages' own build config transpiles
+their JSX to `React.createElement(...)` calls before it ever reaches `dist` (see
+`guides/architecture.md`), so a **current** build of these packages needs no special Next.js
+config at all: `examples/nextjs-sample/next.config.js` (Next 15, App Router) carries no
+`transpilePackages` and both `next build` and `next dev` work against it unmodified — verified
+directly, not assumed (see `reviews/README.md`'s Phase 9 notes for the exact scenarios re-run
+without it).
 
-- **Pages router / Next ≤ 12** (what `apps/www` uses):
+You only need a transpile step if you're consuming a **pre-Phase-9** build of these packages, or
+vendoring the `.tsx` source directly instead of the built `dist` (Option A above, if you point
+your app's imports at `packages/tldraw/src` rather than its build output). In either of those
+cases:
+
+- **Pages router / Next ≤ 12** (what `apps/www` still carries, harmlessly — transpiling
+  already-transpiled JS is a no-op, and pre-13 Next has no built-in alternative):
   ```js
   const withTM = require('next-transpile-modules')(['@tlslides/tldraw', '@tlslides/core'])
   module.exports = withTM({ reactStrictMode: true, /* ...your config */ })
@@ -65,6 +77,11 @@ JSX syntax.
     transpilePackages: ['@tlslides/tldraw', '@tlslides/core'],
   }
   ```
+
+If you're not in either case above, leave `transpilePackages`/`next-transpile-modules` out
+entirely — it costs nothing to have it in (it just transpiles code that no longer has any JSX
+left to find), but it's one more thing to explain to the next person reading your config for no
+remaining reason.
 
 **2. The editor must not render on the server.** `<Tldraw>` touches `window`/canvas/DOM APIs at
 import time, so it needs `ssr: false`.

@@ -74,12 +74,28 @@ source here and vendor the output (see `guides/nextjs-integration.md`). You cann
   "viewer"/presentation-only page distinct from the editor.
 - Build tool: each package's `build`/`start` script runs a private internal tool called `lask`
   (esbuild + `tsconfig-replace-paths` + dts generation) producing `dist/index.js` (CJS),
-  `dist/index.mjs` (ESM), and `dist/index.d.ts`. **The dist output ships un-transpiled JSX** —
-  `dist/index.mjs` literally contains `return <TextWrapper>...` — so any downstream bundler
-  consuming this package must be configured to parse JSX in `.js`/`.mjs` files from
-  `node_modules` (this is exactly why `apps/www/next.config.js` wraps the Next config with
-  `next-transpile-modules(['@tlslides/tldraw', '@tlslides/core'])` — see
-  `guides/nextjs-integration.md`).
+  `dist/index.mjs` (ESM), and `dist/index.d.ts`. **As of Phase 9, the dist output ships
+  transpiled JS** — `dist/index.mjs` contains `React.createElement(...)` calls, no JSX syntax —
+  so a downstream bundler needs no special JSX-in-`node_modules` configuration to consume it.
+  Before Phase 9 it shipped raw JSX (`return <TextWrapper>...` literally in `dist/index.mjs`),
+  because `lask` hands esbuild each package's own `tsconfig.build.json`/`tsconfig.dev.json`,
+  which extended `tsconfig.base.json`'s `"jsx": "preserve"` — the setting that lets *this repo's
+  own* `.tsx` source pass through untouched into a host's own JSX pipeline (e.g. `apps/www`'s
+  Next/webpack build compiling its own pages) is the wrong setting for the library's own build
+  step, which has no such downstream pipeline to hand JSX to. `packages/tldraw` and
+  `packages/core`'s `tsconfig.build.json`/`tsconfig.dev.json` now override `"jsx": "react"`
+  (matching every source file's existing `import * as React from 'react'`, i.e. the classic
+  transform, not the automatic runtime), so esbuild transpiles JSX to `React.createElement`
+  when it builds *these two packages*, before it ever reaches a consumer. Nothing else changed:
+  `esm`/`cjs`/`.d.ts` outputs, the `files`/`main`/`module`/`types` fields, and every existing
+  consumer's own JSX (`apps/www`'s pages, `examples/*`'s own `.tsx` source) are unaffected —
+  `apps/www/next.config.js` still wraps the Next config with
+  `next-transpile-modules(['@tlslides/tldraw', '@tlslides/core'])` (harmless now — transpiling
+  already-transpiled JS is a no-op — and Next 12/pages-router has no built-in alternative), but
+  `examples/nextjs-sample/next.config.js` (Next 15/App Router) has demonstrably dropped
+  `transpilePackages` entirely and still builds and runs (see `guides/nextjs-integration.md`). A
+  host still needs a JSX-aware transpile step only if it consumes a pre-Phase-9 build of these
+  packages, or vendors the `.tsx` source directly rather than the built `dist`.
 
 ## Dependency vintage (important context, not a criticism)
 
