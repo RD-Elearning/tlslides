@@ -4,6 +4,7 @@ import { styled } from '~styles'
 import { PageMenu } from './PageMenu'
 import { ZoomMenu } from './ZoomMenu'
 import { StyleMenu } from './StyleMenu'
+import { AnimateMenu } from './AnimateMenu'
 import { BackgroundMenu } from './BackgroundMenu'
 import { ThemeMenu } from './ThemeMenu'
 import { Panel } from '~components/Primitives/Panel'
@@ -53,6 +54,7 @@ export function TopPanel({
             <RedoIcon />
           </TopPanelToolButton>
           {showStyles && !readOnly && <StyleMenu />}
+          {showStyles && !readOnly && <AnimateMenu />}
           {showZoom && <ZoomMenu />}
         </Panel>
       )}

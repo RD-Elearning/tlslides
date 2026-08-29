@@ -1,7 +1,7 @@
 import { mockDocument, TldrawTestApp } from '~test'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
-import { TDShapeType } from '~types'
+import { AnimationEffect, AnimationTrigger, TDShapeType } from '~types'
 
 function freshApp(): TldrawTestApp {
   const app = new TldrawTestApp()
@@ -143,6 +143,15 @@ describe('Deck facade — slides', () => {
 
     expect(app.deck.setSlideBackground('nope', bg)).toBeUndefined()
     expect(app.deck.setSlideNotes('nope', 'x')).toBeUndefined()
+  })
+
+  it('setSlideSkip (T16.4) sets/clears skipInPresentation, or undefined for a bad id', () => {
+    const app = freshApp()
+    expect(app.deck.getSlide('page1')?.skipInPresentation).toBeUndefined()
+
+    expect(app.deck.setSlideSkip('page1', true)?.skipInPresentation).toBe(true)
+    expect(app.deck.setSlideSkip('page1', undefined)?.skipInPresentation).toBeUndefined()
+    expect(app.deck.setSlideSkip('nope', true)).toBeUndefined()
   })
 })
 
@@ -311,6 +320,36 @@ describe('Deck facade — navigation & presentation', () => {
     expect(app.deck.present({ exit: true })).toBe(false)
     expect(app.settings.isPresentationMode).toBe(false)
   })
+
+  it('getPresentationState is undefined outside presentation mode, populated inside it', () => {
+    const app = freshApp()
+    expect(app.deck.getPresentationState()).toBeUndefined()
+
+    app.deck.present()
+    expect(app.deck.getPresentationState()).toEqual({
+      slideId: 'page1',
+      buildStep: 0,
+      totalBuildSteps: 0,
+    })
+  })
+
+  it('advance/back drive build steps and slide navigation together (T16.1/T16.7)', () => {
+    const app = freshApp()
+    app.setShapeAnimation(
+      { effect: AnimationEffect.FadeIn, trigger: AnimationTrigger.OnClick, order: 0, durationMs: 300, delayMs: 0 },
+      ['rect1']
+    )
+    const secondId = app.deck.addSlide()
+    app.deck.goToSlide('page1')
+    app.deck.present()
+
+    expect(app.deck.advance()).toEqual({ slideId: 'page1', buildStep: 1, totalBuildSteps: 1 })
+    // Every step on page1 is revealed — the next advance moves to the next slide.
+    expect(app.deck.advance()).toEqual({ slideId: secondId, buildStep: 0, totalBuildSteps: 0 })
+
+    // Back lands on page1 fully built, not at its own step 0 — see TldrawApp.previousPresentation.
+    expect(app.deck.back()).toEqual({ slideId: 'page1', buildStep: 1, totalBuildSteps: 1 })
+  })
 })
 
 describe('Deck facade — theme & templates', () => {
@@ -434,6 +473,19 @@ describe('Deck facade — events', () => {
     off()
     app.deck.addSlide()
     expect(seen).toHaveLength(1)
+  })
+
+  it('fires presentationChanged on entering/leaving presentation mode and on advance/back', () => {
+    const app = freshApp()
+    const events: { active: boolean; slideId: string; buildStep: number }[] = []
+    app.deck.on('presentationChanged', (e) => events.push(e))
+
+    app.deck.present()
+    app.deck.advance() // no build steps on page1 -> no-op advance (already at 0/0)
+    app.deck.present({ exit: true })
+
+    expect(events[0]).toMatchObject({ active: true, slideId: 'page1', buildStep: 0 })
+    expect(events[events.length - 1]).toMatchObject({ active: false, slideId: 'page1' })
   })
 
   it('loadDeck resyncs the baseline instead of replaying the new document as slideAdded', () => {

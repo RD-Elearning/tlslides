@@ -22,6 +22,7 @@ import { GRID_SIZE } from '~constants'
 import { Loading } from '~components/Loading'
 import { Deck } from '~components/Deck'
 import { BottomPanel } from '~components/BottomPanel'
+import { PresentationRuntime } from '~components/Presentation'
 
 // Stable default so a host that never passes `components` doesn't hand ComponentUtil a "new"
 // empty object every render.
@@ -277,6 +278,10 @@ export function Tldraw({
     const doc = window.document
     const handleFullscreenChange = () => {
       if (!doc.fullscreenElement) {
+        // T16.5 — opening the presenter-view popup also triggers this (see
+        // `TldrawApp.suppressNextFullscreenExit`'s doc comment); skip exiting presentation mode
+        // for exactly that one, explicitly-flagged loss.
+        if (app.consumeFullscreenExitSuppression()) return
         app.exitPresentationMode()
       }
     }
@@ -609,7 +614,15 @@ const InnerTldraw = React.memo(function InnerTldraw({
             !settings.isPresentationMode &&
             settings.showDeck &&
             showPages && <Deck />}
-          {settings.isPresentationMode && <BottomPanel />}
+          {settings.isPresentationMode && (
+            <>
+              {/* Phase 16 — mounted only while presenting, so a shape's `animation` and the
+                  slide-transition setting have literally no code path outside presentation mode:
+                  see `PresentationRuntime`'s own doc comment. */}
+              <PresentationRuntime />
+              <BottomPanel />
+            </>
+          )}
         </>
       )}
     </StyledLayout>

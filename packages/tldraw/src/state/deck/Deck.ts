@@ -16,6 +16,7 @@ import type {
   DeckInsertContentOptions,
   DeckSlide,
   NewSlideOptions,
+  PresentationState,
   PresentOptions,
   RenderSlidePngOptions,
   ThumbnailOptions,
@@ -60,11 +61,18 @@ export class Deck {
   // remember to fire an event by hand. Reset wholesale (not diffed) by `_resync`.
   private knownOrder: string[]
   private prevSelection: { slideId: string; shapeIds: string[] }
+  // Baseline for `_onPresentationMaybeChanged` — see that method.
+  private prevPresentation: { active: boolean; slideId: string; buildStep: number }
 
   constructor(app: TldrawApp) {
     this.app = app
     this.knownOrder = this.sortedPageIds()
     this.prevSelection = { slideId: app.currentPageId, shapeIds: [...app.pageState.selectedIds] }
+    this.prevPresentation = {
+      active: app.settings.isPresentationMode,
+      slideId: app.currentPageId,
+      buildStep: app.appState.presentationBuildStep,
+    }
   }
 
   /* -------------------------------------------------- */
@@ -179,6 +187,19 @@ export class Deck {
   setSlideNotes = (id: string, notes: string | undefined): DeckSlide | undefined => {
     if (!this.app.document.pages[id]) return undefined
     this.app.setPageNotes(id, notes)
+    return this.getSlide(id)
+  }
+
+  /**
+   * Set (or clear) whether presentation navigation should skip a slide (T16.4). Editing
+   * navigation is unaffected — a skipped slide stays fully reachable from the deck panel/`Deck`
+   * facade to edit it or un-skip it; only `present`/`Deck.advance`/`Deck.back` (and the editor's
+   * own next/previous-slide controls while presenting) route around it.
+   * @returns The updated slide, or `undefined` if `id` doesn't name one.
+   */
+  setSlideSkip = (id: string, skip: boolean | undefined): DeckSlide | undefined => {
+    if (!this.app.document.pages[id]) return undefined
+    this.app.setPageSkipInPresentation(id, skip)
     return this.getSlide(id)
   }
 
@@ -365,6 +386,52 @@ export class Deck {
     return this.app.settings.isPresentationMode
   }
 
+  /**
+   * Advance the presentation by one step (T16.1/T16.7) — reveals the current slide's next build
+   * step, or moves to the next (non-skipped) slide once every step on this one is revealed. See
+   * `TldrawApp.advancePresentation`'s doc comment for the full build-step/slide-navigation
+   * semantics this composes. A no-op outside presentation mode.
+   * @returns The resulting `PresentationState`, or `undefined` if presentation mode isn't active.
+   */
+  advance = (): PresentationState | undefined => {
+    this.app.advancePresentation()
+    return this.getPresentationState()
+  }
+
+  /**
+   * The mirror of `advance` — see `TldrawApp.previousPresentation`'s doc comment for why landing
+   * on the *previous* slide lands it fully built, not at its own first step.
+   * @returns The resulting `PresentationState`, or `undefined` if presentation mode isn't active.
+   */
+  back = (): PresentationState | undefined => {
+    this.app.previousPresentation()
+    return this.getPresentationState()
+  }
+
+  /**
+   * The current slide's build-step position, for a host driving its own progress indicator
+   * (e.g. "step 2 of 4") in sync with `presentationChanged`.
+   * @returns `undefined` when presentation mode isn't active — there is no meaningful build
+   * position to report while editing.
+   */
+  getPresentationState = (): PresentationState | undefined => {
+    if (!this.app.settings.isPresentationMode) return undefined
+    const totalBuildSteps = this.app.buildSteps.length
+    return {
+      slideId: this.app.currentPageId,
+      buildStep: Math.min(this.app.appState.presentationBuildStep, totalBuildSteps),
+      totalBuildSteps,
+    }
+  }
+
+  /**
+   * Open the presenter view (T16.5) — see `TldrawApp.openPresenterView`'s doc comment for exactly
+   * what it shows and, importantly, what it cannot do (a real second window, same-origin only,
+   * popups can be blocked).
+   * @returns `true` if the popup opened (or an already-open one was refocused), `false` otherwise.
+   */
+  openPresenterView = (): boolean => this.app.openPresenterView()
+
   /* -------------------------------------------------- */
   /*                  Theme & templates                 */
   /* -------------------------------------------------- */
@@ -502,6 +569,28 @@ export class Deck {
   }
 
   /**
+   * @internal Called by `TldrawApp.onStateDidChange`, same as `_onSelectionMaybeChanged` and for
+   * the same reason: presentation mode and build steps are both patched via `patchState`, never
+   * committed as a `Command`, so `onPersist` never fires for them. Diffs against a small baseline
+   * (not full `PresentationState`, since `active` isn't part of that type) rather than re-reading
+   * three separate fields at every call site. Not part of the `app.deck` public surface.
+   */
+  _onPresentationMaybeChanged = (): void => {
+    const active = this.app.settings.isPresentationMode
+    const slideId = this.app.currentPageId
+    const buildStep = this.app.appState.presentationBuildStep
+    const prev = this.prevPresentation
+    if (prev.active === active && prev.slideId === slideId && prev.buildStep === buildStep) return
+    this.prevPresentation = { active, slideId, buildStep }
+    this.emit('presentationChanged', {
+      active,
+      slideId,
+      buildStep: Math.min(buildStep, this.app.buildSteps.length),
+      totalBuildSteps: this.app.buildSteps.length,
+    })
+  }
+
+  /**
    * @internal Called by `TldrawApp.loadDocument` (which `loadDeck` above just forwards to, but
    * also the initial IndexedDB-restore call `onReady` makes before `loadDeck` is ever reachable —
    * this has to live here, not in `loadDeck`, to cover that call too). Resyncs the page-order and
@@ -514,6 +603,11 @@ export class Deck {
     this.prevSelection = {
       slideId: this.app.currentPageId,
       shapeIds: [...this.app.pageState.selectedIds],
+    }
+    this.prevPresentation = {
+      active: this.app.settings.isPresentationMode,
+      slideId: this.app.currentPageId,
+      buildStep: this.app.appState.presentationBuildStep,
     }
     this.emit('deckChanged', { document: this.app.document })
   }

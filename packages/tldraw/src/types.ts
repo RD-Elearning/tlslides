@@ -95,6 +95,11 @@ export interface TDSnapshot {
     showBindingHandles: boolean
     showCloneHandles: boolean
     showGrid: boolean
+    // Phase 16 — T16.6. An editor-wide preference (like `isDarkMode`), not a document field: a
+    // slide transition is how *this viewer* is watching the deck, not a property of the deck
+    // itself, and nothing here needs a schema migration this way. 'fade' is the default; 'push'
+    // slides the incoming slide in from the direction of travel; 'none' cuts instantly.
+    presentationTransition: 'fade' | 'push' | 'none'
   }
   appState: {
     currentStyle: ShapeStyles
@@ -109,6 +114,12 @@ export interface TDSnapshot {
     isLoading: boolean
     disableAssets: boolean
     selectByContain?: boolean
+    // Phase 16 — T16.1. How many of the current slide's build steps (`computeBuildSteps`) are
+    // revealed right now. Presentation-runtime state, deliberately not part of `TDDocument`: it
+    // describes where a *viewing* of the deck currently is, not the deck's own content, so it
+    // resets on every slide change (`TldrawApp.changePage`) and is never touched by undo/redo —
+    // see `advancePresentation`/`previousPresentation` for the read/write side.
+    presentationBuildStep: number
   }
   document: TDDocument
   room?: {

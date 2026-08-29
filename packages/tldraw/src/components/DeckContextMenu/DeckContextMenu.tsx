@@ -1,10 +1,12 @@
 import * as React from 'react'
 import { dark, styled } from '~styles'
 import * as RadixContextMenu from '@radix-ui/react-context-menu'
+import { CheckIcon } from '@radix-ui/react-icons'
 import { useTheme, useTldrawApp } from '~hooks'
 import { Divider } from '~components/Primitives/Divider'
 import { MenuContent } from '~components/Primitives/MenuContent'
 import { RowButton, RowButtonProps } from '~components/Primitives/RowButton'
+import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { ToolButton, ToolButtonProps } from '~components/Primitives/ToolButton'
 import { TDPage } from '~types'
 
@@ -75,6 +77,14 @@ const InnerMenu = React.memo(function InnerMenu({
     app.movePage(page.id, index + 1)
   }, [app, page, index])
 
+  // T16.4 — `skipInPresentation` (reserved on `TDPage` since Phase 3). This deck-panel context
+  // menu, not `PageOptionsDialog`, is its home: unlike notes (an authoring-time field, edited one
+  // slide at a time), skip is something a presenter flips while scanning the whole deck strip
+  // deciding what to leave out of a run-through — the same place reordering already happens.
+  const handleToggleSkip = React.useCallback(() => {
+    app.setPageSkipInPresentation(page.id, !page.skipInPresentation)
+  }, [app, page])
+
   const rContent = React.useRef<HTMLDivElement>(null)
 
   return (
@@ -111,6 +121,21 @@ const InnerMenu = React.memo(function InnerMenu({
         <CMRowButton onClick={handleDelete} id="TD-Deck-ContextMenu-Delete">
           Delete
         </CMRowButton>
+        <Divider />
+        <RadixContextMenu.CheckboxItem
+          checked={!!page.skipInPresentation}
+          onCheckedChange={handleToggleSkip}
+          asChild
+        >
+          <RowButton id="TD-Deck-ContextMenu-SkipInPresentation" isActive={!!page.skipInPresentation}>
+            <span>Skip in Presentation</span>
+            {page.skipInPresentation && (
+              <SmallIcon>
+                <CheckIcon />
+              </SmallIcon>
+            )}
+          </RowButton>
+        </RadixContextMenu.CheckboxItem>
       </MenuContent>
     </RadixContextMenu.Content>
   )

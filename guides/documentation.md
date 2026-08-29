@@ -308,7 +308,8 @@ the full reasoning:
 | `deleteSlide` | `(id: string)` | `boolean` | `false` if `id` is unknown, or if it's the deck's last remaining slide. |
 | `moveSlide` | `(id: string, toIndex: number)` | `DeckSlide[]` | Returns the deck's slides in their resulting order. `toIndex` is the target position in the *final* order — see `Commands.movePage`. |
 | `setSlideBackground` | `(id: string, background: SlideBackground \| undefined)` | `DeckSlide \| undefined` | |
-| `setSlideNotes` | `(id: string, notes: string \| undefined)` | `DeckSlide \| undefined` | Speaker notes — reserved on `TDPage` since Phase 3, first written by this command. No presenter view reads it back yet (Phase 16). |
+| `setSlideNotes` | `(id: string, notes: string \| undefined)` | `DeckSlide \| undefined` | Speaker notes — editable from the UI (`PageOptionsDialog`'s textarea) and read back by the presenter view (Phase 16). |
+| `setSlideSkip` | `(id: string, skip: boolean \| undefined)` | `DeckSlide \| undefined` | Phase 16 — whether presentation navigation should skip this slide. Editing navigation (the deck panel, `goToSlide`) still reaches it either way. |
 
 `DeckSlide` is `{ id, name, index, size: [number, number], background?, notes?, skipInPresentation?
 }` — a narrow, canvas-agnostic projection of a `TDPage` (no `shapes`/`bindings`/`childIndex`; a host
@@ -436,12 +437,78 @@ already has is not something this package can decide on a caller's behalf.
 
 | Method | Signature | Returns | Notes |
 |---|---|---|---|
-| `goToSlide` | `(id: string)` | `boolean` | Whether `id` named a slide. |
+| `goToSlide` | `(id: string)` | `boolean` | Whether `id` named a slide. Always jumps directly — never skips a `skipInPresentation` slide (that's a presentation-only rule; a host asking for a specific slide by id gets that slide). |
 | `present` | `(opts?: { slideId?, exit? })` | `boolean` | Enters presentation mode (fullscreen best-effort), jumping to `slideId` first if given; pass `exit: true` to leave instead. Returns whether presentation mode is active afterwards. |
+| `advance` | `()` | `PresentationState \| undefined` | Phase 16 — reveal the current slide's next build step, or move to the next (non-skipped) slide once every step on this one is revealed. `undefined` outside presentation mode. See "Presentation runtime" below for the full build-step model. |
+| `back` | `()` | `PresentationState \| undefined` | The mirror of `advance`. Un-reveals one build step; once there's nothing left to un-reveal, moves to the *previous* slide **fully built**, not at its own first step. |
+| `getPresentationState` | `()` | `PresentationState \| undefined` | `{ slideId, buildStep, totalBuildSteps }`. `undefined` outside presentation mode — there's no build position to report while editing. |
+| `openPresenterView` | `()` | `boolean` | Opens (or refocuses) the presenter-view popup. See "Presenter view" below for what it shows and what it cannot do. |
 
-There's no `previousSlide`/`nextSlide` — compose them from `listSlides()` + `goToSlide()` on the
-host side (see `examples/nextjs-sample/components/Editor.tsx`'s `goRelative`); it wasn't worth two
-more facade methods for a one-line convenience.
+There's no `previousSlide`/`nextSlide` distinct from `advance`/`back` — a plain slide-only version
+would have to duplicate `TldrawApp.nextPage`/`previousPage`'s own `skipInPresentation` handling for
+no real benefit; `goToSlide` already covers "jump to a specific slide" for a host's own UI (see
+`examples/nextjs-sample/components/Editor.tsx`'s `goRelative`).
+
+### Presentation runtime (Phase 16)
+
+`ShapeAnimation`/`AnimationEffect`/`AnimationTrigger`, `TDPage.notes`, and `TDPage.
+skipInPresentation` were reserved in the schema since Phase 3 (see `packages/tldraw/src/
+types.ts`) and unused until this phase. All four needed no migration or version bump — they were
+already valid, inert fields on every existing document.
+
+**Build-order animation playback.** A shape's `animation` field (set via the `AnimateMenu` UI, or
+`TldrawApp.setShapeAnimation(animation, ids?)`) is `{ effect, trigger, order, durationMs,
+delayMs }`. `computeBuildSteps(page)` (exported from the package root, also `app.buildSteps`)
+groups every animated shape on a page into an ordered list of **build steps**, sorted by `order`:
+
+- `AnimationTrigger.OnClick` starts a **new** step that only reveals on an explicit advance.
+- `AnimationTrigger.WithPrevious` joins the **same** step as the cue immediately before it in
+  `order` — it never gets its own advance, manual or automatic.
+- `AnimationTrigger.AfterPrevious` also starts a new step, but one that reveals **automatically**
+  (no click) once the previous step's own animation has finished playing.
+
+`TldrawApp.advancePresentation`/`previousPresentation` (bound to the Right/Left arrow keys and
+Space, and to the deck's Back/Next buttons, while presenting) compose build steps and slide
+navigation into the single "Next"/"Back" action a presentation remote has: **advance** reveals the
+next step, or moves to the next slide once every step is revealed; **back** un-reveals a step, or
+— once nothing is revealed — moves to the *previous* slide fully built (every step already
+revealed), not at its own first step. `app.deck.advance`/`app.deck.back` are the facade
+equivalents, returning the resulting `PresentationState`.
+
+**This only ever affects the live editor while presenting.** `renderPageToSvg`, `TldrawApp.
+copySvg`, and normal (non-presenting) editing never read `animation` at all — a shape with a
+`fadeIn` animation exports, and edits, at full opacity regardless of build state. The playback
+itself (`PresentationRuntime`, mounted only while `settings.isPresentationMode`) sets `opacity`/
+`translate`/`scale`/`clip-path` directly on a shape's own positioned container element, and
+restores every touched node the moment presentation mode ends. It also respects `prefers-reduced-
+motion`: builds still gate on the same steps, just without an animated transition.
+
+**Slide transitions** (`settings.presentationTransition: 'fade' | 'push' | 'none'`, default
+`'fade'`) are an editor-wide viewer preference, like `isDarkMode` — not a document field, so (like
+the animation playback above) this needed no schema change either. Cycle it from the deck's own
+control while presenting, or `app.setSetting('presentationTransition', 'push')`.
+
+**Speaker notes** are editable from `PageOptionsDialog` (the gear icon next to a slide in the
+`PageMenu` dropdown) — a plain textarea, committed on blur through `TldrawApp.setPageNotes`.
+
+**`skipInPresentation`** has a checkbox in the deck panel's per-slide context menu
+(`DeckContextMenu`, right-click a slide thumbnail), and a small "SKIPPED" badge on the thumbnail
+itself. `TldrawApp.nextPage`/`previousPage` only honour it while `settings.isPresentationMode` —
+editing navigation always reaches every slide.
+
+**Presenter view** (`app.deck.openPresenterView()` / `TldrawApp.openPresenterView()`) opens a
+separate `window.open` popup: the current slide, an "up next" preview (skip-aware, rendered via
+`renderPageToSvg` — no second mounted editor), speaker notes, and an elapsed timer, with its own
+Back/Next buttons that drive the main window. Deliberately **not** an in-app split view: a
+presenter routinely wants this on a genuinely separate monitor, which only a real second window can
+be. What it cannot do: it needs a real browser popup (a user gesture, and it can be silently
+blocked); it's same-origin only (it calls back into the same `TldrawApp` instance directly, so "a
+second display" means a second monitor on the *same* machine, not a remote viewer); it polls the
+app's state roughly every 300ms rather than subscribing to a dedicated event, so it can lag the
+main window by that much; and it's orphaned (not auto-closed) if the main tab crashes rather than
+closing normally. A host wanting its own remote/cross-origin presenter surface should build it from
+`Deck.getThumbnail`, `Deck.getSlide`, `Deck.on('presentationChanged', ...)`, and `Deck.advance`/
+`back` instead — the same primitives this popup is built on.
 
 ### Theme & templates
 
@@ -468,12 +535,16 @@ directly from the package root, for a host that wants them before an editor is m
 | `onDeckChange` | `(listener: (document: TDDocument) => void)` | `() => void` (unsubscribe) |
 
 `on`'s events: `slideAdded { slideId, index }`, `slideRemoved { slideId }`, `slideReordered {
-order: string[] }`, `selectionChanged { slideId, shapeIds }`, `deckChanged { document }`.
-`slideAdded`/`slideRemoved`/`slideReordered` fire once per committed command (the same cadence as
-`onPersist`, never on an in-progress drag); `selectionChanged` fires on any selection or
-current-slide change, including transient ones a plain click produces. `loadDeck` resyncs the
-event baseline and fires exactly one `deckChanged`, rather than replaying the new document's pages
-as a flood of `slideAdded` events.
+order: string[] }`, `selectionChanged { slideId, shapeIds }`, `deckChanged { document }`,
+`presentationChanged { active, slideId, buildStep, totalBuildSteps }` (Phase 16 — fires on
+entering/leaving presentation mode and on every build-step/slide change while presenting; `active:
+false` on the one event fired when presentation mode turns off). `slideAdded`/`slideRemoved`/
+`slideReordered` fire once per committed command (the same cadence as `onPersist`, never on an
+in-progress drag); `selectionChanged`/`presentationChanged` fire on any relevant transient change,
+including ones a plain click or a build-step advance produces (neither is a `Command` — undo/redo
+never rewinds "what's selected" or "what's revealed," only content). `loadDeck` resyncs the event
+baseline and fires exactly one `deckChanged`, rather than replaying the new document's pages as a
+flood of `slideAdded` events.
 
 ### Read-only display: `<DeckViewer>`
 

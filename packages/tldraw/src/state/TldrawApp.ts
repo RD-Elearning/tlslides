@@ -47,6 +47,7 @@ import {
   SlideBackground,
   DeckTheme,
   Template,
+  ShapeAnimation,
 } from '~types'
 import {
   migrate,
@@ -67,6 +68,8 @@ import { resolveSlideBackground, appendBackgroundDefs } from '~state/shapes/shar
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { getTemplate } from '~state/templates'
 import { Deck } from './deck'
+import { computeBuildSteps, adjacentPresentableSlideId } from './deck/presentation'
+import { openPresenterView } from './deck/presenterView'
 import * as Commands from './commands'
 import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
@@ -587,6 +590,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     // create an undo entry), so `app.deck`'s `selectionChanged` event has to hook this lifecycle
     // method rather than `onPersist` above, unlike the page-list events.
     this.deck._onSelectionMaybeChanged()
+    // T16.7 — presentation mode and build steps are also patched, never committed, state.
+    this.deck._onPresentationMaybeChanged()
 
     if (this.room && this.selectedIds !== this.prevSelectedIds) {
       this.callbacks.onChangePresence?.(this, {
@@ -1058,6 +1063,35 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       this.exitFullscreen()
     }
     return this
+  }
+
+  // T16.5 — see `suppressNextFullscreenExit`'s own doc comment.
+  private fullscreenExitSuppressions = 0
+
+  /**
+   * @internal Called by `Deck`/`openPresenterView` immediately before `window.open`ing the
+   * presenter-view popup. Opening *any* new window is a well-known trigger for the browser to
+   * silently exit fullscreen on its own — a real, observable interaction with `Tldraw.tsx`'s
+   * `fullscreenchange` listener below, not a hypothetical: without this, clicking "Open presenter
+   * view" while presenting ends the presentation it was just asked to support, because that
+   * listener treats *any* loss of fullscreen as the user leaving presentation mode (Esc, F11, a
+   * mobile gesture — this call site is simply a fourth cause it didn't know about). This makes the
+   * very next such loss a no-op instead, once, rather than turning off the "auto-exit on
+   * fullscreen loss" safety net for presentation mode generally.
+   */
+  suppressNextFullscreenExit = (): void => {
+    this.fullscreenExitSuppressions++
+  }
+
+  /**
+   * @internal Consumed by `Tldraw.tsx`'s `fullscreenchange` listener. Returns whether this
+   * particular fullscreen loss should be ignored, decrementing the counter so only exactly as many
+   * losses as were explicitly flagged are ever suppressed.
+   */
+  consumeFullscreenExitSuppression = (): boolean => {
+    if (this.fullscreenExitSuppressions <= 0) return false
+    this.fullscreenExitSuppressions--
+    return true
   }
 
   /**
@@ -1847,6 +1881,16 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   changePage = (pageId: string): this => {
     this.setState(Commands.changePage(this, pageId))
     this.fitCurrentPage()
+    // T16.1 — a build step is scoped to "whatever slide is current," so any slide change (this
+    // command, `nextPage`/`previousPage`, a hosted `Deck.goToSlide`, clicking a thumbnail) starts
+    // that slide fresh at "nothing revealed yet." `previousPresentation` overrides this back to
+    // "fully built" immediately afterwards for its own specific case — see that method.
+    // Harmless outside presentation mode (the field is only ever read while presenting), so this
+    // doesn't need an `isPresentationMode` guard.
+    this.patchState(
+      { appState: { presentationBuildStep: 0 } },
+      'presentation:reset_build_step'
+    )
     return this
   }
 
@@ -1861,9 +1905,16 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
-   * Change the the page before the current page.
+   * Change the the page before the current page. While presenting (T16.4), skips any slide
+   * marked `skipInPresentation` — editing navigation still visits every slide (a skipped slide
+   * has to stay reachable to edit it, or to un-skip it), so this only changes behaviour once
+   * presentation mode is on.
    */
   previousPage = (): this => {
+    if (this.settings.isPresentationMode) {
+      const id = adjacentPresentableSlideId(this.document.pages, this.currentPageId, -1)
+      return id ? this.changePage(id) : this
+    }
     const pages = Object.values(this.document.pages).sort(
       (a, b) => (a.childIndex || 0) - (b.childIndex || 0)
     )
@@ -1873,15 +1924,114 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
-   * Change the the page after the current page.
+   * Change the the page after the current page. See `previousPage`'s comment for the
+   * `skipInPresentation` behaviour, which applies here identically in the forward direction.
    */
   nextPage = (): this => {
+    if (this.settings.isPresentationMode) {
+      const id = adjacentPresentableSlideId(this.document.pages, this.currentPageId, 1)
+      return id ? this.changePage(id) : this
+    }
     const pages = Object.values(this.document.pages).sort(
       (a, b) => (a.childIndex || 0) - (b.childIndex || 0)
     )
     const index = pages.findIndex((page) => page.id === this.currentPageId)
     if (index + 1 >= pages.length) return this
     return this.changePage(pages[index + 1].id)
+  }
+
+  /**
+   * T16.1 — the current slide's build steps (see `computeBuildSteps`'s own doc comment for the
+   * `onClick`/`withPrevious`/`afterPrevious` grouping rules). Recomputed from the document on
+   * every read rather than cached: it's cheap (one page's shapes) and can never go stale after an
+   * edit made mid-presentation (e.g. a host's `Deck.insertContent` landing a new animated shape).
+   */
+  get buildSteps(): ReturnType<typeof computeBuildSteps> {
+    return computeBuildSteps(this.page)
+  }
+
+  /**
+   * "Next" in presentation mode (T16.1): reveal the current slide's next build step, or — once
+   * every step on this slide is already revealed — advance to the next slide (`nextPage`, which
+   * already skips `skipInPresentation` slides). Build steps and slide navigation share this one
+   * action deliberately, the same way a presentation remote's single "next" button does: a
+   * presenter never has to think about which of the two "next" means.
+   *
+   * Not a `Command`: like `hoveredId`, "what's been revealed" is presentation-runtime state, not
+   * part of the undoable document — undo/redo must keep rewinding *content*, never a build.
+   * A no-op outside presentation mode.
+   */
+  advancePresentation = (): this => {
+    if (!this.settings.isPresentationMode) return this
+    const steps = this.buildSteps
+    if (this.appState.presentationBuildStep < steps.length) {
+      this.patchState(
+        { appState: { presentationBuildStep: this.appState.presentationBuildStep + 1 } },
+        'presentation:advance'
+      )
+      return this
+    }
+    return this.nextPage()
+  }
+
+  /**
+   * "Back" in presentation mode (T16.1): the mirror of `advancePresentation`, with one
+   * deliberate, documented asymmetry. Un-revealing one build step at a time is the obvious half;
+   * the less obvious half is what happens once nothing is left to un-reveal. Rather than moving
+   * to the previous slide at *its own* step 0 (which would silently hide content the presenter
+   * already showed and would have to build back up again just to get back to where they were),
+   * this lands on the previous slide **fully built** — every one of its steps already revealed.
+   * That mirrors the muscle-memory expectation of "back" after watching a build: you return to
+   * the slide as you left it, not as it started.
+   */
+  previousPresentation = (): this => {
+    if (!this.settings.isPresentationMode) return this
+    if (this.appState.presentationBuildStep > 0) {
+      this.patchState(
+        { appState: { presentationBuildStep: this.appState.presentationBuildStep - 1 } },
+        'presentation:back'
+      )
+      return this
+    }
+    const before = this.currentPageId
+    this.previousPage()
+    if (this.currentPageId !== before) {
+      // `previousPage` -> `changePage` already reset this to 0; override it to "fully built" now
+      // that `this.page`/`this.buildSteps` reflect the slide we just landed on.
+      this.patchState(
+        { appState: { presentationBuildStep: this.buildSteps.length } },
+        'presentation:back_full_build'
+      )
+    }
+    return this
+  }
+
+  /**
+   * Set (or clear) the animation that plays this shape into a presentation build (T16.1/T16.2).
+   * A thin, named wrapper over the generic `setShapeProps` — same reason `toggleHidden`/
+   * `toggleLocked` wrap `toggleShapeProp` instead of every call site spelling out the field name.
+   * Routed through the command layer like every other style change, so undo/redo and multi-shape
+   * selection both work exactly as `AnimateMenu` (and a host's own UI, or `Deck`) expect.
+   * @param animation The new animation, or `undefined` to make this shape appear immediately with
+   * the slide again (no build step).
+   * @param ids The shapes to change (defaults to the current selection).
+   */
+  setShapeAnimation = (animation: ShapeAnimation | undefined, ids = this.selectedIds): this => {
+    if (ids.length === 0) return this
+    return this.setShapeProps({ animation }, ids)
+  }
+
+  /**
+   * Open the presenter view (T16.5) — a separate `window.open` popup showing the current slide,
+   * an "up next" preview (rendered via `renderPageToSvg`, not a second mounted editor — see that
+   * module's own doc comment), speaker notes, and an elapsed timer. See `openPresenterView`'s own
+   * doc comment (`state/deck/presenterView.ts`) for exactly how it stays in sync and what it
+   * cannot do (no `document`, a blocked popup, closing the main tab).
+   * @returns `true` if the popup opened, `false` if it couldn't (no `document`/`window`, or the
+   * browser blocked the popup — e.g. called outside a user gesture).
+   */
+  openPresenterView = (): boolean => {
+    return openPresenterView(this)
   }
 
   /**
@@ -1917,15 +2067,28 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   /**
-   * Set (or clear) a page's speaker notes (Phase 14/16). Reserved on `TDPage` since Phase 3;
-   * this is the first command to actually write it. A presenter view that reads it back is
-   * Phase 16's job — for now this just makes the field a normal, undoable piece of page data.
+   * Set (or clear) a page's speaker notes. Reserved on `TDPage` since Phase 3, first written by
+   * `Commands.setPageNotes` in Phase 14; Phase 16 adds the editor UI (`PageOptionsDialog`'s notes
+   * field) and the presenter view that reads it back.
    * @param pageId The id of the page to update.
    * @param notes The new notes, or `undefined` to clear them.
    */
   setPageNotes = (pageId: string, notes: string | undefined): this => {
     if (this.readOnly) return this
     return this.setState(Commands.setPageNotes(this, pageId, notes))
+  }
+
+  /**
+   * Set (or clear) whether presentation navigation should skip this slide (Phase 16). Reserved on
+   * `TDPage` since Phase 3, unused until now — see `nextPage`/`previousPage` for where it's
+   * actually honoured (only while `settings.isPresentationMode`; editing navigation still visits
+   * every slide, since a skipped slide must still be reachable to edit or un-skip it).
+   * @param pageId The id of the page to update.
+   * @param skip `true` to skip it, `undefined`/`false` to include it again.
+   */
+  setPageSkipInPresentation = (pageId: string, skip: boolean | undefined): this => {
+    if (this.readOnly) return this
+    return this.setState(Commands.setPageSkipInPresentation(this, pageId, skip))
   }
 
   /**
@@ -4163,6 +4326,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       showBindingHandles: true,
       showCloneHandles: false,
       showGrid: false,
+      presentationTransition: 'fade',
     },
     appState: {
       status: TDStatus.Idle,
@@ -4176,6 +4340,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
       snapLines: [],
       isLoading: false,
       disableAssets: false,
+      presentationBuildStep: 0,
     },
     document: TldrawApp.defaultDocument,
   }

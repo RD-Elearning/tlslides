@@ -134,13 +134,23 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                       onDragEnd={handleDragEnd}
                     >
                       <StyledSlideContainerInner active={page.id === app.currentPageId}>
-                        <DeckContextMenu
-                          page={page}
-                          index={index}
-                          count={sortedPages.length}
-                        >
-                          <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
-                        </DeckContextMenu>
+                        {/* T16.4 — only the thumbnail's own content dims; the badge below sits
+                            outside this wrapper so it stays fully legible rather than fading into
+                            the dimmed slide it's labeling. */}
+                        <StyledSlideContent skipped={!!page.skipInPresentation}>
+                          <DeckContextMenu
+                            page={page}
+                            index={index}
+                            count={sortedPages.length}
+                          >
+                            <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                          </DeckContextMenu>
+                        </StyledSlideContent>
+                        {/* Visible without opening the context menu, so scanning the deck panel
+                            tells you at a glance which slides a run-through will skip. */}
+                        {page.skipInPresentation && (
+                          <StyledSkipBadge>Skipped</StyledSkipBadge>
+                        )}
                       </StyledSlideContainerInner>
                     </StyledSlideContainer>
                   </React.Fragment>
@@ -226,6 +236,41 @@ const StyledSlideContainerInner = styled('div', {
   defaultVariants: {
     active: 'false',
   },
+})
+
+const StyledSlideContent = styled('div', {
+  height: '100%',
+  width: '100%',
+  borderRadius: 'inherit',
+  variants: {
+    // T16.4 — dimmed, not hidden: the slide is still fully editable from here, only presentation
+    // navigation skips it (see `TldrawApp.nextPage`/`previousPage`).
+    skipped: {
+      true: {
+        opacity: 0.4,
+      },
+      false: {},
+    },
+  },
+  defaultVariants: {
+    skipped: 'false',
+  },
+})
+
+const StyledSkipBadge = styled('div', {
+  position: 'absolute',
+  bottom: 4,
+  right: 4,
+  fontSize: 9,
+  fontWeight: 600,
+  lineHeight: 1,
+  letterSpacing: 0.2,
+  textTransform: 'uppercase',
+  color: 'white',
+  background: 'rgba(0, 0, 0, 0.65)',
+  padding: '3px 5px',
+  borderRadius: '$0',
+  pointerEvents: 'none',
 })
 
 const StyledSlideContainer = styled('div', {

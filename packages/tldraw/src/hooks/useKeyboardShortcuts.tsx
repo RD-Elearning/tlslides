@@ -164,7 +164,9 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
     'left',
     (e) => {
       if (!canHandleEvent(true) || !app.settings.isPresentationMode) return
-      app.previousPage()
+      // T16.1 — "back" composes build steps and slide navigation; see
+      // `TldrawApp.previousPresentation`'s doc comment for the exact semantics.
+      app.previousPresentation()
       e.preventDefault()
     },
     undefined,
@@ -172,10 +174,10 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
   )
 
   useHotkeys(
-    'right',
+    'right,space',
     (e) => {
       if (!canHandleEvent(true) || !app.settings.isPresentationMode) return
-      app.nextPage()
+      app.advancePresentation()
       e.preventDefault()
     },
     undefined,

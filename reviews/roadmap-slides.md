@@ -297,12 +297,69 @@ notes; the short version of what differed from the plan:
   `TDDocument` in and out as a plain, already-serializable object; these exist only for a host that
   specifically wants text.
 
-### Phase 16 — Presentation runtime
+### Phase 16 — Presentation runtime ✅ done
 
-`ShapeAnimation`, `AnimationEffect`, `AnimationTrigger` and `TDPage.notes` /
-`skipInPresentation` are **already reserved in the schema** (Phase 3) and unused. This phase makes
-them real: build-order animation playback, speaker notes, a presenter view (next slide + notes +
-timer), and slide transitions.
+`ShapeAnimation`, `AnimationEffect`, `AnimationTrigger` and `TDPage.notes`/`skipInPresentation`
+were reserved in the schema (Phase 3) and unused; this phase made them real, with no migration and
+no version bump — every field this phase needed already existed. Full write-up:
+`reviews/README.md`'s **Phase 16 notes**. Summary of what shipped vs. what this plan assumed:
+
+- **Build-order animation playback — shipped as planned, plus a concrete answer to a question
+  this entry didn't ask.** `onClick`/`withPrevious`/`afterPrevious` all behave distinctly
+  (`withPrevious` joins the previous step with no advance of its own; `afterPrevious` gets its own
+  step that reveals on a timer, no click needed); "Next"/"Back" compose build steps and slide
+  navigation into one action, with "Back" landing on a previous slide **fully built** rather than
+  at its own first step (a deliberate, documented choice this entry left for the implementer to
+  make). Kept fully out of `renderPageToSvg`/`copySvg`/normal editing, verified directly (a
+  `fadeIn` shape exports at full opacity), not assumed.
+- **Speaker notes — shipped in `PageOptionsDialog`** (the existing per-page settings dialog), not
+  a new panel; committed on blur, with `stopKeyPropagationUnlessEscape` on the textarea per this
+  repo's established convention.
+- **`skipInPresentation` — shipped as a `DeckContextMenu` checkbox plus a "SKIPPED" thumbnail
+  badge** (the badge wasn't asked for; added because a context-menu checkbox alone is easy to set
+  and forget). Honoured by `nextPage`/`previousPage` only while presenting.
+- **Presenter view — shipped as a `window.open` popup, the plan's own suggested "conventional"
+  choice, not the in-app split view.** Current slide + skip-aware "up next" preview (via
+  `renderPageToSvg`, no second mounted editor) + speaker notes + a local elapsed timer, with
+  Back/Next buttons that drive the opener's own `TldrawApp` directly (same-origin, direct function
+  calls — no `postMessage`). **What it cannot do, as flagged as a risk by this plan and confirmed,
+  not hedged, by shipping it:** needs a real, unblockable popup and a user gesture; same-origin
+  and same-machine only (not a remote/networked presenter view); polls the app's state on a
+  ~300ms interval rather than a push subscription, so it can lag the main window by that much.
+  **A real, non-hypothetical bug this pairing produced, not anticipated by this entry:** opening
+  the popup could silently end the presentation it was opened from, because opening any new
+  window is a well-known trigger for a browser to auto-exit fullscreen, and this fork's Phase 6
+  `fullscreenchange` listener treated any fullscreen loss as "leave presentation mode." Fixed with
+  a narrowly-scoped, self-consuming suppression flag — see the Phase 16 notes for the full story.
+- **Slide transitions — shipped as a small, fixed set (fade / push / cut), exactly "small and
+  tasteful" as asked, as an editor-wide `settings` preference (like `isDarkMode`), not a document
+  field** — the same "this phase needs no schema change" property the rest of it has. `push` is
+  honestly one-sided (the incoming slide animates in; there is no outgoing frame left to animate
+  against once React has already swapped the page's shape tree), not a two-slide crossfade/push.
+- **An authoring UI for animations (T16.2) wasn't explicitly scoped by this entry, and shipped
+  as `AnimateMenu`** next to `StyleMenu`, editing effect/trigger/order/duration/delay on the
+  current selection through the command layer (undo/redo work). Reads/writes only the *first*
+  selected shape for a multi-selection — a deliberate, documented scope cut (`computeBuildSteps`'
+  own grouping rules make "the same build step, two different triggers" an ambiguous idea, so
+  authoring is almost always one shape at a time) — a full `StyleMenu`-style merge across the
+  selection is the natural follow-up if that ever stops being true in practice.
+- **`app.deck` grew `setSlideSkip`, `advance`, `back`, `getPresentationState`, and
+  `openPresenterView`, plus a `presentationChanged` event** — "presenting is something a host will
+  absolutely want to drive," per the Phase 16 brief in `reviews/README.md`'s scope decision.
+  Deliberately *not* added: a per-shape animation setter on the facade — Phase 14's own line
+  ("add/replace a slide's content as a unit," not "edit an existing shape's fields") still holds;
+  `getDeck().pages[id]` plus `TldrawApp.setShapeAnimation` covers a host that genuinely needs it.
+
+**Explicit follow-ups, not silently dropped:**
+- Click-anywhere-on-the-canvas to advance (a common presenter convention) wasn't wired — the
+  canvas click already has meaning in this editor (selection), and giving it a second, contextual
+  meaning during presentation felt like a real interaction-design decision to make deliberately
+  later, not a default to ship quietly now. Right arrow/Space, the deck's own Back/Next buttons,
+  and the host API (`Deck.advance`/`back`) are the driving surfaces today.
+- `AnimateMenu`'s multi-selection merge (see above).
+- A remote/cross-origin presenter view for a host that can't rely on `window.open` same-origin
+  access — buildable today from `Deck.getThumbnail`/`Deck.on('presentationChanged', ...)`/
+  `Deck.advance`/`back`, just not shipped as a ready component.
 
 ### Phase 17 — Typography and text
 

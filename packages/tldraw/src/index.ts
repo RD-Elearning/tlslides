@@ -23,6 +23,7 @@ export type {
   DeckInsertContentOptions,
   DeckContent,
   AddBlockOptions,
+  PresentationState,
 } from './state/deck'
 export {
   BUILT_IN_DECK_THEMES,
@@ -45,6 +46,13 @@ export { BUILT_IN_TEMPLATES, getTemplate } from './state/templates'
 // and `renderSvgToPng`'s for why PNG rasterization is browser-only.
 export { renderPageToSvg, renderSvgToPng } from './state/render'
 export type { RenderPageToSvgOptions, RenderSvgToPngOptions } from './state/render'
+
+// Phase 16 — build-order animation playback. `computeBuildSteps` is the same pure function
+// `TldrawApp.buildSteps`/`Deck.getPresentationState` use internally; exported directly for a host
+// building its own presenter chrome around `Deck.advance`/`Deck.back` that wants to show e.g. a
+// "3 of 5" indicator without re-deriving the grouping rules itself.
+export { computeBuildSteps } from './state/deck/presentation'
+export type { BuildStep } from './state/deck/presentation'
 
 // Phase 14 — a standalone, read-only deck display for host pages that only need to show a deck,
 // not edit it. See the component's own doc comment for why this wraps `<Tldraw>` rather than

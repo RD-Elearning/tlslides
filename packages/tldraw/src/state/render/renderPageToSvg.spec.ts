@@ -13,7 +13,7 @@ import {
   Video,
 } from '~state/shapes'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
-import { ColorStyle, DashStyle, Decoration, TDAssetType, TDPage } from '~types'
+import { AnimationEffect, AnimationTrigger, ColorStyle, DashStyle, Decoration, TDAssetType, TDPage } from '~types'
 import { estimateTextSize, renderPageToSvg, resolvePageSize } from './renderPageToSvg'
 
 const theme = BUILT_IN_DECK_THEMES.find((t) => t.id === 'ivory-editorial')!
@@ -236,6 +236,30 @@ describe('renderPageToSvg — per-shape coverage', () => {
     const group = Group.create({ id: 'group2', parentId: 'page1', children: ['child2'] })
     const svg = renderPageToSvg(pageOf([group, child]))
     expect((svg.match(/<g transform="translate\(1, 1\)/g) || []).length).toBe(1)
+  })
+
+  // T16.1 — a hard requirement of the phase, checked directly rather than assumed: presentation
+  // build-step playback is purely a live-DOM, presentation-mode-only effect (`PresentationRuntime`)
+  // that this function has never heard of. A shape with a `fadeIn`/`onClick` animation must export
+  // exactly as if it had none — full opacity, no clip-path, no transform beyond its own position.
+  it('ignores a shape animation entirely — exports at full opacity, not "as if hidden"', () => {
+    const rect = Rectangle.create({
+      id: 'animated1',
+      parentId: 'page1',
+      point: [0, 0],
+      size: [100, 50],
+      animation: {
+        effect: AnimationEffect.FadeIn,
+        trigger: AnimationTrigger.OnClick,
+        order: 0,
+        durationMs: 400,
+        delayMs: 0,
+      },
+    })
+    const svg = renderPageToSvg(pageOf([rect]))
+    expect(svg).toContain('<g opacity="1">')
+    expect(svg).not.toContain('opacity="0"')
+    expect(svg).not.toContain('clip-path')
   })
 })
 

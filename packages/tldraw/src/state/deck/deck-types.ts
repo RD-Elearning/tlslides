@@ -73,6 +73,18 @@ export interface PresentOptions {
   exit?: boolean
 }
 
+/** T16.1/T16.7 — where a live presentation currently is: which slide, and how much of its build
+ *  is revealed. Returned by `Deck.advance`/`Deck.back`/`Deck.getPresentationState`, and the
+ *  payload of the `presentationChanged` event — the same shape in both places, so a host doesn't
+ *  need two ways to read "where are we." */
+export interface PresentationState {
+  slideId: string
+  /** How many of `totalBuildSteps` are currently revealed (`0` to `totalBuildSteps`). */
+  buildStep: number
+  /** The current slide's total build-step count (`0` for a slide with no animated shapes). */
+  totalBuildSteps: number
+}
+
 /** Payloads for the `app.deck` event stream — see `Deck.on`/`Deck.onDeckChange`. */
 export interface DeckEventMap {
   /** A new slide was added, at `index` in the deck's (post-add) order. Fired once per added
@@ -91,6 +103,13 @@ export interface DeckEventMap {
   /** Fired after every committed (undoable) change to the document — the typed, subscribable
    *  replacement for polling `<Tldraw onPersist>`. Also fired once, alone, after `loadDeck`. */
   deckChanged: { document: TDDocument }
+  /** T16.7 — presentation mode was entered/left, the current slide changed while presenting, or a
+   *  build step was revealed/un-revealed. `active: false` on the one event that fires when
+   *  presentation mode is turned off (`slideId`/`buildStep`/`totalBuildSteps` describe whatever
+   *  slide was current at that moment, not a meaningful "where to resume" — re-`present()` and
+   *  read `getPresentationState()` for that instead). Does not fire for ordinary editing
+   *  navigation (`goToSlide` outside presentation mode) — see `selectionChanged` for that. */
+  presentationChanged: PresentationState & { active: boolean }
 }
 
 export type DeckEventName = keyof DeckEventMap

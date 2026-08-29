@@ -1,4 +1,14 @@
 import { mockDocument, TldrawTestApp } from '~test'
+import { AnimationEffect, AnimationTrigger } from '~types'
+import type { ShapeAnimation } from '~types'
+
+const CLICK_FADE: ShapeAnimation = {
+  effect: AnimationEffect.FadeIn,
+  trigger: AnimationTrigger.OnClick,
+  order: 0,
+  durationMs: 300,
+  delayMs: 0,
+}
 
 // Fullscreen isn't implemented in jsdom: `requestFullscreen`/`exitFullscreen` don't exist on the
 // prototypes at all, and `fullscreenElement` isn't a real accessor. Stub the pieces
@@ -137,5 +147,147 @@ describe('Fullscreen (T6.3)', () => {
 
     expect(() => app.togglePresentationMode()).not.toThrow()
     expect(app.settings.isPresentationMode).toBe(false)
+  })
+})
+
+describe('setShapeAnimation (T16.2)', () => {
+  it('sets and clears a shape animation through the command layer (undo/redo)', () => {
+    const app = new TldrawTestApp().loadDocument(mockDocument)
+    expect(app.getShape('rect1').animation).toBeUndefined()
+
+    app.setShapeAnimation(CLICK_FADE, ['rect1'])
+    expect(app.getShape('rect1').animation).toEqual(CLICK_FADE)
+
+    app.undo()
+    expect(app.getShape('rect1').animation).toBeUndefined()
+    app.redo()
+    expect(app.getShape('rect1').animation).toEqual(CLICK_FADE)
+
+    app.setShapeAnimation(undefined, ['rect1'])
+    expect(app.getShape('rect1').animation).toBeUndefined()
+  })
+
+  it('is a no-op with no ids and no selection', () => {
+    const app = new TldrawTestApp().loadDocument(mockDocument)
+    app.selectNone()
+    expect(() => app.setShapeAnimation(CLICK_FADE)).not.toThrow()
+    expect(app.getShape('rect1').animation).toBeUndefined()
+  })
+})
+
+describe('Build-order animation playback (T16.1)', () => {
+  // page1: rect1 (onClick), rect2 (withPrevious -> joins rect1's step), rect3 (afterPrevious ->
+  // its own auto step). Two build steps total.
+  function twoStepDeck() {
+    const app = new TldrawTestApp().loadDocument(mockDocument)
+    app.setShapeAnimation(CLICK_FADE, ['rect1'])
+    app.setShapeAnimation(
+      { effect: AnimationEffect.FadeIn, trigger: AnimationTrigger.WithPrevious, order: 1, durationMs: 300, delayMs: 0 },
+      ['rect2']
+    )
+    app.setShapeAnimation(
+      { effect: AnimationEffect.SlideIn, trigger: AnimationTrigger.AfterPrevious, order: 2, durationMs: 300, delayMs: 0 },
+      ['rect3']
+    )
+    return app
+  }
+
+  it('buildSteps groups withPrevious and separates afterPrevious', () => {
+    const app = twoStepDeck()
+    expect(app.buildSteps).toEqual([
+      { shapeIds: ['rect1', 'rect2'], auto: false },
+      { shapeIds: ['rect3'], auto: true },
+    ])
+  })
+
+  it('advancePresentation/previousPresentation are no-ops outside presentation mode', () => {
+    const app = twoStepDeck()
+    app.advancePresentation()
+    expect(app.appState.presentationBuildStep).toBe(0)
+    app.previousPresentation()
+    expect(app.appState.presentationBuildStep).toBe(0)
+  })
+
+  it('advancePresentation reveals one step at a time, then moves to the next slide', () => {
+    const app = twoStepDeck()
+    app.createPage('slide2')
+    app.changePage('page1')
+    app.togglePresentationMode()
+
+    expect(app.appState.presentationBuildStep).toBe(0)
+    app.advancePresentation()
+    expect(app.appState.presentationBuildStep).toBe(1)
+    expect(app.currentPageId).toBe('page1')
+    app.advancePresentation()
+    expect(app.appState.presentationBuildStep).toBe(2)
+    expect(app.currentPageId).toBe('page1')
+
+    // Every step revealed — the next "next" moves the slide, not the build.
+    app.advancePresentation()
+    expect(app.currentPageId).toBe('slide2')
+    expect(app.appState.presentationBuildStep).toBe(0)
+  })
+
+  it('previousPresentation un-reveals a step before moving slides, and lands on the previous slide fully built', () => {
+    const app = twoStepDeck()
+    app.createPage('slide2')
+    app.changePage('page1')
+    app.togglePresentationMode()
+    app.advancePresentation()
+    app.advancePresentation()
+    app.advancePresentation() // -> slide2
+
+    app.previousPresentation()
+    expect(app.currentPageId).toBe('page1')
+    expect(app.appState.presentationBuildStep).toBe(2) // fully built, not reset to 0
+
+    app.previousPresentation()
+    expect(app.appState.presentationBuildStep).toBe(1)
+    expect(app.currentPageId).toBe('page1') // un-revealing a step does not change slides
+  })
+
+  it('changing slides through ordinary navigation resets the build step', () => {
+    const app = twoStepDeck()
+    app.createPage('slide2')
+    app.changePage('page1')
+    app.togglePresentationMode()
+    app.advancePresentation()
+    expect(app.appState.presentationBuildStep).toBe(1)
+
+    app.changePage('slide2')
+    expect(app.appState.presentationBuildStep).toBe(0)
+  })
+})
+
+describe('skipInPresentation navigation (T16.4)', () => {
+  it('nextPage/previousPage skip a flagged slide only while presenting', () => {
+    const app = new TldrawTestApp().loadDocument(mockDocument)
+    app.createPage('slide2')
+    app.createPage('slide3')
+    app.setPageSkipInPresentation('slide2', true)
+    app.changePage('page1')
+
+    // Editing navigation still visits every slide.
+    app.nextPage()
+    expect(app.currentPageId).toBe('slide2')
+    app.changePage('page1')
+
+    app.togglePresentationMode()
+    app.nextPage()
+    expect(app.currentPageId).toBe('slide3') // slide2 skipped
+
+    app.previousPage()
+    expect(app.currentPageId).toBe('page1')
+  })
+
+  it('stops at the end of the deck even when every remaining slide is skipped', () => {
+    const app = new TldrawTestApp().loadDocument(mockDocument)
+    app.createPage('slide2')
+    app.setPageSkipInPresentation('slide2', true)
+    app.changePage('page1')
+    app.togglePresentationMode()
+
+    app.nextPage()
+    expect(app.currentPageId).toBe('page1') // nowhere presentable to go
   })
 })

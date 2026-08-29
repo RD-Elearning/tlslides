@@ -9,7 +9,7 @@ import { Divider } from '~components/Primitives/Divider'
 import { IconButton } from '~components/Primitives/IconButton/IconButton'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { breakpoints } from '~components/breakpoints'
-import { preventEvent } from '~components/preventEvent'
+import { preventEvent, stopKeyPropagationUnlessEscape } from '~components/preventEvent'
 
 const canDeleteSelector = (s: TDSnapshot) => {
   return Object.keys(s.document.pages).length > 1
@@ -29,6 +29,22 @@ export function PageOptionsDialog({ page, onOpen, onClose }: PageOptionsDialogPr
   const canDelete = app.useStore(canDeleteSelector)
 
   const rInput = React.useRef<HTMLInputElement>(null)
+
+  // T16.3 — speaker notes. A local draft, committed on blur rather than per keystroke: `notes` is
+  // written through `app.setPageNotes`, an undoable command (Phase 14), and nobody wants one undo
+  // entry per character typed into a paragraph of notes. Re-seeded from `page.notes` whenever the
+  // dialog opens for a (possibly different) page — `page` is a prop, so switching which page this
+  // dialog is open for without unmounting it would otherwise show stale notes from the last page.
+  const [notesDraft, setNotesDraft] = React.useState(page.notes ?? '')
+  React.useEffect(() => {
+    if (isOpen) setNotesDraft(page.notes ?? '')
+  }, [isOpen, page.notes])
+  const handleNotesChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotesDraft(e.target.value)
+  }, [])
+  const handleNotesBlur = React.useCallback(() => {
+    app.setPageNotes(page.id, notesDraft.trim() === '' ? undefined : notesDraft)
+  }, [app, page.id, notesDraft])
 
   const handleDuplicate = React.useCallback(() => {
     app.duplicatePage(page.id)
@@ -98,6 +114,17 @@ export function PageOptionsDialog({ page, onOpen, onClose }: PageOptionsDialogPr
             Delete
           </DialogAction>
           <Divider />
+          <StyledNotesLabel htmlFor="TD-PageOptions-Notes">Speaker notes</StyledNotesLabel>
+          <StyledNotesTextarea
+            id="TD-PageOptions-Notes"
+            placeholder="Notes for the presenter — not shown on the slide itself"
+            value={notesDraft}
+            onChange={handleNotesChange}
+            onBlur={handleNotesBlur}
+            onKeyDown={stopKeyPropagationUnlessEscape}
+            onKeyUp={stopKeyPropagationUnlessEscape}
+          />
+          <Divider />
           <Dialog.Cancel asChild>
             <RowButton>Cancel</RowButton>
           </Dialog.Cancel>
@@ -127,6 +154,34 @@ export const StyledDialogContent = styled(Dialog.Content, {
   font: '$ui',
   '&:focus': {
     outline: 'none',
+  },
+})
+
+const StyledNotesLabel = styled('label', {
+  display: 'block',
+  fontSize: '$1',
+  color: '$text',
+  opacity: 0.7,
+  padding: '$2 $3 0',
+})
+
+const StyledNotesTextarea = styled('textarea', {
+  display: 'block',
+  width: '100%',
+  minHeight: 80,
+  margin: 0,
+  padding: '$2 $3',
+  boxSizing: 'border-box',
+  border: 'none',
+  outline: 'none',
+  resize: 'vertical',
+  background: 'transparent',
+  color: '$text',
+  fontFamily: '$ui',
+  fontSize: '$1',
+  '&:focus': {
+    outline: '2px solid $selected',
+    outlineOffset: -2,
   },
 })
 

@@ -240,6 +240,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 13 | Template system — `slot?` field, twelve theme-aware starter layouts, `addSlideFromTemplate`, `TemplatePicker` UI (see `reviews/roadmap-slides.md`) | ✅ done |
 | 14 | Host control API — `app.deck.*` facade, typed event stream, caller-supplied slide ids, `DeckViewer` read-only entry point, `getThumbnail` (see `reviews/roadmap-slides.md`) | ✅ done |
 | 15 | Headless render + export — pure `renderPageToSvg`, `getThumbnail` works for any slide with no DOM, browser-only PNG rasterization, deck JSON in/out, PDF scoped to a documented recipe (see `reviews/roadmap-slides.md`) | ✅ done |
+| 16 | Presentation runtime — build-order animation playback, `AnimateMenu` UI, speaker notes UI, `skipInPresentation` UI, a `window.open` presenter view, slide transitions, `app.deck.advance`/`back`/`getPresentationState`/`openPresenterView`/`presentationChanged` (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -1498,6 +1499,174 @@ harness scenarios and all three Next.js-sample scenarios (`deckapi`, `nextjs`, `
 re-verified with no regression, screenshots re-inspected, including `templates-stat-row.png` (the
 same template the bug was found in, confirmed unaffected live — the bug was export-only, since the
 live canvas never calls `getTextSvgElement`).
+
+#### Phase 16 notes — presentation runtime
+
+`ShapeAnimation`/`AnimationEffect`/`AnimationTrigger` (`TDShape.animation`) and `TDPage.notes`/
+`skipInPresentation` were all reserved in the Phase 3 migration and untouched since — this phase
+makes every one of them real, with **no schema migration and no version bump**: every field
+already existed, valid and inert, on every document this fork has ever produced.
+
+- **Build steps are derived, not stored — `computeBuildSteps(page)` (`state/deck/
+  presentation.ts`), a pure function with no `TldrawApp`, no DOM.** Every shape carrying an
+  `animation` is a "cue"; cues sort by `order` (ties broken by shape id, so the result is
+  deterministic regardless of insertion order) and fold into steps: `onClick` starts a new step
+  that waits for an explicit advance; `withPrevious` joins the *same* step as the cue before it
+  and never gets its own advance, manual or automatic; `afterPrevious` also starts a new step, but
+  one that reveals itself on a timer once the previous step's own animation has finished — the
+  concrete, observable difference between the two triggers the roadmap asked for. A step with no
+  `onClick` cue in it is `auto: true`. Being derived rather than persisted means a host inserting
+  an animated shape mid-presentation (`Deck.insertContent`) never leaves stale build-step data
+  behind to reconcile — there's nothing to reconcile.
+- **"Next"/"Back" compose build steps and slide navigation into one action, deliberately, the way
+  a presentation remote's single button does.** `TldrawApp.advancePresentation`: reveal the next
+  step, or — once every step on this slide is revealed — advance to the next slide
+  (`nextPage`, which itself now skips `skipInPresentation` slides while presenting). `TldrawApp.
+  previousPresentation`: un-reveal a step, or — once nothing is left to un-reveal — move to the
+  *previous* slide **fully built**, not at its own first step. This asymmetry is deliberate, not
+  an oversight: landing on a previous slide at its own step 0 would silently re-hide content the
+  presenter already showed, forcing them to build it back up again just to return to where they
+  left off; "back" should mirror the muscle memory of "I just watched this build, take me back to
+  it as I left it." Neither method is a `Command` — like the pre-existing `hoveredId`, "what's
+  been revealed" is presentation-runtime state (`appState.presentationBuildStep`, reset to 0 on
+  every `changePage`), not part of the undoable document; undo/redo keeps rewinding *content*
+  only, never a build.
+- **Kept out of the editor's normal rendering, `copySvg`, and `renderPageToSvg` by construction,
+  not by a guard clause — checked directly, not assumed.** `PresentationRuntime` (`components/
+  Presentation/`), the component that actually applies build-step visibility, is mounted only
+  inside `{settings.isPresentationMode && <PresentationRuntime />}` in `Tldraw.tsx`; nothing else
+  in the package imports it or reads `shape.animation` (grepped for `.animation`/`animation:`
+  across the whole package before writing the report: exactly four files touch it — this
+  component, `AnimateMenu`, `TldrawApp.setShapeAnimation`, and `state/deck/presentation.ts`
+  itself). `renderPageToSvg.spec.ts` gained a direct test for this: a shape with a `fadeIn`
+  animation renders `<g opacity="1">`, never `opacity="0"` or a `clip-path` — export and edit-mode
+  rendering have simply never heard of presentation state.
+- **DOM-imperative, on the shape's *own* container, using CSS properties nothing else on that
+  element writes — the same "reuse a stable, already-rendered node" discipline `appendBackgroundDefs`
+  established for gradients.** `@tlslides/core`'s `Container` already gives every shape a
+  positioned `<div id={shape.id}>`; `@tlslides/core`'s `usePosition` hook owns that element's
+  `transform` (position + rotation) via a mobx `autorun`, so writing to `transform` for a
+  slide-in/zoom-in effect would race that autorun and silently lose depending on write order.
+  Modern browsers' standalone `translate`/`scale` CSS properties (CSS Transforms Level 2) compose
+  with `transform` rather than colliding with it — `usePosition` never touches them — so
+  `PresentationRuntime` animates `opacity`/`translate`/`scale`/`clip-path` directly, with plain
+  inline-style transitions (no injected stylesheet, no keyframes) it can start, force-reflow, and
+  reverse, and restores every touched node to a bare style the moment presentation mode ends
+  (verified both by unit test, on the render side, and in the `present.js` screenshot: the same
+  two shapes render at full opacity after `exitPresentationMode`).
+- **A real, load-bearing bug this phase's own screenshot found, in Phase 6 code this phase didn't
+  write: opening the presenter-view popup silently ended the very presentation it was opened
+  from.** Confirmed directly before fixing it, not assumed: `document.fullscreenElement` was
+  still truthy in the headless test environment right after `togglePresentationMode()`, and
+  `window.open()`-ing the presenter-view popup fired *two* `fullscreenchange` events on the main
+  window, the second with `fullscreenElement === null`. `Tldraw.tsx`'s pre-existing
+  `fullscreenchange` listener (added for Esc/F11/mobile-gesture fullscreen exits) treats *any*
+  loss of fullscreen as "the user left presentation mode" and calls `exitPresentationMode` — a
+  rule this phase's popup tripped over the moment it existed, since opening any new window is a
+  well-documented trigger for a browser to silently drop fullscreen on the opener. Fixed with a
+  narrowly-scoped, self-consuming counter (`TldrawApp.suppressNextFullscreenExit`/
+  `consumeFullscreenExitSuppression`) rather than weakening the listener generally: `Deck`/
+  `openPresenterView` flags exactly the fullscreen loss it's about to cause immediately before
+  `window.open`, the listener consumes (and clears) that flag for the very next loss only, and
+  every *other* way of leaving fullscreen (Esc, F11, a real mobile gesture) still exits
+  presentation mode exactly as before. `present.js`'s `mainStillPresenting` assertion is the
+  regression test — caught only by actually opening the popup mid-presentation in a real browser
+  and reading `isPresentationMode` afterwards, not by any type check or unit test, since the two
+  features had never been exercised together before this phase.
+- **The presenter view is a same-origin `window.open` popup, not an in-app split view — see
+  `state/deck/presenterView.ts`'s own doc comment for the full reasoning and the honestly-stated
+  limitations (popup-blocker risk, same-machine-only, ~300ms poll lag, no auto-recovery from a
+  crashed opener).** It shows the current slide and a skip-aware "up next" preview via
+  `renderPageToSvg` — no second mounted editor, the same reuse Phase 15 was built to enable — plus
+  speaker notes and a local elapsed timer, with Back/Next buttons that call straight back into the
+  opener's own `TldrawApp` instance (same-origin, same JS realm, so a plain function reference
+  crosses the window boundary with no `postMessage`/serialization). Every dynamic value it shows
+  (a slide's own name, its notes) is written via `createElement`/`textContent`, never `innerHTML`
+  — there's no attacker in this trust boundary, but no reason to open one either.
+- **T16.6's slide transitions are a `settings` field (`presentationTransition: 'fade' | 'push' |
+  'none'`), not a document field, for the same reason the animation playback needed no schema
+  change: it describes how *this viewer* is watching the deck, not a property of the deck itself.**
+  `'push'` is direction-aware (the incoming slide enters from the direction of travel) but,
+  honestly, one-sided: React swaps a page's shape tree the instant `currentPageId` changes, so
+  there is no outgoing frame left to animate against — only the *incoming* slide's entrance is
+  animated, not a true two-slide crossfade/push. Applied to `#canvas` (`@tlslides/core`'s pan/zoom
+  root), confirmed to carry no transform of its own before reusing it as an animation target (the
+  camera transform lives one level down, on `Canvas`'s `rLayer`/`rContainer` refs).
+- **`AnimateMenu` (T16.2) lives next to `StyleMenu` in `TopPanel`, and reads/writes only the
+  *first* selected shape — a deliberate, documented scope cut, not the full `StyleMenu`-style
+  "common value across the selection" merge.** Two shapes rarely belong on the same `order`
+  (`computeBuildSteps`' own grouping rules make that ambiguous — same `order`, different
+  `trigger`, produces a build step nobody explicitly asked for), so authoring is almost always
+  one shape at a time; the panel still *writes* the same animation to every selected shape in one
+  undo step via `TldrawApp.setShapeAnimation` (a thin wrapper over the pre-existing generic
+  `setShapesProps` command — no new command needed), only the panel's own *display* is narrowed.
+  **A real bug this phase's own manual browser check found, not a screenshot this time:** the
+  panel's first draft read `app.page.shapes[id].animation` directly off the `TldrawApp` instance
+  at render time — a plain getter with no subscription — while only re-rendering on a
+  `selectedIds` change. Picking a new effect never re-rendered the dropdown (it kept showing
+  "None" after selecting "Fade in", confirmed by actually driving the menu in a browser, not
+  assumed from the code). Fixed by moving the read into its own `app.useStore` selector
+  (`currentAnimationSelector`) keyed off the store the same way `selectedIdsSelector` already is.
+- **`skipInPresentation`'s UI is the deck panel's slide context menu (`DeckContextMenu`), per the
+  brief, plus a small "SKIPPED" badge on the thumbnail itself** — added on top of what was asked,
+  since a checkbox buried in a context menu is easy to set and then forget; the badge makes a
+  skipped slide visible while just scanning the deck strip. The badge sits as a *sibling* of the
+  dimmed thumbnail content, not a child of it — the first version nested it inside the same
+  opacity-dimmed wrapper as the slide's own render, which made a dark badge on a light background
+  fade to the point of being unreadable against a "0.4 opacity" thumbnail; caught by looking at
+  the actual screenshot, cropped to the thumbnail strip, not by the boolean "badge element
+  exists" check alone.
+- **Notes UI lives in `PageOptionsDialog`** (the gear icon next to a slide in `PageMenu`'s
+  dropdown) — an existing per-page settings surface, not a new panel, since notes are exactly as
+  page-scoped a property as rename/duplicate/delete already there. Committed on blur, not per
+  keystroke — `setPageNotes` is a real `Command`, and nobody wants one undo entry per character
+  typed into a paragraph. Carries `stopKeyPropagationUnlessEscape` on the textarea per the brief's
+  explicit instruction, even though `PageOptionsDialog`'s own container already unconditionally
+  stops all keydown/keyup propagation at a higher level (confirmed by reading it, not assumed) —
+  redundant in this one case, but the per-field convention every other free-typed control in this
+  fork follows, and the field-level guarantee that doesn't quietly depend on which dialog happens
+  to contain it.
+- **`app.deck` grew five members, all following Phase 14's existing conventions.**
+  `setSlideSkip` (mirrors `setSlideBackground`/`setSlideNotes` exactly — same signature shape,
+  same `DeckSlide \| undefined` return). `advance`/`back`/`getPresentationState` return a shared
+  `PresentationState` (`{ slideId, buildStep, totalBuildSteps }`) rather than three different
+  shapes for what is, from a host's point of view, one concept viewed three ways.
+  `openPresenterView` returns a plain `boolean`, never the `Window` it opened — no canvas-level
+  *or* browser-level handle leaks through the facade. `presentationChanged` is a new event,
+  following the same `onStateDidChange`-hooked, diffed-against-a-baseline pattern
+  `_onSelectionMaybeChanged` already established for other `patchState`-driven (non-`Command`)
+  state. **Deliberately not added:** a per-shape animation setter on `Deck` — Phase 14 drew the
+  facade's line at "add/replace a slide's content as a unit," not "edit an existing shape's
+  fields," and a host that genuinely needs to script animations already has `getDeck().pages[id]`
+  and `TldrawApp.setShapeAnimation` for that, exactly as it already does for any other per-shape
+  field.
+- **Scoped down, on purpose, and named here rather than left for someone to discover:** no
+  click-anywhere-on-canvas advance (Right arrow/Space, the deck's own Back/Next, and the host API
+  are the driving surfaces — a raw canvas click already has meaning in this editor, and giving it
+  a second one felt like exactly the kind of interaction ambiguity worth avoiding rather than
+  shipping and hoping); `AnimateMenu`'s multi-select display (see above); presenter view's
+  same-machine-only reach and ~300ms poll lag (see above). None of these are silent — each is
+  called out in this section, `guides/documentation.md`, and `reviews/roadmap-slides.md`'s
+  rewritten Phase 16 section.
+
+**Verified:** 86/86 suites, 540 tests passing (up from 84/510 at the start of this phase; 30 new
+tests — `setPageSkipInPresentation.spec.ts` (3, new), `state/deck/presentation.spec.ts` (13, new
+— `computeBuildSteps`/`stepChainDelayMs`/`nextBuildOrder`/`adjacentPresentableSlideId`),
+`TldrawApp.presentation.spec.ts` (9 new alongside its 9 pre-existing — `setShapeAnimation`,
+build-step playback incl. the `withPrevious`/`afterPrevious` distinction and the "back lands fully
+built" asymmetry, `skipInPresentation` navigation), `Deck.spec.ts` (4 new —
+`setSlideSkip`/`getPresentationState`/`advance`+`back`/`presentationChanged`), and
+`renderPageToSvg.spec.ts` (1 new — animation ignored, full opacity) · `build:packages` clean, zero
+type errors · all fourteen `tools/visual/scenarios` scenarios (the pre-existing thirteen,
+re-verified with no regression, plus the new `present.js`) exit 0 with no unexpected console
+errors; `present.js` actually enters presentation mode, advances through build steps via the real
+BottomPanel button (not just the API), and screenshots three states
+(`present-step0`/`present-step1`/`present-step2`.png — nothing revealed, `onClick` step revealed
+mid-transition with the `afterPrevious` step still untouched, both revealed) plus the presenter
+view popup (`present-presenter-view.png`, showing the notes just edited through the real
+`PageOptionsDialog` textarea and a correctly skip-aware "up next" slide four slots ahead) — every
+screenshot inspected directly, not just asserted on, which is what caught both the `AnimateMenu`
+staleness bug and the presenter-view/fullscreen interaction bug above.
 
 ### Suggested order
 
