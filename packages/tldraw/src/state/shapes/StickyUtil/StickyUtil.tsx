@@ -2,10 +2,16 @@
 import * as React from 'react'
 import { Utils, HTMLContainer, TLBounds } from '@tlslides/core'
 import { defaultTextStyle } from '../shared/shape-styles'
-import { AlignStyle, StickyShape, TDMeta, TDShapeType, TransformInfo } from '~types'
+import { AlignStyle, DeckTheme, StickyShape, TDMeta, TDShapeType, TransformInfo } from '~types'
 import { getBoundsRectangle, TextAreaUtils } from '../shared'
 import { TDShapeUtil } from '../TDShapeUtil'
-import { getStickyFontStyle, getStickyShapeStyle, getShapeOpacity } from '../shared/shape-styles'
+import {
+  getStickyFontStyle,
+  getStickyShapeStyle,
+  getShapeOpacity,
+  getLetterSpacingCss,
+  getLineHeight,
+} from '../shared/shape-styles'
 import { styled } from '~styles'
 import { Vec } from '@tlslides/vec'
 import { GHOSTED_OPACITY } from '~constants'
@@ -49,7 +55,7 @@ export class StickyUtil extends TDShapeUtil<T, E> {
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, meta, events, isGhost, isBinding, isEditing, onShapeBlur, onShapeChange }, ref) => {
-      const font = getStickyFontStyle(shape.style)
+      const font = getStickyFontStyle(shape.style, meta.deckTheme)
 
       const { color, fill } = getStickyShapeStyle(shape.style, meta.isDarkMode)
 
@@ -180,9 +186,17 @@ export class StickyUtil extends TDShapeUtil<T, E> {
         textarea?.focus()
       }, [shape.text, shape.size[1], shape.style])
 
+      // Phase 17 — letter-spacing/line-height added here for the same reason they were added to
+      // TextUtil/TextLabel's inline styles: `StickyShape` never had *any* letter-spacing before
+      // this phase (its CSS is `font: 'inherit'` all the way down — see StyledText/StyledTextArea
+      // below — so nothing previously set it), a small, pre-existing Text-vs-Sticky inconsistency
+      // closed as a side effect of making the value itself overridable, matching what
+      // `getTextSvgElement`'s new `letter-spacing` attribute now does for this shape's own export.
       const style = {
         font,
         color,
+        letterSpacing: getLetterSpacingCss(shape.style),
+        lineHeight: getLineHeight(shape.style),
         textShadow: meta.isDarkMode
           ? `0.5px 0.5px 2px rgba(255, 255, 255,.25)`
           : `0.5px 0.5px 2px rgba(255, 255, 255,.5)`,
@@ -284,10 +298,10 @@ export class StickyUtil extends TDShapeUtil<T, E> {
     return shape
   }
 
-  getSvgElement = (shape: T): SVGElement | void => {
+  getSvgElement = (shape: T, deckTheme?: DeckTheme): SVGElement | void => {
     const bounds = this.getBounds(shape)
     const textBounds = Utils.expandBounds(bounds, -PADDING)
-    const textElm = getTextSvgElement(shape.text, shape.style, textBounds)
+    const textElm = getTextSvgElement(shape.text, shape.style, textBounds, deckTheme)
     const style = getStickyShapeStyle(shape.style)
     textElm.setAttribute('fill', style.color)
     textElm.setAttribute('transform', `translate(${PADDING}, ${PADDING})`)

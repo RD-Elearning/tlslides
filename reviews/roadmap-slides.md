@@ -361,11 +361,57 @@ no version bump — every field this phase needed already existed. Full write-up
   access — buildable today from `Deck.getThumbnail`/`Deck.on('presentationChanged', ...)`/
   `Deck.advance`/`back`, just not shipped as a ready component.
 
-### Phase 17 — Typography and text
+### Phase 17 — Typography and text (done — shipped vs. planned)
 
-Bullet/numbered lists, line height, letter spacing, arbitrary font families with a loading story,
-text auto-fit within a box, and vertical alignment. Slide decks are mostly text; the current four
-built-in fonts and single text block are the weakest part of the editor for this use case.
+All six asks shipped as optional `ShapeStyles` fields (`lineHeight`, `letterSpacing`, `list`,
+`verticalAlign`, `fontFamily`, `fontToken`, `autoFit`), no migration, no version bump. Full design
+rationale and the two real bugs a screenshot caught: `reviews/README.md`'s Phase 17 notes.
+Reference: `guides/documentation.md`'s "Typography (Phase 17)" section.
+
+**Shipped, narrower than "every shape everywhere," on purpose:**
+- Bullet/numbered `list` markers — **`TextShape` only**, not shape labels or `StickyShape`.
+- `verticalAlign`/`autoFit` — **Rectangle/Ellipse/Triangle labels only**. Not Arrow (its own
+  independent auto-shrink-to-length `scale` already exists; a second auto-sizing mechanism would
+  collide with it, not complement it). Not `StickyShape` (its box *grows* to fit text — the
+  opposite philosophy from "shrink text into a fixed box"). Not a bare `TextShape` (no independent
+  box — its bounds *are* the measured text).
+- `fontFamily` — an arbitrary CSS font-family, trusted verbatim; a host owns making it load (a
+  `<link>` tag, a self-hosted `@font-face`, or a web-safe name). Resolved by one function,
+  `resolveFont`, everywhere a font is used (live CSS, `getSvgElement`, `renderPageToSvg`).
+- `fontToken` (`'heading' | 'body'`) closes the Phase 12 "theme switch doesn't restyle fonts"
+  follow-up, but **only for shape labels and `StickyShape`** — see the follow-up rewritten below
+  for exactly why a bare `TextShape` (and therefore every one of the twelve starter templates,
+  which render all their real content as `TextShape`) is excluded, and confirmed, not assumed.
+
+**Explicitly NOT built, named here as follow-ups rather than left silent:**
+- **Live web-font-loading detection.** No `FontFaceObserver`/`document.fonts.ready` hook forces a
+  re-measure once a slow-loading `fontFamily` finishes; text can reflow once, the same as any page
+  using `font-display: swap`. A real, separate feature (an async load-and-invalidate lifecycle no
+  shape util has needed before), not a corollary of resolving the field — worth adding once a real
+  host reports it as a problem in practice, not speculatively.
+- **A `fontToken` UI control.** `StyleMenu` has no "bind this shape's font to the theme's
+  heading/body pairing" checkbox — only `resolveFont`/the field itself exist; a host or future
+  template author sets it via `app.style({ fontToken: 'heading' })` directly. Small, addable
+  without any data-model change whenever it's wanted.
+- **Closing the theme-font-switch follow-up for `TextShape`/the shipped templates.** `TextUtil.
+  getBounds` measures a shape's own box from its rendered font, and its inherited signature
+  (`getBounds(shape)`, cached by shape identity) has no way to receive "the active theme" or
+  invalidate that cache on a theme switch. Resolving `fontToken` in the live render while
+  `getBounds` kept measuring the old font would make a label's *displayed* font drift from the box
+  it was *sized for* — worse than the bug being fixed. Real fix needs either widening a base-
+  library (`@tlslides/core`) interface this fork doesn't own, or `buildTemplateShapes` rewriting a
+  concrete `style.font` into every `TextShape` on each theme switch (Phase 12's "less invasive, less
+  consistent" alternative, not attempted here) — left as the next concrete step for this specific
+  follow-up, not a redo of Phase 17's own scope.
+- **Pixel-exact `verticalAlign` at an edge, headlessly.** `renderPageToSvg`'s `Start`/`End` label
+  positioning is a few pixels off (glyph ink starts slightly outside the computed anchor) — an
+  extension of `estimateTextSize`'s pre-existing "approximate, not measured" text-layout limitation
+  from Phase 15, exposed rather than introduced by this phase's edge-anchoring (the pre-existing
+  `Middle` default masked the same slack by symmetry). Not fixable without real font-metrics data
+  this module doesn't have, especially not for an arbitrary `fontFamily`.
+- **Lists/vertical-align beyond their shipped shape types** (a bulleted `StickyShape`, a vertically-
+  aligned bare `TextShape`) — the `applyListMarkers`/box-offset mechanisms are already centralized
+  and shape-agnostic, so extending them is mechanical whenever a real use case asks for it.
 
 ## Suggested, not yet scheduled
 
@@ -379,14 +425,18 @@ Worth doing, in rough order of value per effort:
   broken; the two features are simply unaware of each other. Worth either deriving muted text from
   the *effective* background, or warning in the background picker when contrast drops below a
   threshold.
-- **Make a theme switch restyle fonts, not just colours.** Theme colours resolve lazily at render
-  time (through `resolveThemeColor`), so switching a theme repaints an existing deck. The font
-  pairing does not: `buildTemplateShapes` bakes `style.font` into each shape once, at
-  instantiation. A host that switches theme therefore sees colours change and typography stay put,
-  which reads as a bug even though each half is behaving as designed. Either resolve fonts lazily
-  too (a `theme:heading` token, mirroring the colour tokens) or have `setDeckTheme` rewrite the
-  font of every shape that still carries the outgoing theme's pairing — the first is more
-  consistent, the second is less invasive.
+- **Make a theme switch restyle fonts, not just colours — partially closed by Phase 17, not fully.**
+  `ShapeStyles.fontToken` (`'heading' | 'body'`, resolved by `resolveFont`) is exactly the "resolve
+  fonts lazily too" fix this bullet originally proposed, and it works: a shape **label**'s or
+  `StickyShape`'s font now does restyle live on `setDeckTheme`, with no shape rewritten. It does
+  **not** yet apply to a bare `TextShape` — which is what all twelve starter templates actually use
+  for their real content (`buildTemplateShapes` still bakes a concrete `style.font` there, unchanged
+  from Phase 12) — because `TextUtil.getBounds` measures a `TextShape`'s own box from its rendered
+  font and has no way to receive "the active theme" or invalidate its cache on a switch; see the
+  Phase 17 section above and its own report notes for the full reasoning. The remaining half of
+  this bullet is now `setDeckTheme` rewriting `style.font` on every `TextShape` that still carries
+  the outgoing theme's pairing (Phase 12's original "less invasive, less consistent" alternative)
+  — the concrete next step, not a re-opening of Phase 17's own scope.
 - **Alignment & distribute + smart guides** — check what tldraw 1.9 already ships before building.
 - **Locked / background layer** — shapes that can't be selected by a click, only from the layers
   panel. Pairs with the master slide.

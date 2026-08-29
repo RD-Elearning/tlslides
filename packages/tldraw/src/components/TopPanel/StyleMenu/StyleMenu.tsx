@@ -5,6 +5,8 @@ import {
   fills,
   defaultTextStyle,
   getEffectiveStrokeWidth,
+  getLetterSpacingEm,
+  getLineHeight,
 } from '~state/shapes/shared/shape-styles'
 import { GRADIENT_PRESETS } from '~state/shapes/shared/background'
 import { useTldrawApp } from '~hooks'
@@ -30,6 +32,7 @@ import {
   FontStyle,
   AlignStyle,
   TDShapeType,
+  TextListStyle,
 } from '~types'
 import { styled } from '~styles'
 import { breakpoints } from '~components/breakpoints'
@@ -37,10 +40,14 @@ import { Divider } from '~components/Primitives/Divider'
 import { preventEvent, stopKeyPropagationUnlessEscape } from '~components/preventEvent'
 import {
   Cross2Icon,
+  ListBulletIcon,
   TextAlignCenterIcon,
   TextAlignJustifyIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextAlignBottomIcon,
+  TextAlignMiddleIcon,
+  TextAlignTopIcon,
 } from '@radix-ui/react-icons'
 
 const currentStyleSelector = (s: TDSnapshot) => s.appState.currentStyle
@@ -59,6 +66,14 @@ const STYLE_KEYS = [
   'stroke',
   'fill',
   'fillGradient',
+  // Phase 17
+  'lineHeight',
+  'letterSpacing',
+  'verticalAlign',
+  'list',
+  'fontFamily',
+  'fontToken',
+  'autoFit',
 ] as (keyof ShapeStyles)[]
 
 // Corner radius is only meaningful for shapes with a rectangular outline (Rectangle and the
@@ -121,6 +136,26 @@ const ALIGN_ICONS = {
   [AlignStyle.End]: <TextAlignRightIcon />,
   [AlignStyle.Justify]: <TextAlignJustifyIcon />,
 }
+
+// Phase 17 — vertical align only ever offers Start/Middle/End (top/center/bottom); `Justify` has
+// no vertical meaning (see `ShapeStyles.verticalAlign`'s comment) so it's simply not a choice here,
+// unlike the four-way horizontal `ALIGN_ICONS` above.
+const VERTICAL_ALIGN_OPTIONS = [AlignStyle.Start, AlignStyle.Middle, AlignStyle.End] as const
+const VERTICAL_ALIGN_ICONS = {
+  [AlignStyle.Start]: <TextAlignTopIcon />,
+  [AlignStyle.Middle]: <TextAlignMiddleIcon />,
+  [AlignStyle.End]: <TextAlignBottomIcon />,
+}
+
+// Phase 17 — list style. Plain text glyphs, not icons: there is no dedicated "numbered list" icon
+// in this fork's icon set, and a mismatched icon pairing (a real bullet glyph next to a generic
+// list icon standing in for "numbered") would read as less clear than the two literal characters
+// a list actually starts each line with.
+const LIST_OPTIONS: { value: TextListStyle | 'none'; label: React.ReactNode; id: string }[] = [
+  { value: 'none', label: 'None', id: 'TD-Styles-List-None' },
+  { value: 'bullet', label: <ListBulletIcon />, id: 'TD-Styles-List-Bullet' },
+  { value: 'number', label: '1.', id: 'TD-Styles-List-Number' },
+]
 
 const themeSelector = (s: TDSnapshot) => (s.settings.isDarkMode ? 'dark' : 'light')
 
@@ -218,11 +253,92 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
     // same `app.style` call — one undo step either restores both together, or neither.
     app.style({ size: value as SizeStyle, strokeWidth: undefined })
   }, [])
+  // Phase 17 — same "picking the enum clears the override" coherence rule as color/stroke/fill
+  // (see `handleColorChange` below): a built-in face is the discrete "go back to the enum" action,
+  // so it clears both `fontFamily` (the more specific override) and `fontToken` (the theme
+  // pairing) in the same call. Without this, a shape that ever had either would stop responding
+  // to the Font row's buttons entirely.
   const handleFontChange = React.useCallback((value: string) => {
-    app.style({ font: value as FontStyle })
+    app.style({ font: value as FontStyle, fontFamily: undefined, fontToken: undefined })
   }, [])
   const handleTextAlignChange = React.useCallback((value: string) => {
     app.style({ textAlign: value as AlignStyle })
+  }, [])
+  const handleVerticalAlignChange = React.useCallback((value: string) => {
+    app.style({ verticalAlign: value as AlignStyle })
+  }, [])
+  const handleListChange = React.useCallback((value: string) => {
+    app.style({ list: value === 'none' ? undefined : (value as TextListStyle) })
+  }, [])
+  const handleAutoFitChange = React.useCallback((checked: boolean) => {
+    app.style({ autoFit: checked })
+  }, [])
+
+  // --- Font family (Phase 17) -------------------------------------------------------------
+  // Free-typed, so — unlike the hex fields, which validate a strict pattern before committing —
+  // this commits *any* non-blank value on blur/Enter: there is no way to validate an arbitrary
+  // CSS `font-family` string beyond "is it non-empty," and rejecting a value the browser would
+  // have accepted (or silently coercing it) would be worse than trusting it, exactly as
+  // `resolveFont`'s own doc comment says a host-supplied family is trusted verbatim.
+  const [fontFamilyDraft, setFontFamilyDraft] = React.useState<string | undefined>(undefined)
+  const handleFontFamilyInput = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setFontFamilyDraft(e.target.value),
+    []
+  )
+  const commitFontFamily = React.useCallback(() => {
+    setFontFamilyDraft((draft) => {
+      if (draft !== undefined) {
+        const trimmed = draft.trim()
+        app.style({ fontFamily: trimmed === '' ? undefined : trimmed })
+      }
+      return undefined
+    })
+  }, [])
+  const handleFontFamilyKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    stopKeyPropagationUnlessEscape(e)
+    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur()
+  }, [])
+
+  // --- Line height / letter spacing (Phase 17) --------------------------------------------
+  // Same free-typed-number idiom as stroke width/corner radius above: draft state while typing,
+  // committed on blur or Enter, `stopKeyPropagationUnlessEscape` on both key handlers per the
+  // brief (Tab would otherwise clone the selected shape mid-edit — see that function's comment).
+  const [lineHeightDraft, setLineHeightDraft] = React.useState<string | undefined>(undefined)
+  const handleLineHeightInput = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setLineHeightDraft(e.target.value),
+    []
+  )
+  const commitLineHeight = React.useCallback(() => {
+    setLineHeightDraft((draft) => {
+      if (draft !== undefined && draft.trim() !== '') {
+        const parsed = Number(draft)
+        if (Number.isFinite(parsed)) app.style({ lineHeight: Math.max(0.1, parsed) })
+      }
+      return undefined
+    })
+  }, [])
+  const handleLineHeightKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    stopKeyPropagationUnlessEscape(e)
+    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur()
+  }, [])
+
+  const [letterSpacingDraft, setLetterSpacingDraft] = React.useState<string | undefined>(undefined)
+  const handleLetterSpacingInput = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setLetterSpacingDraft(e.target.value),
+    []
+  )
+  const commitLetterSpacing = React.useCallback(() => {
+    setLetterSpacingDraft((draft) => {
+      if (draft !== undefined && draft.trim() !== '') {
+        const parsed = Number(draft)
+        if (Number.isFinite(parsed)) app.style({ letterSpacing: parsed })
+      }
+      return undefined
+    })
+  }, [])
+  const handleLetterSpacingKeyDown = React.useCallback((e: React.KeyboardEvent) => {
+    stopKeyPropagationUnlessEscape(e)
+    if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur()
   }, [])
   // Phase 8b — same coherence rule as size/strokeWidth above, applied to color/stroke/fill:
   // picking a swatch is the discrete "go back to the enum" action, so it clears both custom hex
@@ -662,6 +778,142 @@ export const StyleMenu = React.memo(function ColorMenu(): JSX.Element {
                 </StyledGroup>
               </StyledRow>
             )}
+            <StyledRow id="TD-Styles-FontFamily-Container">
+              Family
+              <NumberFieldRow>
+                <TextInput
+                  id="TD-Styles-FontFamily-Input"
+                  type="text"
+                  placeholder="Theme default"
+                  value={fontFamilyDraft ?? displayedStyle.fontFamily ?? ''}
+                  onChange={handleFontFamilyInput}
+                  onBlur={commitFontFamily}
+                  onKeyDown={handleFontFamilyKeyDown}
+                  onKeyUp={stopKeyPropagationUnlessEscape}
+                />
+                {displayedStyle.fontFamily !== undefined && (
+                  <ToolButton
+                    variant="icon"
+                    onClick={() => app.style({ fontFamily: undefined })}
+                    id="TD-Styles-FontFamily-Reset"
+                  >
+                    <Cross2Icon />
+                  </ToolButton>
+                )}
+              </NumberFieldRow>
+            </StyledRow>
+            <StyledRow id="TD-Styles-LineHeight-Container">
+              Line height
+              <NumberFieldRow>
+                <NumberInput
+                  id="TD-Styles-LineHeight-Input"
+                  type="number"
+                  min={0.1}
+                  step={0.1}
+                  value={lineHeightDraft ?? String(getLineHeight(displayedStyle))}
+                  onChange={handleLineHeightInput}
+                  onBlur={commitLineHeight}
+                  onKeyDown={handleLineHeightKeyDown}
+                  onKeyUp={stopKeyPropagationUnlessEscape}
+                />
+                {displayedStyle.lineHeight !== undefined && (
+                  <ToolButton
+                    variant="icon"
+                    onClick={() => app.style({ lineHeight: undefined })}
+                    id="TD-Styles-LineHeight-Reset"
+                  >
+                    <Cross2Icon />
+                  </ToolButton>
+                )}
+              </NumberFieldRow>
+            </StyledRow>
+            <StyledRow id="TD-Styles-LetterSpacing-Container">
+              Letter spacing
+              <NumberFieldRow>
+                <NumberInput
+                  id="TD-Styles-LetterSpacing-Input"
+                  type="number"
+                  step={0.01}
+                  value={letterSpacingDraft ?? String(getLetterSpacingEm(displayedStyle))}
+                  onChange={handleLetterSpacingInput}
+                  onBlur={commitLetterSpacing}
+                  onKeyDown={handleLetterSpacingKeyDown}
+                  onKeyUp={stopKeyPropagationUnlessEscape}
+                />
+                {displayedStyle.letterSpacing !== undefined && (
+                  <ToolButton
+                    variant="icon"
+                    onClick={() => app.style({ letterSpacing: undefined })}
+                    id="TD-Styles-LetterSpacing-Reset"
+                  >
+                    <Cross2Icon />
+                  </ToolButton>
+                )}
+              </NumberFieldRow>
+            </StyledRow>
+            {/* Phase 17 — list markers are `TextShape`-only (see `ShapeStyles.list`'s comment for
+                why shape labels are a scope cut), so this row only shows for the Text tool/a
+                selection of bare text shapes, not for `options === 'label'`. */}
+            {options === 'text' && (
+              <StyledRow id="TD-Styles-List-Container">
+                List
+                <StyledGroup
+                  dir="ltr"
+                  value={displayedStyle.list ?? 'none'}
+                  onValueChange={handleListChange}
+                >
+                  {LIST_OPTIONS.map((opt) => (
+                    <DMRadioItem
+                      key={opt.value}
+                      isActive={opt.value === (displayedStyle.list ?? 'none')}
+                      value={opt.value}
+                      onSelect={preventEvent}
+                      bp={breakpoints}
+                      id={opt.id}
+                    >
+                      {opt.label}
+                    </DMRadioItem>
+                  ))}
+                </StyledGroup>
+              </StyledRow>
+            )}
+            {/* Phase 17 — vertical align/auto-fit only make sense against a shape's own box
+                (Rectangle/Ellipse/Triangle — see `ShapeStyles.verticalAlign`/`autoFit`'s comments
+                for why Arrow/Sticky/a bare `TextShape` are explicit scope cuts), so both are
+                `options === 'label'`-only. */}
+            {options === 'label' && (
+              <>
+                <StyledRow id="TD-Styles-VerticalAlign-Container">
+                  Vertical align
+                  <StyledGroup
+                    dir="ltr"
+                    value={displayedStyle.verticalAlign ?? AlignStyle.Middle}
+                    onValueChange={handleVerticalAlignChange}
+                  >
+                    {VERTICAL_ALIGN_OPTIONS.map((style) => (
+                      <DMRadioItem
+                        key={style}
+                        isActive={style === (displayedStyle.verticalAlign ?? AlignStyle.Middle)}
+                        value={style}
+                        onSelect={preventEvent}
+                        bp={breakpoints}
+                        id={`TD-Styles-VerticalAlign-${style}`}
+                      >
+                        {VERTICAL_ALIGN_ICONS[style]}
+                      </DMRadioItem>
+                    ))}
+                  </StyledGroup>
+                </StyledRow>
+                <DMCheckboxItem
+                  variant="styleMenu"
+                  checked={!!displayedStyle.autoFit}
+                  onCheckedChange={handleAutoFitChange}
+                  id="TD-Styles-AutoFit"
+                >
+                  Shrink to fit
+                </DMCheckboxItem>
+              </>
+            )}
           </>
         )}
       </DMContent>
@@ -787,6 +1039,26 @@ const NumberInput = styled('input', {
   fontFamily: '$ui',
   fontSize: '$1',
   textAlign: 'right',
+
+  '&:focus': {
+    outline: '2px solid $selected',
+    outlineOffset: -1,
+  },
+})
+
+// Phase 17 — the free-typed font-family field. Same look as `NumberInput` but left-aligned and
+// wider, since a CSS font-family value ("Poppins", sans-serif) is meaningfully longer than a
+// two-digit number.
+const TextInput = styled('input', {
+  width: 132,
+  padding: '$1 $2',
+  border: '1px solid $hover',
+  borderRadius: '$0',
+  background: 'transparent',
+  color: '$text',
+  fontFamily: '$ui',
+  fontSize: '$1',
+  textAlign: 'left',
 
   '&:focus': {
     outline: '2px solid $selected',

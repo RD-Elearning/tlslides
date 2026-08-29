@@ -6,6 +6,8 @@ import {
   getShapeStyle,
   getShapeOpacity,
   getFontStyle,
+  getLetterSpacingCss,
+  getLineHeight,
   GradientDef,
 } from '~state/shapes/shared'
 import { EllipseShape, DashStyle, TDShapeType, TDShape, TransformInfo, TDMeta } from '~types'
@@ -71,7 +73,7 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
       ref
     ) => {
       const { id, radius, style, label = '', labelPoint = LABEL_POINT } = shape
-      const font = getFontStyle(shape.style)
+      const font = getFontStyle(shape.style, meta.deckTheme)
       const styles = getShapeStyle(style, meta.isDarkMode, id, meta.deckTheme)
       const strokeWidth = styles.strokeWidth
       const sw = 1 + strokeWidth * 1.618
@@ -95,6 +97,11 @@ export class EllipseUtil extends TDShapeUtil<T, E> {
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
             opacity={opacity}
+            letterSpacing={getLetterSpacingCss(style)}
+            lineHeight={getLineHeight(style)}
+            verticalAlign={style.verticalAlign}
+            boxSize={[bounds.width, bounds.height]}
+            autoFit={style.autoFit}
           />
           {/* Opacity goes on this inner <g>, not on <SVGContainer> — see the comment in
               RectangleUtil.tsx for why: SVGContainer spreads unknown props onto the outer,

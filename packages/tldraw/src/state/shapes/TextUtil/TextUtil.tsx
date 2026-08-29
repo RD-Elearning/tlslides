@@ -1,7 +1,15 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as React from 'react'
 import { Utils, HTMLContainer, TLBounds } from '@tlslides/core'
-import { defaultTextStyle, getShapeStyle, getShapeOpacity, getFontStyle } from '../shared/shape-styles'
+import {
+  defaultTextStyle,
+  getShapeStyle,
+  getShapeOpacity,
+  getFontStyle,
+  getLetterSpacingCss,
+  getLineHeight,
+} from '../shared/shape-styles'
+import { applyListMarkers } from '../shared/textList'
 import { TextShape, TDMeta, TDShapeType, TransformInfo, AlignStyle, DeckTheme } from '~types'
 import { BINDING_DISTANCE, GHOSTED_OPACITY, LETTER_SPACING } from '~constants'
 import { TDShapeUtil } from '../TDShapeUtil'
@@ -52,7 +60,21 @@ export class TextUtil extends TDShapeUtil<T, E> {
     ({ shape, isBinding, isGhost, isEditing, onShapeBlur, onShapeChange, meta, events }, ref) => {
       const { text, style } = shape
       const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
+      // Phase 17 — deliberately NOT passing `meta.deckTheme` here: unlike a shape label,
+      // `TextUtil.getBounds` (below) measures a bare `TextShape`'s own on-canvas size from its
+      // rendered font, and that method's signature/cache (`TLShapeUtil.getBounds(shape)`, keyed on
+      // shape identity only) has no way to receive "the currently active theme." Resolving
+      // `fontToken` here but not there would make this component's displayed font drift from what
+      // `getBounds` measured the moment a `TextShape` ever carried a `fontToken` — worse than the
+      // follow-up this field exists to close. So `fontToken` has no effect on a bare `TextShape`;
+      // it only resolves for shape labels (Rectangle/Ellipse/Triangle/Arrow), whose box is derived
+      // from persisted `size`/`radius`, never from measured text — see the Phase 17 report.
       const font = getFontStyle(shape.style)
+      const letterSpacing = getLetterSpacingCss(style)
+      const lineHeight = getLineHeight(style)
+      // Phase 17 — list markers decorate only the *displayed* text; `text`/the textarea below
+      // keep the raw string the user typed. See `applyListMarkers`'s own comment.
+      const displayText = applyListMarkers(text, style.list)
       const rInput = React.useRef<HTMLTextAreaElement>(null)
       const rIsMounted = React.useRef(false)
 
@@ -157,6 +179,8 @@ export class TextUtil extends TDShapeUtil<T, E> {
                 font,
                 color: styles.stroke,
                 textAlign: getTextAlign(style.textAlign),
+                letterSpacing,
+                lineHeight,
               }}
             >
               {isBinding && (
@@ -201,7 +225,7 @@ export class TextUtil extends TDShapeUtil<T, E> {
                   onContextMenu={stopPropagation}
                 />
               ) : (
-                text
+                displayText
               )}
               &#8203;
             </InnerWrapper>
@@ -225,8 +249,17 @@ export class TextUtil extends TDShapeUtil<T, E> {
 
       if (!melm.parentNode) document.body.appendChild(melm)
 
+      // Phase 17 — must match the live render exactly: letter-spacing/line-height affect layout
+      // width/height, and a list marker widens whichever line it's prepended to. Measuring the raw
+      // text here while rendering the marked-up text above would size the shape's own box (its
+      // visual bounds AND its hit-test/click target) too small for the actual glyphs — a bug the
+      // Phase 15 report's own "assume yours has one" warning is aimed squarely at.
+      // No `deckTheme` here — see the Component's own `font` line above for why `fontToken` is
+      // deliberately not resolved for a bare `TextShape`; this must match that exactly.
       melm.style.font = getFontStyle(shape.style)
-      melm.textContent = this.texts.get(shape.id) ?? shape.text
+      melm.style.letterSpacing = getLetterSpacingCss(shape.style)
+      melm.style.lineHeight = String(getLineHeight(shape.style))
+      melm.textContent = applyListMarkers(this.texts.get(shape.id) ?? shape.text, shape.style.list)
 
       // In tests, offsetWidth and offsetHeight will be 0
       const width = melm.offsetWidth || 1
@@ -314,7 +347,12 @@ export class TextUtil extends TDShapeUtil<T, E> {
 
   getSvgElement = (shape: T, deckTheme?: DeckTheme): SVGElement | void => {
     const bounds = this.getBounds(shape)
-    const elm = getTextSvgElement(shape.text, shape.style, bounds)
+    const displayText = applyListMarkers(shape.text, shape.style.list)
+    // `deckTheme` is passed for `stroke` (a bare TextShape's colour IS theme-token-aware — see
+    // getShapeStyle) but deliberately withheld from `getTextSvgElement`'s own font resolution, to
+    // stay consistent with `getBounds`/the live Component: see the Component's `font` line for why
+    // `fontToken` never applies to a bare `TextShape`.
+    const elm = getTextSvgElement(displayText, shape.style, bounds)
     elm.setAttribute('fill', getShapeStyle(shape.style, false, undefined, deckTheme).stroke)
     return elm
   }

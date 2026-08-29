@@ -1,6 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const LETTER_SPACING = '-0.03em'
 export const LINE_HEIGHT = 1.3
+// Phase 17 — the numeric form of LETTER_SPACING above, for `getLetterSpacingEm`'s default. Kept as
+// a second constant rather than parsed from the string at runtime: this is the exact value every
+// document rendered before `ShapeStyles.letterSpacing` existed, and re-deriving it by parsing
+// `-0.03em` would be one string-format assumption away from silently drifting from that string.
+export const DEFAULT_LETTER_SPACING_EM = -0.03
+// Phase 17 — the live-CSS line-height default (`lineHeight: 1`, hardcoded across TextUtil/
+// TextLabel/StickyUtil before this phase). Deliberately a different number from `LINE_HEIGHT`
+// above: that constant is the SVG/export baseline-to-baseline multiple, a different convention
+// (no automatic line box) that already had its own, larger default — see `ShapeStyles.lineHeight`'s
+// comment for why the two are not unified.
+export const DEFAULT_LINE_HEIGHT = 1
 export const GRID_SIZE = 8
 export const SVG_EXPORT_PADDING = 16
 export const BINDING_DISTANCE = 16

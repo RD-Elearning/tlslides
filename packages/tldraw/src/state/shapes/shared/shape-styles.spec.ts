@@ -1,13 +1,21 @@
-import { ColorStyle, DashStyle, SizeStyle, ShapeStyles } from '~types'
+import { ColorStyle, DashStyle, FontStyle, SizeStyle, ShapeStyles } from '~types'
 import {
   clampCornerRadius,
+  computeAutoFitScale,
   defaultStyle,
   fills,
   getEffectiveStrokeWidth,
+  getFontStyle,
+  getLetterSpacingCss,
+  getLetterSpacingEm,
+  getLineHeight,
   getShapeOpacity,
   getShapeStyle,
+  getStickyFontStyle,
   getStrokeWidth,
+  resolveFont,
   strokes,
+  unquoteFontFamily,
 } from './shape-styles'
 import { BUILT_IN_DECK_THEMES, themeToken } from './deck-theme'
 
@@ -202,5 +210,101 @@ describe('getShapeStyle — Phase 12 theme tokens', () => {
   it('a plain hex override still works exactly as before — tokens are additive, not a replacement', () => {
     const style = { ...baseStyle, stroke: '#43CEA2' }
     expect(getShapeStyle(style, false, undefined, theme).stroke).toBe('#43CEA2')
+  })
+})
+
+// Phase 17 — font resolution / typography helpers.
+describe('resolveFont', () => {
+  const theme = BUILT_IN_DECK_THEMES.find((t) => t.id === 'ivory-editorial')!
+
+  it('falls back to the four-way enum when nothing is overridden', () => {
+    const resolved = resolveFont({ ...baseStyle, font: FontStyle.Serif })
+    expect(resolved.font).toBe(FontStyle.Serif)
+    expect(resolved.face).toBe('"Crimson Pro"')
+  })
+
+  it('an explicit fontFamily wins outright, even with a fontToken and an active theme present', () => {
+    const resolved = resolveFont(
+      { ...baseStyle, font: FontStyle.Mono, fontFamily: '"Poppins", sans-serif', fontToken: 'heading' },
+      theme
+    )
+    expect(resolved.face).toBe('"Poppins", sans-serif')
+    // The enum is still returned (for the size-modifier/metrics table), untouched by the override.
+    expect(resolved.font).toBe(FontStyle.Mono)
+  })
+
+  it('a fontToken resolves against the active theme’s pairing when fontFamily is unset', () => {
+    const heading = resolveFont({ ...baseStyle, fontToken: 'heading' }, theme)
+    expect(heading.font).toBe(theme.fonts.heading)
+    const body = resolveFont({ ...baseStyle, fontToken: 'body' }, theme)
+    expect(body.font).toBe(theme.fonts.body)
+  })
+
+  it('a fontToken degrades to style.font — not a hardcoded value — with no active theme', () => {
+    const resolved = resolveFont({ ...baseStyle, font: FontStyle.Sans, fontToken: 'heading' })
+    expect(resolved.font).toBe(FontStyle.Sans)
+    expect(resolved.face).toBe('"Source Sans Pro"')
+  })
+
+  it("prefers a theme's own headingFamily/bodyFamily override over its enum pairing's bundled face", () => {
+    const themeWithFamily = { ...theme, fonts: { ...theme.fonts, headingFamily: 'Georgia, serif' } }
+    const resolved = resolveFont({ ...baseStyle, fontToken: 'heading' }, themeWithFamily)
+    expect(resolved.face).toBe('Georgia, serif')
+  })
+})
+
+describe('unquoteFontFamily', () => {
+  it('strips a single wrapping quote pair', () => {
+    expect(unquoteFontFamily('"Caveat Brush"')).toBe('Caveat Brush')
+  })
+
+  it('leaves an unquoted or multi-font value untouched', () => {
+    expect(unquoteFontFamily('Georgia, serif')).toBe('Georgia, serif')
+    expect(unquoteFontFamily('"Poppins", sans-serif')).toBe('"Poppins", sans-serif')
+  })
+})
+
+describe('getLetterSpacingEm / getLetterSpacingCss / getLineHeight', () => {
+  it('fall back to the pre-existing constants when unset', () => {
+    expect(getLetterSpacingEm(baseStyle)).toBe(-0.03)
+    expect(getLetterSpacingCss(baseStyle)).toBe('-0.03em')
+    expect(getLineHeight(baseStyle)).toBe(1)
+  })
+
+  it('pass an explicit override through unchanged', () => {
+    expect(getLetterSpacingEm({ ...baseStyle, letterSpacing: 0.1 })).toBe(0.1)
+    expect(getLetterSpacingCss({ ...baseStyle, letterSpacing: 0.1 })).toBe('0.1em')
+    expect(getLineHeight({ ...baseStyle, lineHeight: 1.6 })).toBe(1.6)
+  })
+})
+
+describe('getFontStyle / getStickyFontStyle with a fontToken', () => {
+  const theme = BUILT_IN_DECK_THEMES.find((t) => t.id === 'mono-grid')!
+
+  it('bakes the theme-resolved face into the CSS font shorthand', () => {
+    const style = { ...baseStyle, fontToken: 'heading' as const }
+    expect(getFontStyle(style, theme)).toContain('"Source Code Pro"') // mono-grid's heading is Mono
+    expect(getStickyFontStyle(style, theme)).toContain('"Source Code Pro"')
+  })
+
+  it('a token has no effect without a theme argument', () => {
+    const style = { ...baseStyle, font: FontStyle.Sans, fontToken: 'heading' as const }
+    expect(getFontStyle(style)).toContain('"Source Sans Pro"')
+  })
+})
+
+describe('computeAutoFitScale', () => {
+  it('never grows beyond 1 when the natural size already fits', () => {
+    expect(computeAutoFitScale(100, 40, 400, 200)).toBe(1)
+  })
+
+  it('shrinks to the tighter of the two dimensions', () => {
+    expect(computeAutoFitScale(400, 100, 200, 100)).toBe(0.5)
+    expect(computeAutoFitScale(100, 400, 100, 200)).toBe(0.5)
+  })
+
+  it('never shrinks toward zero/negative or NaN for a degenerate size', () => {
+    expect(computeAutoFitScale(0, 0, 100, 100)).toBe(1)
+    expect(computeAutoFitScale(100, 100, 0, 0)).toBe(1)
   })
 })

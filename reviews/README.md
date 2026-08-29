@@ -241,6 +241,7 @@ headless Chromium) is reused from a sibling checkout rather than installed here.
 | 14 | Host control API — `app.deck.*` facade, typed event stream, caller-supplied slide ids, `DeckViewer` read-only entry point, `getThumbnail` (see `reviews/roadmap-slides.md`) | ✅ done |
 | 15 | Headless render + export — pure `renderPageToSvg`, `getThumbnail` works for any slide with no DOM, browser-only PNG rasterization, deck JSON in/out, PDF scoped to a documented recipe (see `reviews/roadmap-slides.md`) | ✅ done |
 | 16 | Presentation runtime — build-order animation playback, `AnimateMenu` UI, speaker notes UI, `skipInPresentation` UI, a `window.open` presenter view, slide transitions, `app.deck.advance`/`back`/`getPresentationState`/`openPresenterView`/`presentationChanged` (see `reviews/roadmap-slides.md`) | ✅ done |
+| 17 | Typography — line height, letter spacing, bullet/numbered lists, vertical align + shrink-to-fit for shape labels, arbitrary font families (`fontFamily`), lazy theme-font pairing (`fontToken`), `StyleMenu` UI for all of it (see `reviews/roadmap-slides.md`) | ✅ done |
 
 #### Phase 1 notes
 
@@ -1667,6 +1668,179 @@ view popup (`present-presenter-view.png`, showing the notes just edited through 
 `PageOptionsDialog` textarea and a correctly skip-aware "up next" slide four slots ahead) — every
 screenshot inspected directly, not just asserted on, which is what caught both the `AnimateMenu`
 staleness bug and the presenter-view/fullscreen interaction bug above.
+
+#### Phase 17 notes — typography
+
+Six new optional `ShapeStyles` fields (`lineHeight`, `letterSpacing`, `list`, `verticalAlign`,
+`fontFamily`, `fontToken`, `autoFit` — seven, plus two optional `DeckTheme.fonts` additions,
+`headingFamily`/`bodyFamily`), all with a today's-behaviour fallback: **no migration, no
+`TldrawApp.version` bump**, document stays at 16.
+
+- **Scoping decision, stated up front.** The brief's six asks (lists, line height, letter spacing,
+  arbitrary fonts with a loading story, auto-fit, vertical align) all shipped, but each is
+  deliberately narrower than "every shape everywhere" — narrower on purpose, not by oversight:
+  - `list` (bullet/numbered markers) is **`TextShape` only**. A shape label is normally a short
+    phrase, not body copy; `StickyShape` was left out for the same reason plus one more (below).
+  - `verticalAlign`/`autoFit` are **Rectangle/Ellipse/Triangle labels only** — not Arrow (already
+    has its own independent auto-shrink-to-arrow-length `scale`, a second, possibly-conflicting
+    auto-sizing mechanism would be a real design collision, not an enhancement), not `StickyShape`
+    (its box *grows* to fit text — see `StickyUtil`'s "Resize to fit text" effect — the exact
+    opposite philosophy from "shrink text to fit a fixed box"; unifying the two wasn't attempted),
+    and not a bare `TextShape` (structurally has no independent box — its own bounds *are* the
+    measured text, per `TextUtil.getBounds`).
+  - `fontToken` resolves live on **shape labels and `StickyShape`**, but is a deliberate **no-op on
+    a bare `TextShape`** — see "Closing the theme-font follow-up, partially" below for exactly why,
+    checked and confirmed rather than assumed.
+  - No live web-font-loading detection (`FontFaceObserver`/`document.fonts.ready`) was added — see
+    "Arbitrary font families" below for why this is a stated, not silent, gap.
+  Each of these is enforced in code (the field is inert outside its supported shape types, never a
+  crash) and named again in `guides/documentation.md`'s Typography section and the rewritten
+  Phase 17 entry in `reviews/roadmap-slides.md`, not left for someone to rediscover.
+
+- **Font resolution is one function, `resolveFont`** (`state/shapes/shared/shape-styles.ts`),
+  consulted by every place a font is turned into a CSS/SVG value (`getFontStyle`,
+  `getStickyFontStyle`, `getTextSvgElement`, `renderPageToSvg`'s `estimateTextSize`/
+  `renderTextLines`) — the same "resolve once, reused everywhere" discipline Phase 12 established
+  for colour tokens. Three-tier precedence, most-specific-wins, mirroring the existing
+  stroke/fill-hex-over-`color`-enum and gradient-over-flat-fill rules: an explicit `fontFamily`
+  beats a `fontToken` beats the plain `font` enum. Picking a built-in face in `StyleMenu` clears
+  both overrides in the same `app.style` call (`handleFontChange`), the same coherence rule
+  `handleColorChange` already enforces for stroke/fill.
+
+- **Arbitrary font families — honest about Node, honest about loading.** This fork does not fetch,
+  bundle, or verify that a `fontFamily` (or a theme's `headingFamily`/`bodyFamily`) is ever actually
+  loaded; a host owns making it available exactly as it would for any other web page (a `<link>`
+  tag, a self-hosted `@font-face`, or a browser-safe name). Two consequences, written up rather than
+  discovered the hard way:
+  1. **Editor, before the font loads:** the browser measures/renders with its own fallback until
+     the real font arrives, and text can visibly reflow once — no `FontFaceObserver` hook forces an
+     early re-measure. Recorded as a follow-up in `reviews/roadmap-slides.md`, not fixed here: it's
+     a genuinely separate feature (an async load-and-invalidate lifecycle this codebase's shape
+     utils have never needed before) rather than a corollary of resolving the field itself.
+  2. **`renderPageToSvg`, in Node — no DOM, no fonts installed at all:** the SVG `font-family`
+     attribute is set to the literal value, precisely the way the four bundled faces already were
+     (Node never "measured" those either — `estimateTextSize` is a heuristic regardless of which
+     face is named). An arbitrary family therefore degrades exactly as gracefully as the pre-
+     existing four: whatever renders the SVG resolves the family the normal CSS way, including its
+     own fallback if unavailable. `estimateTextSize`'s per-`FontStyle` average-glyph-width table has
+     no entry for an unbundled family — no way to measure one in Node — so an override falls back
+     to one neutral, face-independent guess (`CUSTOM_FONT_AVG_CHAR_WIDTH_EM = 0.55`), documented in
+     `renderPageToSvg.ts` as an approximation *of* an approximation, honestly worse than the four
+     built-ins' own hand-tuned numbers.
+  The `typography.js` visual scenario deliberately demos this with `Georgia, serif` — a web-safe
+  stack needing no network fetch at all — specifically to avoid a Google-Fonts dependency inside a
+  headless CI browser, not because the real host-supplied-webfont case isn't real; that case is
+  what the two paragraphs above are about.
+
+- **Closing the theme-font follow-up, partially — and confirmed exactly how far, not assumed.** The
+  Phase 12 follow-up (`reviews/roadmap-slides.md`) was: a theme switch restyles colours (tokens
+  resolve lazily) but not typography (`buildTemplateShapes` bakes `style.font` once). `fontToken`
+  is the "resolve fonts lazily too" fix the follow-up itself proposed — but it only closes the gap
+  for shape **labels** and `StickyShape`, not for a bare `TextShape`, and that split is load-
+  bearing, not incidental: a label/sticky's box comes from persisted `size`/`radius`
+  (`getBoundsRectangle`), so nothing about resolving its font lazily touches its geometry. A bare
+  `TextShape`'s box, uniquely among every shape type, **is** its measured text
+  (`TextUtil.getBounds`) — and that method's inherited signature (`getBounds(shape)`, cached by
+  shape identity in a `WeakMap`) has no way to receive "the currently active theme," and no way to
+  invalidate its own cache on a theme switch even if it did. Resolving `fontToken` in the live
+  Component/export path while `getBounds` kept measuring the old font would have made the label's
+  *displayed* font drift from what its own box was *sized for* — a worse bug than the one being
+  fixed. Checked directly before deciding this, not assumed: `TextUtil.tsx`'s Component, `getBounds`,
+  and `getSvgElement` all deliberately call `getFontStyle`/`getTextSvgElement` **without** a
+  `deckTheme` argument, with a comment at each call site pointing at this same reasoning. Since
+  every one of the twelve starter templates renders its real content as `TextShape` (`textShape()`
+  in `state/templates.ts`, used 46 times; `label` is only ever set to `'Image'` placeholder text),
+  **`buildTemplateShapes` itself needed no change** — the follow-up is closed for the mechanism
+  Phase 12 asked for (a theme-aware font reference that resolves lazily) but remains open,
+  explicitly, for the shipped templates' own content. Restated as a named follow-up in
+  `reviews/roadmap-slides.md` rather than left to look silently finished.
+
+- **Vertical align: computed as a plain pixel offset, not CSS `align-items` — and a real,
+  screenshot-caught bug is exactly why.** The first version gave `TextLabel`'s flex container
+  (`TextWrapper`) a dynamic `align-items`, reasoning (correctly, per the flexbox spec) that a flex
+  container's alignment resolves the *static position* of an absolutely-positioned child with
+  `auto` offsets. It does — but composing that static-position resolution with this same element's
+  own pre-existing `scale(...) translate(offsetX, offsetY)` transform (needed for `autoFit` and for
+  the labelPoint-based offset Arrow/Rectangle labels already relied on) put a label wildly outside
+  its own box on a real screenshot: `typography.png`'s first draft showed "Auto Fit Demo Text"
+  floating near the very top of the whole canvas, nowhere near the tiny rectangle it was supposed
+  to be shrunk into. Not caught by any unit test (jsdom never resolves a real flex layout) or by
+  the structural JSON assertions in the scenario itself (`style.verticalAlign === 'start'` was
+  correctly persisted; only the *rendered position* was wrong) — caught only by looking at the PNG,
+  exactly the hard rule this phase was warned about. Fixed by computing the box-relative vertical
+  offset explicitly, in real screen pixels, as a leading `translate` **outside** the existing
+  `scale(...) translate(...)` (so it doesn't shrink along with `autoFit`, unlike the pre-existing
+  labelPoint offset, which intentionally does) — see `TextLabel.tsx`'s layout-effect comment for the
+  full before/after. `renderPageToSvg`'s `renderShapeLabel` mirrors the same box-relative `ty`
+  formula in its own, independent arithmetic (no shared function — deliberately: one centers
+  against a live DOM measurement, the other against `estimateTextSize`'s heuristic, the same
+  live/headless "natural size" split Phase 15 already established for label centering).
+
+- **A second, smaller honest limitation found by the same screenshot discipline, in the headless
+  path this time.** Rendering `renderShapeLabel`'s own output for a `verticalAlign: 'start'` label
+  and measuring it precisely (`getBoundingClientRect`, not eyeballed) showed the glyph ink starting
+  a handful of pixels *above* the computed `ty` — roughly a quarter of one line's height for the
+  built-in faces — because `renderTextLines`'s per-line `y` formula (paired with SVG
+  `alignment-baseline="central"`) was calibrated for a vertically-**centered** `ty`, where a few
+  pixels of slack is invisible by symmetry; anchoring at an edge exposes that same pre-existing
+  slack directly instead of hiding it. Not patched with a hand-tuned pixel constant — the exact
+  overshoot is real font-ascent-metric data this module doesn't have (and, for an arbitrary
+  `fontFamily`, structurally *can't* have in Node) — documented instead, at the function itself and
+  in `guides/documentation.md`'s Typography section, as an extension of the pre-existing "text
+  layout is an approximation" disclosure from Phase 15's `estimateTextSize`, not a new one.
+
+- **`computeAutoFitScale`, one function, two callers with two different ideas of "natural size."**
+  `TextLabel.tsx` (live) measures the label's actual DOM size at the shape's current font (a real
+  `getTextLabelSize` call); `renderPageToSvg`'s `renderShapeLabel` (headless) calls `estimateTextSize`
+  with `scale` pinned to `1`. Both then call the exact same `Math.min(1, boxW/naturalW, boxH/naturalH)`
+  — capped at 1 so auto-fit only ever *shrinks*, never grows a label beyond its set size, matching
+  every mainstream slide tool's own "shrink to fit" behaviour rather than a surprising "grow to
+  fill" one. `autoFit` is the more specific control, so it overrides `scale`'s effect entirely while
+  on — the same "more specific wins" precedent gradient-over-fill and hex-over-enum already set.
+
+- **Letter-spacing closes two small, pre-existing, unrelated gaps as a side effect of making the
+  value itself overridable — not scope creep, a necessary consequence of picking one representation.**
+  Before this phase, `LETTER_SPACING` (`-0.03em`) was applied to `TextShape`/label CSS but **never**
+  emitted into SVG export at all (`getTextSvgElement`'s `<g>` had no `letter-spacing` attribute), and
+  `StickyShape` never had any letter-spacing, live or exported (`font: 'inherit'` all the way down
+  its own styled components). Overriding a value that isn't consistently applied anywhere would have
+  meant three different "default" behaviours to preserve; instead, the same default constant is now
+  applied everywhere text renders, and `style.letterSpacing` overrides all of them identically.
+  Measurement (`getTextLabelSize`, `TextUtil.getBounds`'s `melm`) was updated to set
+  `letterSpacing`/`lineHeight` **per call**, not once at module-load time as before — the pre-
+  existing code only ever set these once when the shared measurement `<pre>` element was created,
+  which was invisible slop while both values were fixed constants, but would have silently sized a
+  shape's own box (and, for labels, its centering offset) against the *wrong* letter-spacing/line-
+  height the moment either became user-overridable — an easy-to-miss, exactly-the-warned-about class
+  of bug, checked for and fixed here rather than found by a later screenshot.
+
+- **No new command.** Every field is a plain `ShapeStyles` key, so `app.style(...)` (the existing,
+  fully generic `Commands.styleShapes`) already routes all of it through the undo stack — the same
+  free ride Phase 8a's fields got. `StyleMenu` gained: a free-typed `Family` field
+  (`stopKeyPropagationUnlessEscape` on both key handlers, matching every other free-typed control in
+  this fork), numeric `Line height`/`Letter spacing` fields (the same draft-state-until-blur idiom as
+  stroke width/corner radius), a `List` radio row (`text` options only), a `Vertical align` radio row
+  plus a `Shrink to fit` checkbox (`label` options only).
+
+**Verified:** 87/87 suites, 570 tests passing (up from 86/540 at the start of this phase; 30 new —
+`shape-styles.spec.ts` (`resolveFont`, `unquoteFontFamily`, `getLetterSpacingEm`/`Css`,
+`getLineHeight`, `getFontStyle`/`getStickyFontStyle` with a `fontToken`, `computeAutoFitScale`),
+`textList.spec.ts` (new file — `applyListMarkers`), `getTextSvgElement.spec.ts` (letter-spacing
+default/override, lineHeight override, `fontFamily` override), and `renderPageToSvg.spec.ts`
+(bullet/numbered markers, `fontFamily` override, label auto-fit shrinking the rendered font-size,
+`verticalAlign` shifting a label off dead-center, a `fontToken` restyling a label and *not*
+restyling a bare `TextShape`) · `build:packages` clean, zero type errors · all fourteen
+`tools/visual/scenarios` (the pre-existing thirteen, re-verified with no regression, plus the new
+`typography.js`) exit 0 with no unexpected console errors; `typography.js` drives the real
+`StyleMenu` end to end (auto-fit + vertical-align on a Rectangle label, bullet list + line-height +
+letter-spacing on a `TextShape`, an arbitrary `fontFamily` on a second `TextShape`, a `fontToken`
+exercised directly and confirmed to restyle live across a real `setDeckTheme` call), then renders
+the *same* page through `renderPageToSvg` and asserts the export carries the same bullets,
+letter-spacing, custom font-family, theme-resolved heading face, and a genuinely shrunk auto-fit
+font-size — plus a second screenshot of the headless SVG itself (`typography-headless.png`,
+alongside the live `typography.png`), the same "look at it, don't just assert on it" discipline
+`export.js` established, which is what caught both bugs described above · consumer smoke test
+(`examples/consumer-smoke/run.sh`) exits 0.
 
 ### Suggested order
 

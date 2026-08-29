@@ -188,6 +188,63 @@ A sticky note.
 | -------- | -------- | ------------------------- |
 | `text`   | `string` | The shape's text content. |
 
+### Typography (Phase 17)
+
+The `ShapeStyle` table above predates several phases' worth of style additions (opacity/stroke-
+width/corner-radius/hex-colours/gradients from Phases 8a/8b/11, all still valid `ShapeStyles` keys
+that table was simply never updated to list); this section documents the typography fields Phase
+17 added on top, all optional with a today's-behaviour fallback (no document migration):
+
+| Property         | Type                        | Applies to                                    | Description |
+| ----------------- | --------------------------- | ---------------------------------------------- | ----------- |
+| `lineHeight`      | `number`                    | `TextShape`, labels, `StickyShape`             | Line spacing, as a multiplier of font size. Undefined keeps the pre-existing hardcoded default (`1` live, `1.3` in SVG export — two different pre-existing conventions, not unified by this field; see `ShapeStyles.lineHeight`'s own comment). |
+| `letterSpacing`   | `number`                    | `TextShape`, labels, `StickyShape`             | Letter spacing, in em, as a bare number (not a CSS string — see below). Undefined keeps the pre-existing `-0.03em` constant. |
+| `verticalAlign`   | `AlignStyle` (`start`/`middle`/`end`; `justify` is treated as `start`) | Shape **labels** only (Rectangle/Ellipse/Triangle) | Vertical position within the shape's own box. **No effect on a bare `TextShape` or an Arrow label** — see below. |
+| `list`            | `'bullet' \| 'number'`       | `TextShape` only                               | Prepends a marker to each `\n`-split line of the *rendered* text. The raw `shape.text`/what you edit is never rewritten — only the display form gets markers (`applyListMarkers`). |
+| `fontFamily`      | `string`                    | Anything with a `font`                          | An arbitrary CSS `font-family` value (ideally a full stack, e.g. `'"Poppins", sans-serif'`), trusted verbatim, in place of the four bundled faces. See "Arbitrary font families" below. |
+| `fontToken`       | `'heading' \| 'body'`       | Shape labels and `StickyShape` (**not** `TextShape` — see below) | A reference into the active `DeckTheme`'s `fonts.heading`/`fonts.body` pairing, resolved fresh on every render — the lazy-font counterpart to the `'theme:accent1'` colour tokens (Phase 12). |
+| `autoFit`         | `boolean`                   | Rectangle/Ellipse/Triangle labels only          | Shrinks (never grows) the label's effective scale so it fits inside the shape's own box. Overrides `scale`'s effect while `true`. Not offered for Arrow (has its own auto-shrink-to-length behaviour already), `StickyShape` (its box grows to fit text — the opposite philosophy), or a bare `TextShape` (no independent box). |
+
+**Arbitrary font families — the honest version.** This fork does not fetch, bundle, or verify that
+a `fontFamily`/theme `headingFamily`/`bodyFamily` you set is ever actually loaded. You own making
+the family available exactly as you would for any other web page — a `<link>` to a Google Fonts (or
+other) stylesheet in your host page's `<head>`, a self-hosted `@font-face`, or a name you know the
+browser already has (a web-safe stack like `'Georgia, serif'`, no loading required at all). Two
+concrete consequences, stated rather than hidden:
+- **In the editor**, if the font hasn't finished loading when text is measured, the browser
+  measures/renders with its fallback until the real font loads — text may visibly reflow once,
+  the same way any web page using `font-display: swap` can. This fork does not add a
+  `FontFaceObserver`/`document.fonts.ready` hook to force a re-measure; that's a documented,
+  not-yet-scheduled follow-up (`reviews/roadmap-slides.md`).
+- **In `renderPageToSvg` (Node, no DOM, no fonts installed at all)**, the SVG `font-family`
+  attribute is set to your literal value, exactly as it already is for the four bundled faces
+  (which Node can't "measure" either — text layout there was always an approximation; see
+  `estimateTextSize`). Whatever ends up displaying that SVG (a browser, your own SVG→PNG pipeline)
+  resolves the family the normal CSS way, including its own fallback if the family isn't available
+  there either. `estimateTextSize`'s average-glyph-width table has no entry for an arbitrary
+  family (it can't — there's no way to measure an unbundled font's real metrics), so it falls back
+  to one neutral, `FontStyle`-independent guess, documented in `renderPageToSvg.ts` as an
+  approximation of an approximation.
+
+**Scope cuts, named rather than silent:**
+- `verticalAlign`/`autoFit`/`list` are each restricted to the shape type(s) listed above — set on
+  an unsupported shape type, the field is simply inert (harmless, not an error).
+- `fontToken` has **no effect on a bare `TextShape`**: unlike a label, a `TextShape`'s own on-canvas
+  bounds are *measured from its rendered text* (`TextUtil.getBounds`), and that method has no way
+  to receive "the currently active theme" without either widening a base-library interface this
+  fork doesn't own, or a non-pure global that would make its own bounds cache stale on a theme
+  switch — worse than the problem `fontToken` exists to solve. `buildTemplateShapes` therefore still
+  bakes a concrete `style.font` into every template's (all `TextShape`-based) content at
+  instantiation time, exactly as before Phase 17; a *label's* `fontToken` **does** restyle live on
+  a theme switch, since a label's box comes from `size`/`radius`, never from measured text.
+- `verticalAlign`/`autoFit`'s headless rendering (`renderPageToSvg`) can be a handful of pixels off
+  at the box edges for `start`/`end` (not `middle`, the pre-existing default) — an extension of the
+  pre-existing "text layout is an approximation, not a measurement" limitation from Phase 15's own
+  `estimateTextSize`, not a new one; see that function's own comment for the concrete numbers.
+- No StyleMenu control binds a shape to a theme's `fontToken` interactively yet — only
+  `buildTemplateShapes` sets it (on label-bearing content; see above). A host or future template
+  author can still set it directly via `app.style({ fontToken: 'heading' })`.
+
 ## Bindings
 
 A binding is a connection **from** one shape and **to** another shape. At the moment, only arrows may be bound "from". Most shapes may be bound "to", except other `ArrowShape` and `DrawShape`s.

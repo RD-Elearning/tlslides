@@ -8,6 +8,8 @@ import {
   transformRectangle,
   transformSingleRectangle,
   getFontStyle,
+  getLetterSpacingCss,
+  getLineHeight,
 } from '~state/shapes/shared'
 import {
   intersectBoundsPolygon,
@@ -71,7 +73,7 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
       ref
     ) => {
       const { id, label = '', size, style, labelPoint = LABEL_POINT } = shape
-      const font = getFontStyle(style)
+      const font = getFontStyle(style, meta.deckTheme)
       const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
       const Component = style.dash === DashStyle.Draw ? DrawTriangle : DashedTriangle
       const handleLabelChange = React.useCallback(
@@ -96,6 +98,11 @@ export class TriangleUtil extends TDShapeUtil<T, E> {
             onChange={handleLabelChange}
             onBlur={onShapeBlur}
             opacity={opacity}
+            letterSpacing={getLetterSpacingCss(style)}
+            lineHeight={getLineHeight(style)}
+            verticalAlign={style.verticalAlign}
+            boxSize={[bounds.width, bounds.height]}
+            autoFit={style.autoFit}
           />
           {/* Opacity goes on this inner <g>, not on <SVGContainer> — see the comment in
               RectangleUtil.tsx for why: SVGContainer spreads unknown props onto the outer,

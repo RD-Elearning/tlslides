@@ -3,15 +3,19 @@ import { Vec } from '@tlslides/vec'
 import { DEFAULT_SLIDE_SIZE, EASINGS, LABEL_POINT, LINE_HEIGHT } from '~constants'
 import {
   clampCornerRadius,
-  getFontFace,
+  computeAutoFitScale,
   getFontSize,
+  getLetterSpacingCss,
   getShapeOpacity,
   getShapeStyle,
   getStickyShapeStyle,
+  resolveFont,
+  unquoteFontFamily,
 } from '~state/shapes/shared/shape-styles'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { resolveSlideBackground } from '~state/shapes/shared/background'
 import { getTextAlign } from '~state/shapes/shared/getTextAlign'
+import { applyListMarkers } from '~state/shapes/shared/textList'
 import {
   getRectangleIndicatorPathTDSnapshot,
   getRectanglePath,
@@ -354,27 +358,46 @@ const AVG_CHAR_WIDTH_EM: Record<FontStyle, number> = {
   [FontStyle.Mono]: 0.6,
 }
 
+// Phase 17 — an arbitrary `style.fontFamily`/theme `headingFamily`/`bodyFamily` has no entry in
+// the table above (this fork never bundled or measured it, and cannot in Node — there is no
+// display, no installed fonts, no way to ask an OS or a browser engine how wide a glyph in an
+// unknown family actually is). Rather than silently mis-keying into `AVG_CHAR_WIDTH_EM` with
+// whatever `style.font` enum happens to also be set (which may have nothing to do with the actual
+// override — see `resolveFont`, which keeps the enum only for this metrics fallback), an override
+// gets its own neutral, `FontStyle`-independent guess: not the narrowest (Script, 0.42) or widest
+// (Mono, 0.6) built-in, just a plain average. This is an approximation of an approximation —
+// honestly worse than the four bundled faces' own numbers, documented as such in
+// `guides/documentation.md` rather than presented as equally reliable.
+const CUSTOM_FONT_AVG_CHAR_WIDTH_EM = 0.55
+
 /**
  * A pure, non-measuring stand-in for `getTextLabelSize`/`TextUtil.getBounds`'s DOM measurement —
  * used for a bare `TextShape`'s own size (it has no persisted `size` field; unlike every other
  * shape, its bounds *are* the measurement) and for centering a `label` on Rectangle/Ellipse/
  * Triangle/Arrow. See the module comment for the honest limitation this represents.
+ *
+ * Phase 17 — `deckTheme` is optional and only ever passed for a *label* (see `renderShapeLabel`):
+ * a bare `TextShape` never resolves `fontToken` here, matching `TextUtil`'s own live/measurement
+ * code exactly (see that file's comment on why `getBounds` can't safely do so).
  */
 export function estimateTextSize(
   text: string,
-  style: Pick<ShapeStyles, 'size' | 'font' | 'scale'>
+  style: Pick<ShapeStyles, 'size' | 'font' | 'scale' | 'fontFamily' | 'fontToken' | 'lineHeight'>,
+  deckTheme?: DeckTheme
 ): number[] {
   // Matches `getTextLabelSize`'s own hard-coded empty-text case exactly, so an empty label's
   // centering box is identical between the live/export path and this one.
   if (!text) return [16, 32]
-  const fontSize = getFontSize(style.size, style.font) * (style.scale ?? 1)
+  const { font, face } = resolveFont(style, deckTheme)
+  const fontSize = getFontSize(style.size, font) * (style.scale ?? 1)
   const lines = text.split('\n')
   const longestLine = Math.max(...lines.map((line) => line.length))
-  const charWidth = fontSize * AVG_CHAR_WIDTH_EM[style.font ?? FontStyle.Script]
+  const isOverride = !!style.fontFamily || (!!style.fontToken && !!deckTheme)
+  const charWidth = fontSize * (isOverride ? CUSTOM_FONT_AVG_CHAR_WIDTH_EM : AVG_CHAR_WIDTH_EM[font])
   // +10/+2 approximate the couple of pixels `getTextLabelSize`'s own measurement `<pre>` adds via
   // its `border`/`padding` (see `getTextSize.ts`) — cosmetic parity, not exactness.
   const width = Math.max(1, Math.round(longestLine * charWidth) + 10)
-  const height = Math.max(1, Math.round(lines.length * fontSize * LINE_HEIGHT) + 2)
+  const height = Math.max(1, Math.round(lines.length * fontSize * (style.lineHeight ?? LINE_HEIGHT)) + 2)
   return [width, height]
 }
 
@@ -385,13 +408,20 @@ export function estimateTextSize(
  * renderer's job, not ours); only the *bounds* fed in here (from stored `size` for Sticky, from
  * `estimateTextSize` for a bare `TextShape`/a label) are ever approximated.
  */
-function renderTextLines(text: string, style: ShapeStyles, boundsWidth: number): string {
+function renderTextLines(
+  text: string,
+  style: ShapeStyles,
+  boundsWidth: number,
+  deckTheme?: DeckTheme
+): string {
   // Must match `getTextSvgElement`'s own `scale` fix exactly (see that function's comment for the
   // bug this was — found via this exact module's own screenshot, in the pre-existing shared
   // helper, not introduced here): every bounds this is ever called with (a persisted `size` for
   // Sticky, `estimateTextSize`'s own return value otherwise) already assumes a scaled font size.
-  const fontSize = getFontSize(style.size, style.font) * (style.scale ?? 1)
-  const fontFamily = getFontFace(style.font).slice(1, -1)
+  const { font, face } = resolveFont(style, deckTheme)
+  const fontSize = getFontSize(style.size, font) * (style.scale ?? 1)
+  const fontFamily = unquoteFontFamily(face)
+  const lineHeight = style.lineHeight ?? LINE_HEIGHT
   const lines = text.split('\n')
   let anchor: 'start' | 'middle' | 'end' = 'start'
   let x = 0
@@ -411,13 +441,11 @@ function renderTextLines(text: string, style: ShapeStyles, boundsWidth: number):
       extraAttrs = ' alignment-baseline="central"'
   }
   const lineElms = lines
-    .map(
-      (line, i) =>
-        `<text x="${x}" y="${LINE_HEIGHT * fontSize * (0.5 + i)}">${escapeXml(line)}</text>`
-    )
+    .map((line, i) => `<text x="${x}" y="${lineHeight * fontSize * (0.5 + i)}">${escapeXml(line)}</text>`)
     .join('')
   return (
     `<g font-size="${fontSize}" font-family="${escapeAttr(fontFamily)}" ` +
+    `letter-spacing="${getLetterSpacingCss(style)}" ` +
     `text-align="${getTextAlign(style.textAlign)}" text-anchor="${anchor}"${extraAttrs}>` +
     `${lineElms}</g>`
   )
@@ -431,19 +459,59 @@ function renderTextLines(text: string, style: ShapeStyles, boundsWidth: number):
  * `copySvg`/Deck's old thumbnail today, confirmed by reading `TDShapeUtil.getSvgElement`), not a
  * limitation introduced here — this function reproduces the export path's own convention, not the
  * live canvas's, since export/thumbnail fidelity is this module's job.
+ *
+ * Phase 17 — `style.verticalAlign` shifts `ty` off dead-center, mirroring the live `TextLabel`'s
+ * own explicit pixel offset (see that component's layout-effect comment for why it's a plain
+ * translate rather than a CSS `align-items` — the first version of this tried that in `TextLabel`
+ * and it put a label wildly out of its box on a real screenshot). `style.autoFit` recomputes an
+ * effective `scale` from this label's own *natural* (unscaled) `estimateTextSize` against
+ * `boundsWidth`/`boundsHeight` (`computeAutoFitScale` — the same function, the same fit-ratio math,
+ * `TextLabel.tsx` uses for its own DOM-measured natural size) and renders/centers against that
+ * effective style instead of the raw one — see `ShapeStyles.autoFit`'s comment for why this
+ * composes with, rather than ignores, the live/headless "natural size" split Phase 15 established.
+ *
+ * **Known, honest slop specific to `Start`/`End` (not `Middle`, the pre-existing default):**
+ * `renderTextLines`'s per-line `y` (`lineHeight * fontSize * (0.5 + i)`, paired with SVG
+ * `alignment-baseline="central"`) was calibrated for a vertically-*centered* `ty` — a symmetric
+ * placement, where a few pixels of miscalibration are invisible either way. Anchoring at an edge
+ * exposes that same slop directly: measured on a real render (`getBoundingClientRect`, not eyeballed
+ * from a screenshot), a `Start`-aligned single-line label's glyph ink starts a handful of pixels
+ * *above* `ty`, not flush at it — roughly a quarter of one line's height, for the built-in faces.
+ * Not fixed with a hand-tuned constant here: `AVG_CHAR_WIDTH_EM`-style hand-tuning is already this
+ * module's least-precise dial, and the exact overshoot is real font-ascent-metric-dependent — data
+ * this fork has no access to for an arbitrary `fontFamily` override anyway (see `resolveFont`).
+ * Documented rather than papered over; see `guides/documentation.md`.
  */
 function renderShapeLabel(
   label: string,
   style: ShapeStyles,
   stroke: string,
   boundsWidth: number,
-  boundsHeight: number
+  boundsHeight: number,
+  deckTheme?: DeckTheme
 ): string {
   if (!label) return ''
-  const inner = renderTextLines(label, style, boundsWidth)
-  const [labelWidth, labelHeight] = estimateTextSize(label, style)
+  let effectiveStyle = style
+  if (style.autoFit) {
+    const [naturalWidth, naturalHeight] = estimateTextSize(label, { ...style, scale: 1 }, deckTheme)
+    const fitScale = computeAutoFitScale(naturalWidth, naturalHeight, boundsWidth, boundsHeight)
+    effectiveStyle = { ...style, scale: fitScale }
+  }
+  const inner = renderTextLines(label, effectiveStyle, boundsWidth, deckTheme)
+  const [labelWidth, labelHeight] = estimateTextSize(label, effectiveStyle, deckTheme)
   const tx = (boundsWidth - labelWidth) / 2
-  const ty = (boundsHeight - labelHeight) / 2
+  let ty: number
+  switch (style.verticalAlign) {
+    case AlignStyle.Start:
+    case AlignStyle.Justify:
+      ty = 0
+      break
+    case AlignStyle.End:
+      ty = boundsHeight - labelHeight
+      break
+    default:
+      ty = (boundsHeight - labelHeight) / 2
+  }
   return `<g fill="${escapeAttr(stroke)}" transform="translate(${tx}, ${ty})">${inner}</g>`
 }
 
@@ -460,7 +528,7 @@ function renderRectangle(shape: RectangleShape, ctx: RenderCtx): ShapeRender {
   const body = isDraw
     ? drawRectangleBody(id, style, size, styles)
     : dashedRectangleBody(style, size, styles)
-  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h, ctx.theme)
   return {
     width: w,
     height: h,
@@ -549,7 +617,7 @@ function renderEllipse(shape: EllipseShape, ctx: RenderCtx): ShapeRender {
   const isDraw = style.dash === DashStyle.Draw
   const gradientDefs = styles.fillGradientDef ? renderFillDefs(styles.fillGradientDef).defs : ''
   const body = isDraw ? drawEllipseBody(id, radius, style, styles) : dashedEllipseBody(radius, style, styles)
-  const labelSvg = renderShapeLabel(label, style, styles.stroke, width, height)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, width, height, ctx.theme)
   return {
     width,
     height,
@@ -603,7 +671,7 @@ function renderTriangle(shape: TriangleShape, ctx: RenderCtx): ShapeRender {
   const body = isDraw
     ? drawTriangleBody(id, size, style, styles)
     : dashedTriangleBody(size, style, styles)
-  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h)
+  const labelSvg = renderShapeLabel(label, style, styles.stroke, w, h, ctx.theme)
   return { width: w, height: h, inner: `<g opacity="${getShapeOpacity(style)}">${body}</g>${labelSvg}` }
 }
 
@@ -833,7 +901,7 @@ function renderArrow(shape: ArrowShape, ctx: RenderCtx): ShapeRender {
     }
   }
 
-  const labelSvg = renderShapeLabel(label, style, stroke, bounds.width, bounds.height)
+  const labelSvg = renderShapeLabel(label, style, stroke, bounds.width, bounds.height, ctx.theme)
   return {
     width: bounds.width,
     height: bounds.height,
@@ -857,12 +925,19 @@ function renderArrowhead(
 
 function renderText(shape: TextShape, ctx: RenderCtx): ShapeRender {
   const { style, text } = shape
-  const [width, height] = estimateTextSize(text, style)
+  // Phase 17 — list markers, applied once and reused for both sizing and rendering, exactly as
+  // `TextUtil`'s own live component/`getBounds`/`getSvgElement` all do (see `applyListMarkers`).
+  const displayText = applyListMarkers(text, style.list)
+  // No `deckTheme` passed to either text-layout call below — a bare `TextShape` never resolves
+  // `fontToken`, matching `TextUtil`'s live Component and `getBounds` exactly (see that file's
+  // comment for why: this module's `deckTheme` is the *active* theme, not necessarily the one the
+  // live editor measured this text with, and `estimateTextSize` has no live DOM to fall back on).
+  const [width, height] = estimateTextSize(displayText, style)
   // Matches `TextUtil.getSvgElement`: `isDarkMode` is hard-coded `false` for the label/text fill
   // in the export path regardless of the render context's own `isDarkMode` — see that method's
   // own call to `getShapeStyle(shape.style, false, undefined, deckTheme)`.
   const stroke = getShapeStyle(style, false, undefined, ctx.theme).stroke
-  const inner = renderTextLines(text, style, width)
+  const inner = renderTextLines(displayText, style, width)
   return { width, height, inner: `<g fill="${escapeAttr(stroke)}">${inner}</g>` }
 }
 
@@ -884,7 +959,9 @@ function renderSticky(shape: StickyShape, ctx: RenderCtx): ShapeRender {
   // Mirrors `StickyUtil.getSvgElement` exactly: the text is laid out via the *generic*
   // `getTextSvgElement`/`getFontSize` table, not `getStickyFontSize` — a pre-existing difference
   // between Sticky's live (smaller) font and its SVG-export font, not something introduced here.
-  const textSvg = renderTextLines(text, style, textWidth)
+  // Unlike a bare `TextShape`, a sticky's box comes from its persisted `size`, never from measured
+  // text (see `StickyUtil.getBounds`), so `fontToken` is safe to resolve here.
+  const textSvg = renderTextLines(text, style, textWidth, ctx.theme)
   return {
     width,
     height,

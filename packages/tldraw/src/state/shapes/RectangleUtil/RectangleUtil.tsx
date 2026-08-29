@@ -11,6 +11,8 @@ import {
   getBoundsRectangle,
   transformRectangle,
   getFontStyle,
+  getLetterSpacingCss,
+  getLineHeight,
   transformSingleRectangle,
   GradientDef,
 } from '~state/shapes/shared'
@@ -69,7 +71,7 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
       ref
     ) => {
       const { id, size, style, label = '', labelPoint = LABEL_POINT } = shape
-      const font = getFontStyle(style)
+      const font = getFontStyle(style, meta.deckTheme)
       const styles = getShapeStyle(style, meta.isDarkMode, id, meta.deckTheme)
       const Component = style.dash === DashStyle.Draw ? DrawRectangle : DashedRectangle
       const handleLabelChange = React.useCallback(
@@ -89,6 +91,11 @@ export class RectangleUtil extends TDShapeUtil<T, E> {
             offsetX={(labelPoint[0] - 0.5) * bounds.width}
             offsetY={(labelPoint[1] - 0.5) * bounds.height}
             opacity={opacity}
+            letterSpacing={getLetterSpacingCss(style)}
+            lineHeight={getLineHeight(style)}
+            verticalAlign={style.verticalAlign}
+            boxSize={[bounds.width, bounds.height]}
+            autoFit={style.autoFit}
           />
           {/* Opacity is applied to this inner <g>, not to <SVGContainer> itself: SVGContainer
               spreads unknown props (including `opacity`) onto the outer, uncloned <svg>, while

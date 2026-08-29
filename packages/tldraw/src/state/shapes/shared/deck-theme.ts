@@ -82,11 +82,12 @@ export function isThemeToken(value: string | undefined): boolean {
 // ---------------------------------------------------------------------------------------------
 // Five real, designer-considered palettes — a light/dark spread, a serif editorial look, a
 // vibrant consumer look, and a monochrome-plus-one-accent look — each with genuine text/background
-// contrast and a heading/body font pairing drawn from this fork's four existing `FontStyle` faces
-// (see the `DeckTheme` doc comment in `~types` for why the pairing is limited to those four rather
-// than arbitrary font families). `shapeDefaults` is intentionally light-touch: a rounded corner
-// and a filled default so a freshly theme-instantiated panel doesn't need every template to repeat
-// the same two style fields.
+// contrast and a heading/body font pairing drawn from this fork's four bundled `FontStyle` faces.
+// None sets `fonts.headingFamily`/`bodyFamily` (Phase 17's arbitrary-font-family override, resolved
+// by `resolveFont` in `shape-styles.ts`) — every shipped theme stays dependency-free by design; see
+// that field's comment on `DeckTheme` (`~types`) for a host's own brand kit wiring one up.
+// `shapeDefaults` is intentionally light-touch: a rounded corner and a filled default so a freshly
+// theme-instantiated panel doesn't need every template to repeat the same two style fields.
 export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
   {
     id: 'midnight',

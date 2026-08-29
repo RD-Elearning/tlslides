@@ -1,4 +1,4 @@
-import { LETTER_SPACING } from '~constants'
+import { LETTER_SPACING, DEFAULT_LINE_HEIGHT } from '~constants'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let melm: any
@@ -40,13 +40,27 @@ if (typeof window !== 'undefined') {
 
 let prevText = ''
 let prevFont = ''
+// Phase 17 — letter-spacing/line-height now feed into the measurement, not just the module-level
+// constant baked into `getMeasurementDiv` above (that Object.assign only ever ran once, at module
+// load, so before this phase `melm`'s own letter-spacing/line-height silently never changed no
+// matter what a caller passed — harmless while both were fixed constants, a real mismatch the
+// moment `ShapeStyles.letterSpacing`/`lineHeight` became overridable: a shape rendered wider/taller
+// than its own measured label-centering box would report). Included in the memo cache key for the
+// same reason `font` already is.
+let prevLetterSpacing = LETTER_SPACING
+let prevLineHeight = DEFAULT_LINE_HEIGHT
 let prevSize = [0, 0]
 
 export function clearPrevSize() {
   prevText = ''
 }
 
-export function getTextLabelSize(text: string, font: string) {
+export function getTextLabelSize(
+  text: string,
+  font: string,
+  letterSpacing: string = LETTER_SPACING,
+  lineHeight: number = DEFAULT_LINE_HEIGHT
+) {
   if (!text) {
     return [16, 32]
   }
@@ -58,15 +72,24 @@ export function getTextLabelSize(text: string, font: string) {
 
   if (!melm.parent) document.body.appendChild(melm)
 
-  if (text === prevText && font === prevFont) {
+  if (
+    text === prevText &&
+    font === prevFont &&
+    letterSpacing === prevLetterSpacing &&
+    lineHeight === prevLineHeight
+  ) {
     return prevSize
   }
 
   prevText = text
   prevFont = font
+  prevLetterSpacing = letterSpacing
+  prevLineHeight = lineHeight
 
   melm.textContent = text
   melm.style.font = font
+  melm.style.letterSpacing = letterSpacing
+  melm.style.lineHeight = String(lineHeight)
 
   // In tests, offsetWidth and offsetHeight will be 0
   const width = melm.offsetWidth || 1

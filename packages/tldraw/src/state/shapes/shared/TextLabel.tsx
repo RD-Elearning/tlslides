@@ -1,10 +1,12 @@
 import * as React from 'react'
 import { stopPropagation } from '~components/stopPropagation'
-import { GHOSTED_OPACITY, LETTER_SPACING } from '~constants'
+import { GHOSTED_OPACITY, LETTER_SPACING, DEFAULT_LINE_HEIGHT } from '~constants'
+import { AlignStyle } from '~types'
 import { TLDR } from '~state/TLDR'
 import { styled } from '~styles'
 import { getTextLabelSize } from './getTextSize'
 import { useTextKeyboardEvents } from './useTextKeyboardEvents'
+import { computeAutoFitScale } from './shape-styles'
 
 export interface TextLabelProps {
   font: string
@@ -21,6 +23,28 @@ export interface TextLabelProps {
    * (via `getShapeOpacity`) before passing this down — see the note on `TextWrapper` below for why
    * that keeps this the single source of truth for the label's opacity. */
   opacity?: number
+  /** Phase 17 — CSS `letter-spacing`, already formatted (e.g. `'-0.03em'`) by the caller via
+   * `getLetterSpacingCss`. Defaults to the pre-Phase-17 constant, matching every caller that
+   * hasn't been updated to pass a resolved value. */
+  letterSpacing?: string
+  /** Phase 17 — line-height multiplier, resolved by the caller via `getLineHeight`. Defaults to
+   * the pre-Phase-17 hardcoded `1`. */
+  lineHeight?: number
+  /** Phase 17 — `style.verticalAlign`, passed straight through: this component owns the only
+   * layout mechanism (`TextWrapper`'s flexbox) capable of acting on it. `undefined` keeps the
+   * pre-existing hardcoded center. */
+  verticalAlign?: AlignStyle
+  /** Phase 17 — the label's own box (shape bounds, e.g. `[bounds.width, bounds.height]`), needed
+   * only when `autoFit` is true. Without a box there is nothing to fit text *into*, so `autoFit`
+   * is a no-op unless this is also provided. */
+  boxSize?: [number, number]
+  /** Phase 17 — shrink (never grow) `scale`'s effective value so the label's natural text size
+   * fits inside `boxSize`. See `computeAutoFitScale`'s own comment for the fit-ratio math, shared
+   * verbatim with `renderPageToSvg`'s headless equivalent. Composes multiplicatively with `scale`
+   * exactly the way ArrowUtil's own pre-existing auto-shrink-to-arrow-length `scale` already
+   * composes with a manually-set `style.scale` baked into `font` — not a new pattern, the same
+   * "multiple independent scale sources multiply together" idiom this component already had. */
+  autoFit?: boolean
 }
 
 export const TextLabel = React.memo(function TextLabel({
@@ -32,6 +56,11 @@ export const TextLabel = React.memo(function TextLabel({
   scale = 1,
   isEditing = false,
   opacity,
+  letterSpacing = LETTER_SPACING,
+  lineHeight = DEFAULT_LINE_HEIGHT,
+  verticalAlign,
+  boxSize,
+  autoFit = false,
   onBlur,
   onChange,
 }: TextLabelProps) {
@@ -100,11 +129,48 @@ export const TextLabel = React.memo(function TextLabel({
   React.useLayoutEffect(() => {
     const elm = rInnerWrapper.current
     if (!elm) return
-    const size = getTextLabelSize(text, font)
-    elm.style.transform = `scale(${scale}, ${scale}) translate(${offsetX}px, ${offsetY}px)`
+    const size = getTextLabelSize(text, font, letterSpacing, lineHeight)
+    // Phase 17 — auto-fit composes with `scale` rather than replacing it in the general case, but
+    // in practice every current caller passes `scale={1}` (the default) whenever `autoFit` is
+    // true, so this reads as "auto-fit's own fit ratio is the effective scale" — see
+    // `computeAutoFitScale`'s doc comment and RectangleUtil/EllipseUtil/TriangleUtil for how the
+    // two are wired together.
+    const fitScale = autoFit && boxSize ? computeAutoFitScale(size[0], size[1], ...boxSize) : 1
+    const effectiveScale = scale * fitScale
+    // Phase 17 — `verticalAlign`. A first version of this tried an inline `alignItems` on
+    // `TextWrapper` (the flex container) instead, reasoning that CSS *does* let a flex container's
+    // `align-items` resolve the static position of an absolutely-positioned child with `auto`
+    // offsets. It technically does, but composing that with this element's own `scale(...)
+    // translate(...)` transform (needed for `offsetX`/`offsetY`/auto-fit) put the label wildly off
+    // -box on a real screenshot — caught only by looking at the PNG, not by any of the unit tests,
+    // which never render a real flex layout. Replaced with a plain, explicit pixel offset instead:
+    // `boxAlignY`, computed in *screen* pixels (the box's own size, minus the label's *final*
+    // rendered height, halved) and applied as a leading `translate` OUTSIDE the scale — unlike
+    // `offsetX`/`offsetY` below (which intentionally shrink with `effectiveScale`, matching how
+    // ArrowUtil's pre-existing label-follows-bend-point offset already behaves), a vertical-align
+    // nudge should stay a fixed number of screen pixels regardless of how small auto-fit shrank
+    // the text, or a heavily-shrunk label would barely move off dead-center at all.
+    let boxAlignY = 0
+    if (boxSize) {
+      const scaledHeight = size[1] * effectiveScale
+      switch (verticalAlign) {
+        case AlignStyle.Start:
+        case AlignStyle.Justify:
+          boxAlignY = -(boxSize[1] - scaledHeight) / 2
+          break
+        case AlignStyle.End:
+          boxAlignY = (boxSize[1] - scaledHeight) / 2
+          break
+        default:
+          boxAlignY = 0
+      }
+    }
+    elm.style.transform =
+      `translate(0px, ${boxAlignY}px) ` +
+      `scale(${effectiveScale}, ${effectiveScale}) translate(${offsetX}px, ${offsetY}px)`
     elm.style.width = size[0] + 1 + 'px'
     elm.style.height = size[1] + 1 + 'px'
-  }, [text, font, offsetY, offsetX, scale])
+  }, [text, font, offsetY, offsetX, scale, letterSpacing, lineHeight, autoFit, boxSize, verticalAlign])
 
   return (
     // Opacity is applied here as an inline style rather than through the `isGhost` styled-component
@@ -113,6 +179,9 @@ export const TextLabel = React.memo(function TextLabel({
     // variant for control of the same CSS property. (That `isGhost` variant is left in place as
     // dead code — no caller has ever passed `isGhost` to this component — but if one someday does,
     // an explicit `opacity` from a caller should still take precedence.)
+    // `verticalAlign` is deliberately NOT handled here via `alignItems` — see the layout effect's
+    // own comment on why that approach broke on a real screenshot. `TextWrapper` stays exactly the
+    // "always centered" flex container it was before this phase.
     <TextWrapper style={opacity === undefined ? undefined : { opacity }}>
       <InnerWrapper
         ref={rInnerWrapper}
@@ -121,6 +190,8 @@ export const TextLabel = React.memo(function TextLabel({
         style={{
           font,
           color,
+          letterSpacing,
+          lineHeight,
         }}
       >
         {isEditing ? (

@@ -18,7 +18,14 @@ import {
   isAngleBetween,
 } from './arrowHelpers'
 import { styled } from '~styles'
-import { TextLabel, getFontStyle, getShapeStyle, getShapeOpacity } from '../shared'
+import {
+  TextLabel,
+  getFontStyle,
+  getShapeStyle,
+  getShapeOpacity,
+  getLetterSpacingCss,
+  getLineHeight,
+} from '../shared'
 import { getTextLabelSize } from '../shared/getTextSize'
 import { StraightArrow } from './components/StraightArrow'
 import { CurvedArrow } from './components/CurvedArrow.tsx'
@@ -92,9 +99,12 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
         style,
       } = shape
       const isStraightLine = Vec.dist(bend.point, Vec.toFixed(Vec.med(start.point, end.point))) < 1
-      const font = getFontStyle(style)
+      const font = getFontStyle(style, meta.deckTheme)
       const styles = getShapeStyle(style, meta.isDarkMode, undefined, meta.deckTheme)
-      const labelSize = label || isEditing ? getTextLabelSize(label, font) : [0, 0]
+      const letterSpacing = getLetterSpacingCss(style)
+      const lineHeight = getLineHeight(style)
+      const labelSize =
+        label || isEditing ? getTextLabelSize(label, font, letterSpacing, lineHeight) : [0, 0]
       const bounds = this.getBounds(shape)
       const dist = React.useMemo(() => {
         const { start, bend, end } = shape.handles
@@ -138,6 +148,8 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
             onChange={handleLabelChange}
             onBlur={onShapeBlur}
             opacity={opacity}
+            letterSpacing={letterSpacing}
+            lineHeight={lineHeight}
           />
           <SVGContainer id={shape.id + '_svg'}>
             <defs>

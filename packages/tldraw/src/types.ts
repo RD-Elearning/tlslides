@@ -172,15 +172,26 @@ export interface DeckThemeColors {
   accent2: string
 }
 
-// Phase 12 — deck theme / brand kit. `fonts` is a *pairing*, not two arbitrary font names: this
-// fork's font system is still the four fixed `FontStyle` faces (see `fontFaces` in
-// `shape-styles.ts`) — arbitrary font families with a loading story are Phase 17's job, not this
-// one's — so a theme picks two of those four for its heading/body pairing rather than introducing
-// a second, incompatible font model. `shapeDefaults` is applied once, at template-instantiation
-// time (`addSlideFromTemplate`), as the base a template shape's own style patches on top of — it is
-// deliberately NOT re-applied to already-placed shapes on a later theme switch (unlike the colour
-// tokens), because a "default" is a starting point for new content, not a live constraint on
-// existing content; see the Phase 12 report for the full reasoning.
+// Phase 12 — deck theme / brand kit. `fonts` is a *pairing*: `heading`/`body` each pick one of
+// this fork's four bundled `FontStyle` faces, so a theme with no family override still renders
+// with zero font-loading risk (the four faces ship with the package). `shapeDefaults` is applied
+// once, at template-instantiation time (`addSlideFromTemplate`), as the base a template shape's
+// own style patches on top of — it is deliberately NOT re-applied to already-placed shapes on a
+// later theme switch (unlike the colour tokens), because a "default" is a starting point for new
+// content, not a live constraint on existing content; see the Phase 12 report for the full
+// reasoning.
+//
+// Phase 17 — `headingFamily`/`bodyFamily` are optional, arbitrary-CSS-font-family overrides paired
+// with `heading`/`body`, the same "an enum for the safe built-in case, plus an optional string for
+// an absolute override" shape `ShapeStyles.font`/`fontFamily` already uses (see that field's
+// comment in this same file for the full honesty story on where an arbitrary family comes from and
+// what happens when it hasn't loaded). None of the five built-in themes below set them — every
+// shipped theme stays dependency-free — but a host's own brand kit can now pin a real logo/brand
+// typeface without abandoning the enum pairing entirely: `heading`/`body` still drive the
+// `FontStyle`-keyed size modifier and the `estimateTextSize` metrics table, so even a theme with a
+// custom `headingFamily` degrades to a sane bundled face's metrics rather than an unmeasured guess
+// alone. Resolved by `resolveFont` (`state/shapes/shared/shape-styles.ts`), the one function that
+// turns a shape's `fontToken` plus the active theme into an actual CSS font-family value.
 export interface DeckTheme {
   id: string
   name: string
@@ -188,6 +199,8 @@ export interface DeckTheme {
   fonts: {
     heading: FontStyle
     body: FontStyle
+    headingFamily?: string
+    bodyFamily?: string
   }
   shapeDefaults?: Partial<ShapeStyles>
 }
@@ -657,7 +670,78 @@ export type ShapeStyles = {
   // enforce it. Currently consumed by RectangleUtil and EllipseUtil only (see the Phase 11
   // report for what was left out of scope).
   fillGradient?: ShapeGradientFill
+  // ---------------------------------------------------------------------------------------------
+  // Phase 17 — typography. All five fields below are optional overrides with a today's-behaviour
+  // fallback (undefined = exactly what every document rendered before this phase), so no
+  // migration and no `TldrawApp.version` bump — the same discipline Phase 8a established for
+  // opacity/strokeWidth/cornerRadius. See `guides/documentation.md` and the Phase 17 report
+  // (`reviews/README.md`) for the full design rationale, especially the arbitrary-font-family
+  // honesty story and what does/doesn't survive `renderPageToSvg`.
+  /** Line spacing, as a multiplier of font size. Undefined means the pre-Phase-17 hardcoded
+   *  default — `1` for the live CSS `line-height` (TextUtil/TextLabel/StickyUtil), `LINE_HEIGHT`
+   *  (1.3) for the SVG baseline-to-baseline spacing (`getTextSvgElement`/`renderPageToSvg`). Those
+   *  two defaults already differed before this field existed (a CSS line-height and an SVG
+   *  baseline multiple are different conventions); this field feeds the same number into each
+   *  pipeline's own convention rather than trying to unify them. */
+  lineHeight?: number
+  /** Letter spacing, in em (a bare number, not a CSS length string — see `getLetterSpacingEm`'s
+   *  comment for why a free-typed CSS unit was rejected). Undefined means the pre-existing
+   *  hardcoded `LETTER_SPACING` constant (`-0.03em`), which — as of this phase — is now also
+   *  applied to the SVG `letter-spacing` attribute and to `StickyShape`'s live CSS, closing two
+   *  small pre-existing live/export and Text-vs-Sticky gaps as a side effect of making the value
+   *  itself overridable (see the Phase 17 report). */
+  letterSpacing?: number
+  /** Vertical position of a shape *label* (Rectangle/Ellipse/Triangle/Arrow — anything rendered
+   *  via `TextLabel`) within its box. Reuses `AlignStyle` rather than a new two/three-value union
+   *  — `Start`/`Middle`/`End` already mean exactly "top/center/bottom" read on the cross axis;
+   *  `Justify` is meaningless vertically and is treated the same as `Start` wherever this is
+   *  consumed. Undefined means the pre-existing hardcoded center. **No effect on a bare
+   *  `TextShape`**: unlike a label, a bare text shape's box IS its measured text (`TextUtil.
+   *  getBounds`), so there is no independent "box" to align within — see the Phase 17 report. */
+  verticalAlign?: AlignStyle
+  /** Bullet or numbered list markers, one line (`\n`-split) at a time. **`TextShape` only** — see
+   *  the Phase 17 report for why shape labels and `StickyShape` are an explicit, named scope cut
+   *  rather than a silent gap. The marker is prepended to the *rendered* line only; the raw
+   *  textarea value a user edits is never rewritten, so undo/redo and copy/paste keep operating on
+   *  plain text — see `applyListMarkers` (`shared/textList.ts`), the one place this is computed,
+   *  for the exact marker strings. */
+  list?: TextListStyle
+  /** An arbitrary CSS `font-family` value (ideally a full stack with a generic fallback, e.g.
+   *  `'"Poppins", sans-serif'`), trusted verbatim and used in place of the bundled face `font`
+   *  would otherwise resolve to. The **more specific** control, so it wins over both `fontToken`
+   *  and `font` when set (same "more specific wins" precedent as `stroke`/`fill` overriding
+   *  `color`, and `fillGradient` overriding `fill`) — see `resolveFont` in `shape-styles.ts`, the
+   *  one place this is resolved, for the full honesty story: this fork does not fetch, bundle, or
+   *  verify that the named family is ever actually loaded. A host wiring this up owns making the
+   *  family available (a `<link>` to Google Fonts, a self-hosted `@font-face`, or a name it knows
+   *  the browser already has) exactly as it would for any other web page. */
+  fontFamily?: string
+  /** A reference to the active `DeckTheme`'s heading/body font pairing, mirroring the `'theme:*'`
+   *  colour token design (`resolveThemeColor` in `deck-theme.ts`) but as its own field rather than
+   *  a sentinel string prefix — `font` is a `FontStyle` enum, not a `string`, so it can't hold a
+   *  `'theme:heading'`-style token itself without widening its type for every existing reader.
+   *  Resolved by `resolveFont`, which — per the "more specific wins" rule above — only consults
+   *  this when `fontFamily` is unset, and only when a `DeckTheme` is actually active; otherwise it
+   *  falls back to `font` exactly as if this had never been set. `buildTemplateShapes`
+   *  (`state/templates.ts`) sets this instead of baking `style.font`, which is what makes a theme
+   *  switch restyle a template's typography, not just its colours — closing the follow-up recorded
+   *  in `reviews/roadmap-slides.md` after Phase 12. Not currently exposed as a user-facing "bind to
+   *  theme" control in `StyleMenu` — see the Phase 17 report for that scope cut. */
+  fontToken?: 'heading' | 'body'
+  /** Shrink (never grow) a shape *label*'s effective font scale so it fits inside the shape's own
+   *  box, recomputed from current text/box/font on every relevant change rather than stored as a
+   *  fixed number. **Shape labels only** (Rectangle/Ellipse/Triangle — not Arrow, which already has
+   *  its own independent auto-shrink-to-arrow-length behaviour; not `StickyShape`, whose box
+   *  already auto-*grows* to fit its text, the opposite philosophy; not a bare `TextShape`, which
+   *  has no independent box at all). The **more specific** control: while `true`, this overrides
+   *  `scale`'s effect entirely rather than compounding with it — see `computeAutoFitScale` in
+   *  `shape-styles.ts`, the one place the fit ratio is computed, consumed identically (given each
+   *  environment's own idea of "natural" text size) by the live editor and by `renderPageToSvg`. */
+  autoFit?: boolean
 }
+
+/** The two list-marker styles `TextShape.style.list` supports — see that field's own comment. */
+export type TextListStyle = 'bullet' | 'number'
 
 export enum TDAssetType {
   Image = 'image',

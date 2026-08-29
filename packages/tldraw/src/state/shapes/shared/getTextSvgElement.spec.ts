@@ -36,3 +36,31 @@ describe('getTextSvgElement — Phase 15 regression: `style.scale` must be appli
     expect(text?.getAttribute('x')).toBe(String(bounds.width / 2))
   })
 })
+
+describe('getTextSvgElement — Phase 17 typography fields', () => {
+  it('emits the pre-existing default letter-spacing when unset — a new attribute, same value the live CSS already used', () => {
+    const elm = getTextSvgElement('Hello', baseStyle, bounds)
+    expect(elm.getAttribute('letter-spacing')).toBe('-0.03em')
+  })
+
+  it('an explicit letterSpacing override is reflected in the attribute', () => {
+    const elm = getTextSvgElement('Hello', { ...baseStyle, letterSpacing: 0.08 }, bounds)
+    expect(elm.getAttribute('letter-spacing')).toBe('0.08em')
+  })
+
+  it('an explicit lineHeight changes the per-line baseline spacing (default stays LINE_HEIGHT, 1.3)', () => {
+    const defaultElm = getTextSvgElement('a\nb', baseStyle, bounds)
+    const lines = defaultElm.querySelectorAll('text')
+    const fontSize = getFontSize(baseStyle.size, baseStyle.font)
+    expect(lines[1].getAttribute('y')).toBe(String(1.3 * fontSize * 1.5))
+
+    const custom = getTextSvgElement('a\nb', { ...baseStyle, lineHeight: 2 }, bounds)
+    const customLines = custom.querySelectorAll('text')
+    expect(customLines[1].getAttribute('y')).toBe(String(2 * fontSize * 1.5))
+  })
+
+  it('an arbitrary fontFamily override replaces the bundled face in font-family', () => {
+    const elm = getTextSvgElement('Hello', { ...baseStyle, fontFamily: 'Georgia, serif' }, bounds)
+    expect(elm.getAttribute('font-family')).toBe('Georgia, serif')
+  })
+})

@@ -263,6 +263,114 @@ describe('renderPageToSvg — per-shape coverage', () => {
   })
 })
 
+describe('renderPageToSvg — Phase 17 typography', () => {
+  it('renders bullet markers on every line of a TextShape with style.list = bullet', () => {
+    const text = Text.create({
+      id: 'list1',
+      parentId: 'page1',
+      text: 'First\nSecond',
+      style: { ...Text.getShape({}).style, list: 'bullet' },
+    })
+    const svg = renderPageToSvg(pageOf([text]))
+    expect(svg).toContain('•  First')
+    expect(svg).toContain('•  Second')
+  })
+
+  it('renders incrementing numbers for style.list = number', () => {
+    const text = Text.create({
+      id: 'list2',
+      parentId: 'page1',
+      text: 'First\nSecond',
+      style: { ...Text.getShape({}).style, list: 'number' },
+    })
+    const svg = renderPageToSvg(pageOf([text]))
+    expect(svg).toContain('1.  First')
+    expect(svg).toContain('2.  Second')
+  })
+
+  it('an arbitrary fontFamily override reaches the exported font-family attribute', () => {
+    const text = Text.create({
+      id: 'font1',
+      parentId: 'page1',
+      text: 'Hi',
+      style: { ...Text.getShape({}).style, fontFamily: 'Georgia, serif' },
+    })
+    const svg = renderPageToSvg(pageOf([text]))
+    expect(svg).toContain('font-family="Georgia, serif"')
+  })
+
+  it('a shape label auto-fits: text wider than the box renders at a shrunk, but never zero, scale', () => {
+    const rect = Rectangle.create({
+      id: 'fit1',
+      parentId: 'page1',
+      point: [0, 0],
+      size: [40, 40], // deliberately tiny — the label's natural size will not fit
+      label: 'A rather long label that will not fit',
+      style: { ...Rectangle.getShape({}).style, autoFit: true },
+    })
+    const withoutFit = renderPageToSvg(
+      pageOf([{ ...rect, style: { ...rect.style, autoFit: false } } as typeof rect])
+    )
+    const withFit = renderPageToSvg(pageOf([rect]))
+    // Both render *something* (autoFit never produces empty/invisible text)...
+    expect(withFit).toContain('<text')
+    // ...but the fitted version uses a visibly smaller font-size than the unfitted one, since the
+    // label cannot possibly fit an unshrunk font into a 40x40 box.
+    const sizeOf = (svg: string) => Number(svg.match(/font-size="([\d.]+)"/)?.[1])
+    expect(sizeOf(withFit)).toBeLessThan(sizeOf(withoutFit))
+  })
+
+  it('verticalAlign shifts a label to the top/bottom of its box instead of dead-center', () => {
+    const base = {
+      id: 'valign1',
+      parentId: 'page1',
+      point: [0, 0],
+      size: [200, 200],
+      label: 'Hi',
+    }
+    const top = Rectangle.create({
+      ...base,
+      style: { ...Rectangle.getShape({}).style, verticalAlign: 'start' as const },
+    })
+    const bottom = Rectangle.create({
+      ...base,
+      id: 'valign2',
+      style: { ...Rectangle.getShape({}).style, verticalAlign: 'end' as const },
+    })
+    const topSvg = renderPageToSvg(pageOf([top]))
+    const bottomSvg = renderPageToSvg(pageOf([bottom]))
+    const tyOf = (svg: string) => Number(svg.match(/translate\(([\d.-]+), ([\d.-]+)\)">.*?<text/)?.[2])
+    expect(tyOf(topSvg)).toBe(0)
+    expect(tyOf(bottomSvg)).toBeGreaterThan(0)
+  })
+
+  it('a fontToken resolves against the active theme for a shape label', () => {
+    const rect = Rectangle.create({
+      id: 'tok1',
+      parentId: 'page1',
+      point: [0, 0],
+      size: [200, 100],
+      label: 'Heading',
+      style: { ...Rectangle.getShape({}).style, fontToken: 'heading' as const },
+    })
+    const svg = renderPageToSvg(pageOf([rect]), { theme })
+    // ivory-editorial's heading face is Serif ("Crimson Pro").
+    expect(svg).toContain('font-family="Crimson Pro"')
+  })
+
+  it('a fontToken has NO effect on a bare TextShape — see TextUtil/renderText\'s own comment for why', () => {
+    const text = Text.create({
+      id: 'tok2',
+      parentId: 'page1',
+      text: 'Body copy',
+      style: { ...Text.getShape({}).style, font: undefined, fontToken: 'heading' as const },
+    })
+    const svg = renderPageToSvg(pageOf([text]), { theme })
+    // Falls back to the plain Script default, not the theme's Serif heading face.
+    expect(svg).not.toContain('font-family="Crimson Pro"')
+  })
+})
+
 describe('resolvePageSize', () => {
   it('prefers page.size, then defaultPageSize, then DEFAULT_SLIDE_SIZE', () => {
     expect(resolvePageSize({ size: [10, 20] } as TDPage)).toEqual([10, 20])

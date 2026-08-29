@@ -9,7 +9,7 @@ import {
   AlignStyle,
   DeckTheme,
 } from '~types'
-import { GHOSTED_OPACITY } from '~constants'
+import { GHOSTED_OPACITY, DEFAULT_LETTER_SPACING_EM, DEFAULT_LINE_HEIGHT } from '~constants'
 import { resolveShapeGradientFill } from './background'
 import { resolveThemeColor } from './deck-theme'
 
@@ -160,20 +160,112 @@ export function getStickyFontSize(size: SizeStyle): number {
   return stickyFontSizes[size]
 }
 
-export function getFontStyle(style: ShapeStyles): string {
-  const fontSize = getFontSize(style.size, style.font)
-  const fontFace = getFontFace(style.font)
-  const { scale = 1 } = style
-
-  return `${fontSize * scale}px/1 ${fontFace}`
+// ---------------------------------------------------------------------------------------------
+// Phase 17 — font resolution: bundled face, arbitrary family, or theme pairing
+// ---------------------------------------------------------------------------------------------
+// Three ways a shape's font can now be decided, in "most specific wins" order — the same
+// precedent `getShapeStyle` already established for stroke/fill hex overriding the `color` enum,
+// and gradient overriding flat fill:
+//   1. `style.fontFamily` — an arbitrary, host-trusted CSS `font-family` value. Wins outright.
+//   2. `style.fontToken` — a reference into the active `DeckTheme`'s `fonts.heading`/`fonts.body`
+//      pairing, resolved *lazily* (every call), which is what makes a theme switch restyle a
+//      template's typography and not just its colours — see `ShapeStyles.fontToken`'s comment for
+//      the follow-up this closes. Only consulted when `fontFamily` is unset and a theme is active;
+//      an inactive/missing theme degrades to `style.font` exactly as if the token were never set,
+//      mirroring `resolveThemeColor`'s own "degrade to undefined, not a hardcoded value" rule.
+//   3. `style.font` — the pre-existing four-way enum, resolved through the bundled `fontFaces`
+//      table exactly as before this phase.
+// `font` (the `FontStyle` enum) is returned alongside `face` in every case, even when `face` came
+// from an override: it still drives `getFontSize`'s size-modifier lookup and (see
+// `renderPageToSvg.ts`) the `estimateTextSize` average-glyph-width table, since neither of those
+// has any way to measure the metrics of a family this fork never bundled or loaded — an arbitrary
+// or theme-paired family still needs *some* enum to stand in for "how wide is this font, roughly."
+export interface ResolvedFont {
+  font: FontStyle
+  face: string
 }
 
-export function getStickyFontStyle(style: ShapeStyles): string {
-  const fontSize = getStickyFontSize(style.size)
-  const fontFace = getFontFace(style.font)
+export function resolveFont(
+  style: Pick<ShapeStyles, 'font' | 'fontFamily' | 'fontToken'>,
+  deckTheme?: DeckTheme
+): ResolvedFont {
+  const font = style.font ?? FontStyle.Script
+
+  if (style.fontFamily) return { font, face: style.fontFamily }
+
+  if (style.fontToken && deckTheme) {
+    const themeFont = deckTheme.fonts[style.fontToken]
+    const familyOverride =
+      style.fontToken === 'heading' ? deckTheme.fonts.headingFamily : deckTheme.fonts.bodyFamily
+    return { font: themeFont, face: familyOverride ?? fontFaces[themeFont] }
+  }
+
+  return { font, face: fontFaces[font] }
+}
+
+// SVG's `font-family` attribute wants the bare family list, not a CSS-shorthand-ready quoted
+// string — `fontFaces` above stores e.g. `'"Caveat Brush"'` (quoted, for embedding in the `font`
+// shorthand `getFontStyle` builds below) and this fork's export code has always stripped that one
+// wrapping quote pair before setting the attribute (`getTextSvgElement.ts`, pre-Phase-17). An
+// arbitrary override (`style.fontFamily`, or a theme's `headingFamily`/`bodyFamily`) may or may not
+// arrive pre-quoted depending on what the host wrote, so this strips a wrapping quote pair only
+// when the *entire* value is wrapped in one — a bare `Georgia, serif` passes through untouched, a
+// host-supplied `'"Poppins", sans-serif'` loses only its outer quoting the same way a bundled face
+// does. Never used for the CSS `font` shorthand (`getFontStyle`/`getStickyFontStyle`), which wants
+// the value exactly as `resolveFont` returned it.
+export function unquoteFontFamily(face: string): string {
+  return face.length >= 2 && face.startsWith('"') && face.endsWith('"') ? face.slice(1, -1) : face
+}
+
+// Phase 17 — letter-spacing/line-height resolution. A bare number (em), not a free-typed CSS
+// length string: StyleMenu's field only ever needs to express "a bit tighter/looser," and
+// accepting an arbitrary string would mean validating arbitrary CSS before it reaches an SVG
+// attribute or an inline style — see StyleMenu's own comment on why this was rejected. Undefined
+// falls back to exactly the constant every document already rendered with.
+export function getLetterSpacingEm(style: Pick<ShapeStyles, 'letterSpacing'>): number {
+  return style.letterSpacing ?? DEFAULT_LETTER_SPACING_EM
+}
+
+export function getLetterSpacingCss(style: Pick<ShapeStyles, 'letterSpacing'>): string {
+  return `${getLetterSpacingEm(style)}em`
+}
+
+export function getLineHeight(style: Pick<ShapeStyles, 'lineHeight'>): number {
+  return style.lineHeight ?? DEFAULT_LINE_HEIGHT
+}
+
+export function getFontStyle(style: ShapeStyles, deckTheme?: DeckTheme): string {
+  const { font, face } = resolveFont(style, deckTheme)
+  const fontSize = getFontSize(style.size, font)
   const { scale = 1 } = style
 
-  return `${fontSize * scale}px/1 ${fontFace}`
+  return `${fontSize * scale}px/1 ${face}`
+}
+
+export function getStickyFontStyle(style: ShapeStyles, deckTheme?: DeckTheme): string {
+  const fontSize = getStickyFontSize(style.size)
+  const { face } = resolveFont(style, deckTheme)
+  const { scale = 1 } = style
+
+  return `${fontSize * scale}px/1 ${face}`
+}
+
+// Phase 17 — text auto-fit. Shrinks (never grows — capped at 1) a shape label's effective scale so
+// its *natural* (unscaled) text size fits inside its box, both dimensions. Pure and tiny on
+// purpose: the live editor (`TextLabel.tsx`) and `renderPageToSvg` each feed it their own idea of
+// "natural size" (a real DOM measurement live, `estimateTextSize`'s heuristic headlessly — the same
+// split Phase 15 already established for label centering), but the fit-ratio arithmetic itself is
+// computed in exactly this one place either way. A zero-sized natural/box dimension (an empty
+// label, a degenerate shape) returns `1` rather than `Infinity`/`NaN` — "don't shrink" is the safe
+// default when there's nothing sensible to fit against.
+export function computeAutoFitScale(
+  naturalWidth: number,
+  naturalHeight: number,
+  boxWidth: number,
+  boxHeight: number
+): number {
+  if (naturalWidth <= 0 || naturalHeight <= 0 || boxWidth <= 0 || boxHeight <= 0) return 1
+  return Math.min(1, boxWidth / naturalWidth, boxHeight / naturalHeight)
 }
 
 export function getStickyShapeStyle(style: ShapeStyles, isDarkMode = false) {

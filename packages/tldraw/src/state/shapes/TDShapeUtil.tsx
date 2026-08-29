@@ -13,7 +13,8 @@ import * as React from 'react'
 import { BINDING_DISTANCE } from '~constants'
 import { getTextSvgElement } from './shared/getTextSvgElement'
 import { getTextLabelSize } from './shared/getTextSize'
-import { getFontStyle, getShapeStyle } from './shared'
+import { getFontStyle, getShapeStyle, getLetterSpacingCss, getLineHeight } from './shared'
+import { AlignStyle } from '~types'
 
 export abstract class TDShapeUtil<T extends TDShape, E extends Element = any> extends TLShapeUtil<
   T,
@@ -189,19 +190,59 @@ export abstract class TDShapeUtil<T extends TDShape, E extends Element = any> ex
       const s = shape as TDShape & { label: string }
       const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
       const bounds = this.getBounds(shape)
-      const labelElm = getTextSvgElement(s['label'], shape.style, bounds)
+      const labelElm = getTextSvgElement(s['label'], shape.style, bounds, deckTheme)
       labelElm.setAttribute('fill', getShapeStyle(shape.style, false, undefined, deckTheme).stroke)
-      const font = getFontStyle(shape.style)
-      const size = getTextLabelSize(s['label'], font)
-      labelElm.setAttribute('transform-origin', 'top left')
-      labelElm.setAttribute(
-        'transform',
-        `translate(${(bounds.width - size[0]) / 2}, ${(bounds.height - size[1]) / 2})`
+      const font = getFontStyle(shape.style, deckTheme)
+      // Phase 17 — must match the live label's own measurement inputs (letter-spacing, line-
+      // height) or this translate — the only place export centers a label, since it never clones
+      // a live `TextLabel` node — drifts off-center exactly the way the Phase 15 report's `scale`
+      // bug did for font size.
+      const size = getTextLabelSize(
+        s['label'],
+        font,
+        getLetterSpacingCss(shape.style),
+        getLineHeight(shape.style)
       )
+      const tx = (bounds.width - size[0]) / 2
+      const ty = verticalAlignOffset(shape.style.verticalAlign, bounds.height, size[1])
+      labelElm.setAttribute('transform-origin', 'top left')
+      labelElm.setAttribute('transform', `translate(${tx}, ${ty})`)
       g.appendChild(elm)
       g.appendChild(labelElm)
       return g
     }
     return elm
+  }
+}
+
+// Phase 17 — shared with `renderPageToSvg.ts`'s `renderShapeLabel` in spirit (same formula), but
+// kept as its own tiny function here rather than imported: this one centers against a *live-DOM-
+// measured* label size, that one against `estimateTextSize`'s heuristic — different enough inputs
+// that sharing the function itself would mean threading one more parameter through a module that
+// otherwise has no reason to import from this one (`renderPageToSvg.ts` deliberately doesn't
+// import any DOM-touching module — see that file's own module comment on why). `AlignStyle.Justify`
+// has no vertical meaning; treated the same as `Start` (top), matching `TextLabel`'s own live
+// vertical-align handling (its layout-effect comment explains why that one is a plain translate,
+// not CSS `align-items`).
+//
+// This path (`getSvgElement`, used by "Copy as SVG"/`TldrawApp.copySvg`) shares the same
+// `Start`/`End` edge-slop `renderPageToSvg.ts`'s `renderShapeLabel` documents: `getTextSvgElement`'s
+// per-line `y` formula was calibrated for a centered `ty`, so anchoring at `0` here doesn't put the
+// glyph *ink* flush at the box edge, only its nominal layout box. This path at least measures via
+// the real DOM (`getTextLabelSize`, not a heuristic), so the *size* is exact — only the same
+// font-ascent-metric slop as the headless path remains.
+function verticalAlignOffset(
+  verticalAlign: AlignStyle | undefined,
+  boxHeight: number,
+  labelHeight: number
+): number {
+  switch (verticalAlign) {
+    case AlignStyle.Start:
+    case AlignStyle.Justify:
+      return 0
+    case AlignStyle.End:
+      return boxHeight - labelHeight
+    default:
+      return (boxHeight - labelHeight) / 2
   }
 }
