@@ -17,6 +17,17 @@ API, custom component blocks, AI/templates/animation, and a prioritized feature 
 **Current scope decision** section is the live plan: Next.js integration and the AI pipeline are
 deferred, work is editor-only, and each item is mapped to the module it lands in.
 
+Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)** (all shipped),
+18+ in **[reviews/blocks/README.md](reviews/blocks/README.md)** — the block system. Read that
+README before touching anything under `packages/blocks` or `packages/tldraw/src/blocks`; it is the
+entry point for P18–P32 and carries the governing rules (one layout + two renderers, spec-not-
+pixels in the document, colors as roles, additive schema only).
+
+`ppt-master/` and `transitions.dev/` are **git-ignored local clones** of reference skill
+libraries — presentation-design guidance and a motion-token/transition recipe library. They are
+design sources for `reviews/blocks/`, never dependencies; nothing in `packages/` may import from
+them.
+
 Key things not to relearn the hard way:
 - `@tlslides/tldraw` / `@tlslides/core` are **not published to npm** — only usable by building
   this repo from source.
