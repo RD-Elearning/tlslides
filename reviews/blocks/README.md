@@ -45,7 +45,8 @@ Neither library is a dependency. Both are *design sources* — we copy judgment,
 |---|---|---|
 | — | **this file** | Always first. Scope, rules, phase tracker. |
 | — | [CONTINUE.md](CONTINUE.md) | You are picking this work up in a new session. Current state, verified commands, traps, review protocol. |
-| — | [BACKLOG.md](BACKLOG.md) | **You are about to implement something.** P20–P32 broken into ~40 one-session tasks with per-task scope, dependencies and acceptance. |
+| — | [BACKLOG.md](BACKLOG.md) | **You are about to implement something.** P20–P32 broken into ~40 one-session tasks with per-task scope, dependencies and acceptance. Its status column is the single source of truth for progress. |
+| — | [RUN.md](RUN.md) | The paste-every-time prompt that advances the backlog by one task: orient → pick → implement → review → land. |
 | 1 | [01-architecture.md](01-architecture.md) | You touch the block model, registry, renderers, or how a block becomes a shape. |
 | 2 | [02-design-language.md](02-design-language.md) | You pick colors, spacing, type sizes, or write a lint rule. |
 | 3 | [03-block-catalog.md](03-block-catalog.md) | You implement any block. 170 blocks, grouped into 8 families. |
