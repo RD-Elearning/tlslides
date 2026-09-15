@@ -21,6 +21,11 @@ import type {
   TLShapeCloneHandler,
   TLAsset,
 } from '@tlslides/core'
+// Phase 19 — type-only, so this never becomes a runtime circular import: `blocks/tokens.ts`
+// itself imports several of *this* file's types (`DeckTheme`, `SlideBackground`, ...), also as
+// `import type`. TypeScript erases both sides at compile time, same pattern `blocks/types.ts`
+// already uses for its own `import type { TDShape, AnimationTrigger } from '~types'`.
+import type { DeckTokens } from './blocks/tokens'
 
 /* -------------------------------------------------- */
 /*                         App                        */
@@ -163,6 +168,15 @@ export interface TDDocument {
   // with. See `state/shapes/shared/deck-theme.ts` for how a shape or background actually *uses*
   // this (the token-reference design) and `BUILT_IN_DECK_THEMES` for the shipped palettes.
   theme?: DeckTheme
+  // Phase 19 — design tokens v2 (`reviews/blocks/02-design-language.md`, `blocks/tokens.ts`).
+  // Optional and additive, exactly like `theme` above: absent means "derive everything from the
+  // active theme" (`resolveTokens(activeDeckTheme(theme), undefined)`), so a document that
+  // predates this field — every document so far — resolves to the same theme-derived defaults
+  // it always would have, with no migration and no `TldrawApp.version` bump. A document that
+  // *does* set this only needs to write the specific overrides a brand kit or a block wants to
+  // pin (a custom categorical ramp, a tighter type scale, `density: 'compact'`) — every field on
+  // `DeckTokens` is itself optional for the same reason.
+  tokens?: DeckTokens
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -176,6 +190,17 @@ export interface DeckThemeColors {
   textMuted: string
   accent1: string
   accent2: string
+  // Phase 19 (P19, design tokens v2) — semantic status colours (doc `reviews/blocks/
+  // 02-design-language.md` §2.2). Optional, and additive for the same reason every other field
+  // on this interface is not: a `DeckTheme` predating this phase (a host's own brand kit, or one
+  // of `BUILT_IN_DECK_THEMES` before this patch) simply has none, and `resolveTokens`
+  // (`blocks/tokens.ts`) falls back to a generic positive/negative/warning family rather than
+  // requiring every theme author to pick one. Every one of the five built-ins below DOES set
+  // these, chosen per palette — "a green that works on `midnight` is not the green for
+  // `mono-grid`" — never one global green/red reused five times.
+  positive?: string
+  negative?: string
+  warning?: string
 }
 
 // Phase 12 — deck theme / brand kit. `fonts` is a *pairing*: `heading`/`body` each pick one of

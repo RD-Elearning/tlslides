@@ -164,6 +164,27 @@ interface SurfaceContext {
 without a browser.** That matters: the existing bug is invisible to every current test because
 nothing measures contrast anywhere.
 
+**Building a `SurfaceContext` (P19, `blocks/tokens.ts`):**
+
+```ts
+function surfaceFromBackground(
+  background: SlideBackground | string | undefined,
+  box: Box,
+  pageSize: [number, number],
+  theme?: DeckTheme
+): SurfaceContext
+
+function surfaceFromPaint(paint: Paint, box: Box, parentBox: Box): SurfaceContext
+```
+
+`surfaceFromPaint` takes **three** arguments, not two: a gradient fill spans exactly the box it
+paints (the same `objectBoundingBox` convention the slide background already uses), so sampling
+"where within that fill does `box` sit" needs a reference frame — `parentBox` — the same role
+`pageSize` plays for `surfaceFromBackground`. `box` and `parentBox` are both in the same absolute
+slide-unit coordinate space; `surfaceFromPaint` normalizes `box`'s position against `parentBox`
+before projecting it onto the gradient, the same way `surfaceFromBackground` normalizes against
+the page.
+
 ## 2.5 Typography rules
 
 - **Fonts come from the theme pairing, resolved lazily.** Phase 17's `fontToken: 'heading' |

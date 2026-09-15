@@ -44,6 +44,7 @@ Neither library is a dependency. Both are *design sources* — we copy judgment,
 | # | Document | Read it when |
 |---|---|---|
 | — | **this file** | Always first. Scope, rules, phase tracker. |
+| — | [CONTINUE.md](CONTINUE.md) | You are picking this work up in a new session. Current state, verified commands, traps, review protocol. |
 | 1 | [01-architecture.md](01-architecture.md) | You touch the block model, registry, renderers, or how a block becomes a shape. |
 | 2 | [02-design-language.md](02-design-language.md) | You pick colors, spacing, type sizes, or write a lint rule. |
 | 3 | [03-block-catalog.md](03-block-catalog.md) | You implement any block. 170 blocks, grouped into 8 families. |
@@ -116,15 +117,54 @@ These are not suggestions. A phase that violates one is not done.
    [08-phase-plan.md](08-phase-plan.md) listing scope cuts as named follow-ups. "A correct partial
    beats a broken whole" — but a silent partial is neither.
 
+## Current state — read this before starting a phase
+
+**Implemented: P18 and P19.** Everything lives in `packages/tldraw/src/blocks/`, exported from the
+package root. Resuming work: [CONTINUE.md](CONTINUE.md) is the self-contained brief.
+
+| What exists | Where |
+|---|---|
+| Block types — `BlockSpec`, `BlockDefinition`, `LayoutNode`, `LayoutContext`, `BlockSchema` | `blocks/types.ts` |
+| `BlockRegistry`, `createBlockComponents` (placeholder components until P20) | `blocks/registry.ts` |
+| `blockToShape` / `shapeToBlock` / `BLOCK_PROP_KEY` | `blocks/shape-bridge.ts` |
+| WCAG contrast math + the hue-preserving solver | `blocks/color-math.ts` |
+| Type / space / radius / elevation / motion scales, categorical ramp | `blocks/scales.ts` |
+| `DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint` | `blocks/tokens.ts` |
+| A live demo in the reference host (button: **Add P18 block**) | `examples/nextjs-sample/components/p18-blocks.tsx` |
+| Role-swatch matrix scenario | `tools/visual/scenarios/tokens.js` |
+
+**Measured baselines at the current tree** — re-measure rather than quote, but these are the
+numbers to beat:
+
+| | Value |
+|---|---|
+| Jest (`packages/tldraw`) | **99/99 suites · 726 passed · 77 todo · 19 snapshots** |
+| Typecheck | **10 errors, all in `.spec.ts`; zero in non-spec source** |
+| eslint `src/blocks` | **0 errors; warnings only inside spec files** |
+
+**Carried debt, tracked so it is not rediscovered:**
+
+- `packages/blocks` (the separate library package) was deliberately **not** created in P18. The
+  runtime primitives live in `@tlslides/tldraw`. Create it when P24 needs somewhere to put
+  concrete block definitions.
+- `surfaceFromPaint(paint, box, parentBox)` takes **three** arguments, not the two §2.4 first
+  implied. P20's `layoutChild` author needs this.
+- `tools/visual/scenarios/tokens.js` proves contrast numerically but draws every swatch on the
+  same dark card rather than on the surface under test — so it cannot show legibility. Rework it
+  once P20 can render a real slide.
+- `TypeToken` no longer includes `'label'` (a P18 stub); nothing referenced it.
+- `resolveColor` can return `ok: false` only for floors above √21 ≈ 4.583 — nothing uses one
+  today, but P31's linter must treat it as a real finding rather than assume success.
+
 ## Phase tracker
 
-Nothing is started. Update the Status column as work lands; append phase notes to
+Update the Status column as work lands; append phase notes to
 [08-phase-plan.md](08-phase-plan.md), the same way `reviews/README.md` carries phases 1–17.
 
 | Phase | Name | Depends on | Status |
 |---|---|---|---|
-| **P18** | Block foundations — types, registry, `packages/blocks` | — | ⬜ not started |
-| **P19** | Design tokens v2 — color roles, effective surface, scales | P18 | ⬜ not started |
+| **P18** | Block foundations — types, registry, shape bridge | — | ✅ done (partial — see notes) |
+| **P19** | Design tokens v2 — color roles, effective surface, scales | P18 | ✅ done |
 | **P20** | Layout engine + dual renderer + parity harness | P18, P19 | ⬜ not started |
 | **P21** | Headless block rendering (`renderPageToSvg` hook) | P20 | ⬜ not started |
 | **P22** | Motion core — tokens, adapter, WAAPI driver, build steps | P18 | ⬜ not started |

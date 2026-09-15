@@ -3,8 +3,15 @@
 import * as React from 'react'
 import { ColorStyle, TDShapeType, Tldraw, TldrawApp } from '@tlslides/tldraw'
 import type { DeckSlide, DeckTheme, TDDocument, Template } from '@tlslides/tldraw'
+import { blockToShape, shapeToBlock } from '@tlslides/tldraw'
 import { blockComponents } from './blocks'
+import { demoSpec, p18Components } from './p18-blocks'
 import { SlideManager } from './SlideManager'
+
+// Phase 5's hand-written host blocks and Phase 18's registry-driven ones share one canvas and one
+// `components` registry — the block system sits next to the existing mechanism, it does not
+// replace it.
+const allComponents = { ...blockComponents, ...p18Components }
 
 // No `id` prop is passed to <Tldraw> below, which disables its built-in IndexedDB persistence.
 // `onPersist` still fires on every persistable change, so it is the hook a host app uses to save
@@ -162,6 +169,29 @@ export default function Editor() {
     )
   }, [])
 
+  // Phase 18 — the block foundations, end to end in a real host. A `BlockSpec` (plain JSON:
+  // nested children, style and motion, and not a single coordinate) becomes a `ComponentShape`
+  // through `blockToShape`, is inserted through the same `deck.insertContent` escape hatch any
+  // host shape JSON uses, and is read straight back out with `shapeToBlock` to prove the round
+  // trip survived the document. It renders as a labelled placeholder because P20's renderer does
+  // not exist yet — that is the honest state of the system, not a broken block.
+  const addP18Block = React.useCallback(() => {
+    const app = appRef.current
+    if (!app) return
+
+    const shape = blockToShape(demoSpec, { x: 80, y: 340, width: 620, height: 220 })
+    app.deck.insertContent(app.currentPageId, { shapes: [shape] }, { center: false })
+
+    const recovered = shapeToBlock(shape)
+    // eslint-disable-next-line no-console
+    console.log('[P18] spec -> shape -> spec round trip:', {
+      componentId: shape.componentId,
+      shapeId: shape.id,
+      children: recovered?.children?.length,
+      lossless: JSON.stringify(recovered) === JSON.stringify(demoSpec),
+    })
+  }, [])
+
   const addSlide = React.useCallback(() => {
     appRef.current?.deck.addSlide()
   }, [])
@@ -225,6 +255,9 @@ export default function Editor() {
         <button id="add-bar-chart" data-testid="add-bar-chart" onClick={addBarChart}>
           Add bar chart
         </button>
+        <button id="add-p18-block" data-testid="add-p18-block" onClick={addP18Block}>
+          Add P18 block
+        </button>
         <button id="add-slide" data-testid="add-slide" onClick={addSlide}>
           Add slide
         </button>
@@ -256,7 +289,7 @@ export default function Editor() {
           onClearBackground={handleClearBackground}
         />
         <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-          <Tldraw onMount={onMount} onPersist={onPersist} components={blockComponents} />
+          <Tldraw onMount={onMount} onPersist={onPersist} components={allComponents} />
         </div>
       </div>
     </div>

@@ -484,4 +484,88 @@ ingestion (PDF/DOCX/URL), AI rewriting/expanding, AI image generation.
 *(Append one subsection per phase as it ships — what differed, what broke, what was not built.
 Follow the Phase 1–17 format in `reviews/README.md`: specifics, mechanisms, and the bugs a
 screenshot caught.)*
+
+### P18 notes — block foundations
+
+`BlockSpec`/`BlockDefinition`/`LayoutNode`/`LayoutContext` (types only), `BlockRegistry`,
+`createBlockComponents`, and `blockToShape`/`shapeToBlock` landed in
+`packages/tldraw/src/blocks/`, exported from the package root. No version bump, no migration.
+
+**Shipped narrower than the plan, on purpose: `packages/blocks` was NOT created.** The runtime
+primitives live in `@tlslides/tldraw` as §01 1.11 describes; the separate library package, which
+needs `pnpm-workspace.yaml`/`turbo.json` edits and a reinstall, is deferred until P24 actually
+needs somewhere to put concrete block definitions. Nothing else in P18 was cut.
+
+**Two bugs, both found in review, both invisible to the tests that existed:**
+
+1. **Every converted shape carried the same hardcoded id** (`'shape-id-will-be-assigned'`).
+   `TldrawApp.insertContent` remaps ids through `idsMap[shape.id] = Utils.uniqueId()`
+   (`TldrawApp.ts:2279-2280`) — **a map keyed by the shape's own id** — so two blocks inserted
+   together collapsed into one map entry, got the same new id, and one silently overwrote the
+   other. `childIndex: 0` on every block was the same defect in z-order, which this repo already
+   paid for once as B-03/B-04 in Phase 3. Fixed with `Utils.uniqueId()` plus a
+   `BlockToShapeOptions { id?, parentId?, childIndex? }`.
+2. **`style: defaultStyle` aliased a module-level singleton** — introduced *by* the fix for the
+   duplicated style literal. Every block shared one style object, so one `shape.style.color = …`
+   would restyle every block in the process and corrupt the shared default. Third time this repo
+   has hit module-level aliasing (`DEFAULT_SLIDE_SIZE`, Phase 3; `mergeTypeScale`, P19 below).
+   **`toEqual` passes happily while aliasing — only `not.toBe` catches it**, so that assertion is
+   now mandatory on anything derived from a module-level default.
+
+**Process lessons, recorded because they cost time:** the phase's stated test baseline was stale
+(phase notes are in authoring order, not commit order — `df699142`/Phase 8c landed *after* Phase
+17), and both `npx tsc` and `cmd | tail; $?` silently report success in this repo. All three are
+now documented in [09-testing.md](09-testing.md) §9.0 with verified commands and measured
+baselines.
+
+**Verified:** 95/95 suites, 639 passing (up from 93/598) · typecheck byte-identical to the
+10-error baseline · eslint `src/blocks` 0 errors · demonstrated end to end in
+`examples/nextjs-sample` (a nested `BlockSpec` → `ComponentShape` → canvas → `shapeToBlock`),
+alongside the Phase 5 blocks on the same canvas.
+
+### P19 notes — design tokens v2
+
+`color-math.ts` (WCAG luminance/contrast, hex⇄RGB⇄HSL, the hue-preserving solver), `scales.ts`
+(type/space/radius/elevation/motion as data, `applyDensity`, categorical ramp), and `tokens.ts`
+(`DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint`).
+`positive`/`negative`/`warning` added per-palette to all five built-in themes — not one shared
+green/red. `TDDocument.tokens?` is optional; no version bump, no migration.
+
+**The named follow-up is closed.** `mono-grid` `textMuted` on a gradient: against
+`theme.colors.background` it measured ~7.1:1 and looked fine; against the *actual* sampled surface
+luminance it was ~1.16:1. It now resolves at ≥ 4.5:1.
+
+**One bug found in review: the solver reported failure on a solution that existed.** The
+hue-preserving lightness clamp (`0.04–0.96`) was treated as the whole search space, so
+`ok: false` meant "nothing in my preferred aesthetic band works" rather than "no legible colour
+exists" — at surface luminance 0.170 it returned `#F5F5F5` (4.378, below the 4.5 floor) while pure
+white was a valid 4.773. Fixed with a two-tier search: the preferred band first, the true extremes
+only as a fallback. **The stated justification for the clamp — "so `ok: false` stays reachable" —
+was backwards**; making a failure mode reachable is not a design goal.
+
+That fix came with a genuinely useful piece of algebra, verified independently: for any background
+luminance, `contrast-to-white × contrast-to-black = 21` exactly, so `max(…) ≥ √21 ≈ 4.583`.
+Every floor this codebase uses (4.5, 1.4) is below that, so **`ok: false` cannot occur for them** —
+measured across 1800 samples (5 themes × 24 `GRADIENT_PRESETS` × 5 positions × 3 roles): **41
+`ok: false` before the fix, 0 after.** The invariant the linter will depend on held throughout:
+`ok: true` never lies — zero samples where `ok: true` but `ratio < floor`.
+
+**Also caught by the implementer's own test, worth repeating:** `mergeTypeScale`'s no-override
+path did `{ ...TYPE_SCALE }`, a shallow copy leaving each token's `{size, lineHeight}` aliased to
+the module-level scale. Same bug class as P18's `defaultStyle` and Phase 3's `DEFAULT_SLIDE_SIZE`.
+
+**Open follow-up, not a blocker:** `tools/visual/scenarios/tokens.js` renders a real 5-theme ×
+3-surface × 6-role matrix with measured ratios, but every swatch sits on the same dark card rather
+than on the surface being tested — so it proves the numbers without letting anyone *see* whether a
+role is legible on its ground, which was the stated reason for having a visual check at all.
+Worth reworking when P20's renderer makes a real slide available to draw on.
+
+**Interface deviation P20 must know:** `surfaceFromPaint(paint, box, parentBox)` takes three
+arguments, not the two §2.4 implied — a parent block's paint has no page-sized frame to normalize
+against the way a slide background does. Recorded in
+[02-design-language.md](02-design-language.md) §2.4.
+
+**Verified:** 99/99 suites, 726 passing (up from 95/639) · typecheck byte-identical to the
+10-error baseline · eslint `src/blocks` 0 errors, 0 warnings outside spec files · the 1800-sample
+sweep re-run independently · `tokens.png` screenshot inspected.
 </content>

@@ -68,3 +68,11 @@ export type { DeckViewerProps } from './components/DeckViewer'
 // in *any* DOM element on the page the editor shares, not only ones inside the editor's own React
 // tree; Tab is the dramatic case (it clones the current selection) but not the only one.
 export { stopKeyPropagationUnlessEscape } from './components/preventEvent'
+
+// Phase 18 — block system runtime primitives. The registry, type definitions, and bridge between
+// block instances (BlockSpec, plain JSON) and shapes (ComponentShape). Concrete block definitions
+// live in `@tlslides/blocks`; this package provides the primitives every block host needs, whether
+// they embed an editor, render blocks headlessly, or validate AI output on a server. The split keeps
+// the editor independent of any concrete block (no circular dependency), and lets a host import
+// the library alone without mounting the editor.
+export * from './blocks'

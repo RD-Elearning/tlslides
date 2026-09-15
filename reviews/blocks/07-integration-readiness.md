@@ -8,7 +8,8 @@ without the block layer this plan adds. The distinction matters because the rema
 *content-model* work, not integration work — none of it is discovered by trying to integrate, and
 none of it is made cheaper by waiting.
 
-Baseline at `df699142`: 87/87 jest suites, 570 tests passing; `build:packages` 9/9 clean;
+Baseline measured on a clean tree at `df699142`: **93/93 jest suites, 598 passing + 77 todo (675
+total), 19 snapshots**; `build:packages` 9/9 clean;
 document schema version 16; `@tlslides/tldraw@1.9.3`, unpublished.
 
 ## 7.1 What phases 1–17 actually delivered

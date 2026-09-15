@@ -3,6 +3,41 @@
 What "done" means, mechanically. Every phase's acceptance section in
 [08-phase-plan.md](08-phase-plan.md) is an instance of this.
 
+## 9.0 Running things — verified commands
+
+Measured on this machine, not quoted from a config file. Two of these are traps.
+
+```bash
+# Unit tests — one package. `npx jest` works fine.
+cd packages/tldraw && npx jest --silent                 # full suite
+cd packages/tldraw && npx jest src/blocks --silent      # one directory
+
+# Type check — `npx tsc` is BROKEN here: it resolves to
+#   node_modules/node_modules/.pnpm/typescript@4.5.5/...  (a doubled path) and dies with
+#   MODULE_NOT_FOUND. Use the package-local binary. And `--noEmit` alone fails with
+#   TS5053 because tsconfig sets `emitDeclarationOnly`, so override it:
+cd packages/tldraw && ./node_modules/.bin/tsc -p tsconfig.json --noEmit \
+  --emitDeclarationOnly false 2>&1 | grep -E '^src/'
+
+# Visual scenarios — Playwright is deliberately NOT a dependency; the harness reuses an
+# installation found via PLAYWRIGHT_PATH or a hardcoded sibling checkout.
+node tools/visual/shoot.js <scenario> [--base=URL]
+```
+
+**Beware `cmd | tail` and `$?`** — that reports `tail`'s exit code, not the command's. Use
+`${PIPESTATUS[0]}`. This is how a failing type check reads as a pass.
+
+### Measured baselines at `df699142` (clean tree)
+
+| | Value |
+|---|---|
+| Jest | **93/93 suites · 598 passed · 77 todo · 675 total · 19 snapshots** |
+| Typecheck | **10 errors, all inside `.spec.ts` files; zero in non-spec source** |
+
+The 77 todo tests and the 10 spec-file type errors are pre-existing. Do not "fix" them as part of
+a block phase, and do not count them against yourself — but **introduce no new ones**, including
+in your own new spec files.
+
 ## 9.1 The four layers
 
 | Layer | Runs | Catches | Cost |
@@ -171,5 +206,12 @@ Plus prose covering: what differed from the plan and why; every bug found, with 
 just "fixed a bug"); what was **not** built, named as a follow-up rather than dropped; and any new
 trap a future phase will hit.
 
-Baseline to count from: **87/87 suites, 570 tests** at `df699142`.
+Baseline to count from, measured rather than quoted: **93/93 suites, 598 passing + 77 todo (675
+total), 19 snapshots** at `df699142`.
+
+> The Phase 17 notes in `reviews/README.md` say "87/87 suites, 570 tests". That is not HEAD: the
+> commit at HEAD (`df699142`, Phase 8c) landed *after* Phase 17, so the phase notes are in
+> chronological order of authoring, not of committing. **Measure the baseline on a clean tree
+> before you start a phase; do not quote a number out of a phase note.** The 77 todo tests are
+> pre-existing placeholders — they must stay todo, not get "fixed".
 </content>
