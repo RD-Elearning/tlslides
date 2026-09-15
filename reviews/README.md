@@ -23,6 +23,13 @@ was checked by grep, not assumed.
 | 5 | [05-ai-templates-animation.md](05-ai-templates-animation.md) | The three pillars of your product: AI generation, element templates, per-item animation |
 | 6 | [06-feature-backlog.md](06-feature-backlog.md) | Prioritized backlog, completeness double-check, and known bugs |
 
+**Phases 11–17 are planned in [roadmap-slides.md](roadmap-slides.md). Phases 18+ are planned in
+[blocks/README.md](blocks/README.md)** — the block system: ~170 typed, themeable, animatable
+content blocks with a pure layout function and matching DOM/SVG renderers, the slide-composition
+layer above them, and the `DeckSpec` contract an AI targets. That directory's README is the entry
+point for any agent implementing P18–P32, and it also carries the evidence-based answer to
+"is this ready to embed in the real Next.js app?" ([blocks/07-integration-readiness.md](blocks/07-integration-readiness.md)).
+
 ## Executive summary
 
 ### The three questions you asked

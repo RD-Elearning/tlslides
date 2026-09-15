@@ -88,6 +88,15 @@ export function isThemeToken(value: string | undefined): boolean {
 // that field's comment on `DeckTheme` (`~types`) for a host's own brand kit wiring one up.
 // `shapeDefaults` is intentionally light-touch: a rounded corner and a filled default so a freshly
 // theme-instantiated panel doesn't need every template to repeat the same two style fields.
+// Phase 19 — `positive`/`negative`/`warning` per built-in theme (doc `reviews/blocks/
+// 02-design-language.md` §2.2). Picked per palette, not as one shared green/red/amber: a
+// brighter, more saturated family reads on `midnight`'s dark surfaces; the same hues would look
+// garish against `ivory-editorial`'s warm cream, so that theme gets deeper, muted tones instead.
+// Where a theme's own `accent2` already sits in the red or green family (`mono-grid`'s red,
+// `forest`'s green-ish `accent1`), the status colour is still a distinct hex — close in family
+// is fine (both read as "that kind of colour" to a viewer), identical is not (it would make the
+// brand accent and a semantic status colour indistinguishable in the laid-out node tree, which
+// is exactly the "positive/negative reserved for real polarity" rule this doc section polices).
 export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
   {
     id: 'midnight',
@@ -99,6 +108,9 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       textMuted: '#94A3B8',
       accent1: '#38BDF8',
       accent2: '#F472B6',
+      positive: '#34D399',
+      negative: '#F87171',
+      warning: '#FBBF24',
     },
     fonts: { heading: FontStyle.Sans, body: FontStyle.Sans },
     shapeDefaults: { isFilled: true, cornerRadius: 24 },
@@ -113,6 +125,9 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       textMuted: '#6B7280',
       accent1: '#B45309',
       accent2: '#065F46',
+      positive: '#3F7D58',
+      negative: '#A3342A',
+      warning: '#C08A17',
     },
     fonts: { heading: FontStyle.Serif, body: FontStyle.Sans },
     shapeDefaults: { isFilled: true, cornerRadius: 8 },
@@ -127,6 +142,9 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       textMuted: '#6B7280',
       accent1: '#FF6B6B',
       accent2: '#4ECDC4',
+      positive: '#2FAE66',
+      negative: '#E63946',
+      warning: '#F4A736',
     },
     fonts: { heading: FontStyle.Sans, body: FontStyle.Sans },
     shapeDefaults: { isFilled: true, cornerRadius: 32 },
@@ -141,6 +159,9 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       textMuted: '#6E6252',
       accent1: '#4A7856',
       accent2: '#C1502E',
+      positive: '#5B8C3A',
+      negative: '#9B3A2C',
+      warning: '#B8862B',
     },
     fonts: { heading: FontStyle.Serif, body: FontStyle.Sans },
     shapeDefaults: { isFilled: true, cornerRadius: 4 },
@@ -155,6 +176,9 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       textMuted: '#555555',
       accent1: '#111111',
       accent2: '#E63946',
+      positive: '#1F8A3B',
+      negative: '#D32F2F',
+      warning: '#C77700',
     },
     fonts: { heading: FontStyle.Mono, body: FontStyle.Sans },
     shapeDefaults: { isFilled: true, cornerRadius: 0 },
