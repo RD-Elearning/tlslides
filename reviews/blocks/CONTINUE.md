@@ -14,8 +14,10 @@ this file or reachable from it. Keep this file current: when a phase ships, upda
 > the traps. Then read `reviews/blocks/README.md` and the phase you are starting from
 > `reviews/blocks/08-phase-plan.md`.
 >
-> P18 and P19 are shipped and verified. Start at **P20** and work through the plan in order,
-> respecting the dependency graph in README.md's tracker.
+> P18 and P19 are shipped and verified. **Work from `reviews/blocks/BACKLOG.md`** — it breaks the
+> remaining phases into one-session tasks with their own scope, dependencies and acceptance. Take
+> them in the order its dependency graph allows; A5 and A4 are the two that gate everything after
+> them.
 >
 > Working agreement: **subagents implement, you coordinate and review.** Spawn one Sonnet subagent
 > per phase with a fully-specified brief (scope, acceptance criteria, verified commands, measured
