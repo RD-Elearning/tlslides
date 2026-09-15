@@ -1,7 +1,9 @@
 # The Block System — plan overview and agent entry point
 
 **Date:** 2026-09-15 · **Against commit:** `df699142` (branch `main`, phases 1–17 shipped)
-**Status:** plan only. Nothing in this directory is implemented yet.
+**Status:** P18 and P19 shipped and verified; P20 onward not started. Work is on branch
+`plan/block-system`. See [Current state](#current-state--read-this-before-starting-a-phase) for
+what exists, and [BACKLOG.md](BACKLOG.md) for what to do next.
 
 > **If you are an implementing agent, read this file first, then read only the documents your
 > phase names.** Every phase in [08-phase-plan.md](08-phase-plan.md) lists its own required
@@ -46,6 +48,7 @@ Neither library is a dependency. Both are *design sources* — we copy judgment,
 | — | **this file** | Always first. Scope, rules, phase tracker. |
 | — | [CONTINUE.md](CONTINUE.md) | You are picking this work up in a new session. Current state, verified commands, traps, review protocol. |
 | — | [BACKLOG.md](BACKLOG.md) | **You are about to implement something.** P20–P32 broken into ~40 one-session tasks with per-task scope, dependencies and acceptance. Its status column is the single source of truth for progress. |
+| — | [OVERVIEW.vi.md](OVERVIEW.vi.md) | Bản tiếng Việt — tổng quan, trạng thái, và các quyết định cần duyệt. |
 | — | [RUN.md](RUN.md) | The paste-every-time prompt that advances the backlog by one task: orient → pick → implement → review → land. |
 | 1 | [01-architecture.md](01-architecture.md) | You touch the block model, registry, renderers, or how a block becomes a shape. |
 | 2 | [02-design-language.md](02-design-language.md) | You pick colors, spacing, type sizes, or write a lint rule. |
