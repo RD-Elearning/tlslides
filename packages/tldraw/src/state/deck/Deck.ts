@@ -1,6 +1,9 @@
 import { Utils } from '@tlslides/core'
+import { compileSlide } from '~blocks/slide-compiler'
+import { resolveTokens } from '~blocks/tokens'
+import type { SlideSpec } from '~blocks/types'
+import { activeDeckTheme, BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
-import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
 import { renderPageToSvg, renderSvgToPng, resolvePageSize, toBase64Utf8 } from '~state/render'
 import { TDShapeType } from '~types'
@@ -134,6 +137,63 @@ export class Deck {
     const before = this.app.currentPageId
     this.app.addSlideFromTemplate(template, content, opts.id)
     return this.app.currentPageId === before ? undefined : this.app.currentPageId
+  }
+
+  /**
+   * Add a new slide compiled from a `SlideSpec` (D3). The spec's layout is resolved, its content
+   * blocks are converted to `ComponentShape`s via `compileSlide`, and the resulting shapes are
+   * inserted into the new slide. Background, notes, skipInPresentation and masterId are applied
+   * to the page when present in the spec.
+   *
+   * Every compiled shape gets a unique `id` and a unique, monotonically-increasing `childIndex`
+   * (P18 bug prevention). The compilation is pure and DOM-free — this method only touches the
+   * editor to create the page and insert shapes.
+   *
+   * @param spec The slide specification to compile.
+   * @param opts (optional) `id` — see the class doc comment.
+   * @returns The new slide's id.
+   */
+  addSlideFromSpec = (spec: SlideSpec, opts: NewSlideOptions = {}): string => {
+    this.assertNoCollision(opts.id)
+
+    // 1. Create the page.
+    this.app.createPage(opts.id)
+    const slideId = this.app.currentPageId
+
+    // 2. Resolve the frame from the page's stored size (or the document default).
+    const page = this.app.document.pages[slideId]
+    const [w, h] = resolvePageSize(page, this.app.document.defaultPageSize)
+    const frame = { width: w, height: h }
+
+    // 3. Resolve tokens from the document's theme + token overrides.
+    const tokens = resolveTokens(
+      activeDeckTheme(this.app.document.theme),
+      this.app.document.tokens
+    )
+
+    // 4. Compile the spec into shapes + metadata.
+    const result = compileSlide(spec, frame, tokens)
+
+    // 5. Apply page-level metadata.
+    if (result.background !== undefined) {
+      this.app.setPageBackground(slideId, result.background as SlideBackground)
+    }
+    if (result.notes !== undefined) {
+      this.app.setPageNotes(slideId, result.notes)
+    }
+    if (result.skipInPresentation !== undefined) {
+      this.app.setPageSkipInPresentation(slideId, result.skipInPresentation)
+    }
+
+    // 6. Insert the compiled shapes.
+    if (result.shapes.length > 0) {
+      this.app.insertContent(
+        { shapes: result.shapes },
+        { pageId: slideId, center: false, select: false }
+      )
+    }
+
+    return slideId
   }
 
   /**

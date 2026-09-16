@@ -77,3 +77,7 @@ export { createWAAPI_driver } from './motion/waapi-driver'
 // D2 — 16 slide layouts as pure geometry functions (06-slide-composition.md §6.3).
 export { SLIDE_LAYOUTS, getSlideLayout } from './slide-layouts'
 export type { SlideLayoutId, SlideLayout } from './slide-layouts'
+
+// D3 — slide compiler: SlideSpec → ComponentShape[] (06-slide-composition.md §6.3).
+export { compileSlide } from './slide-compiler'
+export type { CompileSlideResult } from './slide-compiler'
