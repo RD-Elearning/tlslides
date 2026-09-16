@@ -28,6 +28,8 @@ export {
   createLayoutContext,
 } from './layout'
 export type { MeasureTextProvider, CreateLayoutContextOptions } from './layout'
+export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
+export type { BlockRendererProps } from './render-dom'
 export {
   clamp,
   hexToRgb,
