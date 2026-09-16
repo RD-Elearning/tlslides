@@ -25,5 +25,13 @@ export type {
   MotionDriver,
 } from './driver'
 
+// Motion presets (05-motion-system.md §5.3)
+export {
+  MOTION_PRESETS,
+  PRESET_IDS,
+  getPreset,
+} from './presets'
+export type { MotionPreset, MotionPresetId } from './presets'
+
 // WAAPI driver implementation
 export { createWAAPI_driver } from './waapi-driver'
