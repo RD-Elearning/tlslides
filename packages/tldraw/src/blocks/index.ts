@@ -50,3 +50,25 @@ export {
   contrastRatio,
   solveForContrast,
 } from './color-math'
+
+// P22 — motion tokens + driver (05-motion-system.md §5.2, §5.6).
+export {
+  DURATION_TOKENS,
+  EASING_TOKENS,
+  DISTANCE_TOKENS,
+  SCALE_TOKENS,
+  BLUR_TOKENS,
+} from './motion/tokens'
+export {
+  ALLOWED_PROPERTIES,
+  FORBIDDEN_PROPERTIES,
+} from './motion/driver'
+export type {
+  MotionKeyframes,
+  MotionOptions,
+  MotionHandle,
+  MotionState,
+  MotionStep,
+  MotionDriver,
+} from './motion/driver'
+export { createWAAPI_driver } from './motion/waapi-driver'
