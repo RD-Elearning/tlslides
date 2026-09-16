@@ -297,6 +297,7 @@ export class Deck {
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
       blocks: opts.blocks ?? this.blocks,
+      masters: this.app.document.masters,
     })
     if (opts.format === 'svg') return svg
     return `data:image/svg+xml;base64,${toBase64Utf8(svg)}`
@@ -321,6 +322,7 @@ export class Deck {
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
       blocks: opts.blocks ?? this.blocks,
+      masters: this.app.document.masters,
     })
     return renderSvgToPng(svg, width, height, opts)
   }
