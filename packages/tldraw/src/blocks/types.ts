@@ -369,6 +369,8 @@ export interface ResolvedTextStyle {
   color: string
   /** Vertical alignment: start (top), center, end (bottom). */
   verticalAlign?: 'start' | 'center' | 'end'
+  /** Scale multiplier applied to font size. 1 = no scaling. Used by autofit and templates. */
+  scale?: number
 }
 
 /**

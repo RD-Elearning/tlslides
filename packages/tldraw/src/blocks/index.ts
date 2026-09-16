@@ -30,8 +30,19 @@ export {
   createMetricsProvider,
   isCJK,
   createLayoutContext,
+  autofitText,
+  renderList,
+  alignVertically,
 } from './layout'
-export type { MeasureTextProvider, MetricsProviderChoice, MinimalCanvasContext, CreateLayoutContextOptions } from './layout'
+export type {
+  MeasureTextProvider,
+  MetricsProviderChoice,
+  MinimalCanvasContext,
+  CreateLayoutContextOptions,
+  AutofitResult,
+  ListMarker,
+  ListOpts,
+} from './layout'
 export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
 export type { BlockRendererProps } from './render-dom'
 export { renderNodeToSvg, renderSvgDefs } from './render-svg'
@@ -75,6 +86,12 @@ export type {
   MotionStep,
   MotionDriver,
 } from './motion/driver'
+export {
+  MOTION_PRESETS,
+  PRESET_IDS,
+  getPreset,
+} from './motion/presets'
+export type { MotionPreset, MotionPresetId } from './motion/presets'
 export { createWAAPI_driver } from './motion/waapi-driver'
 
 // D2 — 16 slide layouts as pure geometry functions (06-slide-composition.md §6.3).
