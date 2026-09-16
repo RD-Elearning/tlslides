@@ -31,6 +31,13 @@ export type { MeasureTextProvider, CreateLayoutContextOptions } from './layout'
 export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
 export type { BlockRendererProps } from './render-dom'
 export { renderNodeToSvg, renderSvgDefs } from './render-svg'
+export { assertParity, TEST_TOKENS, TEST_SURFACE } from './parity-harness'
+export {
+  probeRects,
+  probeTextAndLines,
+  probeMediaAndIcons,
+  PROBE_BOX,
+} from './probe-blocks'
 export {
   clamp,
   hexToRgb,
