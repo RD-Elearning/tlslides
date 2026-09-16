@@ -25,6 +25,7 @@ export {
   anchorBox,
   splitBox,
   estimateMetrics,
+  isCJK,
   createLayoutContext,
 } from './layout'
 export type { MeasureTextProvider, CreateLayoutContextOptions } from './layout'

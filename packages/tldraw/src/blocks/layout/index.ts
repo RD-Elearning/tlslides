@@ -5,7 +5,7 @@
  */
 
 export { insetBox, anchorBox, splitBox } from './box-model'
-export { estimateMetrics } from './measure'
+export { estimateMetrics, isCJK } from './measure'
 export type { MeasureTextProvider } from './measure'
 export { createLayoutContext } from './layout-child'
 export type { CreateLayoutContextOptions } from './layout-child'
