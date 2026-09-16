@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Renderer } from '@tlslides/core'
 import { styled, dark } from '~styles'
 import { TDDocument, TDStatus } from '~types'
+import type { ComponentShape } from '~types'
 import { TldrawApp, TDCallbacks } from '~state'
 import {
   TldrawContext,
@@ -118,6 +119,17 @@ export interface TldrawProps extends TDCallbacks {
    * safely outlive, or be opened by, an app with a smaller registry.
    */
   components?: TldrawComponentsRegistry
+
+  /**
+   * (optional) When supplied, `ComponentShape`s are rendered through this callback during
+   * headless export (`Deck.getThumbnail`, `Deck.exportSlidePng`). The callback receives the
+   * `ComponentShape` and returns either a complete SVG fragment or `undefined` (fall through to
+   * the dashed placeholder). Stored on `Deck.blocks` so every subsequent thumbnail/export call
+   * uses it without the host having to pass it per-call. A host renders Tier-B blocks by looking
+   * up the block by `shape.componentId`, calling `poster()`, rendering the result to SVG, and
+   * returning the markup here.
+   */
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 export function Tldraw({
@@ -137,6 +149,7 @@ export function Tldraw({
   showSponsorLink = false,
   disableAssets = false,
   components = EMPTY_COMPONENTS,
+  blocks,
   onMount,
   onChange,
   onChangePresence,
@@ -265,6 +278,14 @@ export function Tldraw({
     if (darkMode === undefined) return
     app.setSetting('isDarkMode', darkMode)
   }, [app, darkMode])
+
+  // A5 — headless block rendering. The `blocks` callback is stored on the `Deck` instance so
+  // every subsequent `getThumbnail`/`exportSlidePng` call uses it without the host having to pass
+  // it per-call. `undefined` (no prop) clears the callback, restoring the default placeholder
+  // behaviour — same contract as every other optional prop here.
+  React.useEffect(() => {
+    app.deck.blocks = blocks
+  }, [app, blocks])
 
   // Keep presentation mode in sync with the browser's actual fullscreen state. The user can
   // leave fullscreen without going through `togglePresentationMode` at all — Esc (handled

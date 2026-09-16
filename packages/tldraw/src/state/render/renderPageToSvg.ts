@@ -170,6 +170,13 @@ export interface RenderPageToSvgOptions {
    *  server-rendered thumbnail has no user-facing UI-theme toggle to reflect, and `false` matches
    *  what `TDShapeUtil.getSvgElement`'s own label-fill resolution already hard-codes for export. */
   isDarkMode?: boolean
+  /** When supplied, `ComponentShape`s are rendered through this callback instead of the dashed
+   *  placeholder. The callback receives the `ComponentShape` and returns either a complete SVG
+   *  fragment (which is inlined verbatim) or `undefined` to fall through to the placeholder.
+   *  This is how a host routes Tier-B block `poster()` output into headless exports: the
+   *  callback looks up the block by `shape.componentId`, calls `poster()`, renders the resulting
+   *  `LayoutNode` to SVG, and returns the markup here. */
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 /** `page.size ?? defaultPageSize ?? DEFAULT_SLIDE_SIZE` — the exact fallback chain `Deck.
@@ -195,7 +202,7 @@ export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {})
   const isDarkMode = opts.isDarkMode ?? false
   const [width, height] = resolvePageSize(page, opts.defaultPageSize)
 
-  const ctx: RenderCtx = { assets, theme, isDarkMode }
+  const ctx: RenderCtx = { assets, theme, isDarkMode, blocks: opts.blocks }
 
   let defs = ''
   let backgroundRect = ''
@@ -238,6 +245,7 @@ interface RenderCtx {
   assets: TDAssets
   theme: DeckTheme
   isDarkMode: boolean
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 /** One shape's rendered body, in its own *local* coordinate space (top-left at `[0, 0]`) — the
@@ -293,8 +301,16 @@ function renderShape(shape: TDShape, ctx: RenderCtx): ShapeRender {
       return renderImage(shape, ctx)
     case TDShapeType.Video:
       return renderVideoPlaceholder(shape)
-    case TDShapeType.Component:
-      return renderComponentPlaceholder(shape as ComponentShape)
+    case TDShapeType.Component: {
+      const compShape = shape as ComponentShape
+      if (ctx.blocks) {
+        const svg = ctx.blocks(compShape)
+        if (svg !== undefined) {
+          return { width: compShape.size[0], height: compShape.size[1], inner: svg }
+        }
+      }
+      return renderComponentPlaceholder(compShape)
+    }
     case TDShapeType.Polygon:
       return renderPolygon(shape, ctx)
     case TDShapeType.Star:

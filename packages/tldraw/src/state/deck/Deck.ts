@@ -64,6 +64,11 @@ export class Deck {
   // Baseline for `_onPresentationMaybeChanged` — see that method.
   private prevPresentation: { active: boolean; slideId: string; buildStep: number }
 
+  /** When set, `getThumbnail`/`exportSlidePng` use this as the default `blocks` callback (per-call
+   *  `opts.blocks` takes precedence). Set by `<Tldraw blocks>` so a host can supply one callback
+   *  for the entire editor lifetime without passing it on every thumbnail/export call. */
+  blocks?: (shape: ComponentShape) => string | undefined
+
   constructor(app: TldrawApp) {
     this.app = app
     this.knownOrder = this.sortedPageIds()
@@ -231,6 +236,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
+      blocks: opts.blocks ?? this.blocks,
     })
     if (opts.format === 'svg') return svg
     return `data:image/svg+xml;base64,${toBase64Utf8(svg)}`
@@ -254,6 +260,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
+      blocks: opts.blocks ?? this.blocks,
     })
     return renderSvgToPng(svg, width, height, opts)
   }
