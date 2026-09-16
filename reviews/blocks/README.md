@@ -135,6 +135,7 @@ package root. Resuming work: [CONTINUE.md](CONTINUE.md) is the self-contained br
 | WCAG contrast math + the hue-preserving solver | `blocks/color-math.ts` |
 | Type / space / radius / elevation / motion scales, categorical ramp | `blocks/scales.ts` |
 | `DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint` | `blocks/tokens.ts` |
+| Box model helpers, `estimateMetrics`, `createLayoutContext`, `layoutChild` with depth cap | `blocks/layout/` |
 | A live demo in the reference host (button: **Add P18 block**) | `examples/nextjs-sample/components/p18-blocks.tsx` |
 | Role-swatch matrix scenario | `tools/visual/scenarios/tokens.js` |
 
@@ -143,9 +144,9 @@ numbers to beat:
 
 | | Value |
 |---|---|
-| Jest (`packages/tldraw`) | **99/99 suites · 726 passed · 77 todo · 19 snapshots** |
-| Typecheck | **10 errors, all in `.spec.ts`; zero in non-spec source** |
-| eslint `src/blocks` | **0 errors; warnings only inside spec files** |
+| Jest (`packages/tldraw`) | **100/100 suites · 771 passed · 77 todo · 19 snapshots** |
+| Typecheck | **0 errors in non-spec source** |
+| eslint `src/blocks` | **0 errors, 27 warnings (all in spec files)** |
 
 **Carried debt, tracked so it is not rediscovered:**
 

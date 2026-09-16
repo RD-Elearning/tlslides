@@ -40,7 +40,7 @@ and this line:
 **The critical path.** Nothing visual, no export, and no thumbnail works until A5 lands. Do this
 epic first and in order.
 
-### A1 · Layout engine core ⬜
+### A1 · Layout engine core ✅
 **Depends:** — · **Size:** M
 **Read:** `01-architecture.md` §1.6–1.8, `04-block-anatomy.md` §4.2–4.6
 **Do:** `blocks/layout/` — box model helpers (`insetBox`, `anchorBox`, `splitBox`), `layoutChild`

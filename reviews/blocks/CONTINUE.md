@@ -44,6 +44,7 @@ library package — does **not** exist yet and is deliberately deferred to P24.
 | `blocks/color-math.ts` | WCAG luminance + contrast, hex⇄RGB⇄HSL, two-tier hue-preserving solver |
 | `blocks/scales.ts` | type / space / radius / elevation / motion scales, `applyDensity`, categorical ramp |
 | `blocks/tokens.ts` | `DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint` |
+| `blocks/layout/` | box model helpers, `estimateMetrics`, `createLayoutContext`, `layoutChild` (A1) |
 
 Also touched: `types.ts` (`DeckTokens` + optional `TDDocument.tokens`, status colours on
 `DeckThemeColors`), `state/shapes/shared/deck-theme.ts` (per-palette `positive`/`negative`/
@@ -66,9 +67,9 @@ stale for HEAD).
 
 | | Current |
 |---|---|
-| Jest | **99/99 suites · 726 passed · 77 todo · 19 snapshots** |
-| Typecheck | **10 errors, all inside `.spec.ts`; zero in non-spec source** |
-| eslint `src/blocks` | **0 errors**; warnings only inside spec files |
+| Jest | **100/100 suites · 771 passed · 77 todo · 19 snapshots** |
+| Typecheck | **0 errors in non-spec source** |
+| eslint `src/blocks` | **0 errors, 27 warnings (all in spec files)** |
 
 The 77 todo tests and the 10 spec-file type errors are pre-existing. Do not "fix" them. Introduce
 no new ones, including in your own spec files.

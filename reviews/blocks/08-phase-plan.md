@@ -568,4 +568,27 @@ against the way a slide background does. Recorded in
 **Verified:** 99/99 suites, 726 passing (up from 95/639) · typecheck byte-identical to the
 10-error baseline · eslint `src/blocks` 0 errors, 0 warnings outside spec files · the 1800-sample
 sweep re-run independently · `tokens.png` screenshot inspected.
+
+### A1 notes — layout engine core (backlog task)
+
+`blocks/layout/` with four modules: `box-model.ts` (insetBox, anchorBox, splitBox), `measure.ts`
+(MeasureTextProvider interface + estimateMetrics), `layout-child.ts` (createLayoutContext factory +
+layoutChild with depth cap at 4), and barrel `index.ts`. Exported from `blocks/index.ts`.
+
+**One bug found in review: multi-line baselines were not cumulative.** Every `TextLine.baseline`
+was set to `lineHeight * 0.8` regardless of line index, so all lines in a multi-line text had
+identical baseline values (e.g. [29, 29, 29] for 3 lines). The `TextLine.baseline` doc says
+"relative to the text node's origin" — cumulative from (0,0) of the text box. Fixed to
+`Math.round(i * lineHeight + lineHeight * 0.8)`, producing [29, 66, 102] for the same input. The
+renderers (A2, A3) haven't been built yet so no consumer was broken, but the contract was wrong.
+
+**Scope cuts, named as follow-ups:**
+- `canvasMetrics` provider (browser, uses `CanvasRenderingContext2D.measureText`, opt-in) — deferred
+  to P23.
+- `tableMetrics` provider (Node, bundled per-face advance-width tables) — deferred to P23.
+- Deck-level provider decision (P23 makes it a deck-level choice, not per-call) — deferred to P23.
+
+**Verified:** 100/100 suites, 771 passing (up from 99/726) · typecheck 0 errors in non-spec source
+(down from 10 — the pre-existing spec-file errors appear to have been resolved) · eslint `src/blocks`
+0 errors, 27 warnings (all in spec files).
 </content>

@@ -21,6 +21,14 @@ export {
 } from './scales'
 export type { RGB, HSL, ContrastSolution } from './color-math'
 export {
+  insetBox,
+  anchorBox,
+  splitBox,
+  estimateMetrics,
+  createLayoutContext,
+} from './layout'
+export type { MeasureTextProvider, CreateLayoutContextOptions } from './layout'
+export {
   clamp,
   hexToRgb,
   tryHexToRgb,
