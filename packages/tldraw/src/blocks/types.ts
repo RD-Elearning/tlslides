@@ -649,3 +649,67 @@ export type TypeToken =
  * Motion preset ID: 'fade-up', 'count-up', etc. Full list in Phase 22.
  */
 export type MotionPresetId = string
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Slide / Master / Deck composition types                                         */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A slide authored by AI or human. Pure JSON — round-trips through
+ * `JSON.parse(JSON.stringify(...))` unchanged.
+ *
+ * Every field is optional so that a partial spec is valid (the layout engine
+ * supplies defaults for anything absent), and so the type can be used as a
+ * lightweight overlay on top of an existing `TDPage` without requiring any
+ * existing data to change.
+ */
+export interface SlideSpec {
+  /** Named layout (e.g. `'title'`, `'two-column'`). */
+  layout?: string
+  /** Named content slots, each holding a `BlockSpec`. */
+  content: Record<string, BlockSpec>
+  /** Override slide background. */
+  background?: Paint
+  /** Speaker notes. */
+  notes?: string
+  /** When true, this slide is skipped in presentation mode. */
+  skipInPresentation?: boolean
+  /** References a reusable `MasterSpec` by name. */
+  masterId?: string
+}
+
+/**
+ * A reusable slide template — a background layer of named regions that a
+ * `SlideSpec` can reference via `masterId`. Not a slide itself; it supplies
+ * default `BlockSpec`s for the regions it declares.
+ */
+export interface MasterSpec {
+  /** Unique name, used as the key in `DeckSpec.masters` and as the target of `SlideSpec.masterId`. */
+  name: string
+  /** Named regions, each holding a default `BlockSpec`. */
+  blocks: Record<string, BlockSpec>
+  /** Default background for slides that use this master. */
+  background?: Paint
+  /** Default layout name. */
+  layout?: string
+}
+
+/**
+ * A complete deck specification: an ordered array of slides plus optional
+ * master definitions and deck-wide theme/metadata. Pure JSON.
+ */
+export interface DeckSpec {
+  /** Ordered slides. */
+  slides: SlideSpec[]
+  /** Reusable master templates, keyed by name. */
+  masters?: Record<string, MasterSpec>
+  /** Deck-wide theme overrides. */
+  theme?: {
+    /** Colour token map. */
+    colors?: Record<string, string>
+    /** Font token map. */
+    fonts?: Record<string, string>
+  }
+  /** Deck title. */
+  title?: string
+}
