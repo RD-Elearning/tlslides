@@ -30,6 +30,7 @@ export {
 export type { MeasureTextProvider, CreateLayoutContextOptions } from './layout'
 export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
 export type { BlockRendererProps } from './render-dom'
+export { renderNodeToSvg, renderSvgDefs } from './render-svg'
 export {
   clamp,
   hexToRgb,
