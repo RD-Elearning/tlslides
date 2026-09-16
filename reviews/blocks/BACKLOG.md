@@ -51,7 +51,7 @@ it is currently declared but never instantiated.
 deep correctly and rejects 5 with a lint error, not a stack overflow; `measureText` returns the
 same result in Node and jsdom for the same input.
 
-### A2 · DOM renderer ⬜
+### A2 · DOM renderer ✅
 **Depends:** A1 · **Size:** M
 **Read:** `01-architecture.md` §1.6, §1.12
 **Do:** `blocks/render-dom.tsx` — every `LayoutNode` kind → React, absolutely positioned in slide
@@ -59,7 +59,7 @@ units, `data-part` stamped on every node carrying a `part`.
 **Acceptance:** all 8 node kinds render; `data-part` attributes match the parts the tree declares;
 no layout is computed in the renderer (it only places what layout already resolved).
 
-### A3 · SVG renderer ⬜
+### A3 · SVG renderer ✅
 **Depends:** A1 · **Size:** M · **Parallel with A2**
 **Read:** `01-architecture.md` §1.6, §1.12 items 5–6
 **Do:** `blocks/render-svg.ts` — pure string output, no DOM. Gradients via `<defs>`.
@@ -68,7 +68,7 @@ attribute** (Phase 11: a CSS class beats a presentation attribute regardless of 
 **paint on inner nodes, never an outer container** (Phase 8a: outer paint looks right live and
 vanishes from export).
 
-### A4 · Parity harness + 3 probe blocks ⬜
+### A4 · Parity harness + 3 probe blocks ✅
 **Depends:** A2, A3 · **Size:** M
 **Read:** `09-testing.md` §3
 **Do:** `assertParity(definition, props, box)` — render once through `layout()`, then compare DOM
@@ -78,7 +78,7 @@ geometry (parsed attributes). Plus three throwaway blocks exercising every node 
 count exact. A deliberately broken renderer must make it fail — prove that, don't assume it.
 **This is the test the whole architecture rests on.** If it is weak, 170 blocks drift.
 
-### A5 · Headless block rendering ⛔→⬜
+### A5 · Headless block rendering ✅
 **Depends:** A3 · **Size:** S · **CRITICAL**
 **Read:** `07-integration-readiness.md` §7.3 G1, `state/render/renderPageToSvg.ts` end to end
 **Do:** add `RenderPageToSvgOptions.blocks?: (shape, ctx) => string | undefined`; pass it through
@@ -91,7 +91,7 @@ block exports its poster, not a hole.
 block-built slide is a dashed placeholder. `Deck.exportSlidePng` does not escape it — it
 rasterizes `renderPageToSvg`'s output.
 
-### A6 · Live editor draws real blocks ⬜
+### A6 · Live editor draws real blocks ✅
 **Depends:** A2 · **Size:** S
 **Do:** `ComponentUtil` renders through `render-dom` instead of `createBlockComponents`'
 placeholder. Update `examples/nextjs-sample`'s **Add P18 block** demo to show a real block.
@@ -101,7 +101,7 @@ placeholder. Update `examples/nextjs-sample`'s **Add P18 block** demo to show a 
 
 ## Epic B — Motion  *(P22)* — parallel with Epic A
 
-### B1 · Driver + tokens ⬜
+### B1 · Driver + tokens ✅
 **Depends:** — · **Size:** S
 **Read:** `05-motion-system.md` §5.2, §5.6
 **Do:** `blocks/motion/` — the transitions.dev token scale (durations/easings/distances×3/scales/
@@ -111,7 +111,7 @@ dependency**).
 `stroke-dashoffset` — a test asserts no call touches `transform`, `width`, `height`, `top`,
 `left`, `box-shadow`. `will-change` is removed on finish.
 
-### B2 · The 34 presets ⬜
+### B2 · The 34 presets ✅
 **Depends:** B1 · **Size:** M
 **Read:** `05-motion-system.md` §5.3 (the full table)
 **Acceptance:** every preset in the table exists and is unit-tested for the properties it emits;
@@ -141,7 +141,7 @@ bundled copy, no peer dependency, no import from the main entry.
 
 ## Epic C — Text  *(P23)*
 
-### C1 · RichText + line breaking ⬜
+### C1 · RichText + line breaking ✅
 **Depends:** A1 · **Size:** M
 **Do:** `RichText = { runs: { text, bold?, italic?, color?, size? }[] }` — inline runs only, no
 nesting, no HTML. Line breaking preserves runs across breaks; output `TextLine[]` with explicit
@@ -149,14 +149,14 @@ baselines.
 **Acceptance:** a paragraph with 3 runs wrapped over 4 lines keeps run boundaries; CJK+Latin mixed
 measurement works (different rates).
 
-### C2 · Metrics providers ⬜
+### C2 · Metrics providers ✅
 **Depends:** C1 · **Size:** M
 **Do:** `estimateMetrics` (default), `tableMetrics` (Node, the 4 built-in faces), `canvasMetrics`
 (browser, opt-in). **Deck-level choice, not per call.**
 **Acceptance:** editor and export pick the same provider by default — mixed providers make a slide
 reflow between edit and export, which is worse than both being approximate.
 
-### C3 · Autofit, lists, vertical align ⬜
+### C3 · Autofit, lists, vertical align ✅
 **Depends:** C1 · **Size:** M
 **Acceptance:** autofit shrinks to a 0.75 floor then reports overflow, never below; list markers
 (dot/dash/chevron/number/icon) with indent levels; **`style.scale` multiplies font size in every
@@ -176,14 +176,14 @@ path** — that exact omission silently broke every template export from Phase 1
 blocks. This is the half of the data model that does not exist yet: `TDPage` already persists
 `size`/`background`/`notes`/`skipInPresentation`, but there is no authoring/compile layer.
 
-### D1 · SlideSpec / MasterSpec / DeckSpec types ⬜
+### D1 · SlideSpec / MasterSpec / DeckSpec types ✅
 **Depends:** — · **Size:** S
 **Read:** `06-slide-composition.md` §6.2, §6.5, §6.7
 **Do:** the three types, plus optional `TDDocument.masters?` and `TDPage.masterId?`.
 **Acceptance:** additive only — no version bump, no migration; a document without them loads
 unchanged; full JSON round-trip.
 
-### D2 · The 16 slide layouts ⬜
+### D2 · The 16 slide layouts ✅
 **Depends:** D1 · **Size:** M
 **Read:** `06-slide-composition.md` §6.3, `02-design-language.md` §2.7
 **Do:** each layout as a pure `compile(frame, tokens) → Record<string, Box>`. Pure geometry plus
@@ -191,14 +191,14 @@ the P19 spacing scale — **no block needs to exist for this.**
 **Acceptance:** every region stays inside the safe margin at 16:9, 4:3 and 9:16; declared ratios
 are actually produced; no two regions overlap. All numeric — no renderer required.
 
-### D3 · compileSlide ⬜
+### D3 · compileSlide ✅
 **Depends:** D2 · **Size:** M
 **Do:** `compileSlide(SlideSpec, frame, tokens) → { shapes, background, masterId }`, using
 `blockToShape`. Add `Deck.addSlideFromSpec(spec, opts?)`.
 **Acceptance:** a 3-slide `DeckSpec` compiles to a valid `TDDocument` in Node with no editor
 mounted; every shape gets a unique id and childIndex (the P18 bug).
 
-### D4 · Master rendering ⬜
+### D4 · Master rendering ✅
 **Depends:** D1, A2, A3 · **Size:** M
 **Read:** `06-slide-composition.md` §6.5 — this closes the master/layout follow-up open since P13
 **Acceptance:** master blocks render behind slide content in editor, presentation **and**
@@ -231,7 +231,7 @@ E2–E7 are independent of each other — this is the epic to fan out across age
 
 | id | Task | Count | Depends | Read |
 |---|---|---|---|---|
-| **E1** ⬜ | Layout containers | 14 | A4 | `03` §A, `04` E1–E2 |
+| **E1** ✅ | Layout containers | 14 | A4 | `03` §A, `04` E1–E2 |
 | **E2** ⬜ | Text blocks | 24 | E1, C3 | `03` §B, `04` E3–E4 |
 | **E3** ⬜ | Chart engine (`_engine/`) | — | E1 | `04` §4.8 |
 | **E4** ⬜ | Data & chart blocks | 32 | E3 | `03` §C, `04` E5–E6 |

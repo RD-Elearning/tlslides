@@ -171,17 +171,17 @@ Update the Status column as work lands; append phase notes to
 |---|---|---|---|
 | **P18** | Block foundations — types, registry, shape bridge | — | ✅ done (partial — see notes) |
 | **P19** | Design tokens v2 — color roles, effective surface, scales | P18 | ✅ done |
-| **P20** | Layout engine + dual renderer + parity harness | P18, P19 | ⬜ not started |
-| **P21** | Headless block rendering (`renderPageToSvg` hook) | P20 | ⬜ not started |
-| **P22** | Motion core — tokens, adapter, WAAPI driver, build steps | P18 | ⬜ not started |
-| **P23** | Text engine — rich text, autofit, measurement provider | P20 | ⬜ not started |
-| **P24** | Library A — layout containers (14) + text blocks (24) | P20, P23 | ⬜ not started |
+| **P20** | Layout engine + dual renderer + parity harness | P18, P19 | ✅ done |
+| **P21** | Headless block rendering (`renderPageToSvg` hook) | P20 | ✅ done |
+| **P22** | Motion core — tokens, adapter, WAAPI driver, build steps | P18 | ✅ B1+B2 done |
+| **P23** | Text engine — rich text, autofit, measurement provider | P20 | ✅ C1+C2+C3 done |
+| **P24** | Library A — layout containers (14) + text blocks (24) | P20, P23 | 🔄 E1 done, E2 needs E1+C3 (both ✅) |
 | **P25** | Library B — data & chart blocks (32) | P24 | ⬜ not started |
 | **P26** | Library C — diagram & relationship blocks (30) | P24 | ⬜ not started |
 | **P27** | Library D — media & icon blocks (24) | P24 | ⬜ not started |
 | **P28** | Library E — composite slides (20) + master chrome (14) | P24–P27 | ⬜ not started |
 | — | *(the 12 live/Tier-B blocks are folded into the family they twin — see [03](03-block-catalog.md) §H)* | — | — |
-| **P29** | Slide composition — regions, overflow, masters | P24 | ⬜ not started |
+| **P29** | Slide composition — regions, overflow, masters | P24 | 🔄 D1-D4 done, D5 needs E2, D6 needs G1 |
 | **P30** | Authoring UX — inserter, inspector, in-place editing | P24 | ⬜ not started |
 | **P31** | Deck Doctor — the design linter | P19, P24 | ⬜ not started |
 | **P32** | AI contract — `DeckSpec` schema + compiler + fixtures | P29, P31 | ⬜ not started |
