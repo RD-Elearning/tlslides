@@ -1,6 +1,7 @@
 export * from './useKeyboardShortcuts'
 export * from './useTldrawApp'
 export * from './useTldrawComponents'
+export * from './useBlockRegistry'
 export * from './useTheme'
 export * from './useStylesheet'
 export * from './useFileSystemHandlers'

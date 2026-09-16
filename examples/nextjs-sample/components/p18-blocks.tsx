@@ -3,6 +3,11 @@
 import * as React from 'react'
 import { BlockRegistry, createBlockComponents } from '@tlslides/tldraw'
 import type { BlockDefinition, BlockSpec } from '@tlslides/tldraw'
+import {
+  probeRects,
+  probeTextAndLines,
+  probeMediaAndIcons,
+} from '@tlslides/tldraw'
 
 // Phase 18 demo wiring for the sample app.
 //
@@ -11,11 +16,9 @@ import type { BlockDefinition, BlockSpec } from '@tlslides/tldraw'
 // `blockToShape` into a `ComponentShape`, and the registry resolves its `componentId` back to a
 // React component that the canvas renders.
 //
-// What it deliberately does NOT do is render a finished-looking block. P18 ships types, the
-// registry and the shape bridge — the layout engine and the DOM/SVG renderers are P20. So
-// `createBlockComponents` returns a labelled placeholder per block, and that placeholder is the
-// honest state of the system today. Once P20 lands, these same definitions render for real with
-// no change to the document, which is the whole point of storing a spec rather than pixels.
+// The "Add P18 block" demo now registers probe blocks (from @tlslides/tldraw) with real
+// layout() functions. When ComponentUtil sees a matching BlockDefinition in the BlockRegistry,
+// it renders through renderNodeToDom — the real layout engine — instead of the grey placeholder.
 
 function def(type: string, name: string, family: BlockDefinition['family']): BlockDefinition {
   return {
@@ -46,16 +49,19 @@ p18Registry.register(def('tls.l.split', 'Split', 'layout'))
  *  hand-written Phase 5 blocks so both mechanisms coexist on one canvas. */
 export const p18Components = createBlockComponents(p18Registry)
 
-/** A nested spec, used by the "Add P18 block" button. Two levels deep, with style and motion —
- *  all of which survive the round trip into the document and back out. */
+/** A BlockRegistry with probe blocks that have real layout() functions.
+ *  These render through renderNodeToDom instead of the grey placeholder. */
+export const liveBlockRegistry = new BlockRegistry()
+liveBlockRegistry.register(probeRects)
+liveBlockRegistry.register(probeTextAndLines)
+liveBlockRegistry.register(probeMediaAndIcons)
+
+/** A nested spec, used by the "Add P18 block" button. Now uses a probe block (probe.rects)
+ *  with real layout rendering instead of a placeholder. */
 export const demoSpec: BlockSpec = {
-  type: 'tls.l.split',
-  id: 'demo-split',
-  props: { ratio: '3:7', gutter: 'xl' },
+  type: 'probe.rects',
+  id: 'demo-rects',
+  props: {},
   style: { surface: 'surfaceAlt', tone: 'filled', radius: 'lg' },
-  motion: { preset: 'split-in', order: 1, duration: 500 },
-  children: [
-    { type: 'tls.t.title', props: { text: 'Margin fell on infrastructure' } },
-    { type: 'tls.d.kpi', props: { label: 'Gross margin', value: '61%', delta: -3 } },
-  ],
+  motion: { preset: 'fade-in', order: 1, duration: 500 },
 }

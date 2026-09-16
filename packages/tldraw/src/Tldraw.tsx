@@ -11,7 +11,9 @@ import {
   useTldrawApp,
   TldrawComponentsContext,
   TldrawComponentsRegistry,
+  BlockRegistryContext,
 } from '~hooks'
+import type { BlockRegistry } from '~blocks/registry'
 import { shapeUtils } from '~state/shapes'
 import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
@@ -130,6 +132,15 @@ export interface TldrawProps extends TDCallbacks {
    * returning the markup here.
    */
   blocks?: (shape: ComponentShape) => string | undefined
+
+  /**
+   * (optional) A BlockRegistry containing block definitions with layout() functions.
+   * When a ComponentShape's componentId matches a definition in this registry,
+   * ComponentUtil renders through renderNodeToDom (the real layout engine) instead of
+   * the createBlockComponents placeholder. The host app typically builds this registry
+   * from its block definitions and passes it alongside the `components` prop.
+   */
+  blockRegistry?: BlockRegistry
 }
 
 export function Tldraw({
@@ -150,6 +161,7 @@ export function Tldraw({
   disableAssets = false,
   components = EMPTY_COMPONENTS,
   blocks,
+  blockRegistry,
   onMount,
   onChange,
   onChangePresence,
@@ -372,22 +384,24 @@ export function Tldraw({
   // Use the `key` to ensure that new selector hooks are made when the id changes
   return (
     <TldrawContext.Provider value={app}>
-      <TldrawComponentsContext.Provider value={components}>
-        <InnerTldraw
-          key={sId || 'Tldraw'}
-          id={sId}
-          autofocus={autofocus}
-          showPages={showPages}
-          showMenu={showMenu}
-          showMultiplayerMenu={showMultiplayerMenu}
-          showStyles={showStyles}
-          showZoom={showZoom}
-          showTools={showTools}
-          showUI={showUI}
-          showSponsorLink={showSponsorLink}
-          readOnly={readOnly}
-        />
-      </TldrawComponentsContext.Provider>
+      <BlockRegistryContext.Provider value={blockRegistry}>
+        <TldrawComponentsContext.Provider value={components}>
+          <InnerTldraw
+            key={sId || 'Tldraw'}
+            id={sId}
+            autofocus={autofocus}
+            showPages={showPages}
+            showMenu={showMenu}
+            showMultiplayerMenu={showMultiplayerMenu}
+            showStyles={showStyles}
+            showZoom={showZoom}
+            showTools={showTools}
+            showUI={showUI}
+            showSponsorLink={showSponsorLink}
+            readOnly={readOnly}
+          />
+        </TldrawComponentsContext.Provider>
+      </BlockRegistryContext.Provider>
     </TldrawContext.Provider>
   )
 }
