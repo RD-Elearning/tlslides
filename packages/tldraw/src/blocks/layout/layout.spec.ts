@@ -327,7 +327,7 @@ function makeContainerBlock(): BlockDefinition {
     layout: (_props: Record<string, unknown>, ctx: LayoutContext): LayoutNode => {
       const box: Box = { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }
       const child: LayoutNode = ctx.layoutChild(
-        { type: 'test.child', props: {} },
+        { id: 'c1', type: 'test.child', props: {} },
         box
       )
       return { k: 'group', box: ctx.box, part: 'root', children: [child] }
@@ -375,27 +375,27 @@ describe('layoutChild depth capping', () => {
     // We'll build this manually by nesting createLayoutContext.
     const root = makeCtx({ registry })
     const box1: Box = { x: 0, y: 0, width: 1920, height: 1080 }
-    const node1 = root.layoutChild({ type: 'test.container', props: {} }, box1)
+    const node1 = root.layoutChild({ id: 'ct1', type: 'test.container', props: {} }, box1)
     // node1 is a group containing a child (test.child at depth 1).
     expect(node1.k).toBe('group')
 
     // Now build a context at depth 1 and try again.
     const ctx1 = makeCtx({ registry, depth: 1 })
     const box2: Box = { x: 0, y: 0, width: 800, height: 600 }
-    const node2 = ctx1.layoutChild({ type: 'test.container', props: {} }, box2)
+    const node2 = ctx1.layoutChild({ id: 'ct2', type: 'test.container', props: {} }, box2)
     expect(node2.k).toBe('group')
 
     // At depth 2, layoutChild should still work.
     const ctx2 = makeCtx({ registry, depth: 2 })
     const box3: Box = { x: 0, y: 0, width: 400, height: 300 }
-    const node3 = ctx2.layoutChild({ type: 'test.container', props: {} }, box3)
+    const node3 = ctx2.layoutChild({ id: 'ct3', type: 'test.container', props: {} }, box3)
     expect(node3.k).toBe('group')
 
     // At depth 3, layoutChild should still work (newDepth = 4 <= MAX_DEPTH).
     // layoutChild now wraps in a group, so the result is a group containing a rect.
     const ctx3 = makeCtx({ registry, depth: 3 })
     const box4: Box = { x: 0, y: 0, width: 200, height: 200 }
-    const node4 = ctx3.layoutChild({ type: 'test.child', props: {} }, box4)
+    const node4 = ctx3.layoutChild({ id: 'c2', type: 'test.child', props: {} }, box4)
     expect(node4.k).toBe('group')
     expect(node4.children[0].k).toBe('rect')
   })
@@ -406,7 +406,7 @@ describe('layoutChild depth capping', () => {
     const box: Box = { x: 0, y: 0, width: 200, height: 200 }
     let node: LayoutNode | undefined
     expect(() => {
-      node = ctx4.layoutChild({ type: 'test.child', props: {} }, box)
+      node = ctx4.layoutChild({ id: 'c3', type: 'test.child', props: {} }, box)
     }).not.toThrow()
     expect(node).toBeDefined()
     expect(node!.k).toBe('group')
@@ -418,7 +418,7 @@ describe('layoutChild depth capping', () => {
     // Even at an absurd depth, it should return a node without stack overflow.
     const ctx = makeCtx({ registry, depth: 100 })
     const box: Box = { x: 0, y: 0, width: 100, height: 100 }
-    const node = ctx.layoutChild({ type: 'test.child', props: {} }, box)
+    const node = ctx.layoutChild({ id: 'c4', type: 'test.child', props: {} }, box)
     expect(node.k).toBe('group')
   })
 })

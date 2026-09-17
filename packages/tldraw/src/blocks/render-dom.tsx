@@ -99,7 +99,13 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           {...(part ? { 'data-part': part } : {})}
         >
           {node.children.map((child, i) => (
-            <React.Fragment key={child.part ?? i}>
+            // The key must include the index. `part` alone is not unique: a block is free to
+            // emit two nodes with the same part name (a repeated `label`, one per column), and
+            // React then warns "Encountered two children with the same key" and may duplicate or
+            // omit one of them. Part names are a *motion* address (`data-part`, which stays on
+            // the element below), not an identity — the layout tree is rebuilt wholesale on every
+            // render, so position is the identity here.
+            <React.Fragment key={`${child.part ?? 'n'}:${i}`}>
               {renderNodeToDom(child)}
             </React.Fragment>
           ))}

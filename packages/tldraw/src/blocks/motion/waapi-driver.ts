@@ -32,12 +32,29 @@ const KEYFRAME_MAP: Record<string, string> = {
 }
 
 /**
+ * Is this authoring-side property name one the driver is allowed to animate?
+ *
+ * The allow-list in `driver.ts` is written in **CSS** spelling (`clip-path`,
+ * `stroke-dashoffset`) while `MotionKeyframes`/`MotionState` — the only shapes a caller can
+ * legally construct — are written in **JS** spelling (`clipPath`, `strokeDashoffset`). Comparing
+ * the caller's key against the allow-list directly therefore rejected `clipPath` and
+ * `strokeDashoffset` unconditionally, i.e. every wipe/mask-reveal preset the motion system
+ * declares. Mapping through `KEYFRAME_MAP` first is what makes the two vocabularies agree, and
+ * keeps `ALLOWED_PROPERTIES` the single source of truth rather than duplicating it in a second
+ * spelling. An unmapped key is not in the map at all, so it still fails.
+ */
+function isAllowedProperty(key: string): boolean {
+  const cssProp = KEYFRAME_MAP[key]
+  return cssProp !== undefined && (ALLOWED_PROPERTIES as readonly string[]).includes(cssProp)
+}
+
+/**
  * Assert that a keyframes object only contains allowed properties.
  * Throws in development if a forbidden property is present.
  */
 function assertAllowedKeyframes(keyframes: MotionKeyframes): void {
   for (const key of Object.keys(keyframes)) {
-    if (!(ALLOWED_PROPERTIES as readonly string[]).includes(key)) {
+    if (!isAllowedProperty(key)) {
       throw new Error(`motion/waapi-driver: forbidden keyframe property "${key}"`)
     }
   }
@@ -48,7 +65,7 @@ function assertAllowedKeyframes(keyframes: MotionKeyframes): void {
  */
 function assertAllowedState(state: MotionState): void {
   for (const key of Object.keys(state)) {
-    if (!(ALLOWED_PROPERTIES as readonly string[]).includes(key)) {
+    if (!isAllowedProperty(key)) {
       throw new Error(`motion/waapi-driver: forbidden state property "${key}"`)
     }
   }

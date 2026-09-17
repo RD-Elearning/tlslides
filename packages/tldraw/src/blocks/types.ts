@@ -5,7 +5,15 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationTrigger } from '~types'
+import type { TDShape, AnimationTrigger, DeckTheme } from '~types'
+// Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
+// itself imports type-only from this file — both directions are `import type`, so this is a
+// type-only circular reference, erased entirely at compile time. No runtime cycle exists.
+// Re-exported below so `DeckSpec.tokens` and any consumer importing from `./types` (the
+// app-facing contract module) can both reach it without also knowing it physically lives in
+// `./tokens`.
+import type { DeckTokens } from './tokens'
+export type { DeckTokens }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Block instance and spec                                                         */
@@ -19,8 +27,10 @@ export interface BlockSpec {
   /** Registry key of the definition, namespaced. Built-ins use `tls.`; a host uses its own. */
   type: string
   /** Stable within its slide. Used to target motion, to let AI cross-reference, and as the
-   *  animation part-key prefix. Generated on insert if absent. */
-  id?: string
+   *  animation part-key prefix. Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2): required —
+   *  this is the app-facing contract FastAPI and the AI exchange. `shapeToBlock` still reads
+   *  older shapes that predate this and mints an id when one is absent; it never throws. */
+  id: string
   /** Content + options. Validated against the definition's `schema`. */
   props: Record<string, unknown>
   /** Presentation overrides. Every field optional; the theme + definition defaults fill the rest. */
@@ -709,29 +719,30 @@ export interface MasterSpec {
 }
 
 /**
- * A complete deck specification: an ordered array of slides plus optional
- * master definitions and deck-wide theme/metadata. Pure JSON.
+ * A complete deck specification: an ordered array of slides plus optional master
+ * definitions and deck-wide theme/metadata. Pure JSON. Schema v1
+ * (`reviews/blocks/BACKLOG-demo.md` §2.2) — this is the contract FastAPI stores and the AI
+ * writes to directly.
  */
 export interface DeckSpec {
-  /** Schema version. */
-  version?: number
-  /** Document ID. */
-  id?: string
+  /** Schema version. Literal `1` — an unversioned or differently-versioned payload is a
+   *  contract violation, not a value this field can hold. */
+  version: 1
+  /** Document ID. FastAPI's key for this deck. */
+  id: string
+  /** Deck title. */
+  title: string
+  /** A built-in theme id (one of `BUILT_IN_DECK_THEMES`, e.g. `'mono-grid'`) or a full
+   *  `DeckTheme` object (a host's own brand kit). NEVER literal hex — see governing rule #3
+   *  (`reviews/blocks/README.md`): the AI writes a theme id, never a colour. */
+  theme: string | DeckTheme
+  /** Aspect ratio: a named preset, or an explicit `[width, height]` — see
+   *  `resolveDeckFrame` (`blocks/deck-document.ts`) for exactly how a tuple is interpreted. */
+  aspect: 'widescreen' | 'standard' | 'square' | [number, number]
+  /** Design token overrides (brand-kit overrides layered on top of `theme`). */
+  tokens?: DeckTokens
+  /** Reusable master templates. */
+  masters?: MasterSpec[]
   /** Ordered slides. */
   slides: SlideSpec[]
-  /** Reusable master templates. */
-  masters?: Record<string, MasterSpec> | MasterSpec[]
-  /** Deck-wide theme overrides. */
-  theme?: {
-    /** Colour token map. */
-    colors?: Record<string, string>
-    /** Font token map. */
-    fonts?: Record<string, string>
-  }
-  /** Deck title. */
-  title?: string
-  /** Aspect ratio: named preset (e.g. 'widescreen') or explicit [width, height]. */
-  aspect?: string | [number, number]
-  /** Design token overrides. */
-  tokens?: Record<string, unknown>
 }

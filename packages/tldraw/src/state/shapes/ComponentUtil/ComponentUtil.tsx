@@ -12,64 +12,10 @@ import {
   transformSingleRectangle,
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
-import { useTldrawComponents, useBlockRegistry } from '~hooks'
+import { useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
 import { renderNodeToDom } from '~blocks/render-dom'
-import { createLayoutContext } from '~blocks/layout'
-import type { ResolvedTokens, SurfaceContext } from '~blocks/types'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
-
-/**
- * Minimal default tokens for the block renderer. Used when a BlockDefinition's layout()
- * needs a LayoutContext but no host-supplied tokens are available. These cover the fields
- * createLayoutContext requires; the values are safe defaults that let probe/test blocks
- * render correctly without a full design-token pipeline.
- */
-const DEFAULT_TOKENS: ResolvedTokens = {
-  color: {
-    surface: '#ffffff',
-    surfaceAlt: '#f3f4f6',
-    accent: '#3b82f6',
-    accent2: '#8b5cf6',
-    text: '#1a1a1a',
-    textMuted: '#6b7280',
-    positive: '#22c55e',
-    negative: '#ef4444',
-    warning: '#f59e0b',
-    neutral: '#71717a',
-    line: '#d1d5db',
-    scrim: '#00000066',
-  },
-  categorical: ['#3b82f6', '#8b5cf6', '#ef4444', '#22c55e', '#f59e0b', '#06b6d4'],
-  space: { '3xs': 2, '2xs': 4, xs: 6, sm: 8, md: 12, lg: 16, xl: 24, '2xl': 32, '3xl': 48, '4xl': 64 },
-  radius: { none: 0, sm: 4, md: 8, lg: 12, xl: 16, pill: 9999 },
-  type: {
-    display: { size: 48, lineHeight: 1.1 },
-    title: { size: 36, lineHeight: 1.2 },
-    heading: { size: 28, lineHeight: 1.3 },
-    subheading: { size: 22, lineHeight: 1.35 },
-    lead: { size: 18, lineHeight: 1.4 },
-    body: { size: 16, lineHeight: 1.5 },
-    caption: { size: 13, lineHeight: 1.4 },
-    footnote: { size: 11, lineHeight: 1.35 },
-  },
-  elevation: {
-    0: { level: 0, dx: 0, dy: 0, blur: 0, color: 'transparent', shadow: 'none' },
-    1: { level: 1, dx: 0, dy: 1, blur: 3, color: '#0000001a', shadow: '0 1px 3px #0000001a' },
-    2: { level: 2, dx: 0, dy: 2, blur: 8, color: '#00000026', shadow: '0 2px 8px #00000026' },
-  },
-  motion: {
-    duration: { fast: 150, normal: 300, slow: 500 },
-    ease: { linear: 'linear', 'ease-in': 'ease-in', 'ease-out': 'ease-out', 'ease-in-out': 'ease-in-out' },
-  },
-  density: 'default',
-}
-
-const DEFAULT_SURFACE: SurfaceContext = {
-  behind: { type: 'solid', color: '#ffffff' },
-  luminance: 1,
-  overImage: false,
-}
 
 type T = ComponentShape
 type E = HTMLDivElement
@@ -137,6 +83,18 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
 
       const Registered = registry[componentId]
 
+      // The deck's real tokens (theme + any per-doc override) and the real surface behind this
+      // shape (the current page's background, sampled at this shape's own position) — not a
+      // hardcoded second scale system. Called unconditionally (hooks can't run inside the `if`
+      // below) — cheap when there is no `blockDef` since nothing downstream reads it, and both
+      // `useDeckTokens`/`useBlockSurface` are memoised so an unrelated store tick doesn't produce
+      // a new object here. See `hooks/useDeckTokens.ts` for why this doesn't call
+      // `blocks/deck-context.ts`'s `deckLayoutContext` (it can't carry this shape's position).
+      const layoutCtx = useBlockLayoutContext(
+        { x: shape.point[0], y: shape.point[1], width: size[0], height: size[1] },
+        { headless: false },
+      )
+
       // When a BlockDefinition exists in the BlockRegistry for this componentId, render
       // through the layout engine + DOM renderer instead of the createBlockComponents
       // placeholder. The layout props come from $block.props if present, otherwise the
@@ -148,13 +106,9 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           ? ((props as Record<string, unknown>).$block as Record<string, unknown>).props ??
             props
           : props
-        const ctx = createLayoutContext({
-          box: { width: size[0], height: size[1] },
-          tokens: DEFAULT_TOKENS,
-          surface: DEFAULT_SURFACE,
-          headless: false,
-        })
-        blockNode = renderNodeToDom(blockDef.layout(layoutProps as Record<string, unknown>, ctx))
+        blockNode = renderNodeToDom(
+          blockDef.layout(layoutProps as Record<string, unknown>, layoutCtx),
+        )
       }
 
       return (

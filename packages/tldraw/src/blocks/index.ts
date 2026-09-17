@@ -101,3 +101,47 @@ export type { SlideLayoutId, SlideLayout } from './slide-layouts'
 // D3 — slide compiler: SlideSpec → ComponentShape[] (06-slide-composition.md §6.3).
 export { compileSlide } from './slide-compiler'
 export type { CompileSlideResult, CompileFinding } from './slide-compiler'
+
+// Q8 — slide decompiler: TDPage/TDDocument → SlideSpec/DeckSpec (the reverse path).
+export { documentToDeckSpec, pageToSlideSpec } from './slide-decompiler'
+export type { DecompileFinding, DecompileOptions } from './slide-decompiler'
+
+// Q9 — deckLayoutContext: one LayoutContext builder, three consumers (editor, DeckViewer, export).
+export { deckLayoutContext } from './deck-context'
+
+// W1 — DeckSpec → TDDocument (the compile-side counterpart to documentToDeckSpec above).
+export { deckSpecToDocument, resolveDeckFrame, resolveDeckTheme } from './deck-document'
+export type { DeckDocumentResult } from './deck-document'
+
+// Q3/W1 — the built-in block library (14 layout containers, 9 text blocks, 1 data block) and
+// its registration helper. `./library` is the aggregate; individual family arrays are also
+// exported directly for a host that wants only one family.
+export { BUILT_IN_BLOCKS, registerBuiltInBlocks, layoutBlocks, textBlocks, dataBlocks } from './library'
+
+// P22/B3 — motion resolution: a block's declarative recipe + spec overrides → concrete
+// block-level (`ShapeAnimation`) and part-level (`MotionKeyframes`+timing) descriptors.
+export {
+  resolveBlockMotion,
+  resolvePartMotion,
+  deriveShapeAnimation,
+  presetToEffect,
+} from './motion/resolve-motion'
+export type { ResolvedBlockMotion, ResolvedPartMotion } from './motion/resolve-motion'
+
+// Q19 — validation + the AI capability digest. `validateDeckSpec`'s findings are written to be
+// fed straight back to a model as a fix instruction; `capabilityDigest` is generated from
+// `BUILT_IN_BLOCKS` and `SLIDE_LAYOUTS` so it cannot drift from the library the way a
+// hand-written prompt fragment would.
+export { validateDeckSpec, defaultBlockRegistry } from './validate-deck-spec'
+export type { DeckFinding } from './validate-deck-spec'
+export { capabilityDigest, capabilityDigestData } from './capability-digest'
+export type {
+  CapabilityDigest,
+  CapabilityBlockDigest,
+  CapabilityLayoutDigest,
+  CapabilitySlotDigest,
+} from './capability-digest'
+
+// Shared nearest-name suggestion, used by both `compileSlide`'s region findings and
+// `validateDeckSpec`'s — so the same misspelled name gets the same suggested fix from both.
+export { levenshtein, nearestName } from './nearest-name'

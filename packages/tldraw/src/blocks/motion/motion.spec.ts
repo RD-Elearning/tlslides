@@ -355,3 +355,51 @@ describe('createWAAPI_driver', () => {
     await expect(handle.finished).resolves.toBeUndefined()
   })
 })
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* The allow-list spelling mismatch — clipPath/strokeDashoffset used to throw       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('waapi-driver allow-list accepts the spellings its own types mandate', () => {
+  function fakeElement() {
+    const el = {
+      animate: jest.fn(() => ({
+        finished: Promise.resolve(),
+        cancel: jest.fn(),
+        pause: jest.fn(),
+        play: jest.fn(),
+      })),
+      style: { setProperty: jest.fn(), removeProperty: jest.fn() } as unknown as CSSStyleDeclaration,
+    }
+    return el as unknown as Element
+  }
+
+  it('accepts clipPath and strokeDashoffset keyframes (ALLOWED_PROPERTIES spells them in CSS)', () => {
+    const driver = createWAAPI_driver()
+    const el = fakeElement()
+    expect(() =>
+      driver.play(
+        el,
+        { clipPath: ['inset(0 100% 0 0)', 'inset(0 0 0 0)'], strokeDashoffset: ['100', '0'] },
+        { durationMs: 100 }
+      )
+    ).not.toThrow()
+  })
+
+  it('accepts clipPath in set() too — the reduced-motion path', () => {
+    const driver = createWAAPI_driver()
+    const el = fakeElement()
+    expect(() => driver.set(el, { clipPath: 'inset(0 0 0 0)', opacity: 1 })).not.toThrow()
+  })
+
+  it('still rejects a genuinely forbidden property', () => {
+    const driver = createWAAPI_driver()
+    const el = fakeElement()
+    expect(() =>
+      driver.play(el, { transform: ['none', 'scale(2)'] } as never, { durationMs: 100 })
+    ).toThrow(/forbidden keyframe property "transform"/)
+    expect(() => driver.set(el, { width: '10px' } as never)).toThrow(
+      /forbidden state property "width"/
+    )
+  })
+})

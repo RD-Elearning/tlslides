@@ -91,7 +91,8 @@ export function makeRegistry(): BlockRegistry {
 
 /** Create N leaf child specs for use in container tests. */
 export function makeChildren(n: number): BlockSpec[] {
-  return Array.from({ length: n }, () => ({
+  return Array.from({ length: n }, (_, i) => ({
+    id: `leaf-${i}`,
     type: 'test.leaf',
     props: {},
   }))

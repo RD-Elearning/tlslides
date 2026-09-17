@@ -37,3 +37,6 @@ export { layoutBlocks } from './layout'
 
 // Re-export text blocks for direct access.
 export { textBlocks } from './text'
+
+// Re-export data blocks for direct access. (W1 — `blocks/index.ts` wire-up.)
+export { dataBlocks } from './data'

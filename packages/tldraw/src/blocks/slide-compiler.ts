@@ -14,6 +14,7 @@ import type { ComponentShape } from '~types'
 import type { BlockSpec, Box, Paint, ResolvedTokens, SlideSpec } from './types'
 import { blockToShape } from './shape-bridge'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
+import { nearestName } from './nearest-name'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -190,26 +191,10 @@ function resolveRegions(
 }
 
 /**
- * Find the nearest known region name by longest common prefix similarity.
- * Returns undefined if no name has >30% overlap.
+ * Find the nearest known region name, so an unknown-region finding can name the replacement.
+ * Delegates to the shared Levenshtein scorer — see `nearest-name.ts` for why this used to be a
+ * prefix scorer and why that was wrong.
  */
 function nearestRegion(target: string, knownRegions: string[]): string | undefined {
-  let best: string | undefined
-  let bestScore = 0
-
-  for (const name of knownRegions) {
-    const minLen = Math.min(target.length, name.length)
-    let common = 0
-    for (let i = 0; i < minLen; i++) {
-      if (target[i] === name[i]) common++
-      else break
-    }
-    const score = common / Math.max(target.length, name.length)
-    if (score > bestScore) {
-      bestScore = score
-      best = name
-    }
-  }
-
-  return bestScore > 0.3 ? best : undefined
+  return nearestName(target, knownRegions)
 }

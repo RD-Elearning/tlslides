@@ -1,7 +1,8 @@
 import * as React from 'react'
 import { render, screen } from '@testing-library/react'
 import { Component } from '..'
-import { TldrawComponentsContext, BlockRegistryContext } from '~hooks'
+import { TldrawComponentsContext, BlockRegistryContext, TldrawContext } from '~hooks'
+import { TldrawApp } from '~state'
 import { ComponentShape, TDShapeType } from '~types'
 import { BlockRegistry } from '~blocks/registry'
 import { probeRects } from '~blocks/probe-blocks'
@@ -16,23 +17,30 @@ function noopEvents() {
   }
 }
 
+// `Component.Component` now reads the deck's real tokens/surface off the live `TldrawApp`
+// (Q4 — `useBlockLayoutContext`), so every render needs a real app in `TldrawContext`, not the
+// context's `{}` default. `new TldrawApp()`'s own `defaultState` already has a usable document
+// (a `slide1` page, no background/theme override) without needing `loadDocument`.
 function renderComponentShape(shape: ComponentShape, registry: Record<string, React.ComponentType<any>>, blockRegistry?: BlockRegistry) {
+  const app = new TldrawApp()
   return render(
-    <BlockRegistryContext.Provider value={blockRegistry}>
-      <TldrawComponentsContext.Provider value={registry}>
-        <Component.Component
-          shape={shape}
-          isEditing={false}
-          isBinding={false}
-          isHovered={false}
-          isSelected={false}
-          isGhost={false}
-          bounds={{ minX: 0, minY: 0, maxX: shape.size[0], maxY: shape.size[1], width: shape.size[0], height: shape.size[1] }}
-          meta={{ isDarkMode: false }}
-          events={noopEvents()}
-        />
-      </TldrawComponentsContext.Provider>
-    </BlockRegistryContext.Provider>
+    <TldrawContext.Provider value={app}>
+      <BlockRegistryContext.Provider value={blockRegistry}>
+        <TldrawComponentsContext.Provider value={registry}>
+          <Component.Component
+            shape={shape}
+            isEditing={false}
+            isBinding={false}
+            isHovered={false}
+            isSelected={false}
+            isGhost={false}
+            bounds={{ minX: 0, minY: 0, maxX: shape.size[0], maxY: shape.size[1], width: shape.size[0], height: shape.size[1] }}
+            meta={{ isDarkMode: false }}
+            events={noopEvents()}
+          />
+        </TldrawComponentsContext.Provider>
+      </BlockRegistryContext.Provider>
+    </TldrawContext.Provider>
   )
 }
 
@@ -80,19 +88,22 @@ describe('Component shape', () => {
 
   it('renders a placeholder when no registry is provided at all', () => {
     const shape = Component.create({ id: 'component3', componentId: 'kpi-tile', props: {} })
+    const app = new TldrawApp()
 
     render(
-      <Component.Component
-        shape={shape}
-        isEditing={false}
-        isBinding={false}
-        isHovered={false}
-        isSelected={false}
-        isGhost={false}
-        bounds={{ minX: 0, minY: 0, maxX: shape.size[0], maxY: shape.size[1], width: shape.size[0], height: shape.size[1] }}
-        meta={{ isDarkMode: false }}
-        events={noopEvents()}
-      />
+      <TldrawContext.Provider value={app}>
+        <Component.Component
+          shape={shape}
+          isEditing={false}
+          isBinding={false}
+          isHovered={false}
+          isSelected={false}
+          isGhost={false}
+          bounds={{ minX: 0, minY: 0, maxX: shape.size[0], maxY: shape.size[1], width: shape.size[0], height: shape.size[1] }}
+          meta={{ isDarkMode: false }}
+          events={noopEvents()}
+        />
+      </TldrawContext.Provider>
     )
 
     expect(screen.getByText('Unknown block')).toBeInTheDocument()

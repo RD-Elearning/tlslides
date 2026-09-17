@@ -22,9 +22,9 @@ import { TEST_TOKENS } from './parity-harness'
 
 const DEFAULT_FRAME = { width: 1920, height: 1080 }
 
-const blockA: BlockSpec = { type: 'tls.text', props: { text: 'Hello' } }
+const blockA: BlockSpec = { type: 'tls.text', id: 'b-a', props: { text: 'Hello' } }
 const blockB: BlockSpec = { type: 'tls.text', id: 'b-b', props: { text: 'World' } }
-const blockC: BlockSpec = { type: 'tls.kpi', props: { label: 'Revenue', value: 42 } }
+const blockC: BlockSpec = { type: 'tls.kpi', id: 'b-c', props: { label: 'Revenue', value: 42 } }
 
 /* ── compileSlide: basic compilation ────────────────────────────────────────── */
 

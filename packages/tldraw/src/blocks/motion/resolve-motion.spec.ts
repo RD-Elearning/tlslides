@@ -497,6 +497,7 @@ describe('fadeIn block export guarantee', () => {
     // override — the fadeIn effect is purely DOM-imperative (PresentationRuntime).
     const shape = blockToShape(
       {
+        id: 'fadein-1',
         type: 'tls.test.fadein',
         props: { label: 'Fade In Test' },
         motion: {

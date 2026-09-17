@@ -164,15 +164,15 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
     }
   }
 
-  // Reassemble the BlockSpec
+  // Reassemble the BlockSpec. Schema v1 requires `id`; a shape from before this field
+  // existed (or one authored by hand) simply has no `$block.id` — mint one rather than
+  // throwing, per `reviews/blocks/BACKLOG-demo.md` §2.2's note on `BlockSpec.id`.
   const spec: BlockSpec = {
+    id: meta.id ?? Utils.uniqueId(),
     type: shapeObj.componentId as string,
     props: clonedProps,
   }
 
-  if (meta.id !== undefined) {
-    spec.id = meta.id
-  }
   if (meta.style !== undefined) {
     spec.style = JSON.parse(JSON.stringify(meta.style))
   }

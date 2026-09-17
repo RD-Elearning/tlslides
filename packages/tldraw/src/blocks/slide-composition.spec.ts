@@ -8,12 +8,14 @@
 
 import type { SlideSpec, MasterSpec, DeckSpec } from './types'
 import type { TDDocument, TDPage } from '~types'
+import { FontStyle } from '~types'
 import type { BlockSpec } from './types'
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
 
 const sampleBlock: BlockSpec = {
   type: 'tls.text',
+  id: 'b1',
   props: { text: 'Hello' },
 }
 
@@ -108,16 +110,30 @@ describe('MasterSpec', () => {
 /* ── DeckSpec ──────────────────────────────────────────────────────────────── */
 
 describe('DeckSpec', () => {
-  it('is constructable with only the required `slides` field', () => {
-    const deck: DeckSpec = { slides: [] }
+  // Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2): `version`, `id`, `title`, `theme`,
+  // `aspect` and `slides` are all required — this is the app-facing contract FastAPI stores
+  // and the AI writes to directly, not a loosely-optional convenience type.
+  it('is constructable with only the required fields, `masters`/`tokens` optional', () => {
+    const deck: DeckSpec = {
+      version: 1,
+      id: 'deck-1',
+      title: 'Untitled',
+      theme: 'mono-grid',
+      aspect: 'widescreen',
+      slides: [],
+    }
     expect(deck.slides).toEqual([])
     expect(deck.masters).toBeUndefined()
-    expect(deck.theme).toBeUndefined()
-    expect(deck.title).toBeUndefined()
+    expect(deck.tokens).toBeUndefined()
   })
 
   it('round-trips a fully populated deck through JSON', () => {
     const deck: DeckSpec = {
+      version: 1,
+      id: 'deck-2',
+      title: 'My Deck',
+      theme: 'mono-grid',
+      aspect: 'widescreen',
       slides: [
         { id: 'd1', layout: 'blank', regions: { title: [sampleBlock] } },
         {
@@ -127,35 +143,48 @@ describe('DeckSpec', () => {
           masterId: 'brand',
         },
       ],
-      masters: {
-        brand: {
+      masters: [
+        {
           name: 'brand',
           blocks: { header: sampleBlock },
           background: { type: 'solid', color: '#111111' },
         },
-      },
-      theme: {
-        colors: { accent: '#ff0000' },
-        fonts: { heading: 'Poppins' },
-      },
-      title: 'My Deck',
+      ],
     }
 
     const roundTripped: DeckSpec = JSON.parse(JSON.stringify(deck))
     expect(roundTripped).toEqual(deck)
     expect(roundTripped.slides).toHaveLength(2)
-    expect(roundTripped.masters!.brand.name).toBe('brand')
-    expect(roundTripped.theme!.colors!.accent).toBe('#ff0000')
+    expect(roundTripped.masters![0].name).toBe('brand')
+    expect(roundTripped.theme).toBe('mono-grid')
     expect(roundTripped.title).toBe('My Deck')
   })
 
-  it('round-trips a deck with empty masters and no theme', () => {
+  it('round-trips a deck with a full DeckTheme (not just a theme id) and empty masters', () => {
     const deck: DeckSpec = {
+      version: 1,
+      id: 'deck-3',
+      title: 'Brand Kit Deck',
+      theme: {
+        id: 'brand-kit',
+        name: 'Brand Kit',
+        colors: {
+          background: '#ffffff',
+          surface: '#f5f5f5',
+          text: '#111111',
+          textMuted: '#666666',
+          accent1: '#ff0000',
+          accent2: '#0000ff',
+        },
+        fonts: { heading: FontStyle.Sans, body: FontStyle.Sans },
+      },
+      aspect: 'widescreen',
       slides: [{ id: 'd3', layout: 'blank', regions: {} }],
-      masters: {},
+      masters: [],
     }
     const roundTripped: DeckSpec = JSON.parse(JSON.stringify(deck))
     expect(roundTripped).toEqual(deck)
+    expect((roundTripped.theme as any).id).toBe('brand-kit')
   })
 })
 
@@ -251,19 +280,26 @@ describe('TDPage optional masterId', () => {
 
 describe('end-to-end: DeckSpec ↔ document fields', () => {
   it('a DeckSpec can be stored on TDDocument.masters and round-trip', () => {
+    // DeckSpec.masters is an array (Schema v1, `BACKLOG-demo.md` §2.2); TDDocument.masters is
+    // still the keyed Record it always was — a document isn't a wire-format DeckSpec. Converting
+    // between the two is exactly what `deckSpecToDocument` / `documentToDeckSpec` do.
     const deck: DeckSpec = {
+      version: 1,
+      id: 'e2e-deck',
+      title: 'E2E Test',
+      theme: 'mono-grid',
+      aspect: 'widescreen',
       slides: [
         { id: 'e1', layout: 'blank', regions: { title: [sampleBlock] }, masterId: 'm1' },
         { id: 'e2', layout: 'blank', regions: { body: [sampleBlock2] } },
       ],
-      masters: {
-        m1: {
+      masters: [
+        {
           name: 'm1',
           blocks: { header: sampleBlock },
           layout: 'title',
         },
-      },
-      title: 'E2E Test',
+      ],
     }
 
     const doc: TDDocument = {
@@ -287,7 +323,7 @@ describe('end-to-end: DeckSpec ↔ document fields', () => {
       },
       pageStates: {},
       assets: {},
-      masters: deck.masters,
+      masters: Object.fromEntries(deck.masters!.map((m) => [m.name, m])),
     }
 
     const roundTripped = JSON.parse(JSON.stringify(doc))
