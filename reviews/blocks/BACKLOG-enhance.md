@@ -188,11 +188,18 @@ that shows every block, and no chrome covering the slide.
    `quote`). A block that measures taller than the region still gets its measured height and a
    `region/overflow` finding is emitted — do not silently shrink it. Keep the equal split only as
    the fallback for a block whose layout throws.
-2. **Load the theme font (F1, cause 2).** Give every built-in theme an explicit `family` in its
-   type tokens (Inter for the neutral themes, keep whatever `02-design-language.md` names for the
-   others), and load it in the sample with `next/font/google` so the browser measures with the
-   same face the estimate table describes. Add `family` to the estimate table key so
-   `estimateMetrics` is per-family, not one table for all.
+2. **Load the theme font and measure with its real metrics (F1, cause 2).** Give every
+   built-in theme an explicit `family` in its type tokens (Inter for the neutral themes, keep
+   whatever `02-design-language.md` names for the others) and load it in the sample with
+   `next/font/local` from a woff2 checked into `public/fonts` (`next/font/google` fetches at
+   build time and fails offline CI). Then fix the measurement side: `measure.ts` has only four
+   hand-authored **category** tables (`sans`, `serif`, `mono`, `script`, `ADVANCE_WIDTH_TABLES`
+   at `measure.ts:584`, "typical metrics for each font category") — there is no table derived
+   from a real font, and `estimateMetrics` buckets by the same categories. Add a one-off script
+   under `tools/fonts/` (its own `devDependencies`, never `packages/`) that reads a font file
+   and emits a per-glyph advance-width JSON, check in `inter.json`, register it under face key
+   `inter`, and make `createMetricsProvider` pick the table by the resolved `family` with the
+   category table as the loud fallback (a `metrics/unknown-family` finding).
 3. **Verify then fix the editor's missing title (F2).** Reproduce with the `blocks.js` scenario,
    confirm whether `.tl-positioned-div { overflow: hidden }` is clipping; if so, the fix is (1) —
    re-screenshot after (1) before touching CSS.
@@ -218,18 +225,24 @@ that shows every block, and no chrome covering the slide.
   does not know. The estimate table is per-family after this task, so an unknown family is
   loud (a finding), not silently wrong.
 - *A block taller than its region must still round-trip to the same region.* `documentToDeckSpec`
-  decides which region a shape belongs to from the shape's box. With intrinsic heights, a
-  `display` title can legitimately extend past the region's bottom edge. If the decompiler
-  requires full containment, that title comes back as `free[]` and the demo's own round trip
-  regresses. **Write this test first** (compile a region with an over-tall block, decompile,
-  assert it is back in the region), then make the decompiler match on the block's anchor
-  (top-left inside the region, width equal to the region's) rather than on containment. Emit
-  `region/overflow` from the compiler; do not clamp the box — a clamped box is what the
-  editor's `overflow: hidden` wrapper clips against, which is F2.
+  matches a shape to a region in `shapeMatchesRegion` (`slide-decompiler.ts:78-89`): x equal,
+  width equal, top inside, **and bottom inside** (`bottomOk`). With intrinsic heights a
+  `display` title can legitimately extend past the region's bottom edge, so `bottomOk` fails and
+  the title comes back as `free[]` — the demo's own round trip regresses. **Write this test
+  first** (compile a region with an over-tall block, decompile, assert it is back in the
+  region), then drop `bottomOk` or give it a generous tolerance; x, width and top are enough to
+  identify a region. Emit `region/overflow` from the compiler; do not clamp the box — a clamped
+  box is what the editor's `overflow: hidden` wrapper clips against, which is F2.
 - *Vertical alignment is a property of the region, not the block.* Kicker/title/subtitle stack
-  from the top; a quote centres. Add an optional `align?: 'start' | 'center' | 'end'` to the
-  region definitions in `slide-layouts.ts` (additive, default `start`) and distribute leftover
-  height there. Do not let blocks reach for it — a block does not know where it is.
+  from the top; a quote centres. `SlideLayout.compile` returns plain `Record<string, Box>`
+  (`slide-layouts.ts:449`) with no room for it, so add an optional
+  `regionAlign?: Record<string, 'start' | 'center' | 'end'>` on `SlideLayout` (additive,
+  default `start`, `quote` sets `center`) and distribute leftover height in `compileSlide`. Do
+  not let blocks reach for it — a block does not know where it is.
+- *Geometry of every existing slide changes.* No spec pins the demo's numbers (checked:
+  `demo-deck-contract`, `demo-deck-roundtrip`, `parity-3way` compare paths against each other,
+  not against constants), so nothing should need a snapshot bump. If one does, update it in the
+  same commit and say why; do not "fix" the layout back to the old numbers.
 - *Font loading is asynchronous; measurement is not.* With `next/font` the face is available
   before hydration, but a host that loads Inter with a plain `<link>` renders one frame in the
   fallback face. The table provider makes the layout right regardless; the only visible effect
@@ -237,10 +250,11 @@ that shows every block, and no chrome covering the slide.
 
 **Expected output.**
 - `node tools/visual/shoot.js parity-3way` still reports 0 failing rows.
-- New scenario `tools/visual/scenarios/deck-demo.js` screenshots all six slides at their final
-  build step; a checked-in text assertion per slide that no two text nodes' bounding boxes
-  intersect (measure with `getBoundingClientRect` in the page). This is the regression test for
-  F1 — it fails today on slides 1, 4 and 5.
+- New scenario `tools/visual/scenarios/deck-demo.js` (modelled on `blocks.js`, which drives the
+  Next.js sample on `:5433`; `parity-3way.js` drives an internal harness page instead)
+  screenshots all six slides at their final build step; a checked-in text assertion per slide
+  that no two text nodes' bounding boxes intersect (measure with `getBoundingClientRect` in the
+  page). This is the regression test for F1 — it fails today on slides 1, 4 and 5.
 - `edit-initial` screenshot shows kicker, title and subtitle on slide 1, no thumbnail strip.
 - `/view` DOM carries the five attributes; the QA script can read "Slide 4 of 6".
 
@@ -298,17 +312,21 @@ This is the foundation R2 and R3 stand on; it changes no existing block.
 
 **Watch out — the hard parts.**
 
-- *React StrictMode mounts twice in development.* The Next.js App Router enables it by default,
-  so `mount → unmount → mount` on the same element is the normal dev path. `mount` must start by
+- *React StrictMode mounts twice in development.* The sample sets `reactStrictMode: true`
+  explicitly (`examples/nextjs-sample/next.config.js:35`) and the App Router defaults to it
+  anyway, so `mount → unmount → mount` on the same element is the normal dev path. `mount` must start by
   clearing the element (`root.replaceChildren()`), the disposer must be idempotent, and the
   probe test in jsdom must run under `<React.StrictMode>` to prove it.
 - *tldraw re-renders shapes far more often than props change.* Selection, hover, camera and
   drag all re-render `ComponentUtil`'s component; `usePosition` writes `transform` to
   `.tl-positioned-div` via a mobx autorun on every move. If `HostMount` calls `update` on
   every render, a drag re-templates the block sixty times a second and destroys any GSAP state
-  inside it. Trigger `update` only when `props` is shallow-unequal to the last mounted props
-  **or** `box.width/height` changed; never on `box.x/y`. Test: render, change only `x`, assert
-  `update` count is 0; change `width`, assert 1.
+  inside it. Trigger `update` only when `props` **structurally** differ from the last mounted
+  props (compare a `JSON.stringify` of props, cached per mount — props are small JSON and tldraw
+  may hand you a cloned object with identical content on every store change, so reference or
+  shallow equality would re-template on every drag) **or** `box.width/height` changed; never
+  on `box.x/y`. Test: render, change only `x`, assert `update` count is 0; re-render with a deep
+  clone of the same props, assert 0; change `width`, assert 1.
 - *Coordinates inside the host are slide units.* Both the editor (through the camera) and the
   viewer (through one `scale()` on the slide root) scale the whole canvas, so a host div of
   `box.width × box.height` CSS px is correct and a template must use `px` sizes equal to slide
@@ -367,10 +385,13 @@ folder pattern; `blocks/capability-digest.ts`; `blocks/validate-deck-spec.ts`.
    HTML-escaping; the template is **code in the registry, never in the `DeckSpec`** — the JSON
    carries `props` only, so rule 2 holds and no user-supplied markup is ever injected.
 2. `kind: 'html'` blocks get a generated `layout()`: it returns a single host node filling the
-   box with `render: def.type` and `poster: def.html.poster(props, ctx)`. Register a
-   `HostRenderer` for each html block automatically in `registerBuiltInBlocks`: `mount` sets
-   `root.innerHTML = template(...)` then calls `animate` (if present); `update` re-templates only
-   when props changed; `unmount` runs the disposer.
+   box with `render: def.type` and `poster: def.html.poster(props, ctx)`. **No second
+   registration:** `HostMount` (R1) resolves a `render` id first against the `BlockRegistry` —
+   a `kind: 'html'` definition whose `type` equals the id is rendered by a built-in
+   `HostRenderer` derived from its `html` object (`mount` sets `root.innerHTML = template(...)`,
+   `update` re-templates only when props changed, `unmount` runs the disposer) — and only then
+   against the `HostRegistry`, which stays for host-supplied renderers that are not blocks. One
+   registry to pass to the viewer, one to the editor, nothing to keep in sync.
 3. Each html block still ships `schema`, `defaults`, `summary`, `keywords`, `motion.parts` (the
    parts are `data-part` attributes in the template), `size`. The ten-point DoD applies; the
    parity test for an html block compares the **poster** against the SVG renderer, and a jsdom
@@ -397,7 +418,8 @@ folder pattern; `blocks/capability-digest.ts`; `blocks/validate-deck-spec.ts`.
 - *Escaping is the whole security story.* Props come from the LLM and from people; the template
   is trusted code. `ctx.esc()` must escape `& < > " '` and templates may only place props in
   text content or in quoted attribute values — never in `style=""`, never in `on*=""`, never as
-  a URL without a scheme allow-list (`https:`, `data:image/`). Write one generic test that runs
+  a URL without a scheme allow-list (`https:` and raster `data:image/png|jpeg|gif|webp` only —
+  `data:image/svg+xml` can carry script). Write one generic test that runs
   every html block's `template()` with `<img src=x onerror=alert(1)>` in every string slot and
   asserts the parsed DOM contains no `img` and no `on*` attribute. It runs against all html
   blocks automatically because it iterates the registry.
@@ -440,11 +462,17 @@ that makes it useful.
 `components/DeckViewer/DeckViewer.tsx:340-390`, `05-motion-system.md` §6, README rule 6.
 
 **Do.**
-1. `blocks/motion/gsap-driver.ts`, exported from a **separate entry point**
-   (`@tlslides/tldraw/motion-gsap`) so the main bundle never references it:
-   `createGsapDriver(gsap): MotionDriver`. It maps the same keyframe vocabulary WAAPI uses to
-   `gsap.fromTo`, refuses `FORBIDDEN_PROPERTIES` exactly as the WAAPI driver does, and reports
-   `finished` through the driver's promise so build-step chaining is unchanged.
+1. `blocks/motion/gsap-driver.ts`: `createGsapDriver(gsap): MotionDriver`. It takes the
+   **host's** gsap instance as an argument and contains **no `import` of `gsap`** — so it adds
+   no dependency and about 2 KB, and it can be exported from the main entry like every other
+   driver. (B5 asked for a separate entry point to keep gsap out of the bundle; that is
+   achieved by not importing it. `lask` builds a single entry from `src/index.ts` with no
+   `exports` map in `package.json`, so a second entry point would mean a build-tool change for
+   no gain.) It maps the same keyframe vocabulary WAAPI uses to `gsap.fromTo`, refuses
+   `FORBIDDEN_PROPERTIES` exactly as the WAAPI driver does, and reports `finished` through the
+   driver's promise so build-step chaining is unchanged. Type the parameter structurally
+   (`{ fromTo, timeline, … }`), not as `typeof import('gsap')`, so `@types/gsap` is not needed
+   either.
 2. Define `BlockMotionRuntime`:
    ```ts
    interface BlockMotionRuntime {
@@ -501,22 +529,23 @@ that makes it useful.
 - *Seconds vs milliseconds.* GSAP takes seconds, the runtime hands out milliseconds. Do the
   division once in the driver and in `BlockMotionRuntime.timing`'s doc, and put one test on a
   known duration; this is the bug every adapter ships once.
-- *A second entry point needs a second bundle.* `lask`/esbuild currently builds one entry. Add
-  `src/motion-gsap.ts` as an additional entry with its own `dist/motion-gsap.js` and `.d.ts`,
-  and an `exports` map entry in `package.json`. Verify `dist/index.js` still exists after the
-  build (the 2a4df990 incident) and that `grep gsap dist/index.js` is empty.
+- *Prove the bundle is gsap-free.* After the build, `grep -c "from 'gsap'\|require('gsap')" dist/index.js`
+  must be 0 and `dist/index.js` must exist (the 2a4df990 incident: a bad import graph emits
+  `.d.ts` files and no JS while the build exits 0). The import-graph test asserts no module
+  under `src/` imports `gsap`.
 
 **Expected output.**
 - `motion/gsap-driver.spec.ts` with a stub gsap object: fromTo called with expected vars,
   forbidden property rejected, finished promise resolves.
-- Import-graph test (`import-graph.spec.ts` pattern) asserting `blocks/index.ts` does **not**
-  reach `gsap-driver.ts`.
+- Import-graph test (`import-graph.spec.ts` pattern) asserting no module under `src/` imports
+  `gsap`, and `dist/index.js` contains no `gsap` import after the build.
 - Scenario `deck-demo.js` variant with GSAP: three screenshots at t = 0, t = half, t = end of
   the hero reveal, visibly different, final frame identical to the no-GSAP final frame.
 - With `prefers-reduced-motion`, the final frame appears immediately.
 
 **Acceptance.** `packages/tldraw/package.json` has no `gsap` in any dependency field.
-Bundle size of `dist/index.js` unchanged within 1 KB.
+Bundle size of `dist/index.js` grows by no more than 4 KB (the driver itself), and `gsap`
+appears nowhere in it.
 
 ---
 
@@ -566,10 +595,12 @@ luminance sampling — already written for slide backgrounds), `blocks/shape-bri
   gradient card would inherit the slide's luminance, not the card's. That is where
   light-on-light text on nested blocks will come from; derive the child surface there. Test: gradient parent dark-to-light, two
   children at the two ends, assert their resolved text colours differ.
-- *SVG gradient ids collide.* Two blocks with gradients on one slide need two `<linearGradient>`
-  defs with distinct ids, each referenced by its own rect. Derive the id from the block id (and a
-  per-render counter for nested paints); assert on a two-card fixture that the SVG contains two
-  defs with different ids and that each `fill="url(#…)"` resolves.
+- *SVG gradient ids collide today.* `render-svg.ts:21-23` mints ids from a per-call counter
+  with the fixed prefix `'svg'` (`svglg0`, …), reset on every `renderNodeToSvg` call, and no
+  caller passes `idPrefix` (`parity-harness.ts:382`, `parity-3way.spec.ts:391`). Two gradient
+  blocks rendered separately and placed on one slide both produce `svglg0`. Make `idPrefix`
+  the block id at every call site (the page exporter in R14 included) and assert on a two-card
+  fixture that the SVG contains two defs with different ids, each `fill="url(#…)"` resolving.
 - *`style` lives in shape props and is an object.* Every read that hands it to a context must
   copy it (`not.toBe` and `toEqual`, DoD 5). The decompiler already persists it; the test to
   add is the byte-for-byte round trip with a `Paint`, because `Paint` has nested arrays (stops)
@@ -605,16 +636,20 @@ runs through the existing `data-part` attributes.
 `state/deck/presentation.ts`, `05-motion-system.md` §5.4–5.6.
 
 **Do.**
-1. `shape-bridge.ts`: replace the hardcoded `FadeIn` with `deriveShapeAnimation(spec.motion, def.motion)`
-   and carry `delay`/`duration`/`ease` into the shape's `animation` (all optional fields —
-   additive). `documentToDeckSpec` reads them back.
+1. `shape-bridge.ts`: replace the hardcoded `FadeIn` with `deriveShapeAnimation(spec.motion, def.motion)`.
+   The persisted `ShapeAnimation` (`src/types.ts:485-491`) **already has** `effect`, `trigger`,
+   `order`, `durationMs`, `delayMs` — so carry the spec's `delay`/`duration` into those two
+   existing fields (check whether the bridge fills them today or leaves preset defaults) and add
+   only `easing?: string` (optional, additive). `documentToDeckSpec` reads all of them back.
 2. `DeckViewer` reveal step: resolve the block's motion with `resolveBlockMotion`, then for each
    `parts` entry call `resolvePartMotion` and play it on `el.querySelectorAll('[data-part="…"]')`
    with the resolved stagger, via the driver. The whole-block preset plays on `el` as now. Both
    respect `ALLOWED_PROPERTIES`; count-up is a `textContent` tween driven by the driver's
    progress callback (add `onUpdate` to `MotionDriver`, optional), never a layout change.
-3. Editor build-step preview (Q16) uses the same helper, so the editor and viewer play the same
-   thing — one function, `playBlockReveal(el, spec, def, rt)`, in `motion/play-reveal.ts`.
+3. The editor's Present mode (`components/Presentation/PresentationRuntime.tsx`, which is where
+   Q16's build-step playback lives, with `AnimateMenu` as its UI) uses the same helper, so the
+   editor and viewer play the same thing — one function, `playBlockReveal(el, spec, def, rt)`,
+   in `motion/play-reveal.ts`.
 4. Presets that today map to `null` effect get a real keyframe set or are removed from the
    catalog; the digest (R7) lists only presets that play.
 
@@ -647,8 +682,8 @@ runs through the existing `data-part` attributes.
 - *`null`-effect presets.* Removing a preset id breaks any saved deck that used it. Keep the id
   as an alias resolving to the nearest real effect, mark it `deprecated: true` so R7's digest
   hides it, and log nothing at runtime.
-- *One function, three callers.* `playBlockReveal` is called by the viewer, by the editor's Q16
-  preview and by the R12 inspector's Preview button. Put it in `motion/play-reveal.ts` with no
+- *One function, three callers.* `playBlockReveal` is called by the viewer, by
+  `PresentationRuntime` in the editor and by the R12 inspector's Preview button. Put it in `motion/play-reveal.ts` with no
   React import; the `import-graph` test asserts it does not reach `TldrawApp`.
 
 **Expected output.**
