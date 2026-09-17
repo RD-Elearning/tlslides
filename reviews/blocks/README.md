@@ -9,7 +9,10 @@ what exists, and [BACKLOG.md](BACKLOG.md) for what to do next.
 > of the running demo, the gap analysis against the AI-composed-deck vision, and the prioritised
 > tasks R0–R16 in four phases are in **[BACKLOG-enhance.md](BACKLOG-enhance.md)**. The how-to
 > for using the demo, adding a block (layout or html kind) and the FastAPI/LLM flow is
-> **[guides/blocks-authoring.md](../../guides/blocks-authoring.md)**. Start there.
+> **[guides/blocks-authoring.md](../../guides/blocks-authoring.md)**. The backend design — deck
+> profiles (teaching vs keynote vs report…), the outline → plan → fill → review pipeline, what is
+> saved at each step, the self-review loop and the tech stack — is
+> **[LLM-ARCHITECTURE.md](LLM-ARCHITECTURE.md)**. Start there.
 
 > **If you are an implementing agent, read this file first, then read only the documents your
 > phase names.** Every phase in [08-phase-plan.md](08-phase-plan.md) lists its own required

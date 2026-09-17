@@ -266,7 +266,9 @@ viewer. R1 adds `registry` and `hostRegistry` props to the viewer beside the edi
 ## 3. FastAPI + LLM integration — how a model picks blocks
 
 The frontend never talks to the LLM. It talks to FastAPI in `DeckSpec` JSON; FastAPI owns the
-prompt. The Next.js mock in `examples/nextjs-sample/app/api/` is the reference for the shapes
+prompt. This section is the minimal loop; the full design (deck profiles for teaching vs keynote
+vs report, outline → plan → fill → review stages, what is saved, the self-review critic, the tech
+stack) is [reviews/blocks/LLM-ARCHITECTURE.md](../reviews/blocks/LLM-ARCHITECTURE.md). The Next.js mock in `examples/nextjs-sample/app/api/` is the reference for the shapes
 the real backend must return. The endpoint table is in task **R16** of
 [BACKLOG-enhance.md](../reviews/blocks/BACKLOG-enhance.md); today only `GET/PUT /api/decks/:id`
 exist.

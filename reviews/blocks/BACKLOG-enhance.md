@@ -954,7 +954,10 @@ driver so a GSAP host gets them too; `slideTimeline` (R6) adds the transition to
 #### R16 · Backend contract — FastAPI endpoints and the mock that mirrors them · S · ⬜
 
 **Goal.** A written contract the FastAPI team implements and the Next.js mock already satisfies,
-so the frontend does not change when the real backend arrives.
+so the frontend does not change when the real backend arrives. The full backend design — deck
+profiles, the outline → plan → fill → review pipeline, versions, the critic loop and the stack —
+is [LLM-ARCHITECTURE.md](LLM-ARCHITECTURE.md); its §8 extends this table and its §11 maps
+each backend stage to the R-tasks it needs.
 
 **Do.** Document (in `guides/blocks-authoring.md` §3, expand as needed) and mirror in
 `examples/nextjs-sample/app/api/`:

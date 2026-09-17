@@ -22,7 +22,9 @@ deferred, work is editor-only, and each item is mapped to the module it lands in
 Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)** (all shipped),
 18+ in **[reviews/blocks/README.md](reviews/blocks/README.md)** — the block system. The demo
 slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; the **current work list is
-[reviews/blocks/BACKLOG-enhance.md](reviews/blocks/BACKLOG-enhance.md)** (R0–R16, four phases). Read that
+[reviews/blocks/BACKLOG-enhance.md](reviews/blocks/BACKLOG-enhance.md)** (R0–R16, four phases).
+The FastAPI/LLM backend design (deck profiles, pipeline stages, self-review, stack) is
+**[reviews/blocks/LLM-ARCHITECTURE.md](reviews/blocks/LLM-ARCHITECTURE.md)**. Read that
 README before touching anything under `packages/blocks` or `packages/tldraw/src/blocks`; it is the
 entry point for P18–P32 and carries the governing rules (one layout + two renderers, spec-not-
 pixels in the document, colors as roles, additive schema only).
