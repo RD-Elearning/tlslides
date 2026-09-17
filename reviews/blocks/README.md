@@ -5,6 +5,12 @@
 `plan/block-system`. See [Current state](#current-state--read-this-before-starting-a-phase) for
 what exists, and [BACKLOG.md](BACKLOG.md) for what to do next.
 
+> **2026-09-17 — the demo slice (Q0–Q20) is closed and the next slice is planned.** The review
+> of the running demo, the gap analysis against the AI-composed-deck vision, and the prioritised
+> tasks R0–R16 in four phases are in **[BACKLOG-enhance.md](BACKLOG-enhance.md)**. The how-to
+> for using the demo, adding a block (layout or html kind) and the FastAPI/LLM flow is
+> **[guides/blocks-authoring.md](../../guides/blocks-authoring.md)**. Start there.
+
 > **If you are an implementing agent, read this file first, then read only the documents your
 > phase names.** Every phase in [08-phase-plan.md](08-phase-plan.md) lists its own required
 > reading, the files it may touch, and the tests that decide whether it is done. Do not start a

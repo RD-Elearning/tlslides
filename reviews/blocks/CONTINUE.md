@@ -11,8 +11,9 @@ this file or reachable from it. Keep this file current: when a phase ships, upda
 
 > Continue the tlslides block system in this repo. Read `reviews/blocks/CONTINUE.md` first — it is
 > the resume brief and names the current state, the working agreement, the verified commands and
-> the traps. Then read `reviews/blocks/README.md` and the phase you are starting from
-> `reviews/blocks/08-phase-plan.md`.
+> the traps. Then read `reviews/blocks/README.md` and the task you are starting from
+> `reviews/blocks/BACKLOG-enhance.md` (R0–R16, four phases; read the task's **Watch out**
+> section before its **Do** list). `08-phase-plan.md` is the long-form phase history.
 >
 > P18 and P19 are shipped and verified. **Work from `reviews/blocks/BACKLOG.md`** — it breaks the
 > remaining phases into one-session tasks with their own scope, dependencies and acceptance. Take

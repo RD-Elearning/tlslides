@@ -1008,6 +1008,11 @@ working tree. Do not commit it with your changes.
 
 ## 10. Where to go after the demo
 
+**Superseded on 2026-09-17 by [BACKLOG-enhance.md](BACKLOG-enhance.md)**, written after a
+browser review of this demo found text overlapping on three of six slides (equal-split region
+stacking plus unloaded theme font) and no way to edit content from the UI. The list below is
+kept for the reasoning; the order to follow is the phase plan in that file.
+
 Return to `BACKLOG.md` with **nothing to rewrite**. Recommended order:
 
 1. **The rest of E2** (15 text blocks) — the cheapest lane; the pattern is set by Q10–Q12 and it

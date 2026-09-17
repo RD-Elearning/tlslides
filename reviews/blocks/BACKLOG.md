@@ -8,6 +8,12 @@ scope, files, and acceptance.
 commands (three of them are traps), the measured baselines, and the traps that have already cost
 time. Then read the task's own "Read" line.
 
+**Current slice (2026-09-17): [BACKLOG-enhance.md](BACKLOG-enhance.md)** — R0–R16 in four
+phases: demo fixes, HTML/GSAP blocks, per-block style and motion wiring, AI digest v2,
+composites, inline editing, inspector, export and the backend contract. Several items below are
+subsumed by it and point there: B5 → R3, D6 → R7, E8 → R9/R10, F1 → R13, F2 → R12, F3 → R11,
+A5's headless export gap → R14.
+
 **Status legend:** ⬜ not started · 🔄 in progress · ✅ done · ⛔ blocked
 
 ---
