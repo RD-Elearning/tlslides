@@ -65,11 +65,11 @@ Re-measure on a clean tree before starting; do **not** quote a number out of a p
 Phase 1–17 notes in `reviews/README.md` are in authoring order, not commit order, so they are
 stale for HEAD).
 
-| | Current |
+| | Current (2026-09-17) |
 |---|---|
-| Jest | **100/100 suites · 771 passed · 77 todo · 19 snapshots** |
+| Jest | **46 suites · 1000 passed · 77 todo · 19 snapshots** |
 | Typecheck | **0 errors in non-spec source** |
-| eslint `src/blocks` | **0 errors, 27 warnings (all in spec files)** |
+| eslint `src/blocks` | **0 errors, 372 warnings (all in spec files)** |
 
 The 77 todo tests and the 10 spec-file type errors are pre-existing. Do not "fix" them. Introduce
 no new ones, including in your own spec files.

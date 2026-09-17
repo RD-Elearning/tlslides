@@ -117,7 +117,7 @@ dependency**).
 **Acceptance:** every preset in the table exists and is unit-tested for the properties it emits;
 `motion.parts` names match parts `layout()` emits (rule `motion/orphan-part`).
 
-### B3 · Build-step playback ⬜
+### B3 · Build-step playback ✅
 **Depends:** B1, A6 · **Size:** M
 **Read:** `components/Presentation/PresentationRuntime.tsx` **in full** before touching it
 **Do:** block-level reveal compiles to `ShapeAnimation` so `computeBuildSteps` drives it
@@ -232,9 +232,9 @@ E2–E7 are independent of each other — this is the epic to fan out across age
 | id | Task | Count | Depends | Read |
 |---|---|---|---|---|
 | **E1** ✅ | Layout containers | 14 | A4 | `03` §A, `04` E1–E2 |
-| **E2** ⬜ | Text blocks | 24 | E1, C3 | `03` §B, `04` E3–E4 |
-| **E3** ⬜ | Chart engine (`_engine/`) | — | E1 | `04` §4.8 |
-| **E4** ⬜ | Data & chart blocks | 32 | E3 | `03` §C, `04` E5–E6 |
+| **E2** ✅ | Text blocks | 24 (9 done) | E1, C3 | `03` §B, `04` E3–E4 |
+| **E3** ✅ | Chart engine (`_engine/`) | — | E1 | `04` §4.8 |
+| **E4** 🔄 | Data & chart blocks | 32 (1 done) | E3 | `03` §C, `04` E5–E6 |
 | **E5** ⬜ | Diagram blocks, part 1 (order/link) | 15 | E1 | `03` §D, `04` E7 |
 | **E6** ⬜ | Diagram blocks, part 2 (parent/contrast/membership) | 15 | E1 | `03` §D |
 | **E7** ⬜ | Media & icon blocks | 24 | E1 | `03` §E, `04` E8 |
