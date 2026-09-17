@@ -76,7 +76,13 @@ export function computeYAxis(config: AxisLayoutConfig): AxisLayoutResult {
     const zeroY = scale(0)
     nodes.push({
       k: 'line',
-      box: { x: chartBox.x - tickLength, y: zeroY, width: chartBox.width + tickLength * 2, height: 0 },
+      // `width` must equal `to.x - from.x`. Both renderers draw a line from `from`/`to` and use
+      // `box` only as its reported extent, so a box wider than the line it describes is a lie
+      // that nothing catches at runtime — it silently misreports the part's geometry to anything
+      // measuring it (parity checks, hit-testing, overflow detection). The line starts one
+      // `tickLength` left of the chart and ends at the chart's right edge, so it spans
+      // `chartBox.width + tickLength`, not `+ tickLength * 2`.
+      box: { x: chartBox.x - tickLength, y: zeroY, width: chartBox.width + tickLength, height: 0 },
       part: 'axis/baseline',
       from: { x: chartBox.x - tickLength, y: zeroY },
       to: { x: chartBox.x + chartBox.width, y: zeroY },

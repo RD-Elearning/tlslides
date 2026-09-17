@@ -221,8 +221,25 @@ function makeCategoryLabel(
 }
 
 /** Offset a layout node's box by (dx, dy). Shallow — only the outermost box. */
+/**
+ * Translate a layout node by `(dx, dy)`.
+ *
+ * `box` is not the only thing that carries position. Two node kinds keep coordinates outside it,
+ * and both renderers draw from those, not from `box`:
+ *
+ * - `line` draws `x1/y1/x2/y2` straight from `from`/`to` (`render-svg.ts` `case 'line'`, and the
+ *   DOM renderer likewise). Shifting only `box` left the axis line drawn where it was while its
+ *   reported box moved — Q17 measured the two disagreeing by exactly `axisWidth`, 24 units, on
+ *   the baseline and all seven ticks.
+ * - `group` positions its children absolutely, so they have to move with it.
+ *
+ * `path` is deliberately not handled: its `d` string holds absolute coordinates that cannot be
+ * rewritten without parsing path data, so translating its `box` alone would reintroduce exactly
+ * this bug. Nothing in this block emits a `path` inside an offset subtree; if that changes, the
+ * path has to be laid out at its final position rather than moved afterwards.
+ */
 function offsetNode(node: LayoutNode, dx: number, dy: number): LayoutNode {
-  return {
+  const moved = {
     ...node,
     box: {
       x: node.box.x + dx,
@@ -230,7 +247,21 @@ function offsetNode(node: LayoutNode, dx: number, dy: number): LayoutNode {
       width: node.box.width,
       height: node.box.height,
     },
+  } as LayoutNode
+
+  if (moved.k === 'group') {
+    return { ...moved, children: moved.children.map((child) => offsetNode(child, dx, dy)) }
   }
+
+  if (moved.k === 'line') {
+    return {
+      ...moved,
+      from: { x: moved.from.x + dx, y: moved.from.y + dy },
+      to: { x: moved.to.x + dx, y: moved.to.y + dy },
+    }
+  }
+
+  return moved
 }
 
 /** Layout for an empty chart (no categories). */

@@ -140,27 +140,35 @@ exported from the package root. Resuming work: [CONTINUE.md](CONTINUE.md) is the
 | SVG renderer — pure string output, no DOM | `blocks/render-svg.ts` |
 | Parity harness — DOM+SVG comparison, all 8 node kinds | `blocks/parity-harness.ts` |
 | `compileSlide` v2 — regions[], free[], findings | `blocks/slide-compiler.ts` |
+| `deckSpecToDocument` — compile spec to document | `blocks/deck-document.ts` |
 | `documentToDeckSpec` — the reverse path | `blocks/slide-decompiler.ts` |
 | `deckLayoutContext` — one context, three consumers | `blocks/deck-context.ts` |
-| Motion driver + presets + `deriveShapeAnimation` | `blocks/motion/` |
+| `validateDeckSpec` — structural validation with findings | `blocks/validate-deck-spec.ts` |
+| `capabilityDigest` — AI-facing capability table | `blocks/capability-digest.ts` |
+| `nearestName` — typo suggestion by longest prefix | `blocks/nearest-name.ts` |
+| Motion driver + presets + `deriveShapeAnimation` + `resolvePartMotion` | `blocks/motion/` |
 | Schema v1 — `DeckSpec`, `SlideSpec`, `PlacedBlock` | `blocks/types.ts` |
 | `TDPage.layout` / `TDPage.slideSpecId` | `src/types.ts` |
-| `<DeckViewer>` — animated read-only viewer | `components/DeckViewer/` |
+| `<DeckViewer>` — animated read-only viewer, no editor mounted | `components/DeckViewer/` |
+| `<DeckEmbed>` — editor-backed slide component | `components/DeckEmbed/` |
 | 14 layout containers | `blocks/library/layout/` |
 | 9 text blocks (title, subtitle, kicker, body, bullets, caption, hero-number, quote, takeaway) | `blocks/library/text/` |
 | 1 data block (bar chart) + chart engine | `blocks/library/data/` |
 | `BUILT_IN_BLOCKS` aggregate + `registerBuiltInBlocks` | `blocks/library/index.ts` |
 | `SCHEMA.md` — self-contained contract reference | `reviews/blocks/SCHEMA.md` |
+| `RUN-demo.md` — how to run the demo from scratch | `reviews/blocks/RUN-demo.md` |
 | Edit mode route in Next.js sample | `examples/nextjs-sample/app/edit/` |
+| View mode route in Next.js sample | `examples/nextjs-sample/app/view/` |
+| Mock API route handler | `examples/nextjs-sample/app/api/decks/` |
 
 **Measured baselines at the current tree** — re-measure rather than quote, but these are the
 numbers to beat:
 
 | | Value |
 |---|---|
-| Jest (`packages/tldraw`) | **46 suites · 1000 passed · 77 todo · 19 snapshots** |
+| Jest (`packages/tldraw`) | **148 suites · 1716 passed · 77 todo · 19 snapshots** |
 | Typecheck | **0 errors in non-spec source** |
-| eslint `src/blocks` | **0 errors, 372 warnings (all in spec files)** |
+| eslint `src/blocks` | **0 errors** |
 
 **Carried debt, tracked so it is not rediscovered:**
 

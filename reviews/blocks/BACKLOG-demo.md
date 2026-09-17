@@ -13,6 +13,31 @@ an implementing agent does not need to re-derive the design.
 
 ---
 
+## Progress tracker — Q0 through Q20
+
+**Q0–Q13 and Q16 shipped** in commit `82b1c7a7` (2026-09-16). **Q4 and Q14 were marked done in that commit but were not implemented**, and have since been completed properly, verified independently. **Q7's commit claimed a Levenshtein suggester and shipped a longest-common-prefix scorer** — so `"lft"` scored 0.25 against `"left"`, under its own 0.3 cutoff, and the most likely region typo produced no suggestion. It is a real Levenshtein now, shared with `validateDeckSpec` via `blocks/nearest-name.ts`. **Q15, Q18, Q19 shipped** in commits `603379d2` and `2a4df990`. **Q17 shipped**: editor ↔ viewer parity passes (109 rows compared, 0 failing, worst delta 0.7 units); SVG export turns out not to render blocks at all, so the third path is still unproven. **Q20 is this task.**
+
+| Task | Status | Notes |
+|---|---|---|
+| Q0 | ✅ | Typecheck command fixed; baselines recorded |
+| Q1–Q5 | ✅ | Spine and parity harness — stages 0–1 of the graph |
+| Q6 | ✅ | Schema v1 landed |
+| Q7 | ✅ | `compileSlide` v2 with regions, free[], findings. **Repaired:** the nearest-region suggester was a longest-prefix scorer despite the commit claiming Levenshtein; it is Levenshtein now. |
+| Q8 | ✅ | `documentToDeckSpec` — the reverse path, round trip works |
+| Q9 | ✅ | `deckLayoutContext` — one context, three consumers |
+| Q10–Q13 | ✅ | Nine text and data blocks + bar chart engine |
+| Q14 | ✅ | `<DeckViewer>` — editor-free read-only viewer. **Repaired:** was shipping the old editor-backed component. |
+| Q15 | ✅ | Edit route in Next.js sample; round trip visible in UI |
+| Q16 | ✅ | Build-step motion in the editor (block-level reveal) |
+| Q17 | ✅ | Parity measured. Editor ↔ viewer **PASS** (109 rows, 0 failing). SVG export renders no blocks at all — see the commit and `RUN-demo.md`. |
+| Q18 | ✅ | Next.js demo app with two routes and mock API |
+| Q19 | ✅ | Validation (`validateDeckSpec`) and capability digest |
+| Q20 | ✅ | This task: RUN-demo.md, tracker, phase notes |
+
+**Two tasks repaired after shipping:** Q4 (editor uses real deck tokens, not hardcoded `DEFAULT_TOKENS`) and Q14 (the real read-only viewer was never written; the old editor-backed component was shipped instead). Both are verified and working. The issue surfaced in the 2026-09-17 review, fixing them required comparing the file against its spec, and the import-graph test now walks the module graph transitively to catch this class of bug.
+
+---
+
 ## 1. Target architecture
 
 ```

@@ -264,14 +264,20 @@ export async function shutdownWorker(): Promise<void> {
 /* LayoutNode tree walking helpers                                                 */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-interface PartInfo {
+export interface PartInfo {
   part: string
   kind: string
   box: Box
 }
 
-/** Collect all nodes with a `part` in DFS order. */
-function collectParts(node: LayoutNode): PartInfo[] {
+/**
+ * Collect all nodes with a `part` in DFS order.
+ *
+ * Exported (Q17, `reviews/blocks/BACKLOG-demo.md` §7) so the three-way parity scenario/spec can
+ * reuse this exact walk instead of writing a second one against the same `LayoutNode` shape. Pure
+ * addition — no existing caller's behavior changes.
+ */
+export function collectParts(node: LayoutNode): PartInfo[] {
   const result: PartInfo[] = []
   if (node.part) {
     result.push({ part: node.part, kind: node.k, box: { ...node.box } })
