@@ -1,10 +1,11 @@
 /**
  * D3 — `compileSlide`: pure function from a `SlideSpec` to an array of `ComponentShape`s.
  *
- * Looks up the slide layout, compiles it to named regions, then converts each
- * `BlockSpec` in `spec.content` to a `ComponentShape` via `blockToShape`. Every
- * shape gets a unique `id` and a unique, monotonically-increasing `childIndex`
- * (the P18 bug prevention).
+ * Looks up the slide layout, compiles it to named regions, then iterates each
+ * region's `BlockSpec[]` array, stacking blocks vertically within the region box,
+ * separated by `tokens.space.md`. Free-positioned blocks (`spec.free[]`) are
+ * placed directly. Every shape gets a unique, monotonically-increasing `childIndex`
+ * (the P18 bug prevention) across regions AND free[].
  *
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no side effects.
  */
@@ -15,11 +16,25 @@ import { blockToShape } from './shape-bridge'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* Finding type                                                                     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+export interface CompileFinding {
+  level: 'error' | 'warning'
+  rule: 'region/unknown' | 'region/overflow' | 'block/unregistered'
+  slideId: string
+  region?: string
+  blockId?: string
+  message: string
+  suggestion?: string
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* Return type                                                                     */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 export interface CompileSlideResult {
-  /** ComponentShapes produced by mapping `spec.content` through the layout regions. */
+  /** ComponentShapes produced by mapping `spec.regions` through the layout regions. */
   shapes: ComponentShape[]
   /** Propagated from `spec.background`. */
   background?: Paint
@@ -27,8 +42,14 @@ export interface CompileSlideResult {
   masterId?: string
   /** Propagated from `spec.notes`. */
   notes?: string
-  /** Propagated from `spec.skipInPresentation`. */
+  /** Propagated from `spec.skip`. */
   skipInPresentation?: boolean
+  /** The resolved layout id (may differ from spec.layout when fallback is used). */
+  layout: string
+  /** The slide spec id. */
+  slideSpecId: string
+  /** Compile-time diagnostics. */
+  findings: CompileFinding[]
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -43,15 +64,13 @@ const FALLBACK_LAYOUT = 'blank' as const
  *
  * 1. Resolve the layout (fall back to `'blank'` for absent or unknown layout names).
  * 2. Call `layout.compile(frame, tokens)` to get named `Box` regions.
- * 3. For each `spec.content[slotName]`, call `blockToShape(blockSpec, regionBox)`
- *    with a unique, incrementing `childIndex`.
- * 4. Pass through `background`, `masterId`, `notes`, `skipInPresentation`.
+ * 3. For each `spec.regions[regionName]`, iterate the `BlockSpec[]` array and stack
+ *    blocks vertically within the region box, separated by `tokens.space.md`.
+ * 4. For each `spec.free[]` entry, call `blockToShape(entry.block, entry.box)` directly.
+ * 5. All shapes share a single monotonically-increasing `childIndex` counter.
+ * 6. Return `layout`, `slideSpecId`, and `findings: CompileFinding[]`.
  *
- * Slots in `spec.content` that do not match any layout region are silently skipped —
- * this is a grace path for a partial spec, not an error. (D5 adds overflow cascade
- * for content that doesn't fit; D3 just doesn't crash.)
- *
- * @param spec  The slide specification (content, layout, metadata).
+ * @param spec  The slide specification (regions, free, layout, metadata).
  * @param frame The slide frame dimensions `{ width, height }` in slide units.
  * @param tokens Resolved design tokens for the deck.
  * @returns Compiled shapes and pass-through metadata.
@@ -61,26 +80,73 @@ export function compileSlide(
   frame: { width: number; height: number },
   tokens: ResolvedTokens
 ): CompileSlideResult {
-  // 1. Resolve layout regions.
-  const regions = resolveRegions(spec.layout, frame, tokens)
+  const findings: CompileFinding[] = []
+  const slideId = spec.id
 
-  // 2. Convert each content slot to a ComponentShape.
+  // 1. Resolve layout regions.
+  const { regionBoxes, isFallback } = resolveRegions(spec.layout, frame, tokens)
+
+  if (isFallback) {
+    findings.push({
+      level: 'warning',
+      rule: 'region/unknown',
+      slideId,
+      message: `Unknown layout "${spec.layout}"; falling back to "${FALLBACK_LAYOUT}".`,
+    })
+  }
+
+  // 2. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
   let childIndex = 1
 
-  for (const slotName of Object.keys(spec.content)) {
-    const blockSpec: BlockSpec = spec.content[slotName]
-    const regionBox: Box | undefined = regions[slotName]
+  const knownRegionNames = Object.keys(regionBoxes)
+
+  for (const [regionName, blocks] of Object.entries(spec.regions)) {
+    const regionBox: Box | undefined = regionBoxes[regionName]
 
     if (!regionBox) {
-      // Slot doesn't match any layout region — skip (graceful fallback, D5 adds overflow).
+      // Unknown region — emit finding with suggestion (nearest region name).
+      const suggestion = nearestRegion(regionName, knownRegionNames)
+      findings.push({
+        level: 'warning',
+        rule: 'region/unknown',
+        slideId,
+        region: regionName,
+        message: `Region "${regionName}" does not exist in the "${spec.layout}" layout.`,
+        suggestion: suggestion ? `Did you mean "${suggestion}"?` : undefined,
+      })
       continue
     }
 
-    const shape = blockToShape(blockSpec, regionBox, {
-      childIndex: childIndex++,
-    })
-    shapes.push(shape)
+    // Stack blocks vertically within the region box, separated by tokens.space.md.
+    const gap = tokens.space.md
+    const totalBlocks = blocks.length
+    const totalGap = totalBlocks > 1 ? (totalBlocks - 1) * gap : 0
+    const availableHeight = regionBox.height - totalGap
+    const blockHeight = totalBlocks > 0 ? availableHeight / totalBlocks : regionBox.height
+
+    let currentY = regionBox.y
+
+    for (const block of blocks) {
+      const box: Box = {
+        x: regionBox.x,
+        y: currentY,
+        width: regionBox.width,
+        height: blockHeight,
+      }
+
+      const shape = blockToShape(block, box, { childIndex: childIndex++ })
+      shapes.push(shape)
+      currentY += blockHeight + gap
+    }
+  }
+
+  // 3. Handle spec.free[] — place them directly using their explicit box.
+  if (spec.free) {
+    for (const entry of spec.free) {
+      const shape = blockToShape(entry.block, entry.box, { childIndex: childIndex++ })
+      shapes.push(shape)
+    }
   }
 
   return {
@@ -88,7 +154,10 @@ export function compileSlide(
     background: spec.background,
     masterId: spec.masterId,
     notes: spec.notes,
-    skipInPresentation: spec.skipInPresentation,
+    skipInPresentation: spec.skip,
+    layout: spec.layout,
+    slideSpecId: spec.id,
+    findings,
   }
 }
 
@@ -104,16 +173,43 @@ function resolveRegions(
   layoutId: string | undefined,
   frame: { width: number; height: number },
   tokens: ResolvedTokens
-): Record<string, Box> {
+): { regionBoxes: Record<string, Box>; isFallback: boolean } {
   if (layoutId) {
     const layout = getSlideLayout(layoutId as Parameters<typeof getSlideLayout>[0])
     if (layout) {
-      return layout.compile(frame, tokens)
+      return { regionBoxes: layout.compile(frame, tokens), isFallback: false }
     }
   }
 
   // Fallback: use the blank layout (one `content` region filling the safe margin).
-  // `SLIDE_LAYOUTS` is a const array of 16 shipped layouts; 'blank' is always present.
   const fallback = SLIDE_LAYOUTS.find((l) => l.id === FALLBACK_LAYOUT)
-  return fallback ? fallback.compile(frame, tokens) : {}
+  return {
+    regionBoxes: fallback ? fallback.compile(frame, tokens) : {},
+    isFallback: true,
+  }
+}
+
+/**
+ * Find the nearest known region name by longest common prefix similarity.
+ * Returns undefined if no name has >30% overlap.
+ */
+function nearestRegion(target: string, knownRegions: string[]): string | undefined {
+  let best: string | undefined
+  let bestScore = 0
+
+  for (const name of knownRegions) {
+    const minLen = Math.min(target.length, name.length)
+    let common = 0
+    for (let i = 0; i < minLen; i++) {
+      if (target[i] === name[i]) common++
+      else break
+    }
+    const score = common / Math.max(target.length, name.length)
+    if (score > bestScore) {
+      bestScore = score
+      best = name
+    }
+  }
+
+  return bestScore > 0.3 ? best : undefined
 }

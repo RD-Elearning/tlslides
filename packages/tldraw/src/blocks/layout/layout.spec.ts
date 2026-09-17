@@ -392,10 +392,12 @@ describe('layoutChild depth capping', () => {
     expect(node3.k).toBe('group')
 
     // At depth 3, layoutChild should still work (newDepth = 4 <= MAX_DEPTH).
+    // layoutChild now wraps in a group, so the result is a group containing a rect.
     const ctx3 = makeCtx({ registry, depth: 3 })
     const box4: Box = { x: 0, y: 0, width: 200, height: 200 }
     const node4 = ctx3.layoutChild({ type: 'test.child', props: {} }, box4)
-    expect(node4.k).toBe('rect')
+    expect(node4.k).toBe('group')
+    expect(node4.children[0].k).toBe('rect')
   })
 
   it('rejects depth 5 with a lint error node, not a throw', () => {

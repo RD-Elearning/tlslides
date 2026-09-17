@@ -199,8 +199,10 @@ export function createLayoutContext(
       }
 
       // Build a child context with incremented depth.
+      // Child sees only Size (width/height) — its coordinates are always
+      // relative to the group that layoutChild wraps around it.
       const childCtx = createLayoutContext({
-        box,
+        box: { width: box.width, height: box.height },
         tokens,
         surface,
         registry,
@@ -213,7 +215,8 @@ export function createLayoutContext(
         headless,
       })
 
-      return def.layout(spec.props as Record<string, unknown>, childCtx)
+      const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
+      return { k: 'group' as const, box, children: [childNode] }
     },
     asset: assetFn,
     icon: iconFn,

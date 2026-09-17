@@ -79,7 +79,7 @@ function collectGradientDefs(
   collector: DefCollector,
   prefix: string,
 ): void {
-  if (node.fill && node.fill.type !== 'solid') {
+  if ('fill' in node && node.fill && typeof node.fill !== 'string' && node.fill.type !== 'solid') {
     resolvePaintToFill(node.fill, collector, prefix)
   }
   if (node.k === 'group') {

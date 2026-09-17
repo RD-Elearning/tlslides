@@ -61,7 +61,7 @@ const leafBlock: BlockDefinition = {
   layout: (_props: Record<string, unknown>, ctx: LayoutContext): LayoutNode => {
     return {
       k: 'rect',
-      box: ctx.box,
+      box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
       fill: { type: 'solid', color: '#ff0000' },
     }
   },

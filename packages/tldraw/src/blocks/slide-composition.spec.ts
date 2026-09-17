@@ -27,23 +27,24 @@ const sampleBlock2: BlockSpec = {
 /* ── SlideSpec ─────────────────────────────────────────────────────────────── */
 
 describe('SlideSpec', () => {
-  it('is constructable with only the required `content` field', () => {
-    const slide: SlideSpec = { content: {} }
-    expect(slide.content).toEqual({})
-    expect(slide.layout).toBeUndefined()
+  it('is constructable with only the required fields', () => {
+    const slide: SlideSpec = { id: 's1', layout: 'blank', regions: {} }
+    expect(slide.regions).toEqual({})
+    expect(slide.layout).toBe('blank')
     expect(slide.background).toBeUndefined()
     expect(slide.notes).toBeUndefined()
-    expect(slide.skipInPresentation).toBeUndefined()
+    expect(slide.skip).toBeUndefined()
     expect(slide.masterId).toBeUndefined()
   })
 
   it('round-trips through JSON.parse(JSON.stringify(...))', () => {
     const slide: SlideSpec = {
+      id: 's2',
       layout: 'two-column',
-      content: { title: sampleBlock, body: sampleBlock2 },
+      regions: { title: [sampleBlock], body: [sampleBlock2] },
       background: { type: 'solid', color: '#ff0000' },
       notes: 'Speaker notes here',
-      skipInPresentation: true,
+      skip: true,
       masterId: 'brand',
     }
 
@@ -51,16 +52,16 @@ describe('SlideSpec', () => {
 
     expect(roundTripped).toEqual(slide)
     expect(roundTripped.layout).toBe('two-column')
-    expect(roundTripped.content.title.type).toBe('tls.text')
-    expect(roundTripped.content.body.id).toBe('b2')
+    expect(roundTripped.regions.title[0].type).toBe('tls.text')
+    expect(roundTripped.regions.body[0].id).toBe('b2')
     expect(roundTripped.background).toEqual({ type: 'solid', color: '#ff0000' })
     expect(roundTripped.notes).toBe('Speaker notes here')
-    expect(roundTripped.skipInPresentation).toBe(true)
+    expect(roundTripped.skip).toBe(true)
     expect(roundTripped.masterId).toBe('brand')
   })
 
-  it('round-trips a minimal slide (empty content, no optional fields)', () => {
-    const slide: SlideSpec = { content: {} }
+  it('round-trips a minimal slide (empty regions, no optional fields)', () => {
+    const slide: SlideSpec = { id: 's3', layout: 'blank', regions: {} }
     const roundTripped: SlideSpec = JSON.parse(JSON.stringify(slide))
     expect(roundTripped).toEqual(slide)
   })
@@ -118,10 +119,11 @@ describe('DeckSpec', () => {
   it('round-trips a fully populated deck through JSON', () => {
     const deck: DeckSpec = {
       slides: [
-        { content: { title: sampleBlock } },
+        { id: 'd1', layout: 'blank', regions: { title: [sampleBlock] } },
         {
+          id: 'd2',
           layout: 'two-column',
-          content: { left: sampleBlock, right: sampleBlock2 },
+          regions: { left: [sampleBlock], right: [sampleBlock2] },
           masterId: 'brand',
         },
       ],
@@ -149,7 +151,7 @@ describe('DeckSpec', () => {
 
   it('round-trips a deck with empty masters and no theme', () => {
     const deck: DeckSpec = {
-      slides: [{ content: {} }],
+      slides: [{ id: 'd3', layout: 'blank', regions: {} }],
       masters: {},
     }
     const roundTripped: DeckSpec = JSON.parse(JSON.stringify(deck))
@@ -251,8 +253,8 @@ describe('end-to-end: DeckSpec ↔ document fields', () => {
   it('a DeckSpec can be stored on TDDocument.masters and round-trip', () => {
     const deck: DeckSpec = {
       slides: [
-        { content: { title: sampleBlock }, masterId: 'm1' },
-        { content: { body: sampleBlock2 } },
+        { id: 'e1', layout: 'blank', regions: { title: [sampleBlock] }, masterId: 'm1' },
+        { id: 'e2', layout: 'blank', regions: { body: [sampleBlock2] } },
       ],
       masters: {
         m1: {

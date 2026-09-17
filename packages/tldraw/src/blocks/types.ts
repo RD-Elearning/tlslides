@@ -657,25 +657,37 @@ export type MotionPresetId = string
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /**
+ * A block placed at an explicit position on the slide, outside of any named region.
+ * Used for free-form elements that don't fit into the layout's region grid.
+ */
+export interface PlacedBlock {
+  block: BlockSpec
+  box: Box
+}
+
+/**
  * A slide authored by AI or human. Pure JSON — round-trips through
  * `JSON.parse(JSON.stringify(...))` unchanged.
- *
- * Every field is optional so that a partial spec is valid (the layout engine
- * supplies defaults for anything absent), and so the type can be used as a
- * lightweight overlay on top of an existing `TDPage` without requiring any
- * existing data to change.
  */
 export interface SlideSpec {
+  /** Unique slide identifier. */
+  id: string
   /** Named layout (e.g. `'title'`, `'two-column'`). */
-  layout?: string
-  /** Named content slots, each holding a `BlockSpec`. */
-  content: Record<string, BlockSpec>
+  layout: string
+  /** Semantic role hint for the slide. */
+  role?: 'cover' | 'section' | 'content' | 'closing'
+  /** Rhythm hint for the slide. */
+  rhythm?: 'anchor' | 'dense' | 'breath'
+  /** Named regions, each holding an array of BlockSpecs stacked vertically. */
+  regions: Record<string, BlockSpec[]>
+  /** Free-positioned blocks placed outside named regions. */
+  free?: PlacedBlock[]
   /** Override slide background. */
   background?: Paint
   /** Speaker notes. */
   notes?: string
   /** When true, this slide is skipped in presentation mode. */
-  skipInPresentation?: boolean
+  skip?: boolean
   /** References a reusable `MasterSpec` by name. */
   masterId?: string
 }
@@ -701,10 +713,14 @@ export interface MasterSpec {
  * master definitions and deck-wide theme/metadata. Pure JSON.
  */
 export interface DeckSpec {
+  /** Schema version. */
+  version?: number
+  /** Document ID. */
+  id?: string
   /** Ordered slides. */
   slides: SlideSpec[]
-  /** Reusable master templates, keyed by name. */
-  masters?: Record<string, MasterSpec>
+  /** Reusable master templates. */
+  masters?: Record<string, MasterSpec> | MasterSpec[]
   /** Deck-wide theme overrides. */
   theme?: {
     /** Colour token map. */
@@ -714,4 +730,8 @@ export interface DeckSpec {
   }
   /** Deck title. */
   title?: string
+  /** Aspect ratio: named preset (e.g. 'widescreen') or explicit [width, height]. */
+  aspect?: string | [number, number]
+  /** Design token overrides. */
+  tokens?: Record<string, unknown>
 }

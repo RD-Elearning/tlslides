@@ -13,7 +13,7 @@ import { alignVertically } from './vertical-align'
 function makeLines(
   count: number,
   lineHeight: number,
-  text: string = 'test',
+  text = 'test',
 ): TextLine[] {
   return Array.from({ length: count }, (_, i) => ({
     text,

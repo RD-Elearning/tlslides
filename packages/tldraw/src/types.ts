@@ -253,6 +253,9 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   skipInPresentation?: boolean // skip this slide when presenting
   // Phase D1 — block composition. Optional reference to a master template by name.
   masterId?: string
+  // Phase D2 — block layout. Optional slide-spec ID and layout identifier.
+  slideSpecId?: string
+  layout?: string
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

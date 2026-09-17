@@ -6,8 +6,7 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {}
 
-export interface FieldProps {
-  // No custom props — field always fills the box with the surface colour.
-}
+// No custom props — field always fills the box with the surface colour.
+export type FieldProps = Record<string, unknown>
 
 export const defaults: FieldProps = {}

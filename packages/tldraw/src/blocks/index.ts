@@ -100,4 +100,4 @@ export type { SlideLayoutId, SlideLayout } from './slide-layouts'
 
 // D3 — slide compiler: SlideSpec → ComponentShape[] (06-slide-composition.md §6.3).
 export { compileSlide } from './slide-compiler'
-export type { CompileSlideResult } from './slide-compiler'
+export type { CompileSlideResult, CompileFinding } from './slide-compiler'

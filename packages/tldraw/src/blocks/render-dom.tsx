@@ -143,7 +143,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           <path
             d={node.d}
             style={{
-              fill: fillCSS,
+              fill: fillCSS as string,
               ...(node.stroke
                 ? { stroke: node.stroke.color, strokeWidth: node.stroke.width }
                 : {}),

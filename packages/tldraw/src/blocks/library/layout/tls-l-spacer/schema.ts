@@ -6,8 +6,7 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {}
 
-export interface SpacerProps {
-  // No props — spacer is pure empty space.
-}
+// No props — spacer is pure empty space.
+export type SpacerProps = Record<string, unknown>
 
 export const defaults: SpacerProps = {}

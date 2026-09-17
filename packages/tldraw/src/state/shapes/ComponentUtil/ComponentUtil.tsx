@@ -154,7 +154,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           surface: DEFAULT_SURFACE,
           headless: false,
         })
-        blockNode = renderNodeToDom(blockDef.layout(layoutProps, ctx))
+        blockNode = renderNodeToDom(blockDef.layout(layoutProps as Record<string, unknown>, ctx))
       }
 
       return (

@@ -6,16 +6,14 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {
   divisions: {
-    kind: 'number',
-    min: 2,
-    max: 12,
+    type: { kind: 'number', min: 2, max: 12 },
     role: 'option',
     label: 'Divisions',
     help: 'Number of grid divisions on each axis.',
   },
 }
 
-export interface GridGuideProps {
+export interface GridGuideProps extends Record<string, unknown> {
   divisions: number
 }
 
