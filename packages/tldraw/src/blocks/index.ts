@@ -46,7 +46,13 @@ export type {
 export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
 export type { BlockRendererProps } from './render-dom'
 export { renderNodeToSvg, renderSvgDefs } from './render-svg'
-export { assertParity, TEST_TOKENS, TEST_SURFACE } from './parity-harness'
+// NOT exported: `./parity-harness`. It is a Node-only test harness — it `import`s
+// `child_process` and `require.resolve`s a worker script. Re-exporting it from the package root
+// put `child_process` in the browser bundle's import graph, and esbuild then failed the whole
+// bundle with `Could not resolve "child_process"` — emitting the `.d.ts` files but **no
+// `dist/index.js` at all**, while `turbo run build:packages` still exited 0. Every consumer of
+// `dist` broke with no error pointing at the cause. The specs that use it import it directly
+// (`from './parity-harness'`), which is the only way it should ever be reached.
 export {
   probeRects,
   probeTextAndLines,
