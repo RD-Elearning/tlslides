@@ -1,6 +1,5 @@
 'use client'
 
-import * as React from 'react'
 import { BlockRegistry, createBlockComponents } from '@tlslides/tldraw'
 import type { BlockDefinition, BlockSpec } from '@tlslides/tldraw'
 import {
@@ -35,8 +34,8 @@ function def(type: string, name: string, family: BlockDefinition['family']): Blo
     // renderer that consumes a LayoutNode does not exist. Returning an empty group keeps the
     // definition valid without pretending to lay anything out.
     layout: () => ({ k: 'group', box: { x: 0, y: 0, width: 0, height: 0 }, children: [] }),
-    motion: { default: 'fade', parts: {} },
-  } as BlockDefinition
+    motion: { default: 'fade', parts: [] },
+  } as unknown as BlockDefinition
 }
 
 export const p18Registry = new BlockRegistry()

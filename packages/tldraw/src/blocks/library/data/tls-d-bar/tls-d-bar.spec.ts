@@ -64,6 +64,44 @@ describe('tls.d.bar', () => {
       const gridlines = asGroup(node).children.filter((c) => c.part?.startsWith('gridline/'))
       expect(gridlines.length).toBeGreaterThanOrEqual(1)
     })
+
+    it('bars never extend above the plot area (critical visibility invariant)', () => {
+      // This test verifies that the barDomain fix prevents bars from clipping
+      // outside the chart. Uses data [64, 64, 61] which previously produced
+      // domain [0, 50] (upper < data max), causing bars to be clipped at the top.
+      const ctx = makeCtx({ width: 960, height: 540 }, registry)
+      const node = tlsDBar.layout(
+        {
+          categories: ['A', 'B', 'C'],
+          series: [64, 64, 61],
+        } as any,
+        ctx
+      )
+      const children = asGroup(node).children
+
+      // Find all bar rectangles (not gap markers)
+      const bars = children.filter((c) => c.part?.startsWith('bar/') && !c.part?.startsWith('bar/gap-'))
+      expect(bars.length).toBeGreaterThan(0)
+
+      // Find the plot area top by looking for gridlines or axis baseline.
+      // These are positioned using the scale and mark the axis extent.
+      const gridlines = children.filter((c) => c.part?.startsWith('gridline/'))
+      const axisBaseline = children.find((c) => c.part === 'axis/baseline')
+
+      // The plot area top is the minimum y of any axis/gridline element
+      let plotTop = Infinity
+      for (const line of [...gridlines, ...(axisBaseline ? [axisBaseline] : [])]) {
+        if (line.box && typeof line.box.y === 'number') {
+          plotTop = Math.min(plotTop, line.box.y)
+        }
+      }
+
+      // All bars must have their top edge (y coordinate) >= plotTop
+      expect(plotTop).not.toBe(Infinity)
+      for (const bar of bars) {
+        expect(bar.box.y).toBeGreaterThanOrEqual(plotTop)
+      }
+    })
   })
 
   describe('title rendering', () => {
@@ -326,6 +364,29 @@ describe('chart engine: linear scale', () => {
     it('ignores NaN/Infinity for domain computation', () => {
       const [, max] = barDomain([10, NaN, Infinity, 30])
       expect(max).toBeGreaterThanOrEqual(30)
+    })
+
+    it('upper bound is always >= data maximum (invariant)', () => {
+      // This is the critical invariant: domain upper bound must never be less
+      // than the data max, to prevent bars from clipping outside the plot area.
+      const testCases: number[][] = [
+        [64, 64, 61],         // Original bug case: mantissa 6.4 was in low bucket
+        [0, 42, 78, 55, 91],  // Existing test case
+        [1.3],                // Small decimal
+        [130],                // Another low-mantissa case
+        [0, 0, 0],            // All zeros
+        [10, NaN, Infinity, 30], // With non-finite values
+        [0.04],               // Very small
+        [999],                // Large value
+      ]
+      for (const values of testCases) {
+        const [, max] = barDomain(values)
+        const finite = values.filter((v) => Number.isFinite(v))
+        if (finite.length > 0) {
+          const dataMax = Math.max(...finite.map(Math.abs))
+          expect(max).toBeGreaterThanOrEqual(dataMax)
+        }
+      }
     })
   })
 

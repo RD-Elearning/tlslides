@@ -460,6 +460,29 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     return () => observer.disconnect()
   }, [])
 
+  /**
+   * Take focus on mount so the arrow keys work straight away.
+   *
+   * Keyboard navigation is an `onKeyDown` on this container plus `tabIndex={0}`, which means it
+   * only fires once the container is the focused element. Without this, a viewer filling the
+   * whole page looked broken: nothing happened on Right/End until the visitor happened to click
+   * the slide first, which nobody does when the page is already showing what they asked for.
+   *
+   * `preventScroll` keeps a host page from jumping to the viewer when it is embedded partway down
+   * a longer document. Focus is only taken if nothing else already has it — stealing focus from a
+   * host's own input would be worse than the problem being fixed.
+   */
+  React.useEffect(() => {
+    const el = containerRef.current
+    // `window.document`, not `document`: this component has a local `document` binding of its own
+    // (the compiled `TDDocument`), which shadows the global and made `document.activeElement` a
+    // type error rather than a DOM lookup.
+    if (!el || typeof window === 'undefined') return
+    const active = window.document.activeElement
+    if (active && active !== window.document.body && active !== el) return
+    el.focus({ preventScroll: true })
+  }, [])
+
   const [frameWidth, frameHeight] = document.defaultPageSize ?? [1920, 1080]
   // A single, STATIC CSS transform on the slide container — never touched by the motion driver,
   // and not itself animated — purely to fit the fixed 1920×1080 slide frame into whatever box

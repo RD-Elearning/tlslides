@@ -140,13 +140,29 @@ export function niceTicks(domain: [number, number], maxTicks = 8): number[] {
 /**
  * Compute the optimal domain for a bar chart where baseline is always zero.
  * Returns [0, max] where max is the nice upper bound.
+ *
+ * The upper bound is guaranteed to be >= the data maximum. We compute a nice
+ * step size first, then round the max up to the next multiple of that step.
+ * This avoids the pitfall of snapping the max itself, which can produce a
+ * bound smaller than the data when the max's mantissa falls in the lower part
+ * of a 1-2-5 bucket.
+ *
+ * TARGET_TICKS=5 produces ~5 intervals (6 ticks), which matches the 6-tick
+ * target in niceTicks calls at the layout level. For [64, 64, 61] this yields
+ * upper=70 (step=10), and for [0,42,78,55,91] yields upper=100 (step=20).
  */
 export function barDomain(values: number[]): [number, number] {
   // Filter out NaN/null for computing domain extent, but the caller handles display
   const finite = values.filter((v) => Number.isFinite(v))
   if (finite.length === 0) return [0, 1]
   const maxAbs = Math.max(...finite.map(Math.abs))
-  // Nice upper bound — use niceNumber to round up
-  const nice = niceNumber(maxAbs, false)
-  return [0, Math.max(nice, 0)]
+  // An all-zero series has no extent to be nice about, and a [0, 0] domain collapses the axis to
+  // a single "0" tick, which reads as a broken chart rather than an empty one. Give it the same
+  // unit axis an empty series gets.
+  if (maxAbs === 0) return [0, 1]
+  // Compute a nice step size, then round max up to the next multiple
+  const TARGET_TICKS = 5
+  const step = niceNumber(maxAbs / TARGET_TICKS, false)
+  const upper = Math.ceil(maxAbs / step) * step
+  return [0, Math.max(upper, 0)]
 }
