@@ -357,6 +357,18 @@ This is the foundation R2 and R3 stand on; it changes no existing block.
    `registerBuiltInBlocks` and a host-registered block renders in the editor but not in the
    viewer.
 
+**Implementation addendum — quick-verified against source on 2026-09-18.** One correction to
+item 5: `<DeckViewer>` has **no `registry` prop at all** — it hardcodes a module-level
+`sharedRegistry` built from `registerBuiltInBlocks` (`DeckViewer.tsx:76-77`). The wording "gets
+both `registry` and `hostRegistry` props" implies `registry` already exists and only
+`hostRegistry` is new; in fact **both must be added** as new optional props, with the
+module-level `sharedRegistry` kept as the default when neither is passed. Everything else in R1
+matches source exactly — host node at `types.ts:292`, the empty-div render at
+`render-dom.tsx:283-291`, the placeholder at `render-svg.ts:311-319`,
+`ResolvedTokens`/`SurfaceContext`/`Box` at `types.ts:297,499,526` — and the `HostRegistryProvider`
+pattern already has a precedent to copy: `BlockRegistryContext` / `useBlockRegistry()`
+(`Tldraw.tsx:143,164,387`, `ComponentUtil.tsx:63`).
+
 **Watch out — the hard parts.**
 
 - *React StrictMode mounts twice in development.* The sample sets `reactStrictMode: true`
@@ -424,15 +436,20 @@ folder pattern; `blocks/capability-digest.ts`; `blocks/validate-deck-spec.ts`.
    kind?: 'layout' | 'html'                        // default 'layout'
    html?: {
      template(props: P, ctx: HtmlTemplateContext): string   // returns markup; MUST use ctx.esc()
-     poster(props: P, ctx: LayoutContext): LayoutNode        // required — the SVG/thumbnail still
      animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)   // R3 fills rt
    }
    ```
    `HtmlTemplateContext` = `{ esc(s): string, cssVar(role): string, box, tokens }`. `esc` is
    HTML-escaping; the template is **code in the registry, never in the `DeckSpec`** — the JSON
-   carries `props` only, so rule 2 holds and no user-supplied markup is ever injected.
+   carries `props` only, so rule 2 holds and no user-supplied markup is ever injected. A
+   `kind: 'html'` block sets `tier: 'B'` and implements the **existing top-level**
+   `poster(props, ctx): LayoutNode` field `BlockDefinition` already declares for Tier-B blocks
+   (`blocks/types.ts:137-180`) — do not add a second, nested poster field. Every other Tier-B
+   consumer (the parity harness, `renderPageToSvg`/R14, R9/R10's composites) reads `def.poster`;
+   forking that into `def.html.poster` for html blocks only would give the codebase two
+   incompatible poster mechanisms for the same job.
 2. `kind: 'html'` blocks get a generated `layout()`: it returns a single host node filling the
-   box with `render: def.type` and `poster: def.html.poster(props, ctx)`. **No second
+   box with `render: def.type` and `poster: def.poster(props, ctx)`. **No second
    registration:** `HostMount` (R1) resolves a `render` id first against the `BlockRegistry` —
    a `kind: 'html'` definition whose `type` equals the id is rendered by a built-in
    `HostRenderer` derived from its `html` object (`mount` sets `root.innerHTML = template(...)`,
@@ -449,6 +466,19 @@ folder pattern; `blocks/capability-digest.ts`; `blocks/validate-deck-spec.ts`.
    layouts, description written for the model ("Opening slide. One idea in the title, no full
    sentence; subtitle gives date/audience; CTA optional"), an `example` instance.
 5. Add `kind` and, for html blocks, the `data-part` names to `capabilityDigest()`.
+
+**Implementation addendum — quick-verified against source on 2026-09-18.** `BlockDefinition`
+(`blocks/types.ts:137-180`) already declared a top-level, previously-unused `poster?(props, ctx):
+LayoutNode` field for Tier-B blocks, plus a `tier: 'A' | 'B'` field — the original draft of step 1
+proposed a second, nested `html.poster()` for the same job. **Resolved: reuse the existing
+top-level `poster` field and `tier: 'B'`** (now reflected in step 1 and step 2 above); do not
+reintroduce `html.poster`. This keeps one poster mechanism for every Tier-B consumer — the parity
+harness, R14's headless export, and R9/R10's composites — instead of forking it for html blocks
+only. Everything else checks out: `kind` is genuinely absent from `BlockDefinition` today (safe to
+add additively), `library/text/tls-t-title/` is a real, current folder pattern to copy, and
+`capabilityDigest()` / `validateDeckSpec()` (`capability-digest.ts:73,119`,
+`validate-deck-spec.ts:74`) both take `(registry?: BlockRegistry)` and are straightforward to
+extend.
 
 **Watch out — the hard parts.**
 
@@ -472,7 +502,7 @@ folder pattern; `blocks/capability-digest.ts`; `blocks/validate-deck-spec.ts`.
   blocks automatically because it iterates the registry.
 - *The poster is the geometry.* An html block cannot measure itself in Node, and `compileSlide`
   (R0) stacks by measured height. For `kind: 'html'` the compiler and the parity harness use
-  `html.poster()` as the layout. Consequently the poster must be honest about height: a
+  `def.poster()` as the layout. Consequently the poster must be honest about height: a
   template that renders taller than its poster overlaps its neighbour exactly as F1 did. The
   template-vs-poster test compares text; add a jsdom check that the template's rendered
   `scrollHeight` at the poster's width is within 8 units of the poster's height, for
