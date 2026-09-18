@@ -108,10 +108,15 @@ export interface ResolvedBlockMotion {
   durationMs: number
   /** Delay in ms. */
   delayMs: number
+  /** CSS easing string for the block-level entrance. */
+  easing: string
 }
 
 /** Default block-level timing when the spec doesn't override. */
 const BLOCK_DURATION_FALLBACK = 400
+
+/** Default block-level easing when neither the spec nor the preset supplies one. */
+const BLOCK_EASING_FALLBACK = EASING_TOKENS.smoothOut
 
 /**
  * Resolve the block-level motion (the entrance of the whole container).
@@ -129,13 +134,16 @@ export function resolveBlockMotion(
   // motion chain expressed intent (a preset, a trigger, or non-empty recipe).
   const hasMotionIntent =
     specMotion?.preset !== undefined ||
+    specMotion?.effect !== undefined ||
     specMotion?.trigger !== undefined ||
     specMotion?.order !== undefined ||
     definitionMotion.preset !== undefined
   const presetId = specMotion?.preset ?? definitionMotion.preset ?? (hasMotionIntent ? 'fade' : 'none')
-  const effect = presetToEffect(presetId)
+  // An explicit effect (from a persisted `ShapeAnimation`) wins over the preset mapping.
+  const effect = specMotion?.effect ?? presetToEffect(presetId)
   const preset = MOTION_PRESETS[presetId]
   const fallbackDuration = preset ? DURATION_TOKENS[preset.duration] : BLOCK_DURATION_FALLBACK
+  const fallbackEasing = preset ? EASING_TOKENS[preset.easing] : BLOCK_EASING_FALLBACK
 
   return {
     effect,
@@ -143,6 +151,7 @@ export function resolveBlockMotion(
     order: specMotion?.order ?? 0,
     durationMs: resolveDuration(specMotion?.duration, fallbackDuration),
     delayMs: resolveDuration(specMotion?.delay, 0),
+    easing: resolveEasing(specMotion?.ease as EaseToken | undefined, fallbackEasing),
   }
 }
 
@@ -265,7 +274,10 @@ export function deriveShapeAnimation(
   specMotion: BlockMotionSpec | undefined,
   definitionMotion: MotionRecipe
 ): ShapeAnimation | undefined {
-  if (!specMotion || (specMotion.order === undefined && specMotion.preset === undefined)) {
+  if (
+    !specMotion ||
+    (specMotion.order === undefined && specMotion.preset === undefined && specMotion.effect === undefined)
+  ) {
     return undefined
   }
 
@@ -278,6 +290,7 @@ export function deriveShapeAnimation(
     order: resolved.order,
     durationMs: resolvedDurationMs(resolved),
     delayMs: resolved.delayMs,
+    easing: resolved.easing,
   }
 }
 

@@ -604,11 +604,59 @@ function validateProps(propsRaw: unknown, def: BlockDefinition, blockPath: strin
 const TEXT_CONTRAST_FLOOR = 4.5
 
 /**
+ * The luminance a literal `style.on` is checked against: the block instance's own resolved
+ * `style.surface`, not the theme's nominal `tokens.color.surface`. A block with a custom dark
+ * gradient and a literal light `on` (correct against its own background) must not be judged
+ * against an unrelated colour.
+ *
+ * The block's own `box` is not available in the linter, so a gradient's representative
+ * luminance is the mean of its stops' luminances — deterministic and box-independent.
+ */
+function resolvedSurfaceBaseline(
+  surface: unknown,
+  tokens: ResolvedTokens,
+): { hex: string; luminance: number } | undefined {
+  const nominal = (): { hex: string; luminance: number } | undefined => {
+    const hex = tokens.color.surface
+    const rgb = tryHexToRgb(hex)
+    return rgb ? { hex, luminance: relativeLuminance(rgb) } : undefined
+  }
+
+  if (surface === undefined || surface === null) return nominal()
+
+  if (typeof surface === 'string') {
+    const hex = tryHexToRgb(surface)
+      ? surface
+      : (tokens.color[surface as keyof ResolvedTokens['color']] ?? tokens.color.surface)
+    const rgb = tryHexToRgb(hex)
+    return rgb ? { hex, luminance: relativeLuminance(rgb) } : undefined
+  }
+
+  if (!isPaint(surface)) return nominal()
+
+  if (surface.type === 'solid') {
+    const rgb = tryHexToRgb(surface.color)
+    return rgb ? { hex: surface.color, luminance: relativeLuminance(rgb) } : undefined
+  }
+
+  const stops = surface.stops ?? []
+  const luminances = stops
+    .map((s) => tryHexToRgb(s.color))
+    .filter((rgb): rgb is NonNullable<typeof rgb> => rgb !== undefined)
+    .map((rgb) => relativeLuminance(rgb))
+  if (luminances.length === 0) return undefined
+  return {
+    hex: stops[0].color,
+    luminance: luminances.reduce((a, b) => a + b, 0) / luminances.length,
+  }
+}
+
+/**
  * Validate a block's `style` override.
  *
  * Rules:
- * - A literal hex `on` colour whose contrast against the resolved surface is below
- *   4.5:1 → warning (`style/low-contrast-on`). The hex is respected as-is (never
+ * - A literal hex `on` colour whose contrast against the block's own resolved `surface` is
+ *   below 4.5:1 → warning (`style/low-contrast-on`). The hex is respected as-is (never
  *   silently replaced), but the user is warned.
  * - A gradient `surface` with fewer than 2 stops → error (`style/gradient-few-stops`).
  */
@@ -627,13 +675,11 @@ function validateStyle(
     // Only check literal hex values (not role names).
     const rgb = tryHexToRgb(on)
     if (rgb) {
-      // Resolve the surface luminance from the resolved tokens.
-      const surfaceHex = tokens.color.surface
-      const surfaceRgb = tryHexToRgb(surfaceHex)
-      if (surfaceRgb) {
-        const surfaceLum = relativeLuminance(surfaceRgb)
+      // Baseline: the instance's *own* resolved surface, not the theme's nominal one.
+      const baseline = resolvedSurfaceBaseline(style.surface, tokens)
+      if (baseline) {
         const onLum = relativeLuminance(rgb)
-        const ratio = contrastRatio(onLum, surfaceLum)
+        const ratio = contrastRatio(onLum, baseline.luminance)
         if (ratio < TEXT_CONTRAST_FLOOR) {
           findings.push({
             level: 'warning',
@@ -641,9 +687,9 @@ function validateStyle(
             path: `${path}.on`,
             message:
               `Block "${blockType}" has style.on = "${on}" with a contrast ratio of ` +
-              `${ratio.toFixed(2)}:1 against the resolved surface (${surfaceHex}), ` +
+              `${ratio.toFixed(2)}:1 against the block's resolved surface (${baseline.hex}), ` +
               `below the ${TEXT_CONTRAST_FLOOR}:1 minimum for readable text. ` +
-              `The colour is honoured as-is; consider a darker value.`,
+              `The colour is honoured as-is; consider a darker or lighter value.`,
           })
         }
       }

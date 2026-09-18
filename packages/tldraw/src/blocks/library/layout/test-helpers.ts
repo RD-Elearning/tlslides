@@ -4,6 +4,7 @@
 
 import type {
   BlockSpec,
+  BlockStyleSpec,
   LayoutContext,
   LayoutNode,
   ResolvedTokens,
@@ -72,13 +73,15 @@ import type { BlockDefinition } from '../../types'
 
 export function makeCtx(
   box: Size,
-  registry?: BlockRegistry
+  registry?: BlockRegistry,
+  style?: BlockStyleSpec
 ): LayoutContext {
   return createLayoutContext({
     box,
     tokens: TEST_TOKENS,
     surface: TEST_SURFACE,
     registry,
+    style,
   })
 }
 

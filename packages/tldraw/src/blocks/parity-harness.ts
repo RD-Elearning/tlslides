@@ -385,8 +385,9 @@ export async function assertParity(
   // 2. Build DOM HTML directly from LayoutNode (bypasses React)
   const domHtml = nodeToDomHtml(node, box)
 
-  // 3. Render to SVG (or use override)
-  const rawSvg = options?.svgOverride ?? renderNodeToSvg(node)
+  // 3. Render to SVG (or use override). The prefix is the block's own type so two blocks
+  //    rendered into one document cannot collide on a gradient def id.
+  const rawSvg = options?.svgOverride ?? renderNodeToSvg(node, definition.type)
   // Add width/height/viewBox for consistent coordinate system
   const svgString = rawSvg.replace(
     '<svg xmlns="http://www.w3.org/2000/svg">',

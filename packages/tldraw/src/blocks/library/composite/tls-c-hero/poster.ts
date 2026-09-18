@@ -7,7 +7,7 @@
  * using existing text measurement primitives (no DOM, pure layout).
  */
 
-import type { LayoutContext, LayoutNode, RichText } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint, RichText } from '../../../types'
 import type { HeroProps } from './schema'
 import { richTextToPlain } from './schema'
 
@@ -94,10 +94,26 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
 
   const totalHeight = y
 
+  // The hero's own background: the instance's Paint when set, else the resolved surface
+  // role. Rendered first so it sits behind every text part. Deliberately *no* `part`: it is
+  // structural, not a motion part, and the template/poster data-part sets must stay equal
+  // (R0.5 item 5).
+  const surfacePaint: Paint =
+    ctx.style?.surface && typeof ctx.style.surface !== 'string'
+      ? ctx.style.surface
+      : { type: 'solid', color: ctx.resolveColor('surface').color }
+
   return {
     k: 'group',
     box: { x: 0, y: 0, width: w, height: totalHeight },
     part: 'root',
-    children,
+    children: [
+      {
+        k: 'rect',
+        box: { x: 0, y: 0, width: w, height: totalHeight },
+        fill: surfacePaint,
+      },
+      ...children,
+    ],
   }
 }

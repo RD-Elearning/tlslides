@@ -728,6 +728,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
             const ctx = contextForBlock(shape, document, {
               headless: false,
               slideBackground: page.background,
+              registry: blockRegistry,
             })
             const blockSpec = shapeToBlock(shape)
             const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined

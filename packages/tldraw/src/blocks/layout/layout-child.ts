@@ -25,10 +25,11 @@ import type {
   TextStyleSpec,
   TypeToken,
 } from '../types'
+import type { DeckTheme } from '~types'
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
 import { estimateMetrics } from './measure'
-import { surfaceFromPaint } from '../tokens'
+import { resolveColor as solveColor, surfaceFromPaint } from '../tokens'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -55,8 +56,10 @@ export interface CreateLayoutContextOptions {
   registry?: BlockRegistry
   /** Text measurement provider. Defaults to `estimateMetrics`. */
   measureText?: MeasureTextProvider
-  /** Colour resolution. Defaults to returning `{ color, ratio: 1, ok: true }` with the token value. */
-  resolveColor?: (role: ColorRole | string) => ResolvedColor
+  /** Colour resolution. Receives the effective surface this context resolves against, so the
+   *  default (and any injected solver) can contrast-solve against the block's own background
+   *  rather than a fixed one. Defaults to `tokens.ts`'s luminance-aware `resolveColor`. */
+  resolveColor?: (role: ColorRole | string, surface: SurfaceContext) => ResolvedColor
   /** Type-token resolution. Defaults to looking up `tokens.type` with a default font family. */
   resolveText?: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle
   /** Asset lookup. Returns `undefined` by default. */
@@ -72,6 +75,8 @@ export interface CreateLayoutContextOptions {
   /** Per-instance style overrides. When `surface` is a `Paint`, the block's surface context
    *  is derived from the paint sampled at the block's box. */
   style?: BlockStyleSpec
+  /** The deck theme, used only to resolve `theme:`-sentinel literals (`'theme:accent1'`). */
+  theme?: DeckTheme
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -79,18 +84,19 @@ export interface CreateLayoutContextOptions {
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /**
- * Default `resolveColor` implementation. Returns the token-derived colour with an
- * informational contrast ratio of 1 and `ok: true`. This is a stand-in; the real
- * implementation contrast-solves against `ctx.luminance` and lives in `tokens.ts`.
- *
- * For blocks that need contrast-correct colours, inject the `resolveColor` from `tokens.ts`.
+ * Default `resolveColor` implementation: the real, luminance-aware solver from `tokens.ts`.
+ * A foreground role (`text`, `textMuted`, `line`) is contrast-solved against the *effective*
+ * surface — the one behind this block, including a per-child resample of a gradient parent —
+ * rather than the theme's nominal background. This is what makes `ctx.resolveColor` in
+ * production honour R4 Do item 2's "text colours keep passing contrast" claim.
  */
 function defaultResolveColor(
   role: ColorRole | string,
-  tokens: ResolvedTokens
+  surface: SurfaceContext,
+  tokens: ResolvedTokens,
+  theme?: DeckTheme
 ): ResolvedColor {
-  const color = tokens.color[role as ColorRole] ?? role
-  return { color, ratio: 1, ok: true }
+  return solveColor(role, surface, tokens, theme)
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -184,7 +190,8 @@ export function createLayoutContext(
 
   const resolveColorFn =
     options.resolveColor ??
-    ((role: ColorRole | string) => defaultResolveColor(role, tokens))
+    ((role: ColorRole | string, surface: SurfaceContext) =>
+      defaultResolveColor(role, surface, tokens, options.theme))
 
   const resolveTextFn =
     options.resolveText ??
@@ -205,17 +212,17 @@ export function createLayoutContext(
     if (instanceStyle) {
       // `on` and `accent` override specific foreground roles
       if (role === 'text' && instanceStyle.on !== undefined) {
-        return resolveColorFn(instanceStyle.on)
+        return resolveColorFn(instanceStyle.on, effectiveSurface)
       }
       if (role === 'accent' && instanceStyle.accent !== undefined) {
-        return resolveColorFn(instanceStyle.accent)
+        return resolveColorFn(instanceStyle.accent, effectiveSurface)
       }
       // `surface` override: when it's a string, resolve it through the base.
       // When it's a Paint (gradient), the surface context already reflects it,
       // so resolveColor('surface') simply returns the paint's solid representative.
       if (role === 'surface' && instanceStyle.surface !== undefined) {
         if (typeof instanceStyle.surface === 'string') {
-          return resolveColorFn(instanceStyle.surface)
+          return resolveColorFn(instanceStyle.surface, effectiveSurface)
         }
         // Paint: return the first stop colour as a solid representative.
         const paint = instanceStyle.surface
@@ -226,7 +233,7 @@ export function createLayoutContext(
         return { color: firstStop?.color ?? tokens.color.surface, ratio: 1, ok: true }
       }
     }
-    return resolveColorFn(role)
+    return resolveColorFn(role, effectiveSurface)
   }
 
   // Build the context object with all methods bound.
@@ -269,13 +276,31 @@ export function createLayoutContext(
         | Record<string, unknown>
         | undefined
       const childStyle = childMeta?.style as BlockStyleSpec | undefined
+
+      // A gradient (or solid) parent fill is position-dependent: resample the parent's *raw*
+      // Paint at this child's own `box`, rather than forwarding the parent's already-sampled
+      // `effectiveSurface`. Two children at opposite ends of a gradient card must not receive
+      // identical `ctx.surface` — that is the light-on-light-text bug R4's Watch-out predicted.
+      const parentPaint = instanceStyle?.surface
+      const childSurface: SurfaceContext =
+        parentPaint !== undefined && typeof parentPaint !== 'string'
+          ? surfaceFromPaint(parentPaint, box, {
+              x: 0,
+              y: 0,
+              width: options.box.width,
+              height: options.box.height,
+            })
+          : effectiveSurface
+
       const childCtx = createLayoutContext({
         box: { width: box.width, height: box.height },
         tokens,
-        surface: effectiveSurface,
+        surface: childSurface,
         registry,
         measureText,
-        resolveColor: wrappedResolveColor,
+        // Pass the *base* (surface-aware) resolver down, not this context's wrapped one: the
+        // child's own style overrides must not inherit the parent's `on`/`accent`/`surface`.
+        resolveColor: resolveColorFn,
         resolveText: resolveTextFn,
         asset: assetFn,
         resolveAsset: resolveAssetFn,
@@ -283,6 +308,7 @@ export function createLayoutContext(
         depth: newDepth,
         headless,
         style: childStyle,
+        theme: options.theme,
       })
 
       const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)

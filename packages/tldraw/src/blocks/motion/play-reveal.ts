@@ -32,7 +32,6 @@ import type { AnimationEffect } from '~types'
 import type { MotionDriver, MotionKeyframes, MotionState } from './driver'
 import { resolveBlockMotion, resolvePartMotion } from './resolve-motion'
 import type { BlockSpec, BlockDefinition } from '../types'
-import { EASING_TOKENS, DURATION_TOKENS } from './tokens'
 
 // --- Types -------------------------------------------------------------------
 
@@ -111,15 +110,6 @@ function blockEntranceKeyframes(effect: AnimationEffect): MotionKeyframes {
   return kf
 }
 
-/**
- * Resolve an easing value to a CSS easing string, falling back to smoothOut.
- * Accepts a CSS string directly or falls back to the token scale.
- */
-function resolveEasingString(easing?: string): string {
-  if (easing) return easing
-  return EASING_TOKENS.smoothOut
-}
-
 // --- Public API ---------------------------------------------------------------
 
 /**
@@ -168,16 +158,14 @@ export function playBlockReveal(
   // 4. Set hidden state on the block container.
   driver.set(el, blockHiddenState(blockMotion.effect))
 
-  // 5. Build block-level keyframes and play.
+  // 5. Build block-level keyframes and play. Easing now comes from the resolved motion
+  //    (spec/definition/preset), so a persisted shape easing reaches the driver.
   const blockKeyframes = blockEntranceKeyframes(blockMotion.effect)
-  const blockEasing = resolveEasingString(blockMotion.effect === ('wipe' as AnimationEffect)
-    ? EASING_TOKENS.smoothOut
-    : undefined)
 
   driver.play(el, blockKeyframes, {
     duration: blockMotion.durationMs,
     delay: blockMotion.delayMs,
-    easing: blockMotion.effect === ('wipe' as AnimationEffect) ? EASING_TOKENS.smoothOut : blockEasing,
+    easing: blockMotion.easing,
     fill: 'forwards',
   })
 
@@ -188,9 +176,9 @@ export function playBlockReveal(
       // Count-up: intercept onUpdate to tween textContent.
       if (pm.presetId === 'count-up') {
         const targetText = partEl.textContent ?? '0'
-        const targetValue = parseFloat(targetText.replace(/[^0-9.\-]/g, '')) || 0
+        const targetValue = parseFloat(targetText.replace(/[^0-9.-]/g, '')) || 0
         const isInteger = Number.isInteger(targetValue)
-        const prefix = targetText.match(/^[^0-9.\-]*/)?.[0] ?? ''
+        const prefix = targetText.match(/^[^0-9.-]*/)?.[0] ?? ''
         const suffix = targetText.match(/[^0-9.]*$/)?.[0] ?? ''
 
         driver.play(partEl as HTMLElement, pm.keyframes, {

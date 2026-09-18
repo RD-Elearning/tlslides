@@ -16,6 +16,7 @@ import { AnimationEffect, AnimationTrigger } from '~types'
 import type { BlockSpec, BlockDefinition, MotionRecipe } from '../types'
 import type { MotionDriver, MotionHandle, MotionKeyframes, MotionOptions, MotionState, MotionStep } from './driver'
 import { playBlockReveal } from './play-reveal'
+import { blockToShape, shapeToBlock } from '../shape-bridge'
 import { DURATION_TOKENS, EASING_TOKENS } from './tokens'
 
 // ---------------------------------------------------------------------------
@@ -39,13 +40,13 @@ function createRecordingDriver(): { driver: MotionDriver; calls: RecordingCalls 
       calls.play.push({ target, keyframes, opts })
       // Fire onUpdate(1) synchronously so tests can observe count-up behavior.
       if (opts.onUpdate) opts.onUpdate(1)
-      return { cancel() {}, finished: Promise.resolve() }
+      return { cancel(): void { /* no-op mock */ }, finished: Promise.resolve() }
     },
     set(target: Element, state: MotionState): void {
       calls.set.push({ target, state })
     },
     timeline(): MotionHandle {
-      return { cancel() {}, finished: Promise.resolve() }
+      return { cancel(): void { /* no-op mock */ }, finished: Promise.resolve() }
     },
     cancelAll(): void {
       calls.cancelAll += 1
@@ -390,7 +391,6 @@ describe('motion round-trip through shape-bridge', () => {
     // This tests the round-trip path: blockToShape persists motion fields on the shape,
     // and shapeToBlock reads them back. The shape's animation field carries the resolved
     // effect, trigger, order, durationMs, delayMs, and optional easing.
-    const { blockToShape, shapeToBlock } = require('../shape-bridge')
     const spec: BlockSpec = {
       id: 'roundtrip-1',
       type: 'tls.test',
@@ -420,6 +420,40 @@ describe('motion round-trip through shape-bridge', () => {
     expect(recovered!.motion!.delay).toBe(200)
     expect(recovered!.motion!.duration).toBe(600)
     expect(recovered!.motion!.stagger).toBe(40)
+  })
+
+  it('playback honours a persisted shape.animation delay edit (B.5 item 8)', () => {
+    // The shape's `animation` is the actual persisted source of truth (and what R12's inspector
+    // writes into). Editing it without touching `meta.motion` must reach the driver.
+    const { driver, calls } = createRecordingDriver()
+    const spec: BlockSpec = {
+      id: 'inspector-edit',
+      type: 'tls.test',
+      props: {},
+      motion: { preset: 'fade', delay: 100, duration: 400, order: 1 },
+    }
+    const shape = blockToShape(spec, { x: 0, y: 0, width: 100, height: 100 })
+    shape.animation!.delayMs = 777
+
+    const recovered = shapeToBlock(shape)!
+    const el = mockElement('inspector-edit')
+    playBlockReveal(el, recovered, minimalDef(FADE_RECIPE), { driver, reducedMotion: false })
+
+    const blockPlay = calls.play.find((c) => c.target === el)
+    expect(blockPlay).toBeDefined()
+    expect(blockPlay!.opts.delay).toBe(777)
+  })
+
+  it('the resolved block easing reaches the driver (B.5 item 9)', () => {
+    const { driver, calls } = createRecordingDriver()
+    const el = mockElement('easing')
+    const spec = minimalSpec({ preset: 'fade', ease: 'ease-in-out', order: 0 })
+
+    playBlockReveal(el, spec, minimalDef(FADE_RECIPE), { driver, reducedMotion: false })
+
+    const blockPlay = calls.play.find((c) => c.target === el)
+    expect(blockPlay).toBeDefined()
+    expect(blockPlay!.opts.easing).toBe('ease-in-out')
   })
 })
 

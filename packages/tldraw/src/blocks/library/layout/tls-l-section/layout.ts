@@ -5,7 +5,7 @@
  * in the remaining space below.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { BlockSpec, LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { SectionProps } from './schema'
 
 export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
@@ -16,6 +16,13 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
 
   const W = ctx.box.width
   const H = ctx.box.height
+
+  // The section's own background: the instance's Paint when set, else the resolved
+  // surface role (so it tracks the theme and the gradient behind it).
+  const surfacePaint: Paint =
+    ctx.style?.surface && typeof ctx.style.surface !== 'string'
+      ? ctx.style.surface
+      : { type: 'solid', color: ctx.resolveColor('surface').color }
 
   // Measure title text
   const titleStyle = ctx.resolveText('subheading')
@@ -35,13 +42,14 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
     style: titleStyle,
   }
 
+  // A hairline rule drawn as a thin rect, matching `tls.t.title`'s own `rule` part — a `line`
+  // node's SVG geometry is only its endpoints, so a horizontal line's box height (the gap band)
+  // and its rendered height disagree; a rect keeps DOM/SVG geometry parity by construction.
   const dividerNode: LayoutNode = {
-    k: 'line',
-    box: { x: 0, y: dividerY, width: W, height: gap },
+    k: 'rect',
+    box: { x: 0, y: dividerY, width: W, height: 1 },
     part: 'divider',
-    from: { x: 0, y: 0 },
-    to: { x: W, y: 0 },
-    stroke: { color: ctx.resolveColor('line').color, width: 1 },
+    fill: { type: 'solid', color: ctx.resolveColor('line').color },
   }
 
   const contentBox = { x: 0, y: contentY, width: W, height: contentH }
@@ -53,6 +61,16 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: W, height: H },
     part: 'root',
-    children: [titleNode, dividerNode, ...childNodes],
+    children: [
+      {
+        k: 'rect',
+        part: 'surface',
+        box: { x: 0, y: 0, width: W, height: H },
+        fill: surfacePaint,
+      },
+      titleNode,
+      dividerNode,
+      ...childNodes,
+    ],
   }
 }

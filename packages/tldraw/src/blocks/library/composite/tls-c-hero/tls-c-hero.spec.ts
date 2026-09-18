@@ -19,7 +19,7 @@ import { template } from './template'
 import { validateDeckSpec } from '../../../validate-deck-spec'
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
-import type { DeckSpec, LayoutContext, LayoutNode } from '../../../types'
+import type { DeckSpec, LayoutContext, LayoutNode, Paint } from '../../../types'
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
 
@@ -43,6 +43,29 @@ describe('tls.c.hero', () => {
       assertValidNode(node)
       expect(node.k).toBe('group')
       expect(node.part).toBe('root')
+    })
+  })
+
+  describe('surface background (B.5 item 6)', () => {
+    it('renders the instance Paint as a full-poster background rect with no motion part', () => {
+      const paint: Paint = {
+        type: 'linearGradient',
+        angle: 0,
+        stops: [
+          { at: 0, color: '#111111' },
+          { at: 1, color: '#EEEEEE' },
+        ],
+      }
+      const c = makeCtx({ width: 1920, height: 1080 }, registry, { surface: paint })
+      const node = poster(tlsCHero.defaults as any, c)
+      const root = node as Extract<LayoutNode, { k: 'group' }>
+      const bg = root.children[0] as Extract<LayoutNode, { k: 'rect' }>
+      expect(bg.k).toBe('rect')
+      expect(bg.fill).toEqual(paint)
+      expect(bg.box).toEqual(node.box)
+      // Structural background — must not become a data-part, or the template/poster
+      // part-set equality (R0.5 item 5) would break.
+      expect(bg.part).toBeUndefined()
     })
   })
 

@@ -31,19 +31,33 @@
     },
     {
       "id": "sl_02",
-      "layout": "section",
+      "layout": "blank",
       "role": "section",
       "rhythm": "breath",
       "regions": {
-        "title": [
-          { "id": "b_02_title", "type": "tls.t.title",
-            "props": { "text": { "runs": [{ "text": "01 — Where the money went" }] }, "size": "title", "align": "start", "rule": true },
-            "motion": { "preset": "section-in", "order": 1 } }
-        ],
-        "subtitle": [
-          { "id": "b_02_sub", "type": "tls.t.subtitle",
-            "props": { "text": "Compute spend, headcount, and the two decisions behind both.", "align": "start" },
-            "motion": { "preset": "fade-up", "order": 2, "trigger": "afterPrevious" } }
+        "content": [
+          { "id": "b_02_section", "type": "tls.l.section",
+            "style": {
+              "surface": {
+                "type": "linearGradient",
+                "angle": 135,
+                "stops": [
+                  { "color": "#0E2233", "at": 0 },
+                  { "color": "#1B4A6B", "at": 1 }
+                ]
+              },
+              "on": "text"
+            },
+            "props": {
+              "title": "01 — Where the money went",
+              "gap": "md",
+              "children": [
+                { "id": "b_02_sub", "type": "tls.t.subtitle",
+                  "props": { "text": "Compute spend, headcount, and the two decisions behind both.", "align": "start" },
+                  "motion": { "preset": "fade-up", "order": 2, "trigger": "afterPrevious" } }
+              ]
+            },
+            "motion": { "preset": "fade-up", "order": 1 } }
         ]
       },
       "notes": "Two beats, then move."

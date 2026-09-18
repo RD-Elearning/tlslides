@@ -40,6 +40,8 @@ module.exports = {
   base: 'http://localhost:5433',
   known: [/Accessing element\.ref was removed in React 19/],
   route: `/view/${DECK.id}`,
+  // The read-only viewer mounts `[data-testid="deck-viewer"]`, not the editor's `#canvas`.
+  waitFor: '[data-testid="deck-viewer"]',
 
   async run(page) {
     // Enable reduced motion so auto-steps complete instantly.

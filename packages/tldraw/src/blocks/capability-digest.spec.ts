@@ -39,6 +39,143 @@ function loadGoldenFixtures(): Array<{ name: string; deck: DeckSpec }> {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* A tiny AJV-free structural validator                                             */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Validate `data` against a JSON Schema *object* (the actual output of
+ * `deckSpecJsonSchema()`) using the subset of draft-2020-12 keywords that schema emits:
+ * `type`, `const`, `enum`, `required`, `properties`, `additionalProperties: false`,
+ * `oneOf`, `items`, `minItems`/`maxItems`, `minLength`/`maxLength`, `minimum`/`maximum`.
+ *
+ * Returns a list of human-readable errors; empty means valid. Deliberately NOT ajv (R7's own
+ * "no new dependency" constraint) — this exists so the two tests below actually exercise the
+ * generated schema instead of asserting on the raw deck JSON.
+ */
+function validateAgainstSchema(schema: unknown, data: unknown, path = '$'): string[] {
+  if (schema === true) return []
+  if (schema === false) return [`${path}: schema is false`]
+  if (schema === null || typeof schema !== 'object') return []
+
+  const s = schema as Record<string, unknown>
+  const errors: string[] = []
+
+  if (s.type !== undefined && !matchesJsonType(s.type as string | string[], data)) {
+    errors.push(`${path}: expected type ${JSON.stringify(s.type)}, got ${jsonTypeOf(data)}`)
+    return errors
+  }
+  if ('const' in s && !deepEqual(s.const, data)) {
+    errors.push(`${path}: expected const ${JSON.stringify(s.const)}, got ${JSON.stringify(data)}`)
+  }
+  if (Array.isArray(s.enum) && !s.enum.some((v) => deepEqual(v, data))) {
+    errors.push(`${path}: ${JSON.stringify(data)} is not one of ${JSON.stringify(s.enum)}`)
+  }
+
+  if (Array.isArray(s.oneOf)) {
+    const matched = s.oneOf.filter((sub) => validateAgainstSchema(sub, data, path).length === 0)
+    if (matched.length !== 1) {
+      errors.push(`${path}: must match exactly one of the ${s.oneOf.length} oneOf branches (matched ${matched.length})`)
+    }
+    return errors
+  }
+
+  if (isPlainObject(data)) {
+    const props = isPlainObject(s.properties) ? (s.properties as Record<string, unknown>) : undefined
+    if (Array.isArray(s.required)) {
+      for (const key of s.required) {
+        if (!(key as string in data)) errors.push(`${path}: missing required property "${key}"`)
+      }
+    }
+    if (props) {
+      for (const [key, sub] of Object.entries(props)) {
+        if (key in data) errors.push(...validateAgainstSchema(sub, (data as Record<string, unknown>)[key], `${path}.${key}`))
+      }
+      if (s.additionalProperties === false) {
+        for (const key of Object.keys(data)) {
+          if (!(key in props)) errors.push(`${path}: unexpected property "${key}"`)
+        }
+      } else if (isPlainObject(s.additionalProperties)) {
+        for (const [key, value] of Object.entries(data)) {
+          if (!props || !(key in props)) {
+            errors.push(...validateAgainstSchema(s.additionalProperties, value, `${path}.${key}`))
+          }
+        }
+      }
+    } else if (isPlainObject(s.additionalProperties)) {
+      for (const [key, value] of Object.entries(data)) {
+        errors.push(...validateAgainstSchema(s.additionalProperties, value, `${path}.${key}`))
+      }
+    }
+  }
+
+  if (Array.isArray(data)) {
+    if (s.items !== undefined) {
+      data.forEach((item, i) => errors.push(...validateAgainstSchema(s.items, item, `${path}[${i}]`)))
+    }
+    if (typeof s.minItems === 'number' && data.length < s.minItems) {
+      errors.push(`${path}: expected at least ${s.minItems} items`)
+    }
+    if (typeof s.maxItems === 'number' && data.length > s.maxItems) {
+      errors.push(`${path}: expected at most ${s.maxItems} items`)
+    }
+  }
+
+  if (typeof data === 'string') {
+    if (typeof s.maxLength === 'number' && data.length > s.maxLength) {
+      errors.push(`${path}: string is longer than maxLength ${s.maxLength}`)
+    }
+    if (typeof s.minLength === 'number' && data.length < s.minLength) {
+      errors.push(`${path}: string is shorter than minLength ${s.minLength}`)
+    }
+  }
+
+  if (typeof data === 'number') {
+    if (typeof s.minimum === 'number' && data < s.minimum) errors.push(`${path}: below minimum ${s.minimum}`)
+    if (typeof s.maximum === 'number' && data > s.maximum) errors.push(`${path}: above maximum ${s.maximum}`)
+  }
+
+  return errors
+}
+
+function matchesJsonType(expected: string | string[], data: unknown): boolean {
+  const types = Array.isArray(expected) ? expected : [expected]
+  return types.some((t) => {
+    switch (t) {
+      case 'object':
+        return isPlainObject(data)
+      case 'array':
+        return Array.isArray(data)
+      case 'string':
+        return typeof data === 'string'
+      case 'number':
+        return typeof data === 'number' && Number.isFinite(data)
+      case 'integer':
+        return typeof data === 'number' && Number.isInteger(data)
+      case 'boolean':
+        return typeof data === 'boolean'
+      case 'null':
+        return data === null
+      default:
+        return true
+    }
+  })
+}
+
+function jsonTypeOf(data: unknown): string {
+  if (data === null) return 'null'
+  if (Array.isArray(data)) return 'array'
+  return typeof data
+}
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* Original tests (Q19)                                                            */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -374,35 +511,14 @@ describe('R7 — deckSpecJsonSchema', () => {
       expect(slidesSchema.items.properties.regions).toBeDefined()
     })
 
-    it('schema accepts all 10 golden deck structures (top-level field check)', () => {
+    it('the generated schema accepts all 10 golden deck structures', () => {
       for (const { name, deck } of goldenFixtures) {
-        // Check required top-level fields are present
-        expect(deck).toHaveProperty('version', 1)
-        expect(deck).toHaveProperty('id')
-        expect(deck).toHaveProperty('title')
-        expect(deck).toHaveProperty('theme')
-        expect(deck).toHaveProperty('aspect')
-        expect(deck).toHaveProperty('slides')
-
-        // Check each slide has required fields
-        for (const slide of deck.slides) {
-          expect(slide).toHaveProperty('id')
-          expect(slide).toHaveProperty('layout')
-          expect(slide).toHaveProperty('regions')
-          expect(typeof slide.regions).toBe('object')
-
-          // Check each block in each region has required fields
-          for (const [, blocks] of Object.entries(slide.regions)) {
-            for (const block of blocks) {
-              expect(block).toHaveProperty('id')
-              expect(block).toHaveProperty('type')
-            }
-          }
-        }
+        const errors = validateAgainstSchema(schema, deck)
+        expect({ name, errors }).toEqual({ name, errors: [] })
       }
     })
 
-    it('schema structure rejects a deck with an unknown block type at the structural level', () => {
+    it('the generated schema rejects a deck with an unknown block type', () => {
       const badDeck: DeckSpec = {
         version: 1,
         id: 'bad-deck',
@@ -426,10 +542,15 @@ describe('R7 — deckSpecJsonSchema', () => {
         ],
       }
 
-      // validateDeckSpec catches unknown types as errors
-      const errors = validateDeckSpec(badDeck).filter((f) => f.level === 'error')
-      const unknownTypeErrors = errors.filter((e) => e.rule === 'block/unknown-type')
-      expect(unknownTypeErrors.length).toBe(1)
+      const errors = validateAgainstSchema(schema, badDeck)
+      expect(errors.length).toBeGreaterThan(0)
+      expect(errors.join('\n')).toMatch(/oneOf/)
+
+      // And a malformed `props` (a string) must be rejected by the schema itself, too.
+      const malformed = JSON.parse(JSON.stringify(badDeck)) as DeckSpec
+      ;(malformed.slides[0].regions['content'][0] as unknown as { type: string }).type = 'tls.t.title'
+      ;(malformed.slides[0].regions['content'][0] as unknown as { props: unknown }).props = 'not-an-object'
+      expect(validateAgainstSchema(schema, malformed).length).toBeGreaterThan(0)
     })
   })
 

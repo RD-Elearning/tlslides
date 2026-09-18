@@ -19,7 +19,7 @@ import {
   documentToDeckSpec,
   type DecompileFinding,
 } from './slide-decompiler'
-import type { SlideSpec, BlockSpec, Box, DeckSpec, PlacedBlock } from './types'
+import type { SlideSpec, BlockSpec, Box, DeckSpec, Paint, PlacedBlock } from './types'
 import type { TDDocument, TDPage, ComponentShape } from '~types'
 import { TEST_TOKENS } from './parity-harness'
 import { blockToShape } from './shape-bridge'
@@ -650,6 +650,65 @@ describe('ROUND-TRIP: DeckSpec → compileSlide → TDDocument → documentToDec
     expect(recovered.type).toBe(complexBlock.type)
     expect(recovered.props).toEqual(complexBlock.props)
     expect(recovered.style).toEqual(complexBlock.style)
+  })
+
+  it('round-trip deep-copies a gradient style.surface — the stops array is not shared', () => {
+    const gradientSurface: Paint = {
+      type: 'linearGradient',
+      angle: 45,
+      stops: [
+        { at: 0, color: '#111111' },
+        { at: 1, color: '#EEEEEE' },
+      ],
+    }
+    const block: BlockSpec = {
+      id: 'grad-1',
+      type: 'tls.kpi',
+      props: { label: 'Gradient', value: 7 },
+      style: { surface: gradientSurface, tone: 'filled' as const },
+    }
+
+    const spec: SlideSpec = {
+      id: 'grad-slide',
+      layout: 'blank',
+      regions: { content: [block] },
+    }
+
+    const compiled = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS)
+    const shapes: Record<string, ComponentShape> = {}
+    for (const shape of compiled.shapes) {
+      shapes[shape.id] = JSON.parse(JSON.stringify(shape))
+    }
+    const page: TDPage = {
+      id: 'grad-page',
+      name: 'Gradient',
+      childIndex: 1,
+      size: [1920, 1080],
+      shapes,
+      bindings: {},
+      layout: compiled.layout,
+      slideSpecId: 'grad-slide',
+    }
+
+    const result = pageToSlideSpec(page, TEST_TOKENS)
+    const recovered = result.spec.regions!.content[0]
+
+    expect(recovered.style).toEqual(block.style)
+
+    const recoveredStops = (recovered.style!.surface as Extract<Paint, { stops: unknown }>).stops
+    expect(recoveredStops).toEqual(gradientSurface.stops)
+    expect(recoveredStops).not.toBe(gradientSurface.stops)
+
+    // The page shape's own stops must be a *different* array too: editing the decompiled
+    // spec must never corrupt the live shape it came from.
+    const sourceShape = shapes[compiled.shapes[0].id]
+    const sourceStops = (sourceShape.props.$block as { style: { surface: Paint } }).style.surface
+    expect(recoveredStops).not.toBe((sourceStops as Extract<Paint, { stops: unknown }>).stops)
+
+    ;(recoveredStops as Array<{ at: number; color: string }>)[0].color = '#FF0000'
+    expect(
+      ((sourceStops as Extract<Paint, { stops: Array<{ color: string }> }>).stops)[0].color
+    ).toBe('#111111')
   })
 })
 

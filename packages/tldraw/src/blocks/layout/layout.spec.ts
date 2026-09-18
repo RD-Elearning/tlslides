@@ -8,6 +8,7 @@ import type {
   Box,
   LayoutContext,
   LayoutNode,
+  Paint,
   ResolvedTokens,
   Size,
   SurfaceContext,
@@ -420,6 +421,83 @@ describe('layoutChild depth capping', () => {
     const box: Box = { x: 0, y: 0, width: 100, height: 100 }
     const node = ctx.layoutChild({ id: 'c4', type: 'test.child', props: {} }, box)
     expect(node.k).toBe('group')
+  })
+})
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Gradient surface chaining to children (B.5 item 1)                              */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** A leaf block that reports the `text` colour it resolves against its own surface. */
+function makeProbeBlock(): BlockDefinition {
+  return {
+    type: 'test.probe',
+    name: 'Probe',
+    family: 'layout',
+    tier: 'A',
+    summary: 'Probe',
+    keywords: ['probe'],
+    schema: {},
+    defaults: {},
+    size: { preferred: [100, 50], min: [10, 10] },
+    layout: (_props: Record<string, unknown>, ctx: LayoutContext): LayoutNode => ({
+      k: 'rect',
+      box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+      fill: { type: 'solid', color: ctx.resolveColor('text').color },
+    }),
+    motion: {},
+  }
+}
+
+/** Vertical, white-at-top → black-at-bottom. `gradientAngleToVector(180)` points down. */
+const VERTICAL_GRADIENT: Paint = {
+  type: 'linearGradient',
+  angle: 180,
+  stops: [
+    { at: 0, color: '#FFFFFF' },
+    { at: 1, color: '#000000' },
+  ],
+}
+
+function rectFillColor(node: LayoutNode): string {
+  if (node.k !== 'group') throw new Error(`expected group, got ${node.k}`)
+  const child = node.children[0]
+  if (child.k !== 'rect' || !child.fill || child.fill.type !== 'solid') return ''
+  return child.fill.color
+}
+
+describe('gradient surface chaining to children', () => {
+  let registry: BlockRegistry
+
+  beforeEach(() => {
+    registry = new BlockRegistry()
+    registry.register(makeProbeBlock())
+  })
+
+  it('resamples the parent gradient at each child box, not the parent centre', () => {
+    // The parent's own fill is a gradient. Children at opposite ends must resolve
+    // different foreground colours — the light-on-light bug this test exists to catch.
+    const ctx = makeCtx({
+      box: { width: 1000, height: 1000 },
+      registry,
+      style: { surface: VERTICAL_GRADIENT },
+    })
+
+    const top = ctx.layoutChild(
+      { id: 'top', type: 'test.probe', props: {} },
+      { x: 0, y: 0, width: 400, height: 100 }
+    )
+    const bottom = ctx.layoutChild(
+      { id: 'bottom', type: 'test.probe', props: {} },
+      { x: 0, y: 900, width: 400, height: 100 }
+    )
+
+    const topColor = rectFillColor(top)
+    const bottomColor = rectFillColor(bottom)
+    expect(topColor).not.toBe(bottomColor)
+    // The dark end forces a light foreground; the light end keeps a dark one.
+    expect(topColor).toBe('#1A1A1A')
+    expect(bottomColor).not.toBe('#1A1A1A')
   })
 })
 

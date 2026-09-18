@@ -14,6 +14,7 @@
  */
 
 import { AnimationTrigger } from '~types'
+import type { ComponentShape, TDPage } from '~types'
 import { resolveBlockMotion, resolvePartMotion } from './resolve-motion'
 import { MOTION_PRESETS } from './presets'
 import { DURATION_TOKENS } from './tokens'
@@ -21,6 +22,9 @@ import type { BlockSpec, BlockDefinition, LayoutNode, SlideSpec, ResolvedTokens,
 import type { BlockRegistry } from '../registry'
 import { createLayoutContext } from '../layout'
 import { resolveTokens } from '../tokens'
+import { compileSlide } from '../slide-compiler'
+import { shapeToBlock } from '../shape-bridge'
+import { computeBuildSteps, stepDurationMs } from '~state/deck/presentation'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type { SurfaceContext } from '../types'
 
@@ -45,14 +49,18 @@ export interface BlockShowDuration {
 }
 
 export interface SlideTimelineBlock {
-  /** Block shape id. */
+  /** Block id (the authored `$block.id`, stable across compiles — not the random shape id). */
   id: string
   /** Absolute start time in ms (relative to slide start). */
   startsAtMs: number
   /** Absolute end time in ms. */
   endsAtMs: number
+  /** This block's own animation duration in ms (relative). */
+  durationMs: number
   /** The trigger that activated this block. */
   trigger: AnimationTrigger
+  /** True when this block waits for a human advance (its own trigger is `onClick`). */
+  isClickGated: boolean
 }
 
 export interface SlideTimelineStep {
@@ -62,6 +70,10 @@ export interface SlideTimelineStep {
   startsAtMs: number
   /** Absolute end time in ms (when all blocks in this step have finished). */
   endsAtMs: number
+  /** This step's own duration in ms, relative to its start — never human click-wait time. */
+  durationMs: number
+  /** True when this step only reveals on a human advance (contains an `onClick` cue). */
+  isClickGated: boolean
   /** Blocks in this step. */
   blocks: SlideTimelineBlock[]
 }
@@ -69,7 +81,9 @@ export interface SlideTimelineStep {
 export interface SlideTimeline {
   /** Ordered steps. */
   steps: SlideTimelineStep[]
-  /** Total slide duration in ms: sum of all step durations. */
+  /** Auto-play time in ms: the sum of every step's own duration. Human click-wait time is
+   *  never included (a click-gated step contributes only its animation duration, not the
+   *  unbounded time a person may take to decide). */
   totalMs: number
 }
 
@@ -137,21 +151,37 @@ function createFallbackTokens(): ResolvedTokens {
  * The exact box and token values don't affect which `part` names the layout
  * produces — only the number of items (e.g., list length) does.
  *
- * Lazily cached to avoid repeated token copying.
+ * Cached **per registry**: a context built with one registry must never be handed to a
+ * lookup that expects another's part counts (the bug a single module-level slot had — a
+ * second `slideTimeline(..., otherRegistry)` silently reused the first registry's context).
  */
-let _partCountCtx: ReturnType<typeof createLayoutContext> | undefined
+const _partCountCtxByRegistry = new WeakMap<BlockRegistry, ReturnType<typeof createLayoutContext>>()
+let _partCountCtxNoRegistry: ReturnType<typeof createLayoutContext> | undefined
 
 function getPartCountContext(registry?: BlockRegistry): ReturnType<typeof createLayoutContext> {
-  if (!_partCountCtx) {
-    _partCountCtx = createLayoutContext({
-      box: { width: DEFAULT_FRAME.width, height: DEFAULT_FRAME.height },
-      tokens: getDefaultTokens(),
-      surface: MINIMAL_SURFACE,
-      registry,
-      headless: true,
-    })
+  if (registry) {
+    const cached = _partCountCtxByRegistry.get(registry)
+    if (cached) return cached
+    const ctx = createPartCountContext(registry)
+    _partCountCtxByRegistry.set(registry, ctx)
+    return ctx
   }
-  return _partCountCtx
+  if (!_partCountCtxNoRegistry) {
+    _partCountCtxNoRegistry = createPartCountContext(undefined)
+  }
+  return _partCountCtxNoRegistry
+}
+
+function createPartCountContext(
+  registry?: BlockRegistry
+): ReturnType<typeof createLayoutContext> {
+  return createLayoutContext({
+    box: { width: DEFAULT_FRAME.width, height: DEFAULT_FRAME.height },
+    tokens: getDefaultTokens(),
+    surface: MINIMAL_SURFACE,
+    registry,
+    headless: true,
+  })
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -295,119 +325,95 @@ export function blockShowDuration(
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /**
- * Compute the full timeline of a slide — when each block starts and ends,
- * grouped into steps by trigger semantics.
+ * Compute the full timeline of a slide — when each block starts and ends, grouped into steps
+ * by trigger semantics.
  *
- * Iterates the SlideSpec's blocks directly (no full compilation), resolves each
- * block's motion, and computes timing. The trigger semantics match
- * `computeBuildSteps` exactly:
+ * **Source of truth.** The timeline is built from the *compiled page* — `computeBuildSteps` plus
+ * each shape's persisted `ShapeAnimation` — never from the raw `DeckSpec`. A `SlideSpec` input is
+ * compiled (with the supplied registry) first, so an in-editor edit to a delay is reflected
+ * exactly as playback sees it. This is the R6 Watch-out ("or the two disagree the moment a person
+ * edits a delay in the editor") made structural.
  *
- * Step grouping:
- * - `withPrevious` blocks share a step with the previous block.
- * - `afterPrevious` starts a new step (auto-advances after the previous step ends).
- * - `onClick` starts a new step (waits for user interaction).
+ * **Agreement with the runtime.** Step boundaries are computed with
+ * `state/deck/presentation.ts`'s own `stepDurationMs` — `max(delayMs + durationMs)` across the
+ * step's shapes — so `slideTimeline().totalMs` equals the time the real auto-advance chain takes
+ * to play every step, by construction.
  *
- * For timeline planning, each step starts at the previous step's end time.
- * The slide's `totalMs` is the sum of all step durations.
+ * **Click-gated steps.** Each step exposes a relative `durationMs` and `isClickGated`; `totalMs`
+ * is the sum of those durations only, so a caller never folds unbounded human click-wait time
+ * into the sum.
  *
- * DOM-free: no compilation, no browser APIs.
- *
- * @param slide    The slide specification.
- * @param registry The block registry (for part counting).
+ * @param input    The slide specification, or an already-compiled page.
+ * @param registry The block registry (for compilation and part counting).
  */
 export function slideTimeline(
-  slide: SlideSpec,
+  input: SlideSpec | TDPage,
   registry: BlockRegistry
 ): SlideTimeline {
-  // 1. Flatten all blocks from regions and free[], resolve motion, filter animated.
-  interface CueEntry {
-    block: BlockSpec
-    trigger: AnimationTrigger
-    order: number
-    resolved: ReturnType<typeof resolveBlockMotion>
-    def: BlockDefinition | undefined
-  }
+  const page = isPage(input)
+    ? input
+    : compileToPage(input, registry)
 
-  const cues: CueEntry[] = []
-
-  const processBlock = (block: BlockSpec) => {
-    if (!block.motion) return
-    const def = registry.get(block.type)
-    const resolved = resolveBlockMotion(block.motion, def?.motion ?? {})
-    if (resolved.effect === null) return
-    cues.push({ block, trigger: resolved.trigger, order: resolved.order, resolved, def })
-  }
-
-  for (const blocks of Object.values(slide.regions)) {
-    for (const block of blocks) processBlock(block)
-  }
-  if (slide.free) {
-    for (const entry of slide.free) processBlock(entry.block)
-  }
-
-  // 2. Sort cues by order (stable sort preserves insertion order for ties).
-  cues.sort((a, b) => a.order - b.order)
-
-  if (cues.length === 0) {
+  const buildSteps = computeBuildSteps(page)
+  if (buildSteps.length === 0) {
     return { steps: [], totalMs: 0 }
   }
 
-  // 3. Group cues into steps (matching computeBuildSteps logic).
-  const stepGroups: CueEntry[][] = []
-
-  for (const cue of cues) {
-    if (cue.trigger === AnimationTrigger.WithPrevious && stepGroups.length > 0) {
-      stepGroups[stepGroups.length - 1].push(cue)
-      continue
-    }
-    stepGroups.push([cue])
-  }
-
-  // 4. Compute timing for each step.
   const steps: SlideTimelineStep[] = []
   let absoluteTime = 0
 
-  // Cache part counts per block instance to avoid redundant layout calls.
-  // Uses the block spec reference identity for fast lookup — same object = same block.
-  const partCountBySpec = new WeakMap<object, number>()
+  for (let i = 0; i < buildSteps.length; i++) {
+    const buildStep = buildSteps[i]
+    const durationMs = stepDurationMs(page, buildStep)
+    const startsAtMs = absoluteTime
 
-  for (const group of stepGroups) {
-    const stepBlocks: SlideTimelineBlock[] = []
-    let stepEnd = absoluteTime
-
-    for (const cue of group) {
-      // Get or compute part count.
-      let partCount = partCountBySpec.get(cue.block)
-      if (partCount === undefined) {
-        partCount = cue.def
-          ? countLayoutParts(cue.block, cue.def, registry)
-          : 0
-        partCountBySpec.set(cue.block, partCount)
+    const blocks: SlideTimelineBlock[] = buildStep.shapeIds.map((shapeId) => {
+      const shape = page.shapes[shapeId]
+      const animation = shape?.animation
+      const trigger = animation?.trigger ?? AnimationTrigger.WithPrevious
+      const blockId = shape ? shapeToBlock(shape)?.id ?? shapeId : shapeId
+      const blockStart = startsAtMs + (animation?.delayMs ?? 0)
+      return {
+        id: blockId,
+        startsAtMs: blockStart,
+        endsAtMs: blockStart + (animation?.durationMs ?? 0),
+        durationMs: animation?.durationMs ?? 0,
+        trigger,
+        isClickGated: trigger === AnimationTrigger.OnClick,
       }
-
-      const duration = blockShowDuration(cue.block, cue.def ?? ({ type: cue.block.type, motion: {} } as any), registry, partCount)
-
-      const startsAtMs = absoluteTime + duration.delayMs
-      const endsAtMs = startsAtMs + duration.activeMs
-
-      stepBlocks.push({
-        id: cue.block.id,
-        startsAtMs,
-        endsAtMs,
-        trigger: cue.trigger,
-      })
-      stepEnd = Math.max(stepEnd, endsAtMs)
-    }
-
-    steps.push({
-      index: steps.length,
-      startsAtMs: absoluteTime,
-      endsAtMs: stepEnd,
-      blocks: stepBlocks,
     })
 
-    absoluteTime = stepEnd
+    steps.push({
+      index: i,
+      startsAtMs,
+      endsAtMs: startsAtMs + durationMs,
+      durationMs,
+      isClickGated: !buildStep.auto,
+      blocks,
+    })
+
+    absoluteTime += durationMs
   }
 
   return { steps, totalMs: absoluteTime }
+}
+
+/** A `TDPage` carries `shapes`; a `SlideSpec` carries `regions`. */
+function isPage(input: SlideSpec | TDPage): input is TDPage {
+  return 'shapes' in input && (input as TDPage).shapes !== undefined
+}
+
+/** Compile a `SlideSpec` to a minimal page-shaped object so `computeBuildSteps` can read it. */
+function compileToPage(slide: SlideSpec, registry: BlockRegistry): TDPage {
+  const { shapes } = compileSlide(slide, DEFAULT_FRAME, getDefaultTokens(), registry)
+  const byId: Record<string, ComponentShape> = {}
+  for (const shape of shapes) byId[shape.id] = shape
+  return {
+    id: slide.id,
+    name: slide.id,
+    childIndex: 0,
+    shapes: byId,
+    bindings: {},
+    size: [DEFAULT_FRAME.width, DEFAULT_FRAME.height],
+  } as unknown as TDPage
 }

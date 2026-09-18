@@ -573,7 +573,7 @@ Bullet list with dot/dash/chevron/number markers and indent levels. _(family: te
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`items\` | yes | list of text (1–40 items) | 2–8 items, each 2–8 words. Start each with a verb or noun, not a full sentence. |
+| \`items\` | yes | list of object (text, level) (1–40 items) | 2–8 items, each 2–8 words. Start each with a verb or noun, not a full sentence. |
 | \`marker\` | no | enum: dot \\\\| dash \\\\| chevron \\\\| number \\\\| icon | Bullet style. |
 | \`indentLevels\` | no | boolean | Enable per-item indent levels for nested lists. |
 | \`spacing\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg | Vertical spacing between items. |

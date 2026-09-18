@@ -14,14 +14,23 @@
  *  - DOM-free: no document, window, or browser APIs used
  */
 
+import * as fs from 'fs'
+import * as path from 'path'
 import { AnimationTrigger } from '~types'
-import type { BlockSpec, BlockDefinition, SlideSpec } from '../types'
+import type { BlockSpec, BlockDefinition, DeckSpec, LayoutContext, LayoutNode, SlideSpec } from '../types'
 import { BlockRegistry } from '../registry'
 import { registerBuiltInBlocks } from '../library'
 import { DURATION_TOKENS } from './tokens'
 import { MOTION_PRESETS } from './presets'
 import { blockShowDuration, slideTimeline, countLayoutParts } from './timeline'
 import type { BlockShowDuration } from './timeline'
+import { deckSpecToDocument } from '../deck-document'
+import { compileSlide } from '../slide-compiler'
+import { shapeToBlock } from '../shape-bridge'
+import { resolveTokens } from '../tokens'
+import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
+import { computeBuildSteps, stepChainDelayMs, stepDurationMs } from '~state/deck/presentation'
+import type { TDPage } from '~types'
 
 /* ── Shared fixtures ──────────────────────────────────────────────────────────── */
 
@@ -399,10 +408,7 @@ describe('slideTimeline', () => {
 
   describe('demo deck slides', () => {
     const DEMO_DECK: { slides: SlideSpec[] } = JSON.parse(
-      require('fs').readFileSync(
-        require('path').resolve(__dirname, '../__fixtures__/demo-deck.json'),
-        'utf-8'
-      )
+      fs.readFileSync(path.resolve(__dirname, '../__fixtures__/demo-deck.json'), 'utf-8')
     )
 
     it('slide 3 (sl_03) has steps with onClick triggers', () => {
@@ -466,6 +472,154 @@ describe('slideTimeline', () => {
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════════ */
+/* B.5 item 10 — compiled-page source + runtime agreement                           */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+describe('slideTimeline agrees with the runtime auto-advance (B.5 item 10)', () => {
+  const DEMO_DECK: DeckSpec = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../__fixtures__/demo-deck.json'), 'utf-8')
+  )
+  const { document: compiledDoc } = deckSpecToDocument(DEMO_DECK)
+
+  it("the runtime chain's last finish equals totalMs within one frame on every demo slide", () => {
+    for (const slide of DEMO_DECK.slides) {
+      const page = compiledDoc.pages[slide.id]
+      const steps = computeBuildSteps(page)
+      const timeline = slideTimeline(page, registry)
+
+      // Simulate the real runtime: each step waits `stepChainDelayMs` after the previous one,
+      // then plays its own blocks. The last block's finish is the chain's total.
+      let cumulative = 0
+      for (let i = 1; i < steps.length; i++) cumulative += stepChainDelayMs(page, steps, i)
+      const lastFinished =
+        steps.length === 0 ? 0 : cumulative + stepDurationMs(page, steps[steps.length - 1])
+
+      expect(Math.abs(lastFinished - timeline.totalMs)).toBeLessThanOrEqual(16)
+    }
+  })
+
+  it('tie-breaks equal order exactly as computeBuildSteps does', () => {
+    const slide: SlideSpec = {
+      id: 'tie',
+      layout: 'blank',
+      regions: {
+        content: [
+          { id: 'tie-b', type: 'tls.t.title', props: { text: { runs: [{ text: 'B' }] } }, motion: { preset: 'fade-up', order: 5 } },
+          { id: 'tie-a', type: 'tls.t.title', props: { text: { runs: [{ text: 'A' }] } }, motion: { preset: 'fade-up', order: 5 } },
+        ],
+      },
+    }
+    const { shapes } = compileSlide(slide, { width: 1920, height: 1080 }, resolveTokens(DEFAULT_DECK_THEME), registry)
+    const page = {
+      id: 'tie',
+      shapes: Object.fromEntries(shapes.map((s) => [s.id, s])),
+    } as unknown as TDPage
+
+    const buildSteps = computeBuildSteps(page)
+    const expectedOrder = buildSteps[0].shapeIds.map((id) => shapeToBlock(page.shapes[id])!.id)
+
+    const timeline = slideTimeline(page, registry)
+    expect(timeline.steps).toHaveLength(1)
+    expect(timeline.steps[0].blocks.map((b) => b.id)).toEqual(expectedOrder)
+  })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* B.5 items 11 & 12 — registry-keyed cache, click-gated relative clock             */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+describe('part-count cache is keyed by registry (B.5 item 11)', () => {
+  function leafDef(count: number): BlockDefinition {
+    return {
+      type: 'test.leaf',
+      name: 'Leaf',
+      family: 'layout',
+      tier: 'A',
+      summary: 'Leaf',
+      keywords: [],
+      schema: {},
+      defaults: {},
+      size: { preferred: [100, 100], min: [10, 10] },
+      layout: (_props: Record<string, unknown>, ctx: LayoutContext): LayoutNode => ({
+        k: 'group',
+        box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+        children: Array.from({ length: count }, (_, i) => ({
+          k: 'rect' as const,
+          part: `p${i}`,
+          box: { x: 0, y: i, width: ctx.box.width, height: 1 },
+          fill: { type: 'solid' as const, color: '#000000' },
+        })),
+      }),
+      motion: {},
+    }
+  }
+
+  const outer: BlockDefinition = {
+    type: 'test.outer',
+    name: 'Outer',
+    family: 'layout',
+    tier: 'A',
+    summary: 'Outer',
+    keywords: [],
+    schema: {},
+    defaults: {},
+    size: { preferred: [100, 100], min: [10, 10] },
+    layout: (_props: Record<string, unknown>, ctx: LayoutContext): LayoutNode =>
+      ctx.layoutChild({ id: 'c', type: 'test.leaf', props: {} }, {
+        x: 0,
+        y: 0,
+        width: ctx.box.width,
+        height: ctx.box.height,
+      }),
+    // A glob part forces the slow path (layout call), which is where the cache is used.
+    motion: { parts: ['child[*]'] },
+  }
+
+  it('a second call with a different registry does not reuse the first registry context', () => {
+    const regA = new BlockRegistry()
+    regA.register(outer)
+    regA.register(leafDef(5))
+
+    const regB = new BlockRegistry()
+    regB.register(outer)
+    regB.register(leafDef(2))
+
+    const spec: BlockSpec = { id: 'o1', type: 'test.outer', props: {} }
+
+    expect(countLayoutParts(spec, outer, regA)).toBe(5)
+    expect(countLayoutParts(spec, outer, regB)).toBe(2)
+  })
+})
+
+describe('slideTimeline click-gated steps (B.5 item 12)', () => {
+  it('exposes a relative duration and a click-gated flag, without folding in click wait', () => {
+    const slide: SlideSpec = {
+      id: 'click-clock',
+      layout: 'blank',
+      regions: {
+        content: [
+          { id: 'auto', type: 'tls.t.title', props: { text: { runs: [{ text: 'A' }] } }, motion: { preset: 'fade-up', order: 1 } },
+          { id: 'click', type: 'tls.t.body', props: { text: 'B' }, motion: { preset: 'fade-up', order: 2, trigger: AnimationTrigger.OnClick } },
+        ],
+      },
+    }
+    const result = slideTimeline(slide, registry)
+
+    expect(result.steps).toHaveLength(2)
+    expect(result.steps[0].isClickGated).toBe(false)
+    expect(result.steps[1].isClickGated).toBe(true)
+
+    // Each step's absolute span equals its exposed relative duration.
+    for (const step of result.steps) {
+      expect(step.endsAtMs - step.startsAtMs).toBe(step.durationMs)
+    }
+    // totalMs is the sum of the step durations only — no unbounded human wait.
+    const sumOfDurations = result.steps.reduce((sum, step) => sum + step.durationMs, 0)
+    expect(result.totalMs).toBe(sumOfDurations)
+  })
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
 /* Performance                                                                      */
 /* ═══════════════════════════════════════════════════════════════════════════════ */
 
@@ -473,10 +627,7 @@ describe('performance', () => {
   it('slideTimeline on a 60-slide deck runs under 20 ms', () => {
     // Build a 60-slide deck from the demo deck template
     const DEMO_DECK: { slides: SlideSpec[] } = JSON.parse(
-      require('fs').readFileSync(
-        require('path').resolve(__dirname, '../__fixtures__/demo-deck.json'),
-        'utf-8'
-      )
+      fs.readFileSync(path.resolve(__dirname, '../__fixtures__/demo-deck.json'), 'utf-8')
     )
 
     const slides: SlideSpec[] = []
@@ -487,15 +638,27 @@ describe('performance', () => {
       })
     }
 
+    // `slideTimeline`'s production input is the *compiled page* (a `TDPage`), so that is what
+    // this measures — compiling the 60 slides is a separate, one-time cost the app already pays.
+    const { document } = deckSpecToDocument({
+      version: 1,
+      id: 'perf-deck',
+      title: 'Perf',
+      theme: 'mono-grid',
+      aspect: 'widescreen',
+      slides,
+    })
+    const pages = slides.map((s) => document.pages[s.id])
+
     // Pre-warm caches (LayoutContext, tokens, part count cache) so the timing
     // loop measures steady-state performance, not cold-start overhead.
     for (let i = 0; i < 3; i++) {
-      slideTimeline(slides[i], registry)
+      slideTimeline(pages[i], registry)
     }
 
     const start = performance.now()
-    for (const slide of slides) {
-      slideTimeline(slide, registry)
+    for (const page of pages) {
+      slideTimeline(page, registry)
     }
     const elapsed = performance.now() - start
 

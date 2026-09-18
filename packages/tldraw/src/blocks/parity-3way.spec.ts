@@ -35,8 +35,9 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { renderNodeToSvg } from './render-svg'
 import { collectParts, type PartInfo } from './parity-harness'
-import type { DeckSpec, LayoutNode } from './types'
+import type { DeckSpec, LayoutNode, Paint } from './types'
 import type { ComponentShape, TDPage } from '~types'
+import { TDShapeType } from '~types'
 import { renderPageToSvg } from '~state/render/renderPageToSvg'
 import { migrate } from '~state/data/migrate'
 
@@ -387,9 +388,11 @@ function blocksCallback(page: TDPage, shape: ComponentShape): string | undefined
   const ctx = contextForBlock(shape, document, {
     headless: true,
     slideBackground: page.background,
+    registry,
   })
   const node = def.layout(shape.props, ctx)
-  return renderNodeToSvg(node)
+  // Per-shape id prefix: two blocks on one slide must not collide on a gradient def id.
+  return renderNodeToSvg(node, shape.id)
 }
 
 function renderPageToSvgWithBlocksCallback(page: TDPage): string {
@@ -400,3 +403,78 @@ function renderPageToSvgWithBlocksCallback(page: TDPage): string {
     blocks: (shape: ComponentShape) => blocksCallback(page, shape),
   })
 }
+
+/* ── B.5 item 2 — per-shape gradient-def id prefix ──────────────────────────────────────── */
+// Two gradient blocks on one slide used to render with the same `renderNodeToSvg` prefix
+// ('svg'), so both gradient defs got id `svglg0` — the second block's `fill:url(#svglg0)`
+// would silently point at the first block's gradient. This goes through the *real* call
+// path (`renderPageToSvg` + `blocksCallback`), not a hand-rolled `renderNodeToSvg(node, 'a')`.
+
+describe('B.5 item 2 — per-shape SVG gradient id prefix', () => {
+  function gradientCard(id: string, point: [number, number]): ComponentShape {
+    const surface: Paint = {
+      type: 'linearGradient',
+      angle: 0,
+      stops: [
+        { at: 0, color: '#111111' },
+        { at: 1, color: '#EEEEEE' },
+      ],
+    }
+    return {
+      id,
+      type: TDShapeType.Component,
+      componentId: 'tls.l.card',
+      parentId: 'b5-page',
+      childIndex: 1,
+      point,
+      size: [400, 300],
+      rotation: 0,
+      props: { $block: { style: { surface } } },
+    } as unknown as ComponentShape
+  }
+
+  it('emits two distinct <linearGradient> defs whose url(#id) fills each resolve to their own def', () => {
+    const a = gradientCard('shape-a', [0, 0])
+    const b = gradientCard('shape-b', [500, 0])
+    const page = {
+      id: 'b5-page',
+      shapes: { 'shape-a': a, 'shape-b': b },
+      background: undefined,
+      size: [1920, 1080],
+    } as unknown as TDPage
+
+    const svg = renderPageToSvgWithBlocksCallback(page)
+
+    const defIds = [...svg.matchAll(/<linearGradient id="([^"]+)"/g)].map((m) => m[1])
+    expect(defIds).toHaveLength(2)
+    expect(new Set(defIds).size).toBe(2)
+
+    const fillRefs = [...svg.matchAll(/fill:url\(#([^)]+)\)/g)].map((m) => m[1])
+    expect(fillRefs).toHaveLength(2)
+    for (const ref of fillRefs) {
+      expect(defIds).toContain(ref)
+    }
+  })
+})
+
+/* ── B.5 item 7 — the demo deck's slide-2 gradient actually renders to SVG ────────────────── */
+describe('B.5 item 7 — demo slide 2 ships a real gradient block', () => {
+  it('renderNodeToSvg emits a real <linearGradient> def for slide 2 (the section block)', () => {
+    const page = document.pages['sl_02']
+    expect(page).toBeDefined()
+    const shape = Object.values(page.shapes)[0] as ComponentShape
+    expect(shape.componentId).toBe('tls.l.section')
+
+    // The real per-shape SVG export path (`renderPageToSvg`'s `opts.blocks` callback), which is
+    // the only thing that ever calls `renderNodeToSvg` for a block.
+    const svg = blocksCallback(page, shape)
+    expect(svg).toBeDefined()
+
+    const defs = [...svg!.matchAll(/<linearGradient id="([^"]+)"/g)].map((m) => m[1])
+    expect(defs.length).toBeGreaterThanOrEqual(1)
+    // And the fill on the section's surface rect must actually reference it.
+    const refs = [...svg!.matchAll(/fill:url\(#([^)]+)\)/g)].map((m) => m[1])
+    expect(refs.length).toBeGreaterThanOrEqual(1)
+    for (const ref of refs) expect(defs).toContain(ref)
+  })
+})

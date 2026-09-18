@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, MotionRecipe, Box } from './types'
+import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
 import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
@@ -113,6 +113,7 @@ export function blockToShape(
         order: resolved.order,
         durationMs: resolved.durationMs,
         delayMs: resolved.delayMs,
+        easing: resolved.easing,
       }
     }
   }
@@ -197,6 +198,36 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   }
   if (meta.motion !== undefined) {
     spec.motion = JSON.parse(JSON.stringify(meta.motion))
+  }
+  // The persisted `ShapeAnimation` is the actual source of truth for playback — and the field a
+  // future inspector (R12) writes into directly, independently of `meta.motion`. Fold it into
+  // `spec.motion` when it has *diverged* from what `meta.motion` alone implies, so playback can
+  // never silently ignore a persisted delay/duration/effect/easing edit. When it has not diverged
+  // (the common case), `spec.motion` is returned verbatim and the DeckSpec round-trip stays
+  // lossless.
+  const animation = shapeObj.animation as ShapeAnimation | undefined
+  if (animation) {
+    const implied = resolveBlockMotion(spec.motion ?? {}, {})
+    const diverged =
+      animation.effect !== implied.effect ||
+      animation.trigger !== implied.trigger ||
+      animation.order !== implied.order ||
+      animation.durationMs !== implied.durationMs ||
+      animation.delayMs !== implied.delayMs ||
+      (animation.easing !== undefined && animation.easing !== implied.easing)
+    if (diverged) {
+      spec.motion = {
+        ...(spec.motion ?? {}),
+        effect: animation.effect,
+        trigger: animation.trigger,
+        order: animation.order,
+        duration: animation.durationMs,
+        delay: animation.delayMs,
+        // `easing` is an arbitrary CSS string; `ease` is the narrow token union but
+        // `resolveEasing` passes any non-token string through unchanged.
+        ...(animation.easing !== undefined ? { ease: animation.easing as EaseToken } : {}),
+      }
+    }
   }
   if (meta.children !== undefined) {
     spec.children = JSON.parse(JSON.stringify(meta.children))

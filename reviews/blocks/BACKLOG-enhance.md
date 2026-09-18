@@ -1039,7 +1039,7 @@ non-square source, the missing-asset frame, and the demo deck's slide 6 gaining 
 
 ---
 
-#### B.5 · Phase B hardening — fix the gaps a post-implementation read found · M · ⬜
+#### B.5 · Phase B hardening — fix the gaps a post-implementation read found · M · ✅
 
 **Goal.** R4–R8 are implemented and committed (`9574b97e`, `6ec5e24a`); the full suite is green
 (155 suites, 1886 passed, 0 failing) and typecheck/eslint add no new *class* of problem beyond one
@@ -1225,6 +1225,50 @@ either wired to a real (even stub) host or explicitly recorded as a scope cut.
 still green after the fixes, with strictly more assertions than before (no test deleted to make a
 fix pass). `npx eslint src/blocks --ext .ts,.tsx` reports 0 errors (warnings unchanged is fine). No
 new npm dependency. No `TldrawApp.version` bump.
+
+**B.5 implementation notes (2026-09-18).** All 16 items closed. `yarn jest src/blocks src/components`
+= 66 suites / 1306 passed / 0 failing (from 1253 at Phase B's own commit); `eslint src/blocks`
+= 0 errors. Red-first verification was done by temporarily reverting each fix and confirming the
+new test goes red (items 1, 2, 3, 8, 9, 11, 14). Named deviations and scope cuts, none left
+implied by a green suite:
+
+- **Item 5 (Paint deep-copy test)** adds the missing test as asked, but it cannot be made to go red
+  on the pre-fix code: `shapeToBlock` already deep-copies `style` via `JSON.parse(JSON.stringify)`,
+  so the invariant held. The test's teeth were proven by *temporarily* reverting that clone to a
+  shallow assignment, which turns it red. It is coverage against a future regression, not a fix.
+- **Item 7 (demo gradient).** Demo slide 2 now uses a `tls.l.section` container with a
+  `style.surface` gradient + `style.on: 'text'`, wrapping the subtitle as its child (the layout
+  changed from `section` to `blank` to host the container). Automated evidence: `parity-3way.spec`
+  asserts `renderNodeToSvg` emits a real `<linearGradient>` for slide 2, and `deck-context.spec`
+  asserts `contextForBlock` (the exact DeckViewer/ComponentUtil path) resolves that gradient surface.
+  **Scope cut: the `deck-demo.js` Playwright screenshot pass could not be run in this environment** —
+  the Next.js sample app's declared `gsap` dependency is not installed (no lockfile entry, no store
+  copy, no network), so `/view/...` 500s at module resolution before the viewer mounts. The harness
+  was also taught a per-scenario `waitFor` selector (`shoot.js`), because the viewer mounts
+  `[data-testid="deck-viewer"]`, not the editor's `#canvas` — without that the scenario could not
+  have run even with deps present. Re-run `node tools/visual/shoot.js deck-demo` once the example
+  app's deps are installed to capture the PNGs.
+- **Item 13/14 exposed a real schema bug**: `tls.t.bullets`'s SlotSpec declared `items` as a list of
+  **text**, but the layout consumes `{ text, level? }` objects (every golden fixture uses that
+  shape). Fixed the SlotSpec to a list of object; the capability-digest markdown snapshot was
+  updated accordingly (one line).
+- **Item 6** also changed `tls.l.section`'s divider from a `line` node to a thin `rect` (matching
+  `tls.t.title`'s own rule): a horizontal `line`'s box height (the gap band) and its SVG endpoint
+  geometry disagree, which the demo's now-containerised slide 2 surfaced in the parity geometry
+  probe. Rects keep DOM/SVG geometry parity by construction.
+- **Item 10** changed `slideTimeline`'s signature to accept a `TDPage` *or* a `SlideSpec` (a spec is
+  compiled internally). The 60-slide performance test now measures the production input (a compiled
+  page) — compiling the slides is a one-time cost the app already pays — keeping the same
+  `< 20 ms` bound.
+- **Registry plumbing** was required for item 6/7 to be reachable in production: `deckLayoutContext`/
+  `contextForBlock` (and `useBlockLayoutContext`) now accept and pass a `BlockRegistry`, so a
+  container block's `layoutChild` can resolve its `props.children` in the viewer/editor/export. It
+  was previously dropped, so no container child ever rendered outside a test.
+- **Item 15** wired the resolver rather than recording a cut: `deckLayoutContext` now supplies
+  `resolveAsset` from `doc.assets[id].src`, with a test proving it reaches `tls.m.image`.
+- **Accepted debt (unchanged):** the pre-existing `LayoutNode` discriminated-union narrowing errors
+  in ~10 spec files (and the 22 in `tls-m-image.spec.ts`) remain, per item 0. No non-spec type error
+  is introduced.
 
 ---
 

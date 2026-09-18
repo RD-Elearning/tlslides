@@ -5,7 +5,7 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationTrigger, DeckTheme } from '~types'
+import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme } from '~types'
 // Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
 // itself imports type-only from this file — both directions are `import type`, so this is a
 // type-only circular reference, erased entirely at compile time. No runtime cycle exists.
@@ -78,6 +78,10 @@ export interface BlockStyleSpec {
 export interface BlockMotionSpec {
   /** Motion preset ID: 'fade-up', 'stagger-lines', etc. */
   preset?: MotionPresetId
+  /** Explicit block-level `AnimationEffect`, when the persisted shape carries one that
+   *  does not round-trip through `preset` alone (e.g. written directly by an inspector).
+   *  Takes precedence over the preset→effect mapping in `resolveBlockMotion`. */
+  effect?: AnimationEffect
   /** When this block enters the build. */
   trigger?: AnimationTrigger
   /** Build order within the slide. */

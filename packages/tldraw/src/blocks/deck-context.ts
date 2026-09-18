@@ -23,6 +23,7 @@ import { resolveTokens, surfaceFromBackground } from './tokens'
 import { createLayoutContext } from './layout'
 import { BLOCK_PROP_KEY } from './shape-bridge'
 import type { BlockStyleSpec, Box, LayoutContext, Size } from './types'
+import type { BlockRegistry } from './registry'
 import type { ComponentShape } from '~types'
 
 /**
@@ -50,6 +51,8 @@ export function deckLayoutContext(
     slideBackground?: SlideBackground | string
     depth?: number
     style?: BlockStyleSpec
+    /** Block registry, so container blocks' `layoutChild` can resolve their children. */
+    registry?: BlockRegistry
   }
 ): LayoutContext {
   const theme = activeDeckTheme(doc.theme)
@@ -72,6 +75,16 @@ export function deckLayoutContext(
     headless: opts.headless,
     depth: opts.depth,
     style: opts.style,
+    // The real luminance-aware solver lives in `tokens.ts`; passing the theme lets
+    // `theme:`-sentinel literals (`'theme:accent1'`) resolve, and `createLayoutContext`
+    // defaults `resolveColor` to it so production rendering is contrast-correct.
+    theme,
+    // R8 — resolve an asset id to its renderable URL from the document's own asset table,
+    // so `tls.m.image` (and any future media block) renders the real image rather than the
+    // dashed fallback frame.
+    resolveAsset: (id: string) => doc.assets?.[id]?.src,
+    // Container blocks (card/section/overlay/…) resolve their `props.children` through this.
+    registry: opts.registry,
   })
 }
 
@@ -92,6 +105,8 @@ export function contextForBlock(
     headless: boolean
     slideBackground?: SlideBackground | string
     depth?: number
+    /** Block registry, so container blocks' `layoutChild` can resolve their children. */
+    registry?: BlockRegistry
   }
 ): LayoutContext {
   const box: Box = {

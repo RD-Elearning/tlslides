@@ -9,7 +9,6 @@
 
 import type { BlockRegistry } from './registry'
 import { defaultBlockRegistry } from './validate-deck-spec'
-import { BUILT_IN_BLOCKS } from './library'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import type { SlotSpec, SlotType } from './types'
@@ -40,18 +39,6 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
       },
       required: ['id', 'type'],
     })
-  }
-
-  // Also accept blocks with unknown types (validation will catch them, schema is permissive
-  // at this level for forward-compat)
-  const blockSchema: Record<string, unknown> = {
-    type: 'object',
-    properties: {
-      id: { type: 'string' },
-      type: { type: 'string' },
-      props: { type: 'object' },
-    },
-    required: ['id', 'type'],
   }
 
   const themeIds = BUILT_IN_DECK_THEMES.map((t) => t.id)
@@ -150,51 +137,47 @@ function slideSchema(
   }
 }
 
-function blockSchema(blockTypeSchemas: Record<string, unknown>[]): Record<string, unknown> {
+/**
+ * The schema for one block node, discriminating on `type` via `oneOf` over the per-type
+ * schemas built by `deckSpecJsonSchema`. This is the core of the FastAPI/LLM structured-output
+ * contract: an unknown `type`, or props that do not satisfy the type's own slot schema, is
+ * rejected by the schema itself. `children` recurses (bounded, so the in-memory schema object
+ * stays acyclic and JSON-serializable).
+ *
+ * Deliberately **no** permissive fallback for unknown types: forward-compat is handled by
+ * regenerating the schema from the registry, not by accepting arbitrary types (a fabricated
+ * block type must be a validation failure).
+ */
+function blockSchema(
+  blockTypeSchemas: Record<string, unknown>[],
+  depth = 0,
+): Record<string, unknown> {
+  const childrenItems: Record<string, unknown> =
+    depth < MAX_BLOCK_NESTING_DEPTH ? blockSchema(blockTypeSchemas, depth + 1) : { type: 'object' }
+
   return {
     type: 'object',
     required: ['id', 'type'],
     properties: {
       id: { type: 'string' },
       type: { type: 'string' },
-      props: { type: 'object' },
+      props: { type: 'object', description: 'Type-specific props (see the matching oneOf branch).' },
       style: { type: 'object', description: 'BlockStyleSpec overrides.' },
       motion: { type: 'object', description: 'BlockMotionSpec overrides.' },
       children: {
         type: 'array',
-        items: undefined, // recursive — set below
+        items: childrenItems,
         description: 'Child blocks (container blocks only).',
       },
       slot: { type: 'string' },
     },
     additionalProperties: false,
+    oneOf: blockTypeSchemas,
   }
 }
 
-// Fix the recursive children reference
-function blockSchemaWithChildren(blockTypeSchemas: Record<string, unknown>[]): Record<string, unknown> {
-  const bs = blockSchema(blockTypeSchemas)
-  const childSchema = {
-    type: 'object',
-    required: ['id', 'type'],
-    properties: {
-      id: { type: 'string' },
-      type: { type: 'string' },
-      props: { type: 'object' },
-      style: { type: 'object' },
-      motion: { type: 'object' },
-      children: undefined as unknown, // will self-reference
-      slot: { type: 'string' },
-    },
-    additionalProperties: false,
-  }
-  // Self-referencing children
-  ;(childSchema.properties as Record<string, unknown>).children = {
-    type: 'array',
-    items: childSchema,
-  }
-  return childSchema
-}
+/** Keeps the recursive `children` schema finite (and the object graph acyclic). */
+const MAX_BLOCK_NESTING_DEPTH = 4
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* SlotSpec → JSON Schema                                                          */

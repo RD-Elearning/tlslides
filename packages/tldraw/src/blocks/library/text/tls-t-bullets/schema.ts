@@ -10,7 +10,20 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {
   items: {
-    type: { kind: 'list', of: { kind: 'text' }, min: 1, max: 40 },
+    // Each item is `{ text, level? }` (see `BulletItem` below), not a bare string — the JSON
+    // Schema R7 generates must describe the shape the layout actually consumes.
+    type: {
+      kind: 'list',
+      of: {
+        kind: 'object',
+        fields: {
+          text: { type: { kind: 'text' }, required: true, role: 'content', label: 'Item text' },
+          level: { type: { kind: 'number' }, role: 'option', label: 'Indent level' },
+        },
+      },
+      min: 1,
+      max: 40,
+    },
     role: 'content',
     label: 'List items',
     help: 'Bullet list items. Each item is a short phrase or sentence.',

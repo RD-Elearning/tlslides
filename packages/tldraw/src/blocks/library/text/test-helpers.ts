@@ -4,7 +4,7 @@
  * Re-exports layout helpers and adds text-specific utilities.
  */
 
-import type { LayoutContext, LayoutNode, Size } from '../../types'
+import type { BlockStyleSpec, LayoutContext, LayoutNode, Size } from '../../types'
 import {
   TEST_TOKENS,
   TEST_SURFACE,
@@ -40,8 +40,12 @@ const textLeafBlock: BlockDefinition = {
   motion: {},
 }
 
-export function makeCtx(box: Size, registry?: BlockRegistry): LayoutContext {
-  return layoutMakeCtx(box, registry)
+export function makeCtx(
+  box: Size,
+  registry?: BlockRegistry,
+  style?: BlockStyleSpec
+): LayoutContext {
+  return layoutMakeCtx(box, registry, style)
 }
 
 /** Create a registry with the test text leaf block. */

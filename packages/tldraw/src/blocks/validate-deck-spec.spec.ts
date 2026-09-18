@@ -506,3 +506,63 @@ describe('validateDeckSpec — custom registry', () => {
     expect(a.has('tls.l.stack')).toBe(true)
   })
 })
+
+/* ── B.5 item 4 — the `style.on` contrast baseline is the block's own surface ─────────── */
+
+/** A valid one-block deck whose title block carries the given `style`. */
+function deckWithBlockStyle(style: unknown): DeckSpec {
+  return {
+    version: 1,
+    id: 'style-deck',
+    title: 'Style deck',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: [
+      {
+        id: 'sl1',
+        layout: 'blank',
+        regions: {
+          content: [
+            {
+              id: 'b1',
+              type: 'tls.t.title',
+              props: { text: 'Hi' },
+              style,
+            } as BlockSpec,
+          ],
+        },
+      },
+    ],
+  }
+}
+
+describe('validateDeckSpec — style contrast baseline (B.5 item 4)', () => {
+  it('flags a literal `on` that is low-contrast against the block\u2019s own surface', () => {
+    // Dark block background with near-black text: unreadable against *its own* surface,
+    // even though it would look fine against the theme's nominal (light) surface.
+    const findings = findingsOf(
+      deckWithBlockStyle({ surface: '#000000', on: '#333333' })
+    )
+    const hits = byRule(findings, 'style/low-contrast-on')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].path).toBe('slides[0].regions.content[0].style.on')
+    // The message must name the block's own surface, not an unrelated one.
+    expect(hits[0].message).toContain('#000000')
+  })
+
+  it('flags a gradient surface with fewer than two stops', () => {
+    const findings = findingsOf(
+      deckWithBlockStyle({
+        surface: {
+          type: 'linearGradient',
+          angle: 0,
+          stops: [{ at: 0, color: '#FFFFFF' }],
+        },
+      })
+    )
+    const hits = byRule(findings, 'style/gradient-few-stops')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].level).toBe('error')
+    expect(hits[0].path).toBe('slides[0].regions.content[0].style.surface')
+  })
+})

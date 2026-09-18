@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { useTldrawApp } from './useTldrawApp'
+import { useBlockRegistry } from './useBlockRegistry'
 import { resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
@@ -77,6 +78,10 @@ export function useBlockLayoutContext(
 ): LayoutContext {
   const tokens = useDeckTokens()
   const surface = useBlockSurface(box)
+  const app = useTldrawApp()
+  const doc = app.useStore((s) => s.document)
+  const assets = doc.assets
+  const blockRegistry = useBlockRegistry()
   const { headless = false, depth, style } = opts
 
   return React.useMemo(
@@ -88,7 +93,11 @@ export function useBlockLayoutContext(
         headless,
         depth,
         style,
+        // R8 — the live editor resolves media asset ids through the document's asset table.
+        resolveAsset: (id: string) => assets?.[id]?.src,
+        // Container blocks resolve `props.children` through the registry.
+        registry: blockRegistry,
       }),
-    [box.width, box.height, tokens, surface, headless, depth, style],
+    [box.width, box.height, tokens, surface, headless, depth, style, assets, blockRegistry],
   )
 }

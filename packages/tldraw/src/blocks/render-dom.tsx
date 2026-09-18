@@ -231,7 +231,7 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       if (def.html!.animate) {
         const parts = root.querySelectorAll('[data-part]')
         for (let i = 0; i < parts.length; i++) {
-          ;(parts[i] as HTMLElement).style.opacity = '0'
+          (parts[i] as HTMLElement).style.opacity = '0'
         }
       }
 
@@ -372,7 +372,6 @@ const HostMount = React.memo(function HostMount({
       }
       mountedRef.current = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [render, registry, blockRegistry])
 
   useIsomorphicLayoutEffect(() => {
@@ -405,7 +404,6 @@ const HostMount = React.memo(function HostMount({
     prevBoxSizeRef.current = boxSize
 
     renderer.update(root, ctx)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostProps, box.width, box.height])
 
   const hasRenderer = (registry?.has(render) ?? false) || (() => {

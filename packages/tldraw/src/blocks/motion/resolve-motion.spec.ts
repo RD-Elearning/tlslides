@@ -365,7 +365,20 @@ describe('deriveShapeAnimation', () => {
       order: 2,
       durationMs: 500,
       delayMs: 100,
+      easing: EASING_TOKENS[MOTION_PRESETS['fade-up'].easing],
     })
+  })
+
+  it('populates easing from the spec ease token (B.5 item 9)', () => {
+    const spec: BlockMotionSpec = { preset: 'fade', order: 0, ease: 'ease-in-out' }
+    const result = deriveShapeAnimation(spec, defRecipe)
+    expect(result?.easing).toBe('ease-in-out')
+  })
+
+  it('an explicit effect overrides the preset mapping (B.5 item 8)', () => {
+    const spec: BlockMotionSpec = { preset: 'fade', order: 0, effect: AnimationEffect.Wipe }
+    const result = deriveShapeAnimation(spec, defRecipe)
+    expect(result?.effect).toBe(AnimationEffect.Wipe)
   })
 
   it('derives a ZoomIn ShapeAnimation from a pop preset', () => {
