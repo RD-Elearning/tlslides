@@ -9,7 +9,7 @@
  * and the two registries serve different layers.
  */
 
-import type { Box, ResolvedTokens, SurfaceContext } from './types'
+import type { Box, ResolvedTokens, SurfaceContext, BlockMotionRuntime } from './types'
 
 /**
  * Resolved block motion (from R5); undefined until that phase lands.
@@ -41,6 +41,9 @@ export interface HostRenderContext {
   props: Record<string, unknown>
   /** Resolved motion (from R5); `undefined` until that phase lands. */
   motion?: ResolvedBlockMotion
+  /** Block motion runtime (R3). When present and the block defines `animate()`, it runs
+   *  instead of the whole-block preset. Created by DeckViewer per build step. */
+  blockMotion?: BlockMotionRuntime
   /** True when rendering for export/thumbnail rather than the live editor. */
   headless: boolean
 }

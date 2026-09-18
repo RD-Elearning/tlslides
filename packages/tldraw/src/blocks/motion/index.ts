@@ -35,3 +35,7 @@ export type { MotionPreset, MotionPresetId } from './presets'
 
 // WAAPI driver implementation
 export { createWAAPI_driver } from './waapi-driver'
+
+// GSAP driver adapter (host-injected, optional)
+export { createGsapDriver } from './gsap-driver'
+export type { GsapInstance, GsapTimeline, GsapVars } from './gsap-driver'

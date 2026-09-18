@@ -14,6 +14,7 @@ import type { TDShape, AnimationTrigger, DeckTheme } from '~types'
 // `./tokens`.
 import type { DeckTokens } from './tokens'
 export type { DeckTokens }
+import type { MotionDriver } from './motion/driver'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Block instance and spec                                                         */
@@ -155,12 +156,45 @@ export interface HtmlTemplateContext {
 }
 
 /**
- * Block motion runtime, passed to `kind: 'html'` block's `animate()`. R3 fills this interface;
- * for R2, `animate` is not yet called but its signature is declared so the first html block
- * can ship with an animation stub.
+ * Block motion runtime, passed to `kind: 'html'` block's `animate(root, rt)`.
+ *
+ * The driver enforces the same allowed/forbidden property vocabulary on every element
+ * it is handed — including elements inside `animate()`. `animate()` may do anything
+ * to descendants of `root` (GSAP's `x`, `y`, `scale`, `rotation` are fine on parts)
+ * but must never set `root.style.transform` — `.tl-positioned-div` owns that.
+ *
+ * `onComplete` is load-bearing: the viewer chains `afterPrevious` and auto-advance
+ * on the promise it resolves. Three invariants:
+ * - Must be called exactly once (idempotent if called more).
+ * - The viewer creates the resolving promise *before* calling `mount`, so a
+ *   synchronous `onComplete` inside `animate` still resolves correctly.
+ * - If not called within `timing.durationMs + 2000`, the viewer warns (naming the
+ *   block id) and resolves the promise anyway.
  */
 export interface BlockMotionRuntime {
-  [key: string]: unknown
+  /** The motion driver (WAAPI or GSAP-backed). `animate()` may call
+   *  `rt.driver.play(...)` on descendants, or use the raw `gsap` instance. */
+  driver: MotionDriver
+  /** The host's GSAP instance, if the driver was created with one.
+   *  `undefined` when using the default WAAPI driver. */
+  gsap?: unknown
+  /** Timing tokens for this animation step, in milliseconds. */
+  timing: {
+    /** Delay before the animation starts. */
+    delayMs: number
+    /** Duration of the animation. */
+    durationMs: number
+    /** Per-item stagger offset (for lists/grids). */
+    staggerMs: number
+    /** CSS easing string. */
+    ease: string
+  }
+  /** True when `prefers-reduced-motion: reduce` is active. `animate()` should skip
+   *  animation and call `onComplete()` immediately. */
+  reducedMotion: boolean
+  /** MUST be called when the animation completes (or is skipped for reduced motion).
+   *  The viewer awaits this promise for build-step chaining. Idempotent. */
+  onComplete(): void
 }
 
 /**

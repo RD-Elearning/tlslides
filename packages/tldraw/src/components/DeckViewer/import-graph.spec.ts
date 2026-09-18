@@ -93,3 +93,25 @@ describe('DeckViewer import graph (real, transitive)', () => {
     expect(badPaths.some((f) => f.endsWith(`${path.sep}Tldraw.tsx`))).toBe(true)
   })
 })
+
+/**
+ * R3 — prove the bundle is gsap-free.
+ *
+ * Walks from the blocks barrel (`~blocks/index.ts`) and asserts that `gsap` never appears
+ * as a value (runtime) import. `createGsapDriver` takes the host's instance as an argument
+ * and contains no `import 'gsap'`, so the driver adapter adds ~2 KB but zero dependency.
+ */
+describe('blocks barrel import graph — no gsap dependency', () => {
+  const BLOCKS_BARREL = path.resolve(__dirname, '../../blocks/index.ts')
+
+  it('walks a non-trivial graph from blocks/index.ts', () => {
+    const result = walkImportGraph(BLOCKS_BARREL, TSCONFIG_PATH)
+    expect(result.visited.size).toBeGreaterThan(20)
+  })
+
+  it('never reaches gsap as a runtime import', () => {
+    const result = walkImportGraph(BLOCKS_BARREL, TSCONFIG_PATH)
+    const gsapExternals = [...result.externals].filter((s) => s === 'gsap' || s.startsWith('gsap/'))
+    expect(gsapExternals).toEqual([])
+  })
+})

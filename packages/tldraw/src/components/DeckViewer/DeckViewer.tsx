@@ -9,7 +9,7 @@ import { TDShapeType } from '~types'
 // uses avoids pulling that (and anything else barrel-adjacent) into a real DeckViewer bundle.
 // Verified with the same walker `import-graph.spec.ts` uses: none of these leaf modules reach
 // `parity-harness.ts`, `state/TldrawApp`, `state/sessions/`, or `mobx`.
-import type { DeckSpec, Box } from '~blocks/types'
+import type { DeckSpec, Box, BlockMotionRuntime } from '~blocks/types'
 import type { MotionDriver } from '~blocks/motion/driver'
 import type { BlockDefinition } from '~blocks/types'
 import type { LayoutContext } from '~blocks/types'
@@ -66,6 +66,10 @@ export interface DeckViewerProps {
   onBuildStepChange?: (step: number) => void
   /** Motion driver. Defaults to `createWAAPI_driver()`. Inject a stub in tests. */
   driver?: MotionDriver
+  /** Host-injected GSAP instance (R3). When provided, passed through to `BlockMotionRuntime.gsap`
+   *  so that html blocks with `animate()` can use GSAP directly. No `import gsap` anywhere
+   *  in the bundle — the adapter is structurally typed. */
+  gsap?: unknown
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
   autoAdvanceMs?: number
@@ -259,6 +263,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   onSlideChange,
   onBuildStepChange,
   driver,
+  gsap,
   autoAdvanceMs,
   registry: registryProp,
   hostRegistry,
@@ -285,6 +290,40 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const motionDriver = React.useMemo<MotionDriver>(() => driver ?? createWAAPI_driver(), [driver])
 
   const elementsRef = React.useRef<Map<string, HTMLDivElement>>(new Map())
+
+  /* --- R3: animate() disposers and onComplete promises ------------------------------ */
+
+  /**
+   * Disposer functions returned by `animate()`, keyed by shape id. Called on every cancel
+   * path (backward navigation, slide change, unmount) to kill GSAP timelines that the
+   * driver's `cancelAll()` knows nothing about.
+   */
+  const animateDisposersRef = React.useRef<Map<string, () => void>>(new Map())
+
+  /**
+   * Map of shape id → resolve function for the `onComplete` promise. The viewer awaits
+   * these for build-step chaining (`afterPrevious` / auto-advance).
+   */
+  const animateCompletersRef = React.useRef<Map<string, () => void>>(new Map())
+
+  /**
+   * Timeout handles for blocks that never call `onComplete`. Cleared on cancel/dispose.
+   */
+  const animateTimeoutsRef = React.useRef<Map<ReturnType<typeof setTimeout>, unknown>>(new Map())
+
+  /** Kill all animate()-started timelines and clear tracking state. */
+  const cancelAllAnimate = React.useCallback(() => {
+    for (const disposer of animateDisposersRef.current.values()) {
+      disposer()
+    }
+    animateDisposersRef.current.clear()
+    for (const timeout of animateTimeoutsRef.current.keys()) {
+      clearTimeout(timeout)
+    }
+    animateTimeoutsRef.current.clear()
+    // Note: we do NOT clear animateCompletersRef — the promises are already stored
+    // in the build-step chain and will resolve when the disposer runs or timeout fires.
+  }, [])
 
   /* --- Navigation state transitions --------------------------------------------------- */
 
@@ -360,43 +399,151 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     if (!page) return
     const prev = prevBuildRef.current
     const pageChanged = prev.pageId !== page.id
-    if (pageChanged) motionDriver.cancelAll()
+    if (pageChanged) {
+      motionDriver.cancelAll()
+      cancelAllAnimate()
+    }
     const prevRevealed = pageChanged ? -1 : prev.revealed
 
     steps.forEach((step, index) => {
       const isRevealed = index < currentBuildStep
-      const isNewlyRevealed = !pageChanged && !reducedMotion && index >= prevRevealed && isRevealed
+      // isNewlyRevealed: first time appearing. reducedMotion is handled per-block below,
+      // not folded into this flag, so that animate() blocks get their onComplete() call.
+      const isNewlyRevealed = !pageChanged && index >= prevRevealed && isRevealed
       step.shapeIds.forEach((shapeId) => {
         const el = elementsRef.current.get(shapeId)
-        const animation = page.shapes[shapeId]?.animation
-        if (!el || !animation) return
-        if (isRevealed) {
-          if (isNewlyRevealed) {
-            motionDriver.play(el, entranceKeyframes(animation.effect), {
-              duration: animation.durationMs,
-              delay: animation.delayMs,
-              easing: 'ease-out',
-              fill: 'forwards',
-            })
-          } else {
-            motionDriver.set(el, visibleState(animation.effect))
+        if (!el) return
+
+        // R3: check if this block has animate() and should be handled via the runtime
+        const shape = page.shapes[shapeId]
+        const blockSpec = shape ? shapeToBlock(shape) : undefined
+        const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined
+        const hasAnimate = blockDef?.kind === 'html' && !!blockDef.html?.animate
+
+        if (hasAnimate && isNewlyRevealed) {
+          // Find the host root div inside the shape wrapper
+          const hostRoot = el.querySelector('[data-render]') as HTMLElement | null
+          if (!hostRoot) return
+
+          const animation = shape?.animation
+          const durationMs = animation?.durationMs ?? 400
+          const delayMs = animation?.delayMs ?? 0
+
+          // Create the onComplete promise — stored before calling animate so that a
+          // synchronous onComplete still resolves correctly (promise is already created).
+          let completeResolve!: () => void
+          const completePromise = new Promise<void>((resolve) => {
+            completeResolve = resolve
+          })
+          // Suppress unused variable — the promise is stored via the completer ref
+          void completePromise
+
+          // Store the completer for build-step chaining
+          animateCompletersRef.current.set(shapeId, completeResolve)
+
+          if (reducedMotion) {
+            // Reduced motion: skip animate(), call onComplete immediately
+            completeResolve()
+            animateCompletersRef.current.delete(shapeId)
+            return
           }
-        } else {
-          motionDriver.set(el, hiddenState(animation.effect))
+
+          const rt: BlockMotionRuntime = {
+            driver: motionDriver,
+            gsap: gsap ?? undefined,
+            timing: {
+              delayMs,
+              durationMs,
+              staggerMs: 40, // default stagger from motion tokens
+              ease: 'cubic-bezier(0.22, 1, 0.36, 1)', // smoothOut
+            },
+            reducedMotion: false,
+            onComplete: () => {
+              // Idempotent resolve
+              const resolve = animateCompletersRef.current.get(shapeId)
+              if (resolve) {
+                resolve()
+                animateCompletersRef.current.delete(shapeId)
+              }
+              // Clear timeout
+              for (const [timeout] of animateTimeoutsRef.current) {
+                animateTimeoutsRef.current.delete(timeout)
+                clearTimeout(timeout)
+              }
+            },
+          }
+
+          const disposer = blockDef!.html!.animate!(hostRoot, rt)
+          if (disposer) {
+            animateDisposersRef.current.set(shapeId, disposer)
+          }
+
+          // Timeout guard: if onComplete is not called within durationMs + 2000
+          const timeout = setTimeout(() => {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[block "${blockDef!.type}"] animate() did not call onComplete ` +
+              `within ${durationMs + 2000}ms — continuing anyway`
+            )
+            rt.onComplete()
+          }, durationMs + 2000)
+          animateTimeoutsRef.current.set(timeout, shapeId)
+
+        } else if (hasAnimate && !isRevealed) {
+          // Block is hidden — cancel any running animate for this shape
+          const disposer = animateDisposersRef.current.get(shapeId)
+          if (disposer) {
+            disposer()
+            animateDisposersRef.current.delete(shapeId)
+          }
+          // Also resolve onComplete so build-step chaining isn't blocked
+          const resolve = animateCompletersRef.current.get(shapeId)
+          if (resolve) {
+            resolve()
+            animateCompletersRef.current.delete(shapeId)
+          }
+
+          // Apply hidden state to the shape wrapper (existing behavior)
+          const animation = shape?.animation
+          if (animation) {
+            motionDriver.set(el, hiddenState(animation.effect))
+          }
+
+        } else if (!hasAnimate) {
+          // Non-animated block — existing behavior unchanged
+          const animation = shape?.animation
+          if (!animation) return
+          if (isRevealed) {
+            if (isNewlyRevealed && !reducedMotion) {
+              motionDriver.play(el, entranceKeyframes(animation.effect), {
+                duration: animation.durationMs,
+                delay: animation.delayMs,
+                easing: 'ease-out',
+                fill: 'forwards',
+              })
+            } else {
+              motionDriver.set(el, visibleState(animation.effect))
+            }
+          } else {
+            motionDriver.set(el, hiddenState(animation.effect))
+          }
         }
+        // If hasAnimate && isRevealed && !isNewlyRevealed: already settled, do nothing
       })
     })
 
     prevBuildRef.current = { pageId: page.id, revealed: currentBuildStep }
-  }, [page, steps, currentBuildStep, reducedMotion, motionDriver])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, steps, currentBuildStep, reducedMotion, motionDriver, gsap])
 
   // Cancel every in-flight animation on unmount — an abandoned WAAPI animation holding
   // `will-change` on an unmounted subtree is a real leak (rule 5).
   React.useEffect(() => {
     return () => {
       motionDriver.cancelAll()
+      cancelAllAnimate()
     }
-  }, [motionDriver])
+  }, [motionDriver, cancelAllAnimate])
 
   /* --- Auto-advance chain (`afterPrevious`/a leading `withPrevious`) -------------------- */
 

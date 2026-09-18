@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import type { DeckSpec } from '@tlslides/tldraw'
-import { DeckViewer } from '@tlslides/tldraw'
+import { DeckViewer, createGsapDriver } from '@tlslides/tldraw'
+import gsap from 'gsap'
 import Link from 'next/link'
 
 interface ViewDeckProps {
@@ -35,6 +36,9 @@ export default function ViewDeck({ deckId }: ViewDeckProps) {
 
     fetchDeck()
   }, [deckId])
+
+  // R3: Create GSAP-backed driver once; pass raw instance for BlockMotionRuntime.gsap
+  const gsapDriver = useMemo(() => createGsapDriver(gsap as any), [])
 
   if (loading) {
     return (
@@ -84,6 +88,8 @@ export default function ViewDeck({ deckId }: ViewDeckProps) {
       <div style={{ width: '100%', height: '100%' }}>
         <DeckViewer
           spec={spec}
+          driver={gsapDriver}
+          gsap={gsap}
           className="deck-viewer"
         />
       </div>

@@ -201,9 +201,11 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
 
-      // If animate is defined, call it (R3 fills the runtime; for R2 it's a stub).
-      if (def.html!.animate) {
-        return def.html!.animate(root, {} as any) ?? undefined
+      // If animate is defined and a BlockMotionRuntime is provided, call it.
+      // When blockMotion is absent (e.g. initial load in editor), animate is skipped —
+      // the block behaves as any other shape (rule 5: motion is off by default).
+      if (def.html!.animate && hctx.blockMotion) {
+        return def.html!.animate(root, hctx.blockMotion) ?? undefined
       }
       return undefined
     },

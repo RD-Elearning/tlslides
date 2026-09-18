@@ -104,6 +104,8 @@ export {
 } from './motion/presets'
 export type { MotionPreset, MotionPresetId } from './motion/presets'
 export { createWAAPI_driver } from './motion/waapi-driver'
+export { createGsapDriver } from './motion/gsap-driver'
+export type { GsapInstance, GsapTimeline, GsapVars } from './motion/gsap-driver'
 
 // D2 — 16 slide layouts as pure geometry functions (06-slide-composition.md §6.3).
 export { SLIDE_LAYOUTS, getSlideLayout } from './slide-layouts'
