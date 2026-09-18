@@ -141,6 +141,16 @@ export {
 } from './motion/resolve-motion'
 export type { ResolvedBlockMotion, ResolvedPartMotion } from './motion/resolve-motion'
 
+// R6 — block show duration + slide timeline: pure timing functions for the backend,
+// the viewer, and the digest. DOM-free, no React, no browser APIs.
+export { blockShowDuration, slideTimeline, countLayoutParts } from './motion/timeline'
+export type {
+  BlockShowDuration,
+  SlideTimeline,
+  SlideTimelineStep,
+  SlideTimelineBlock,
+} from './motion/timeline'
+
 // Q19 — validation + the AI capability digest. `validateDeckSpec`'s findings are written to be
 // fed straight back to a model as a fix instruction; `capabilityDigest` is generated from
 // `BUILT_IN_BLOCKS` and `SLIDE_LAYOUTS` so it cannot drift from the library the way a

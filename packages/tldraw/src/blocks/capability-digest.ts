@@ -140,8 +140,13 @@ function getActiveMs(presetId: string): number {
   const preset = MOTION_PRESETS[presetId]
   if (!preset) return 0
   const baseDuration = DURATION_TOKENS[preset.duration] ?? 0
-  // For chained presets, approximate as base × chain length
-  if (preset.isChained) return baseDuration * (preset.chain?.length ?? 1)
+  // For chained presets, sum the actual sub-preset durations (R6 real values).
+  if (preset.isChained && preset.chain) {
+    return preset.chain.reduce((sum, subId) => {
+      const sub = MOTION_PRESETS[subId]
+      return sum + (sub ? DURATION_TOKENS[sub.duration] ?? 0 : baseDuration)
+    }, 0)
+  }
   return baseDuration
 }
 

@@ -55,7 +55,7 @@ Set \`motion.preset\` on any block. Every preset below plays (no-op excluded).
 - **stagger-children** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
 - **stagger-grid** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
 - **words-in** _text-reveal_ — 500ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
-- **quote-in** _composite_ — 1200ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-lines → fade)
+- **quote-in** _composite_ — 1000ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-lines → fade)
 - **count-up** _card-resize_ — 500ms, triggers: withPrevious, afterPrevious, onClick
 - **grow-bars-x** _card-resize_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
 - **grow-bars-y** _card-resize_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
@@ -65,18 +65,18 @@ Set \`motion.preset\` on any block. Every preset below plays (no-op excluded).
 - **sweep** _success-check_ — 500ms, triggers: withPrevious, afterPrevious, onClick
 - **sweep-nodes** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
 - **pop-points** _badge_ — 250ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
-- **radiate** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-children)
+- **radiate** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-children)
 - **grow-branches** _success-check_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: draw-path → stagger-children)
 - **split-in** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
 - **field-in** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
-- **title-then-body** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → fade)
+- **title-then-body** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → fade)
 - **title-then-split** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → split-in)
-- **scrim-then-text** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → stagger-lines)
+- **scrim-then-text** _composite_ — 750ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → stagger-lines)
 - **ken-burns** _ambient_ — 500ms, triggers: withPrevious, afterPrevious, onClick (loops)
-- **cover-in** _composite_ — 1600ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → words-in → fade-up → fade)
-- **section-in** _composite_ — 1200ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → wipe-x → fade-up)
+- **cover-in** _composite_ — 1400ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → words-in → fade-up → fade)
+- **section-in** _composite_ — 1000ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → wipe-x → fade-up)
 - **dashboard-in** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: stagger-children → grow-bars-y)
-- **closing-in** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → pop)
+- **closing-in** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → pop)
 
 ## Layouts
 
