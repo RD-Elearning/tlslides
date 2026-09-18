@@ -19,6 +19,8 @@ import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~stat
 import { compileSlide, type CompileFinding } from './slide-compiler'
 import { resolveTokens } from './tokens'
 import type { DeckSpec } from './types'
+import { BlockRegistry } from './registry'
+import { registerBuiltInBlocks } from './library'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -107,12 +109,16 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   const tokens = resolveTokens(theme, spec.tokens)
   const findings: CompileFinding[] = []
 
+  // Shared registry for intrinsic-height measurement during compileSlide.
+  const registry = new BlockRegistry()
+  registerBuiltInBlocks(registry)
+
   const pages: TDDocument['pages'] = {}
   const pageStates: TDDocument['pageStates'] = {}
 
   spec.slides.forEach((slideSpec, index) => {
     const pageId = slideSpec.id
-    const result = compileSlide(slideSpec, frame, tokens)
+    const result = compileSlide(slideSpec, frame, tokens, registry)
     findings.push(...result.findings)
 
     const shapes: Record<string, ComponentShape> = {}

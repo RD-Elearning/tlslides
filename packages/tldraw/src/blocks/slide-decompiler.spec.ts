@@ -881,3 +881,47 @@ describe('module-level objects are copied, not aliased', () => {
     expect(r1.spec.regions).not.toBe(r2.spec.regions)
   })
 })
+
+/* ── Over-tall block round-trip ──────────────────────────────────────────── */
+
+describe('over-tall block round-trip (bottomOk removed)', () => {
+  it('a block taller than its region still decompiles back into the region, not free[]', () => {
+    // Build a shape whose bottom edge extends past the region's bottom.
+    const m = TEST_TOKENS.space['3xl']
+    const regionBox = { x: m, y: m, width: 1920 - 2 * m, height: 1080 - 2 * m }
+    // Height intentionally exceeds region height.
+    const overTallHeight = regionBox.height + 200
+    const overTallBlock: BlockSpec = { type: 'tls.text', id: 'over-tall', props: { text: 'Tall content' } }
+    const shape = blockToShape(overTallBlock, {
+      x: regionBox.x,
+      y: regionBox.y,
+      width: regionBox.width,
+      height: overTallHeight,
+    })
+
+    const page: TDPage = {
+      id: 'over-tall-page',
+      name: 'Over Tall',
+      childIndex: 1,
+      size: [1920, 1080],
+      shapes: { [shape.id]: shape },
+      bindings: {},
+      layout: 'blank',
+      slideSpecId: 'over-tall-slide',
+    }
+
+    const result = pageToSlideSpec(page, TEST_TOKENS)
+
+    // The block should be in regions.content, not in free[].
+    expect(result.spec.regions!.content).toBeDefined()
+    const contentBlocks = result.spec.regions!.content
+    const found = contentBlocks.find((b) => b.id === 'over-tall')
+    expect(found).toBeDefined()
+
+    // free[] should NOT contain this block.
+    if (result.spec.free) {
+      const freeBlock = result.spec.free.find((f) => f.block.id === 'over-tall')
+      expect(freeBlock).toBeUndefined()
+    }
+  })
+})

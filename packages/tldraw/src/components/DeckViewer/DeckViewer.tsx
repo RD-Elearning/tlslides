@@ -525,11 +525,17 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       tabIndex={0}
       role="group"
       aria-roledescription="presentation"
+      aria-live="polite"
       onKeyDown={handleKeyDown}
       onClick={handleClick}
       style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', outline: 'none' }}
       data-testid="deck-viewer"
+      data-slide-index={currentSlideIndex}
+      data-slide-count={pages.length}
+      data-build-step={currentBuildStep}
+      data-build-step-count={steps.length}
     >
+      <span className="sr-only">Slide {currentSlideIndex + 1} of {pages.length}</span>
       {page && (
         <div
           data-testid="deck-viewer-slide"

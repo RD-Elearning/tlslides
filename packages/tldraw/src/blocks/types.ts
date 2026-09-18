@@ -518,6 +518,10 @@ export interface ResolvedTokens {
    *  (e.g. to decide whether it has room for an optional decorative element) without needing
    *  the original `DeckTokens` it was built from. */
   density: 'compact' | 'default' | 'roomy'
+  /** The deck's primary font family for block text, resolved from the theme's
+   *  `headingFamily`/`bodyFamily` (or the built-in default when the theme doesn't set one).
+   *  `defaultResolveText` reads this to replace the hardcoded fallback. */
+  fontFamily: string
 }
 
 /**

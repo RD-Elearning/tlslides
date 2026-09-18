@@ -117,5 +117,13 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children: nodes }
+  // Compute the intrinsic content height: text height + optional rule.
+  const textNodeHeight = Math.min(textHeight, inner.height)
+  let contentHeight = textNodeHeight
+  if (props.rule) {
+    contentHeight = textNodeHeight + ctx.tokens.space.sm + 6 // rule height
+  }
+
+  // Return measured content height, not the full available box height.
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight }, part: 'root', children: nodes }
 }

@@ -34,5 +34,6 @@ export function layout(props: CaptionProps, ctx: LayoutContext): LayoutNode {
     style: resolvedStyle,
   }
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children: [textNode] }
+  // Return measured content height, not the full available box height.
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, inner.height) }, part: 'root', children: [textNode] }
 }

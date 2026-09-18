@@ -84,5 +84,6 @@ export function layout(props: KickerProps, ctx: LayoutContext): LayoutNode {
     style: resolvedStyle,
   })
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children }
+  // Return measured content height, not the full available box height.
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children }
 }

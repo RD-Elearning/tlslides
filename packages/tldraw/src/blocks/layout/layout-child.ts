@@ -92,7 +92,8 @@ function defaultResolveColor(
 /**
  * Default `resolveText` implementation. Looks up `tokens.type[token]` for size and
  * line-height, applies any overrides, and returns a `ResolvedTextStyle` with the
- * default font family.
+ * font family from the resolved tokens (which comes from the theme, or the built-in
+ * default when the theme doesn't set one).
  */
 function defaultResolveText(
   token: TypeToken,
@@ -102,7 +103,7 @@ function defaultResolveText(
   const entry = tokens.type[token]
   const size = over?.size ?? entry.size
   const lineHeight = over?.lineHeight ?? entry.lineHeight
-  const family = over?.family ?? DEFAULT_FONT_FAMILY
+  const family = over?.family ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
   const letterSpacing = over?.letterSpacing ?? -0.03
   return {
     family,
@@ -147,6 +148,7 @@ export function createLayoutContext(
       ease: { ...options.tokens.motion.ease },
     },
     density: options.tokens.density,
+    fontFamily: options.tokens.fontFamily,
   }
 
   const surface: SurfaceContext = { ...options.surface }

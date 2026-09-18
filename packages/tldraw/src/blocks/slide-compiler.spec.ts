@@ -17,6 +17,8 @@
 import { compileSlide, type CompileSlideResult } from './slide-compiler'
 import type { SlideSpec, BlockSpec, Box, ResolvedTokens } from './types'
 import { TEST_TOKENS } from './parity-harness'
+import { BlockRegistry } from './registry'
+import { registerBuiltInBlocks } from './library'
 
 /* ── Helpers ────────────────────────────────────────────────────────────────── */
 
@@ -535,6 +537,73 @@ describe('compileSlide', () => {
         // Style should be a plain object (deep-copied by blockToShape)
         expect(typeof shape.style).toBe('object')
       }
+    })
+  })
+
+  describe('intrinsic-height stacking with registry', () => {
+    // Shared registry with all built-in blocks for measurement.
+    let registry: BlockRegistry
+    beforeAll(() => {
+      registry = new BlockRegistry()
+      registerBuiltInBlocks(registry)
+    })
+
+    it('three blocks: middle block is 2× the others, all boxes disjoint and ordered', () => {
+      // Use tls.t.body blocks (Tier A, always measures via layout()).
+      const shortBlock: BlockSpec = { type: 'tls.t.body', id: 'short-a', props: { text: 'Short A' } }
+      const tallBlock: BlockSpec = { type: 'tls.t.body', id: 'tall-b', props: { text: 'Tall B — this text block should measure approximately 2× the height of a short block because it has twice the content and explicit sizing.' } }
+      const shortBlock2: BlockSpec = { type: 'tls.t.body', id: 'short-c', props: { text: 'Short C' } }
+
+      const spec: SlideSpec = {
+        id: 'intrinsic-1',
+        layout: 'blank',
+        regions: { content: [shortBlock, tallBlock, shortBlock2] },
+      }
+
+      const { shapes, findings } = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+      expect(shapes).toHaveLength(3)
+
+      const [s1, s2, s3] = shapes
+
+      // Boxes are disjoint: s1.bottom <= s2.top, s2.bottom <= s3.top.
+      const s1Bottom = s1.point[1] + s1.size[1]
+      const s2Bottom = s2.point[1] + s2.size[1]
+      expect(s1Bottom).toBeLessThanOrEqual(s2.point[1])
+      expect(s2Bottom).toBeLessThanOrEqual(s3.point[1])
+
+      // Boxes are ordered (y-coordinates increasing).
+      expect(s1.point[1]).toBeLessThan(s2.point[1])
+      expect(s2.point[1]).toBeLessThan(s3.point[1])
+
+      // The middle block is taller than the short blocks.
+      expect(s2.size[1]).toBeGreaterThan(s1.size[1])
+      expect(s2.size[1]).toBeGreaterThan(s3.size[1])
+
+      // All boxes share the same x and width (region width).
+      const regionWidth = DEFAULT_FRAME.width - 2 * TEST_TOKENS.space['3xl']
+      expect(s1.point[0]).toBe(TEST_TOKENS.space['3xl'])
+      expect(s1.size[0]).toBe(regionWidth)
+      expect(s2.size[0]).toBe(regionWidth)
+      expect(s3.size[0]).toBe(regionWidth)
+
+      // No overflow finding for reasonable content.
+      const overflowFindings = findings.filter((f) => f.rule === 'region/overflow')
+      expect(overflowFindings).toHaveLength(0)
+    })
+
+    it('falls back to equal split when registry is not provided', () => {
+      const spec: SlideSpec = {
+        id: 'no-registry',
+        layout: 'blank',
+        regions: { content: [blockA, blockB, blockC] },
+      }
+
+      // Without registry: equal split.
+      const { shapes: equalShapes } = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS)
+      expect(equalShapes).toHaveLength(3)
+      // All three blocks should have the same height.
+      expect(equalShapes[0].size[1]).toBeCloseTo(equalShapes[1].size[1], 0)
+      expect(equalShapes[1].size[1]).toBeCloseTo(equalShapes[2].size[1], 0)
     })
   })
 })

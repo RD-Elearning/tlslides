@@ -351,6 +351,8 @@ export default function EditDeck({ deckId }: EditDeckProps) {
             blockRegistry={registry}
             onMount={(app) => {
               appRef.current = app
+              // Hide the thumbnail strip (F5 chrome finding) so it doesn't cover the slide.
+              app.setSetting('showDeck', () => false)
             }}
           />
         </div>

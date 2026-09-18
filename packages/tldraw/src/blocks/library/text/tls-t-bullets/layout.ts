@@ -63,7 +63,7 @@ export function layout(props: BulletsProps, ctx: LayoutContext): LayoutNode {
   if (items.length === 0) {
     return {
       k: 'group',
-      box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+      box: { x: 0, y: 0, width: ctx.box.width, height: 0 },
       part: 'root',
       children: [],
     }
@@ -111,5 +111,8 @@ export function layout(props: BulletsProps, ctx: LayoutContext): LayoutNode {
     y += m.height + gap
   }
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children }
+  // Return measured content height, not the full available box height.
+  // Subtract the last gap that was added after the final item.
+  const contentHeight = y - gap
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight }, part: 'root', children }
 }

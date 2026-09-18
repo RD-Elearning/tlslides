@@ -66,7 +66,8 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
       style: currentStyle,
     }
 
-    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children: [textNode] }
+    // Return measured content height, not the full available box height.
+    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, inner.height) }, part: 'root', children: [textNode] }
   }
 
   // Multi-column: split text by newlines, or if no newlines, split by space
@@ -98,5 +99,7 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }, part: 'root', children }
+  // Multi-column: measure each column and take the max height.
+  const maxColHeight = children.reduce((max, child) => Math.max(max, child.box.height), 0)
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: maxColHeight }, part: 'root', children }
 }

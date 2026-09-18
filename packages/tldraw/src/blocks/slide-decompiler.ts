@@ -14,7 +14,7 @@
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no `Math.random()`.
  */
 
-import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
+import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
@@ -70,10 +70,11 @@ function resolveFrame(page: TDPage): { width: number; height: number } {
  * A shape matches a region if:
  * - its x and width are within `tolerance` of the region's x and width
  * - its top edge is within `tolerance` of (or below) the region's top
- * - its bottom edge is within `tolerance` of (or above) the region's bottom
  *
- * This handles both single-block regions (exact fill) and multi-block regions
- * (stacked blocks share x/width with the region but have smaller heights).
+ * Note: the bottom edge is intentionally NOT checked. With intrinsic-height
+ * stacking, a block can legitimately extend past its region's bottom edge
+ * (e.g. a display-sized title). x, width, and top are sufficient to identify
+ * a region. The compiler emits a `region/overflow` finding for such blocks.
  */
 function shapeMatchesRegion(
   shape: { point: number[]; size: number[] },
@@ -83,9 +84,7 @@ function shapeMatchesRegion(
   const xOk = Math.abs(shape.point[0] - regionBox.x) <= tolerance
   const wOk = Math.abs(shape.size[0] - regionBox.width) <= tolerance
   const yOk = shape.point[1] >= regionBox.y - tolerance
-  const bottomOk =
-    shape.point[1] + shape.size[1] <= regionBox.y + regionBox.height + tolerance
-  return xOk && wOk && yOk && bottomOk
+  return xOk && wOk && yOk
 }
 
 /**

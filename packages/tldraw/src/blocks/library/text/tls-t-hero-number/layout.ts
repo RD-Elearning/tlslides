@@ -77,9 +77,13 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
+  // Return measured content height (y after last content + bottom pad),
+  // not the full available box height.
+  const contentHeight = cy + valueHeight + gapUnit + (props.unit ? ctx.resolveText('subheading').size * 1.2 + gapUnit : 0) + (props.caption ? ctx.resolveText('caption').size * 1.2 : 0) + pad
+
   return {
     k: 'group',
-    box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+    box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight },
     part: 'root',
     children,
   }

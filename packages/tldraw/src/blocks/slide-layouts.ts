@@ -447,6 +447,11 @@ export interface SlideLayout {
   name: string
   /** Compile the layout: pure geometry, no side effects. */
   compile(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box>
+  /** Optional per-region vertical alignment within stacked multi-block regions.
+   *  Default: 'start' (top). 'center' distributes leftover height equally above/below.
+   *  'end' pushes blocks to the bottom. Used by `compileSlide` when distributing
+   *  leftover height after intrinsic-height measurement. */
+  regionAlign?: Record<string, 'start' | 'center' | 'end'>
 }
 
 /**
@@ -466,7 +471,7 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'grid-2x3', name: 'Grid 2×3', compile: layoutGrid2x3 },
   { id: 'comparison', name: 'Comparison', compile: layoutComparison },
   { id: 'timeline', name: 'Timeline', compile: layoutTimeline },
-  { id: 'quote', name: 'Quote', compile: layoutQuote },
+  { id: 'quote', name: 'Quote', compile: layoutQuote, regionAlign: { quote: 'center', attribution: 'start' } },
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
   { id: 'blank', name: 'Blank', compile: layoutBlank },
 ]

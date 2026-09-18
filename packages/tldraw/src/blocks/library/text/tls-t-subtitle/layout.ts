@@ -24,9 +24,10 @@ export function layout(props: SubtitleProps, ctx: LayoutContext): LayoutNode {
   // Measure text within the available width
   const m = ctx.measureText(props.text, resolvedStyle, inner.width)
 
+  // Return measured content height, not the full available box height.
   return {
     k: 'group',
-    box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+    box: { x: 0, y: 0, width: ctx.box.width, height: m.height },
     part: 'root',
     children: [{
       k: 'text',

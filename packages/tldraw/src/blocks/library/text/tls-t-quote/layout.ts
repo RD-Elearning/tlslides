@@ -98,9 +98,25 @@ export function layout(props: QuoteProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
+  // Compute final y position after the last content element.
+  let finalY = cy + textHeight + gapMd
+  if (props.attribution) {
+    const attrStyle = ctx.resolveText('body')
+    const attrMetrics = ctx.measureText(
+      props.role ? `${props.attribution} — ${props.role}` : props.attribution,
+      attrStyle,
+      cw,
+    )
+    finalY += attrMetrics.height
+  }
+
+  // Return measured content height (y after last content + bottom pad),
+  // not the full available box height.
+  const contentHeight = finalY + pad
+
   return {
     k: 'group',
-    box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+    box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight },
     part: 'root',
     children,
   }
