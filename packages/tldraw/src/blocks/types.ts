@@ -5,7 +5,16 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationTrigger } from '~types'
+import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme } from '~types'
+// Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
+// itself imports type-only from this file — both directions are `import type`, so this is a
+// type-only circular reference, erased entirely at compile time. No runtime cycle exists.
+// Re-exported below so `DeckSpec.tokens` and any consumer importing from `./types` (the
+// app-facing contract module) can both reach it without also knowing it physically lives in
+// `./tokens`.
+import type { DeckTokens } from './tokens'
+export type { DeckTokens }
+import type { MotionDriver } from './motion/driver'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Block instance and spec                                                         */
@@ -19,8 +28,10 @@ export interface BlockSpec {
   /** Registry key of the definition, namespaced. Built-ins use `tls.`; a host uses its own. */
   type: string
   /** Stable within its slide. Used to target motion, to let AI cross-reference, and as the
-   *  animation part-key prefix. Generated on insert if absent. */
-  id?: string
+   *  animation part-key prefix. Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2): required —
+   *  this is the app-facing contract FastAPI and the AI exchange. `shapeToBlock` still reads
+   *  older shapes that predate this and mints an id when one is absent; it never throws. */
+  id: string
   /** Content + options. Validated against the definition's `schema`. */
   props: Record<string, unknown>
   /** Presentation overrides. Every field optional; the theme + definition defaults fill the rest. */
@@ -39,8 +50,8 @@ export interface BlockSpec {
  * universal style field is not.
  */
 export interface BlockStyleSpec {
-  /** The block's own background. ColorRole or literal hex or theme token. */
-  surface?: ColorRole | string
+  /** The block's own background. ColorRole, literal hex, theme token, or a Paint (gradient). */
+  surface?: ColorRole | string | Paint
   /** Foreground colour; derived from `surface` when absent. */
   on?: ColorRole | string
   /** The block's one emphasis colour. */
@@ -67,6 +78,10 @@ export interface BlockStyleSpec {
 export interface BlockMotionSpec {
   /** Motion preset ID: 'fade-up', 'stagger-lines', etc. */
   preset?: MotionPresetId
+  /** Explicit block-level `AnimationEffect`, when the persisted shape carries one that
+   *  does not round-trip through `preset` alone (e.g. written directly by an inspector).
+   *  Takes precedence over the preset→effect mapping in `resolveBlockMotion`. */
+  effect?: AnimationEffect
   /** When this block enters the build. */
   trigger?: AnimationTrigger
   /** Build order within the slide. */
@@ -121,6 +136,72 @@ export interface AmbientMotionSpec {
 export type BlockFamily = 'layout' | 'text' | 'data' | 'diagram' | 'media' | 'composite' | 'chrome' | 'live'
 
 /**
+ * Block kind: how the block is authored and rendered. 'layout' (default) is a pure `layout()`
+ * function producing a LayoutNode tree. 'html' is an HTML template rendered as real DOM, with a
+ * generated `layout()` that returns a host node and a poster for SVG/export.
+ */
+export type BlockKind = 'layout' | 'html'
+
+/**
+ * Context passed to a `kind: 'html'` block's `template()` function. Provides escaping,
+ * CSS custom property resolution, the block's box, and resolved tokens. Templates MUST use
+ * `ctx.esc()` for all user-provided content — the DeckSpec carries `props` only, never markup
+ * (governing rule 2).
+ */
+export interface HtmlTemplateContext {
+  /** HTML-escape a string. Must be used for all user-provided content. */
+  esc(s: string): string
+  /** Resolve a CSS custom property by its role name (e.g. 'accent' → 'var(--tls-accent)'). */
+  cssVar(role: string): string
+  /** The block's box in slide units. */
+  box: Box
+  /** Resolved design tokens for this deck. */
+  tokens: ResolvedTokens
+}
+
+/**
+ * Block motion runtime, passed to `kind: 'html'` block's `animate(root, rt)`.
+ *
+ * The driver enforces the same allowed/forbidden property vocabulary on every element
+ * it is handed — including elements inside `animate()`. `animate()` may do anything
+ * to descendants of `root` (GSAP's `x`, `y`, `scale`, `rotation` are fine on parts)
+ * but must never set `root.style.transform` — `.tl-positioned-div` owns that.
+ *
+ * `onComplete` is load-bearing: the viewer chains `afterPrevious` and auto-advance
+ * on the promise it resolves. Three invariants:
+ * - Must be called exactly once (idempotent if called more).
+ * - The viewer creates the resolving promise *before* calling `mount`, so a
+ *   synchronous `onComplete` inside `animate` still resolves correctly.
+ * - If not called within `timing.durationMs + 2000`, the viewer warns (naming the
+ *   block id) and resolves the promise anyway.
+ */
+export interface BlockMotionRuntime {
+  /** The motion driver (WAAPI or GSAP-backed). `animate()` may call
+   *  `rt.driver.play(...)` on descendants, or use the raw `gsap` instance. */
+  driver: MotionDriver
+  /** The host's GSAP instance, if the driver was created with one.
+   *  `undefined` when using the default WAAPI driver. */
+  gsap?: unknown
+  /** Timing tokens for this animation step, in milliseconds. */
+  timing: {
+    /** Delay before the animation starts. */
+    delayMs: number
+    /** Duration of the animation. */
+    durationMs: number
+    /** Per-item stagger offset (for lists/grids). */
+    staggerMs: number
+    /** CSS easing string. */
+    ease: string
+  }
+  /** True when `prefers-reduced-motion: reduce` is active. `animate()` should skip
+   *  animation and call `onComplete()` immediately. */
+  reducedMotion: boolean
+  /** MUST be called when the animation completes (or is skipped for reduced motion).
+   *  The viewer awaits this promise for build-step chaining. Idempotent. */
+  onComplete(): void
+}
+
+/**
  * Runtime metadata and behaviour for a block type. The definition lives in code; each
  * instance is a plain JSON `BlockSpec` in the document.
  */
@@ -133,10 +214,26 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   family: BlockFamily
   /** 'A' = pure layout, exports headlessly. 'B' = DOM-only. */
   tier: 'A' | 'B'
+  /** Block kind: 'layout' (default) = pure `layout()`, 'html' = HTML template with auto-generated
+   *  `layout()` that returns a host node. Absent means 'layout'. */
+  kind?: BlockKind
   /** One-line summary, shown in the inserter and given to the AI. */
   summary: string
   /** Keywords for inserter search and AI selection. */
   keywords: string[]
+
+  /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
+   *  example instance that passes `validateDeckSpec`. Every built-in block should provide
+   *  this; the capability digest renders it verbatim — no hand-written catalog text
+   *  outside this field. */
+  describe?: {
+    /** One sentence: when an LLM should reach for this block. */
+    when: string
+    /** One sentence: when NOT to use this block (reduces mis-selection). */
+    avoid: string
+    /** A valid BlockSpec with all required slots filled, used as a reference in the digest. */
+    example: BlockSpec
+  }
 
   /** Content and option schema. */
   schema: BlockSchema
@@ -148,13 +245,26 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   size: { preferred: [number, number]; min: [number, number]; aspect?: number }
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
-   *  This is the single source of truth for what the block looks like. */
+   *  This is the single source of truth for what the block looks like.
+   *  For `kind: 'html'`, this is auto-generated from the html template — do not provide. */
   layout(props: P, ctx: LayoutContext): LayoutNode
 
   /** Tier B only. When present, it draws the live block; `poster()` supplies the export image.
-   *  Tier A blocks leave both undefined. */
+   *  Tier A blocks leave both undefined.
+   *  For `kind: 'html'`, this is the existing top-level poster field — the poster is built by
+   *  the block author as a normal Tier-B poster, not nested inside `html`. */
   Component?: React.FC<BlockRenderProps<P>>
   poster?(props: P, ctx: LayoutContext): LayoutNode
+
+  /** `kind: 'html'` only. The HTML template and optional animation. */
+  html?: {
+    /** Return markup. MUST use `ctx.esc()` for all user content.
+     *  Parts are declared as `data-part` attributes matching `motion.parts`. */
+    template(props: P, ctx: HtmlTemplateContext): string
+    /** Optional animation hook. R3 fills rt; for R2, this signature is declared but not called.
+     *  Returns a disposer that cleans up running animations. */
+    animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)
+  }
 
   /** Named parts and default choreography. */
   motion: MotionRecipe
@@ -276,10 +386,10 @@ export type LayoutNode =
   | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
   | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle }
-  | { k: 'image'; box: Box; part?: string; assetId: string; fit: 'cover' | 'contain'; radius?: number }
+  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
-  | { k: 'host'; box: Box; part?: string; render: string }
+  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode }
 
 /**
  * A 2D box: origin at top-left, measured in slide units (1920×1080 frame).
@@ -369,6 +479,8 @@ export interface ResolvedTextStyle {
   color: string
   /** Vertical alignment: start (top), center, end (bottom). */
   verticalAlign?: 'start' | 'center' | 'end'
+  /** Scale multiplier applied to font size. 1 = no scaling. Used by autofit and templates. */
+  scale?: number
 }
 
 /**
@@ -423,6 +535,8 @@ export interface LayoutContext {
   tokens: ResolvedTokens
   /** What is behind this block. Foreground colors are solved against it. */
   surface: SurfaceContext
+  /** The instance's raw BlockStyleSpec (read-only). Absent when no override is set. */
+  style?: BlockStyleSpec
   /** Resolve a colour role to a concrete, contrast-correct value. */
   resolveColor(role: ColorRole | string): ResolvedColor
   /** Resolve a type token to concrete size, line-height, and family. */
@@ -433,6 +547,9 @@ export interface LayoutContext {
   layoutChild(spec: BlockSpec, box: Box): LayoutNode
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
+  /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided
+   *  or the asset is missing — the renderers show a dashed frame with alt text instead. */
+  resolveAsset?(id: string): string | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
   /** Current nesting depth. Capped at 4; deeper trees are an error. */
@@ -506,6 +623,10 @@ export interface ResolvedTokens {
    *  (e.g. to decide whether it has room for an optional decorative element) without needing
    *  the original `DeckTokens` it was built from. */
   density: 'compact' | 'default' | 'roomy'
+  /** The deck's primary font family for block text, resolved from the theme's
+   *  `headingFamily`/`bodyFamily` (or the built-in default when the theme doesn't set one).
+   *  `defaultResolveText` reads this to replace the hardcoded fallback. */
+  fontFamily: string
 }
 
 /**
@@ -649,3 +770,88 @@ export type TypeToken =
  * Motion preset ID: 'fade-up', 'count-up', etc. Full list in Phase 22.
  */
 export type MotionPresetId = string
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Slide / Master / Deck composition types                                         */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A block placed at an explicit position on the slide, outside of any named region.
+ * Used for free-form elements that don't fit into the layout's region grid.
+ */
+export interface PlacedBlock {
+  block: BlockSpec
+  box: Box
+}
+
+/**
+ * A slide authored by AI or human. Pure JSON — round-trips through
+ * `JSON.parse(JSON.stringify(...))` unchanged.
+ */
+export interface SlideSpec {
+  /** Unique slide identifier. */
+  id: string
+  /** Named layout (e.g. `'title'`, `'two-column'`). */
+  layout: string
+  /** Semantic role hint for the slide. */
+  role?: 'cover' | 'section' | 'content' | 'closing'
+  /** Rhythm hint for the slide. */
+  rhythm?: 'anchor' | 'dense' | 'breath'
+  /** Named regions, each holding an array of BlockSpecs stacked vertically. */
+  regions: Record<string, BlockSpec[]>
+  /** Free-positioned blocks placed outside named regions. */
+  free?: PlacedBlock[]
+  /** Override slide background. */
+  background?: Paint
+  /** Speaker notes. */
+  notes?: string
+  /** When true, this slide is skipped in presentation mode. */
+  skip?: boolean
+  /** References a reusable `MasterSpec` by name. */
+  masterId?: string
+}
+
+/**
+ * A reusable slide template — a background layer of named regions that a
+ * `SlideSpec` can reference via `masterId`. Not a slide itself; it supplies
+ * default `BlockSpec`s for the regions it declares.
+ */
+export interface MasterSpec {
+  /** Unique name, used as the key in `DeckSpec.masters` and as the target of `SlideSpec.masterId`. */
+  name: string
+  /** Named regions, each holding a default `BlockSpec`. */
+  blocks: Record<string, BlockSpec>
+  /** Default background for slides that use this master. */
+  background?: Paint
+  /** Default layout name. */
+  layout?: string
+}
+
+/**
+ * A complete deck specification: an ordered array of slides plus optional master
+ * definitions and deck-wide theme/metadata. Pure JSON. Schema v1
+ * (`reviews/blocks/BACKLOG-demo.md` §2.2) — this is the contract FastAPI stores and the AI
+ * writes to directly.
+ */
+export interface DeckSpec {
+  /** Schema version. Literal `1` — an unversioned or differently-versioned payload is a
+   *  contract violation, not a value this field can hold. */
+  version: 1
+  /** Document ID. FastAPI's key for this deck. */
+  id: string
+  /** Deck title. */
+  title: string
+  /** A built-in theme id (one of `BUILT_IN_DECK_THEMES`, e.g. `'mono-grid'`) or a full
+   *  `DeckTheme` object (a host's own brand kit). NEVER literal hex — see governing rule #3
+   *  (`reviews/blocks/README.md`): the AI writes a theme id, never a colour. */
+  theme: string | DeckTheme
+  /** Aspect ratio: a named preset, or an explicit `[width, height]` — see
+   *  `resolveDeckFrame` (`blocks/deck-document.ts`) for exactly how a tuple is interpreted. */
+  aspect: 'widescreen' | 'standard' | 'square' | [number, number]
+  /** Design token overrides (brand-kit overrides layered on top of `theme`). */
+  tokens?: DeckTokens
+  /** Reusable master templates. */
+  masters?: MasterSpec[]
+  /** Ordered slides. */
+  slides: SlideSpec[]
+}

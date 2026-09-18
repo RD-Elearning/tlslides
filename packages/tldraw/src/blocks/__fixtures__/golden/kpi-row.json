@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "id": "golden-kpi-row",
+  "title": "KPI Row Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "kpi-row",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Key " }, { "text": "Metrics", "bold": true }] }
+            }
+          }
+        ],
+        "kpi1": [
+          {
+            "id": "b2",
+            "type": "tls.t.hero-number",
+            "props": { "value": "$4.2M", "unit": "Revenue", "caption": "FY2024 total", "format": "currency", "emphasis": "accent" }
+          }
+        ],
+        "kpi2": [
+          {
+            "id": "b3",
+            "type": "tls.t.hero-number",
+            "props": { "value": "67%", "unit": "Retention", "caption": "Annual rate", "format": "percent", "emphasis": "default" }
+          }
+        ],
+        "kpi3": [
+          {
+            "id": "b4",
+            "type": "tls.t.hero-number",
+            "props": { "value": "1,234", "unit": "Users", "caption": "Active accounts", "format": "compact", "emphasis": "default" }
+          }
+        ],
+        "kpi4": [
+          {
+            "id": "b5",
+            "type": "tls.t.hero-number",
+            "props": { "value": "3.1%", "unit": "Churn", "caption": "Monthly average", "format": "percent", "emphasis": "muted" }
+          }
+        ]
+      }
+    }
+  ]
+}

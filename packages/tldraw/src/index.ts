@@ -54,9 +54,23 @@ export type { RenderPageToSvgOptions, RenderSvgToPngOptions } from './state/rend
 export { computeBuildSteps } from './state/deck/presentation'
 export type { BuildStep } from './state/deck/presentation'
 
-// Phase 14 — a standalone, read-only deck display for host pages that only need to show a deck,
-// not edit it. See the component's own doc comment for why this wraps `<Tldraw>` rather than
-// `ReadOnlyEditor`.
+// Phase 14 — a standalone, editor-backed read-only deck EMBED for host pages that only need to
+// show a deck, not edit it (pannable/zoomable — a full `<Tldraw readOnly>` under the hood). See
+// the component's own doc comment for why this wraps `<Tldraw>` rather than `ReadOnlyEditor`.
+// Renamed from `DeckViewer` in Q14 (`reviews/blocks/BACKLOG-demo.md` §7) to make room for the
+// real, editor-free `<DeckViewer>` below.
+// Imported from its own leaf file, not `./components/DeckViewer` (that folder's `index.ts`
+// deliberately re-exports only `DeckViewer` — see its own comment — so bundling it in isolation
+// never pulls in `DeckEmbed`'s `<Tldraw>`/TldrawApp/MobX).
+export { DeckEmbed } from './components/DeckViewer/DeckEmbed'
+export type { DeckEmbedProps } from './components/DeckViewer/DeckEmbed'
+
+// Q14 — the animated, read-only deck VIEWER: `DeckSpec` -> `layout()` -> `renderNodeToDom` + a
+// `MotionDriver`, with no `TldrawApp`, no MobX, no canvas, no session system anywhere in its
+// import graph (verified by `components/DeckViewer/import-graph.spec.ts`). This is the primary
+// product surface — viewers vastly outnumber authors — and should be the default choice for a
+// host that only needs to show a deck; reach for `DeckEmbed` only when the host wants pan/zoom or
+// already ships the editor bundle anyway.
 export { DeckViewer } from './components/DeckViewer'
 export type { DeckViewerProps } from './components/DeckViewer'
 

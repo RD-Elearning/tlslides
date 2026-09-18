@@ -105,7 +105,10 @@
     "moduleNameMapper": {
       "@tlslides/tldraw": "<rootDir>/src",
       "\\~(.*)": "<rootDir>/src/$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(playwright|playwright-core)/)"
+    ]
   },
   "gitHead": "4b1137849ad07da36fc8f0f19cb64e7535a79296"
 }

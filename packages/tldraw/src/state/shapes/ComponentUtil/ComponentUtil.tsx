@@ -12,7 +12,8 @@ import {
   transformSingleRectangle,
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
-import { useTldrawComponents } from '~hooks'
+import { useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
+import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 
@@ -59,6 +60,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, isGhost, isBinding, meta, events }, ref) => {
       const registry = useTldrawComponents()
+      const blockRegistry = useBlockRegistry()
       const { size, style, componentId, props } = shape
 
       const rWrapper = React.useRef<HTMLDivElement>(null)
@@ -80,6 +82,38 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       }, [size, style.cornerRadius])
 
       const Registered = registry[componentId]
+
+      // The deck's real tokens (theme + any per-doc override) and the real surface behind this
+      // shape (the current page's background, sampled at this shape's own position) — not a
+      // hardcoded second scale system. Called unconditionally (hooks can't run inside the `if`
+      // below) — cheap when there is no `blockDef` since nothing downstream reads it, and both
+      // `useDeckTokens`/`useBlockSurface` are memoised so an unrelated store tick doesn't produce
+      // a new object here. See `hooks/useDeckTokens.ts` for why this doesn't call
+      // `blocks/deck-context.ts`'s `deckLayoutContext` (it can't carry this shape's position).
+      const blockMeta = (props as Record<string, unknown>).$block as
+        | Record<string, unknown>
+        | undefined
+      const blockStyle = blockMeta?.style as import('~blocks/types').BlockStyleSpec | undefined
+      const layoutCtx = useBlockLayoutContext(
+        { x: shape.point[0], y: shape.point[1], width: size[0], height: size[1] },
+        { headless: false, style: blockStyle },
+      )
+
+      // When a BlockDefinition exists in the BlockRegistry for this componentId, render
+      // through the layout engine + DOM renderer instead of the createBlockComponents
+      // placeholder. The layout props come from $block.props if present, otherwise the
+      // full shape.props (which is what blockToShape puts at the top level).
+      const blockDef = blockRegistry?.get(componentId)
+      let blockNode: React.ReactNode = null
+      if (blockDef) {
+        const layoutProps = (props as Record<string, unknown>).$block
+          ? ((props as Record<string, unknown>).$block as Record<string, unknown>).props ??
+            props
+          : props
+        blockNode = renderNodeToDom(
+          blockDef.layout(layoutProps as Record<string, unknown>, layoutCtx),
+        )
+      }
 
       return (
         <HTMLContainer ref={ref} {...events}>
@@ -124,7 +158,16 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             style={{ opacity: getShapeOpacity(style, isGhost) }}
           >
             <BlockErrorBoundary componentId={componentId}>
-              {Registered ? (
+              {blockNode ? (
+                <HostLayoutContext.Provider value={{
+                  tokens: layoutCtx.tokens,
+                  surface: layoutCtx.surface,
+                  props: (props ?? {}) as Record<string, unknown>,
+                  headless: false,
+                }}>
+                  {blockNode}
+                </HostLayoutContext.Provider>
+              ) : Registered ? (
                 <Registered {...props} />
               ) : (
                 <MissingBlockPlaceholder componentId={componentId} />

@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "id": "deck-demo-q3",
+  "title": "Q3 Business Review",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "title",
+      "role": "cover",
+      "rhythm": "anchor",
+      "regions": {
+        "title": [
+          { "id": "b_01_kicker", "type": "tls.t.kicker",
+            "props": { "text": "QUARTERLY REVIEW", "case": "uppercase", "tracking": "wide", "marker": true },
+            "motion": { "preset": "fade-up", "order": 1 } },
+          { "id": "b_01_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [
+              { "text": "Margin fell on " },
+              { "text": "infrastructure", "bold": true }
+            ] }, "size": "display", "align": "start", "rule": true },
+            "motion": { "preset": "cover-in", "order": 2 } }
+        ],
+        "subtitle": [
+          { "id": "b_01_sub", "type": "tls.t.subtitle",
+            "props": { "text": { "runs": [
+              { "text": "Q3 FY2026 · prepared for the " },
+              { "text": "board", "italic": true }
+            ] }, "align": "start" },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Open on the headline, not the agenda."
+    },
+    {
+      "id": "sl_02",
+      "layout": "section",
+      "role": "section",
+      "rhythm": "breath",
+      "regions": {
+        "title": [
+          { "id": "b_02_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "01 — Where the money went" }] }, "size": "title", "align": "start", "rule": true },
+            "motion": { "preset": "section-in", "order": 1 } }
+        ],
+        "subtitle": [
+          { "id": "b_02_sub", "type": "tls.t.subtitle",
+            "props": { "text": "Compute spend, headcount, and the two decisions behind both.", "align": "start" },
+            "motion": { "preset": "fade-up", "order": 2, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Two beats, then move."
+    },
+    {
+      "id": "sl_03",
+      "layout": "two-column",
+      "role": "content",
+      "rhythm": "dense",
+      "regions": {
+        "title": [
+          { "id": "b_03_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [
+              { "text": "Gross margin, " },
+              { "text": "three quarters", "bold": true }
+            ] }, "size": "heading", "align": "start" },
+            "motion": { "preset": "fade-up", "order": 1 } }
+        ],
+        "left": [
+          { "id": "b_03_bar", "type": "tls.d.bar",
+            "props": { "categories": ["Q1", "Q2", "Q3"], "series": [64, 64, 61], "highlightIndex": 2, "title": "Gross margin %" },
+            "motion": { "preset": "grow-bars-y", "order": 2, "trigger": "onClick" } }
+        ],
+        "right": [
+          { "id": "b_03_take", "type": "tls.t.takeaway",
+            "props": { "text": "Compute spend grew 2.4× while revenue grew 1.2×.", "tone": "warning", "label": "Key Insight", "icon": "" },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "onClick" } },
+          { "id": "b_03_bullets", "type": "tls.t.bullets",
+            "props": { "items": [
+              { "text": "GPU reservations moved from spot to committed" },
+              { "text": "Two enterprise pilots ran at negative margin" },
+              { "text": "Support load per account up 18%" }
+            ], "marker": "dash", "spacing": "sm" },
+            "motion": { "preset": "stagger-lines", "order": 4, "trigger": "onClick" } },
+          { "id": "b_03_cap", "type": "tls.t.caption",
+            "props": { "text": "Source: internal Q3 financials", "align": "start", "position": "below" },
+            "motion": { "preset": "fade-up", "order": 5, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Land on the 61 — this is the hinge slide."
+    },
+    {
+      "id": "sl_04",
+      "layout": "kpi-row",
+      "role": "content",
+      "rhythm": "anchor",
+      "regions": {
+        "title": [
+          { "id": "b_04_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "The quarter in four numbers" }] }, "size": "heading", "align": "start" },
+            "motion": { "preset": "fade-up", "order": 1 } }
+        ],
+        "kpi1": [
+          { "id": "b_04_k1", "type": "tls.t.hero-number",
+            "props": { "value": "$4.2M", "unit": "Revenue", "caption": "+21% QoQ", "format": "currency", "emphasis": "accent" },
+            "motion": { "preset": "count-up", "order": 2, "trigger": "onClick" } }
+        ],
+        "kpi2": [
+          { "id": "b_04_k2", "type": "tls.t.hero-number",
+            "props": { "value": "61%", "unit": "Gross margin", "caption": "−3 pts QoQ", "format": "percent", "emphasis": "default" },
+            "motion": { "preset": "count-up", "order": 3, "trigger": "afterPrevious" } }
+        ],
+        "kpi3": [
+          { "id": "b_04_k3", "type": "tls.t.hero-number",
+            "props": { "value": "118", "unit": "Enterprise accounts", "caption": "+14 net new", "format": "plain", "emphasis": "default" },
+            "motion": { "preset": "count-up", "order": 4, "trigger": "afterPrevious" } }
+        ],
+        "kpi4": [
+          { "id": "b_04_k4", "type": "tls.t.hero-number",
+            "props": { "value": "2.4×", "unit": "Compute spend", "caption": "vs. 1.2× revenue", "format": "plain", "emphasis": "muted" },
+            "motion": { "preset": "count-up", "order": 5, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Four numbers, one story: growth bought with margin."
+    },
+    {
+      "id": "sl_05",
+      "layout": "quote",
+      "role": "content",
+      "rhythm": "breath",
+      "regions": {
+        "quote": [
+          { "id": "b_05_quote", "type": "tls.t.quote",
+            "props": {
+              "text": "We were optimising for the demo, and the demo was never the product.",
+              "attribution": "Head of Platform",
+              "role": "Internal retro, September",
+              "markStyle": "glyph"
+            },
+            "motion": { "preset": "quote-in", "order": 1 } }
+        ],
+        "attribution": [
+          { "id": "b_05_cap", "type": "tls.t.caption",
+            "props": { "text": "Q3 engineering retrospective", "align": "start", "position": "below" },
+            "motion": { "preset": "fade-up", "order": 2, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Pause here. Let it sit."
+    },
+    {
+      "id": "sl_06",
+      "layout": "blank",
+      "role": "closing",
+      "rhythm": "anchor",
+      "regions": {
+        "content": [
+          { "id": "b_06_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [
+              { "text": "Next quarter: " },
+              { "text": "margin first", "bold": true }
+            ] }, "size": "display", "align": "start", "rule": true },
+            "motion": { "preset": "closing-in", "order": 1 } },
+          { "id": "b_06_body", "type": "tls.t.body",
+            "props": { "text": "Commit reservations drop on 1 Nov. Two pilots convert or close. Support ratio capped at 40 accounts per engineer.", "columns": 1, "align": "start" },
+            "motion": { "preset": "fade-up", "order": 2, "trigger": "onClick" } }
+        ]
+      },
+      "free": [
+        {
+          "block": {
+            "id": "b_06_free_note",
+            "type": "tls.t.caption",
+            "props": { "text": "Hand-placed — this block lives in free[], not in a region.", "align": "start", "position": "below" }
+          },
+          "box": { "x": 1180, "y": 860, "width": 620, "height": 80 }
+        }
+      ],
+      "notes": "Close on the commitment, not the thanks."
+    }
+  ]
+}

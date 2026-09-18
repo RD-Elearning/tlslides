@@ -5,6 +5,15 @@
 `plan/block-system`. See [Current state](#current-state--read-this-before-starting-a-phase) for
 what exists, and [BACKLOG.md](BACKLOG.md) for what to do next.
 
+> **2026-09-17 — the demo slice (Q0–Q20) is closed and the next slice is planned.** The review
+> of the running demo, the gap analysis against the AI-composed-deck vision, and the prioritised
+> tasks R0–R16 in four phases are in **[BACKLOG-enhance.md](BACKLOG-enhance.md)**. The how-to
+> for using the demo, adding a block (layout or html kind) and the FastAPI/LLM flow is
+> **[guides/blocks-authoring.md](../../guides/blocks-authoring.md)**. The backend design — deck
+> profiles (teaching vs keynote vs report…), the outline → plan → fill → review pipeline, what is
+> saved at each step, the self-review loop and the tech stack — is
+> **[LLM-ARCHITECTURE.md](LLM-ARCHITECTURE.md)**. Start there.
+
 > **If you are an implementing agent, read this file first, then read only the documents your
 > phase names.** Every phase in [08-phase-plan.md](08-phase-plan.md) lists its own required
 > reading, the files it may touch, and the tests that decide whether it is done. Do not start a
@@ -124,28 +133,51 @@ These are not suggestions. A phase that violates one is not done.
 
 ## Current state — read this before starting a phase
 
-**Implemented: P18 and P19.** Everything lives in `packages/tldraw/src/blocks/`, exported from the
-package root. Resuming work: [CONTINUE.md](CONTINUE.md) is the self-contained brief.
+**Implemented: P18–P24 partial, P29 partial.** Everything lives in `packages/tldraw/src/blocks/`,
+exported from the package root. Resuming work: [CONTINUE.md](CONTINUE.md) is the self-contained brief.
 
 | What exists | Where |
 |---|---|
 | Block types — `BlockSpec`, `BlockDefinition`, `LayoutNode`, `LayoutContext`, `BlockSchema` | `blocks/types.ts` |
-| `BlockRegistry`, `createBlockComponents` (placeholder components until P20) | `blocks/registry.ts` |
+| `BlockRegistry`, `createBlockComponents` | `blocks/registry.ts` |
 | `blockToShape` / `shapeToBlock` / `BLOCK_PROP_KEY` | `blocks/shape-bridge.ts` |
 | WCAG contrast math + the hue-preserving solver | `blocks/color-math.ts` |
 | Type / space / radius / elevation / motion scales, categorical ramp | `blocks/scales.ts` |
 | `DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint` | `blocks/tokens.ts` |
-| A live demo in the reference host (button: **Add P18 block**) | `examples/nextjs-sample/components/p18-blocks.tsx` |
-| Role-swatch matrix scenario | `tools/visual/scenarios/tokens.js` |
+| Box model helpers, `estimateMetrics`, `createLayoutContext`, `layoutChild` with depth cap | `blocks/layout/` |
+| DOM renderer — all 8 LayoutNode kinds | `blocks/render-dom.tsx` |
+| SVG renderer — pure string output, no DOM | `blocks/render-svg.ts` |
+| Parity harness — DOM+SVG comparison, all 8 node kinds | `blocks/parity-harness.ts` |
+| `compileSlide` v2 — regions[], free[], findings | `blocks/slide-compiler.ts` |
+| `deckSpecToDocument` — compile spec to document | `blocks/deck-document.ts` |
+| `documentToDeckSpec` — the reverse path | `blocks/slide-decompiler.ts` |
+| `deckLayoutContext` — one context, three consumers | `blocks/deck-context.ts` |
+| `validateDeckSpec` — structural validation with findings | `blocks/validate-deck-spec.ts` |
+| `capabilityDigest` — AI-facing capability table | `blocks/capability-digest.ts` |
+| `nearestName` — typo suggestion by longest prefix | `blocks/nearest-name.ts` |
+| Motion driver + presets + `deriveShapeAnimation` + `resolvePartMotion` | `blocks/motion/` |
+| Schema v1 — `DeckSpec`, `SlideSpec`, `PlacedBlock` | `blocks/types.ts` |
+| `TDPage.layout` / `TDPage.slideSpecId` | `src/types.ts` |
+| `<DeckViewer>` — animated read-only viewer, no editor mounted | `components/DeckViewer/` |
+| `<DeckEmbed>` — editor-backed slide component | `components/DeckEmbed/` |
+| 14 layout containers | `blocks/library/layout/` |
+| 9 text blocks (title, subtitle, kicker, body, bullets, caption, hero-number, quote, takeaway) | `blocks/library/text/` |
+| 1 data block (bar chart) + chart engine | `blocks/library/data/` |
+| `BUILT_IN_BLOCKS` aggregate + `registerBuiltInBlocks` | `blocks/library/index.ts` |
+| `SCHEMA.md` — self-contained contract reference | `reviews/blocks/SCHEMA.md` |
+| `RUN-demo.md` — how to run the demo from scratch | `reviews/blocks/RUN-demo.md` |
+| Edit mode route in Next.js sample | `examples/nextjs-sample/app/edit/` |
+| View mode route in Next.js sample | `examples/nextjs-sample/app/view/` |
+| Mock API route handler | `examples/nextjs-sample/app/api/decks/` |
 
 **Measured baselines at the current tree** — re-measure rather than quote, but these are the
 numbers to beat:
 
 | | Value |
 |---|---|
-| Jest (`packages/tldraw`) | **99/99 suites · 726 passed · 77 todo · 19 snapshots** |
-| Typecheck | **10 errors, all in `.spec.ts`; zero in non-spec source** |
-| eslint `src/blocks` | **0 errors; warnings only inside spec files** |
+| Jest (`packages/tldraw`) | **148 suites · 1716 passed · 77 todo · 19 snapshots** |
+| Typecheck | **0 errors in non-spec source** |
+| eslint `src/blocks` | **0 errors** |
 
 **Carried debt, tracked so it is not rediscovered:**
 
@@ -170,17 +202,17 @@ Update the Status column as work lands; append phase notes to
 |---|---|---|---|
 | **P18** | Block foundations — types, registry, shape bridge | — | ✅ done (partial — see notes) |
 | **P19** | Design tokens v2 — color roles, effective surface, scales | P18 | ✅ done |
-| **P20** | Layout engine + dual renderer + parity harness | P18, P19 | ⬜ not started |
-| **P21** | Headless block rendering (`renderPageToSvg` hook) | P20 | ⬜ not started |
-| **P22** | Motion core — tokens, adapter, WAAPI driver, build steps | P18 | ⬜ not started |
-| **P23** | Text engine — rich text, autofit, measurement provider | P20 | ⬜ not started |
-| **P24** | Library A — layout containers (14) + text blocks (24) | P20, P23 | ⬜ not started |
+| **P20** | Layout engine + dual renderer + parity harness | P18, P19 | ✅ done |
+| **P21** | Headless block rendering (`renderPageToSvg` hook) | P20 | ✅ done |
+| **P22** | Motion core — tokens, adapter, WAAPI driver, build steps | P18 | ✅ B1+B2+B3 done |
+| **P23** | Text engine — rich text, autofit, measurement provider | P20 | ✅ C1+C2+C3 done |
+| **P24** | Library A — layout containers (14) + text blocks (24) + data (1) | P20, P23 | ✅ E1+E2+E3 done (10 blocks + chart engine) |
 | **P25** | Library B — data & chart blocks (32) | P24 | ⬜ not started |
 | **P26** | Library C — diagram & relationship blocks (30) | P24 | ⬜ not started |
 | **P27** | Library D — media & icon blocks (24) | P24 | ⬜ not started |
 | **P28** | Library E — composite slides (20) + master chrome (14) | P24–P27 | ⬜ not started |
 | — | *(the 12 live/Tier-B blocks are folded into the family they twin — see [03](03-block-catalog.md) §H)* | — | — |
-| **P29** | Slide composition — regions, overflow, masters | P24 | ⬜ not started |
+| **P29** | Slide composition — regions, overflow, masters | P24 | ✅ D1-D4 done, compileSlide v2, documentToDeckSpec |
 | **P30** | Authoring UX — inserter, inspector, in-place editing | P24 | ⬜ not started |
 | **P31** | Deck Doctor — the design linter | P19, P24 | ⬜ not started |
 | **P32** | AI contract — `DeckSpec` schema + compiler + fixtures | P29, P31 | ⬜ not started |

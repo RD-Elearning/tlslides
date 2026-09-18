@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Renderer } from '@tlslides/core'
 import { styled, dark } from '~styles'
 import { TDDocument, TDStatus } from '~types'
+import type { ComponentShape } from '~types'
 import { TldrawApp, TDCallbacks } from '~state'
 import {
   TldrawContext,
@@ -10,7 +11,11 @@ import {
   useTldrawApp,
   TldrawComponentsContext,
   TldrawComponentsRegistry,
+  BlockRegistryContext,
+  HostRegistryContext,
 } from '~hooks'
+import type { BlockRegistry } from '~blocks/registry'
+import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
 import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
@@ -118,6 +123,35 @@ export interface TldrawProps extends TDCallbacks {
    * safely outlive, or be opened by, an app with a smaller registry.
    */
   components?: TldrawComponentsRegistry
+
+  /**
+   * (optional) When supplied, `ComponentShape`s are rendered through this callback during
+   * headless export (`Deck.getThumbnail`, `Deck.exportSlidePng`). The callback receives the
+   * `ComponentShape` and returns either a complete SVG fragment or `undefined` (fall through to
+   * the dashed placeholder). Stored on `Deck.blocks` so every subsequent thumbnail/export call
+   * uses it without the host having to pass it per-call. A host renders Tier-B blocks by looking
+   * up the block by `shape.componentId`, calling `poster()`, rendering the result to SVG, and
+   * returning the markup here.
+   */
+  blocks?: (shape: ComponentShape) => string | undefined
+
+  /**
+   * (optional) A BlockRegistry containing block definitions with layout() functions.
+   * When a ComponentShape's componentId matches a definition in this registry,
+   * ComponentUtil renders through renderNodeToDom (the real layout engine) instead of
+   * the createBlockComponents placeholder. The host app typically builds this registry
+   * from its block definitions and passes it alongside the `components` prop.
+   */
+  blockRegistry?: BlockRegistry
+
+  /**
+   * (optional) A HostRegistry containing host renderers for `k: 'host'` layout nodes.
+   * When a LayoutNode has `k: 'host'` and its `render` id matches a renderer in this
+   * registry, the DOM renderer calls the renderer's `mount`/`update`/`unmount` lifecycle
+   * instead of rendering an empty div. Unknown ids degrade to a `data-host-missing`
+   * attribute — never throw.
+   */
+  hostRegistry?: HostRegistry
 }
 
 export function Tldraw({
@@ -137,6 +171,9 @@ export function Tldraw({
   showSponsorLink = false,
   disableAssets = false,
   components = EMPTY_COMPONENTS,
+  blocks,
+  blockRegistry,
+  hostRegistry,
   onMount,
   onChange,
   onChangePresence,
@@ -266,6 +303,14 @@ export function Tldraw({
     app.setSetting('isDarkMode', darkMode)
   }, [app, darkMode])
 
+  // A5 — headless block rendering. The `blocks` callback is stored on the `Deck` instance so
+  // every subsequent `getThumbnail`/`exportSlidePng` call uses it without the host having to pass
+  // it per-call. `undefined` (no prop) clears the callback, restoring the default placeholder
+  // behaviour — same contract as every other optional prop here.
+  React.useEffect(() => {
+    app.deck.blocks = blocks
+  }, [app, blocks])
+
   // Keep presentation mode in sync with the browser's actual fullscreen state. The user can
   // leave fullscreen without going through `togglePresentationMode` at all — Esc (handled
   // natively by the browser, independent of our own Escape shortcut), F11, a mobile gesture, or
@@ -351,22 +396,26 @@ export function Tldraw({
   // Use the `key` to ensure that new selector hooks are made when the id changes
   return (
     <TldrawContext.Provider value={app}>
-      <TldrawComponentsContext.Provider value={components}>
-        <InnerTldraw
-          key={sId || 'Tldraw'}
-          id={sId}
-          autofocus={autofocus}
-          showPages={showPages}
-          showMenu={showMenu}
-          showMultiplayerMenu={showMultiplayerMenu}
-          showStyles={showStyles}
-          showZoom={showZoom}
-          showTools={showTools}
-          showUI={showUI}
-          showSponsorLink={showSponsorLink}
-          readOnly={readOnly}
-        />
-      </TldrawComponentsContext.Provider>
+      <BlockRegistryContext.Provider value={blockRegistry}>
+        <HostRegistryContext.Provider value={hostRegistry}>
+          <TldrawComponentsContext.Provider value={components}>
+            <InnerTldraw
+            key={sId || 'Tldraw'}
+            id={sId}
+            autofocus={autofocus}
+            showPages={showPages}
+            showMenu={showMenu}
+            showMultiplayerMenu={showMultiplayerMenu}
+            showStyles={showStyles}
+            showZoom={showZoom}
+            showTools={showTools}
+            showUI={showUI}
+            showSponsorLink={showSponsorLink}
+            readOnly={readOnly}
+          />
+        </TldrawComponentsContext.Provider>
+          </HostRegistryContext.Provider>
+      </BlockRegistryContext.Provider>
     </TldrawContext.Provider>
   )
 }

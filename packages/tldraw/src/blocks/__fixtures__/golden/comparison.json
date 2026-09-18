@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "id": "golden-comparison",
+  "title": "Comparison Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "comparison",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "This Year vs " }, { "text": "Last Year", "bold": true }] }
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b2",
+            "type": "tls.t.body",
+            "props": {
+              "text": { "runs": [{ "text": "Revenue: " }, { "text": "$4.2M", "bold": true }, { "text": " (+42%)" }] }
+            }
+          },
+          {
+            "id": "b3",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Enterprise grew 58%" },
+                { "text": "SMB held flat" },
+                { "text": "New verticals opened" }
+              ],
+              "marker": "dot",
+              "spacing": "sm"
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b4",
+            "type": "tls.t.body",
+            "props": {
+              "text": { "runs": [{ "text": "Revenue: " }, { "text": "$3.0M", "bold": true }, { "text": " (baseline)" }] }
+            }
+          },
+          {
+            "id": "b5",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Enterprise was 62% of ARR" },
+                { "text": "Churn at 5.2%" },
+                { "text": "Two product lines only" }
+              ],
+              "marker": "dot",
+              "spacing": "sm"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

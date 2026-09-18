@@ -1,0 +1,325 @@
+/**
+ * LayoutContext construction and child layout with depth capping.
+ *
+ * `createLayoutContext` builds a real `LayoutContext` from tokens, surface, box, and providers.
+ * `layoutChild` recursively lays out child blocks inside a box, capping depth at 4.
+ *
+ * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
+ */
+
+import type {
+  BlockSpec,
+  BlockStyleSpec,
+  Box,
+  ColorRole,
+  IconPath,
+  AssetInfo,
+  LayoutContext,
+  LayoutNode,
+  Paint,
+  ResolvedColor,
+  ResolvedTextStyle,
+  ResolvedTokens,
+  Size,
+  SurfaceContext,
+  TextStyleSpec,
+  TypeToken,
+} from '../types'
+import type { DeckTheme } from '~types'
+import type { BlockRegistry } from '../registry'
+import type { MeasureTextProvider } from './measure'
+import { estimateMetrics } from './measure'
+import { resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Default font family for block text                                              */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const DEFAULT_FONT_FAMILY = '"Source Sans Pro", sans-serif'
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CreateLayoutContextOptions                                                      */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Options for building a `LayoutContext`. Required fields are the structural context
+ * (box, tokens, surface); providers and the registry are injectable with sensible defaults.
+ */
+export interface CreateLayoutContextOptions {
+  /** The box this block must fill, in slide units. Origin at top-left (0,0). */
+  box: Size
+  /** Resolved design tokens for this deck: colors, scales, radii. */
+  tokens: ResolvedTokens
+  /** What is behind this block. Foreground colors are solved against it. */
+  surface: SurfaceContext
+  /** Block registry for `layoutChild` lookups. */
+  registry?: BlockRegistry
+  /** Text measurement provider. Defaults to `estimateMetrics`. */
+  measureText?: MeasureTextProvider
+  /** Colour resolution. Receives the effective surface this context resolves against, so the
+   *  default (and any injected solver) can contrast-solve against the block's own background
+   *  rather than a fixed one. Defaults to `tokens.ts`'s luminance-aware `resolveColor`. */
+  resolveColor?: (role: ColorRole | string, surface: SurfaceContext) => ResolvedColor
+  /** Type-token resolution. Defaults to looking up `tokens.type` with a default font family. */
+  resolveText?: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle
+  /** Asset lookup. Returns `undefined` by default. */
+  asset?: (assetId: string) => AssetInfo | undefined
+  /** Resolve an asset id to a renderable URL. Returns `undefined` by default. */
+  resolveAsset?: (id: string) => string | undefined
+  /** Icon lookup. Returns `undefined` by default. */
+  icon?: (id: string) => IconPath | undefined
+  /** Current nesting depth. Defaults to 0. */
+  depth?: number
+  /** True when laying out for export/thumbnail; false for live editor. */
+  headless?: boolean
+  /** Per-instance style overrides. When `surface` is a `Paint`, the block's surface context
+   *  is derived from the paint sampled at the block's box. */
+  style?: BlockStyleSpec
+  /** The deck theme, used only to resolve `theme:`-sentinel literals (`'theme:accent1'`). */
+  theme?: DeckTheme
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Default resolveColor                                                            */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Default `resolveColor` implementation: the real, luminance-aware solver from `tokens.ts`.
+ * A foreground role (`text`, `textMuted`, `line`) is contrast-solved against the *effective*
+ * surface — the one behind this block, including a per-child resample of a gradient parent —
+ * rather than the theme's nominal background. This is what makes `ctx.resolveColor` in
+ * production honour R4 Do item 2's "text colours keep passing contrast" claim.
+ */
+function defaultResolveColor(
+  role: ColorRole | string,
+  surface: SurfaceContext,
+  tokens: ResolvedTokens,
+  theme?: DeckTheme
+): ResolvedColor {
+  return solveColor(role, surface, tokens, theme)
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Default resolveText                                                             */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Default `resolveText` implementation. Looks up `tokens.type[token]` for size and
+ * line-height, applies any overrides, and returns a `ResolvedTextStyle` with the
+ * font family from the resolved tokens (which comes from the theme, or the built-in
+ * default when the theme doesn't set one).
+ */
+function defaultResolveText(
+  token: TypeToken,
+  over: Partial<TextStyleSpec> | undefined,
+  tokens: ResolvedTokens
+): ResolvedTextStyle {
+  const entry = tokens.type[token]
+  const size = over?.size ?? entry.size
+  const lineHeight = over?.lineHeight ?? entry.lineHeight
+  const family = over?.family ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
+  const letterSpacing = over?.letterSpacing ?? -0.03
+  return {
+    family,
+    size,
+    lineHeight,
+    letterSpacing,
+    color: tokens.color.text,
+    verticalAlign: undefined,
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* createLayoutContext                                                             */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const MAX_DEPTH = 4
+
+/**
+ * Build a real `LayoutContext` from tokens, surface, box, and injectable providers.
+ *
+ * Every module-level object (`tokens`, `surface`) is **copied** into the context so the
+ * returned `LayoutContext` is structurally isolated from the caller's originals. This is
+ * enforced by tests that assert `not.toBe` *and* `toEqual`.
+ */
+export function createLayoutContext(
+  options: CreateLayoutContextOptions
+): LayoutContext {
+  // Copy module-level objects — never alias them.
+  const tokens: ResolvedTokens = {
+    color: { ...options.tokens.color },
+    categorical: [...options.tokens.categorical],
+    space: { ...options.tokens.space },
+    radius: { ...options.tokens.radius },
+    type: Object.fromEntries(
+      Object.entries(options.tokens.type).map(([k, v]) => [k, { ...v }])
+    ) as ResolvedTokens['type'],
+    elevation: Object.fromEntries(
+      Object.entries(options.tokens.elevation).map(([k, v]) => [k, { ...v }])
+    ) as ResolvedTokens['elevation'],
+    motion: {
+      duration: { ...options.tokens.motion.duration },
+      ease: { ...options.tokens.motion.ease },
+    },
+    density: options.tokens.density,
+    fontFamily: options.tokens.fontFamily,
+  }
+
+  const surface: SurfaceContext = { ...options.surface }
+
+  const measureText: MeasureTextProvider = options.measureText ?? estimateMetrics
+
+  // Deep copy the instance style so the context is structurally isolated.
+  const instanceStyle: BlockStyleSpec | undefined = options.style
+    ? JSON.parse(JSON.stringify(options.style))
+    : undefined
+
+  // If the instance style specifies a Paint surface, recompute the surface context
+  // from that paint sampled at this block's box.
+  let effectiveSurface = surface
+  if (instanceStyle?.surface && typeof instanceStyle.surface !== 'string') {
+    // It is a Paint (solid or gradient). The block's own box is at the origin
+    // in the block's local coordinate space (0,0,width,height), so we sample
+    // against the full box as the parent bounds.
+    effectiveSurface = surfaceFromPaint(
+      instanceStyle.surface as Paint,
+      { x: 0, y: 0, width: options.box.width, height: options.box.height },
+      { x: 0, y: 0, width: options.box.width, height: options.box.height },
+    )
+  }
+
+  const resolveColorFn =
+    options.resolveColor ??
+    ((role: ColorRole | string, surface: SurfaceContext) =>
+      defaultResolveColor(role, surface, tokens, options.theme))
+
+  const resolveTextFn =
+    options.resolveText ??
+    ((token: TypeToken, over?: Partial<TextStyleSpec>) => defaultResolveText(token, over, tokens))
+
+  const assetFn = options.asset ?? (() => undefined)
+  const resolveAssetFn = options.resolveAsset
+  const iconFn = options.icon ?? (() => undefined)
+  const depth = options.depth ?? 0
+  const headless = options.headless ?? false
+  const registry = options.registry
+
+  // Wrap resolveColor with instance style overrides: when the instance specifies
+  // `on`, `accent`, or `surface` as a literal hex / role string, honour it.
+  // A role-valued `on` still goes through the base resolveColor (contrast solver);
+  // a literal `on` is passed through directly (validation may warn later).
+  const wrappedResolveColor = (role: ColorRole | string): ResolvedColor => {
+    if (instanceStyle) {
+      // `on` and `accent` override specific foreground roles
+      if (role === 'text' && instanceStyle.on !== undefined) {
+        return resolveColorFn(instanceStyle.on, effectiveSurface)
+      }
+      if (role === 'accent' && instanceStyle.accent !== undefined) {
+        return resolveColorFn(instanceStyle.accent, effectiveSurface)
+      }
+      // `surface` override: when it's a string, resolve it through the base.
+      // When it's a Paint (gradient), the surface context already reflects it,
+      // so resolveColor('surface') simply returns the paint's solid representative.
+      if (role === 'surface' && instanceStyle.surface !== undefined) {
+        if (typeof instanceStyle.surface === 'string') {
+          return resolveColorFn(instanceStyle.surface, effectiveSurface)
+        }
+        // Paint: return the first stop colour as a solid representative.
+        const paint = instanceStyle.surface
+        if (paint.type === 'solid') {
+          return { color: paint.color, ratio: 1, ok: true }
+        }
+        const firstStop = paint.stops[0]
+        return { color: firstStop?.color ?? tokens.color.surface, ratio: 1, ok: true }
+      }
+    }
+    return resolveColorFn(role, effectiveSurface)
+  }
+
+  // Build the context object with all methods bound.
+  const ctx: LayoutContext = {
+    box: { ...options.box },
+    tokens,
+    surface: effectiveSurface,
+    ...(instanceStyle ? { style: instanceStyle } : {}),
+    resolveColor: wrappedResolveColor,
+    resolveText: resolveTextFn,
+    measureText,
+    layoutChild: (spec: BlockSpec, box: Box): LayoutNode => {
+      const newDepth = depth + 1
+      if (newDepth > MAX_DEPTH) {
+        // Depth overflow: return a lint-style error node. Not a throw, not a stack overflow.
+        return {
+          k: 'group',
+          box,
+          part: 'lint/depth-overflow',
+          children: [],
+        }
+      }
+
+      if (!registry) {
+        // No registry: return an empty placeholder.
+        return { k: 'group', box, children: [] }
+      }
+
+      const def = registry.get(spec.type)
+      if (!def) {
+        // Unknown block type: return an empty placeholder.
+        return { k: 'group', box, children: [] }
+      }
+
+      // Build a child context with incremented depth.
+      // Child sees only Size (width/height) — its coordinates are always
+      // relative to the group that layoutChild wraps around it.
+      // Extract the child's own $block.style if present.
+      const childMeta = (spec.props as Record<string, unknown>)?.$block as
+        | Record<string, unknown>
+        | undefined
+      const childStyle = childMeta?.style as BlockStyleSpec | undefined
+
+      // A gradient (or solid) parent fill is position-dependent: resample the parent's *raw*
+      // Paint at this child's own `box`, rather than forwarding the parent's already-sampled
+      // `effectiveSurface`. Two children at opposite ends of a gradient card must not receive
+      // identical `ctx.surface` — that is the light-on-light-text bug R4's Watch-out predicted.
+      const parentPaint = instanceStyle?.surface
+      const childSurface: SurfaceContext =
+        parentPaint !== undefined && typeof parentPaint !== 'string'
+          ? surfaceFromPaint(parentPaint, box, {
+              x: 0,
+              y: 0,
+              width: options.box.width,
+              height: options.box.height,
+            })
+          : effectiveSurface
+
+      const childCtx = createLayoutContext({
+        box: { width: box.width, height: box.height },
+        tokens,
+        surface: childSurface,
+        registry,
+        measureText,
+        // Pass the *base* (surface-aware) resolver down, not this context's wrapped one: the
+        // child's own style overrides must not inherit the parent's `on`/`accent`/`surface`.
+        resolveColor: resolveColorFn,
+        resolveText: resolveTextFn,
+        asset: assetFn,
+        resolveAsset: resolveAssetFn,
+        icon: iconFn,
+        depth: newDepth,
+        headless,
+        style: childStyle,
+        theme: options.theme,
+      })
+
+      const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
+      return { k: 'group' as const, box, children: [childNode] }
+    },
+    asset: assetFn,
+    resolveAsset: resolveAssetFn,
+    icon: iconFn,
+    depth,
+    headless,
+  }
+
+  return ctx
+}
