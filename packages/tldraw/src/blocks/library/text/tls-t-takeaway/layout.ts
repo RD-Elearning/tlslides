@@ -101,10 +101,14 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
   })
 
   // ── Surface background (subtle tinted rect behind everything) ─────────
-  const surfacePaint: Paint = {
-    type: 'solid',
-    color: accentColor + '12', // ~7% opacity via alpha hex
-  }
+  // When the instance specifies a surface Paint, use it; otherwise derive
+  // from the accent colour at ~7% opacity.
+  const surfacePaint: Paint = ctx.style?.surface && typeof ctx.style.surface !== 'string'
+    ? ctx.style.surface
+    : {
+        type: 'solid',
+        color: accentColor + '12', // ~7% opacity via alpha hex
+      }
 
   // Return measured content height (y after last content + bottom pad),
   // not the full available box height.

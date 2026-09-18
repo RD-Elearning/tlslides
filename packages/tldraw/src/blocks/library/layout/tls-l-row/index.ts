@@ -17,6 +17,16 @@ export const tlsLRow: BlockDefinition = {
   tier: 'A',
   summary: 'Horizontal row with gap.',
   keywords: ['row', 'horizontal', 'inline', 'gap'],
+  describe: {
+    when: 'Use to arrange child blocks horizontally, side by side.',
+    avoid: 'Do not use for vertical arrangement — use tls.l.stack instead.',
+    example: {
+      id: 'b_row',
+      type: 'tls.l.row',
+      props: { gap: 'md' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [100, 100] },

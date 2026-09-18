@@ -21,7 +21,9 @@ import { DEFAULT_SLIDE_SIZE } from '~constants'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { resolveTokens, surfaceFromBackground } from './tokens'
 import { createLayoutContext } from './layout'
-import type { Box, LayoutContext, Size } from './types'
+import { BLOCK_PROP_KEY } from './shape-bridge'
+import type { BlockStyleSpec, Box, LayoutContext, Size } from './types'
+import type { ComponentShape } from '~types'
 
 /**
  * Build a `LayoutContext` from a document and a block's box.
@@ -38,6 +40,7 @@ import type { Box, LayoutContext, Size } from './types'
  *              the theme's own `colors.background` is used (matching the existing
  *              "no background resolved" fallback in `surfaceFromBackground`).
  *              `depth` is the current nesting depth; defaults to 0.
+ *              `style` is the per-instance BlockStyleSpec override (from `$block.style`).
  */
 export function deckLayoutContext(
   doc: TDDocument,
@@ -46,6 +49,7 @@ export function deckLayoutContext(
     headless: boolean
     slideBackground?: SlideBackground | string
     depth?: number
+    style?: BlockStyleSpec
   }
 ): LayoutContext {
   const theme = activeDeckTheme(doc.theme)
@@ -67,5 +71,38 @@ export function deckLayoutContext(
     surface,
     headless: opts.headless,
     depth: opts.depth,
+    style: opts.style,
   })
+}
+
+/**
+ * Build a `LayoutContext` for a specific block shape, forwarding its `style` override
+ * from `$block.style` (if any) into the layout context. This is the single helper all
+ * three consumers (`ComponentUtil`, `DeckViewer`, headless export) must call, so style
+ * cannot drift between them.
+ *
+ * @param shape  The `ComponentShape` — source of position, size, and `$block.style`.
+ * @param doc    The full `TDDocument`.
+ * @param opts   `headless` and optional `slideBackground` override.
+ */
+export function contextForBlock(
+  shape: ComponentShape,
+  doc: TDDocument,
+  opts: {
+    headless: boolean
+    slideBackground?: SlideBackground | string
+    depth?: number
+  }
+): LayoutContext {
+  const box: Box = {
+    x: shape.point[0],
+    y: shape.point[1],
+    width: shape.size[0],
+    height: shape.size[1],
+  }
+  const meta = (shape.props as Record<string, unknown>)?.[BLOCK_PROP_KEY] as
+    | Record<string, unknown>
+    | undefined
+  const style = meta?.style as BlockStyleSpec | undefined
+  return deckLayoutContext(doc, box, { ...opts, style })
 }

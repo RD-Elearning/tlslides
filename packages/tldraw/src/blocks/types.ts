@@ -50,8 +50,8 @@ export interface BlockSpec {
  * universal style field is not.
  */
 export interface BlockStyleSpec {
-  /** The block's own background. ColorRole or literal hex or theme token. */
-  surface?: ColorRole | string
+  /** The block's own background. ColorRole, literal hex, theme token, or a Paint (gradient). */
+  surface?: ColorRole | string | Paint
   /** Foreground colour; derived from `surface` when absent. */
   on?: ColorRole | string
   /** The block's one emphasis colour. */
@@ -218,6 +218,19 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   /** Keywords for inserter search and AI selection. */
   keywords: string[]
 
+  /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
+   *  example instance that passes `validateDeckSpec`. Every built-in block should provide
+   *  this; the capability digest renders it verbatim — no hand-written catalog text
+   *  outside this field. */
+  describe?: {
+    /** One sentence: when an LLM should reach for this block. */
+    when: string
+    /** One sentence: when NOT to use this block (reduces mis-selection). */
+    avoid: string
+    /** A valid BlockSpec with all required slots filled, used as a reference in the digest. */
+    example: BlockSpec
+  }
+
   /** Content and option schema. */
   schema: BlockSchema
   /** A valid, good-looking instance with no input at all. Deep-cloned per instantiation. */
@@ -369,7 +382,7 @@ export type LayoutNode =
   | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
   | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle }
-  | { k: 'image'; box: Box; part?: string; assetId: string; fit: 'cover' | 'contain'; radius?: number }
+  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode }
@@ -518,6 +531,8 @@ export interface LayoutContext {
   tokens: ResolvedTokens
   /** What is behind this block. Foreground colors are solved against it. */
   surface: SurfaceContext
+  /** The instance's raw BlockStyleSpec (read-only). Absent when no override is set. */
+  style?: BlockStyleSpec
   /** Resolve a colour role to a concrete, contrast-correct value. */
   resolveColor(role: ColorRole | string): ResolvedColor
   /** Resolve a type token to concrete size, line-height, and family. */
@@ -528,6 +543,9 @@ export interface LayoutContext {
   layoutChild(spec: BlockSpec, box: Box): LayoutNode
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
+  /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided
+   *  or the asset is missing — the renderers show a dashed frame with alt text instead. */
+  resolveAsset?(id: string): string | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
   /** Current nesting depth. Capped at 4; deeper trees are an error. */

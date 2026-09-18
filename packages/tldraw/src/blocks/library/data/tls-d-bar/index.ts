@@ -20,6 +20,15 @@ export const tlsDBar: BlockDefinition = {
   tier: 'A',
   summary: 'Vertical column chart with zero baseline.',
   keywords: ['chart', 'bar', 'column', 'data', 'graph', 'vertical'],
+  describe: {
+    when: 'Use to compare values across categories — 1–20 bars, single series.',
+    avoid: 'Do not use for trends over time (use a line chart) or parts of a whole (use donut).',
+    example: {
+      id: 'b_bar',
+      type: 'tls.d.bar',
+      props: { categories: ['Q1', 'Q2', 'Q3'], series: [64, 64, 61], highlightIndex: 2, title: 'Revenue by Quarter' },
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 500], min: [200, 150] },

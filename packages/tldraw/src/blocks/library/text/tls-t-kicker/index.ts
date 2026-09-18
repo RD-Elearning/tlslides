@@ -17,6 +17,15 @@ export const tlsTKicker: BlockDefinition = {
   tier: 'A',
   summary: 'Small label above the title with case and tracking options.',
   keywords: ['kicker', 'eyebrow', 'label', 'category', 'tag', 'section'],
+  describe: {
+    when: 'Use as a small category or section label above the title.',
+    avoid: 'Do not use for the slide title itself — use tls.t.title.',
+    example: {
+      id: 'b_kicker',
+      type: 'tls.t.kicker',
+      props: { text: 'OVERVIEW', case: 'uppercase', tracking: 'wide', marker: false },
+    },
+  },
   schema,
   defaults,
   size: { preferred: [400, 30], min: [100, 16] },

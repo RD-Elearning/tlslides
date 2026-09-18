@@ -14,7 +14,7 @@ import type { MotionDriver } from '~blocks/motion/driver'
 import type { BlockDefinition } from '~blocks/types'
 import type { LayoutContext } from '~blocks/types'
 import { deckSpecToDocument } from '~blocks/deck-document'
-import { deckLayoutContext } from '~blocks/deck-context'
+import { deckLayoutContext, contextForBlock } from '~blocks/deck-context'
 import { shapeToBlock } from '~blocks/shape-bridge'
 import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
@@ -26,6 +26,8 @@ import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
+import { playBlockReveal } from '~blocks/motion/play-reveal'
+import { resolvePartMotion } from '~blocks/motion/resolve-motion'
 
 /**
  * `<DeckViewer>` — Q14's real, animated, read-only deck viewer (`reviews/blocks/BACKLOG-demo.md`
@@ -512,19 +514,26 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
           }
 
         } else if (!hasAnimate) {
-          // Non-animated block — existing behavior unchanged
+          // Non-animated block — use playBlockReveal for part-level choreography (R5).
           const animation = shape?.animation
           if (!animation) return
           if (isRevealed) {
-            if (isNewlyRevealed && !reducedMotion) {
-              motionDriver.play(el, entranceKeyframes(animation.effect), {
-                duration: animation.durationMs,
-                delay: animation.delayMs,
-                easing: 'ease-out',
-                fill: 'forwards',
-              })
+            if (isNewlyRevealed && !reducedMotion && blockSpec && blockDef) {
+              // Full reveal: block-level + part-level choreography with stagger.
+              playBlockReveal(el, blockSpec, blockDef, { driver: motionDriver, reducedMotion: false })
             } else {
+              // Already revealed (or reduced motion): settle to visible.
               motionDriver.set(el, visibleState(animation.effect))
+              // Also settle parts to visible.
+              if (blockSpec && blockDef) {
+                const partMotions = resolvePartMotion(blockSpec.motion, blockDef.motion)
+                for (const pm of partMotions) {
+                  const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
+                  partEls.forEach((partEl) => {
+                    motionDriver.set(partEl as HTMLElement, { opacity: 1, translate: '0px 0px', scale: 1 })
+                  })
+                }
+              }
             }
           } else {
             motionDriver.set(el, hiddenState(animation.effect))
@@ -716,7 +725,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
           <div style={{ position: 'absolute', inset: 0, ...backgroundStyle }} />
           {shapes.map((shape) => {
             const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
-            const ctx = deckLayoutContext(document, box, {
+            const ctx = contextForBlock(shape, document, {
               headless: false,
               slideBackground: page.background,
             })

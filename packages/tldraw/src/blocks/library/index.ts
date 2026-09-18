@@ -18,12 +18,16 @@ import { dataBlocks } from './data'
 // Composite blocks — html-kind and multi-part composites (R2).
 import { compositeBlocks } from './composite'
 
+// Media blocks — image block and future media types (R8).
+import { mediaBlocks } from './media'
+
 /** All built-in block definitions. */
 export const BUILT_IN_BLOCKS: BlockDefinition[] = [
   ...layoutBlocks,
   ...textBlocks,
   ...dataBlocks,
   ...compositeBlocks,
+  ...mediaBlocks,
 ]
 
 /**
@@ -47,3 +51,6 @@ export { dataBlocks } from './data'
 
 // Re-export composite blocks for direct access.
 export { compositeBlocks } from './composite'
+
+// Re-export media blocks for direct access.
+export { mediaBlocks } from './media'

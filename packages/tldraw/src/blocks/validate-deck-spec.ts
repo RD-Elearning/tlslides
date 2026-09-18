@@ -18,8 +18,9 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
-import type { Box, BlockDefinition, DeckSpec, ResolvedTokens, SlotSpec } from './types'
+import type { Box, BlockDefinition, BlockStyleSpec, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
 import { levenshtein, nearestName } from './nearest-name'
+import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -321,7 +322,7 @@ function validateSlide(
       }
 
       blocksRaw.forEach((blockRaw, bi) => {
-        validateBlockTree(blockRaw, `${regionPath}[${bi}]`, reg, seenBlockIds, findings, [], [], 1)
+        validateBlockTree(blockRaw, `${regionPath}[${bi}]`, reg, seenBlockIds, findings, [], [], 1, tokens)
       })
     }
   }
@@ -371,7 +372,7 @@ function validateSlide(
             message: `free[${fi}] on slide "${slideLabel}" is missing a "box" with numeric x/y/width/height.`,
           })
         }
-        validateBlockTree(entryRaw.block, `${freePath}.block`, reg, seenBlockIds, findings, [], [], 1)
+        validateBlockTree(entryRaw.block, `${freePath}.block`, reg, seenBlockIds, findings, [], [], 1, tokens)
       })
     }
   }
@@ -395,7 +396,8 @@ function validateBlockTree(
   findings: DeckFinding[],
   ancestorIds: string[],
   ancestorRefs: unknown[],
-  depth: number
+  depth: number,
+  tokens: ResolvedTokens
 ): void {
   if (!isRecord(blockRaw)) {
     findings.push({
@@ -500,6 +502,7 @@ function validateBlockTree(
 
   if (def) {
     validateProps(block.props, def, path, findings)
+    validateStyle(block.style, def.type, `${path}.style`, tokens, findings)
   } else if (block.props !== undefined && !isRecord(block.props)) {
     findings.push({
       level: 'error',
@@ -529,7 +532,8 @@ function validateBlockTree(
           findings,
           nextAncestorIds,
           nextAncestorRefs,
-          depth + 1
+          depth + 1,
+          tokens
         )
       })
     }
@@ -591,6 +595,82 @@ function validateProps(propsRaw: unknown, def: BlockDefinition, blockPath: strin
       })
     }
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Style validation                                                                  */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const TEXT_CONTRAST_FLOOR = 4.5
+
+/**
+ * Validate a block's `style` override.
+ *
+ * Rules:
+ * - A literal hex `on` colour whose contrast against the resolved surface is below
+ *   4.5:1 → warning (`style/low-contrast-on`). The hex is respected as-is (never
+ *   silently replaced), but the user is warned.
+ * - A gradient `surface` with fewer than 2 stops → error (`style/gradient-few-stops`).
+ */
+function validateStyle(
+  style: unknown,
+  blockType: string,
+  path: string,
+  tokens: ResolvedTokens,
+  findings: DeckFinding[],
+): void {
+  if (!isRecord(style)) return
+
+  // --- `on` contrast check ---
+  const on = style.on
+  if (typeof on === 'string' && on.length > 0) {
+    // Only check literal hex values (not role names).
+    const rgb = tryHexToRgb(on)
+    if (rgb) {
+      // Resolve the surface luminance from the resolved tokens.
+      const surfaceHex = tokens.color.surface
+      const surfaceRgb = tryHexToRgb(surfaceHex)
+      if (surfaceRgb) {
+        const surfaceLum = relativeLuminance(surfaceRgb)
+        const onLum = relativeLuminance(rgb)
+        const ratio = contrastRatio(onLum, surfaceLum)
+        if (ratio < TEXT_CONTRAST_FLOOR) {
+          findings.push({
+            level: 'warning',
+            rule: 'style/low-contrast-on',
+            path: `${path}.on`,
+            message:
+              `Block "${blockType}" has style.on = "${on}" with a contrast ratio of ` +
+              `${ratio.toFixed(2)}:1 against the resolved surface (${surfaceHex}), ` +
+              `below the ${TEXT_CONTRAST_FLOOR}:1 minimum for readable text. ` +
+              `The colour is honoured as-is; consider a darker value.`,
+          })
+        }
+      }
+    }
+  }
+
+  // --- gradient stops check ---
+  const surface = style.surface
+  if (isPaint(surface) && surface.type !== 'solid') {
+    if (!surface.stops || surface.stops.length < 2) {
+      findings.push({
+        level: 'error',
+        rule: 'style/gradient-few-stops',
+        path: `${path}.surface`,
+        message:
+          `Block "${blockType}" has a gradient style.surface with ` +
+          `${surface.stops?.length ?? 0} stop(s); a gradient must have at least 2 stops.`,
+      })
+    }
+  }
+}
+
+function isPaint(value: unknown): value is Paint {
+  return (
+    isRecord(value) &&
+    (value.type === 'solid' || value.type === 'linearGradient' || value.type === 'radialGradient')
+  )
 }
 
 function isEmptyValue(value: unknown): boolean {

@@ -120,16 +120,16 @@ export { documentToDeckSpec, pageToSlideSpec } from './slide-decompiler'
 export type { DecompileFinding, DecompileOptions } from './slide-decompiler'
 
 // Q9 — deckLayoutContext: one LayoutContext builder, three consumers (editor, DeckViewer, export).
-export { deckLayoutContext } from './deck-context'
+export { deckLayoutContext, contextForBlock } from './deck-context'
 
 // W1 — DeckSpec → TDDocument (the compile-side counterpart to documentToDeckSpec above).
 export { deckSpecToDocument, resolveDeckFrame, resolveDeckTheme } from './deck-document'
 export type { DeckDocumentResult } from './deck-document'
 
-// Q3/W1 — the built-in block library (14 layout containers, 9 text blocks, 1 data block, 1 composite)
+// Q3/W1 — the built-in block library (14 layout containers, 9 text blocks, 1 data block, 1 composite, 1 media)
 // and its registration helper. `./library` is the aggregate; individual family arrays are also
 // exported directly for a host that wants only one family.
-export { BUILT_IN_BLOCKS, registerBuiltInBlocks, layoutBlocks, textBlocks, dataBlocks, compositeBlocks } from './library'
+export { BUILT_IN_BLOCKS, registerBuiltInBlocks, layoutBlocks, textBlocks, dataBlocks, compositeBlocks, mediaBlocks } from './library'
 
 // P22/B3 — motion resolution: a block's declarative recipe + spec overrides → concrete
 // block-level (`ShapeAnimation`) and part-level (`MotionKeyframes`+timing) descriptors.

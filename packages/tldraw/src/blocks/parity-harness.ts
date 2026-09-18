@@ -159,7 +159,14 @@ function nodeToHtml(node: LayoutNode): string {
     case 'image': {
       const fit = node.fit
       const rad = node.radius ? `;border-radius:${node.radius}px` : ''
-      return `<img style="${posStyle(node.box)};object-fit:${fit}${rad}" data-src="${esc(node.assetId)}" alt=""${part}/>`
+      const objectPosition = node.focal
+        ? `;object-position:${node.focal[0] * 100}% ${node.focal[1] * 100}%`
+        : ''
+      if (node.url) {
+        return `<img style="${posStyle(node.box)};object-fit:${fit}${objectPosition}${rad}" src="${esc(node.url)}" alt="${esc(node.alt)}"${part}/>`
+      }
+      // Missing-asset fallback: dashed frame with alt text.
+      return `<div style="${posStyle(node.box)};display:flex;align-items:center;justify-content:center;border:2px dashed #999;border-radius:${node.radius ?? 0}px;color:#999;font-size:14px;font-family:system-ui,sans-serif;text-align:center;padding:8px;box-sizing:border-box"${part}>${esc(node.alt)}</div>`
     }
 
     case 'icon': {

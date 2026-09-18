@@ -9,12 +9,14 @@
 
 import type {
   BlockSpec,
+  BlockStyleSpec,
   Box,
   ColorRole,
   IconPath,
   AssetInfo,
   LayoutContext,
   LayoutNode,
+  Paint,
   ResolvedColor,
   ResolvedTextStyle,
   ResolvedTokens,
@@ -26,6 +28,7 @@ import type {
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
 import { estimateMetrics } from './measure'
+import { surfaceFromPaint } from '../tokens'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -58,12 +61,17 @@ export interface CreateLayoutContextOptions {
   resolveText?: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle
   /** Asset lookup. Returns `undefined` by default. */
   asset?: (assetId: string) => AssetInfo | undefined
+  /** Resolve an asset id to a renderable URL. Returns `undefined` by default. */
+  resolveAsset?: (id: string) => string | undefined
   /** Icon lookup. Returns `undefined` by default. */
   icon?: (id: string) => IconPath | undefined
   /** Current nesting depth. Defaults to 0. */
   depth?: number
   /** True when laying out for export/thumbnail; false for live editor. */
   headless?: boolean
+  /** Per-instance style overrides. When `surface` is a `Paint`, the block's surface context
+   *  is derived from the paint sampled at the block's box. */
+  style?: BlockStyleSpec
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -155,6 +163,25 @@ export function createLayoutContext(
 
   const measureText: MeasureTextProvider = options.measureText ?? estimateMetrics
 
+  // Deep copy the instance style so the context is structurally isolated.
+  const instanceStyle: BlockStyleSpec | undefined = options.style
+    ? JSON.parse(JSON.stringify(options.style))
+    : undefined
+
+  // If the instance style specifies a Paint surface, recompute the surface context
+  // from that paint sampled at this block's box.
+  let effectiveSurface = surface
+  if (instanceStyle?.surface && typeof instanceStyle.surface !== 'string') {
+    // It is a Paint (solid or gradient). The block's own box is at the origin
+    // in the block's local coordinate space (0,0,width,height), so we sample
+    // against the full box as the parent bounds.
+    effectiveSurface = surfaceFromPaint(
+      instanceStyle.surface as Paint,
+      { x: 0, y: 0, width: options.box.width, height: options.box.height },
+      { x: 0, y: 0, width: options.box.width, height: options.box.height },
+    )
+  }
+
   const resolveColorFn =
     options.resolveColor ??
     ((role: ColorRole | string) => defaultResolveColor(role, tokens))
@@ -164,17 +191,51 @@ export function createLayoutContext(
     ((token: TypeToken, over?: Partial<TextStyleSpec>) => defaultResolveText(token, over, tokens))
 
   const assetFn = options.asset ?? (() => undefined)
+  const resolveAssetFn = options.resolveAsset
   const iconFn = options.icon ?? (() => undefined)
   const depth = options.depth ?? 0
   const headless = options.headless ?? false
   const registry = options.registry
 
+  // Wrap resolveColor with instance style overrides: when the instance specifies
+  // `on`, `accent`, or `surface` as a literal hex / role string, honour it.
+  // A role-valued `on` still goes through the base resolveColor (contrast solver);
+  // a literal `on` is passed through directly (validation may warn later).
+  const wrappedResolveColor = (role: ColorRole | string): ResolvedColor => {
+    if (instanceStyle) {
+      // `on` and `accent` override specific foreground roles
+      if (role === 'text' && instanceStyle.on !== undefined) {
+        return resolveColorFn(instanceStyle.on)
+      }
+      if (role === 'accent' && instanceStyle.accent !== undefined) {
+        return resolveColorFn(instanceStyle.accent)
+      }
+      // `surface` override: when it's a string, resolve it through the base.
+      // When it's a Paint (gradient), the surface context already reflects it,
+      // so resolveColor('surface') simply returns the paint's solid representative.
+      if (role === 'surface' && instanceStyle.surface !== undefined) {
+        if (typeof instanceStyle.surface === 'string') {
+          return resolveColorFn(instanceStyle.surface)
+        }
+        // Paint: return the first stop colour as a solid representative.
+        const paint = instanceStyle.surface
+        if (paint.type === 'solid') {
+          return { color: paint.color, ratio: 1, ok: true }
+        }
+        const firstStop = paint.stops[0]
+        return { color: firstStop?.color ?? tokens.color.surface, ratio: 1, ok: true }
+      }
+    }
+    return resolveColorFn(role)
+  }
+
   // Build the context object with all methods bound.
   const ctx: LayoutContext = {
     box: { ...options.box },
     tokens,
-    surface,
-    resolveColor: resolveColorFn,
+    surface: effectiveSurface,
+    ...(instanceStyle ? { style: instanceStyle } : {}),
+    resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
     layoutChild: (spec: BlockSpec, box: Box): LayoutNode => {
@@ -203,24 +264,32 @@ export function createLayoutContext(
       // Build a child context with incremented depth.
       // Child sees only Size (width/height) — its coordinates are always
       // relative to the group that layoutChild wraps around it.
+      // Extract the child's own $block.style if present.
+      const childMeta = (spec.props as Record<string, unknown>)?.$block as
+        | Record<string, unknown>
+        | undefined
+      const childStyle = childMeta?.style as BlockStyleSpec | undefined
       const childCtx = createLayoutContext({
         box: { width: box.width, height: box.height },
         tokens,
-        surface,
+        surface: effectiveSurface,
         registry,
         measureText,
-        resolveColor: resolveColorFn,
+        resolveColor: wrappedResolveColor,
         resolveText: resolveTextFn,
         asset: assetFn,
+        resolveAsset: resolveAssetFn,
         icon: iconFn,
         depth: newDepth,
         headless,
+        style: childStyle,
       })
 
       const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
       return { k: 'group' as const, box, children: [childNode] }
     },
     asset: assetFn,
+    resolveAsset: resolveAssetFn,
     icon: iconFn,
     depth,
     headless,

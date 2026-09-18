@@ -37,18 +37,24 @@ export interface MotionPreset {
   readonly chain?: readonly string[]
   /** True for looping ambient presets (e.g. ken-burns). */
   readonly isAmbient?: boolean
+  /** When true, this preset is hidden from the digest (R7) and the inserter UI.
+   *  Retained in the catalogue so existing saved decks don't break, but not offered
+   *  to new users. A deprecated preset resolves to `null` effect (no animation) or
+   *  an alias for the nearest real effect — see individual entries. */
+  readonly deprecated?: boolean
 }
 
 // --- Preset catalog ----------------------------------------------------------
 
 export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
-  // §5.3 row 1 — no animation
+  // §5.3 row 1 — no animation (deprecated: resolves to null effect, hidden from digest R7)
   none: {
     id: 'none',
     properties: [],
     keyframes: {},
     duration: 'fast',
     easing: 'smoothOut',
+    deprecated: true,
   },
 
   // §5.3 row 2 — baseline fade
@@ -499,3 +505,12 @@ export type MotionPresetId = keyof typeof MOTION_PRESETS
 export function getPreset(id: string): MotionPreset | undefined {
   return MOTION_PRESETS[id]
 }
+
+/**
+ * All non-deprecated preset IDs in catalog order — the set the R7 digest and the
+ * inserter UI should offer. Deprecated presets (e.g. `none`) are still in the
+ * catalogue for backward compatibility but excluded from this list.
+ */
+export const ACTIVE_PRESET_IDS = Object.freeze(
+  Object.keys(MOTION_PRESETS).filter((id) => !MOTION_PRESETS[id].deprecated)
+) as readonly string[]

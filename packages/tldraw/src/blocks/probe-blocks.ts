@@ -135,7 +135,9 @@ export const probeMediaAndIcons: BlockDefinition = {
         box: { x: 10, y: 10, width: 200, height: 150 },
         part: 'photo',
         assetId: 'test-asset-1',
+        alt: 'Test photo',
         fit: 'cover',
+        url: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
       },
       {
         k: 'icon',

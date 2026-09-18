@@ -123,7 +123,16 @@ export function resolveBlockMotion(
   specMotion: BlockMotionSpec | undefined,
   definitionMotion: MotionRecipe
 ): ResolvedBlockMotion {
-  const presetId = specMotion?.preset ?? definitionMotion.preset ?? 'fade'
+  // When neither spec nor definition declares a preset and the definition has an
+  // empty (or absent) motion recipe, there is no block-level animation — return
+  // effect: null.  The 'fade' fallback only applies when *something* in the
+  // motion chain expressed intent (a preset, a trigger, or non-empty recipe).
+  const hasMotionIntent =
+    specMotion?.preset !== undefined ||
+    specMotion?.trigger !== undefined ||
+    specMotion?.order !== undefined ||
+    definitionMotion.preset !== undefined
+  const presetId = specMotion?.preset ?? definitionMotion.preset ?? (hasMotionIntent ? 'fade' : 'none')
   const effect = presetToEffect(presetId)
   const preset = MOTION_PRESETS[presetId]
   const fallbackDuration = preset ? DURATION_TOKENS[preset.duration] : BLOCK_DURATION_FALLBACK
@@ -156,6 +165,9 @@ export interface ResolvedPartMotion {
   easing: string
   /** Whether this preset is ambient (loops). */
   isAmbient: boolean
+  /** The resolved preset id for this part — used by `playBlockReveal` to detect
+   *  special presets like `count-up` that need a textContent tween. */
+  presetId?: string
 }
 
 /**
@@ -234,6 +246,7 @@ export function resolvePartMotion(
       delayMs,
       easing: partEasing,
       isAmbient,
+      presetId: partPresetId,
     }
   })
 }

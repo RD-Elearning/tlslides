@@ -136,6 +136,20 @@ export const tlsCHero: BlockDefinition = {
   kind: 'html',
   summary: HERO_SUMMARY,
   keywords: ['hero', 'opening', 'title', 'cover', 'splash', 'intro', 'landing'],
+  describe: {
+    when: 'Use as a title/cover slide — one idea in the title, date/audience in the subtitle.',
+    avoid: 'Do not use for content slides that have data or body text — use tls.t.title.',
+    example: {
+      id: 'b_hero',
+      type: 'tls.c.hero',
+      props: {
+        kicker: 'QUARTERLY REVIEW',
+        title: { runs: [{ text: 'Margin fell on ' }, { text: 'infrastructure', bold: true }] },
+        subtitle: { runs: [{ text: 'Q3 FY2026' }] },
+        cta: '',
+      },
+    },
+  },
   schema,
   defaults,
   size: { preferred: derivePreferredSize(), min: [400, 200] },

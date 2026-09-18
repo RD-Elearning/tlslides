@@ -16,6 +16,20 @@ export const tlsTQuote: BlockDefinition = {
   tier: 'A',
   summary: 'Pull quote with decorative quotation glyph, attribution, and role.',
   keywords: ['quote', 'blockquote', 'pull-quote', 'attribution', 'testimonial'],
+  describe: {
+    when: 'Use to feature a direct quote with attribution from a named person.',
+    avoid: 'Do not use for anonymous insights — use tls.t.takeaway instead.',
+    example: {
+      id: 'b_quote',
+      type: 'tls.t.quote',
+      props: {
+        text: 'The only way to do great work is to love what you do.',
+        attribution: 'Steve Jobs',
+        role: 'Co-founder, Apple',
+        markStyle: 'glyph',
+      },
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 400], min: [300, 200] },

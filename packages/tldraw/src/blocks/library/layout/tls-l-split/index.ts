@@ -17,6 +17,16 @@ export const tlsLSplit: BlockDefinition = {
   tier: 'A',
   summary: 'Two-panel split with configurable ratio and gutter.',
   keywords: ['split', 'columns', 'two-panel', 'sidebar'],
+  describe: {
+    when: 'Use to divide a region into two panels (left/right or top/bottom).',
+    avoid: 'Do not use for three or more panels — use tls.l.grid instead.',
+    example: {
+      id: 'b_split',
+      type: 'tls.l.split',
+      props: { ratio: 0.5, gutter: 'md', axis: 'x' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [100, 100] },

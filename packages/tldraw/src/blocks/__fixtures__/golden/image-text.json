@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "id": "golden-image-text",
+  "title": "Image + Text Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "image-left",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Our " }, { "text": "Vision", "bold": true }] }
+            }
+          }
+        ],
+        "image": [
+          {
+            "id": "b2",
+            "type": "tls.l.field",
+            "props": {}
+          }
+        ],
+        "text": [
+          {
+            "id": "b3",
+            "type": "tls.t.body",
+            "props": {
+              "text": { "runs": [{ "text": "We believe every team deserves a " }, { "text": "design system", "bold": true }, { "text": " that scales." }] }
+            }
+          },
+          {
+            "id": "b4",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Consistent brand across products" },
+                { "text": "Faster design-to-code handoff" },
+                { "text": "Reduced maintenance burden" }
+              ],
+              "marker": "chevron",
+              "spacing": "sm"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

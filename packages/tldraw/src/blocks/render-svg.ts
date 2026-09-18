@@ -263,12 +263,26 @@ function renderNodeInner(
 
     /* ── image ─────────────────────────────────────────────────────────────── */
     case 'image': {
-      const preserveAspectRatio =
-        node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'
+      // When url is provided, render <image> with the resolved asset URL.
+      // When missing (asset not resolved), render a dashed frame with alt text.
+      if (node.url) {
+        const preserveAspectRatio =
+          node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'
+        return (
+          `<image x="${node.box.x}" y="${node.box.y}" ` +
+          `width="${node.box.width}" height="${node.box.height}" ` +
+          `href="${escapeXml(node.url)}" preserveAspectRatio="${preserveAspectRatio}"/>`
+        )
+      }
+      // Missing-asset fallback: dashed rect with alt text.
+      const rx = typeof node.radius === 'number' ? ` rx="${node.radius}" ry="${node.radius}"` : ''
       return (
-        `<image x="${node.box.x}" y="${node.box.y}" ` +
-        `width="${node.box.width}" height="${node.box.height}" ` +
-        `href="${node.assetId}" preserveAspectRatio="${preserveAspectRatio}"/>`
+        `<rect x="${node.box.x}" y="${node.box.y}" ` +
+        `width="${node.box.width}" height="${node.box.height}"${rx} ` +
+        `${styleAttr('fill:none;stroke:#999;stroke-width:2;stroke-dasharray:6 3')}/>` +
+        `<text x="${node.box.x + node.box.width / 2}" y="${node.box.y + node.box.height / 2}" ` +
+        `${styleAttr('font-family:system-ui,sans-serif;font-size:14px;fill:#999;text-anchor:middle;dominant-baseline:central')}>` +
+        `${escapeXml(node.alt)}</text>`
       )
     }
 

@@ -17,6 +17,16 @@ export const tlsLSidebar: BlockDefinition = {
   tier: 'A',
   summary: 'Sidebar + main content layout with configurable width and side.',
   keywords: ['sidebar', 'panel', 'navigation', 'two-column'],
+  describe: {
+    when: 'Use to reserve a fixed-width panel on one side for navigation or meta content.',
+    avoid: 'Do not use for equal-width columns — use tls.l.split or tls.l.grid.',
+    example: {
+      id: 'b_sidebar',
+      type: 'tls.l.sidebar',
+      props: { sidebarWidth: 320, gutter: 'md', sidebarSide: 'start' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [200, 200] },

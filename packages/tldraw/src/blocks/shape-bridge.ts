@@ -2,7 +2,8 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, Box } from './types'
+import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, MotionRecipe, Box } from './types'
+import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
  * Reserved key under ComponentShape.props where block metadata is stored.
@@ -20,6 +21,11 @@ export interface BlockToShapeOptions {
   parentId?: string
   /** Z-order index within the parent. Defaults to `1`. */
   childIndex?: number
+  /** The block definition's default motion recipe. When provided, `deriveShapeAnimation` resolves
+   *  the block-level animation from the spec's motion + this definition default, instead of
+   *  falling back to a hardcoded FadeIn. Carried by `compileSlide` (which has a registry) so the
+   *  persisted `ShapeAnimation` reflects the real preset rather than Phase 18's placeholder. */
+  definitionMotion?: MotionRecipe
 }
 
 /**
@@ -86,15 +92,28 @@ export function blockToShape(
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
 
-  // Derive animation from motion if present
+  // Derive animation from motion if present.
+  // When a block definition's motion recipe is provided (via opts), use it as the
+  // fallback for preset resolution — this gives the real effect (FadeIn, SlideIn, etc.)
+  // instead of the Phase 18 hardcoded FadeIn. Without a definition, resolve purely from
+  // the spec's own fields (preset → effect mapping lives in resolve-motion.ts).
   let animation: ShapeAnimation | undefined = undefined
-  if (spec.motion && (spec.motion.order !== undefined || spec.motion.preset !== undefined)) {
-    animation = {
-      effect: AnimationEffect.FadeIn, // Phase 18 default; Phase 22 will expand this
-      trigger: spec.motion.trigger ?? AnimationTrigger.WithPrevious,
-      order: spec.motion.order ?? 0,
-      durationMs: typeof spec.motion.duration === 'number' ? spec.motion.duration : 400,
-      delayMs: typeof spec.motion.delay === 'number' ? spec.motion.delay : 0,
+  const defMotion = opts?.definitionMotion
+  if (defMotion) {
+    // Full resolution path: spec → definition → default preset.
+    animation = deriveShapeAnimation(spec.motion, defMotion)
+  } else if (spec.motion && (spec.motion.order !== undefined || spec.motion.preset !== undefined)) {
+    // Fallback: resolve from spec alone (no definition available). The effect mapping
+    // uses presetToEffect directly — the same four effects as the Phase 18 path.
+    const resolved = resolveBlockMotion(spec.motion, {})
+    if (resolved.effect !== null) {
+      animation = {
+        effect: resolved.effect,
+        trigger: resolved.trigger,
+        order: resolved.order,
+        durationMs: resolved.durationMs,
+        delayMs: resolved.delayMs,
+      }
     }
   }
 

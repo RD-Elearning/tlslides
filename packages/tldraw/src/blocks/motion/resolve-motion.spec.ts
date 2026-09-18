@@ -111,9 +111,9 @@ describe('resolveBlockMotion', () => {
     expect(result.durationMs).toBe(600) // spec duration overrides
   })
 
-  it('falls back to fade when neither has a preset', () => {
+  it('returns null effect when neither spec nor definition declares motion intent', () => {
     const result = resolveBlockMotion(undefined, {})
-    expect(result.effect).toBe(AnimationEffect.FadeIn)
+    expect(result.effect).toBeNull()
   })
 
   it('resolves duration token names from the motion scale', () => {

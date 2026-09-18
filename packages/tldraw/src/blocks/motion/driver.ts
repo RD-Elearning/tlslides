@@ -64,6 +64,12 @@ export interface MotionOptions {
   fill?: FillMode
   /** Delay in ms. */
   delay?: number
+  /** Optional progress callback, called with a 0→1 value as the animation advances.
+   *  Used by count-up textContent tweens — the callback writes the interpolated number
+   *  so the tween obeys `cancelAll()` and reduced motion (R5). The driver is not required
+   *  to call this at any specific frequency; the recording driver calls it once at the end
+   *  of `play()` with progress=1. */
+  onUpdate?: (progress: number) => void
 }
 
 // --- Handle -------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
-import type { Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
+import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
 
 /**
  * Derive the deck's resolved design tokens from the live document (`TDDocument.theme` +
@@ -73,11 +73,11 @@ export function useBlockSurface(box: Box): SurfaceContext {
  */
 export function useBlockLayoutContext(
   box: Box,
-  opts: { headless?: boolean; depth?: number } = {},
+  opts: { headless?: boolean; depth?: number; style?: BlockStyleSpec } = {},
 ): LayoutContext {
   const tokens = useDeckTokens()
   const surface = useBlockSurface(box)
-  const { headless = false, depth } = opts
+  const { headless = false, depth, style } = opts
 
   return React.useMemo(
     () =>
@@ -87,7 +87,8 @@ export function useBlockLayoutContext(
         surface,
         headless,
         depth,
+        style,
       }),
-    [box.width, box.height, tokens, surface, headless, depth],
+    [box.width, box.height, tokens, surface, headless, depth, style],
   )
 }

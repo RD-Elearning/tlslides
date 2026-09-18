@@ -17,6 +17,16 @@ export const tlsLSection: BlockDefinition = {
   tier: 'A',
   summary: 'Titled section with divider and content area.',
   keywords: ['section', 'title', 'heading', 'divider'],
+  describe: {
+    when: 'Use to introduce a named subsection within a region with a title + divider.',
+    avoid: 'Do not use for the top-level slide title — use tls.t.title.',
+    example: {
+      id: 'b_section',
+      type: 'tls.l.section',
+      props: { title: 'Revenue Drivers', gap: 'sm' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [100, 100] },

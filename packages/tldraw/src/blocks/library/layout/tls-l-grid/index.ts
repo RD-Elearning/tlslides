@@ -16,6 +16,16 @@ export const tlsLGrid: BlockDefinition = {
   tier: 'A',
   summary: 'Grid layout with configurable columns, rows, and gap.',
   keywords: ['grid', 'columns', 'rows', 'table'],
+  describe: {
+    when: 'Use to arrange child blocks in a rows × columns grid.',
+    avoid: 'Do not use for simple two-column layouts — use tls.l.split instead.',
+    example: {
+      id: 'b_grid',
+      type: 'tls.l.grid',
+      props: { columns: 2, rows: 2, gap: 'md' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [100, 100] },

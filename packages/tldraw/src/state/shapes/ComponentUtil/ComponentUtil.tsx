@@ -90,9 +90,13 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       // `useDeckTokens`/`useBlockSurface` are memoised so an unrelated store tick doesn't produce
       // a new object here. See `hooks/useDeckTokens.ts` for why this doesn't call
       // `blocks/deck-context.ts`'s `deckLayoutContext` (it can't carry this shape's position).
+      const blockMeta = (props as Record<string, unknown>).$block as
+        | Record<string, unknown>
+        | undefined
+      const blockStyle = blockMeta?.style as import('~blocks/types').BlockStyleSpec | undefined
       const layoutCtx = useBlockLayoutContext(
         { x: shape.point[0], y: shape.point[1], width: size[0], height: size[1] },
-        { headless: false },
+        { headless: false, style: blockStyle },
       )
 
       // When a BlockDefinition exists in the BlockRegistry for this componentId, render

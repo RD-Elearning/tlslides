@@ -156,9 +156,12 @@
               { "text": "margin first", "bold": true }
             ] }, "size": "display", "align": "start", "rule": true },
             "motion": { "preset": "closing-in", "order": 1 } },
+          { "id": "b_06_image", "type": "tls.m.image",
+            "props": { "src": "closing-photo", "alt": "Team planning session", "fit": "cover", "focal": [0.5, 0.4], "radius": 8 },
+            "motion": { "preset": "fade-up", "order": 2, "trigger": "afterPrevious" } },
           { "id": "b_06_body", "type": "tls.t.body",
             "props": { "text": "Commit reservations drop on 1 Nov. Two pilots convert or close. Support ratio capped at 40 accounts per engineer.", "columns": 1, "align": "start" },
-            "motion": { "preset": "fade-up", "order": 2, "trigger": "onClick" } }
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "onClick" } }
         ]
       },
       "free": [

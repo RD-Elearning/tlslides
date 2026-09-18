@@ -225,7 +225,12 @@ export function compileSlide(
         })
       }
 
-      const shape = blockToShape(block, box, { childIndex: childIndex++ })
+      // Look up the block definition for motion resolution.
+      const blockDef = registry?.get(block.type)
+      const shape = blockToShape(block, box, {
+        childIndex: childIndex++,
+        definitionMotion: blockDef?.motion,
+      })
       shapes.push(shape)
       currentY += blockHeight + gap
     }
@@ -234,7 +239,11 @@ export function compileSlide(
   // 4. Handle spec.free[] — place them directly using their explicit box.
   if (spec.free) {
     for (const entry of spec.free) {
-      const shape = blockToShape(entry.block, entry.box, { childIndex: childIndex++ })
+      const blockDef = registry?.get(entry.block.type)
+      const shape = blockToShape(entry.block, entry.box, {
+        childIndex: childIndex++,
+        definitionMotion: blockDef?.motion,
+      })
       shapes.push(shape)
     }
   }

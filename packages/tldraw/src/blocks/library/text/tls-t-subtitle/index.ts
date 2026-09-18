@@ -15,11 +15,23 @@ export const tlsTSubtitle: BlockDefinition = {
   name: 'Subtitle',
   family: 'text',
   tier: 'A',
-  summary: 'Secondary heading below the title, with inline styling.',
-  keywords: ['subtitle', 'secondary', 'subheading', 'supporting'],
+  summary: 'Secondary heading below the title with RichText support.',
+  keywords: ['subtitle', 'subheading', 'secondary'],
+  describe: {
+    when: 'Use to add context, date, or audience below the title.',
+    avoid: 'Do not use for long paragraphs — use tls.t.body instead.',
+    example: {
+      id: 'b_sub',
+      type: 'tls.t.subtitle',
+      props: {
+        text: { runs: [{ text: 'Q3 FY2026 · prepared for the ' }, { text: 'board', italic: true }] },
+        align: 'start',
+      },
+    },
+  },
   schema,
   defaults,
-  size: { preferred: [800, 60], min: [200, 30] },
+  size: { preferred: [800, 80], min: [200, 30] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

@@ -17,6 +17,16 @@ export const tlsLCard: BlockDefinition = {
   tier: 'A',
   summary: 'Filled container with configurable padding.',
   keywords: ['card', 'container', 'padding', 'filled'],
+  describe: {
+    when: 'Use to group children inside a visible, padded container.',
+    avoid: 'Do not use for transparent grouping — use tls.l.stack without style.',
+    example: {
+      id: 'b_card',
+      type: 'tls.l.card',
+      props: { padding: 'md' },
+      children: [],
+    },
+  },
   schema,
   defaults,
   size: { preferred: [800, 600], min: [100, 100] },

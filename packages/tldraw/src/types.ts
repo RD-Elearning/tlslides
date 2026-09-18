@@ -488,6 +488,10 @@ export interface ShapeAnimation {
   order: number // build order within the slide
   durationMs: number
   delayMs: number
+  /** CSS easing string — optional, additive (R5). When present, the viewer/PresentationRuntime
+   *  uses this instead of the effect's default easing. Carried from the motion spec's resolved
+   *  easing through `blockToShape` → shape → viewer. */
+  easing?: string
 }
 
 export interface DrawShape extends TDBaseShape {

@@ -1,5 +1,5 @@
 /**
- * Motion system barrel — tokens + driver.
+ * Motion system barrel — tokens + driver + presets + play-reveal.
  */
 
 // Token data (05-motion-system.md §5.2)
@@ -29,6 +29,7 @@ export type {
 export {
   MOTION_PRESETS,
   PRESET_IDS,
+  ACTIVE_PRESET_IDS,
   getPreset,
 } from './presets'
 export type { MotionPreset, MotionPresetId } from './presets'
@@ -39,3 +40,7 @@ export { createWAAPI_driver } from './waapi-driver'
 // GSAP driver adapter (host-injected, optional)
 export { createGsapDriver } from './gsap-driver'
 export type { GsapInstance, GsapTimeline, GsapVars } from './gsap-driver'
+
+// Play-reveal: shared block-reveal function (R5)
+export { playBlockReveal } from './play-reveal'
+export type { PlayBlockRevealContext } from './play-reveal'

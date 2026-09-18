@@ -20,6 +20,7 @@ import type {
   ResolvedTokens,
   SurfaceContext,
   HtmlTemplateContext,
+  LayoutContext,
 } from './types'
 import type { BlockDefinition } from './types'
 import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
@@ -124,6 +125,7 @@ const useIsomorphicLayoutEffect =
  */
 export const HOST_CSS_VARS = [
   '--tls-surface',
+  '--tls-surface-color',
   '--tls-on',
   '--tls-accent',
   '--tls-text-muted',
@@ -143,8 +145,29 @@ function hostCssVarStyle(
   tokens: ResolvedTokens,
   surface: SurfaceContext,
 ): React.CSSProperties {
+  // --tls-surface: CSS gradient string for gradient, hex for solid.
+  // --tls-surface-color: solid fallback (first stop for gradient, hex for solid).
+  let surfaceCss: string
+  let surfaceColor: string
+  const behind = surface.behind
+  if (behind.type === 'solid') {
+    surfaceCss = behind.color
+    surfaceColor = behind.color
+  } else if (behind.type === 'linearGradient') {
+    const stops = behind.stops.map((s) => `${s.color} ${s.at * 100}%`).join(', ')
+    surfaceCss = `linear-gradient(${behind.angle}deg, ${stops})`
+    surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
+  } else if (behind.type === 'radialGradient') {
+    const stops = behind.stops.map((s) => `${s.color} ${s.at * 100}%`).join(', ')
+    surfaceCss = `radial-gradient(circle at ${behind.cx * 100}% ${behind.cy * 100}%, ${stops})`
+    surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
+  } else {
+    surfaceCss = tokens.color.surface
+    surfaceColor = tokens.color.surface
+  }
   return {
-    '--tls-surface': surface.behind.type === 'solid' ? surface.behind.color : tokens.color.surface,
+    '--tls-surface': surfaceCss,
+    '--tls-surface-color': surfaceColor,
     '--tls-on': tokens.color.text,
     '--tls-accent': tokens.color.accent,
     '--tls-text-muted': tokens.color.textMuted,
@@ -546,19 +569,51 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
     }
 
     case 'image': {
-      const imgStyle: React.CSSProperties = {
+      const objectPosition = node.focal
+        ? `${node.focal[0] * 100}% ${node.focal[1] * 100}%`
+        : undefined
+      // When url is provided, render <img> with the resolved asset URL.
+      // When missing (asset not resolved), render a dashed frame with alt text.
+      if (node.url) {
+        const imgStyle: React.CSSProperties = {
+          ...pos,
+          objectFit: node.fit,
+          objectPosition,
+          borderRadius: node.radius ? `${node.radius}px` : undefined,
+        }
+        return (
+          <img
+            key={part ?? undefined}
+            src={node.url}
+            alt={node.alt}
+            style={imgStyle}
+            {...(part ? { 'data-part': part } : {})}
+          />
+        )
+      }
+      // Missing-asset fallback: dashed frame with alt text centred inside.
+      const placeholderStyle: React.CSSProperties = {
         ...pos,
-        objectFit: node.fit,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '2px dashed #999',
         borderRadius: node.radius ? `${node.radius}px` : undefined,
+        color: '#999',
+        fontSize: '14px',
+        fontFamily: 'system-ui, sans-serif',
+        textAlign: 'center',
+        padding: '8px',
+        boxSizing: 'border-box',
       }
       return (
-        <img
+        <div
           key={part ?? undefined}
-          data-src={node.assetId}
-          alt=""
-          style={imgStyle}
+          style={placeholderStyle}
           {...(part ? { 'data-part': part } : {})}
-        />
+        >
+          {node.alt}
+        </div>
       )
     }
 

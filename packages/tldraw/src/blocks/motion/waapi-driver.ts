@@ -142,22 +142,41 @@ export function createWAAPI_driver(): MotionDriver {
 
     const cleanup = applyWillChange(target, keyframes)
     const waaKeyframes = toWAAPIKeyframes(keyframes)
+    const duration = opts.duration ?? 300
     const animation = target.animate(waaKeyframes, {
-      duration: opts.duration ?? 300,
+      duration,
       easing: opts.easing ?? 'ease-out',
       fill: opts.fill ?? 'forwards',
       delay: opts.delay ?? 0,
     })
     active.add(animation)
 
+    // Fire onUpdate(progress) on each animation frame when provided.
+    let rafId: number | undefined
+    if (opts.onUpdate) {
+      const onUpdate = opts.onUpdate
+      const startTime = performance.now() + (opts.delay ?? 0)
+      const tick = () => {
+        const elapsed = performance.now() - startTime
+        const progress = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 1
+        onUpdate(progress)
+        if (progress < 1) {
+          rafId = requestAnimationFrame(tick)
+        }
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
     // Settle will-change cleanup on both resolve and reject (cancel).
     const finished = animation.finished.then(
       () => {
         active.delete(animation)
+        if (rafId !== undefined) cancelAnimationFrame(rafId)
         cleanup()
       },
       () => {
         active.delete(animation)
+        if (rafId !== undefined) cancelAnimationFrame(rafId)
         cleanup()
       }
     )

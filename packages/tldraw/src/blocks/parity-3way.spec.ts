@@ -30,7 +30,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { deckSpecToDocument } from './deck-document'
 import { shapeToBlock } from './shape-bridge'
-import { deckLayoutContext } from './deck-context'
+import { deckLayoutContext, contextForBlock } from './deck-context'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { renderNodeToSvg } from './render-svg'
@@ -63,11 +63,10 @@ function orderedShapes(page: TDPage): ComponentShape[] {
 function canonicalNode(page: TDPage, shape: ComponentShape): LayoutNode | undefined {
   const def = registry.get(shape.componentId)
   if (!def) return undefined
-  const ctx = deckLayoutContext(
-    document,
-    { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] },
-    { headless: false, slideBackground: page.background }
-  )
+  const ctx = contextForBlock(shape, document, {
+    headless: false,
+    slideBackground: page.background,
+  })
   return def.layout(shape.props, ctx)
 }
 
@@ -385,11 +384,10 @@ function renderPageToSvgDefault(page: TDPage): string {
 function blocksCallback(page: TDPage, shape: ComponentShape): string | undefined {
   const def = registry.get(shape.componentId)
   if (!def) return undefined
-  const ctx = deckLayoutContext(
-    document,
-    { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] },
-    { headless: true, slideBackground: page.background }
-  )
+  const ctx = contextForBlock(shape, document, {
+    headless: true,
+    slideBackground: page.background,
+  })
   const node = def.layout(shape.props, ctx)
   return renderNodeToSvg(node)
 }

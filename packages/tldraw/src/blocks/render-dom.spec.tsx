@@ -81,7 +81,9 @@ function makeImage(overrides?: Partial<LayoutNode & { k: 'image' }>): LayoutNode
     k: 'image',
     box: BOX,
     assetId: 'asset-1',
+    alt: 'Test image',
     fit: 'cover',
+    url: 'asset-1',
     ...overrides,
   } as LayoutNode
 }
