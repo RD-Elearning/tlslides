@@ -169,7 +169,7 @@ read them before the **Do** list, not after.
 
 ### Phase A — The demo stops lying; the HTML/GSAP door is open
 
-#### R0 · Demo polish — the six review findings · S · ⬜
+#### R0 · Demo polish — the six review findings · S · ✅
 
 **Goal.** A person opening `/view` and `/edit` sees a deck with no overlapping text, an editor
 that shows every block, and no chrome covering the slide.
@@ -311,7 +311,7 @@ and ordered.
 
 ---
 
-#### R1 · The host-node contract — a real lifecycle for DOM blocks · S · ⬜
+#### R1 · The host-node contract — a real lifecycle for DOM blocks · S · ✅
 
 **Goal.** A `k: 'host'` node mounts real DOM through a registered renderer, gets updated when
 props change, is torn down cleanly, and hands its root element to whoever wants to animate it.
@@ -419,7 +419,7 @@ pattern already has a precedent to copy: `BlockRegistryContext` / `useBlockRegis
 
 ---
 
-#### R2 · `kind: 'html'` blocks — author a block as a template, get a poster for free · M · ⬜
+#### R2 · `kind: 'html'` blocks — author a block as a template, get a poster for free · M · ✅
 
 **Goal.** A block author writes an HTML template plus a schema and a short description and gets a
 block that the editor and the viewer render as real DOM, the SVG path renders as a still, the
@@ -527,7 +527,7 @@ test). The demo JSON is updated to use the hero on slide 1.
 
 ---
 
-#### R3 · GSAP adapter and the per-block animation hook · M · ⬜
+#### R3 · GSAP adapter and the per-block animation hook · M · ✅
 
 **Goal.** A host that has GSAP passes it in once; html blocks that declare `animate()` get a
 timeline positioned inside the slide's build-step choreography; hosts without GSAP get the WAAPI
@@ -637,7 +637,7 @@ backfill this — it would duplicate work R12 already plans.
 
 ---
 
-#### R0.5 · Phase A hardening — fix the gaps a post-implementation read found · S · ⬜
+#### R0.5 · Phase A hardening — fix the gaps a post-implementation read found · S · ✅
 
 **Goal.** R0–R3 are implemented and committed (`9247b411`, `1b563172`, `1885920e`, `cb151a3d`);
 the full `packages/tldraw` suite is green (1132 tests). A code-reading verification pass on
@@ -789,7 +789,7 @@ fix pass). No new npm dependency. No `TldrawApp.version` bump.
 
 ### Phase B — Every field the vision needs is live; the catalog is legible to a model
 
-#### R4 · Wire `BlockStyleSpec` — per-instance colors, gradient backgrounds · M · ⬜
+#### R4 · Wire `BlockStyleSpec` — per-instance colors, gradient backgrounds · M · ✅
 
 **Goal.** `style.surface`, `style.on`, `style.accent` on a block instance actually change what
 renders, `style.surface` may be a `Paint` (so a linear gradient), and the contrast solver still
@@ -862,7 +862,7 @@ luminance sampling — already written for slide backgrounds), `blocks/shape-bri
 
 ---
 
-#### R5 · Motion wiring — presets, delay, duration, stagger and parts actually play · M · ⬜
+#### R5 · Motion wiring — presets, delay, duration, stagger and parts actually play · M · ✅
 
 **Goal.** The preset a block declares is what plays; `delay`, `duration`, `stagger`, `ease` are
 honoured; part-level choreography (bullets one by one, count-up on a hero number, bars growing)
@@ -938,7 +938,7 @@ driver receives zero calls). `resolvePartMotion` has call sites outside its own 
 
 ---
 
-#### R6 · `blockShowDuration` and `slideTimeline` — the numbers the backend plans with · S · ⬜
+#### R6 · `blockShowDuration` and `slideTimeline` — the numbers the backend plans with · S · ✅
 
 **Goal.** Pure functions that tell the backend, the viewer and the digest exactly how long a
 block takes to appear and when each block of a slide starts and ends.
@@ -985,7 +985,7 @@ test with the recording driver asserts the viewer's last driver call finishes at
 
 ---
 
-#### R7 · Capability digest v2 — everything the model needs, machine-readable too · M · ⬜
+#### R7 · Capability digest v2 — everything the model needs, machine-readable too · M · ✅
 
 **Goal.** One generated document (Markdown for the prompt) and one generated JSON Schema (for
 FastAPI validation and structured output) that together let an LLM pick a block, fill it, style
@@ -1019,7 +1019,7 @@ exceeded).
 
 ---
 
-#### R8 · `tls.m.image` — the first media block, and asset resolution · S · ⬜
+#### R8 · `tls.m.image` — the first media block, and asset resolution · S · ✅
 
 **Goal.** An image block (fit `cover | contain`, focal point, optional caption, alt text) so
 composites in R9/R10 have a picture to include. Today no library block emits an `image` node.
@@ -1269,6 +1269,14 @@ implied by a green suite:
 - **Accepted debt (unchanged):** the pre-existing `LayoutNode` discriminated-union narrowing errors
   in ~10 spec files (and the 22 in `tls-m-image.spec.ts`) remain, per item 0. No non-spec type error
   is introduced.
+
+**Independent re-verification (2026-09-18).** A reviewer pass re-checked all 16 items against
+current source rather than trusting these notes, red-verifying items 1, 2, 3, 8, 9, 10, 11, 12, 13,
+14 by reverting each fix and confirming its test fails pre-fix / passes post-fix. All 16 confirmed
+genuinely implemented; item 7's gsap-dependency screenshot blocker is still open (accurately
+disclosed above, not silently dropped) and item 5/12 are honest-but-narrower-than-literal-wording
+matches, noted above as such. Suite counts reconfirmed: 66 suites / 1306 passed / 0 failing,
+`eslint src/blocks` 0 errors. No new gap found — Phase A and Phase B (R0–R8, R0.5, B.5) are done.
 
 ---
 
