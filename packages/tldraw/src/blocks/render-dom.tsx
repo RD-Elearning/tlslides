@@ -201,6 +201,17 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
 
+      // R0.5 item 3: If this block has animate(), hide parts immediately so they
+      // don't flash at full opacity between the layout effect (mount) and the
+      // plain effect (reveal trigger in DeckViewer). animate()'s "from" state
+      // will override this when it runs.
+      if (def.html!.animate) {
+        const parts = root.querySelectorAll('[data-part]')
+        for (let i = 0; i < parts.length; i++) {
+          ;(parts[i] as HTMLElement).style.opacity = '0'
+        }
+      }
+
       // If animate is defined and a BlockMotionRuntime is provided, call it.
       // When blockMotion is absent (e.g. initial load in editor), animate is skipped —
       // the block behaves as any other shape (rule 5: motion is off by default).

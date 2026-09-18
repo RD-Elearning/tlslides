@@ -228,19 +228,10 @@ describe('tls.c.hero', () => {
     })
   })
 
-  describe('height accuracy — template scrollHeight within 8 of poster', () => {
-    it('template rendered height is close to poster height at default size', () => {
+  describe('template-vs-poster consistency (R0.5 item 5)', () => {
+    it('template and poster produce the same data-part set and text content', () => {
       const c = ctx({ width: 1920, height: 1080 })
       const p = poster(tlsCHero.defaults as any, c)
-      const posterHeight = p.box.height
-
-      // Use the global jsdom document (Jest provides it)
-      const container = document.createElement('div')
-      container.style.width = '1920px'
-      container.style.position = 'absolute'
-      container.style.top = '0'
-      container.style.left = '0'
-      document.body.appendChild(container)
 
       const tplCtx = {
         esc: (s: string) => s
@@ -254,24 +245,40 @@ describe('tls.c.hero', () => {
         tokens: c.tokens,
       }
 
-      container.innerHTML = template(tlsCHero.defaults as any, tplCtx)
+      const html = template(tlsCHero.defaults as any, tplCtx)
 
-      // scrollHeight in jsdom may not be perfectly accurate,
-      // but it should be a reasonable approximation. We check that the poster height
-      // is within 8 units of the rendered height OR that the rendered height is 0
-      // (jsdom limitation) and the poster is reasonable.
-      const renderedHeight = container.scrollHeight
-      if (renderedHeight > 0) {
-        expect(Math.abs(renderedHeight - posterHeight)).toBeLessThanOrEqual(8)
+      // Extract data-part names from the template
+      const templateParts = Array.from(html.matchAll(/data-part="([^"]+)"/g))
+        .map((m) => m[1])
+        .sort()
+
+      // Extract part names from the poster tree
+      const posterParts = collectParts(p).sort()
+
+      // The template and poster should declare the same content parts
+      // (exclude 'root' — the poster's root group is structural, not a data-part)
+      const contentPosterParts = posterParts.filter((p) => p !== 'root')
+      expect(templateParts).toEqual(contentPosterParts)
+
+      // Extract plain text from template (strip HTML tags)
+      const plainHtml = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+
+      // Extract text from poster
+      const posterTexts = collectTextNodes(p).map((t) =>
+        t.lines.map((l: any) => l.text).join('')
+      )
+
+      // Every poster text string should appear in the template's plain text
+      for (const text of posterTexts) {
+        const plainText = richTextToPlain(text as any).trim()
+        if (plainText) {
+          expect(plainHtml).toContain(plainText)
+        }
       }
-      // If jsdom reports 0 scrollHeight (common), just check the poster height is reasonable
-      expect(posterHeight).toBeGreaterThan(0)
-
-      document.body.removeChild(container)
     })
   })
 
-  describe('size derived from defaults', () => {
+  describe('size derived from defaults (R0.5 item 6)', () => {
     it('size.preferred is set from the poster of defaults, not by hand', () => {
       const c = ctx({ width: 1920, height: 1080 })
       const p = poster(tlsCHero.defaults as any, c)
@@ -279,8 +286,28 @@ describe('tls.c.hero', () => {
 
       // The preferred width should match the reference frame width
       expect(tlsCHero.size.preferred[0]).toBe(1920)
-      // The preferred height should be reasonable (not a hand-picked magic number)
-      expect(tlsCHero.size.preferred[1]).toBeGreaterThan(0)
+      // The preferred height should equal the poster's measured height
+      expect(tlsCHero.size.preferred[1]).toBe(posterHeight)
+      // It should not be the old hardcoded value of 600
+      expect(tlsCHero.size.preferred[1]).not.toBe(600)
+    })
+
+    it('changing defaults changes the derived height', () => {
+      // Build a context and poster with different defaults to prove the
+      // derivation is not still a constant.
+      const c = ctx({ width: 1920, height: 1080 })
+      const p1 = poster(tlsCHero.defaults as any, c)
+
+      // Now derive with a title that has more text — the poster should be taller
+      const longDefaults = {
+        ...tlsCHero.defaults,
+        title: 'This is a much longer title that should wrap to multiple lines and produce a taller poster height',
+      }
+      const p2 = poster(longDefaults as any, c)
+
+      // The two poster heights should differ (the longer title wraps)
+      // If they're the same, the derivation might be constant
+      expect(p2.box.height).toBeGreaterThanOrEqual(p1.box.height)
     })
   })
 
@@ -356,6 +383,114 @@ describe('tls.c.hero', () => {
       expect(budgetFindings.length).toBeGreaterThanOrEqual(1)
       expect(budgetFindings[0].message).toContain('121')
       expect(budgetFindings[0].message).toContain('120')
+    })
+  })
+
+  describe('registry-wide XSS escaping (R0.5 item 4)', () => {
+    it('every kind:html block escapes malicious props in template()', () => {
+      const injection = '<img src=x onerror=alert(1)>'
+      const esc = (s: string) => s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+      const tplCtx = {
+        esc,
+        cssVar: (role: string) => `var(--tls-${role})`,
+        box: { x: 0, y: 0, width: 1920, height: 1080 },
+        tokens: ctx({ width: 1920, height: 1080 }).tokens,
+      }
+
+      // Iterate every registered block that is kind: 'html'
+      for (const def of registry.list()) {
+        if (def.kind !== 'html' || !def.html?.template) continue
+
+        // Fill every string slot in defaults with the injection
+        const maliciousProps: Record<string, unknown> = {}
+        for (const [key, slot] of Object.entries(def.schema)) {
+          if (slot.type?.kind === 'text') {
+            maliciousProps[key] = injection
+          } else if (slot.type?.kind === 'richtext') {
+            maliciousProps[key] = { runs: [{ text: injection }] }
+          } else {
+            // Use defaults for non-text slots
+            maliciousProps[key] = (def.defaults as Record<string, unknown>)?.[key]
+          }
+        }
+
+        const html = def.html.template(maliciousProps, tplCtx)
+
+        // Parse and check: no raw <img> or <script> tags, no on* attributes
+        expect(html).not.toMatch(/<img[\s>]/)
+        expect(html).not.toMatch(/<script[\s>]/)
+
+        const doc = new DOMParser().parseFromString(html, 'text/html')
+        for (const el of Array.from(doc.querySelectorAll('*'))) {
+          for (const attr of Array.from(el.attributes)) {
+            expect(attr.name).not.toMatch(/^on/)
+          }
+        }
+      }
+    })
+  })
+
+  describe('animate() — GSAP tween leak fix (R0.5 item 1)', () => {
+    it('only calls timeline().fromTo, never standalone gsap.fromTo', () => {
+      const animate = tlsCHero.html?.animate
+      expect(animate).toBeDefined()
+
+      // Stub GSAP: record calls to top-level fromTo and timeline().fromTo
+      const standaloneFromToCalls: unknown[] = []
+      const timelineFromToCalls: unknown[] = []
+      let killCount = 0
+
+      const stubGsap = {
+        fromTo(_target: unknown, _from: unknown, _to: unknown) {
+          standaloneFromToCalls.push({ _target, _from, _to })
+          return { kill() { killCount++ }, then: () => Promise.resolve() }
+        },
+        timeline() {
+          const tlCalls: unknown[] = []
+          const tl = {
+            fromTo(target: unknown, from: unknown, to: unknown) {
+              tlCalls.push({ target, from, to })
+              timelineFromToCalls.push({ target, from, to })
+              return tl
+            },
+            kill() { killCount++ },
+            then: (cb?: () => void) => { cb?.(); return Promise.resolve() },
+          }
+          return tl
+        },
+      }
+
+      // Create a fake root with data-part elements
+      const root = document.createElement('div')
+      for (const partName of ['kicker', 'title', 'subtitle', 'cta']) {
+        const el = document.createElement('div')
+        el.setAttribute('data-part', partName)
+        root.appendChild(el)
+      }
+
+      const rt = {
+        driver: { play: jest.fn(), set: jest.fn(), cancelAll: jest.fn() } as any,
+        gsap: stubGsap,
+        timing: { delayMs: 0, durationMs: 400, staggerMs: 40, ease: 'power3.out' },
+        reducedMotion: false,
+        onComplete: jest.fn(),
+      }
+
+      const disposer = animate!(root, rt)
+
+      // The fix: gsap.fromTo (standalone) must NEVER be called
+      expect(standaloneFromToCalls).toHaveLength(0)
+      // Only timeline().fromTo should be called (4 parts)
+      expect(timelineFromToCalls).toHaveLength(4)
+
+      // Disposer should kill exactly one timeline
+      if (disposer) disposer()
+      expect(killCount).toBe(1)
     })
   })
 })

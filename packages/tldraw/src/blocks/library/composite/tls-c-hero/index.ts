@@ -19,6 +19,9 @@ import { schema, defaults } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { motion } from './motion'
+import { createLayoutContext } from '../../../layout/layout-child'
+import { resolveTokens } from '../../../tokens'
+import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
 
 /** Summary for the AI: what this block is and when to use it. */
 const HERO_SUMMARY =
@@ -43,15 +46,22 @@ function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutN
 }
 
 /**
- * Derive `size.preferred` from the poster of the defaults. The poster's root
- * box gives the intrinsic content size at the reference frame width.
+ * Derive `size.preferred` from the poster of the defaults. Builds a reference
+ * LayoutContext at 1920-wide with the default theme's tokens and calls poster()
+ * to get the real intrinsic height.
  */
 function derivePreferredSize(): [number, number] {
-  // The hero fills the slide width; preferred height is derived from the poster
-  // of defaults at a 1920-wide reference frame. We set a reasonable default and
-  // let the poster's geometry correct it at layout time. The inserter uses this
-  // to determine initial box size.
-  return [1920, 600]
+  const REFERENCE_WIDTH = 1920
+  const REFERENCE_HEIGHT = 1080
+  const theme = BUILT_IN_DECK_THEMES[0] // mono-grid (the demo's default)
+  const tokens = resolveTokens(theme)
+  const ctx = createLayoutContext({
+    box: { width: REFERENCE_WIDTH, height: REFERENCE_HEIGHT },
+    tokens,
+    surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
+  })
+  const posterNode = poster(defaults, ctx)
+  return [REFERENCE_WIDTH, posterNode.box.height]
 }
 
 /**
@@ -84,10 +94,6 @@ function heroAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => v
     const durationSec = rt.timing.durationMs / 1000
 
     parts.forEach((part, i) => {
-      gsap.fromTo(part,
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: durationSec, delay: i * staggerSec, ease: 'power3.out' }
-      )
       tl.fromTo(part,
         { opacity: 0, y: 24 },
         { opacity: 1, y: 0, duration: durationSec, delay: i * staggerSec, ease: 'power3.out' }

@@ -624,6 +624,17 @@ that makes it useful.
 Bundle size of `dist/index.js` grows by no more than 4 KB (the driver itself), and `gsap`
 appears nowhere in it.
 
+**R0.5 item 10 — architecture deviation (recorded 2026-09-18).** The plan's Do item 2 said the
+motion runtime would reach a block's `animate()` via `HostRenderContext.motion` →
+`HostRenderer.mount`, wired for both the editor and the viewer. **What was actually built:**
+`animate()` is driven from a standalone `useEffect` inside `DeckViewer.tsx` that reaches into the
+DOM (`el.querySelector('[data-render]')`) and calls `blockDef.html.animate()` directly, bypassing
+`HostRenderContext.motion` entirely (it is never populated). **The editor's build-step preview does
+not play `animate()`/GSAP reveals in Phase A** — only the viewer does. This is an explicit scope
+cut, not a bug: R12's inspector Preview button (Phase C) will wire `playBlockReveal` for html
+blocks, and that is the correct time to extend `animate()` to the editor. R5 should not attempt to
+backfill this — it would duplicate work R12 already plans.
+
 ---
 
 #### R0.5 · Phase A hardening — fix the gaps a post-implementation read found · S · ⬜

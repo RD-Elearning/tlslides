@@ -307,9 +307,10 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const animateCompletersRef = React.useRef<Map<string, () => void>>(new Map())
 
   /**
-   * Timeout handles for blocks that never call `onComplete`. Cleared on cancel/dispose.
+   * Timeout handles for blocks that never call `onComplete`. Keyed by shapeId
+   * so each shape's onComplete only clears its own timeout, not every pending one.
    */
-  const animateTimeoutsRef = React.useRef<Map<ReturnType<typeof setTimeout>, unknown>>(new Map())
+  const animateTimeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   /** Kill all animate()-started timelines and clear tracking state. */
   const cancelAllAnimate = React.useCallback(() => {
@@ -317,7 +318,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       disposer()
     }
     animateDisposersRef.current.clear()
-    for (const timeout of animateTimeoutsRef.current.keys()) {
+    for (const timeout of animateTimeoutsRef.current.values()) {
       clearTimeout(timeout)
     }
     animateTimeoutsRef.current.clear()
@@ -465,10 +466,11 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                 resolve()
                 animateCompletersRef.current.delete(shapeId)
               }
-              // Clear timeout
-              for (const [timeout] of animateTimeoutsRef.current) {
-                animateTimeoutsRef.current.delete(timeout)
-                clearTimeout(timeout)
+              // Clear only this shape's timeout, not every pending one
+              const t = animateTimeoutsRef.current.get(shapeId)
+              if (t) {
+                clearTimeout(t)
+                animateTimeoutsRef.current.delete(shapeId)
               }
             },
           }
@@ -487,7 +489,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
             )
             rt.onComplete()
           }, durationMs + 2000)
-          animateTimeoutsRef.current.set(timeout, shapeId)
+          animateTimeoutsRef.current.set(shapeId, timeout)
 
         } else if (hasAnimate && !isRevealed) {
           // Block is hidden — cancel any running animate for this shape

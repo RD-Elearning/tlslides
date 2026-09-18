@@ -636,6 +636,32 @@ describe('icon features', () => {
   })
 })
 
+/* ── Host node with poster (R1 Expected Output) ─────────────────────────────── */
+
+describe('host node with poster', () => {
+  it('renders poster subtree instead of dashed placeholder', () => {
+    const posterNode: LayoutNode = {
+      k: 'group',
+      box: { x: 0, y: 0, width: 400, height: 200 },
+      children: [
+        { k: 'text', box: { x: 10, y: 10, width: 380, height: 40 }, lines: [{ text: 'Hero Title', baseline: 30, width: 200 }], style: { family: 'sans', size: 32, lineHeight: 1.2, color: '#000' } },
+        { k: 'rect', box: { x: 10, y: 60, width: 380, height: 2 }, fill: '#ccc' },
+      ],
+    }
+    const node: LayoutNode = { k: 'host', box: { x: 0, y: 0, width: 400, height: 200 }, render: 'test', poster: posterNode }
+    const svg = renderNodeToSvg(node)
+    // Should contain the poster's text, not the dashed placeholder
+    expect(svg).toContain('Hero Title')
+    expect(svg).not.toContain('stroke-dasharray')
+  })
+
+  it('renders dashed placeholder when no poster', () => {
+    const node: LayoutNode = { k: 'host', box: { x: 0, y: 0, width: 400, height: 200 }, render: 'test' }
+    const svg = renderNodeToSvg(node)
+    expect(svg).toContain('stroke-dasharray')
+  })
+})
+
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Scope cuts (named follow-ups)                                                   */
 /*                                                                                   */
