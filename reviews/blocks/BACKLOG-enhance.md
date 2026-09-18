@@ -148,8 +148,8 @@ scenario from R0 is re-shot at the end of every phase and the PNGs are looked at
 
 | Phase | Goal | Tasks | Entry | Exit (checked in a browser) |
 |---|---|---|---|---|
-| **A** | The demo stops lying; the HTML/GSAP door is open | R0 → R1 → R2 → R3 | commit `8320c6a0` | No overlapping text on any of the 6 slides; slide 1 is an html hero that animates with GSAP in the sample and degrades to WAAPI without it; SVG of slide 1 shows the poster |
-| **B** | Every field the vision needs is live; the catalog is legible to a model | R4 ‖ R5 ‖ R7 ‖ R8, then R6 | Phase A exit | A gradient-surface block renders identically in editor, viewer and SVG; `slide-in-up` visibly differs from `fade`; `slideTimeline().totalMs` matches the recording driver; `GET /api/capabilities` and `/api/schema` serve generated output; 10 golden decks validate clean |
+| **A** | The demo stops lying; the HTML/GSAP door is open | R0 → R1 → R2 → R3 → R0.5 | commit `8320c6a0` | No overlapping text on any of the 6 slides; slide 1 is an html hero that animates with GSAP in the sample and degrades to WAAPI without it; SVG of slide 1 shows the poster |
+| **B** | Every field the vision needs is live; the catalog is legible to a model | R4 ‖ R5 ‖ R7 ‖ R8, then R6 | Phase A exit **and** R0.5 done | A gradient-surface block renders identically in editor, viewer and SVG; `slide-in-up` visibly differs from `fade`; `slideTimeline().totalMs` matches the recording driver; `GET /api/capabilities` and `/api/schema` serve generated output; 10 golden decks validate clean |
 | **C** | The block families and the authoring surface | R9 ‖ R10 (fan out), R11 → R12, R13 | Phase B exit (R7's `describe`, R8's image) | 10 new composites in the digest with contact sheets looked at; double-click edits text and survives Save/GET; the inspector changes surface, gradient, preset and delay and persists them |
 | **D** | Export, transitions, the backend contract | R14 ‖ R15 ‖ R16 | Phase B exit (R16's document can start any time) | `parity-3way` compares three paths with 0 failing rows; the mock serves all six endpoints; a generated deck from the mock validates clean |
 
@@ -623,6 +623,156 @@ that makes it useful.
 **Acceptance.** `packages/tldraw/package.json` has no `gsap` in any dependency field.
 Bundle size of `dist/index.js` grows by no more than 4 KB (the driver itself), and `gsap`
 appears nowhere in it.
+
+---
+
+#### R0.5 · Phase A hardening — fix the gaps a post-implementation read found · S · ⬜
+
+**Goal.** R0–R3 are implemented and committed (`9247b411`, `1b563172`, `1885920e`, `cb151a3d`);
+the full `packages/tldraw` suite is green (1132 tests). A code-reading verification pass on
+2026-09-18 (not a re-implementation — the mechanisms are real and mostly correct) found concrete
+bugs and missing coverage concentrated exactly where R3's own **Watch out** section predicted:
+the GSAP timeline-kill path and the `onComplete` timeout guard. Since **R5 (Phase B) extends this
+same motion wiring** to every block, these must be closed before R5 starts or the bugs get a
+second call site. This task is a fix-up, not new scope — no new "Do" design decisions, just
+closing gaps against the acceptance criteria R0–R3 already committed to.
+
+**Read.** `blocks/library/composite/tls-c-hero/index.ts` (all of it, 141 lines);
+`components/DeckViewer/DeckViewer.tsx:294–520` (the R3 animate-wiring block);
+`blocks/render-dom.tsx:100–400` (`HostMount`, both `useIsomorphicLayoutEffect` calls);
+`blocks/layout/measure.ts:670–730` (the `inter` advance-width table and its doc comment);
+`blocks/host-registry.ts`; `blocks/render-svg.ts:305–320`; `render-dom.spec.tsx`;
+`tls-c-hero.spec.ts:150–275`.
+
+**Do.**
+1. **Fix the untracked-tween leak (real bug).** `tls-c-hero/index.ts:86–95` calls both
+   `gsap.fromTo(part, …)` (line 87, standalone, never captured) **and** `tl.fromTo(part, …)`
+   (line 91, added to the timeline) for every part — two independent tweens per part. The
+   disposer at line 102 only does `tl.kill()`, which does not touch the standalone tween from
+   line 87, so it keeps mutating the part's style after cancel (slide back, slide change,
+   unmount). **Fix: delete the standalone `gsap.fromTo` call (lines 87–90) and keep only the
+   `tl.fromTo` call** — the timeline already both plays and is killable. Add the test the
+   original Watch-out asked for and never got: mount the hero, call `animate()`, invoke the
+   disposer mid-tween, then assert (with a stub gsap whose `fromTo`/`timeline().fromTo` record
+   calls and whose returned object exposes a `kill()` you can spy on) that killing the timeline
+   is the *only* handle created — i.e. `gsap.fromTo` (the top-level one) is never called at all
+   once this fix lands, only `timeline().fromTo`.
+2. **Fix the cross-shape timeout-clearing bug (real bug).** `DeckViewer.tsx:312` declares
+   `animateTimeoutsRef` as `Map<timeout, shapeId>`. In the `onComplete` closure at
+   `DeckViewer.tsx:461–473`, the "Clear timeout" step (lines 468–472) iterates **every** entry
+   in the map and clears all of them, regardless of which shape completed — so if block A
+   finishes first while block B's reveal is still pending, A's completion cancels B's timeout
+   guard too (B would never get its "did not call onComplete" warning if it hangs). Fix: key the
+   map by `shapeId` instead (`Map<string, ReturnType<typeof setTimeout>>`), so `onComplete` only
+   clears its own shape's entry: `const t = animateTimeoutsRef.current.get(shapeId); if (t) { clearTimeout(t); animateTimeoutsRef.current.delete(shapeId) }`.
+   Update the `set` call at line 490 to match (`animateTimeoutsRef.current.set(shapeId, timeout)`)
+   and the bulk-clear on page change (`DeckViewer.tsx:320–323`) still iterates values instead of
+   keys. Test: two shapes reveal with `animate()` in the same tick, shape A calls `onComplete`
+   immediately, advance fake timers past shape B's `durationMs + 2000`, assert B's timeout guard
+   still fires (the console warning still happens for B).
+3. **Investigate and close the mount/reveal effect-timing race.** `HostMount`'s template mount
+   (`render-dom.tsx:301`) is a `useIsomorphicLayoutEffect` (paints before the browser's next
+   paint); `DeckViewer`'s reveal-and-`animate()` trigger (`DeckViewer.tsx:398`) is a plain
+   `React.useEffect` (runs after paint). Since the template has no default `opacity: 0` on its
+   parts (`animate()` sets the "from" state itself, synchronously, when it runs — see R3's own
+   Watch-out "Hidden state before reveal"), there is a window between the two effects where a
+   freshly-mounted part is visible at full opacity before `animate()` sets its from-state. Either
+   (a) change the reveal-trigger effect to `useIsomorphicLayoutEffect` so it runs in the same
+   paint-free window as the mount, or (b) give html-block templates a static
+   `[data-part]{opacity:0}` rule that `animate()`'s "to" state overrides, whichever is cheaper to
+   verify. Add the three-frame scenario named in R3's own Expected Output and never shipped (see
+   item 6) — this is the only way to actually see whether the flash happens, since jsdom does not
+   paint.
+4. **Add the missing test files R1/R2 committed to shipping and didn't.**
+   - `blocks/host-registry.spec.tsx` (named in R1's Expected Output, does not exist): a probe
+     renderer that writes `root.textContent` in `mount`, counts `update`s, flips a flag in
+     `unmount`; assert mount-once, update-on-structural-prop-change-only (not on `x`/`y`),
+     unmount-on-removal, disposer honoured, unknown id → `data-host-missing`. This also covers
+     `HostMount`'s prop-diffing logic (`render-dom.tsx:344–375`), which today has zero dedicated
+     coverage despite being 338 new lines.
+   - `render-svg.spec.ts`: add the case named in R1's Expected Output — a host node with a
+     `poster` renders the poster's subtree (assert the SVG contains the poster's rects/text, not
+     the dashed placeholder); keep the existing no-poster → placeholder case.
+   - A registry-wide test (not just `tls-c-hero`'s hardcoded case) that runs every `kind: 'html'`
+     block's `template()` with `<img src=x onerror=alert(1)>` in every string schema slot and
+     asserts no `img`/`on*` survives — iterate `BlockRegistry` instead of hand-picking one block,
+     so R9/R10's future html blocks are covered automatically without a new test being written.
+5. **Fix the height-equality test that never runs.** `tls-c-hero.spec.ts:231–272`'s
+   template-vs-poster height check early-exits when jsdom reports `scrollHeight === 0`, which is
+   always — jsdom does not lay out. Either move this assertion into a Playwright/browser-driven
+   check (it needs real layout to mean anything — the `deck-demo.js` scenario already runs in a
+   real browser, extend it to also read `scrollHeight` there) or, if it must stay a jest test,
+   assert something jsdom can actually observe (e.g. the template and poster produce the same
+   `data-part` set and the same text length per part) — but don't leave an assertion that cannot
+   fail.
+6. **Derive `size.preferred` from the poster instead of hand-picking `[1920, 600]`.**
+   `tls-c-hero/index.ts:49–55`'s `derivePreferredSize()` returns a hardcoded height with a comment
+   that says the poster "corrects it at layout time," which does not happen anywhere. Build a
+   reference `LayoutContext` at a 1920-wide box with `createLayoutContext`
+   (`layout/layout-child.ts:131`) and a plausible default theme/tokens (reuse whatever
+   `test-helpers.ts` in `library/text` or `library/layout` already constructs for this purpose),
+   call `poster(defaults, ctx)`, and return `[1920, posterNode.box.height]`. Add a test that
+   changing `defaults` and re-deriving actually changes the returned height (proves it isn't
+   still a constant).
+7. **Resolve the font-metrics half-measure from R0 addendum item 2, honestly.** Two independent
+   problems, both real:
+   - `measure.ts`'s `inter` advance-width table (~line 676–703) has a doc comment claiming it was
+     "generated by the `tools/fonts/extract-advance-widths.mjs` script" — that script does not
+     exist anywhere in the repo, and neither does `tools/fonts/` or a checked-in `inter.json`.
+     Either actually write the extraction script and generate the table from a real Inter font
+     file (the R0 addendum's original ask — this is the only way the table is trustworthy), or,
+     if that is being deliberately deferred, **remove the false claim from the comment** and say
+     plainly it is a hand-authored estimate pending real extraction — a comment asserting
+     verified provenance for an unverified table is worse than no comment.
+   - `examples/nextjs-sample` never actually loads Inter (`app/layout.tsx` was not touched by
+     any Phase A commit, no `public/fonts`, no `next/font` import anywhere in the sample). Load it
+     with `next/font/local` from a checked-in woff2 as the original R0 Do item 2 specified, so the
+     measurement table and the rendered font are the same font, not two different guesses.
+     If this is deliberately deferred instead, say so explicitly in this section rather than
+     silently leaving the sample on a system fallback font while F1's whole fix assumes Inter.
+8. **Confirm F1's actual fix in a real browser.** Run `deck-demo.js` against the Next.js sample
+   on a live `next dev` server (not jsdom) and look at the six screenshots — this is the one
+   artifact from R0 that could not be confirmed by reading code and running jest. Confirm no two
+   `[data-part]` bounding boxes intersect on any of the six slides, matching the scenario's own
+   assertion. If item 7's font loading is done in the same pass, re-run after it lands, since the
+   fallback-font render is exactly the geometry the assertion is meant to catch.
+9. **Ship R3's missing three-frame GSAP scenario.** R3's own Expected Output asked for a
+   `deck-demo.js` variant with screenshots at t = 0, t = half, t = end of the hero reveal
+   (visibly different, final frame identical with and without GSAP) and a reduced-motion variant
+   whose final frame appears immediately. Neither exists. Write it now that item 3's investigation
+   tells you whether there is a flash to also capture.
+10. **Decide and record the R3 architecture deviation, rather than leave it silent.** The plan's
+    Do item 2 said the motion runtime would reach a block's `animate()` via
+    `HostRenderContext.motion` → `HostRenderer.mount`, wired for both the editor and the viewer.
+    The shipped code instead drives `animate()` from a standalone `useEffect` inside
+    `DeckViewer.tsx` that reaches into the DOM (`el.querySelector('[data-render]')`) and calls
+    `blockDef.html.animate()` directly, bypassing `HostRenderContext.motion` entirely (it is never
+    populated) — and the **editor gets no `animate()` wiring at all**, only the viewer does. Pick
+    one and make it explicit rather than leaving the doc and the code disagreeing: (a) actually
+    wire it through `HostRenderContext.motion` as documented, extending it to
+    `ComponentUtil`/the editor's build-step preview too (more faithful to the original design,
+    more work), or (b) keep the current viewer-only `DeckViewer` mechanism and **update this
+    backlog's R3 section to describe what was actually built**, explicitly naming "the editor's
+    build-step preview does not play GSAP/animate() reveals in Phase A" as a named scope cut (per
+    the DoD's "scope cuts named" requirement) — R12's inspector Preview button (Phase C) will need
+    to know which of these is true before it can call `playBlockReveal` on an html block.
+
+**Watch out.** All of the above were found by reading the diff, not by running a browser or a
+fuzzer — treat "PASS by inspection" items from the verification pass as unconfirmed until the new
+tests in items 1, 2 and 4 actually exercise them; a bug hiding behind a passing test suite is
+exactly the failure mode `07-integration-readiness.md` §7.1 calls out ("the build tool does not
+fail on type errors... a real error can ship with a green build") applied to jest instead of the
+build tool.
+
+**Expected output.** New/fixed tests for items 1, 2, 4, 5, 6; either a real `tools/fonts/`
+extraction (item 7) or an honest comment; `deck-demo.js` screenshots looked at on a live server
+(item 8) with a written confirmation of what was seen, not just "scenario exists"; the three-frame
+GSAP scenario (item 9) with its screenshots looked at; one paragraph added to R3 recording the
+item-10 decision.
+
+**Acceptance.** `yarn jest src/blocks src/components/DeckViewer src/hooks/useHostRegistry` still
+fully green after the fixes, with strictly more assertions than before (no test deleted to make a
+fix pass). No new npm dependency. No `TldrawApp.version` bump.
 
 ---
 
