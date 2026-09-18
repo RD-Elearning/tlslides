@@ -12,23 +12,19 @@
       "rhythm": "anchor",
       "regions": {
         "title": [
-          { "id": "b_01_kicker", "type": "tls.t.kicker",
-            "props": { "text": "QUARTERLY REVIEW", "case": "uppercase", "tracking": "wide", "marker": true },
-            "motion": { "preset": "fade-up", "order": 1 } },
-          { "id": "b_01_title", "type": "tls.t.title",
-            "props": { "text": { "runs": [
-              { "text": "Margin fell on " },
-              { "text": "infrastructure", "bold": true }
-            ] }, "size": "display", "align": "start", "rule": true },
-            "motion": { "preset": "cover-in", "order": 2 } }
-        ],
-        "subtitle": [
-          { "id": "b_01_sub", "type": "tls.t.subtitle",
-            "props": { "text": { "runs": [
-              { "text": "Q3 FY2026 · prepared for the " },
-              { "text": "board", "italic": true }
-            ] }, "align": "start" },
-            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" } }
+          { "id": "b_01_hero", "type": "tls.c.hero",
+            "props": {
+              "kicker": "QUARTERLY REVIEW",
+              "title": { "runs": [
+                { "text": "Margin fell on " },
+                { "text": "infrastructure", "bold": true }
+              ] },
+              "subtitle": { "runs": [
+                { "text": "Q3 FY2026 · prepared for the " },
+                { "text": "board", "italic": true }
+              ] }
+            },
+            "motion": { "preset": "fade-up", "order": 1 } }
         ]
       },
       "notes": "Open on the headline, not the agenda."

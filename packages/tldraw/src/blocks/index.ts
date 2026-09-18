@@ -48,6 +48,9 @@ export type { BlockRendererProps, HostLayoutContextValue } from './render-dom'
 export { HostRegistry } from './host-registry'
 export type { HostRenderer, HostRenderContext } from './host-registry'
 export { renderNodeToSvg, renderSvgDefs } from './render-svg'
+// R2 — html-kind block types exported from types.ts via `export * from './types'` above.
+// Explicit re-export for discoverability:
+export type { BlockKind, HtmlTemplateContext, BlockMotionRuntime } from './types'
 // NOT exported: `./parity-harness`. It is a Node-only test harness — it `import`s
 // `child_process` and `require.resolve`s a worker script. Re-exporting it from the package root
 // put `child_process` in the browser bundle's import graph, and esbuild then failed the whole
@@ -121,10 +124,10 @@ export { deckLayoutContext } from './deck-context'
 export { deckSpecToDocument, resolveDeckFrame, resolveDeckTheme } from './deck-document'
 export type { DeckDocumentResult } from './deck-document'
 
-// Q3/W1 — the built-in block library (14 layout containers, 9 text blocks, 1 data block) and
-// its registration helper. `./library` is the aggregate; individual family arrays are also
+// Q3/W1 — the built-in block library (14 layout containers, 9 text blocks, 1 data block, 1 composite)
+// and its registration helper. `./library` is the aggregate; individual family arrays are also
 // exported directly for a host that wants only one family.
-export { BUILT_IN_BLOCKS, registerBuiltInBlocks, layoutBlocks, textBlocks, dataBlocks } from './library'
+export { BUILT_IN_BLOCKS, registerBuiltInBlocks, layoutBlocks, textBlocks, dataBlocks, compositeBlocks } from './library'
 
 // P22/B3 — motion resolution: a block's declarative recipe + spec overrides → concrete
 // block-level (`ShapeAnimation`) and part-level (`MotionKeyframes`+timing) descriptors.

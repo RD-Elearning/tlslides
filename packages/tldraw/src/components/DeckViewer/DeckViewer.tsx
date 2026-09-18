@@ -20,6 +20,7 @@ import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-d
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
 import { HostRegistryContext } from '~hooks/useHostRegistry'
+import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
 import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
@@ -530,6 +531,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   )
 
   return (
+    <BlockRegistryContext.Provider value={blockRegistry}>
     <HostRegistryContext.Provider value={hostRegistry}>
     <div
       ref={containerRef}
@@ -609,5 +611,6 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       )}
     </div>
     </HostRegistryContext.Provider>
+    </BlockRegistryContext.Provider>
   )
 }

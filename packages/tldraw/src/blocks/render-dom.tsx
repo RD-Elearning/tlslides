@@ -19,9 +19,12 @@ import type {
   MarkerSpec,
   ResolvedTokens,
   SurfaceContext,
+  HtmlTemplateContext,
 } from './types'
+import type { BlockDefinition } from './types'
 import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
 import { HostRegistryContext } from '../hooks/useHostRegistry'
+import { useBlockRegistry } from '../hooks/useBlockRegistry'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Host layout context — carries tokens/surface/props for host nodes               */
@@ -158,6 +161,86 @@ function hostCssVarStyle(
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* HTML block → HostRenderer adapter                                              */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * CSS custom property name map: role name → --tls-* variable.
+ * Used by `ctx.cssVar()` in html block templates.
+ */
+const CSS_VAR_MAP: Record<string, string> = {
+  surface: '--tls-surface',
+  on: '--tls-on',
+  accent: '--tls-accent',
+  'text-muted': '--tls-text-muted',
+  'font-family': '--tls-font-family',
+}
+
+/**
+ * Adapt a `kind: 'html'` BlockDefinition into a `HostRenderer`. The template is called
+ * with an `HtmlTemplateContext` that provides `esc()`, `cssVar()`, box, and tokens.
+ *
+ * Key invariants:
+ * - `mount` replaces children (React StrictMode safety).
+ * - `update` re-templates only when props changed; does NOT call `animate` again (R3 concern).
+ * - `unmount` is a no-op (the disposer from mount handles cleanup).
+ * - The host div is a leaf: no React children, ever.
+ */
+function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
+  return {
+    mount(root: HTMLElement, hctx: HostRenderContext): void | (() => void) {
+      const tplCtx: HtmlTemplateContext = {
+        esc: htmlEscape,
+        cssVar: (role: string) => {
+          const varName = CSS_VAR_MAP[role] ?? `--tls-${role}`
+          return `var(${varName})`
+        },
+        box: hctx.box,
+        tokens: hctx.tokens,
+      }
+      const html = def.html!.template(hctx.props, tplCtx)
+      root.innerHTML = html
+
+      // If animate is defined, call it (R3 fills the runtime; for R2 it's a stub).
+      if (def.html!.animate) {
+        return def.html!.animate(root, {} as any) ?? undefined
+      }
+      return undefined
+    },
+
+    update(root: HTMLElement, hctx: HostRenderContext): void {
+      // Re-template. The previous DOM is replaced wholesale.
+      // Do NOT call animate again — re-templating destroys running animations.
+      const tplCtx: HtmlTemplateContext = {
+        esc: htmlEscape,
+        cssVar: (role: string) => {
+          const varName = CSS_VAR_MAP[role] ?? `--tls-${role}`
+          return `var(${varName})`
+        },
+        box: hctx.box,
+        tokens: hctx.tokens,
+      }
+      const html = def.html!.template(hctx.props, tplCtx)
+      root.innerHTML = html
+    },
+  }
+}
+
+/**
+ * HTML-escape a string for safe insertion into markup. Escapes &, <, >, ", and '.
+ * This is the whole security story for html-kind blocks: all user content goes
+ * through this function.
+ */
+function htmlEscape(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* HostMount — the React component that manages a host node's lifecycle            */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -169,8 +252,10 @@ interface HostMountProps {
 
 /**
  * Internal React component that manages the lifecycle of a host node. It looks up
- * the renderer in the `HostRegistry` context, calls `mount` / `update` / `unmount`,
- * and sets CSS custom properties from resolved tokens (via `HostLayoutContext`).
+ * the renderer first in the `HostRegistry`, then in the `BlockRegistry` (for
+ * `kind: 'html'` blocks whose `html.template` is adapted into a `HostRenderer`),
+ * calls `mount` / `update` / `unmount`, and sets CSS custom properties from
+ * resolved tokens (via `HostLayoutContext`).
  *
  * Key invariants:
  * - `mount` is called once (or twice under React StrictMode; the renderer must
@@ -188,6 +273,7 @@ const HostMount = React.memo(function HostMount({
   part,
 }: HostMountProps) {
   const registry = React.useContext(HostRegistryContext)
+  const blockRegistry = useBlockRegistry()
   const layoutCtx = React.useContext(HostLayoutContext)
   const rootRef = React.useRef<HTMLDivElement>(null)
   const disposerRef = React.useRef<(() => void) | void | null>(null)
@@ -214,7 +300,14 @@ const HostMount = React.memo(function HostMount({
     const root = rootRef.current
     if (!root) return
 
-    const renderer = registry?.get(render)
+    // Resolve renderer: first check HostRegistry, then BlockRegistry for kind: 'html' blocks.
+    let renderer = registry?.get(render) ?? undefined
+    if (!renderer && blockRegistry) {
+      const blockDef = blockRegistry.get(render)
+      if (blockDef && blockDef.kind === 'html' && blockDef.html?.template) {
+        renderer = createHtmlBlockRenderer(blockDef)
+      }
+    }
     rendererRef.current = renderer ?? null
 
     if (!renderer || !tokens || !surface) {
@@ -244,7 +337,7 @@ const HostMount = React.memo(function HostMount({
       mountedRef.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [render, registry])
+  }, [render, registry, blockRegistry])
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
@@ -279,7 +372,11 @@ const HostMount = React.memo(function HostMount({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hostProps, box.width, box.height])
 
-  const hasRenderer = registry?.has(render) ?? false
+  const hasRenderer = (registry?.has(render) ?? false) || (() => {
+    if (!blockRegistry) return false
+    const def = blockRegistry.get(render)
+    return !!(def && def.kind === 'html' && def.html?.template)
+  })()
 
   return (
     <div

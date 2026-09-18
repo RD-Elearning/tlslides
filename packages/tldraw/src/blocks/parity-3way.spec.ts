@@ -122,8 +122,11 @@ function svgGeom(el: Element, kind: string): SvgGeom | undefined {
     case 'rect':
     case 'image':
     case 'icon':
-    case 'host':
       return { x: num('x'), y: num('y'), width: num('width'), height: num('height') }
+    case 'host':
+      // host nodes render as poster subtrees (<g> groups), not direct rects — their geometry
+      // is represented by the poster's child parts, not by the host element itself.
+      return undefined
     case 'line': {
       const x1 = num('x1')
       const y1 = num('y1')

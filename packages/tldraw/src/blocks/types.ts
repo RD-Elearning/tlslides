@@ -131,6 +131,39 @@ export interface AmbientMotionSpec {
 export type BlockFamily = 'layout' | 'text' | 'data' | 'diagram' | 'media' | 'composite' | 'chrome' | 'live'
 
 /**
+ * Block kind: how the block is authored and rendered. 'layout' (default) is a pure `layout()`
+ * function producing a LayoutNode tree. 'html' is an HTML template rendered as real DOM, with a
+ * generated `layout()` that returns a host node and a poster for SVG/export.
+ */
+export type BlockKind = 'layout' | 'html'
+
+/**
+ * Context passed to a `kind: 'html'` block's `template()` function. Provides escaping,
+ * CSS custom property resolution, the block's box, and resolved tokens. Templates MUST use
+ * `ctx.esc()` for all user-provided content — the DeckSpec carries `props` only, never markup
+ * (governing rule 2).
+ */
+export interface HtmlTemplateContext {
+  /** HTML-escape a string. Must be used for all user-provided content. */
+  esc(s: string): string
+  /** Resolve a CSS custom property by its role name (e.g. 'accent' → 'var(--tls-accent)'). */
+  cssVar(role: string): string
+  /** The block's box in slide units. */
+  box: Box
+  /** Resolved design tokens for this deck. */
+  tokens: ResolvedTokens
+}
+
+/**
+ * Block motion runtime, passed to `kind: 'html'` block's `animate()`. R3 fills this interface;
+ * for R2, `animate` is not yet called but its signature is declared so the first html block
+ * can ship with an animation stub.
+ */
+export interface BlockMotionRuntime {
+  [key: string]: unknown
+}
+
+/**
  * Runtime metadata and behaviour for a block type. The definition lives in code; each
  * instance is a plain JSON `BlockSpec` in the document.
  */
@@ -143,6 +176,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   family: BlockFamily
   /** 'A' = pure layout, exports headlessly. 'B' = DOM-only. */
   tier: 'A' | 'B'
+  /** Block kind: 'layout' (default) = pure `layout()`, 'html' = HTML template with auto-generated
+   *  `layout()` that returns a host node. Absent means 'layout'. */
+  kind?: BlockKind
   /** One-line summary, shown in the inserter and given to the AI. */
   summary: string
   /** Keywords for inserter search and AI selection. */
@@ -158,13 +194,26 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   size: { preferred: [number, number]; min: [number, number]; aspect?: number }
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
-   *  This is the single source of truth for what the block looks like. */
+   *  This is the single source of truth for what the block looks like.
+   *  For `kind: 'html'`, this is auto-generated from the html template — do not provide. */
   layout(props: P, ctx: LayoutContext): LayoutNode
 
   /** Tier B only. When present, it draws the live block; `poster()` supplies the export image.
-   *  Tier A blocks leave both undefined. */
+   *  Tier A blocks leave both undefined.
+   *  For `kind: 'html'`, this is the existing top-level poster field — the poster is built by
+   *  the block author as a normal Tier-B poster, not nested inside `html`. */
   Component?: React.FC<BlockRenderProps<P>>
   poster?(props: P, ctx: LayoutContext): LayoutNode
+
+  /** `kind: 'html'` only. The HTML template and optional animation. */
+  html?: {
+    /** Return markup. MUST use `ctx.esc()` for all user content.
+     *  Parts are declared as `data-part` attributes matching `motion.parts`. */
+    template(props: P, ctx: HtmlTemplateContext): string
+    /** Optional animation hook. R3 fills rt; for R2, this signature is declared but not called.
+     *  Returns a disposer that cleans up running animations. */
+    animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)
+  }
 
   /** Named parts and default choreography. */
   motion: MotionRecipe

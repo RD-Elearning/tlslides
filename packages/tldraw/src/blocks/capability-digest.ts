@@ -37,9 +37,12 @@ export interface CapabilityBlockDigest {
   type: string
   name: string
   family: string
+  kind?: string
   summary: string
   keywords: string[]
   slots: CapabilitySlotDigest[]
+  /** For html-kind blocks: the data-part attribute names declared in the template. */
+  parts?: string[]
 }
 
 export interface CapabilityLayoutDigest {
@@ -91,9 +94,11 @@ export function capabilityDigestData(registry?: BlockRegistry): CapabilityDigest
       type: def.type,
       name: def.name,
       family: def.family,
+      ...(def.kind ? { kind: def.kind } : {}),
       summary: def.summary,
       keywords: [...def.keywords],
       slots: Object.entries(def.schema ?? {}).map(([name, slot]) => describeSlot(name, slot)),
+      ...(def.kind === 'html' && def.motion?.parts ? { parts: [...def.motion.parts] } : {}),
     }))
 
   const layouts: CapabilityLayoutDigest[] = SLIDE_LAYOUTS.map((layout) => {
@@ -144,10 +149,15 @@ export function capabilityDigest(registry?: BlockRegistry): string {
   lines.push('## Blocks')
   lines.push('')
   for (const b of data.blocks) {
-    lines.push(`### \`${b.type}\` — ${b.name}`)
+    const kindTag = b.kind ? ` [${b.kind}]` : ''
+    lines.push(`### \`${b.type}\` — ${b.name}${kindTag}`)
     lines.push('')
     lines.push(`${b.summary} _(family: ${b.family}; keywords: ${b.keywords.join(', ') || '—'})_`)
     lines.push('')
+    if (b.parts && b.parts.length) {
+      lines.push(`**Parts:** ${b.parts.map((p) => `\`${p}\``).join(', ')}`)
+      lines.push('')
+    }
     if (b.slots.length) {
       lines.push('| Slot | Required | Type | Guidance |')
       lines.push('|---|---|---|---|')

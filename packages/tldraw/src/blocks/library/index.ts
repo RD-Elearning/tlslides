@@ -15,11 +15,15 @@ import { textBlocks } from './text'
 // Data + chart blocks — populated when E3/E4 land.
 import { dataBlocks } from './data'
 
-/** All built-in Tier-A block definitions. */
+// Composite blocks — html-kind and multi-part composites (R2).
+import { compositeBlocks } from './composite'
+
+/** All built-in block definitions. */
 export const BUILT_IN_BLOCKS: BlockDefinition[] = [
   ...layoutBlocks,
   ...textBlocks,
   ...dataBlocks,
+  ...compositeBlocks,
 ]
 
 /**
@@ -40,3 +44,6 @@ export { textBlocks } from './text'
 
 // Re-export data blocks for direct access. (W1 — `blocks/index.ts` wire-up.)
 export { dataBlocks } from './data'
+
+// Re-export composite blocks for direct access.
+export { compositeBlocks } from './composite'
