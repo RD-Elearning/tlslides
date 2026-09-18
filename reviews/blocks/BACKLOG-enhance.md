@@ -208,6 +208,53 @@ that shows every block, and no chrome covering the slide.
 5. **Expose position (F6).** `DeckViewer` root gets `data-slide-index`, `data-slide-count`,
    `data-build-step`, `data-build-step-count`, and `aria-live="polite"` text "Slide n of N".
 
+**Implementation addendum — verified against source on 2026-09-18, before handing to a coding
+agent.** Five corrections/clarifications the numbered list above does not spell out:
+
+- *Item 1 needs a signature change, not just a call-site change.* `compileSlide` today is
+  `compileSlide(spec, frame, tokens)` — no `registry` parameter, and it never calls
+  `def.layout()`; it only calls `blockToShape(block, box, { childIndex })`. Add a
+  `registry: BlockRegistry` parameter, update every call site (`Deck.addSlideFromSpec`,
+  `deck-document.ts`, and the parity/export paths) to pass one, and look up
+  `registry.get(block.type)` inside `compileSlide` to get `def` before measuring.
+- *Item 2's fix target is wrong.* `createMetricsProvider` does not need touching —
+  `tableMetrics(faceKey?)` already resolves its face from `style.family` via an internal
+  `tableFaceKey` helper. The real work is: (a) add an `'inter'` entry to
+  `ADVANCE_WIDTH_TABLES`/`tableFaceKey` in `measure.ts`, and (b) add a `family` input field
+  themes can set — **this field does not exist yet**. Today font family is one constant,
+  `DEFAULT_FONT_FAMILY` in `layout/layout-child.ts`, used by `defaultResolveText` for every
+  theme; `ResolvedTextStyle.family` is an *output*, not an input a theme sets. Decide and record
+  where the new field lives (`DeckTheme.type.family`? a per-token override?) and who reads it
+  (presumably `defaultResolveText`) before assigning this — it is a small design decision, not a
+  one-line bug fix.
+- *Item 4's target file is wrong; half the finding may not be fixable here.* There is no slide
+  manager or issue badge in `EditDeck.tsx`. The real thumbnail strip is `<Deck />`
+  (`packages/tldraw/src/components/Deck/Deck.tsx`), gated by the boolean setting
+  `app.settings.showDeck`, defaulting to `true` in **two** places: `state/TldrawApp.ts:1569` and
+  `:4343`. The fix is `app.setSetting('showDeck', () => false)` in `EditDeck`'s `onMount`, not a
+  change inside `EditDeck.tsx` itself. The red "1 Issue" badge does not exist anywhere in
+  `packages/tldraw/src` (grepped, no hits) — it is almost certainly Next.js 15's own dev-mode
+  indicator overlay (the sample sets no `devIndicators` in `next.config.js`), which is not part of
+  this codebase and cannot be "collapsed" by a React change. Confirm in a browser with dev tools
+  before assigning; if confirmed, the fix (if wanted) is a `next.config.js` setting, and this half
+  of F5 should be dropped from R0's scope rather than handed to an agent that will hunt for a
+  component that isn't there.
+- *Item 5 is accurate but slightly overstated, and under-specified on location.* `DeckViewer`'s
+  root container is at `DeckViewer.tsx:521-532`; it already sets `role="group"` and
+  `aria-roledescription="presentation"` (only the position attributes and the `aria-live` text
+  are actually missing). The variables needed are already in scope there:
+  `currentSlideIndex`, `pages.length`, `currentBuildStep`, `steps.length`.
+- *Item 3's line reference is approximate; the "model on `blocks.js`" claim overstates reuse.*
+  The `.tl-positioned-div { overflow: hidden }` behavior is real (a comment near
+  `ComponentUtil.tsx:140` documents it, and a `Wrapper` styled div with `overflow: 'hidden'`
+  sits around lines 236-244), but the actual global CSS rule for `.tl-positioned-div` lives
+  outside this file — grep for it rather than trust the line number above. Separately,
+  `tools/visual/scenarios/blocks.js` only gives the `{ base, route, run(page) }` scaffolding
+  shape to copy; its logic (clicking to insert a KPI/chart shape) is unrelated, so the "no two
+  text nodes' bounding boxes intersect" check in Expected Output must be written from scratch.
+  `tools/visual/scenarios/parity-3way.js` (399 lines) likely has reusable geometry-comparison
+  helpers — read it before writing `deck-demo.js`.
+
 **Watch out — the hard parts.**
 
 - *Measuring needs a context before the shape exists.* `compileSlide` today never calls
