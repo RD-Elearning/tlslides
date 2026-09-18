@@ -43,8 +43,10 @@ export type {
   ListMarker,
   ListOpts,
 } from './layout'
-export { renderNodeToDom, paintToCSS, BlockRenderer } from './render-dom'
-export type { BlockRendererProps } from './render-dom'
+export { renderNodeToDom, paintToCSS, BlockRenderer, HOST_CSS_VARS } from './render-dom'
+export type { BlockRendererProps, HostLayoutContextValue } from './render-dom'
+export { HostRegistry } from './host-registry'
+export type { HostRenderer, HostRenderContext } from './host-registry'
 export { renderNodeToSvg, renderSvgDefs } from './render-svg'
 // NOT exported: `./parity-harness`. It is a Node-only test harness — it `import`s
 // `child_process` and `require.resolve`s a worker script. Re-exporting it from the package root

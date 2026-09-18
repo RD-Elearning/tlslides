@@ -12,8 +12,10 @@ import {
   TldrawComponentsContext,
   TldrawComponentsRegistry,
   BlockRegistryContext,
+  HostRegistryContext,
 } from '~hooks'
 import type { BlockRegistry } from '~blocks/registry'
+import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
 import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
@@ -141,6 +143,15 @@ export interface TldrawProps extends TDCallbacks {
    * from its block definitions and passes it alongside the `components` prop.
    */
   blockRegistry?: BlockRegistry
+
+  /**
+   * (optional) A HostRegistry containing host renderers for `k: 'host'` layout nodes.
+   * When a LayoutNode has `k: 'host'` and its `render` id matches a renderer in this
+   * registry, the DOM renderer calls the renderer's `mount`/`update`/`unmount` lifecycle
+   * instead of rendering an empty div. Unknown ids degrade to a `data-host-missing`
+   * attribute — never throw.
+   */
+  hostRegistry?: HostRegistry
 }
 
 export function Tldraw({
@@ -162,6 +173,7 @@ export function Tldraw({
   components = EMPTY_COMPONENTS,
   blocks,
   blockRegistry,
+  hostRegistry,
   onMount,
   onChange,
   onChangePresence,
@@ -385,8 +397,9 @@ export function Tldraw({
   return (
     <TldrawContext.Provider value={app}>
       <BlockRegistryContext.Provider value={blockRegistry}>
-        <TldrawComponentsContext.Provider value={components}>
-          <InnerTldraw
+        <HostRegistryContext.Provider value={hostRegistry}>
+          <TldrawComponentsContext.Provider value={components}>
+            <InnerTldraw
             key={sId || 'Tldraw'}
             id={sId}
             autofocus={autofocus}
@@ -401,6 +414,7 @@ export function Tldraw({
             readOnly={readOnly}
           />
         </TldrawComponentsContext.Provider>
+          </HostRegistryContext.Provider>
       </BlockRegistryContext.Provider>
     </TldrawContext.Provider>
   )

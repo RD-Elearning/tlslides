@@ -17,7 +17,30 @@ import type {
   TextLine,
   TextRun,
   MarkerSpec,
+  ResolvedTokens,
+  SurfaceContext,
 } from './types'
+import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
+import { HostRegistryContext } from '../hooks/useHostRegistry'
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Host layout context — carries tokens/surface/props for host nodes               */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * React context carrying the resolved layout context for host nodes. `HostMount`
+ * reads from this to set CSS custom properties and pass them to renderers.
+ * Set by `ComponentUtil` and `DeckViewer` (and any other consumer of
+ * `renderNodeToDom` that may contain host nodes).
+ */
+export interface HostLayoutContextValue {
+  tokens: ResolvedTokens
+  surface: SurfaceContext
+  props: Record<string, unknown>
+  headless: boolean
+}
+
+export const HostLayoutContext = React.createContext<HostLayoutContextValue | undefined>(undefined)
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Paint → CSS helpers                                                             */
@@ -75,6 +98,206 @@ function posStyle(box: Box): React.CSSProperties {
     height: `${box.height}px`,
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Isomorphic layout effect (SSR-safe)                                            */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A `useLayoutEffect` that is a no-op on the server. This avoids the React warning
+ * when a host page server-renders a `<DeckViewer>` containing host nodes.
+ */
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Host CSS custom properties                                                     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * The CSS custom properties set on every host root div, derived from the resolved
+ * tokens. Renderers read these from CSS rather than receiving a shared object —
+ * values are copied per-mount (DoD item 5).
+ */
+export const HOST_CSS_VARS = [
+  '--tls-surface',
+  '--tls-on',
+  '--tls-accent',
+  '--tls-text-muted',
+  '--tls-font-family',
+  '--tls-type-display',
+  '--tls-type-title',
+  '--tls-type-heading',
+  '--tls-type-subheading',
+  '--tls-type-lead',
+  '--tls-type-body',
+  '--tls-type-caption',
+  '--tls-type-footnote',
+] as const
+
+/** Build a React CSSProperties object that sets HOST_CSS_VARS from resolved tokens. */
+function hostCssVarStyle(
+  tokens: ResolvedTokens,
+  surface: SurfaceContext,
+): React.CSSProperties {
+  return {
+    '--tls-surface': surface.behind.type === 'solid' ? surface.behind.color : tokens.color.surface,
+    '--tls-on': tokens.color.text,
+    '--tls-accent': tokens.color.accent,
+    '--tls-text-muted': tokens.color.textMuted,
+    '--tls-font-family': tokens.fontFamily,
+    '--tls-type-display': `${tokens.type.display.size}px`,
+    '--tls-type-title': `${tokens.type.title.size}px`,
+    '--tls-type-heading': `${tokens.type.heading.size}px`,
+    '--tls-type-subheading': `${tokens.type.subheading.size}px`,
+    '--tls-type-lead': `${tokens.type.lead.size}px`,
+    '--tls-type-body': `${tokens.type.body.size}px`,
+    '--tls-type-caption': `${tokens.type.caption.size}px`,
+    '--tls-type-footnote': `${tokens.type.footnote.size}px`,
+  } as React.CSSProperties
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* HostMount — the React component that manages a host node's lifecycle            */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+interface HostMountProps {
+  render: string
+  box: Box
+  part?: string
+}
+
+/**
+ * Internal React component that manages the lifecycle of a host node. It looks up
+ * the renderer in the `HostRegistry` context, calls `mount` / `update` / `unmount`,
+ * and sets CSS custom properties from resolved tokens (via `HostLayoutContext`).
+ *
+ * Key invariants:
+ * - `mount` is called once (or twice under React StrictMode; the renderer must
+ *   handle this by calling `root.replaceChildren()` first).
+ * - `update` is called only when `props` structurally differ (JSON.stringify) or
+ *   `box.width/height` changed — never on `box.x/y` alone.
+ * - The disposer returned from `mount` is called before `unmount`, and is
+ *   idempotent.
+ * - Unknown `render` id → the div stays empty and gets `data-host-missing`.
+ * - Never throws.
+ */
+const HostMount = React.memo(function HostMount({
+  render,
+  box,
+  part,
+}: HostMountProps) {
+  const registry = React.useContext(HostRegistryContext)
+  const layoutCtx = React.useContext(HostLayoutContext)
+  const rootRef = React.useRef<HTMLDivElement>(null)
+  const disposerRef = React.useRef<(() => void) | void | null>(null)
+  const rendererRef = React.useRef<HostRenderer | null>(null)
+  const prevPropsJsonRef = React.useRef<string>('')
+  const prevBoxSizeRef = React.useRef<string>('')
+  const mountedRef = React.useRef<boolean>(false)
+
+  const tokens = layoutCtx?.tokens
+  const surface = layoutCtx?.surface
+  const hostProps = layoutCtx?.props ?? {}
+  const headless = layoutCtx?.headless ?? false
+
+  // Build the HostRenderContext
+  const ctx: HostRenderContext = React.useMemo(() => ({
+    box,
+    tokens: tokens as ResolvedTokens, // cast: if no context, mount won't be called
+    surface: surface as SurfaceContext,
+    props: hostProps,
+    headless,
+  }), [box, tokens, surface, hostProps, headless])
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current
+    if (!root) return
+
+    const renderer = registry?.get(render)
+    rendererRef.current = renderer ?? null
+
+    if (!renderer || !tokens || !surface) {
+      // Unknown renderer or no layout context — stays empty, gets data-host-missing
+      root.replaceChildren()
+      disposerRef.current = null
+      mountedRef.current = false
+      return
+    }
+
+    // Clear on mount (React StrictMode safety)
+    root.replaceChildren()
+
+    // Mount the host content
+    disposerRef.current = renderer.mount(root, ctx) ?? null
+    mountedRef.current = true
+
+    return () => {
+      // Call disposer first, then unmount
+      if (disposerRef.current) {
+        disposerRef.current()
+        disposerRef.current = null
+      }
+      if (mountedRef.current && renderer) {
+        renderer.unmount?.(root)
+      }
+      mountedRef.current = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [render, registry])
+
+  useIsomorphicLayoutEffect(() => {
+    const root = rootRef.current
+    const renderer = rendererRef.current
+    if (!root || !renderer || !tokens || !surface) return
+
+    if (!renderer.update) return
+
+    const propsJson = JSON.stringify(hostProps)
+    const boxSize = `${box.width}x${box.height}`
+
+    // Skip if nothing structurally changed
+    if (
+      prevPropsJsonRef.current === propsJson &&
+      prevBoxSizeRef.current === boxSize
+    ) {
+      return
+    }
+
+    // If this is the very first run after mount (prevPropsJsonRef is empty),
+    // skip — the mount effect above already called mount().
+    if (prevPropsJsonRef.current === '') {
+      prevPropsJsonRef.current = propsJson
+      prevBoxSizeRef.current = boxSize
+      return
+    }
+
+    prevPropsJsonRef.current = propsJson
+    prevBoxSizeRef.current = boxSize
+
+    renderer.update(root, ctx)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hostProps, box.width, box.height])
+
+  const hasRenderer = registry?.has(render) ?? false
+
+  return (
+    <div
+      ref={rootRef}
+      style={{
+        position: 'absolute',
+        left: `${box.x}px`,
+        top: `${box.y}px`,
+        width: `${box.width}px`,
+        height: `${box.height}px`,
+        ...(tokens && surface ? hostCssVarStyle(tokens, surface) : {}),
+      }}
+      data-render={render}
+      {...(hasRenderer ? {} : { 'data-host-missing': render })}
+      {...(part ? { 'data-part': part } : {})}
+    />
+  )
+})
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Node rendering                                                                 */
@@ -282,11 +505,11 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
 
     case 'host': {
       return (
-        <div
+        <HostMount
           key={part ?? undefined}
-          style={pos}
-          data-render={node.render}
-          {...(part ? { 'data-part': part } : {})}
+          render={node.render}
+          box={node.box}
+          part={node.part}
         />
       )
     }

@@ -13,7 +13,7 @@ import {
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
 import { useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
-import { renderNodeToDom } from '~blocks/render-dom'
+import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 
@@ -154,12 +154,20 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             style={{ opacity: getShapeOpacity(style, isGhost) }}
           >
             <BlockErrorBoundary componentId={componentId}>
-              {blockNode ??
-                (Registered ? (
-                  <Registered {...props} />
-                ) : (
-                  <MissingBlockPlaceholder componentId={componentId} />
-                ))}
+              {blockNode ? (
+                <HostLayoutContext.Provider value={{
+                  tokens: layoutCtx.tokens,
+                  surface: layoutCtx.surface,
+                  props: (props ?? {}) as Record<string, unknown>,
+                  headless: false,
+                }}>
+                  {blockNode}
+                </HostLayoutContext.Provider>
+              ) : Registered ? (
+                <Registered {...props} />
+              ) : (
+                <MissingBlockPlaceholder componentId={componentId} />
+              )}
             </BlockErrorBoundary>
           </Wrapper>
         </HTMLContainer>

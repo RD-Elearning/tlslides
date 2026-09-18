@@ -16,8 +16,10 @@ import type { LayoutContext } from '~blocks/types'
 import { deckSpecToDocument } from '~blocks/deck-document'
 import { deckLayoutContext } from '~blocks/deck-context'
 import { shapeToBlock } from '~blocks/shape-bridge'
-import { renderNodeToDom, paintToCSS } from '~blocks/render-dom'
+import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
+import { HostRegistry } from '~blocks/host-registry'
+import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
 import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
@@ -66,6 +68,10 @@ export interface DeckViewerProps {
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
   autoAdvanceMs?: number
+  /** Optional block registry override. When absent, the module-level `sharedRegistry` is used. */
+  registry?: BlockRegistry
+  /** Optional host registry for `k: 'host'` layout nodes. */
+  hostRegistry?: HostRegistry
   className?: string
 }
 
@@ -253,10 +259,15 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   onBuildStepChange,
   driver,
   autoAdvanceMs,
+  registry: registryProp,
+  hostRegistry,
   className,
 }) => {
   const { document } = React.useMemo(() => deckSpecToDocument(spec), [spec])
   const pages = React.useMemo(() => orderedPages(document), [document])
+
+  // Use the provided registry, or fall back to the module-level sharedRegistry
+  const blockRegistry = registryProp ?? sharedRegistry
 
   const isSlideControlled = slideIndex !== undefined
   const [innerSlideIndex, setInnerSlideIndex] = React.useState(0)
@@ -519,6 +530,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   )
 
   return (
+    <HostRegistryContext.Provider value={hostRegistry}>
     <div
       ref={containerRef}
       className={className}
@@ -558,7 +570,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               slideBackground: page.background,
             })
             const blockSpec = shapeToBlock(shape)
-            const blockDef = blockSpec ? sharedRegistry.get(blockSpec.type) : undefined
+            const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined
             return (
               <div
                 key={shape.id}
@@ -578,7 +590,14 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               >
                 <BlockBoundary blockType={blockSpec?.type ?? shape.componentId ?? '(unknown)'}>
                   {blockDef && blockSpec ? (
-                    <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} />
+                    <HostLayoutContext.Provider value={{
+                      tokens: ctx.tokens,
+                      surface: ctx.surface,
+                      props: blockSpec.props,
+                      headless: false,
+                    }}>
+                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} />
+                    </HostLayoutContext.Provider>
                   ) : (
                     <UnknownBlockPlaceholder type={shape.componentId} />
                   )}
@@ -589,5 +608,6 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
         </div>
       )}
     </div>
+    </HostRegistryContext.Provider>
   )
 }

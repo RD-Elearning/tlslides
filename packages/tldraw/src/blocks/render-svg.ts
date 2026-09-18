@@ -310,6 +310,11 @@ function renderNodeInner(
 
     /* ── host ──────────────────────────────────────────────────────────────── */
     case 'host': {
+      // If the node carries a poster subtree, render that instead of the placeholder.
+      // R2 supplies posters; until then, the dashed placeholder is the fallback.
+      if (node.poster) {
+        return renderNodeInner(node.poster, collector, prefix)
+      }
       return (
         `<rect x="${node.box.x}" y="${node.box.y}" ` +
         `width="${node.box.width}" height="${node.box.height}" ` +
