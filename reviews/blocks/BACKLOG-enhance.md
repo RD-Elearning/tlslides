@@ -149,8 +149,8 @@ scenario from R0 is re-shot at the end of every phase and the PNGs are looked at
 | Phase | Goal | Tasks | Entry | Exit (checked in a browser) |
 |---|---|---|---|---|
 | **A** | The demo stops lying; the HTML/GSAP door is open | R0 → R1 → R2 → R3 → R0.5 | commit `8320c6a0` | No overlapping text on any of the 6 slides; slide 1 is an html hero that animates with GSAP in the sample and degrades to WAAPI without it; SVG of slide 1 shows the poster |
-| **B** | Every field the vision needs is live; the catalog is legible to a model | R4 ‖ R5 ‖ R7 ‖ R8, then R6 | Phase A exit **and** R0.5 done | A gradient-surface block renders identically in editor, viewer and SVG; `slide-in-up` visibly differs from `fade`; `slideTimeline().totalMs` matches the recording driver; `GET /api/capabilities` and `/api/schema` serve generated output; 10 golden decks validate clean |
-| **C** | The block families and the authoring surface | R9 ‖ R10 (fan out), R11 → R12, R13 | Phase B exit (R7's `describe`, R8's image) | 10 new composites in the digest with contact sheets looked at; double-click edits text and survives Save/GET; the inspector changes surface, gradient, preset and delay and persists them |
+| **B** | Every field the vision needs is live; the catalog is legible to a model | R4 ‖ R5 ‖ R7 ‖ R8, then R6, then B.5 | Phase A exit **and** R0.5 done | A gradient-surface block renders identically in editor, viewer and SVG; `slide-in-up` visibly differs from `fade`; `slideTimeline().totalMs` matches the recording driver; `GET /api/capabilities` and `/api/schema` serve generated output; 10 golden decks validate clean |
+| **C** | The block families and the authoring surface | R9 ‖ R10 (fan out), R11 → R12, R13 | Phase B exit **and** B.5 done | 10 new composites in the digest with contact sheets looked at; double-click edits text and survives Save/GET; the inspector changes surface, gradient, preset and delay and persists them |
 | **D** | Export, transitions, the backend contract | R14 ‖ R15 ‖ R16 | Phase B exit (R16's document can start any time) | `parity-3way` compares three paths with 0 failing rows; the mock serves all six endpoints; a generated deck from the mock validates clean |
 
 ```
@@ -1036,6 +1036,195 @@ with the alt text, never a broken image icon.
 
 **Expected output.** Parity rows for the block, a screenshot with `cover` vs `contain` on a
 non-square source, the missing-asset frame, and the demo deck's slide 6 gaining an image.
+
+---
+
+#### B.5 · Phase B hardening — fix the gaps a post-implementation read found · M · ⬜
+
+**Goal.** R4–R8 are implemented and committed (`9574b97e`, `6ec5e24a`); the full suite is green
+(155 suites, 1886 passed, 0 failing) and typecheck/eslint add no new *class* of problem beyond one
+pre-existing pattern (see item 0). A code-reading verification pass on 2026-09-18 (not a
+re-implementation) found that R4 and R6 do not deliver what their own Watch-out sections warned
+against, R7's JSON Schema deliverable is dead code behind tests that cannot detect it, and R5
+silently discards the persisted field it was built to honour. This is the same failure shape R0.5
+fixed in Phase A — a passing suite hiding a gap between what the plan asked for and what the code
+actually does — landing again one phase later. Since **Phase C's R9/R10 blocks consume R4's style
+system and R5's motion wiring directly, and R12's inspector will write straight into the field R5
+currently ignores**, these must close before Phase C starts.
+
+**Do.**
+
+0. **eslint/type hygiene, quick.** Fix the 12 real eslint errors introduced by Phase B's new files:
+   `motion/play-reveal.ts:191,193` (unnecessary `\-` escape in a character class — drop the
+   backslash), `motion/play-reveal.spec.ts:42,48` (empty `cancel() {}` in the mock driver — return
+   `undefined` explicitly or add a one-line comment body), `motion/play-reveal.spec.ts:393` and
+   `motion/timeline.spec.ts:402,403,476,477` (`require('fs')`/`require('path')` inline — hoist to
+   top-level `import`). Leave the 22 new `tls-m-image.spec.ts` "Property 'children' does not exist
+   on type 'LayoutNode'" type errors alone — they're the same narrowing mistake as ~10 pre-existing
+   spec files (`LayoutNode` is a discriminated union; the fix is a shared `test-helpers` narrowing
+   cast, out of scope here) and fixing only the new file would be inconsistent with the rest of the
+   suite; note this as accepted debt rather than silently leaving it undocumented.
+
+1. **Fix gradient luminance not chaining to children (R4's own named Watch-out, unfixed).**
+   `layout/layout-child.ts:271–286`: `layoutChild` forwards `effectiveSurface` — computed once, in
+   the *parent's* `createLayoutContext` call, by sampling the parent's `Paint` against the parent's
+   own box (lines 173–183) — unchanged into every child's `childCtx`, regardless of the child's
+   `box` position inside the parent. Two children at opposite ends of a gradient card get identical
+   `ctx.surface`, which is exactly the light-on-light-text bug the Watch-out predicted. Fix: when
+   the parent's `instanceStyle.surface` is a gradient `Paint`, `layoutChild` must resample it at the
+   **child's box**, not reuse `effectiveSurface` verbatim — carry the raw `Paint` (not just the
+   already-sampled `SurfaceContext`) through the closure so `surfaceFromPaint(paint, box, parentBox)`
+   can be called again per child with that child's own `box` argument. Test (named in R4's own
+   Expected output and never written): a gradient parent dark-to-light, two children laid out at
+   the two ends via `layoutChild`, assert their resolved `ctx.resolveColor('text')` colours differ.
+
+2. **Fix the SVG gradient id collision (R4's own named Watch-out, unfixed at both call sites).**
+   `render-svg.ts`'s `renderNodeToSvg` accepts an `idPrefix` parameter (line 356) but neither real
+   call site passes one: `parity-harness.ts:389` and `parity-3way.spec.ts:392` both call
+   `renderNodeToSvg(node)` with zero arguments beyond the node. Pass a per-block `idPrefix` (the
+   block/shape id) at both sites. Test: render two gradient blocks on one slide through the real
+   call path (not a direct `renderNodeToSvg(node, 'a')` unit call), assert the resulting SVG has two
+   `<linearGradient>` defs with different ids and each `fill="url(#…)"` resolves to its own def.
+
+3. **Wire the real contrast solver into production rendering.** `deck-context.ts`'s
+   `deckLayoutContext`/`contextForBlock` never pass a `resolveColor` option into
+   `createLayoutContext`, so every real render falls back to `layout-child.ts`'s
+   `defaultResolveColor` — a flat `tokens.color[role]` lookup — while the real luminance-aware
+   solver (`tokens.ts`'s `resolveColor(role, ctx, tokens, theme)`) is only ever exercised by its own
+   spec file. Wire it through so `ctx.resolveColor` in production actually reflects `ctx.surface`'s
+   luminance, honouring R4 Do item 2's "text colors keep passing contrast" claim for real. Test: a
+   role-valued `on` over a dark gradient surface resolves to a light hex through the real render
+   path (`deckLayoutContext`), not just in a hand-built `createLayoutContext` unit test.
+
+4. **Fix `validateStyle`'s contrast check to use the block's own surface.** `validate-deck-spec.ts`
+   (`~line 597–660`) checks a literal `on` against `tokens.color.surface` — the theme's nominal
+   surface — instead of the block instance's own resolved `style.surface`. A block with a custom
+   dark gradient and a literal light `on` (correct against its own background) gets checked against
+   an unrelated colour. Fix the baseline to the instance's resolved surface; add the two tests that
+   don't exist today for `style/low-contrast-on` and `style/gradient-few-stops` (currently zero
+   coverage — `validate-deck-spec.spec.ts` was untouched by either Phase B commit).
+
+5. **Add the Paint round-trip deep-copy test.** The only `style` round-trip test
+   (`slide-decompiler.spec.ts:613–650`) uses a string-valued `style.surface` and asserts only
+   `toEqual`. Add a case with a gradient `Paint` (nested `stops` array) asserting both `toEqual` and
+   `not.toBe` on the `stops` array specifically, per DoD 5 — a shallow copy sharing the array would
+   pass `toEqual` today and corrupt on the next edit.
+
+6. **Finish wiring the three blocks R4 named and didn't touch.** `tls-l-section`, `tls-l-overlay`,
+   and `tls-c-hero`'s layout files still don't reference `ctx.resolveColor('surface')`/`ctx.style`
+   at all (confirmed via `git show --stat` on both Phase B commits — neither touched these three
+   files). Wire them the same way `tls-l-card`/`tls-t-takeaway` already are.
+
+7. **Ship R4's own named flagship deliverable.** `demo-deck.json` was not touched by either Phase B
+   commit except to add R8's image block — slide 2 (`section`) still has no `style.surface` at all.
+   Give it the gradient R4's Expected output promised, and confirm via `deck-demo.js` that it
+   renders in both the editor and the viewer, and that `renderNodeToSvg` emits a real
+   `<linearGradient>` def for it (this also exercises items 1–3 together, in the actual demo).
+
+8. **Fix motion wiring reading the wrong source of truth (R5).** `playBlockReveal` (called from
+   `DeckViewer.tsx:523` and `PresentationRuntime.tsx:193`) takes `spec: BlockSpec` from
+   `shapeToBlock(shape)`, which reconstructs `spec.motion` from the shape's `meta.motion` snapshot
+   (`shape-bridge.ts:156+`) — **not** from `shape.props.animation`, the actual persisted
+   `ShapeAnimation` that `blockToShape`/`deriveShapeAnimation` computes and that R12's (Phase C)
+   inspector is specified to write into directly. Today the numbers happen to agree because nothing
+   yet edits `shape.props.animation` independently of `meta.motion`; the moment R12 lands, playback
+   will silently ignore an inspector edit to delay/duration. Fix `shapeToBlock` to read
+   `shape.props.animation`'s `delayMs`/`durationMs`/`effect`/`easing` fields (when present) into the
+   `BlockSpec.motion` it returns, so playback and persistence agree by construction. Test: mutate
+   `shape.props.animation.delayMs` directly without touching `meta.motion` (simulating an inspector
+   edit), call `shapeToBlock` then `playBlockReveal` with a recording driver, assert the driver
+   receives the new delay.
+
+9. **Populate the `easing` field R5 added and never wrote to.** `ResolvedBlockMotion`
+   (`motion/resolve-motion.ts:100–111`) and `deriveShapeAnimation` (`:264–282`) never set `easing`,
+   so the field `types.ts:488–493` added specifically to carry it through to the shape is always
+   `undefined`. Populate it from the resolved preset/spec and pass it into the driver options
+   alongside `duration`/`delay` wherever those are already read.
+
+10. **Fix `slideTimeline` computing from the wrong layer, and disagreeing with the real runtime
+    (R6's own named Watch-out, unfixed).** `motion/timeline.ts`'s `slideTimeline` iterates the raw
+    `SlideSpec.regions`/`free` directly — its own docstring says so — instead of the compiled page
+    (`computeBuildSteps` + each shape's persisted `props.animation`), as the Watch-out explicitly
+    required ("or the two disagree the moment a person edits a delay in the editor"). This is not
+    theoretical: the real auto-advance timer, `state/deck/presentation.ts`'s `stepChainDelayMs`
+    (line ~76), waits `delayMs + durationMs` only, while `blockShowDuration`'s `activeMs` (used
+    inside `slideTimeline`'s totals) adds stagger × (partCount − 1) — the two formulas provably
+    disagree for any staggered block. There is also no tie-break on `cues.sort` (`timeline.ts:349`)
+    for equal `order`, while `presentation.ts:47` tie-breaks by `shapeId.localeCompare`, so the two
+    can also disagree on ordering. Decide the fix's shape explicitly (rebuild `slideTimeline` to
+    consume the compiled page + persisted shape fields as its input, changing its signature if
+    needed; or change `stepChainDelayMs` to match `blockShowDuration`'s formula if stagger really
+    should extend auto-advance — pick one, state which, and make the other match by construction,
+    not coincidence). Then write the acceptance test the backlog asked for and that was never
+    written because it would have failed: recording driver's last `finished` time equals
+    `slideTimeline().totalMs` within one frame, on every demo slide.
+
+11. **Fix `slideTimeline`'s module-level cache ignoring its own `registry` parameter.**
+    `timeline.ts:142–155`'s `_partCountCtx` is a single module-level slot built from whichever
+    `registry` was passed on the *first* call, ever — a second call with a different `registry`
+    silently reuses the first one's part counts. Key the cache by `registry` (e.g. a `WeakMap`), not
+    a bare module-level variable, so this doesn't produce wrong `activeMs` values for custom
+    registries. `_defaultTokens` (line 83) is registry-independent and can stay as-is.
+
+12. **Give onClick steps their own relative clock instead of folding them into the running sum.**
+    The Watch-out asked to "expose both [`totalMs`, and each step's own duration] so a caller does
+    not add human click time into the sum," but `SlideTimelineStep.startsAtMs/endsAtMs`
+    (`timeline.ts:57–62`) are both absolute-from-slide-start and onClick steps are chained into the
+    same cumulative clock as `afterPrevious` (`timeline.ts:378–395`) with no distinction. Add a
+    per-step relative duration (or an `isClickGated` flag) so a caller can compute "auto-play time"
+    excluding human decision gaps, and exclude click-gated wait time from `totalMs` per the original
+    spec.
+
+13. **Make `deckSpecJsonSchema()` actually discriminate by block type (R7, dead code).**
+    `deck-spec-json-schema.ts`'s `blockSchema`/`blockSchemaWithChildren` (lines 153–197) take a
+    `blockTypeSchemas` parameter — built at lines 30–43 with a `const: def.type` discriminator per
+    block — and never reference it in their bodies; they unconditionally return
+    `type: { type: 'string' }, props: { type: 'object' }`, accepting any string type and any props
+    object. This is the core of the "FastAPI/LLM structured-output contract" the task exists for,
+    and it currently validates nothing. Fix `blockSchema` to actually discriminate (a JSON Schema
+    `oneOf` keyed by `type`, or an `if/then` chain, using `blockTypeSchemas`), keeping a genuinely
+    permissive fallback only for types outside the registry if forward-compat is wanted — say so
+    explicitly if you keep it.
+
+14. **Fix the two tests that can't catch item 13 because they don't touch the generated schema.**
+    `capability-digest.spec.ts:377–403` ("schema accepts all 10 golden deck structures") asserts
+    `toHaveProperty` directly on the raw deck JSON, never calling anything from
+    `deckSpecJsonSchema()`. `capability-digest.spec.ts:405–434` ("schema structure rejects a deck
+    with an unknown block type") calls `validateDeckSpec` — the old hand-written validator — not the
+    generated schema. Both would pass unchanged if `deckSpecJsonSchema()` returned `{}`. Rewrite
+    both to run a real (AJV-free, per R7's own Expected output) structural validator against
+    `deckSpecJsonSchema()`'s actual output, so a deck with a fabricated block type or malformed
+    props is rejected by the schema itself.
+
+15. **Record R8's `resolveAsset` host-wiring gap, one way or the other.** `LayoutContext.resolveAsset`
+    is plumbed through `createLayoutContext`/`layoutChild` (`layout-child.ts:65,194,281,292`) and
+    declared on the type, but `deckLayoutContext`/`contextForBlock` — the only entry points
+    `ComponentUtil`, `DeckViewer`, and export actually use — never supply one, so every
+    `tls.m.image` in the running editor/viewer/export today always renders the dashed-frame
+    fallback, including the new demo-deck slide 6 image. Either wire a minimal resolver through to
+    at least one real caller (even a stub id→`/assets/…` map is enough to prove the plumbing reaches
+    a host, consistent with CLAUDE.md's Next.js-integration-deferred scope), or, if that's out of
+    scope here, add one sentence to R8's Acceptance text naming "no host resolves real assets yet;
+    all images render as their fallback frame in the current demo" as an explicit scope cut, so R9's
+    `tls.c.image-text` doesn't get built assuming working images.
+
+**Watch out.** Same lesson as R0.5: every item above was found by reading the diff and the actual
+call sites, not by trusting a green test suite — several of the bugs above (items 1, 2, 10, 13) ship
+behind tests that were written to pass rather than to exercise the real code path. Before marking
+any item done, check that its new test would actually have failed on the pre-fix code (revert the
+fix locally and confirm the test goes red) — a test that passes both before and after a fix is not
+testing the fix.
+
+**Expected output.** New/fixed tests for items 1, 2, 3, 4, 5, 8, 10, 13, 14 that fail on the
+pre-fix code; item 6's three blocks wired; item 7's gradient visible in `deck-demo.js` screenshots
+in both editor and viewer with a `<linearGradient>` in the SVG; item 9's `easing` reaching the
+driver; item 11's cache keyed correctly; item 12's onClick steps excluded from `totalMs`; item 15
+either wired to a real (even stub) host or explicitly recorded as a scope cut.
+
+**Acceptance.** Full suite (`yarn jest packages/tldraw/src/blocks packages/tldraw/src/components`)
+still green after the fixes, with strictly more assertions than before (no test deleted to make a
+fix pass). `npx eslint src/blocks --ext .ts,.tsx` reports 0 errors (warnings unchanged is fine). No
+new npm dependency. No `TldrawApp.version` bump.
 
 ---
 
