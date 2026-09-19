@@ -5,6 +5,11 @@
  * multi-column layout, and text alignment.
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
+ *
+ * V2.3: The Math.min(m.height, inner.height) clamps content to available space.
+ * With V2.1 two-pass region resolution, content can now overflow region bounds
+ * when intrinsic height exceeds allocated height. This clamping may need to be
+ * conditional based on whether a registry is provided for measurement.
  */
 
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'

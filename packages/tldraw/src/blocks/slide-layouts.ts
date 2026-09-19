@@ -14,6 +14,11 @@
  * V2.1 — Two-pass region resolution:
  * - Pass 1 (this function): Returns regions with x, width, and y-start as hints.
  *   Height and y are provisional; the regions that flow to their content.
+ *
+ * V2.2 — Height values as minimums: The box heights above are MINIMUMS for initial layout.
+ * With V2.1 two-pass region resolution, regions can now grow to accommodate measured
+ * content heights when a block registry is provided. These values should be treated as
+ * starting points for vertical alignment, not hard constraints that clip content.
  */
 
 import type { Box, ResolvedTokens } from './types'
@@ -55,6 +60,7 @@ function sectionTitleBand(tokens: ResolvedTokens): number {
 function layoutTitle(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
   const ca = contentArea(frame, tokens)
   const g = gutter(tokens)
+  // V2.2: These heights are MINIMUMS; regions will expand when registry provided
   const titleH = tokens.type.title.size + tokens.space.lg
   const subtitleH = tokens.type.subheading.size + tokens.space.sm
   const totalH = titleH + g + subtitleH
@@ -303,6 +309,7 @@ function layoutQuote(frame: { width: number; height: number }, tokens: ResolvedT
   // Narrow the quote to ~70% of the content width for readability
   const quoteW = Math.round(ca.width * 0.7)
   const quoteX = ca.x + Math.round((ca.width - quoteW) / 2)
+  // V2.2: Height assumes ~3 lines; region can grow with measured content
   const quoteH = tokens.type.lead.size * 3 + tokens.space.lg // room for ~3 lines of lead text
   const attrH = tokens.type.caption.size + tokens.space.sm
   const totalH = quoteH + g + attrH

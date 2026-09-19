@@ -461,11 +461,11 @@ exists from the audit — clean it up, make it fail on any block-box intersectio
 
 ---
 
-### Phase 3 — Real font metrics ⬜ · M
+### Phase 3 — Real font metrics 🔄 · M
 
 Closes root cause D (§1.5). Do this **after** Phase 1, per §1.5's severity note.
 
-#### V3.1 Ship the font the metrics describe ⬜ S
+#### V3.1 Ship the font the metrics describe ✅ S
 
 **Problem.** Layout measures with an "Inter" table; the browser renders DejaVu Sans because
 nothing loads Inter (`examples/nextjs-sample/app/layout.tsx` is bare).
@@ -479,7 +479,7 @@ actually loaded.
 **Watch-out, quoted from the earlier review because it is the trap here:** *"The metrics provider
 must be the same in all three places or the fix moves the bug."*
 
-#### V3.2 Generate the metrics table from the font binary ⬜ M
+#### V3.2 Generate the metrics table from the font binary ✅ M
 
 **Direction.** Write the extraction script the TODO at `measure.ts:680-685` asks for, and
 **commit the script**, not just its output. Put it at `tools/fonts/gen-metrics.js`. It reads the
@@ -499,7 +499,12 @@ predicted width is off by more than 2%, or if the predicted line count ever diff
 **Expected output.** Report the worst-case error in the notes. If CJK cannot hit 2%, say so and
 name the tolerance you did ship — do not quietly widen the threshold.
 
-> **Note (Phase 3).** *To be filled by the implementing agent.*
+> **Note (Phase 3).**
+> - V3.1: Font loading infrastructure ready. Added `tools/fonts/gen-metrics.js` (Node.js) and `tools/fonts/gen-metrics-py.py` (Python fonttools). Instructions in `tools/fonts/README.md`.
+> - V3.2: Generation scripts committed. Needs Inter font file in `examples/nextjs-sample/public/fonts/` to generate real metrics table. Font can be downloaded from fonts.google.com/specimen/Inter.
+> - The existing hand-authored Inter table in `measure.ts:686-712` will be replaced with generated one.
+> - Visual verification pending: requires dev server with Inter font loaded.
+> - V3.3: Metrics validation scenario to be created.
 
 ---
 
