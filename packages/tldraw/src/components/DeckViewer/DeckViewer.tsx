@@ -445,11 +445,25 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
           animateCompletersRef.current.set(shapeId, completeResolve)
 
           if (reducedMotion) {
-            // Reduced motion: skip animate(), call onComplete immediately
+            // Reduced motion: no animate(). Settle the BLOCK and its parts to their
+            // final state. The wrapper can still carry the hidden state applied while
+            // this step was un-revealed, and nothing else in this branch clears it —
+            // returning early here is what left animated html blocks invisible.
+            if (animation) motionDriver.set(el, visibleState(animation.effect))
+            const parts = hostRoot.querySelectorAll<HTMLElement>('[data-part]')
+            for (let i = 0; i < parts.length; i++) parts[i].style.opacity = ''
             completeResolve()
             animateCompletersRef.current.delete(shapeId)
             return
           }
+
+          // R3 "hidden state before reveal", in the order that matters: hide the
+          // parts, then make the BLOCK wrapper visible, then let animate() own the
+          // reveal. The wrapper was hidden when this step was un-revealed and only
+          // this branch clears it — without it the whole block stays invisible.
+          const animateParts = hostRoot.querySelectorAll<HTMLElement>('[data-part]')
+          for (let i = 0; i < animateParts.length; i++) animateParts[i].style.opacity = '0'
+          if (animation) motionDriver.set(el, visibleState(animation.effect))
 
           const rt: BlockMotionRuntime = {
             driver: motionDriver,

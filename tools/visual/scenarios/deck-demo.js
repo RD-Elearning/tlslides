@@ -91,11 +91,15 @@ module.exports = {
         const slideContainer = viewer.querySelector('[data-testid="deck-viewer-slide"]')
         if (!slideContainer) return { error: 'no slide container' }
 
-        // Get all text-bearing elements (nodes with data-part that contain text).
+        // Get LEAF text-bearing elements: a part that carries text and has no
+        // part-descendant. Including container parts (e.g. the `root` group, whose
+        // textContent is the concatenation of its children) makes the check
+        // trivially fail on every parent/child pair — their boxes coincide by
+        // construction — which says nothing about overlapping text.
         const textElements = Array.from(
           slideContainer.querySelectorAll('[data-part]')
         ).filter((el) => {
-          // Only check elements that have visible text content.
+          if (el.querySelector('[data-part]')) return false
           const text = el.textContent?.trim()
           return text && text.length > 0
         })

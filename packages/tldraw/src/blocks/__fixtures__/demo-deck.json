@@ -189,6 +189,34 @@
         }
       ],
       "notes": "Close on the commitment, not the thanks."
+    },
+    {
+      "id": "sl_07",
+      "layout": "blank",
+      "role": "content",
+      "rhythm": "anchor",
+      "regions": {
+        "content": [
+          { "id": "b_07_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [
+              { "text": "Why teams " },
+              { "text": "switch", "bold": true }
+            ] }, "size": "title", "align": "start" },
+            "motion": { "preset": "fade-up", "order": 1 } },
+          { "id": "b_07_grid", "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                { "icon": "zap", "title": "Fast", "desc": "Optimised for speed at every layer of the stack." },
+                { "icon": "shield", "title": "Secure", "desc": "End-to-end encryption keeps your data safe." },
+                { "icon": "globe", "title": "Global", "desc": "Deployed across 30+ regions worldwide." }
+              ],
+              "columns": 3,
+              "gap": 24
+            },
+            "motion": { "preset": "stagger-children", "order": 2, "trigger": "onClick" } }
+        ]
+      },
+      "notes": "Three-feature grid, revealed cell by cell."
     }
   ]
 }

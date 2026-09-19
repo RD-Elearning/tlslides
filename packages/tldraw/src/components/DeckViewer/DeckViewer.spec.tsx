@@ -237,8 +237,51 @@ describe('DeckViewer honours prefers-reduced-motion', () => {
 })
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
-/* 3. cancelAll on slide change and on unmount                                     */
+/* 2b. An animated html block must actually become visible (R10 regression)         */
 /* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('an animated kind:html block is revealed, not left hidden', () => {
+  // sl_01 holds `tls.c.hero` — a `kind: 'html'` block with `animate()`. Its wrapper is
+  // given the hidden state while the reveal step is pending; the reveal branch must
+  // settle it VISIBLE. It used to `return` early (right after calling `onComplete` in
+  // the reduced-motion path) and never applied a visible state, so the whole block —
+  // and every other animated html block — stayed invisible. Found by driving the real
+  // browser (`tools/visual/shoot.js deck-demo`), invisible to the whole jest suite.
+  const stepCount = computeBuildSteps(deckSpecToDocument(DEMO_DECK).document.pages['sl_01']).length
+
+  it('reduced motion: settles the block wrapper visible and leaves no part at opacity 0', () => {
+    mockMatchMedia(true)
+    const { driver, calls } = makeStubDriver()
+    const { container, rerender } = render(
+      <DeckViewer spec={DEMO_DECK} slideIndex={0} buildStep={0} driver={driver} onBuildStepChange={noop} />
+    )
+    for (let step = 1; step <= stepCount; step++) {
+      rerender(
+        <DeckViewer spec={DEMO_DECK} slideIndex={0} buildStep={step} driver={driver} onBuildStepChange={noop} />
+      )
+    }
+
+    // The html block really is mounted (host root rendered by HostMount).
+    expect(container.querySelector('[data-render]')).not.toBeNull()
+
+    // Its parts must not be left hidden by the "hidden before reveal" stamp.
+    const parts = Array.from(container.querySelectorAll('[data-part]')) as HTMLElement[]
+    expect(parts.length).toBeGreaterThan(0)
+    for (const part of parts) {
+      expect(part.style.opacity).not.toBe('0')
+    }
+
+    // And the block WRAPPER itself must have been settled to a visible state. `set` is
+    // called with the hidden state while the step is pending, so assert the LAST state
+    // applied to the wrapper — this is the assertion that fails on the pre-fix code,
+    // where the branch returned early and the wrapper stayed at opacity 0.
+    const wrapperSets = calls.set.filter(
+      (c) => (c.target as HTMLElement).dataset.blockId !== undefined
+    )
+    expect(wrapperSets.length).toBeGreaterThan(0)
+    expect(wrapperSets[wrapperSets.length - 1].state.opacity).toBe(1)
+  })
+})
 
 describe('DeckViewer cancels motion on slide change and unmount', () => {
   it('calls cancelAll exactly once per slide change, and once more on unmount', () => {

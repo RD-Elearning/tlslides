@@ -175,8 +175,9 @@ const SLIDES: SlideBlocks[] = DECK.slides.map((slide) => {
 })
 
 describe('Q17 three-way parity — ground truth + SVG export (Node-only)', () => {
-  it('compiles all 6 demo slides with every block resolving to a registered definition', () => {
-    expect(SLIDES).toHaveLength(6)
+  it('compiles every demo slide with every block resolving to a registered definition', () => {
+    // Derive from the fixture; the deck grows as blocks land (R10 added sl_07).
+    expect(SLIDES).toHaveLength(DECK.slides.length)
     for (const slide of SLIDES) {
       expect(slide.blocks.length).toBeGreaterThan(0)
       for (const b of slide.blocks) {

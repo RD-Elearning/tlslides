@@ -15,10 +15,12 @@ describe('W1 on the real demo deck', () => {
     expect(theme.colors.background).toMatch(/^#|gradient|rgb/)
   })
 
-  it('compiles all 6 slides into pages with shapes and no compile errors', () => {
+  it('compiles every slide into a page with shapes and no compile errors', () => {
     const { document, findings } = deckSpecToDocument(DECK)
     const pageIds = Object.keys(document.pages)
-    expect(pageIds).toHaveLength(6)
+    // Derive from the fixture rather than hardcoding a count: the deck grows as
+    // blocks land (R10 added sl_07, the feature-grid slide).
+    expect(pageIds).toHaveLength(DECK.slides.length)
     for (const id of pageIds) {
       expect(Object.keys(document.pages[id].shapes).length).toBeGreaterThan(0)
     }
