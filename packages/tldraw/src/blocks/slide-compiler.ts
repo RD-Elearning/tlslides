@@ -12,6 +12,13 @@
  * height (or the equal-split fallback when layout throws), gaps go between them,
  * and leftover height is distributed per the region's vertical alignment.
  *
+ * V2.1 — Two-pass region resolution:
+ * - Pass 1: Layout produces region boxes with x, width, and y-start as hints.
+ *   Height and y are provisional for regions in a vertical run.
+ * - Measure: Block intrinsic heights computed per region yield natural heights.
+ * - Pass 2: Re-flow y-positions within vertical runs when blocks are measured
+ *   (registry provided). Fallback equal-split keeps original behavior unchanged.
+ *
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no side effects.
  */
 
@@ -113,11 +120,96 @@ export function compileSlide(
   // 2. Get vertical alignment map from the resolved layout.
   const regionAlignMap = resolvedLayout?.regionAlign
 
+  // V2.1: Two-pass region resolution.
+  // Pre-compute natural heights when registry is provided.
+  const regionNaturalHeights = new Map<string, number>()
+  const knownRegionNames = Object.keys(regionBoxes)
+  const gap = tokens.space.md
+
+  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
+  if (registry) {
+    for (const regionName of knownRegionNames) {
+      const regionBox = regionBoxes[regionName]
+      const blocks = spec.regions[regionName] ?? []
+
+      if (blocks.length === 0 || !regionBox) continue
+
+      const measureCtx = createLayoutContext({
+        box: { width: regionBox.width, height: regionBox.height },
+        tokens,
+        surface: MINIMAL_SURFACE,
+        registry,
+      })
+
+      const blockHeights = blocks.map((block) => {
+        const def = registry.get(block.type)
+        if (!def) return -1
+        try {
+          const node = def.layout(block.props as Record<string, unknown>, measureCtx)
+          return node.box.height
+        } catch {
+          return -1
+        }
+      })
+
+      // Compute natural height (measured blocks + gaps)
+      const gapsTotal = blocks.length > 1 ? (blocks.length - 1) * gap : 0
+      const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : 0), 0)
+      regionNaturalHeights.set(regionName, measuredTotal + gapsTotal)
+    }
+  }
+
+  // V2.1: Re-flow region y-positions based on natural heights (Pass 2).
+  // Sort regions by their layout y-position to identify vertical runs.
+  const regionYPositions = new Map<string, number>()
+  const regionYHeights = new Map<string, number>()
+
+  if (registry && regionNaturalHeights.size > 0) {
+    // Build a map of region -> naturalHeight for quick lookup
+    const needsReFlow = Object.keys(regionBoxes).some((regionName) => {
+      const naturalHeight = regionNaturalHeights.get(regionName)
+      const regionBox = regionBoxes[regionName]
+      return regionBox && naturalHeight && naturalHeight > regionBox.height
+    })
+
+    if (needsReFlow) {
+      const sortedByY = [...knownRegionNames].sort((a, b) => {
+        const boxA = regionBoxes[a]
+        const boxB = regionBoxes[b]
+        if (!boxA || !boxB) return 0
+        return boxA.y - boxB.y
+      })
+
+      // Find the first region with content to determine run start
+      const firstRegionWithContent = sortedByY.find((name) => {
+        const boxes = spec.regions[name] ?? []
+        return boxes.length > 0
+      })
+
+      if (firstRegionWithContent) {
+        let currentY = regionBoxes[firstRegionWithContent]?.y ?? 0
+        for (const regionName of sortedByY) {
+          const regionBox = regionBoxes[regionName]
+          if (!regionBox) continue
+
+          const blocks = spec.regions[regionName] ?? []
+          if (blocks.length === 0) continue
+
+          const naturalHeight = regionNaturalHeights.get(regionName) ?? regionBox.height
+          const effectiveHeight = Math.max(naturalHeight, regionBox.height)
+
+          regionYPositions.set(regionName, currentY)
+          regionYHeights.set(regionName, effectiveHeight)
+
+          currentY = currentY + effectiveHeight + gap
+        }
+      }
+    }
+  }
+
   // 3. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
   let childIndex = 1
-
-  const knownRegionNames = Object.keys(regionBoxes)
 
   for (const [regionName, blocks] of Object.entries(spec.regions)) {
     const regionBox: Box | undefined = regionBoxes[regionName]
@@ -137,12 +229,16 @@ export function compileSlide(
     }
 
     const regionAlign = regionAlignMap?.[regionName] ?? 'start'
-    const gap = tokens.space.md
 
     if (blocks.length === 0) {
       // Empty region — no shapes.
       continue
     }
+
+    // V2.1: Get the y-position for this region.
+    // With registry: use re-flowed position based on natural heights.
+    // Without registry: use layout position with alignment offset.
+    const flowedY = regionYPositions.get(regionName) ?? regionBox.y
 
     // Stack blocks vertically within the region box.
     // When a registry is provided, measure each block's intrinsic height first.
@@ -188,19 +284,30 @@ export function compileSlide(
     // Replace fallback markers with the computed fallback height.
     const finalHeights = blockHeights.map((h) => (h >= 0 ? h : fallbackHeight))
 
-    // Distribute leftover space per vertical alignment.
+    // V2.1: Use natural height when registry provided for effective region height.
+    const hasRegistry = registry !== undefined
+    const regionEffectiveHeight = hasRegistry ? (regionNaturalHeights.get(regionName) ?? regionBox.height) : regionBox.height
     const totalAssigned = finalHeights.reduce((sum, h) => sum + h, 0) + gapsTotal
-    const leftover = regionBox.height - totalAssigned
+    const leftoverInRegion = regionEffectiveHeight - totalAssigned
 
-    let offset = 0
-    if (regionAlign === 'center') {
-      offset = Math.max(0, leftover / 2)
-    } else if (regionAlign === 'end') {
-      offset = Math.max(0, leftover)
+    // Determine y-start for this region
+    // V2.1: When registry provided, use re-flowed position. Otherwise, use layout position with alignment.
+    let startY: number
+    if (hasRegistry) {
+      // Use the re-flowed y-position from Pass 2
+      startY = flowedY
+    } else {
+      // Use original position with alignment offset
+      let offset = 0
+      if (regionAlign === 'center') {
+        offset = Math.max(0, leftoverInRegion / 2)
+      } else if (regionAlign === 'end') {
+        offset = Math.max(0, leftoverInRegion)
+      }
+      startY = regionBox.y + offset
     }
-    // 'start': offset = 0 (default)
 
-    let currentY = regionBox.y + offset
+    let currentY = startY
 
     for (let i = 0; i < blocks.length; i++) {
       const block = blocks[i]

@@ -10,6 +10,10 @@
  * column gutter defaults to `tokens.space['xl']` (48), both from doc 02 §2.3.
  *
  * All coordinates are absolute within the frame (origin top-left).
+ *
+ * V2.1 — Two-pass region resolution:
+ * - Pass 1 (this function): Returns regions with x, width, and y-start as hints.
+ *   Height and y are provisional; the regions that flow to their content.
  */
 
 import type { Box, ResolvedTokens } from './types'
