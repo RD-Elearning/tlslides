@@ -300,7 +300,7 @@ export function estimateMetrics(
     return {
       width: 1,
       height: Math.max(1, Math.round(lh) + 2),
-      lines: [{ text: '', baseline: Math.round(lh * 0.8), width: 0 }],
+      lines: [{ text: '', top: 0, baseline: Math.round(lh * 0.8), width: 0 }],
     }
   }
 
@@ -332,8 +332,9 @@ export function estimateMetrics(
   }
 
   // Build TextLine[] — each line gets its own runs (split from the original runs).
-  // Baselines are cumulative from the text node's origin (top-left of the text box),
-  // so the renderer can position each line with `y = line.baseline` directly.
+  // `top` is the distance from the top of the text box to the top of this line's line box.
+  // `baseline` is the distance from the top of the text box to the glyph baseline.
+  // DOM renderer uses `top` for CSS `top`; SVG renderer uses `baseline` for <tspan y>.
   const withinLineBaseline = lineHeight * 0.8
   const lines: TextLine[] = visualLines.map((lineText, i) => {
     const lineWidth = measureStringWidth(lineText, latinWidth, fontSize)
@@ -342,6 +343,7 @@ export function estimateMetrics(
       : undefined
     return {
       text: lineText,
+      top: Math.round(i * lineHeight),
       baseline: Math.round(i * lineHeight + withinLineBaseline),
       width: Math.round(lineWidth),
       runs: lineRuns,
@@ -508,7 +510,7 @@ export function canvasMetrics(ctx: MinimalCanvasContext): MeasureTextProvider {
       return {
         width: 1,
         height: Math.max(1, Math.round(lh) + 2),
-        lines: [{ text: '', baseline: Math.round(lh * 0.8), width: 0 }],
+        lines: [{ text: '', top: 0, baseline: Math.round(lh * 0.8), width: 0 }],
       }
     }
 
@@ -554,6 +556,7 @@ export function canvasMetrics(ctx: MinimalCanvasContext): MeasureTextProvider {
       return {
         text: lineText,
         baseline: Math.round(i * lineHeight + withinLineBaseline),
+        top: Math.round(i * lineHeight),
         width: Math.round(lineWidth),
         runs: lineRuns,
       }
@@ -829,7 +832,7 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
       return {
         width: 1,
         height: Math.max(1, Math.round(lh) + 2),
-        lines: [{ text: '', baseline: Math.round(lh * 0.8), width: 0 }],
+        lines: [{ text: '', top: 0, baseline: Math.round(lh * 0.8), width: 0 }],
       }
     }
 
@@ -866,6 +869,7 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
         : undefined
       return {
         text: lineText,
+        top: Math.round(i * lineHeight),
         baseline: Math.round(i * lineHeight + withinLineBaseline),
         width: Math.round(lineWidth),
         runs: lineRuns,

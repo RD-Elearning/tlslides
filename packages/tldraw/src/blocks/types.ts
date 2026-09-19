@@ -439,7 +439,12 @@ export interface Stroke {
 export interface TextLine {
   /** The text content. */
   text: string
-  /** Baseline position relative to the text node's origin. */
+  /** Distance from the top of the text box to the top of this line's line box, in slide units.
+   *  DOM renderer uses this for CSS `top`; SVG renderer uses `baseline` for SVG `<text y>`.
+   *  Optional for backward compatibility with older persisted data (additive schema). */
+  top?: number
+  /** Baseline position relative to the text node's origin. SVG renderer uses this for
+   *  `<tspan y="${node.box.y + line.baseline}">`. */
   baseline: number
   /** Width when rendered with the given style. */
   width: number

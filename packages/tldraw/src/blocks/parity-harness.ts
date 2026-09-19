@@ -149,7 +149,8 @@ function nodeToHtml(node: LayoutNode): string {
           const content = line.runs
             ? line.runs.map((run) => esc(run.text)).join('')
             : esc(line.text)
-          return `<div style="position:absolute;top:${line.baseline}px;white-space:pre">${content}</div>`
+          const top = line.top ?? line.baseline - node.style.size * node.style.lineHeight * 0.8
+          return `<div style="position:absolute;top:${top}px;white-space:pre">${content}</div>`
         })
         .join('')
       const style = `${posStyle(node.box)};font-family:${node.style.family};font-size:${node.style.size}px;line-height:${node.style.lineHeight};letter-spacing:${node.style.letterSpacing}em;color:${node.style.color}`

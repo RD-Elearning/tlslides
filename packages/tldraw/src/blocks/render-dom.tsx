@@ -547,7 +547,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
               key={i}
               style={{
                 position: 'absolute',
-                top: `${line.baseline}px`,
+                top: `${line.top ?? line.baseline - node.style.size * node.style.lineHeight * 0.8}px`,
                 whiteSpace: 'pre',
               }}
             >

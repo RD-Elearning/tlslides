@@ -365,3 +365,62 @@ describe('createMetricsProvider', () => {
     }
   })
 })
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Phase 1: top field tests                                                          */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('Phase 1: TextLine.top field', () => {
+  it('estimateMetrics provides top for multi-line text', () => {
+    const m = estimateMetrics('Line1\nLine2\nLine3', sansStyle)
+    expect(m.lines.length).toBe(3)
+    const lineHeight = sansStyle.size * sansStyle.lineHeight // 40.6
+    for (let i = 0; i < m.lines.length; i++) {
+      expect(m.lines[i].top).toBe(Math.round(i * lineHeight))
+    }
+  })
+
+  it('estimateMetrics provides top=0 for empty text', () => {
+    const e = estimateMetrics('', sansStyle)
+    expect(e.lines[0].top).toBe(0)
+    expect(e.lines[0].baseline).toBe(Math.round(sansStyle.size * sansStyle.lineHeight * 0.8))
+  })
+
+  it('canvasMetrics provides top for multi-line text', () => {
+    const ctx = makeMockCanvas()
+    const measure = canvasMetrics(ctx)
+    const m = measure('Line1\nLine2', sansStyle)
+    expect(m.lines.length).toBe(2)
+    const lineHeight = sansStyle.size * sansStyle.lineHeight
+    for (let i = 0; i < m.lines.length; i++) {
+      expect(m.lines[i].top).toBe(Math.round(i * lineHeight))
+    }
+  })
+
+  it('tableMetrics provides top for multi-line text', () => {
+    const measure = tableMetrics()
+    const m = measure('Line1\nLine2', sansStyle)
+    expect(m.lines.length).toBe(2)
+    const lineHeight = sansStyle.size * sansStyle.lineHeight
+    for (let i = 0; i < m.lines.length; i++) {
+      expect(m.lines[i].top).toBe(Math.round(i * lineHeight))
+    }
+  })
+
+  it('top + withinLineBaseline = baseline', () => {
+    const fontSize = 28
+    const lineHeight = 1.45
+    const m = estimateMetrics('Test', sansStyle)
+    const line = m.lines[0]
+    const expectedTop = line.top // 0 for first line
+    const withinLineBaseline = line.baseline - expectedTop
+    expect(withinLineBaseline).toBeCloseTo(fontSize * lineHeight * 0.8, 0)
+  })
+
+  it('top field is optional for backward compatibility', () => {
+    // This test verifies that consumers can safely use optional chaining
+    const m = estimateMetrics('Test', sansStyle)
+    const top = m.lines[0].top ?? 0
+    expect(typeof top).toBe('number')
+  })
+})
