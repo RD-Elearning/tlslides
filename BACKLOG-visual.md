@@ -504,7 +504,7 @@ name the tolerance you did ship — do not quietly widen the threshold.
 > - V3.2: Generation scripts committed. Needs Inter font file in `examples/nextjs-sample/public/fonts/` to generate real metrics table. Font can be downloaded from fonts.google.com/specimen/Inter.
 > - The existing hand-authored Inter table in `measure.ts:686-712` will be replaced with generated one.
 > - Visual verification pending: requires dev server with Inter font loaded.
-> - V3.3: Metrics validation scenario to be created.
+> - V3.3: Metrics validation scenario created (metrics-check.js). Pending font file to run.
 
 ---
 
