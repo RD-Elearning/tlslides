@@ -353,6 +353,9 @@ export default function EditDeck({ deckId }: EditDeckProps) {
               appRef.current = app
               // Hide the thumbnail strip (F5 chrome finding) so it doesn't cover the slide.
               app.setSetting('showDeck', () => false)
+              // Same convention as Editor.tsx — lets tools/visual scenarios drive this page
+              // through the real app instance instead of only the DOM.
+              ;(window as unknown as { tlapp: TldrawApp }).tlapp = app
             }}
           />
         </div>

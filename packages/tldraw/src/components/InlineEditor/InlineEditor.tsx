@@ -1,128 +1,124 @@
 /**
- * Inline Editor - provides editable overlay for text blocks.
- * R11 implementation - ContentEditable with portal to avoid overflow clipping.
+ * Inline Editor — contentEditable overlay for a block's text part.
+ * R11 implementation.
  */
 
 import * as React from 'react'
-import { styled } from '@stitches/react'
-import { useTldraw } from '../../hooks'
-import { setAtPath } from '../../blocks/prop-path'
+import { styled } from '../../styles'
 
 export interface InlineEditorProps {
-  shapeId: string
   propPath: string
-  initialValue: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean }> }
-  posY: number
-  posX: number
-  width: number
-  height: number
-  style: { size: number; color: string }
-  onRequestClose: () => void
+  initialValue: string
+  /** The target element's own bounding rect (viewport coordinates), used to position the
+   *  overlay exactly on top of the text it is replacing. */
+  rect: DOMRect
+  style?: { size?: number; color?: string }
+  onSave: (value: string) => void
+  onCancel: () => void
 }
 
 export const InlineEditor: React.FC<InlineEditorProps> = ({
-  shapeId,
   propPath,
   initialValue,
-  posY,
-  posX,
-  width,
-  height,
+  rect,
   style,
-  onRequestClose,
+  onSave,
+  onCancel,
 }) => {
   const editorRef = React.useRef<HTMLDivElement>(null)
-  const tldraw = useTldraw()
-  
-  const plainText = typeof initialValue === 'string' 
-    ? initialValue 
-    : initialValue.runs?.map(r => r.text).join('') || ''
-  
-  const handleBlur = (e: React.FocusEvent) => {
-    const value = e.target.innerText
-    if (value !== plainText) {
-      tldraw.updateShapes({ id: shapeId, props: { [propPath]: value } })
+  const savedRef = React.useRef(false)
+
+  // Set the starting text once via `textContent` (never `dangerouslySetInnerHTML` — the
+  // value is arbitrary deck content, and rendering it as HTML would let a crafted prop value
+  // inject markup/scripts into the editor's own DOM), then focus and select it.
+  React.useEffect(() => {
+    const el = editorRef.current
+    if (!el) return
+    el.textContent = initialValue
+    el.focus()
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const commit = () => {
+    if (savedRef.current) return
+    savedRef.current = true
+    const value = editorRef.current?.textContent ?? initialValue
+    if (value !== initialValue) {
+      onSave(value)
+    } else {
+      onCancel()
     }
-    onRequestClose()
   }
-  
+
+  const cancel = () => {
+    if (savedRef.current) return
+    savedRef.current = true
+    onCancel()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      onRequestClose()
-    }
-    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      editorRef.current?.blur()
+      cancel()
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      commit()
     }
   }
-  
-  React.useLayoutEffect(() => {
-    if (editorRef.current) {
-      const rect = editorRef.current.getBoundingClientRect()
-      editorRef.current.style.position = 'fixed'
-      editorRef.current.style.left = `${rect.left}px`
-      editorRef.current.style.top = `${rect.top}px`
-    }
-  }, [])
-  
+
   return (
-    <EditorPortal>
-      <EditorOverlay onClick={onRequestClose} />
+    <EditorPortal data-prop-path={propPath}>
+      <EditorOverlay onMouseDown={commit} />
       <EditorDiv
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        onBlur={handleBlur}
+        onBlur={commit}
         onKeyDown={handleKeyDown}
+        onMouseDown={(e) => e.stopPropagation()}
         style={{
-          width,
-          height,
-          fontSize: style.size,
-          color: style.color,
-          fontWeight: 'normal',
-          lineHeight: 1.2,
-          outline: '2px solid transparent',
-          outlineOffset: '2px',
-          whiteSpace: 'pre-wrap',
-          overflowWrap: 'break-word',
-          borderRadius: '4px',
-          padding: '4px 8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          border: '1px solid #0066ff',
+          left: rect.left,
+          top: rect.top,
+          width: rect.width,
+          minHeight: rect.height,
+          fontSize: style?.size,
+          color: style?.color,
         }}
-        dangerouslySetInnerHTML={{ __html: plainText }}
       />
     </EditorPortal>
   )
 }
 
-/* Styled components */
-
 const EditorPortal = styled('div', {
   position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
+  inset: 0,
   pointerEvents: 'none',
   zIndex: 1000,
-  background: 'transparent',
 })
 
 const EditorOverlay = styled('div', {
   position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  cursor: 'pointer',
+  inset: 0,
   pointerEvents: 'auto',
 })
 
 const EditorDiv = styled('div', {
   position: 'absolute',
-  cursor: 'text',
   pointerEvents: 'auto',
+  cursor: 'text',
   userSelect: 'text',
+  lineHeight: 1.2,
+  whiteSpace: 'pre-wrap',
+  overflowWrap: 'break-word',
+  borderRadius: '4px',
+  padding: '2px 4px',
+  outline: '2px solid #0066ff',
+  outlineOffset: '2px',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
 })

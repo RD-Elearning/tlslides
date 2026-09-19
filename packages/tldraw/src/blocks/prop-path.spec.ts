@@ -9,8 +9,14 @@ describe('prop-path', () => {
 
   it('setAtPath sets a value at nested path', () => {
     const obj = { items: [{ text: 'hello' }] }
-    const result = setAtPath(obj, 'items.0.text', 'world')
+    const result = setAtPath(obj, 'items.0.text', 'world') as { items: Array<{ text: string }> }
     expect(result.items[0].text).toBe('world')
+  })
+
+  it('setAtPath does not mutate the input object (undo safety)', () => {
+    const obj = { items: [{ text: 'hello' }] }
+    setAtPath(obj, 'items.0.text', 'world')
+    expect(obj.items[0].text).toBe('hello')
   })
 
   it('parsePropPath parses dot-separated paths', () => {

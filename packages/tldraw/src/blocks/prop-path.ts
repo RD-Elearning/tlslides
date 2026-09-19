@@ -18,7 +18,16 @@ export function parsePropPath(path: string): (string | number)[] {
   })
 }
 
-/** Set a value at a dot-separated path in an object, returning a new object. */
+/**
+ * Set a value at a dot-separated path in an object, returning a new object.
+ *
+ * Every container on the path is shallow-copied before being written to, so the input
+ * `obj` (and any array/object it contains) is never mutated. That matters here specifically:
+ * the result is handed straight to `app.updateShapes`, whose undo stack captures a "before"
+ * snapshot from the *current* shape — if this function mutated a nested array/object in
+ * place, that snapshot would already reflect the new value by the time it's read, silently
+ * breaking undo for any nested path (e.g. a bullet item's `items.0.text`).
+ */
 export function setAtPath(
   obj: Record<string, unknown>,
   path: string,
@@ -30,50 +39,34 @@ export function setAtPath(
     return { ...obj, ...value as Record<string, unknown> }
   }
 
-  // Build the new object with the value set at the path
-  const result = { ...obj }
-  let current: Record<string, unknown> = result
-
-  for (let i = 0; i < keys.length - 1; i++) {
-    const key = keys[i]
-    const nextKey = keys[i + 1]
-    const currentValue = current[key]
-
-    // If the next key is a number, we're in an array
-    if (typeof nextKey === 'number') {
-      // Ensure current[key] is an array
-      if (!Array.isArray(currentValue)) {
-        current[key] = []
+  function set(container: unknown, keys: (string | number)[]): unknown {
+    const [key, ...rest] = keys
+    if (rest.length === 0) {
+      if (typeof key === 'number') {
+        const arr = Array.isArray(container) ? [...container] : []
+        arr[key] = value
+        return arr
       }
-      // Initialize the array element if needed
-      if (!(currentValue instanceof Array) || !(nextKey in currentValue)) {
-        current[key] = []
-      }
-      current = current[key] as Record<string, unknown>
-    } else {
-      // Ensure current[key] is an object
-      if (typeof currentValue !== 'object' || currentValue === null || Array.isArray(currentValue)) {
-        current[key] = {}
-      }
-      current = current[key] as Record<string, unknown>
+      const obj = typeof container === 'object' && container !== null && !Array.isArray(container)
+        ? { ...(container as Record<string, unknown>) }
+        : {}
+      obj[key] = value
+      return obj
     }
+
+    if (typeof key === 'number') {
+      const arr = Array.isArray(container) ? [...container] : []
+      arr[key] = set(arr[key], rest)
+      return arr
+    }
+    const obj = typeof container === 'object' && container !== null && !Array.isArray(container)
+      ? { ...(container as Record<string, unknown>) }
+      : {}
+    obj[key] = set(obj[key], rest)
+    return obj
   }
 
-  // Set the final value
-  const finalKey = keys[keys.length - 1]
-  if (typeof finalKey === 'number') {
-    // We're setting an array element
-    const parent = current
-    if (!Array.isArray(parent)) {
-      // This shouldn't happen if the path is well-formed
-      return result
-    }
-    parent[finalKey] = value
-  } else {
-    current[finalKey] = value
-  }
-
-  return result
+  return set(obj, keys) as Record<string, unknown>
 }
 
 /** Get a value at a dot-separated path in an object. Returns undefined if not found. */

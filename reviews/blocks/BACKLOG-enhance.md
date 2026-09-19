@@ -1395,7 +1395,7 @@ spaced columns, no overlap.
 
 ---
 
-#### R11 · Inline text editing on block parts · M · ⬜
+#### R11 · Inline text editing on block parts · M · 🔄 (core verified in a browser 2026-09-19; gaps named below)
 
 **Goal.** Double-click a text part in the editor, type, press Escape or click away, and the
 block's `props` update as one undo step. This is `BACKLOG.md` **F3** and the most important
@@ -1456,7 +1456,7 @@ old text in one step. Screenshot of the overlay in place.
 
 ---
 
-#### R12 · Block inspector generated from the schema · M · ⬜
+#### R12 · Block inspector generated from the schema · M · 🔄 (core verified in a browser 2026-09-19; gaps named below)
 
 **Goal.** Select a block, see a right-hand panel with three tabs — **Content** (every slot,
 widget by `SlotSpec.type`), **Style** (surface/on/accent as role pickers with a "custom" hex and a
@@ -1475,7 +1475,7 @@ shows it; set `delay = 500`, Motion tab shows the new `totalMs`; Save → GET sh
 
 ---
 
-#### R13 · Block inserter · M · ⬜
+#### R13 · Block inserter · M · 🔄 (core verified in a browser 2026-09-19; gaps named below)
 
 `BACKLOG.md` **F1**. A searchable palette (name, keywords, `describe.when`) with previews drawn by
 `renderNodeToSvg` of each block's `defaults`, dropping the block into the current slide's
@@ -1529,6 +1529,90 @@ auto-advance or voice-over alignment.
 
 ---
 
+**R11/R12/R13 review — 2026-09-19.** Prior commits (`417d212d` "Phase C: Implement R11, R12,
+R13", `e93c1bd5` "Phase D: Complete R11 inline editing integration", `42865814` "Finalize Phase
+C-D") and `reviews/phase-cd-summary.md` claimed these done. This tracker already disagreed (all
+three still ⬜) and that was the accurate signal: none of it worked. What a browser session
+found and what was fixed, so the next reviewer doesn't have to re-discover it:
+
+- `ComponentUtil.tsx` imported `InlineEditor` but never called it — no double-click handler
+  existed at all. `BlockInspector`/`BlockInserter` were never mounted anywhere (`grep` for their
+  names outside their own folders returned nothing) — dead components. **Fixed**: wired into
+  `Tldraw.tsx`'s own `InnerTldraw` (as `BlockInspectorPanel`/`BlockInserterPanel`, same pattern
+  as `LayersPanel`), so any host gets them, not just the Next.js sample.
+- None of the three files type-checked (`tsc --noEmit`: `BlockInserter.tsx` had duplicate
+  `FamilySection`/`FamilyHeader` identifiers and called `blockRegistry.forEach` — not a method;
+  `BlockInspector.tsx` wrote `BlockStyleSpec`/`BlockMotionSpec` onto `shape.style`/a top-level
+  `shape.motion`, neither of which exist on `ComponentShape` — block metadata lives at
+  `props.$block.{style,motion}`, so this silently corrupted the shape's real style object
+  instead of doing anything). **Fixed**, all three now clean.
+- `prop-path.ts`'s `setAtPath` mutated nested arrays/objects in place while also returning a
+  "new" top-level object — for any indexed path (`items.0.text`, i.e. every bullets/list block)
+  this makes undo's "before" snapshot equal the "after" value, since the mutation happens before
+  the snapshot is taken. **Fixed**: every container on the path is now copied, not mutated;
+  regression test in `prop-path.spec.ts`.
+- `InlineEditor.tsx` never actually used `setAtPath` (imported, never called) — it wrote
+  `{ [propPath]: value }` directly, which for `items.0.text` sets a literal, useless
+  `props["items.0.text"]` key while leaving the real `items` array untouched. It also positioned
+  itself from its own post-render `getBoundingClientRect()` (always the viewport's top-left,
+  since it has no explicit position) rather than the target's rect, and used
+  `dangerouslySetInnerHTML` on arbitrary deck text (an XSS opening if a spec ever carries HTML).
+  **Fixed**: position and value now come from the caller (`ComponentUtil`), which owns the
+  merge via `setAtPath`; content is set via `textContent`, never `innerHTML`.
+- Double-click itself doesn't reach a native `dblclick`/React `onDoubleClick`: this app's own
+  click model (`useShapeEvents` in `@tlslides/core`) calls
+  `e.currentTarget.setPointerCapture(e.pointerId)` on `pointerdown`, which retargets every later
+  pointer event at the capturing element — by `pointerup` (let alone a synthetic `dblclick`),
+  `e.target` is the shape's outer container, not the specific `[data-prop-path]` node clicked.
+  **Fixed**: detection moved to `pointerdown` (before capture is set), matching
+  `inputs.isDoubleClick()`'s own 250ms threshold.
+- That same gesture's `pointerup` is independently recognized as a double-click by the app's own
+  click model and runs `SelectTool.onDoubleClickShape`, which unconditionally calls
+  `app.select()` — a store write that raced a synchronous `setEditing()` here and clobbered it
+  back to `null` one render later (verified with instrumented logging in a real browser, not
+  guessed). **Fixed**: opening the editor is deferred one tick (`setTimeout(fn, 0)`) so that
+  settles first — confirmed by re-running the same instrumented browser session.
+- `BlockInserterPanel`'s inserted shape used `blockToShape`'s default `parentId` (the literal
+  string `"page"`), not `app.currentPageId` (a slide id like `sl_01`) — the inserted shape was
+  parented to a page that doesn't exist, and selecting it threw (`Cannot read properties of
+  undefined (reading 'isGhost')`) inside unrelated shape-tree code that assumes every shape's
+  parent page is real. **Fixed**.
+- The "visual tests" the commits claimed (`packages/tldraw/visual-tests/*.js`) imported
+  `@playwright/test` (not a project dependency), used the project's own `tools/visual/shoot.js`
+  scenario format nowhere, and referenced `window.tldrawApp` (the real global, set in
+  `Editor.tsx`'s `onMount`, is `window.tlapp` — never set in `EditDeck.tsx` at all). They could
+  never have run. **Deleted**, replaced with real scenarios that do run against the live Next.js
+  sample: `tools/visual/scenarios/inline-edit.js` and `inserter.js` (`node tools/visual/shoot.js
+  <name>`), plus 3 new jest tests in `ComponentUtil.spec.tsx` covering the nested-path fix and
+  undo safety.
+
+**Verified 2026-09-19**: `yarn jest` in `packages/tldraw` — 167 suites, 2315 passed (77
+pre-existing todo), 0 failing. `tsc --noEmit` — 0 errors in any file this review touched (the
+pre-existing `.spec.ts`/`Tldraw.spec.tsx`/`test/renderWithContext.tsx` errors are untouched
+baseline debt, not from this pass). Both new scenarios pass against a live
+`examples/nextjs-sample` build: `inline-edit.js` double-clicks a real slide's kicker, edits it,
+saves, and reads the new value back off `window.tlapp`; `inserter.js` opens the palette, filters
+to "KPI", inserts a `hero-number` block, and clicks through all three Inspector tabs with zero
+page errors. Screenshots looked at.
+
+**Still open, named — do not re-claim these as done:**
+- **R11**: no Tab-to-next-`data-prop-path` navigation (Tab just leaves the field); rich-text
+  runs are not preserved — a `text` prop that is an array of runs (bold/italic marks) is read
+  back as an empty string and, on save, replaced with a single plain-text run, losing marks.
+  Multi-line parts (`tls-t-body`) don't get a real line-break-on-Enter vs. commit-on-Enter split.
+- **R12**: no gradient editor (Style tab is three solid-color pickers only); the Motion tab's
+  Preview button never renders (`BlockInspectorPanel` passes no `onPlayReveal`, so `playBlockReveal`
+  from R5 is never wired up); slider drags fire one `updateShapes` per `input` event, not one
+  coalesced entry per drag — the spec's explicit undo requirement is not met.
+- **R13**: no SVG preview per block (emoji-by-family icon only); inserted blocks always land as
+  a centered free-floating shape, never matched into a slide's best-fit empty region.
+- Both panels are absolutely positioned to their own `<Tldraw>` container's right edge, which in
+  `examples/nextjs-sample/components/EditDeck.tsx` sits directly against that page's own
+  350px-wide Save/Findings panel — at a narrow viewport the canvas between them gets visibly
+  squeezed. Cosmetic, not attempted here.
+
+---
+
 ## 4. What is deliberately not in this slice
 
 - The remaining ~140 blocks of `BACKLOG.md` Epic E — R9/R10 establish the two authoring
@@ -1560,6 +1644,18 @@ see their notes above for what each phase's own tests could not see. Phase C's e
 **not** met yet: R11 (inline editing), R12 (inspector) and R13 (inserter) are still ⬜, so
 "double-click edits text and survives Save/GET" and "the inspector changes surface, gradient,
 preset and delay and persists them" remain unverified. Next: R11.
+
+**Update 2026-09-19.** A review found R11/R12/R13 had been claimed done in commit messages
+(`417d212d`, `e93c1bd5`, `42865814`) while this tracker still correctly said ⬜ — the code was
+either dead (never mounted), broken (didn't type-check, wrote to the wrong shape fields), or
+both. See the R11/R12/R13 sections above for the full list of what was found and fixed, and for
+what is still genuinely open (gradient editor, Tab navigation, rich-text runs, undo coalescing,
+region-fit insertion, SVG previews) — none of that is done, and none of it should be marked ✅
+until it is. "Double-click edits text and survives Save/GET" now holds, verified in a live
+browser session against `examples/nextjs-sample`, not just in jest. "The inspector changes
+surface, gradient, preset and delay and persists them" is **half true**: surface/text/accent and
+preset/delay/duration/stagger persist; there is no gradient editor. Phase C's exit criteria are
+still not fully met — closer, not closed.
 
 **Phase D.** R14, R15, R16 independent. R16's document should be written **early** (it needs
 no code) so the FastAPI team can start against the mock while Phases B–C run.

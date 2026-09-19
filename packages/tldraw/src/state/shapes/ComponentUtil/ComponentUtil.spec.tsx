@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { Component } from '..'
 import { TldrawComponentsContext, BlockRegistryContext, TldrawContext } from '~hooks'
 import { TldrawApp } from '~state'
 import { ComponentShape, TDShapeType } from '~types'
 import { BlockRegistry } from '~blocks/registry'
+import { registerBuiltInBlocks } from '~blocks/library'
 import { probeRects } from '~blocks/probe-blocks'
 
 function noopEvents() {
@@ -217,5 +218,119 @@ describe('Component shape', () => {
     expect(document.querySelector('[data-part="probe-rects"]')).toBeTruthy()
     // The placeholder component should NOT be rendered
     expect(screen.queryByTestId('placeholder-component')).toBeNull()
+  })
+
+  describe('R11 — inline text editing', () => {
+    // The real detector runs on `pointerdown` (see ComponentUtil.tsx's own comment on why
+    // `dblclick`/`onDoubleClick` can't see the actual target once pointer capture is set), so
+    // the test double-click has to be two `pointerdown`s too, not `fireEvent.doubleClick`.
+    function doubleClick(target: HTMLElement) {
+      fireEvent.pointerDown(target)
+      fireEvent.pointerDown(target)
+    }
+
+    function renderTitleBlock(props: Record<string, unknown>) {
+      const app = new TldrawApp()
+      const registry = new BlockRegistry()
+      registerBuiltInBlocks(registry)
+      const shape = Component.create({
+        id: 'bullets-block',
+        componentId: 'tls.t.bullets',
+        size: [960, 400],
+        props,
+      })
+      render(
+        <TldrawContext.Provider value={app}>
+          <BlockRegistryContext.Provider value={registry}>
+            <TldrawComponentsContext.Provider value={{}}>
+              <Component.Component
+                shape={shape}
+                isEditing={false}
+                isBinding={false}
+                isHovered={false}
+                isSelected={false}
+                isGhost={false}
+                bounds={{ minX: 0, minY: 0, maxX: shape.size[0], maxY: shape.size[1], width: shape.size[0], height: shape.size[1] }}
+                meta={{ isDarkMode: false }}
+                events={noopEvents()}
+              />
+            </TldrawComponentsContext.Provider>
+          </BlockRegistryContext.Provider>
+        </TldrawContext.Provider>
+      )
+      return { app, shape }
+    }
+
+    const bulletsProps = {
+      items: [{ text: 'First item' }, { text: 'Second item' }],
+      marker: 'dot',
+    }
+
+    // Opening the editor is deferred a tick past the double-click (see ComponentUtil.tsx's
+    // comment on the `app.select()` race this sidesteps), so tests wait for it rather than
+    // reading the DOM synchronously right after firing the events.
+    async function findEditor() {
+      return waitFor(() => {
+        const editor = document.querySelector('[contenteditable="true"]') as HTMLElement | null
+        if (!editor) throw new Error('editor not open yet')
+        return editor
+      })
+    }
+
+    it('double-clicking a [data-prop-path] element opens a contentEditable overlay seeded with its value', async () => {
+      renderTitleBlock(bulletsProps)
+
+      const target = document.querySelector('[data-prop-path="items.1.text"]') as HTMLElement
+      expect(target).toBeTruthy()
+
+      doubleClick(target)
+
+      const editor = await findEditor()
+      expect(editor.textContent).toBe('Second item')
+    })
+
+    it('editing a nested prop path writes the value back at that path, not a stray flat key', async () => {
+      const { app, shape } = renderTitleBlock(bulletsProps)
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+
+      const target = document.querySelector('[data-prop-path="items.1.text"]') as HTMLElement
+      doubleClick(target)
+
+      const editor = await findEditor()
+      editor.textContent = 'Edited second item'
+      fireEvent.blur(editor)
+
+      expect(updateShapes).toHaveBeenCalledTimes(1)
+      const [[rawCall]] = updateShapes.mock.calls
+      const call = rawCall as unknown as { id: string; props: Record<string, unknown> }
+      expect(call.id).toBe(shape.id)
+      const newItems = (call.props as { items: Array<{ text: string }> }).items
+      // The bug this guards against: `{ [propPath]: value }` would have written a literal
+      // `"items.1.text"` key alongside the untouched `items` array instead of updating it.
+      expect(newItems[1].text).toBe('Edited second item')
+      expect(newItems[0].text).toBe('First item')
+      // The bug this guards against produced a literal own-property named "items.1.text"
+      // (from `{ [propPath]: value }`) instead of updating the nested array.
+      expect(Object.prototype.hasOwnProperty.call(call.props, 'items.1.text')).toBe(false)
+
+      // Original shape untouched (setAtPath must not mutate in place — undo safety).
+      const originalItems = (shape.props as { items: Array<{ text: string }> }).items
+      expect(originalItems[1].text).toBe('Second item')
+    })
+
+    it('Escape cancels without calling updateShapes', async () => {
+      const { app } = renderTitleBlock(bulletsProps)
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+
+      const target = document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement
+      doubleClick(target)
+
+      const editor = await findEditor()
+      editor.textContent = 'Should not save'
+      fireEvent.keyDown(editor, { key: 'Escape' })
+
+      expect(updateShapes).not.toHaveBeenCalled()
+      expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+    })
   })
 })

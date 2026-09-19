@@ -8,7 +8,7 @@
  */
 
 import * as React from 'react'
-import { styled } from '@stitches/react'
+import { styled } from '../../styles'
 import { useBlockRegistry } from '../../hooks'
 import type { BlockFamily } from '../../blocks/types'
 
@@ -52,8 +52,8 @@ export const BlockInserter: React.FC<BlockInserterProps> = ({
     if (!blockRegistry) return {}
     
     const groups: Record<string, Array<{ id: string; name: string; summary?: string; keywords?: string[] }>> = {}
-    
-    blockRegistry.forEach((def) => {
+
+    blockRegistry.list().forEach((def) => {
       const family = def.family
       if (!groups[family]) {
         groups[family] = []
@@ -183,14 +183,6 @@ export const BlockInserter: React.FC<BlockInserterProps> = ({
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Sub-components                                                                  */
 /* ─────────────────────────────────────────────────────────────────────────────── */
-
-function FamilySection({ children }: { children: React.ReactNode }) {
-  return <FamilySectionStyled>{children}</FamilySectionStyled>
-}
-
-function FamilyHeader({ children }: { children: React.ReactNode }) {
-  return <FamilyHeaderStyled>{children}</FamilyHeaderStyled>
-}
 
 function BlockItem({ block, family, onClick, query }: { 
   block: { id: string; name: string; summary?: string; keywords?: string[] }

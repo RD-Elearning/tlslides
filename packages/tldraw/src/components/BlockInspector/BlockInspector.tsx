@@ -10,10 +10,12 @@
  */
 
 import * as React from 'react'
-import { styled } from '@stitches/react'
+import { styled } from '../../styles'
 import { useTldraw, useBlockRegistry } from '../../hooks'
 import type { BlockSchema, BlockStyleSpec, BlockMotionSpec } from '../../blocks/types'
 import { setAtPath } from '../../blocks/prop-path'
+import type { ComponentShape } from '../../types'
+import { TDShapeType } from '../../types'
 
 export interface BlockInspectorProps {
   selectedShapeId: string | null
@@ -24,45 +26,53 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
   const tldraw = useTldraw()
   const blockRegistry = useBlockRegistry()
   const [activeTab, setActiveTab] = React.useState<'content' | 'style' | 'motion'>('content')
-  
-  const shape = selectedShapeId ? tldraw.getShape(selectedShapeId) : null
-  const blockDef = shape?.componentId ? blockRegistry?.get(shape.componentId) : undefined
-  
+
+  const rawShape = selectedShapeId ? tldraw.getShape(selectedShapeId) : undefined
+  const shape = rawShape?.type === TDShapeType.Component ? (rawShape as ComponentShape) : undefined
+  const blockDef = shape ? blockRegistry?.get(shape.componentId) : undefined
+
+  // Block metadata (style/motion) lives under the reserved `$block` key in the shape's own
+  // `props` — NOT on `shape.style`/a top-level `shape.motion`, which don't exist for a
+  // ComponentShape (`shape.style` is the ordinary tldraw `ShapeStyles` — color/fill/dash — and
+  // overwriting it here would corrupt opacity/corner-radius rendering). See `shape-bridge.ts`.
+  const blockMeta = React.useMemo(() => {
+    if (!shape) return undefined
+    return (shape.props as Record<string, unknown>).$block as Record<string, unknown> | undefined
+  }, [shape])
+
   const blockProps = React.useMemo(() => {
     if (!shape) return null
-    const blockMeta = (shape.props as Record<string, unknown>)?.$block as Record<string, unknown> | undefined
-    return blockMeta?.props ?? shape.props
-  }, [shape])
-  
-  const blockStyle = React.useMemo(() => {
-    if (!shape) return undefined
-    const blockMeta = (shape.props as Record<string, unknown>)?.$block as Record<string, unknown> | undefined
-    return blockMeta?.style as BlockStyleSpec | undefined
-  }, [shape])
-  
-  const blockMotion = React.useMemo(() => {
-    if (!shape) return undefined
-    const blockMeta = (shape.props as Record<string, unknown>)?.$block as Record<string, unknown> | undefined
-    return blockMeta?.motion as BlockMotionSpec | undefined
-  }, [shape])
-  
+    return (blockMeta?.props as Record<string, unknown> | undefined) ?? shape.props
+  }, [shape, blockMeta])
+
+  const blockStyle = blockMeta?.style as BlockStyleSpec | undefined
+  const blockMotion = blockMeta?.motion as BlockMotionSpec | undefined
+
   const updateProp = React.useCallback((path: string, value: unknown) => {
-    if (!selectedShapeId || !blockProps) return
-    const newProps = setAtPath(blockProps as Record<string, unknown>, path, value)
-    tldraw.updateShapes({ id: selectedShapeId, props: newProps as Record<string, unknown> })
-  }, [selectedShapeId, blockProps, tldraw])
-  
+    if (!shape || !blockProps) return
+    const newProps = setAtPath(shape.props as Record<string, unknown>, path, value)
+    tldraw.updateShapes({ id: shape.id, props: newProps })
+  }, [shape, blockProps, tldraw])
+
+  const updateBlockMeta = React.useCallback((key: 'style' | 'motion', path: string, value: unknown) => {
+    if (!shape) return
+    const currentProps = shape.props as Record<string, unknown>
+    const currentMeta = (currentProps.$block as Record<string, unknown> | undefined) ?? {}
+    const currentSection = (currentMeta[key] as Record<string, unknown> | undefined) ?? {}
+    const newProps = {
+      ...currentProps,
+      $block: { ...currentMeta, [key]: { ...currentSection, [path]: value } },
+    }
+    tldraw.updateShapes({ id: shape.id, props: newProps })
+  }, [shape, tldraw])
+
   const updateStyle = React.useCallback((path: string, value: unknown) => {
-    if (!selectedShapeId || !blockStyle) return
-    const newStyle = { ...blockStyle, [path]: value } as BlockStyleSpec
-    tldraw.updateShapes({ id: selectedShapeId, style: newStyle })
-  }, [selectedShapeId, blockStyle, tldraw])
-  
+    updateBlockMeta('style', path, value)
+  }, [updateBlockMeta])
+
   const updateMotion = React.useCallback((path: string, value: unknown) => {
-    if (!selectedShapeId || !blockMotion) return
-    const newMotion = { ...blockMotion, [path]: value } as BlockMotionSpec
-    tldraw.updateShapes({ id: selectedShapeId, motion: newMotion })
-  }, [selectedShapeId, blockMotion, tldraw])
+    updateBlockMeta('motion', path, value)
+  }, [updateBlockMeta])
   
   if (!blockDef || !shape) {
     return (
@@ -80,9 +90,9 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
       <InspectorHeader>
         <InspectorTitle>{blockDef.name}</InspectorTitle>
         <TabContainer>
-          <TabButton $active={activeTab === 'content'} onClick={() => setActiveTab('content')}>Content</TabButton>
-          <TabButton $active={activeTab === 'style'} onClick={() => setActiveTab('style')}>Style</TabButton>
-          <TabButton $active={activeTab === 'motion'} onClick={() => setActiveTab('motion')}>Motion</TabButton>
+          <TabButton active={activeTab === 'content'} onClick={() => setActiveTab('content')}>Content</TabButton>
+          <TabButton active={activeTab === 'style'} onClick={() => setActiveTab('style')}>Style</TabButton>
+          <TabButton active={activeTab === 'motion'} onClick={() => setActiveTab('motion')}>Motion</TabButton>
         </TabContainer>
       </InspectorHeader>
       
@@ -109,7 +119,15 @@ function ContentTab({ schema, props, onUpdate }: ContentTabProps) {
     <ContentSection>
       {Object.entries(schema).map(([key, spec]) => {
         if (spec.role === 'option') return null
-        return <ContentField key={key} name={key} spec={spec} value={props[key]} onChange={onUpdate} />
+        return (
+          <ContentField
+            key={key}
+            name={key}
+            spec={spec}
+            value={props[key]}
+            onChange={(value) => onUpdate(key, value)}
+          />
+        )
       })}
     </ContentSection>
   )

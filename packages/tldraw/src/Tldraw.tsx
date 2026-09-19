@@ -27,6 +27,8 @@ import { GRID_SIZE } from '~constants'
 import { Loading } from '~components/Loading'
 import { Deck } from '~components/Deck'
 import { LayersPanel } from '~components/LayersPanel'
+import { BlockInspectorPanel } from '~components/BlockInspector'
+import { BlockInserterPanel } from '~components/BlockInserter'
 import { BottomPanel } from '~components/BottomPanel'
 import { PresentationRuntime } from '~components/Presentation'
 
@@ -669,6 +671,12 @@ const InnerTldraw = React.memo(function InnerTldraw({
             settings.showLayers &&
             showPages &&
             !readOnly && <LayersPanel />}
+          {!settings.isFocusMode && !settings.isPresentationMode && !readOnly && (
+            <>
+              <BlockInspectorPanel />
+              <BlockInserterPanel />
+            </>
+          )}
           {settings.isPresentationMode && (
             <>
               {/* Phase 16 — mounted only while presenting, so a shape's `animation` and the
