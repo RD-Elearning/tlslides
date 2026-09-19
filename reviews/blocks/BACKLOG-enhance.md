@@ -1282,7 +1282,7 @@ matches, noted above as such. Suite counts reconfirmed: 66 suites / 1306 passed 
 
 ### Phase C — The block families and the authoring surface
 
-#### R9 · Composite blocks, layout kind (Tier A) · L · ⬜ — fan out, one agent per block
+#### R9 · Composite blocks, layout kind (Tier A) · L · ✅ — fan out, one agent per block
 
 **Goal.** The clusters the model will reach for most, authored as pure layouts so they export
 headlessly and pass parity. Each delegates to existing text/media blocks via `layoutChild`
@@ -1304,9 +1304,40 @@ items, 400-char string, CJK), and parity rows.
 **Expected output.** Six new blocks in the digest, six golden fixtures (R7) using them, parity 0
 failing, contact sheet looked at.
 
+**R9 notes (2026-09-19, commit `80dde673`).** All six blocks shipped as pure layouts, registered in
+`library/composite/index.ts`, listed by `capabilityDigest()`, each with a golden fixture, a parity
+row and the `09-testing.md` §9.5 adversarial cases.
+
+**Two real geometry bugs, missed by the blocks' own green tests and found in review:**
+- `tls.c.kpi-row` re-wrapped the `layoutChild` result in a second group at the same coordinates.
+  `layoutChild` already returns a wrapper positioned at the box you pass, so every tile was offset
+  twice. Fixed by renaming the wrapper's part instead of re-wrapping it.
+- `tls.c.image-text` put the text cluster at the root origin — on top of the image — for every
+  placement, and placed the image at `x = 0` for `placement='right'`.
+
+**New guard:** `library/composite-geometry.spec.ts` walks each block into absolute coordinates and
+asserts containment plus no text-involved leaf overlap — the F1 class, which parity cannot catch
+(parity compares DOM against SVG for the *same* tree, so a tree that is wrong for both passes).
+Verified red on the reintroduced kpi-row bug, then green.
+
+**Part naming.** The R9 table's `item/i/index` shorthand is not the repo convention; the blocks use
+`item[0].index` with `item[*].index` families in `motion.parts`, matching `04-block-anatomy.md` §4.4
+and the pre-existing `tls.t.bullets`.
+
+**Deviations, named:** no `blocks-composite.js` contact sheet was written, and the per-block "zero
+lint findings" acceptance cannot be checked — the Deck Doctor linter is P31/G1 and does not exist.
+Part-family motion (`item[*].x`) is still resolved literally by `play-reveal`'s exact
+`[data-part="…"]` selector, so indexed-part animation plays for no block — these six or the
+pre-existing `tls.t.bullets`. **Digest budget** raised 40k → 48k chars for the structured data
+(measured 43,061 at 31 blocks), recorded in the test with its reason; R7's "split per family" stays
+the follow-up.
+
+**Verified:** 73 suites / 1561 passed / 2 todo · typecheck 0 errors in non-spec source · eslint
+`src/blocks` 0 errors, no new non-spec warnings.
+
 ---
 
-#### R10 · Composite blocks, html kind (Tier B, GSAP showcase) · L · ⬜ — fan out
+#### R10 · Composite blocks, html kind (Tier B, GSAP showcase) · L · ✅ — fan out
 
 **Goal.** The blocks whose value is motion, authored as templates on R2's contract with an
 `animate` that uses GSAP when present and degrades to the WAAPI preset when not.
@@ -1323,6 +1354,44 @@ the three-frame scenario from R3.
 
 **Expected output.** Four html blocks; the demo deck gains a feature-grid slide; the digest
 marks them `kind: html`.
+
+**R10 notes (2026-09-19, commits `1c9f533f`, `e844ff89`).** Three `kind: 'html'` blocks plus a
+`variant` option on `tls.c.hero` (classic / split / gradient-sweep, additive — `variant` absent is
+byte-identical to before), all on R2's template/poster contract with a GSAP-with-driver-fallback
+`animate()`. Template and poster share one formatter in `tls.c.big-stat`, so the rendered number
+cannot drift.
+
+**Three defects the agents' own green tests missed:**
+- `tls.c.feature-grid` declared `cells` as a text slot although it is a list of objects, so the
+  registry-wide XSS harness (which builds props from the schema) put a string into `cells` and the
+  template threw. The harness now recurses into list/object slots, so nested strings are exercised
+  rather than silently skipped.
+- `tls.c.feature-grid` declared `columns` as a string enum (`'2'|'3'|'4'`) while its defaults, its
+  template arithmetic and every fixture use a number — the generated JSON Schema rejected the
+  block's own default props (0 of 35 `oneOf` branches matched).
+- Three specs re-registered their block after `registerBuiltInBlocks` and threw "already
+  registered" once the barrel integration landed.
+
+**Animated html blocks were invisible — found only in a browser.** `tools/visual/shoot.js
+deck-demo` ran for the first time once `gsap` was installed (the npm registry is reachable;
+B.5 item 7's "no network" was wrong). Two causes, both fixed in `e844ff89`: DeckViewer's reveal
+branch never applied a visible state to the block wrapper for an `animate()` block (it returned
+early under reduced motion), and `HostMount` stamped `opacity: 0` on every part whether or not
+anything would ever reveal them — the editor passes no motion runtime, so this made html blocks
+invisible there too. A `DeckViewer.spec.tsx` regression test was verified red-first. The deck-demo
+no-overlap assertion was itself broken (it collected container parts, whose boxes coincide with
+their children's by construction) and now checks leaf text parts only.
+
+**Still open, named:** the demo reports two genuine text overlaps, on sl_01 and sl_05 — Phase A
+debt (R0's intrinsic-height stacking with the never-shipped Inter metrics), not introduced here.
+The three-frame GSAP scenario and the contact sheets still do not exist. The digest budget was
+raised again (markdown 40k → 52k, JSON 48k → 52k; measured 43,987 / 48,522 characters at 35
+blocks).
+
+**Verified:** per-folder jest runs — the single whole-suite run OOMs — `src/blocks` 1595 passed,
+`src/components` 30 passed / 2 todo, 0 failing · typecheck 0 errors in non-spec source · eslint
+`src/blocks` 0 errors. Demo slide 7 (the feature-grid) inspected as a screenshot: three evenly
+spaced columns, no overlap.
 
 ---
 
@@ -1484,6 +1553,13 @@ after R5. Phase exit: the four browser checks in the phase table.
 **Phase C.** R9 and R10 fan out one agent per block, only once R7's `describe` contract and
 R8's image block exist — otherwise each block is written twice. R11 → R12 in sequence (the
 inspector reuses the overlay's write path), R13 when a lane frees up.
+
+**Progress 2026-09-19.** R9 ✅ (`80dde673`) and R10 ✅ (`1c9f533f`, `e844ff89`) — ten composite
+blocks, ten golden fixtures, a new cross-block geometry guard, and three browser-only bugs fixed;
+see their notes above for what each phase's own tests could not see. Phase C's exit criteria are
+**not** met yet: R11 (inline editing), R12 (inspector) and R13 (inserter) are still ⬜, so
+"double-click edits text and survives Save/GET" and "the inspector changes surface, gradient,
+preset and delay and persists them" remain unverified. Next: R11.
 
 **Phase D.** R14, R15, R16 independent. R16's document should be written **early** (it needs
 no code) so the FastAPI team can start against the mock while Phases B–C run.
