@@ -325,7 +325,7 @@ phase's screenshots are unreadable until it does.
 
 ---
 
-### Phase 1 — Fix the text vertical-position bug 🔄 · S
+### Phase 1 — Fix the text vertical-position bug ✅ · S
 
 Closes root cause A (§1.2). Highest value per line changed in this entire document.
 
@@ -361,7 +361,7 @@ Leave `render-svg.ts:257` **untouched** — it is correct and stays on `baseline
 **Expected output.** A jsdom test rendering a 2-line `tls.t.title` asserts each line `<div>`'s
 `style.top` equals `i * lineHeight`, not `i * lineHeight + 0.8 * lineHeight`.
 
-#### V1.3 Tighten parity so this cannot regress 🔄 S
+#### V1.3 Tighten parity so this cannot regress ✅ S
 
 **Problem.** `parity-3way` compares DOM against SVG geometry but has an accepted 0.8×lineHeight
 tolerance for text (`BACKLOG-demo.md:541-543`) — the exact size of this bug. It also checks
@@ -380,7 +380,7 @@ have **no geometry assertion at all**.
 **Expected output.** The new invariant test **fails** on the code before V1.1/V1.2 and passes
 after. Demonstrate this in the notes by reporting both runs.
 
-#### V1.4 Visual proof 🔄 XS
+#### V1.4 Visual proof ✅ XS
 
 Create `tools/visual/scenarios/text-fit.js`: walk all 7 demo slides, and for every `[data-part]`
 report `clientHeight`, `scrollHeight` and the ratio; fail the run if any ratio exceeds 1.02.
