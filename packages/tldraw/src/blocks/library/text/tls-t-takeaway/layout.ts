@@ -53,6 +53,7 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
       box: { x: contentX, y, width: contentW, height: labelHeight },
       lines: labelMetrics.lines,
       style: { ...labelStyle, color: labelColor.color },
+      propPath: 'label',
     })
     y += labelHeight + gap * 0.5
   }
@@ -85,6 +86,7 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
     box: { x: contentX, y, width: contentW, height: textHeight },
     lines: textMetrics.lines,
     style: { ...textStyle, color: textColor.color },
+    propPath: 'text',
   })
   y += textHeight
 

@@ -77,6 +77,7 @@ export function layout(props: QuoteProps, ctx: LayoutContext): LayoutNode {
     box: { x: textX, y: cy, width: textW, height: textHeight },
     lines: textMetrics.lines,
     style: { ...textStyle, color: textColor.color },
+    propPath: 'text',
   })
 
   // ── Attribution ──────────────────────────────────────────────────────
@@ -95,6 +96,7 @@ export function layout(props: QuoteProps, ctx: LayoutContext): LayoutNode {
       box: { x: cx, y: attrY, width: cw, height: attrHeight },
       lines: attrMetrics.lines,
       style: { ...attrStyle, color: attrColor.color },
+      propPath: 'attribution',
     })
   }
 

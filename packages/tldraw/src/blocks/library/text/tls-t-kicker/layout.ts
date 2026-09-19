@@ -82,6 +82,7 @@ export function layout(props: KickerProps, ctx: LayoutContext): LayoutNode {
     box: { ...inner, height: m.height },
     lines: m.lines,
     style: resolvedStyle,
+    propPath: 'text',
   })
 
   // Return measured content height, not the full available box height.

@@ -32,6 +32,7 @@ export function layout(props: CaptionProps, ctx: LayoutContext): LayoutNode {
     box: { ...inner, height: Math.min(m.height, inner.height) },
     lines: m.lines,
     style: resolvedStyle,
+    propPath: 'text',
   }
 
   // Return measured content height, not the full available box height.

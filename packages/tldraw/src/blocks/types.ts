@@ -385,7 +385,7 @@ export type LayoutNode =
   | { k: 'group'; box: Box; name?: string; part?: string; clip?: boolean; opacity?: number; children: LayoutNode[] }
   | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
-  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle }
+  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle; propPath?: string }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }

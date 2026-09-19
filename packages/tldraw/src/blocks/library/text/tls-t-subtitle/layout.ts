@@ -35,6 +35,7 @@ export function layout(props: SubtitleProps, ctx: LayoutContext): LayoutNode {
       box: { ...inner, height: m.height },
       lines: m.lines,
       style: resolvedStyle,
+      propPath: 'text',
     }],
   }
 }

@@ -540,6 +540,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           key={part ?? undefined}
           style={textStyle}
           {...(part ? { 'data-part': part } : {})}
+          {...(node.propPath ? { 'data-prop-path': node.propPath } : {})}
         >
           {node.lines.map((line: TextLine, i: number) => (
             <div

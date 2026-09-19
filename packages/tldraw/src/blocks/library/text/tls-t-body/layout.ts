@@ -64,6 +64,7 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
       box: { ...inner, height: Math.min(m.height, inner.height) },
       lines: m.lines,
       style: currentStyle,
+      propPath: 'text',
     }
 
     // Return measured content height, not the full available box height.
@@ -96,6 +97,7 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
       box: { ...colBox, height: Math.min(m.height, colBox.height) },
       lines: m.lines,
       style: resolvedStyle,
+      propPath: 'text',
     })
   }
 

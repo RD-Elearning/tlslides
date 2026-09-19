@@ -23,6 +23,13 @@ const { styled, createTheme } = createStitches({
       tooltip: '#1d1d1d',
       tooltipContrast: '#ffffff',
       warn: 'rgba(255, 100, 100, 1)',
+      // Inspector Panel Colors (Phase 12)
+      bg: '#ffffff',
+      bgHover: '#f5f5f5',
+      border: '#e0e0e0',
+      headerBg: '#fafafa',
+      accent: '#0066ff',
+      textMuted: '#666666',
     },
     shadows: {
       2: '0px 1px 1px rgba(0, 0, 0, 0.14)',
@@ -112,6 +119,13 @@ export const dark = createTheme({
     darkgray: '#939DA8',
     tooltip: '#1d1d1d',
     tooltipContrast: '#ffffff',
+    // Inspector Panel Colors - dark mode
+    bg: '#2d3748',
+    bgHover: '#3a4352',
+    border: '#4a5568',
+    headerBg: '#2a323e',
+    accent: '#58a6ff',
+    textMuted: '#a0aec0',
   },
   shadows: {
     2: '0px 1px 1px rgba(0, 0, 0, 0.24)',

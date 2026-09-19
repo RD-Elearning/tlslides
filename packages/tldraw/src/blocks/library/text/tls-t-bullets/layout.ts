@@ -105,6 +105,7 @@ export function layout(props: BulletsProps, ctx: LayoutContext): LayoutNode {
       box: { ...textBox, height: m.height },
       lines: m.lines,
       style: resolvedStyle,
+      propPath: `items.${i}.text`,
     }
 
     children.push(markerNode, textNode)

@@ -40,6 +40,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
     box: { x: cx, y: cy, width: cw, height: valueHeight },
     lines: valueMetrics.lines,
     style: { ...valueStyle, color: valueColor.color },
+    propPath: 'value',
   })
 
   // ── Unit (subheading) ─────────────────────────────────────────────────
@@ -57,6 +58,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
       box: { x: cx, y: unitY, width: cw, height: unitHeight },
       lines: unitMetrics.lines,
       style: { ...unitStyle, color: unitColor.color },
+      propPath: 'unit',
     })
     unitY += unitHeight + gapUnit
   }
@@ -74,6 +76,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
       box: { x: cx, y: unitY, width: cw, height: captionHeight },
       lines: captionMetrics.lines,
       style: { ...captionStyle, color: captionColor.color },
+      propPath: 'caption',
     })
   }
 
