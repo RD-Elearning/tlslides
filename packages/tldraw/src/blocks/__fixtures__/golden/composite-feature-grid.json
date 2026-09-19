@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "id": "golden-composite-feature-grid",
+  "title": "Feature Grid Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b1",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                { "icon": "zap", "title": "Fast", "desc": "Optimised for speed at every layer of the stack." },
+                { "icon": "shield", "title": "Secure", "desc": "End-to-end encryption keeps your data safe." },
+                { "icon": "globe", "title": "Global", "desc": "Deployed across 30+ regions worldwide." }
+              ],
+              "columns": 3,
+              "gap": 24
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

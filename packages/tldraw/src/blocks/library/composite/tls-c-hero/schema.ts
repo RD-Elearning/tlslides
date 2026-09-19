@@ -4,15 +4,23 @@
  * An opening slide: one idea in the kicker + title, subtitle gives date/audience,
  * optional CTA button. This is a `kind: 'html'` block — the template renders as
  * real DOM, and the poster supplies the geometry for SVG export and thumbnails.
+ *
+ * The `variant` field selects a visual style:
+ * - `'classic'` (default): standard hero with staggered part reveal
+ * - `'split'`: the title is split into two halves that reveal from opposite sides
+ * - `'gradient-sweep'`: a background gradient sweeps in behind the title on reveal
  */
 
 import type { BlockSchema } from '../../../types'
+
+export type HeroVariant = 'classic' | 'split' | 'gradient-sweep'
 
 export interface HeroProps extends Record<string, unknown> {
   kicker?: string
   title: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean; color?: string; size?: number }> }
   subtitle?: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean; color?: string; size?: number }> }
   cta?: string
+  variant?: HeroVariant
 }
 
 export const schema: BlockSchema = {
@@ -40,6 +48,15 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Call to action',
     guidance: 'Optional button text. Short imperative, 2–4 words.',
+  },
+  variant: {
+    type: { kind: 'enum', values: ['classic', 'split', 'gradient-sweep'] },
+    role: 'option',
+    label: 'Variant',
+    guidance:
+      'Visual style: "classic" (default) standard hero with staggered part reveal; ' +
+      '"split" split-title reveal where halves slide in from opposite sides; ' +
+      '"gradient-sweep" a decorative gradient sweeps in behind the title on reveal.',
   },
 }
 

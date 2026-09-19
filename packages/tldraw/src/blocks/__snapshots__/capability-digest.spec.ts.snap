@@ -143,6 +143,38 @@ Agenda or table-of-contents slide. Numbered items with titles and optional notes
 }
 \`\`\`
 
+### \`tls.c.big-stat\` — Big Stat [html]
+
+Big number slide. One enormous headline metric with a short label and optional context line. Use for KPIs, milestones, and hero stats. _(family: composite; keywords: stat, big, number, kpi, metric, hero, headline, count)_
+
+**When:** Use for a single hero statistic — one big number with a label and optional context.
+**Avoid:** Do not use for multiple metrics side by side — use tls.c.kpi-row instead.
+
+**Parts:** \`value\`, \`label\`, \`context\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number | The headline number to display. Any numeric value. |
+| \`label\` | yes | text (max 40 chars) | Short label describing the number. 1–4 words, e.g. \\"Total Revenue\\". |
+| \`context\` | no | text (max 60 chars) | Optional supporting line below the label (e.g. \\"vs last quarter\\"). |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234). |
+| \`prefix\` | no | text (max 4 chars) | Optional prefix before the number (e.g. \\"$\\", \\"€\\"). Max 4 chars. |
+| \`suffix\` | no | text (max 4 chars) | Optional suffix after the number (e.g. \\"%\\", \\"M\\"). Max 4 chars. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_big_stat\\",
+  \\"type\\": \\"tls.c.big-stat\\",
+  \\"props\\": {
+    \\"value\\": 4200000,
+    \\"label\\": \\"Total Revenue\\",
+    \\"context\\": \\"vs last quarter\\",
+    \\"format\\": \\"compact\\",
+    \\"prefix\\": \\"$\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.comparison\` — Comparison
 
 Side-by-side comparison of 2–3 columns, each with a title and a list of items. Use to contrast options, plans, or viewpoints. Highlight the recommended column with the \`highlight\` prop. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
@@ -191,11 +223,54 @@ Side-by-side comparison of 2–3 columns, each with a title and a list of items.
 }
 \`\`\`
 
+### \`tls.c.feature-grid\` — Feature Grid [html]
+
+Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
+
+**When:** Use to show 2–6 feature highlights in a grid layout — each cell has an icon, title, and short description. Good for capability overviews, service lists, or product feature showcases.
+**Avoid:** Do not use for single-row comparisons (use tls.c.comparison) or for more than 6 items (use tls.c.agenda or tls.c.steps).
+
+**Parts:** \`cell[*].icon\`, \`cell[*].title\`, \`cell[*].desc\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`cells\` | yes | list of object (icon, title, desc) (2–6 items) | List of 2–6 feature cells, each with icon (icon id string), title (short, 1–4 words), and desc (one sentence). Describe features, benefits, or capabilities. |
+| \`columns\` | no | number (min 2, max 4) | Number of columns: 2, 3, or 4. Default is 3. |
+| \`gap\` | no | number (min 8, max 48) | Gap between cells in slide units. Default 24. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_feature_grid\\",
+  \\"type\\": \\"tls.c.feature-grid\\",
+  \\"props\\": {
+    \\"cells\\": [
+      {
+        \\"icon\\": \\"zap\\",
+        \\"title\\": \\"Fast\\",
+        \\"desc\\": \\"Optimised for speed at every layer.\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"Secure\\",
+        \\"desc\\": \\"End-to-end encryption by default.\\"
+      },
+      {
+        \\"icon\\": \\"globe\\",
+        \\"title\\": \\"Global\\",
+        \\"desc\\": \\"Deployed across 30+ regions.\\"
+      }
+    ],
+    \\"columns\\": 3,
+    \\"gap\\": 24
+  }
+}
+\`\`\`
+
 ### \`tls.c.hero\` — Hero [html]
 
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
 
-**When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle.
+**When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle. Pick variant \\"classic\\" for a standard hero, \\"split\\" when you want the title to reveal from two halves sliding in from opposite sides, or \\"gradient-sweep\\" for a decorative background gradient that sweeps in behind the title on reveal.
 **Avoid:** Do not use for content slides that have data or body text — use tls.t.title.
 
 **Parts:** \`kicker\`, \`title\`, \`subtitle\`, \`cta\`
@@ -206,6 +281,7 @@ Opening slide. One idea in the title, no full sentence; subtitle gives date/audi
 | \`title\` | yes | richText (max 120 chars) | A concise slide title. Bold one key word for emphasis. Never a full sentence. Max 120 chars. |
 | \`subtitle\` | no | richText | Supporting line: date, audience, or context. 3–12 words. |
 | \`cta\` | no | text (max 40 chars) | Optional button text. Short imperative, 2–4 words. |
+| \`variant\` | no | enum: classic \\\\| split \\\\| gradient-sweep | Visual style: \\"classic\\" (default) standard hero with staggered part reveal; \\"split\\" split-title reveal where halves slide in from opposite sides; \\"gradient-sweep\\" a decorative gradient sweeps in behind the title on reveal. |
 
 \`\`\`json
 {
@@ -376,6 +452,35 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
       }
     ],
     \\"orientation\\": \\"horizontal\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.testimonial\` — Testimonial [html]
+
+Pull-quote testimonial with attribution. Quote text with speaker name, role, and optional avatar. Use for social proof, customer quotes, or endorsements. _(family: composite; keywords: testimonial, quote, pull-quote, endorsement, social-proof, attribution)_
+
+**When:** Use for a customer quote, testimonial, or endorsement — quote text with speaker name, role, and optional avatar.
+**Avoid:** Do not use for general block quotes or section dividers — use tls.t.title or a layout container.
+
+**Parts:** \`quote\`, \`avatar\`, \`name\`, \`role\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`quote\` | yes | richText (max 500 chars) | The testimonial quote. 1–3 sentences. Bold key phrases for emphasis. |
+| \`name\` | yes | text (max 60 chars) | Speaker's full name. 2–4 words. |
+| \`role\` | yes | text (max 80 chars) | Speaker's title or position. 2–8 words. |
+| \`avatar\` | no | text (max 200 chars) | Avatar image URL (https:) or asset id. Optional; shows initials when absent. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_testimonial\\",
+  \\"type\\": \\"tls.c.testimonial\\",
+  \\"props\\": {
+    \\"quote\\": \\"This product transformed how our team works. We shipped 3× faster in the first quarter.\\",
+    \\"name\\": \\"Jane Doe\\",
+    \\"role\\": \\"VP of Engineering\\",
+    \\"avatar\\": \\"\\"
   }
 }
 \`\`\`
@@ -1122,15 +1227,18 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 32,
+  "blockCount": 35,
   "blockTypes": Array [
     "tls.c.agenda",
+    "tls.c.big-stat",
     "tls.c.comparison",
+    "tls.c.feature-grid",
     "tls.c.hero",
     "tls.c.image-text",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
     "tls.c.steps",
+    "tls.c.testimonial",
     "tls.d.bar",
     "tls.l.card",
     "tls.l.field",
