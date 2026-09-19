@@ -8,3 +8,5 @@ export * from './useTheme'
 export * from './useStylesheet'
 export * from './useFileSystemHandlers'
 export * from './useFileSystem'
+// Alias for convenience
+export { useTldrawApp as useTldraw } from './useTldrawApp'
