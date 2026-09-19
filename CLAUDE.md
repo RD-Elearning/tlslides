@@ -21,8 +21,13 @@ deferred, work is editor-only, and each item is mapped to the module it lands in
 
 Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)** (all shipped),
 18+ in **[reviews/blocks/README.md](reviews/blocks/README.md)** — the block system. The demo
-slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; the **current work list is
-[reviews/blocks/BACKLOG-enhance.md](reviews/blocks/BACKLOG-enhance.md)** (R0–R16, four phases).
+slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; `BACKLOG-enhance.md` (R0–R16) shipped
+R0–R13 and parked R14–R16. The **current work list is
+[reviews/blocks/BACKLOG-visual.md](reviews/blocks/BACKLOG-visual.md)** (V1–V8, eight phases):
+fix the renderer's baseline-as-top bug, make regions and containers size to their content, ship
+real font metrics, and fill one exemplar block per empty family. Read its §2 "Working rules"
+before writing code — it carries the verified test/lint/tsc commands, the quality ratchets (the
+repo is *not* clean; do not chase zero) and a mandatory OOM guard for the full test suite.
 The FastAPI/LLM backend design (deck profiles, pipeline stages, self-review, stack) is
 **[reviews/blocks/LLM-ARCHITECTURE.md](reviews/blocks/LLM-ARCHITECTURE.md)**. Read that
 README before touching anything under `packages/blocks` or `packages/tldraw/src/blocks`; it is the
