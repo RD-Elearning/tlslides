@@ -168,3 +168,5 @@ export type {
 // Shared nearest-name suggestion, used by both `compileSlide`'s region findings and
 // `validateDeckSpec`'s — so the same misspelled name gets the same suggested fix from both.
 export { levenshtein, nearestName } from './nearest-name'
+
+export type { DeckSpec } from './types'
