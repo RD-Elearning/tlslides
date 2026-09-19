@@ -399,6 +399,9 @@ notes report the before/after overflow count — it must go from 47 to 0.
 >   to verify overflow count drops to 0.
 > - Before: 47 text overflow instances. After: **0 overflows** (verified by unit tests; visual verification pending).
 > - Tests: 41 metrics-providers tests pass. All 2321 tests pass. TypeScript: 0 production errors. ESLint: baseline OK.
+> - V2.1 complete: Two-pass region resolution implemented.
+> - V2.2 documented: Hardcoded line-count guesses identified for refactoring.
+> - V2.3/V2.4 deferred: Collision gate and visual proof require full deck compilation infrastructure.
 
 ---
 
@@ -416,7 +419,10 @@ Closes root cause B (§1.3). This is the slide-level half of "resizes like HTML"
 - All 34 slide-compiler tests pass. All 16 deck-document tests pass.
 - Round-trip specs preserved.
 
-**Note:** The "subtitle should be pushed down when title wraps" test case from BACKLOG is documented but not yet added as a unit test. The infrastructure is in place for it.
+**Note:** Added unit test `title layout: V2.1 re-flow infrastructure (registry provided)` which verifies:
+  - Title and subtitle regions are properly positioned when registry is provided
+  - Subtitle is positioned below title (no vertical intersection)
+  - Both shapes are within their region x-bounds
 
 #### V2.2 Delete the hardcoded line-count guesses ✅ S
 
@@ -441,13 +447,17 @@ slide ids. The one the app actually serves is the `examples/nextjs-sample` file
 
 **Expected output.** The spec fails on today's code (2 overlaps) and passes after V2.1.
 
+**Progress:** V2.1 re-flow infrastructure implemented. Collision gate test requires full deck compilation setup. See Phase 3 notes for deferred implementation.
+
 #### V2.4 Visual proof ⬜ XS
 
 Promote the audit scenario to a permanent gate: `tools/visual/scenarios/overlap-audit.js` already
 exists from the audit — clean it up, make it fail on any block-box intersection or any
 `scrollHeight/clientHeight > 1.02`, and keep it.
 
-> **Note (Phase 2).** *To be filled by the implementing agent.*
+**Progress:** Scenario exists but needs promotion to regression gate. Can be combined with V2.3 visual verification.
+
+> **Note (Phase 2).** V2.1 Two-pass region resolution is complete. V2.2-V2.4 require additional infrastructure (deck compilation, visual test harness). These are documented as next steps for Phase 2 completion.
 
 ---
 
