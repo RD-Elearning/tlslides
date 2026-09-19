@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "id": "golden-composite-agenda",
+  "title": "Agenda Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b1",
+            "type": "tls.c.agenda",
+            "props": {
+              "items": [
+                { "title": "Opening", "note": "Welcome and agenda overview" },
+                { "title": "Q3 Results", "note": "Revenue and growth metrics" },
+                { "title": "Strategy", "note": "Next quarter priorities" },
+                { "title": "Q&A", "note": "Questions and discussion" }
+              ],
+              "current": 1
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
