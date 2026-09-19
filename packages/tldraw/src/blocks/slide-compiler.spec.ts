@@ -15,6 +15,7 @@
  */
 
 import { compileSlide, type CompileSlideResult } from './slide-compiler'
+import { SLIDE_LAYOUTS, getSlideLayout } from './slide-layouts'
 import type { SlideSpec, BlockSpec, Box, ResolvedTokens } from './types'
 import { TEST_TOKENS } from './parity-harness'
 import { BlockRegistry } from './registry'
@@ -604,6 +605,53 @@ describe('compileSlide', () => {
       // All three blocks should have the same height.
       expect(equalShapes[0].size[1]).toBeCloseTo(equalShapes[1].size[1], 0)
       expect(equalShapes[1].size[1]).toBeCloseTo(equalShapes[2].size[1], 0)
+    })
+
+    it('title layout: V2.1 re-flow infrastructure (registry provided)', () => {
+      // This test verifies that when a registry is provided, the V2.1 infrastructure
+      // is active. The tls.t.body layout clamps height to inner.height, so we test
+      // that the title and subtitle are properly placed based on layout regions.
+      // A separate visual test will verify actual text overflow handling.
+      const titleBlock: BlockSpec = {
+        type: 'tls.t.body',
+        id: 'test-title',
+        props: { text: 'Test Title' },
+      }
+      const subtitleBlock: BlockSpec = {
+        type: 'tls.t.subtitle',
+        id: 'test-subtitle',
+        props: { text: 'Test Subtitle' },
+      }
+
+      const spec: SlideSpec = {
+        id: 'v21-test',
+        layout: 'title',
+        regions: {
+          title: [titleBlock],
+          subtitle: [subtitleBlock],
+        },
+      }
+
+      const { shapes, findings } = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+
+      // V2.1 infrastructure should provide re-flowed positions when registry is provided.
+      expect(shapes).toHaveLength(2)
+
+      const [titleShape, subtitleShape] = shapes
+
+      // Title and subtitle should be placed within their respective regions.
+      const layout = getSlideLayout('title')
+      const regionBoxes = layout?.compile(DEFAULT_FRAME, TEST_TOKENS) ?? {}
+      const titleRegionBox = regionBoxes['title']
+      const subtitleRegionBox = regionBoxes['subtitle']
+
+      // Both shapes should be within their region x-bounds.
+      expect(titleShape.point[0]).toBe(titleRegionBox.x)
+      expect(subtitleShape.point[0]).toBe(subtitleRegionBox.x)
+
+      // Subtitle should be below title (no vertical intersection).
+      const titleBottom = titleShape.point[1] + titleShape.size[1]
+      expect(subtitleShape.point[1]).toBeGreaterThanOrEqual(titleBottom)
     })
   })
 })
