@@ -16,6 +16,7 @@ import { useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~h
 import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
+import { InlineEditor } from '~components/InlineEditor'
 
 type T = ComponentShape
 type E = HTMLDivElement
