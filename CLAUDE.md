@@ -22,12 +22,21 @@ deferred, work is editor-only, and each item is mapped to the module it lands in
 Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)** (all shipped),
 18+ in **[reviews/blocks/README.md](reviews/blocks/README.md)** — the block system. The demo
 slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; `BACKLOG-enhance.md` (R0–R16) shipped
-R0–R13 and parked R14–R16. The **current work list is
-[reviews/blocks/BACKLOG-visual.md](reviews/blocks/BACKLOG-visual.md)** (V1–V8, eight phases):
-fix the renderer's baseline-as-top bug, make regions and containers size to their content, ship
-real font metrics, and fill one exemplar block per empty family. Read its §2 "Working rules"
-before writing code — it carries the verified test/lint/tsc commands, the quality ratchets (the
-repo is *not* clean; do not chase zero) and a mandatory OOM guard for the full test suite.
+R0–R13 and parked R14–R16.
+
+The visual-fidelity slice has been attempted twice and is on its third plan. The **current work
+list is [reviews/blocks/BACKLOG-visual-fix-2.md](reviews/blocks/BACKLOG-visual-fix-2.md)**
+(G0–G6) — start there. Its §0 is the verified state of the tree (of the earlier V1–V8 and F0–F6
+phases, only V1, V2.1, most of V3, V5's icon rendering and F1 actually landed), §2.1 is the reporting protocol, and every phase
+carries an explicit "Done when" checklist plus a progress ledger in §4.
+Its two predecessors stay binding for their content but **not for their status markers**:
+[BACKLOG-visual.md](reviews/blocks/BACKLOG-visual.md) (V1–V8) holds the original analysis §1 and
+the **working rules §2 — read those before writing any code**: verified test/lint/tsc commands,
+the quality ratchets (the repo is *not* clean; do not chase zero) and a mandatory OOM guard for
+the full test suite. [BACKLOG-visual-fix.md](reviews/blocks/BACKLOG-visual-fix.md) (F0–F6) holds
+the still-unbuilt F4/F5 task detail that `-fix-2`'s G5 refers back to, and its §1 rules:
+compile before you commit, a block not in `BUILT_IN_BLOCKS` does not exist, never invent
+vocabulary, never touch dependency resolution, never weaken a test to make it pass.
 The FastAPI/LLM backend design (deck profiles, pipeline stages, self-review, stack) is
 **[reviews/blocks/LLM-ARCHITECTURE.md](reviews/blocks/LLM-ARCHITECTURE.md)**. Read that
 README before touching anything under `packages/blocks` or `packages/tldraw/src/blocks`; it is the
