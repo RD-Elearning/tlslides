@@ -217,6 +217,45 @@
         ]
       },
       "notes": "Three-feature grid, revealed cell by cell."
+    },
+    {
+      "id": "sl_08",
+      "layout": "blank",
+      "role": "content",
+      "rhythm": "anchor",
+      "regions": {
+        "content": [
+          { "id": "b_08_title", "type": "tls.t.title",
+            "props": { "text": { "runs": [
+              { "text": "Performance data" }
+            ] }, "size": "heading", "align": "start" },
+            "motion": { "preset": "fade-up", "order": 1 } },
+          { "id": "b_08_donut", "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                { "value": 40, "color": "accent1", "label": "Revenue Growth" },
+                { "value": 30, "color": "accent2", "label": "Cost Savings" },
+                { "value": 20, "color": "accent3", "label": "Efficiency" },
+                { "value": 10, "color": "accent4", "label": "Other" }
+              ],
+              "total": 100
+            },
+            "motion": { "preset": "fade-up", "order": 2 } },
+          { "id": "b_08_steps", "type": "tls.g.steps",
+            "props": {
+              "steps": [
+                { "title": "Analyze", "description": "Review current metrics" },
+                { "title": "Optimize", "description": "Identify improvement areas" },
+                { "title": "Implement", "description": "Deploy solutions" },
+                { "title": "Validate", "description": "Measure results" }
+              ],
+              "direction": "horizontal",
+              "connector": "arrow"
+            },
+            "motion": { "preset": "stagger-children", "order": 3, "trigger": "afterPrevious" } }
+        ]
+      },
+      "notes": "Donut chart and steps diagram showcase new exemplars."
     }
   ]
 }

@@ -19,6 +19,9 @@ const DECK = require(
 
 const SLIDE_IDS = DECK.slides.map((s) => s.id)
 
+// Updated for Phase 7: Now 8 slides with new exemplars
+const EXPECTED_SLIDE_COUNT = 8
+
 /**
  * How many manual (onClick) ArrowRight presses are needed per slide to reach
  * the final build step. Auto steps complete on their own with reducedMotion.
@@ -186,6 +189,9 @@ module.exports = {
       }
     })
 
+    // Verify slide count assertion
+    const slideCountAssertion = slide4Attrs.slideCount === String(EXPECTED_SLIDE_COUNT)
+
     // Summary.
     const allOverlaps = Object.entries(results).flatMap(([id, r]) =>
       (r.textOverlap.overlaps || []).map((o) => ({ slideId: id, ...o }))
@@ -195,10 +201,11 @@ module.exports = {
       totalSlides: SLIDE_IDS.length,
       slideResults: results,
       slide4Verification: slide4Attrs,
+      slideCountAssertion,
       totalOverlaps: allOverlaps.length,
       overlaps: allOverlaps,
       // The test passes when there are zero overlaps across all slides.
-      passed: allOverlaps.length === 0,
+      passed: allOverlaps.length === 0 && slideCountAssertion,
     }
   },
 }
