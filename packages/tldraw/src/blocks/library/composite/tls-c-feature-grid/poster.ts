@@ -10,6 +10,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { FeatureGridProps } from './schema'
+import { getIcon } from '../../../icons'
 
 export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode {
   const cells = props.cells ?? []
@@ -73,15 +74,30 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     }
 
     const { mTitle, mDesc } = cellData[i]
+    const cell = cellData[i].cell
+    const iconColor = ctx.resolveColor('accent').color
 
-    // Icon (placeholder rect when icon can't be resolved — degrade gracefully)
-    children.push({
-      k: 'rect',
-      part: `cell[${i}].icon`,
-      box: { x, y, width: iconSize, height: iconSize },
-      fill: { type: 'solid', color: ctx.resolveColor('accent').color },
-      radius: 4,
-    })
+    // Icon - use icon node kind, or fallback rect for unknown icons
+    const iconDef = getIcon(cell.icon as string)
+    if (iconDef) {
+      children.push({
+        k: 'icon',
+        part: `cell[${i}].icon`,
+        box: { x, y, width: iconSize, height: iconSize },
+        icon: iconDef.path,
+        fill: iconColor,
+        strokeWidth: 1.5,
+      })
+    } else {
+      // Fallback rect for unknown icon names
+      children.push({
+        k: 'rect',
+        part: `cell[${i}].icon`,
+        box: { x, y, width: iconSize, height: iconSize },
+        fill: { type: 'solid', color: iconColor },
+        radius: 4,
+      })
+    }
 
     // Title
     const titleStyle = ctx.resolveText('subheading')

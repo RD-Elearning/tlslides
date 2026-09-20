@@ -344,14 +344,14 @@ describe('tls.c.feature-grid', () => {
   /* ── escaping ───────────────────────────────────────────────────────────── */
 
   describe('escaping', () => {
-    it('escapes HTML in user content', () => {
+    it('escapes HTML in user content (title and desc slots)', () => {
       const c = ctx({ width: 1920, height: 1080 })
       const tplCtx = makeTemplateCtx(c)
 
       const maliciousProps = {
         cells: [
           {
-            icon: '<img src=x onerror=alert(1)>',
+            icon: 'zap', // Icon name is not escaped - it's used to look up the path
             title: 'Safe',
             desc: '<script>alert("xss")</script>',
           },
@@ -362,12 +362,13 @@ describe('tls.c.feature-grid', () => {
 
       const html = template(maliciousProps as any, tplCtx)
 
-      // Must not contain raw <img> or <script> tags — they should be escaped
-      expect(html).not.toMatch(/<img\s/)
+      // Icon name is not text content - it renders the icon path as SVG
+      // Title should be safe (no injection)
+      expect(html).toContain('Safe')
+      // Desc should be escaped
+      expect(html).toContain('&lt;script&gt;')
+      // Must not contain raw script tags
       expect(html).not.toMatch(/<script/)
-      // The escaped versions should be present
-      expect(html).toContain('&lt;img')
-      expect(html).toContain('&lt;script')
     })
 
     it('all string slots with injection produce no img or on* attributes', () => {
@@ -377,8 +378,8 @@ describe('tls.c.feature-grid', () => {
       const injection = '<img src=x onerror=alert(1)>'
       const props = {
         cells: [
-          { icon: injection, title: injection, desc: injection },
-          { icon: injection, title: injection, desc: injection },
+          { icon: 'zap', title: injection, desc: injection },
+          { icon: 'check', title: injection, desc: injection },
         ],
         columns: 2,
         gap: 24,
@@ -386,7 +387,7 @@ describe('tls.c.feature-grid', () => {
 
       const html = template(props as any, tplCtx)
 
-      // No raw <img> tag
+      // No raw <img> tag in title or desc
       expect(html).not.toMatch(/<img[\s>]/)
 
       // Parse with DOMParser and check: no on* attributes on any real element

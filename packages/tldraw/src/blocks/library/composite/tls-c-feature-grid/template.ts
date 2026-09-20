@@ -10,6 +10,17 @@
 
 import type { HtmlTemplateContext } from '../../../types'
 import type { FeatureGridProps } from './schema'
+import { ICONS } from '../../../icons'
+
+/**
+ * Get icon path by name, with fallback to alert icon for unknown names.
+ */
+function getIconPath(iconName: string): string {
+  const icon = ICONS[iconName]
+  if (icon) return icon.path
+  // Fallback to alert icon
+  return ICONS['alert']?.path ?? ''
+}
 
 export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): string {
   const cells = props.cells ?? []
@@ -20,6 +31,9 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
 
   const cellHtml = cells
     .map((cell, i) => {
+      const iconPath = getIconPath(cell.icon as string)
+      const fillColor = ctx.cssVar('accent')
+      
       return (
         `<div style="` +
           `width:${cellWidth};` +
@@ -27,13 +41,17 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
           `vertical-align:top;` +
           `box-sizing:border-box;` +
         `">` +
-          // Icon
+          // Icon - render as inline SVG with the correct path
           `<div data-part="cell[${i}].icon" style="` +
             `width:48px;` +
             `height:48px;` +
             `margin-bottom:12px;` +
-            `color:${ctx.cssVar('accent')};` +
-          `">${ctx.esc(cell.icon)}</div>` +
+            `display:inline-block;` +
+          `">` +
+            `<svg viewBox="0 0 24 24" width="48" height="48" fill="${fillColor}" style="display:block;">` +
+              `<path d="${iconPath}" stroke="none"/>` +
+            `</svg>` +
+          `</div>` +
           // Title
           `<div data-part="cell[${i}].title" style="` +
             `font-family:var(--tls-font-family);` +
