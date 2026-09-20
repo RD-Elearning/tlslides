@@ -30,7 +30,7 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const registry = (ctx as unknown as { registry?: BlockRegistry }).registry
 
   // Calculate distributed sizes for each child based on sizing mode
-  let sizes: { height: number; y: number }[] = []
+  const sizes: { height: number; y: number }[] = []
 
   if (sizingMode === 'equal' || n === 0) {
     // Equal distribution
