@@ -13,5 +13,5 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMIcon,
 ]
 
-export { tlsMImage, tlsMIcon } from './tls-m-image'
+export { tlsMImage } from './tls-m-image'
 export { tlsMIcon } from './tls-m-icon'
