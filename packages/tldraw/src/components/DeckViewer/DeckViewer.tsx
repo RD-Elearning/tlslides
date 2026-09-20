@@ -1,85 +1,789 @@
 import * as React from 'react'
-import { Tldraw } from '../../Tldraw'
-import type { TDDocument } from '~types'
-import type { TldrawApp } from '~state'
+import type { TDDocument, TDPage, ComponentShape } from '~types'
+import { TDShapeType } from '~types'
+// Deliberately importing each of these from its own leaf module rather than the `~blocks`
+// barrel (`~blocks/index.ts`). The barrel also re-exports `parity-harness.ts`, which imports
+// Node's `child_process` (it forks a worker for the SVG parity harness) — fine for Jest/CJS,
+// but fatal for a browser bundle: `esbuild --bundle --platform=browser` on `~blocks` fails with
+// "Could not resolve child_process". Importing the specific leaf files this component actually
+// uses avoids pulling that (and anything else barrel-adjacent) into a real DeckViewer bundle.
+// Verified with the same walker `import-graph.spec.ts` uses: none of these leaf modules reach
+// `parity-harness.ts`, `state/TldrawApp`, `state/sessions/`, or `mobx`.
+import type { DeckSpec, Box, BlockMotionRuntime } from '~blocks/types'
+import type { MotionDriver } from '~blocks/motion/driver'
+import type { BlockDefinition } from '~blocks/types'
+import type { LayoutContext } from '~blocks/types'
+import { deckSpecToDocument } from '~blocks/deck-document'
+import { deckLayoutContext, contextForBlock } from '~blocks/deck-context'
+import { shapeToBlock } from '~blocks/shape-bridge'
+import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
+import { BlockRegistry } from '~blocks/registry'
+import { HostRegistry } from '~blocks/host-registry'
+import { HostRegistryContext } from '~hooks/useHostRegistry'
+import { BlockRegistryContext } from '~hooks/useBlockRegistry'
+import { registerBuiltInBlocks } from '~blocks/library'
+import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
+import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
+import type { BuildStep } from '~state/deck/presentation'
+import { entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
+import { playBlockReveal } from '~blocks/motion/play-reveal'
+import { resolvePartMotion } from '~blocks/motion/resolve-motion'
 
+/**
+ * `<DeckViewer>` — Q14's real, animated, read-only deck viewer (`reviews/blocks/BACKLOG-demo.md`
+ * §7). Unlike `<DeckEmbed>` (`./DeckEmbed.tsx`, the Phase-14 component this replaces under its old
+ * name), this component mounts **no editor at all**: no `TldrawApp`, no MobX, no canvas, no
+ * session system — verified structurally by `import-graph.spec.ts`, which walks this file's real
+ * module graph rather than trusting a comment.
+ *
+ * The render path is exactly the one the editor uses, minus the editor: `deckSpecToDocument`
+ * compiles the same `DeckSpec` → `TDDocument` a `<Tldraw document={...}>` would load (via
+ * `compileSlide`/`blockToShape`, the same functions `Deck.addSlideFromSpec` calls), so a shape
+ * here is byte-for-byte the same `ComponentShape` the editor would show. Per shape:
+ * `shapeToBlock` → `registry.get(type).layout(props, deckLayoutContext(...))` → `renderNodeToDom`
+ * — the same three calls `ComponentUtil`'s `Component` makes (see its own comment on
+ * `useBlockLayoutContext`), just without a mounted shape/store behind them.
+ *
+ * Build-step playback reuses `computeBuildSteps`/`stepChainDelayMs` from
+ * `state/deck/presentation.ts` unchanged — that module is pure and TDPage-only by design (its own
+ * doc comment says so) specifically so this component and `PresentationRuntime` can share it
+ * without either depending on the other. Motion plays through the `MotionDriver` contract
+ * (`opacity`/`translate`/`scale`/`clip-path` only, never `transform`), defaulting to
+ * `createWAAPI_driver()`.
+ */
 export interface DeckViewerProps {
-  /** The deck to display. */
-  document: TDDocument
-  /** Which slide to show. Omit to show whichever slide `document`'s own `pageStates` last left
-   *  current (the same default `<Tldraw currentPageId>` has). */
-  slideId?: string
-  /** Render the editor's dark UI chrome/shape palette. Off by default, matching a fresh deck. */
-  darkMode?: boolean
-  /**
-   * (optional) Called once the viewer's own `TldrawApp` is ready. Exists for a host that wants to
-   * drive `app.deck.present()`/`app.deck.goToSlide()` from this same instance (e.g. a "preview"
-   * pane with its own play/next controls) rather than mount a second, separate viewer for that —
-   * this is a real `TldrawApp`, so anything `app.deck` can do is available here too.
-   */
-  onMount?: (app: TldrawApp) => void
+  /** The deck to render. Recompiled (via `deckSpecToDocument`) whenever this reference changes. */
+  spec: DeckSpec
+  /** Controlled current slide index (0-based, into `spec.slides` order). Uncontrolled when
+   *  absent — the viewer then owns its own slide position, reporting changes via
+   *  `onSlideChange`. */
+  slideIndex?: number
+  /** Controlled build-step count already revealed on the current slide (0 = only
+   *  non-animated/base content). Uncontrolled when absent. */
+  buildStep?: number
+  /** Fired whenever navigation would change the slide — always fired, controlled or not, so a
+   *  controlled host can decide whether to follow it. */
+  onSlideChange?: (index: number) => void
+  /** Fired whenever navigation would change the build step. */
+  onBuildStepChange?: (step: number) => void
+  /** Motion driver. Defaults to `createWAAPI_driver()`. Inject a stub in tests. */
+  driver?: MotionDriver
+  /** Host-injected GSAP instance (R3). When provided, passed through to `BlockMotionRuntime.gsap`
+   *  so that html blocks with `animate()` can use GSAP directly. No `import gsap` anywhere
+   *  in the bundle — the adapter is structurally typed. */
+  gsap?: unknown
+  /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
+   *  this many ms. Absent = fully manual/click/keyboard navigation only. */
+  autoAdvanceMs?: number
+  /** Optional block registry override. When absent, the module-level `sharedRegistry` is used. */
+  registry?: BlockRegistry
+  /** Optional host registry for `k: 'host'` layout nodes. */
+  hostRegistry?: HostRegistry
   className?: string
-  style?: React.CSSProperties
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Shared block registry — built once per module load, never per instance          */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const sharedRegistry = new BlockRegistry()
+registerBuiltInBlocks(sharedRegistry)
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Pure helpers                                                                     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+function clampIndex(i: number, length: number): number {
+  if (length === 0) return 0
+  return Math.min(Math.max(i, 0), length - 1)
+}
+
+/** `TDPage`s in `spec.slides` order — `deckSpecToDocument` assigns `childIndex = index + 1`, so
+ *  sorting by it reproduces the original slide order exactly (pages are keyed by slide id, not
+ *  by array position). */
+function orderedPages(document: TDDocument): TDPage[] {
+  return Object.values(document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
+}
+
+function isPresentable(page: TDPage | undefined): boolean {
+  return !!page && !page.skipInPresentation
+}
+
+function firstPresentableIndex(pages: TDPage[]): number {
+  for (let i = 0; i < pages.length; i++) if (isPresentable(pages[i])) return i
+  return 0
+}
+
+function lastPresentableIndex(pages: TDPage[]): number {
+  for (let i = pages.length - 1; i >= 0; i--) if (isPresentable(pages[i])) return i
+  return Math.max(0, pages.length - 1)
+}
+
+function nextPresentableIndex(pages: TDPage[], from: number): number | undefined {
+  for (let i = from + 1; i < pages.length; i++) if (isPresentable(pages[i])) return i
+  return undefined
+}
+
+function prevPresentableIndex(pages: TDPage[], from: number): number | undefined {
+  for (let i = from - 1; i >= 0; i--) if (isPresentable(pages[i])) return i
+  return undefined
+}
+
+/** SSR-safe `prefers-reduced-motion` — reads `window` only inside the initial-state thunk (run
+ *  during render, but guarded) and inside effects, never at module scope. Mirrors
+ *  `PresentationRuntime.tsx`'s `usePrefersReducedMotion` (same query, same fallback). */
+function usePrefersReducedMotion(): boolean {
+  const query = '(prefers-reduced-motion: reduce)'
+  const [reduced, setReduced] = React.useState(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia(query).matches === true
+  )
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return
+    const mql = window.matchMedia(query)
+    const onChange = () => setReduced(mql.matches)
+    if (mql.addEventListener) mql.addEventListener('change', onChange)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- older matchMedia API
+    else if ((mql as any).addListener) (mql as any).addListener(onChange)
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', onChange)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- older matchMedia API
+      else if ((mql as any).removeListener) (mql as any).removeListener(onChange)
+    }
+  }, [])
+  return reduced
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Placeholders — a bad or unknown block must never take the whole viewer down     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const PLACEHOLDER_STYLE: React.CSSProperties = {
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 4,
+  border: '2px dashed #a1a1aa',
+  borderRadius: 4,
+  color: '#71717a',
+  fontFamily: 'sans-serif',
+  fontSize: 12,
+  textAlign: 'center',
+  padding: 8,
+  boxSizing: 'border-box',
+}
+
+function UnknownBlockPlaceholder({ type }: { type: string }) {
+  return (
+    <div style={PLACEHOLDER_STYLE} data-testid="unknown-block">
+      <div style={{ fontWeight: 600 }}>Unknown block</div>
+      <div style={{ fontFamily: 'monospace', fontSize: 11, wordBreak: 'break-all' }}>
+        {type || '(no type)'}
+      </div>
+    </div>
+  )
 }
 
 /**
- * A read-only, chrome-free display of a deck — the entry point Phase 14 adds for host pages that
- * only need to *show* a deck (a share/preview link, a dashboard embed, a "view" route distinct
- * from the "edit" route) rather than run the full editor.
- *
- * **Why this wraps `<Tldraw readOnly showUI={false}>` and not `ReadOnlyEditor`** (the existing
- * `packages/tldraw/src/components/ReadOnlyEditor` component, which already renders a read-only
- * slide): `ReadOnlyEditor` is purpose-built as the *thumbnail strip* inside the Deck panel — it
- * calls `useTldrawApp()`, meaning it requires an already-mounted `TldrawApp`/store context to sit
- * inside (specifically, the main editor's own), and its `onPointerUp` handler exists to switch
- * *that* editor's current page when a thumbnail is clicked. A host page with no editor at all has
- * no such context to provide, and would have to hand-build the Provider/store plumbing `<Tldraw>`
- * already encapsulates just to satisfy `ReadOnlyEditor`'s dependency — strictly more work, for a
- * component that isn't shaped like a full-size single-slide view anyway. `<Tldraw>` mounts its
- * own self-contained `TldrawApp`, so wrapping it costs nothing extra and reuses the exact same
- * `Frame`/background/theme rendering path (the one Phases 11-13 verified against screenshots) —
- * this component only fixes a handful of its props (`readOnly`, `showUI`, every `show*` toggle)
- * and narrows the prop surface down to what a viewer actually needs.
- *
- * A mounted `<Tldraw readOnly>` still allows panning, zooming, and selecting shapes — it only
- * blocks document mutation (see `TldrawApp.readOnly`'s cleanup step) — which reads as a
- * reasonable "view" experience (the same trade every mainstream slide viewer makes) rather than a
- * static image. A host that wants a literal, non-interactive image should use
- * `app.deck.getThumbnail` instead (see its own doc comment for what that can and cannot do today).
- *
- * `darkMode` here just passes straight through to `<Tldraw darkMode>` — that prop used to be a
- * silent no-op (declared, never read), found while first building this component; it's now wired
- * up in `Tldraw.tsx` itself (`app.setSetting('isDarkMode', ...)`), so this component no longer
- * needs its own workaround for it.
+ * Renders one block's `layout()` output. Deliberately its own component (not an inline
+ * expression in `DeckViewer`'s JSX): `blockDef.layout()` can throw, and only an error thrown
+ * during a *descendant's* render is visible to an ancestor error boundary — evaluating it
+ * directly in `DeckViewer`'s own render function would crash the whole viewer instead of just
+ * this one block.
  */
-export function DeckViewer({
-  document,
-  slideId,
-  darkMode = false,
-  onMount,
+function BlockContent({
+  blockDef,
+  props,
+  ctx,
+}: {
+  blockDef: BlockDefinition
+  props: Record<string, unknown>
+  ctx: LayoutContext
+}) {
+  return <React.Fragment>{renderNodeToDom(blockDef.layout(props, ctx))}</React.Fragment>
+}
+
+interface BlockBoundaryState {
+  error: Error | null
+  key: string
+}
+
+/** Scoped to a single block. A block that throws degrades to a visible "crashed" placeholder
+ *  rather than taking the rest of the slide (or deck) down with it — rule 7. */
+class BlockBoundary extends React.Component<
+  { blockType: string; children: React.ReactNode },
+  BlockBoundaryState
+> {
+  state: BlockBoundaryState = { error: null, key: this.props.blockType }
+
+  static getDerivedStateFromError(error: Error): Partial<BlockBoundaryState> {
+    return { error }
+  }
+
+  static getDerivedStateFromProps(
+    props: { blockType: string },
+    state: BlockBoundaryState
+  ): Partial<BlockBoundaryState> | null {
+    if (state.error && props.blockType !== state.key) return { error: null, key: props.blockType }
+    return { key: props.blockType }
+  }
+
+  componentDidCatch(error: Error): void {
+    // eslint-disable-next-line no-console
+    console.error(`[DeckViewer block "${this.props.blockType}"] threw while rendering:`, error)
+  }
+
+  render(): React.ReactNode {
+    if (this.state.error) {
+      return (
+        <div
+          style={{ ...PLACEHOLDER_STYLE, border: '2px solid #ef4444', color: '#b91c1c' }}
+          data-testid="crashed-block"
+        >
+          <div>Block crashed</div>
+          <div style={{ fontFamily: 'monospace', fontSize: 11 }}>{this.props.blockType}</div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* DeckViewer                                                                       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+export const DeckViewer: React.FC<DeckViewerProps> = ({
+  spec,
+  slideIndex,
+  buildStep,
+  onSlideChange,
+  onBuildStepChange,
+  driver,
+  gsap,
+  autoAdvanceMs,
+  registry: registryProp,
+  hostRegistry,
   className,
-  style,
-}: DeckViewerProps) {
+}) => {
+  const { document } = React.useMemo(() => deckSpecToDocument(spec), [spec])
+  const pages = React.useMemo(() => orderedPages(document), [document])
+
+  // Use the provided registry, or fall back to the module-level sharedRegistry
+  const blockRegistry = registryProp ?? sharedRegistry
+
+  const isSlideControlled = slideIndex !== undefined
+  const [innerSlideIndex, setInnerSlideIndex] = React.useState(0)
+  const currentSlideIndex = clampIndex(isSlideControlled ? (slideIndex as number) : innerSlideIndex, pages.length)
+
+  const isStepControlled = buildStep !== undefined
+  const [innerBuildStep, setInnerBuildStep] = React.useState(0)
+  const currentBuildStep = isStepControlled ? (buildStep as number) : innerBuildStep
+
+  const page = pages[currentSlideIndex]
+  const steps = React.useMemo<BuildStep[]>(() => (page ? computeBuildSteps(page) : []), [page])
+
+  const reducedMotion = usePrefersReducedMotion()
+  const motionDriver = React.useMemo<MotionDriver>(() => driver ?? createWAAPI_driver(), [driver])
+
+  const elementsRef = React.useRef<Map<string, HTMLDivElement>>(new Map())
+
+  /* --- R3: animate() disposers and onComplete promises ------------------------------ */
+
+  /**
+   * Disposer functions returned by `animate()`, keyed by shape id. Called on every cancel
+   * path (backward navigation, slide change, unmount) to kill GSAP timelines that the
+   * driver's `cancelAll()` knows nothing about.
+   */
+  const animateDisposersRef = React.useRef<Map<string, () => void>>(new Map())
+
+  /**
+   * Map of shape id → resolve function for the `onComplete` promise. The viewer awaits
+   * these for build-step chaining (`afterPrevious` / auto-advance).
+   */
+  const animateCompletersRef = React.useRef<Map<string, () => void>>(new Map())
+
+  /**
+   * Timeout handles for blocks that never call `onComplete`. Keyed by shapeId
+   * so each shape's onComplete only clears its own timeout, not every pending one.
+   */
+  const animateTimeoutsRef = React.useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  /** Kill all animate()-started timelines and clear tracking state. */
+  const cancelAllAnimate = React.useCallback(() => {
+    for (const disposer of animateDisposersRef.current.values()) {
+      disposer()
+    }
+    animateDisposersRef.current.clear()
+    for (const timeout of animateTimeoutsRef.current.values()) {
+      clearTimeout(timeout)
+    }
+    animateTimeoutsRef.current.clear()
+    // Note: we do NOT clear animateCompletersRef — the promises are already stored
+    // in the build-step chain and will resolve when the disposer runs or timeout fires.
+  }, [])
+
+  /* --- Navigation state transitions --------------------------------------------------- */
+
+  const setSlide = React.useCallback(
+    (index: number, step: number) => {
+      if (isSlideControlled) onSlideChange?.(index)
+      else setInnerSlideIndex(index)
+      if (isStepControlled) onBuildStepChange?.(step)
+      else setInnerBuildStep(step)
+    },
+    [isSlideControlled, isStepControlled, onSlideChange, onBuildStepChange]
+  )
+
+  const setStep = React.useCallback(
+    (step: number) => {
+      if (isStepControlled) onBuildStepChange?.(step)
+      else setInnerBuildStep(step)
+    },
+    [isStepControlled, onBuildStepChange]
+  )
+
+  const advance = React.useCallback(() => {
+    if (currentBuildStep < steps.length) {
+      setStep(currentBuildStep + 1)
+      return
+    }
+    const next = nextPresentableIndex(pages, currentSlideIndex)
+    if (next !== undefined) setSlide(next, 0)
+  }, [currentBuildStep, steps.length, pages, currentSlideIndex, setStep, setSlide])
+
+  const retreat = React.useCallback(() => {
+    if (currentBuildStep > 0) {
+      setStep(currentBuildStep - 1)
+      return
+    }
+    const prev = prevPresentableIndex(pages, currentSlideIndex)
+    if (prev !== undefined) {
+      const prevPage = pages[prev]
+      const prevSteps = prevPage ? computeBuildSteps(prevPage) : []
+      setSlide(prev, prevSteps.length)
+    }
+  }, [currentBuildStep, pages, currentSlideIndex, setStep, setSlide])
+
+  const goHome = React.useCallback(() => setSlide(firstPresentableIndex(pages), 0), [pages, setSlide])
+
+  const goEnd = React.useCallback(() => {
+    const last = lastPresentableIndex(pages)
+    const lastPage = pages[last]
+    const lastSteps = lastPage ? computeBuildSteps(lastPage) : []
+    setSlide(last, lastSteps.length)
+  }, [pages, setSlide])
+
+  // When `slideIndex` is host-controlled but `buildStep` is not, an external slide change must
+  // still reset the viewer's own build progress — every other transition (advance/retreat/
+  // goHome/goEnd) already sets both pieces of state together via `setSlide`, so this only needs
+  // to cover the "host changed the prop directly" path.
+  const prevControlledSlideRef = React.useRef(slideIndex)
+  React.useEffect(() => {
+    if (isSlideControlled && !isStepControlled && prevControlledSlideRef.current !== slideIndex) {
+      setInnerBuildStep(0)
+    }
+    prevControlledSlideRef.current = slideIndex
+  }, [slideIndex, isSlideControlled, isStepControlled])
+
+  /* --- Build-step visual sync ---------------------------------------------------------- */
+
+  const prevBuildRef = React.useRef<{ pageId: string; revealed: number }>({
+    pageId: page?.id ?? '',
+    revealed: -1,
+  })
+
+  React.useEffect(() => {
+    if (!page) return
+    const prev = prevBuildRef.current
+    const pageChanged = prev.pageId !== page.id
+    if (pageChanged) {
+      motionDriver.cancelAll()
+      cancelAllAnimate()
+    }
+    const prevRevealed = pageChanged ? -1 : prev.revealed
+
+    steps.forEach((step, index) => {
+      const isRevealed = index < currentBuildStep
+      // isNewlyRevealed: first time appearing. reducedMotion is handled per-block below,
+      // not folded into this flag, so that animate() blocks get their onComplete() call.
+      const isNewlyRevealed = !pageChanged && index >= prevRevealed && isRevealed
+      step.shapeIds.forEach((shapeId) => {
+        const el = elementsRef.current.get(shapeId)
+        if (!el) return
+
+        // R3: check if this block has animate() and should be handled via the runtime
+        const shape = page.shapes[shapeId]
+        const blockSpec = shape ? shapeToBlock(shape) : undefined
+        const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined
+        const hasAnimate = blockDef?.kind === 'html' && !!blockDef.html?.animate
+
+        if (hasAnimate && isNewlyRevealed) {
+          // Find the host root div inside the shape wrapper
+          const hostRoot = el.querySelector('[data-render]') as HTMLElement | null
+          if (!hostRoot) return
+
+          const animation = shape?.animation
+          const durationMs = animation?.durationMs ?? 400
+          const delayMs = animation?.delayMs ?? 0
+
+          // Create the onComplete promise — stored before calling animate so that a
+          // synchronous onComplete still resolves correctly (promise is already created).
+          let completeResolve!: () => void
+          const completePromise = new Promise<void>((resolve) => {
+            completeResolve = resolve
+          })
+          // Suppress unused variable — the promise is stored via the completer ref
+          void completePromise
+
+          // Store the completer for build-step chaining
+          animateCompletersRef.current.set(shapeId, completeResolve)
+
+          if (reducedMotion) {
+            // Reduced motion: no animate(). Settle the BLOCK and its parts to their
+            // final state. The wrapper can still carry the hidden state applied while
+            // this step was un-revealed, and nothing else in this branch clears it —
+            // returning early here is what left animated html blocks invisible.
+            if (animation) motionDriver.set(el, visibleState(animation.effect))
+            const parts = hostRoot.querySelectorAll<HTMLElement>('[data-part]')
+            for (let i = 0; i < parts.length; i++) parts[i].style.opacity = ''
+            completeResolve()
+            animateCompletersRef.current.delete(shapeId)
+            return
+          }
+
+          // R3 "hidden state before reveal", in the order that matters: hide the
+          // parts, then make the BLOCK wrapper visible, then let animate() own the
+          // reveal. The wrapper was hidden when this step was un-revealed and only
+          // this branch clears it — without it the whole block stays invisible.
+          const animateParts = hostRoot.querySelectorAll<HTMLElement>('[data-part]')
+          for (let i = 0; i < animateParts.length; i++) animateParts[i].style.opacity = '0'
+          if (animation) motionDriver.set(el, visibleState(animation.effect))
+
+          const rt: BlockMotionRuntime = {
+            driver: motionDriver,
+            gsap: gsap ?? undefined,
+            timing: {
+              delayMs,
+              durationMs,
+              staggerMs: 40, // default stagger from motion tokens
+              ease: 'cubic-bezier(0.22, 1, 0.36, 1)', // smoothOut
+            },
+            reducedMotion: false,
+            onComplete: () => {
+              // Idempotent resolve
+              const resolve = animateCompletersRef.current.get(shapeId)
+              if (resolve) {
+                resolve()
+                animateCompletersRef.current.delete(shapeId)
+              }
+              // Clear only this shape's timeout, not every pending one
+              const t = animateTimeoutsRef.current.get(shapeId)
+              if (t) {
+                clearTimeout(t)
+                animateTimeoutsRef.current.delete(shapeId)
+              }
+            },
+          }
+
+          const disposer = blockDef!.html!.animate!(hostRoot, rt)
+          if (disposer) {
+            animateDisposersRef.current.set(shapeId, disposer)
+          }
+
+          // Timeout guard: if onComplete is not called within durationMs + 2000
+          const timeout = setTimeout(() => {
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[block "${blockDef!.type}"] animate() did not call onComplete ` +
+              `within ${durationMs + 2000}ms — continuing anyway`
+            )
+            rt.onComplete()
+          }, durationMs + 2000)
+          animateTimeoutsRef.current.set(shapeId, timeout)
+
+        } else if (hasAnimate && !isRevealed) {
+          // Block is hidden — cancel any running animate for this shape
+          const disposer = animateDisposersRef.current.get(shapeId)
+          if (disposer) {
+            disposer()
+            animateDisposersRef.current.delete(shapeId)
+          }
+          // Also resolve onComplete so build-step chaining isn't blocked
+          const resolve = animateCompletersRef.current.get(shapeId)
+          if (resolve) {
+            resolve()
+            animateCompletersRef.current.delete(shapeId)
+          }
+
+          // Apply hidden state to the shape wrapper (existing behavior)
+          const animation = shape?.animation
+          if (animation) {
+            motionDriver.set(el, hiddenState(animation.effect))
+          }
+
+        } else if (!hasAnimate) {
+          // Non-animated block — use playBlockReveal for part-level choreography (R5).
+          const animation = shape?.animation
+          if (!animation) return
+          if (isRevealed) {
+            if (isNewlyRevealed && !reducedMotion && blockSpec && blockDef) {
+              // Full reveal: block-level + part-level choreography with stagger.
+              playBlockReveal(el, blockSpec, blockDef, { driver: motionDriver, reducedMotion: false })
+            } else {
+              // Already revealed (or reduced motion): settle to visible.
+              motionDriver.set(el, visibleState(animation.effect))
+              // Also settle parts to visible.
+              if (blockSpec && blockDef) {
+                const partMotions = resolvePartMotion(blockSpec.motion, blockDef.motion)
+                for (const pm of partMotions) {
+                  const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
+                  partEls.forEach((partEl) => {
+                    motionDriver.set(partEl as HTMLElement, { opacity: 1, translate: '0px 0px', scale: 1 })
+                  })
+                }
+              }
+            }
+          } else {
+            motionDriver.set(el, hiddenState(animation.effect))
+          }
+        }
+        // If hasAnimate && isRevealed && !isNewlyRevealed: already settled, do nothing
+      })
+    })
+
+    prevBuildRef.current = { pageId: page.id, revealed: currentBuildStep }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, steps, currentBuildStep, reducedMotion, motionDriver, gsap])
+
+  // Cancel every in-flight animation on unmount — an abandoned WAAPI animation holding
+  // `will-change` on an unmounted subtree is a real leak (rule 5).
+  React.useEffect(() => {
+    return () => {
+      motionDriver.cancelAll()
+      cancelAllAnimate()
+    }
+  }, [motionDriver, cancelAllAnimate])
+
+  /* --- Auto-advance chain (`afterPrevious`/a leading `withPrevious`) -------------------- */
+
+  React.useEffect(() => {
+    if (!page) return
+    const nextIndex = currentBuildStep
+    const nextStep = steps[nextIndex]
+    if (!nextStep || !nextStep.auto) return
+    const waitMs = reducedMotion ? 0 : stepChainDelayMs(page, steps, nextIndex)
+    const handle = setTimeout(() => setStep(nextIndex + 1), waitMs)
+    return () => clearTimeout(handle)
+  }, [page, steps, currentBuildStep, reducedMotion, setStep])
+
+  /* --- Optional whole-deck auto-advance -------------------------------------------------- */
+
+  React.useEffect(() => {
+    if (!autoAdvanceMs || !page) return
+    if (currentBuildStep < steps.length) return
+    const next = nextPresentableIndex(pages, currentSlideIndex)
+    if (next === undefined) return
+    const handle = setTimeout(() => setSlide(next, 0), autoAdvanceMs)
+    return () => clearTimeout(handle)
+  }, [autoAdvanceMs, page, steps.length, currentBuildStep, pages, currentSlideIndex, setSlide])
+
+  /* --- Keyboard / click navigation -------------------------------------------------------- */
+
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowRight':
+        case ' ':
+        case 'Enter':
+          e.preventDefault()
+          advance()
+          break
+        case 'ArrowLeft':
+        case 'Backspace':
+          e.preventDefault()
+          retreat()
+          break
+        case 'Home':
+          e.preventDefault()
+          goHome()
+          break
+        case 'End':
+          e.preventDefault()
+          goEnd()
+          break
+        default:
+          break
+      }
+    },
+    [advance, retreat, goHome, goEnd]
+  )
+
+  const handleClick = React.useCallback(() => advance(), [advance])
+
+  /* --- Viewport scale-to-fit -------------------------------------------------------------- */
+
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const [viewportSize, setViewportSize] = React.useState<{ width: number; height: number } | null>(null)
+
+  React.useEffect(() => {
+    const el = containerRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry) return
+      const { width, height } = entry.contentRect
+      setViewportSize({ width, height })
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  /**
+   * Take focus on mount so the arrow keys work straight away.
+   *
+   * Keyboard navigation is an `onKeyDown` on this container plus `tabIndex={0}`, which means it
+   * only fires once the container is the focused element. Without this, a viewer filling the
+   * whole page looked broken: nothing happened on Right/End until the visitor happened to click
+   * the slide first, which nobody does when the page is already showing what they asked for.
+   *
+   * `preventScroll` keeps a host page from jumping to the viewer when it is embedded partway down
+   * a longer document. Focus is only taken if nothing else already has it — stealing focus from a
+   * host's own input would be worse than the problem being fixed.
+   */
+  React.useEffect(() => {
+    const el = containerRef.current
+    // `window.document`, not `document`: this component has a local `document` binding of its own
+    // (the compiled `TDDocument`), which shadows the global and made `document.activeElement` a
+    // type error rather than a DOM lookup.
+    if (!el || typeof window === 'undefined') return
+    const active = window.document.activeElement
+    if (active && active !== window.document.body && active !== el) return
+    el.focus({ preventScroll: true })
+  }, [])
+
+  const [frameWidth, frameHeight] = document.defaultPageSize ?? [1920, 1080]
+  // A single, STATIC CSS transform on the slide container — never touched by the motion driver,
+  // and not itself animated — purely to fit the fixed 1920×1080 slide frame into whatever box
+  // the host gives this component. See this file's own doc comment / BACKLOG-demo.md Q14: this
+  // is the one sanctioned use of `transform` here.
+  const scale = viewportSize
+    ? Math.min(viewportSize.width / frameWidth, viewportSize.height / frameHeight) || 1
+    : 1
+
+  const slideCtx = React.useMemo(() => {
+    if (!page) return undefined
+    return deckLayoutContext(
+      document,
+      { x: 0, y: 0, width: frameWidth, height: frameHeight },
+      { headless: false, slideBackground: page.background }
+    )
+  }, [document, page, frameWidth, frameHeight])
+
+  const backgroundStyle: React.CSSProperties = slideCtx ? paintToCSS(slideCtx.surface.behind) : {}
+
+  // `compileSlide` only ever produces `ComponentShape`s (`blockToShape`'s return type), but
+  // `TDPage.shapes` is typed as the general `Record<string, TDShape>` — filter+narrow rather than
+  // cast, so a future non-Component shape on a compiled page is silently skipped instead of
+  // reaching `shape.size`/`shape.componentId`, which only exist on `ComponentShape`.
+  const shapes = React.useMemo<ComponentShape[]>(
+    () =>
+      page
+        ? (Object.values(page.shapes).filter(
+            (s) => s.type === TDShapeType.Component
+          ) as ComponentShape[])
+            .sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
+        : [],
+    [page]
+  )
+
   return (
+    <BlockRegistryContext.Provider value={blockRegistry}>
+    <HostRegistryContext.Provider value={hostRegistry}>
     <div
+      ref={containerRef}
       className={className}
-      style={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, ...style }}
+      tabIndex={0}
+      role="group"
+      aria-roledescription="presentation"
+      aria-live="polite"
+      onKeyDown={handleKeyDown}
+      onClick={handleClick}
+      style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', outline: 'none' }}
+      data-testid="deck-viewer"
+      data-slide-index={currentSlideIndex}
+      data-slide-count={pages.length}
+      data-build-step={currentBuildStep}
+      data-build-step-count={steps.length}
     >
-      <Tldraw
-        document={document}
-        currentPageId={slideId}
-        readOnly
-        darkMode={darkMode}
-        autofocus={false}
-        showUI={false}
-        showMenu={false}
-        showPages={false}
-        showTools={false}
-        showZoom={false}
-        showStyles={false}
-        showMultiplayerMenu={false}
-        onMount={onMount}
-      />
+      <span className="sr-only">Slide {currentSlideIndex + 1} of {pages.length}</span>
+      {page && (
+        <div
+          data-testid="deck-viewer-slide"
+          data-slide-id={page.id}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: frameWidth,
+            height: frameHeight,
+            transform: `translate(-50%, -50%) scale(${scale})`,
+            transformOrigin: 'center center',
+          }}
+        >
+          <div style={{ position: 'absolute', inset: 0, ...backgroundStyle }} />
+          {shapes.map((shape) => {
+            const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+            const ctx = contextForBlock(shape, document, {
+              headless: false,
+              slideBackground: page.background,
+              registry: blockRegistry,
+            })
+            const blockSpec = shapeToBlock(shape)
+            const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined
+            return (
+              <div
+                key={shape.id}
+                data-shape-id={shape.id}
+                data-block-id={blockSpec?.id}
+                ref={(el) => {
+                  if (el) elementsRef.current.set(shape.id, el)
+                  else elementsRef.current.delete(shape.id)
+                }}
+                style={{
+                  position: 'absolute',
+                  left: box.x,
+                  top: box.y,
+                  width: box.width,
+                  height: box.height,
+                }}
+              >
+                <BlockBoundary blockType={blockSpec?.type ?? shape.componentId ?? '(unknown)'}>
+                  {blockDef && blockSpec ? (
+                    <HostLayoutContext.Provider value={{
+                      tokens: ctx.tokens,
+                      surface: ctx.surface,
+                      props: blockSpec.props,
+                      headless: false,
+                    }}>
+                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} />
+                    </HostLayoutContext.Provider>
+                  ) : (
+                    <UnknownBlockPlaceholder type={shape.componentId} />
+                  )}
+                </BlockBoundary>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
+    </HostRegistryContext.Provider>
+    </BlockRegistryContext.Provider>
   )
 }

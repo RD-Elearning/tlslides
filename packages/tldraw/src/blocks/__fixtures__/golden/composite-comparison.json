@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "golden-composite-comparison",
+  "title": "Comparison Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b1",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Build In-House",
+                  "items": ["Full control", "Higher upfront cost", "Longer timeline"]
+                },
+                {
+                  "title": "Buy SaaS",
+                  "items": ["Quick setup", "Lower upfront cost", "Vendor lock-in risk"]
+                },
+                {
+                  "title": "Hybrid",
+                  "items": ["Balanced approach", "Moderate cost", "Flexible roadmap"]
+                }
+              ],
+              "highlight": 2
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

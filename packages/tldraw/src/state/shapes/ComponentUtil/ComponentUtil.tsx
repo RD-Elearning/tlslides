@@ -12,9 +12,12 @@ import {
   transformSingleRectangle,
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
-import { useTldrawComponents } from '~hooks'
+import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
+import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
+import { getAtPath, setAtPath } from '~blocks/prop-path'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
+import { InlineEditor } from '~components/InlineEditor'
 
 type T = ComponentShape
 type E = HTMLDivElement
@@ -58,10 +61,54 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
 
   Component = TDShapeUtil.Component<T, E, TDMeta>(
     ({ shape, isGhost, isBinding, meta, events }, ref) => {
+      const app = useTldrawApp()
       const registry = useTldrawComponents()
+      const blockRegistry = useBlockRegistry()
       const { size, style, componentId, props } = shape
 
       const rWrapper = React.useRef<HTMLDivElement>(null)
+
+      // R11 — double-click any text part (marked `data-prop-path` by the layout that produced
+      // it, see `render-dom.tsx`'s text case) to edit it in place. State lives here, one shape
+      // at a time, rather than in a shared editor-wide registry: each ComponentShape already
+      // gets its own `Component` instance, so there is nothing to coordinate across shapes.
+      const [editing, setEditing] = React.useState<{ propPath: string; rect: DOMRect } | null>(
+        null
+      )
+
+      // Detected on `pointerdown`, not a native `dblclick`/`onDoubleClick`: `useShapeEvents`
+      // (`@tlslides/core`) calls `e.currentTarget.setPointerCapture(e.pointerId)` in its own
+      // `onPointerDown` (spread onto the surrounding `HTMLContainer` via `events`), which
+      // retargets every later pointer event for this gesture at the capturing element — by
+      // `pointerup` (let alone a synthetic `dblclick`), `e.target` is `HTMLContainer` itself,
+      // not the specific `[data-prop-path]` node the user actually clicked. Reading `e.target`
+      // on `pointerdown`, before capture is set, is the only point this app's own click model
+      // still reports the real DOM target. Threshold matches `inputs.isDoubleClick()` (250ms).
+      const lastPointerDownRef = React.useRef<{ time: number; target: EventTarget | null }>({
+        time: 0,
+        target: null,
+      })
+
+      const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
+        const target = (e.target as HTMLElement).closest('[data-prop-path]') as HTMLElement | null
+        const now = performance.now()
+        const isDouble =
+          !!target &&
+          lastPointerDownRef.current.target === target &&
+          now - lastPointerDownRef.current.time < 250
+        lastPointerDownRef.current = { time: now, target }
+        const propPath = target?.getAttribute('data-prop-path')
+        if (isDouble && target && propPath) {
+          const rect = target.getBoundingClientRect()
+          // Deferred: this same gesture's `pointerup` still has to reach `useShapeEvents`,
+          // which independently recognizes it as a double-click (its own timer, unrelated to
+          // ours) and runs `SelectTool.onDoubleClickShape` — unconditionally `app.select()`s
+          // the shape. That store write re-renders this shape and, empirically, wins a race
+          // against a `setEditing` made synchronously here: the state lands, renders once, and
+          // is then clobbered back to `null`. Opening on the next tick lets that settle first.
+          window.setTimeout(() => setEditing({ propPath, rect }), 0)
+        }
+      }, [])
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current
@@ -80,6 +127,38 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       }, [size, style.cornerRadius])
 
       const Registered = registry[componentId]
+
+      // The deck's real tokens (theme + any per-doc override) and the real surface behind this
+      // shape (the current page's background, sampled at this shape's own position) — not a
+      // hardcoded second scale system. Called unconditionally (hooks can't run inside the `if`
+      // below) — cheap when there is no `blockDef` since nothing downstream reads it, and both
+      // `useDeckTokens`/`useBlockSurface` are memoised so an unrelated store tick doesn't produce
+      // a new object here. See `hooks/useDeckTokens.ts` for why this doesn't call
+      // `blocks/deck-context.ts`'s `deckLayoutContext` (it can't carry this shape's position).
+      const blockMeta = (props as Record<string, unknown>).$block as
+        | Record<string, unknown>
+        | undefined
+      const blockStyle = blockMeta?.style as import('~blocks/types').BlockStyleSpec | undefined
+      const layoutCtx = useBlockLayoutContext(
+        { x: shape.point[0], y: shape.point[1], width: size[0], height: size[1] },
+        { headless: false, style: blockStyle },
+      )
+
+      // When a BlockDefinition exists in the BlockRegistry for this componentId, render
+      // through the layout engine + DOM renderer instead of the createBlockComponents
+      // placeholder. The layout props come from $block.props if present, otherwise the
+      // full shape.props (which is what blockToShape puts at the top level).
+      const blockDef = blockRegistry?.get(componentId)
+      let blockNode: React.ReactNode = null
+      if (blockDef) {
+        const layoutProps = (props as Record<string, unknown>).$block
+          ? ((props as Record<string, unknown>).$block as Record<string, unknown>).props ??
+            props
+          : props
+        blockNode = renderNodeToDom(
+          blockDef.layout(layoutProps as Record<string, unknown>, layoutCtx),
+        )
+      }
 
       return (
         <HTMLContainer ref={ref} {...events}>
@@ -122,15 +201,42 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             isGhost={isGhost}
             isDarkMode={meta.isDarkMode}
             style={{ opacity: getShapeOpacity(style, isGhost) }}
+            onPointerDown={handlePointerDown}
           >
             <BlockErrorBoundary componentId={componentId}>
-              {Registered ? (
+              {blockNode ? (
+                <HostLayoutContext.Provider value={{
+                  tokens: layoutCtx.tokens,
+                  surface: layoutCtx.surface,
+                  props: (props ?? {}) as Record<string, unknown>,
+                  headless: false,
+                }}>
+                  {blockNode}
+                </HostLayoutContext.Provider>
+              ) : Registered ? (
                 <Registered {...props} />
               ) : (
                 <MissingBlockPlaceholder componentId={componentId} />
               )}
             </BlockErrorBoundary>
           </Wrapper>
+          {editing && (
+            <InlineEditor
+              propPath={editing.propPath}
+              initialValue={(() => {
+                const value = getAtPath((props ?? {}) as Record<string, unknown>, editing.propPath)
+                return typeof value === 'string' ? value : ''
+              })()}
+              rect={editing.rect}
+              onSave={(value) => {
+                const currentProps = (props ?? {}) as Record<string, unknown>
+                const newProps = setAtPath(currentProps, editing.propPath, value)
+                app.updateShapes({ id: shape.id, props: newProps })
+                setEditing(null)
+              }}
+              onCancel={() => setEditing(null)}
+            />
+          )}
         </HTMLContainer>
       )
     }

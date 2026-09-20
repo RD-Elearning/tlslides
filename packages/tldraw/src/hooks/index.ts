@@ -1,7 +1,12 @@
 export * from './useKeyboardShortcuts'
 export * from './useTldrawApp'
 export * from './useTldrawComponents'
+export * from './useBlockRegistry'
+export * from './useHostRegistry'
+export * from './useDeckTokens'
 export * from './useTheme'
 export * from './useStylesheet'
 export * from './useFileSystemHandlers'
 export * from './useFileSystem'
+// Alias for convenience
+export { useTldrawApp as useTldraw } from './useTldrawApp'

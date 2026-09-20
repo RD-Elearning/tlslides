@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "id": "golden-composite-testimonial",
+  "title": "Testimonial Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b1",
+            "type": "tls.c.testimonial",
+            "props": {
+              "quote": {
+                "runs": [
+                  { "text": "This product " },
+                  { "text": "transformed", "bold": true },
+                  { "text": " how our team works. We shipped " },
+                  { "text": "3× faster", "bold": true },
+                  { "text": " in the first quarter." }
+                ]
+              },
+              "name": "Jane Doe",
+              "role": "VP of Engineering",
+              "avatar": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

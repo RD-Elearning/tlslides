@@ -26,6 +26,7 @@ import type {
 // `import type`. TypeScript erases both sides at compile time, same pattern `blocks/types.ts`
 // already uses for its own `import type { TDShape, AnimationTrigger } from '~types'`.
 import type { DeckTokens } from './blocks/tokens'
+import type { MasterSpec } from './blocks/types'
 
 /* -------------------------------------------------- */
 /*                         App                        */
@@ -177,6 +178,9 @@ export interface TDDocument {
   // pin (a custom categorical ramp, a tighter type scale, `density: 'compact'`) — every field on
   // `DeckTokens` is itself optional for the same reason.
   tokens?: DeckTokens
+  // Phase D1 — block composition. Optional master definitions keyed by name. A document
+  // without `masters` loads and renders exactly as before — no migration, no version bump.
+  masters?: Record<string, MasterSpec>
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -247,6 +251,11 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   background?: SlideBackground | string
   notes?: string // speaker notes
   skipInPresentation?: boolean // skip this slide when presenting
+  // Phase D1 — block composition. Optional reference to a master template by name.
+  masterId?: string
+  // Phase D2 — block layout. Optional slide-spec ID and layout identifier.
+  slideSpecId?: string
+  layout?: string
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`
@@ -479,6 +488,10 @@ export interface ShapeAnimation {
   order: number // build order within the slide
   durationMs: number
   delayMs: number
+  /** CSS easing string — optional, additive (R5). When present, the viewer/PresentationRuntime
+   *  uses this instead of the effect's default easing. Carried from the motion spec's resolved
+   *  easing through `blockToShape` → shape → viewer. */
+  easing?: string
 }
 
 export interface DrawShape extends TDBaseShape {

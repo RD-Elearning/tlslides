@@ -1,0 +1,396 @@
+{
+  "version": 1,
+  "id": "colorful-blocks-demo",
+  "title": "Colorful Blocks Demo",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "title",
+      "role": "cover",
+      "regions": {
+        "title": [
+          {
+            "id": "b_01_hero",
+            "type": "tls.c.hero",
+            "props": {
+              "kicker": "BLOCK SHOWCASE",
+              "title": "All Block Types in Color",
+              "subtitle": { "runs": [
+                { "text": "Beautiful," },
+                { "text": " colorful," },
+                { "text": " interactive" }
+              ] }
+            },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_02",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_02_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Chart Blocks (tls-d-*)" }] },
+              "size": "heading"
+            },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_02_bar",
+            "type": "tls.d.bar",
+            "props": {
+              "categories": ["Red", "Blue", "Green", "Yellow", "Purple"],
+              "series": [85, 72, 91, 68, 79],
+              "title": "Category Performance"
+            },
+            "motion": { "preset": "grow-bars-y", "order": 2 }
+          },
+          {
+            "id": "b_02_donut",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                { "value": 40, "color": "accent1", "label": "Revenue" },
+                { "value": 30, "color": "accent2", "label": "Cost" },
+                { "value": 20, "color": "accent3", "label": "Profit" },
+                { "value": 10, "color": "accent4", "label": "Other" }
+              ],
+              "total": 100
+            },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_03",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_03_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Text Blocks (tls.t-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_03_heading",
+            "type": "tls.t.heading",
+            "props": { "text": "Heading 1", "level": 1, "color": "accent1" },
+            "motion": { "preset": "fade-up", "order": 2 }
+          },
+          {
+            "id": "b_03_title2",
+            "type": "tls.t.title",
+            "props": { "text": "Title", "size": "heading", "color": "accent2" },
+            "motion": { "preset": "fade-up", "order": 3 }
+          },
+          {
+            "id": "b_03_subtitle",
+            "type": "tls.t.subtitle",
+            "props": { "text": "This is a subtitle with colorful text", "align": "start", "color": "accent3" },
+            "motion": { "preset": "fade-up", "order": 4 }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_03_bullets",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Bullet point in red", "marker": "filled", "color": "red" },
+                { "text": "Bullet point in blue", "marker": "circle", "color": "blue" },
+                { "text": "Bullet point in green", "marker": "dash", "color": "green" }
+              ],
+              "spacing": "md"
+            },
+            "motion": { "preset": "stagger-lines", "order": 5 }
+          },
+          {
+            "id": "b_03_quote",
+            "type": "tls.t.quote",
+            "props": {
+              "text": "Design for color!",
+              "attribution": "Creative Team",
+              "markStyle": "glyph"
+            },
+            "motion": { "preset": "quote-in", "order": 6 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_04",
+      "layout": "kpi-row",
+      "role": "content",
+      "regions": {
+        "kpi1": [
+          {
+            "id": "b_04_k1",
+            "type": "tls.t.hero-number",
+            "props": { "value": "52", "unit": "Colors", "format": "plain", "emphasis": "accent" },
+            "motion": { "preset": "count-up", "order": 1 }
+          }
+        ],
+        "kpi2": [
+          {
+            "id": "b_04_k2",
+            "type": "tls.t.hero-number",
+            "props": { "value": "12", "unit": "Block Types", "format": "plain", "emphasis": "default" },
+            "motion": { "preset": "count-up", "order": 2 }
+          }
+        ],
+        "kpi3": [
+          {
+            "id": "b_04_k3",
+            "type": "tls.t.hero-number",
+            "props": { "value": "3", "unit": "Families", "format": "plain", "emphasis": "accent2" },
+            "motion": { "preset": "count-up", "order": 3 }
+          }
+        ],
+        "kpi4": [
+          {
+            "id": "b_04_k4",
+            "type": "tls.t.hero-number",
+            "props": { "value": "∞", "unit": "Possibilities", "format": "plain", "emphasis": "muted" },
+            "motion": { "preset": "count-up", "order": 4 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_05",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_05_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Color Blocks (tls-c-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_05_grid",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "columns": 3,
+              "gap": 16,
+              "cells": [
+                {
+                  "title": "Red Alert",
+                  "desc": "Danger and warnings",
+                  "icon": "alert-triangle",
+                  "color": "red"
+                },
+                {
+                  "title": "Blue Info",
+                  "desc": "Information and data",
+                  "icon": "info",
+                  "color": "blue"
+                },
+                {
+                  "title": "Green Success",
+                  "desc": "Positive outcomes",
+                  "icon": "check",
+                  "color": "green"
+                }
+              ]
+            },
+            "motion": { "preset": "stagger-children", "order": 2 }
+          },
+          {
+            "id": "b_05_section",
+            "type": "tls.l.section",
+            "props": {
+              "title": "Section Example",
+              "children": [
+                { "id": "b_05_child", "type": "tls.t.body", "props": { "text": "A section with colored surface", "color": "accent1" } }
+              ]
+            },
+            "style": {
+              "surface": { "type": "solid", "color": "yellow" },
+              "on": "text"
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_06",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_06_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Diagram Blocks (tls.g-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_06_steps",
+            "type": "tls.g.steps",
+            "props": {
+              "steps": [
+                { "title": "Design", "description": "Plan with color" },
+                { "title": "Build", "description": "Create elements" },
+                { "title": "Test", "description": "Verify features" },
+                { "title": "Deploy", "description": "Go live" }
+              ],
+              "direction": "horizontal",
+              "connector": "arrow"
+            },
+            "motion": { "preset": "stagger-children", "order": 2 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_07",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_07_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Layout Blocks (tls-l-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_07_stack",
+            "type": "tls-l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                { "id": "b_07_child1", "type": "tls.t.body", "props": { "text": "Stack Item 1", "color": "red" } },
+                { "id": "b_07_child2", "type": "tls.t.body", "props": { "text": "Stack Item 2", "color": "blue" } },
+                { "id": "b_07_child3", "type": "tls.t.body", "props": { "text": "Stack Item 3", "color": "green" } }
+              ]
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          },
+          {
+            "id": "b_07_grid",
+            "type": "tls-l.grid",
+            "props": {
+              "columns": 3,
+              "gap": 8,
+              "children": [
+                { "id": "b_07_g1", "type": "tls.d.bar", "props": { "categories": ["A"], "series": [100] } },
+                { "id": "b_07_g2", "type": "tls.d.bar", "props": { "categories": ["B"], "series": [75] } },
+                { "id": "b_07_g3", "type": "tls.d.bar", "props": { "categories": ["C"], "series": [50] } }
+              ]
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_08",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_08_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Media Blocks (tls.m-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_08_image",
+            "type": "tls.m.image",
+            "props": {
+              "src": "https://picsum.photos/seed/color1/400/200",
+              "alt": "Random colorful image 1",
+              "fit": "cover",
+              "radius": 8
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          },
+          {
+            "id": "b_08_image2",
+            "type": "tls.m.image",
+            "props": {
+              "src": "https://picsum.photos/seed/color2/400/200",
+              "alt": "Random colorful image 2",
+              "fit": "cover",
+              "radius": 8
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_09",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_09_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Advanced Charts" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_09_large_donut",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                { "value": 35, "color": "red", "label": "Red Zone" },
+                { "value": 25, "color": "orange", "label": "Orange Zone" },
+                { "value": 20, "color": "yellow", "label": "Yellow Zone" },
+                { "value": 12, "color": "green", "label": "Green Zone" },
+                { "value": 8, "color": "blue", "label": "Blue Zone" }
+              ],
+              "total": 100
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_10",
+      "layout": "blank",
+      "role": "closing",
+      "regions": {
+        "content": [
+          {
+            "id": "b_10_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [
+                { "text": "Thank you!" },
+                { "text": " 🎨", "emoji": true }
+              ]},
+              "size": "display"
+            }
+          },
+          {
+            "id": "b_10_body",
+            "type": "tls.t.body",
+            "props": { "text": "All block types now work with full color support!", "align": "center" }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -71,6 +71,8 @@ import { getPolygonPoints } from '~state/shapes/PolygonUtil/polygonHelpers'
 import { getStarPoints } from '~state/shapes/StarUtil/starHelpers'
 import { getSpeechBubblePoints } from '~state/shapes/SpeechBubbleUtil/speechBubbleHelpers'
 import { getPolygonPath, getPolygonIndicatorPathTDSnapshot } from '~state/shapes/shared/polygonDrawPath'
+import { resolveMaster, isEditorOnly } from '~blocks/master-renderer'
+import { resolveTokens } from '~blocks/tokens'
 
 // ---------------------------------------------------------------------------------------------
 // Phase 15 — headless render. `renderPageToSvg` is a *pure function of the document*: given a
@@ -170,6 +172,18 @@ export interface RenderPageToSvgOptions {
    *  server-rendered thumbnail has no user-facing UI-theme toggle to reflect, and `false` matches
    *  what `TDShapeUtil.getSvgElement`'s own label-fill resolution already hard-codes for export. */
   isDarkMode?: boolean
+  /** When supplied, `ComponentShape`s are rendered through this callback instead of the dashed
+   *  placeholder. The callback receives the `ComponentShape` and returns either a complete SVG
+   *  fragment (which is inlined verbatim) or `undefined` to fall through to the placeholder.
+   *  This is how a host routes Tier-B block `poster()` output into headless exports: the
+   *  callback looks up the block by `shape.componentId`, calls `poster()`, renders the resulting
+   *  `LayoutNode` to SVG, and returns the markup here. */
+  blocks?: (shape: ComponentShape) => string | undefined
+  /** D4 — master definitions from the document (`TDDocument.masters`). When supplied and the
+   *  page has a `masterId`, master blocks are compiled and rendered *behind* the page's own
+   *  shapes (lower childIndex). Master shapes are never added to `page.shapes` and cannot be
+   *  selected. Editor-only master blocks (`x.safe-area`, `x.grid-guide`) are filtered out. */
+  masters?: Record<string, import('~blocks/types').MasterSpec>
 }
 
 /** `page.size ?? defaultPageSize ?? DEFAULT_SLIDE_SIZE` — the exact fallback chain `Deck.
@@ -195,7 +209,7 @@ export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {})
   const isDarkMode = opts.isDarkMode ?? false
   const [width, height] = resolvePageSize(page, opts.defaultPageSize)
 
-  const ctx: RenderCtx = { assets, theme, isDarkMode }
+  const ctx: RenderCtx = { assets, theme, isDarkMode, blocks: opts.blocks }
 
   let defs = ''
   let backgroundRect = ''
@@ -208,14 +222,42 @@ export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {})
     )}" />`
   }
 
+  // D4 — Master rendering. If the page references a master, compile its blocks into shapes
+  // with low childIndex values so they render behind the page's own content. Master shapes
+  // are ephemeral (never added to page.shapes) and cannot be selected. Editor-only blocks
+  // are filtered out here so they never appear in any export path.
+  let masterSvg = ''
+  if (page.masterId && opts.masters) {
+    const tokens = resolveTokens(theme)
+    const masterResult = resolveMaster(
+      page.masterId,
+      opts.masters,
+      { width, height },
+      tokens
+    )
+    if (masterResult) {
+      // Render master shapes behind page content (they have lower childIndex).
+      masterSvg = masterResult.shapes.map((shape) => renderShapeOrGroup(shape, page, ctx)).join('')
+    }
+  }
+
   // Top-level shapes only (`parentId === page.id`) — a group's own children are rendered by
   // `renderShapeOrGroup` when it recurses into them, never independently here too. This is a
   // correctness fix over `TldrawApp.copySvg`'s own iteration (which walks *every* shape in
   // `page.shapes`, including group children, and would double-render a grouped shape once as
   // part of its group and once again as a bare top-level entry) rather than a knowingly-copied
   // behaviour — there was no reason to reproduce it here.
+  // D4 — Editor-only blocks are filtered out of all export paths.
   const topLevel = Object.values(page.shapes)
     .filter((shape) => shape.parentId === page.id)
+    .filter((shape) => {
+      // Filter out editor-only ComponentShapes from export.
+      if (shape.type === TDShapeType.Component) {
+        const compShape = shape as ComponentShape
+        if (isEditorOnly(compShape.componentId || '')) return false
+      }
+      return true
+    })
     .sort((a, b) => a.childIndex - b.childIndex)
 
   const body = topLevel.map((shape) => renderShapeOrGroup(shape, page, ctx)).join('')
@@ -225,6 +267,7 @@ export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {})
     `viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" fill="transparent">` +
     (defs ? `<defs>${defs}</defs>` : '') +
     backgroundRect +
+    masterSvg +
     body +
     '</svg>'
   )
@@ -238,6 +281,7 @@ interface RenderCtx {
   assets: TDAssets
   theme: DeckTheme
   isDarkMode: boolean
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 /** One shape's rendered body, in its own *local* coordinate space (top-left at `[0, 0]`) — the
@@ -293,8 +337,16 @@ function renderShape(shape: TDShape, ctx: RenderCtx): ShapeRender {
       return renderImage(shape, ctx)
     case TDShapeType.Video:
       return renderVideoPlaceholder(shape)
-    case TDShapeType.Component:
-      return renderComponentPlaceholder(shape as ComponentShape)
+    case TDShapeType.Component: {
+      const compShape = shape as ComponentShape
+      if (ctx.blocks) {
+        const svg = ctx.blocks(compShape)
+        if (svg !== undefined) {
+          return { width: compShape.size[0], height: compShape.size[1], inner: svg }
+        }
+      }
+      return renderComponentPlaceholder(compShape)
+    }
     case TDShapeType.Polygon:
       return renderPolygon(shape, ctx)
     case TDShapeType.Star:

@@ -11,8 +11,9 @@ this file or reachable from it. Keep this file current: when a phase ships, upda
 
 > Continue the tlslides block system in this repo. Read `reviews/blocks/CONTINUE.md` first — it is
 > the resume brief and names the current state, the working agreement, the verified commands and
-> the traps. Then read `reviews/blocks/README.md` and the phase you are starting from
-> `reviews/blocks/08-phase-plan.md`.
+> the traps. Then read `reviews/blocks/README.md` and the task you are starting from
+> `reviews/blocks/BACKLOG-enhance.md` (R0–R16, four phases; read the task's **Watch out**
+> section before its **Do** list). `08-phase-plan.md` is the long-form phase history.
 >
 > P18 and P19 are shipped and verified. **Work from `reviews/blocks/BACKLOG.md`** — it breaks the
 > remaining phases into one-session tasks with their own scope, dependencies and acceptance. Take
@@ -32,29 +33,17 @@ this file or reachable from it. Keep this file current: when a phase ships, upda
 
 ## 2. Where the work is
 
-**Shipped: P18 (block foundations), P19 (design tokens).** Both live in
+**Shipped: P18 (block foundations), P19 (design tokens), P20–P24 partial, P29 partial.** Everything lives in
 `packages/tldraw/src/blocks/`, exported from the package root. `packages/blocks` — the separate
-library package — does **not** exist yet and is deliberately deferred to P24.
+library package — does **not** exist yet and is deliberately deferred to P25. See [README.md](README.md)'s
+current-state table for the full module inventory.
 
-| Module | What |
-|---|---|
-| `blocks/types.ts` | `BlockSpec`, `BlockDefinition`, `LayoutNode`, `LayoutContext`, `BlockSchema`, token types |
-| `blocks/registry.ts` | `BlockRegistry`, `createBlockComponents` (returns placeholders until P20) |
-| `blocks/shape-bridge.ts` | `blockToShape` / `shapeToBlock` / `BLOCK_PROP_KEY` (`'$block'`) |
-| `blocks/color-math.ts` | WCAG luminance + contrast, hex⇄RGB⇄HSL, two-tier hue-preserving solver |
-| `blocks/scales.ts` | type / space / radius / elevation / motion scales, `applyDensity`, categorical ramp |
-| `blocks/tokens.ts` | `DeckTokens`, `resolveTokens`, `resolveColor`, `surfaceFromBackground`, `surfaceFromPaint` |
+**Renamed component:** `<DeckViewer>` is now the editor-free read-only viewer (new, Q14). The old
+editor-backed component is now called `<DeckEmbed>`.
 
-Also touched: `types.ts` (`DeckTokens` + optional `TDDocument.tokens`, status colours on
-`DeckThemeColors`), `state/shapes/shared/deck-theme.ts` (per-palette `positive`/`negative`/
-`warning`), `examples/nextjs-sample/components/p18-blocks.tsx` (live demo, **Add P18 block**),
-`examples/tldraw-example/src/develop.tsx` (token fns on `window` for the scenario),
-`tools/visual/scenarios/tokens.js`.
-
-**Next: P20** — layout engine, the DOM and SVG renderers, and the parity harness. It is the
-heaviest phase and the first with anything visual. Then **P21** (headless block rendering) before
-any promise about thumbnails or export is made to anyone. P22 (motion) can run in parallel with
-the P20→P21 spine.
+**Next phase:** P25 (Library B — more data and chart blocks). P30 (Authoring UX — inserter,
+inspector) and P31 (Deck Doctor — linter) depend only on P24 and can start independently. Read
+`[08-phase-plan.md](08-phase-plan.md)` for the full phase tracker.
 
 ---
 
@@ -64,14 +53,14 @@ Re-measure on a clean tree before starting; do **not** quote a number out of a p
 Phase 1–17 notes in `reviews/README.md` are in authoring order, not commit order, so they are
 stale for HEAD).
 
-| | Current |
+| | Current (2026-09-17, after Q19) |
 |---|---|
-| Jest | **99/99 suites · 726 passed · 77 todo · 19 snapshots** |
-| Typecheck | **10 errors, all inside `.spec.ts`; zero in non-spec source** |
-| eslint `src/blocks` | **0 errors**; warnings only inside spec files |
+| Jest | **148 suites · 1716 passed · 77 todo · 19 snapshots** |
+| Typecheck | **0 errors in non-spec source** |
+| eslint `src/blocks` | **0 errors** |
 
-The 77 todo tests and the 10 spec-file type errors are pre-existing. Do not "fix" them. Introduce
-no new ones, including in your own spec files.
+The 77 todo tests are pre-existing. Do not "fix" them. Introduce no new ones, including in your
+own spec files.
 
 ---
 
@@ -82,11 +71,11 @@ no new ones, including in your own spec files.
 cd packages/tldraw && npx jest --silent 2>&1 | tail -8
 cd packages/tldraw && npx jest src/blocks --silent
 
-# TRAP 1 — `npx tsc` is broken here: it resolves to a doubled
-# node_modules/node_modules/.pnpm/... path and dies with MODULE_NOT_FOUND.
+# TRAP 1 — tsc lives in the root node_modules, NOT in packages/tldraw.
+# (`packages/tldraw/node_modules/.bin/` contains only eslint and lask.)
 # And `--noEmit` alone fails TS5053 because tsconfig sets emitDeclarationOnly.
-cd packages/tldraw && ./node_modules/.bin/tsc -p tsconfig.json --noEmit \
-  --emitDeclarationOnly false 2>&1 | grep -E '^src/'
+cd packages/tldraw && ../../node_modules/.bin/tsc -p tsconfig.json \
+  --noEmit --emitDeclarationOnly false 2>&1 | grep -E 'error TS'
 
 cd packages/tldraw && npx eslint src/blocks --ext .ts,.tsx
 

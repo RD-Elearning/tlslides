@@ -33,6 +33,7 @@ describe('blockToShape and shapeToBlock', () => {
     },
     children: [
       {
+        id: 'nested-child-1',
         type: 'tls.nested.child',
         props: { label: 'Child' },
       },
@@ -87,6 +88,7 @@ describe('blockToShape and shapeToBlock', () => {
 
     it('does not create animation when motion is absent', () => {
       const specNoMotion: BlockSpec = {
+        id: 'no-motion-1',
         type: 'tls.test.no-motion',
         props: { label: 'No motion' },
       }
@@ -97,6 +99,7 @@ describe('blockToShape and shapeToBlock', () => {
 
     it('does not create animation when motion has no order or preset', () => {
       const specEmptyMotion: BlockSpec = {
+        id: 'empty-motion-1',
         type: 'tls.test.empty-motion',
         props: { label: 'Empty motion' },
         motion: { duration: 500 },
@@ -197,6 +200,7 @@ describe('blockToShape and shapeToBlock', () => {
   describe('optional fields', () => {
     it('handles BlockSpec with no optional fields', () => {
       const minimalSpec: BlockSpec = {
+        id: 'minimal-1',
         type: 'tls.minimal',
         props: { label: 'Minimal' },
       }
@@ -204,11 +208,26 @@ describe('blockToShape and shapeToBlock', () => {
       const shape = blockToShape(minimalSpec, testBox)
       const recovered = shapeToBlock(shape)
 
-      expect(recovered?.id).toBeUndefined()
+      expect(recovered?.id).toBe('minimal-1')
       expect(recovered?.style).toBeUndefined()
       expect(recovered?.motion).toBeUndefined()
       expect(recovered?.children).toBeUndefined()
       expect(recovered?.slot).toBeUndefined()
+    })
+
+    // Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2): `BlockSpec.id` is required at the
+    // app-facing contract, but a shape authored before this field existed (or hand-built, as
+    // here) has no `$block.id`. `shapeToBlock` must mint one rather than throwing.
+    it('mints an id for a legacy shape whose $block metadata has no id', () => {
+      const shape: any = {
+        type: 'component',
+        componentId: 'tls.legacy',
+        props: { label: 'Legacy', [BLOCK_PROP_KEY]: {} },
+      }
+
+      const recovered = shapeToBlock(shape)
+      expect(recovered?.id).toBeTruthy()
+      expect(typeof recovered?.id).toBe('string')
     })
 
     it('includes optional fields when present', () => {
@@ -255,6 +274,7 @@ describe('blockToShape and shapeToBlock', () => {
   describe('motion without animation', () => {
     it('includes motion in the recovered spec even if animation is not created', () => {
       const specWithMotionButNoOrder: BlockSpec = {
+        id: 'motion-no-order-1',
         type: 'tls.motion-no-order',
         props: {},
         motion: { duration: 300, ease: 'ease-in-out' },
@@ -274,14 +294,17 @@ describe('blockToShape and shapeToBlock', () => {
   describe('nested children', () => {
     it('deeply clones nested children', () => {
       const specWithNesting: BlockSpec = {
+        id: 'parent-1',
         type: 'tls.parent',
         props: {},
         children: [
           {
+            id: 'child1-1',
             type: 'tls.child1',
             props: { data: [1, 2, 3] },
             children: [
               {
+                id: 'grandchild-1',
                 type: 'tls.grandchild',
                 props: { value: 'nested' },
               },
@@ -304,7 +327,7 @@ describe('blockToShape and shapeToBlock', () => {
 
   describe('id generation and options (P0 regression)', () => {
     it('generates different ids for each blockToShape call', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const shape1 = blockToShape(spec, testBox)
       const shape2 = blockToShape(spec, testBox)
 
@@ -315,7 +338,7 @@ describe('blockToShape and shapeToBlock', () => {
     })
 
     it('honours an explicit opts.id', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const customId = 'my-custom-id-12345'
       const shape = blockToShape(spec, testBox, { id: customId })
 
@@ -323,28 +346,28 @@ describe('blockToShape and shapeToBlock', () => {
     })
 
     it('defaults parentId to "page"', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const shape = blockToShape(spec, testBox)
 
       expect(shape.parentId).toBe('page')
     })
 
     it('honours an explicit opts.parentId', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const shape = blockToShape(spec, testBox, { parentId: 'page-custom' })
 
       expect(shape.parentId).toBe('page-custom')
     })
 
     it('defaults childIndex to 1', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const shape = blockToShape(spec, testBox)
 
       expect(shape.childIndex).toBe(1)
     })
 
     it('honours an explicit opts.childIndex', () => {
-      const spec = { type: 'tls.test', props: {} }
+      const spec = { id: 'gen-test-1', type: 'tls.test', props: {} }
       const shape = blockToShape(spec, testBox, { childIndex: 5 })
 
       expect(shape.childIndex).toBe(5)
@@ -354,6 +377,7 @@ describe('blockToShape and shapeToBlock', () => {
   describe('reserved props validation (P3)', () => {
     it('throws if spec.props contains a $block key', () => {
       const specWithReservedKey: BlockSpec = {
+        id: 'bad-1',
         type: 'tls.bad',
         props: { label: 'Safe', $block: 'THIS_IS_RESERVED' },
       }
@@ -393,6 +417,7 @@ describe('blockToShape and shapeToBlock', () => {
       // The repo's Utils.deepMerge treats explicit undefined as "clear this field",
       // but for serializable block props this is acceptable.
       const specWithUndefined: BlockSpec = {
+        id: 'undef-test-1',
         type: 'tls.test',
         props: { defined: 'value', undefined: undefined },
       }

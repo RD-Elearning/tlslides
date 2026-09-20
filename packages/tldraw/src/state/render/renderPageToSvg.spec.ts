@@ -222,6 +222,48 @@ describe('renderPageToSvg — per-shape coverage', () => {
     expect(svg).toContain('stroke-dasharray="8 6"')
   })
 
+  // A5 — headless block rendering. The placeholder contract is the most important acceptance
+  // criterion: with NO `blocks` option, output must be byte-identical to the pre-A5 snapshot.
+  it('ComponentShape placeholder is byte-identical without blocks option (A5 placeholder contract)', () => {
+    const block = Component.create({ id: 'c1', parentId: 'page1', size: [100, 60], componentId: 'kpi-tile' })
+    const without = renderPageToSvg(pageOf([block]))
+    const withUndefined = renderPageToSvg(pageOf([block]), { blocks: undefined })
+    expect(without).toBe(withUndefined)
+    // Spot-check the placeholder markers to catch accidental regressions.
+    expect(without).toContain('Component: kpi-tile')
+    expect(without).toContain('stroke-dasharray="8 6"')
+    expect(without).toContain('stroke="#a1a1aa"')
+  })
+
+  it('renders custom SVG from blocks callback instead of the placeholder', () => {
+    const block = Component.create({ id: 'c2', parentId: 'page1', size: [200, 120], componentId: 'bar-chart' })
+    const customSvg = '<g class="block-bar"><rect width="200" height="120" fill="red" /></g>'
+    const svg = renderPageToSvg(pageOf([block]), {
+      blocks: (shape) => (shape.componentId === 'bar-chart' ? customSvg : undefined),
+    })
+    expect(svg).toContain(customSvg)
+    expect(svg).not.toContain('Component: bar-chart')
+    expect(svg).not.toContain('stroke-dasharray="8 6"')
+  })
+
+  it('falls through to placeholder when blocks callback returns undefined', () => {
+    const block = Component.create({ id: 'c3', parentId: 'page1', size: [100, 60], componentId: 'unknown' })
+    const svg = renderPageToSvg(pageOf([block]), {
+      blocks: () => undefined,
+    })
+    expect(svg).toContain('Component: unknown')
+    expect(svg).toContain('stroke-dasharray="8 6"')
+  })
+
+  it('blocks callback only applies to ComponentShapes, not other shapes', () => {
+    const rect = Rectangle.create({ id: 'r1', parentId: 'page1', size: [100, 50] })
+    const called = jest.fn(() => '<g/>')
+    const svg = renderPageToSvg(pageOf([rect]), { blocks: called })
+    expect(called).not.toHaveBeenCalled()
+    // Rectangle renders normally.
+    expect(svg).toContain('translate(0, 0)')
+  })
+
   it('renders a Group by recursing into its children with no extra transform on the group itself', () => {
     const child = Rectangle.create({ id: 'child', parentId: 'group1', point: [30, 30], size: [10, 10] })
     const group = Group.create({ id: 'group1', parentId: 'page1', children: ['child'] })

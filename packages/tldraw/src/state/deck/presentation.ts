@@ -67,20 +67,29 @@ export function computeBuildSteps(page: TDPage): BuildStep[] {
 }
 
 /**
+ * How long a step's own animations take, measured from the moment the step is revealed: the
+ * longest `delayMs + durationMs` across the step's shapes. This is the single formula both the
+ * runtime (`stepChainDelayMs`) and `blocks/motion/timeline.ts`'s `slideTimeline` use, so the two
+ * agree by construction rather than by coincidence.
+ */
+export function stepDurationMs(page: TDPage, step: BuildStep): number {
+  let max = 0
+  for (const id of step.shapeIds) {
+    const animation = page.shapes[id]?.animation
+    if (!animation) continue
+    max = Math.max(max, animation.delayMs + animation.durationMs)
+  }
+  return max
+}
+
+/**
  * How long `PresentationRuntime` should wait, after `steps[index - 1]` becomes visible, before
  * revealing `steps[index]` — only meaningful when `steps[index].auto` is true. `0` for the first
  * step (nothing to wait on) and for any step whose members have no timing at all.
  */
 export function stepChainDelayMs(page: TDPage, steps: BuildStep[], index: number): number {
   if (index <= 0) return 0
-  const previous = steps[index - 1]
-  let max = 0
-  for (const id of previous.shapeIds) {
-    const animation = page.shapes[id]?.animation
-    if (!animation) continue
-    max = Math.max(max, animation.delayMs + animation.durationMs)
-  }
-  return max
+  return stepDurationMs(page, steps[index - 1])
 }
 
 /**
