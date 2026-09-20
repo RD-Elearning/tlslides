@@ -26,7 +26,7 @@ export const schema: BlockSchema = {
     help: 'Spacing between grid cells.',
   },
   children: {
-    type: { kind: 'object' },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
     role: 'content',
     label: 'Children',
     help: 'Child blocks arranged in grid cells (row-major order).',

@@ -4,7 +4,7 @@
  * Phase 6.1: Simple donut chart rendering with color roles.
  */
 
-import type { LayoutContext, LayoutNode } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { DonutProps } from './schema'
 
 export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
@@ -42,15 +42,17 @@ export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
     const outerPath = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`
     const innerPath = `M ${centerX} ${centerY} L ${centerX + innerRadius * cosCurrent} ${centerY + innerRadius * sinCurrent} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${centerX + innerRadius * cosEnd} ${centerY + innerRadius * sinEnd} Z`
 
-    const fillColor = ctx.resolveColor(slice.color ?? 'accent').color
+    const fillPaint: Paint = { type: 'solid', color: ctx.resolveColor(slice.color ?? 'accent').color }
 
-    sliceNodes.push({
-      k: 'shape',
+    const pathNode: LayoutNode = {
+      k: 'path',
       box: { x: 0, y: 0, width: W, height: H },
       part: `slice[${i}]`,
-      path: `${outerPath} ${innerPath}`,
-      fill: fillColor,
-    })
+      d: `${outerPath} ${innerPath}`,
+      fill: fillPaint,
+    }
+    
+    sliceNodes.push(pathNode)
 
     currentAngle = endAngle
   }

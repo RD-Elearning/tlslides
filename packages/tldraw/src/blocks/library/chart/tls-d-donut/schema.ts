@@ -8,10 +8,10 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {
   slices: {
-    type: { kind: 'object' },
+    type: { kind: 'list', of: { kind: 'object', fields: {} }, min: 0, max: 6 },
     role: 'content',
     label: 'Slices',
-    help: 'Data slices for the donut chart.',
+    help: 'Data slices for the donut chart. Max 6 slices; excess grouped into "Other".',
   },
   total: {
     type: { kind: 'number' },

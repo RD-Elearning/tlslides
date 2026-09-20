@@ -12,7 +12,7 @@ import { motion } from './motion'
 export const tlsDDonut: BlockDefinition = {
   type: 'tls.d.donut',
   name: 'Donut Chart',
-  family: 'chart',
+  family: 'data',
   tier: 'A',
   summary: 'Donut chart with colored slices.',
   keywords: ['chart', 'donut', 'pie', 'data', 'visualization'],

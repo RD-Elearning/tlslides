@@ -6,7 +6,6 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { StepsProps, Step } from './schema'
-import { iconHtml } from '../../../icons'
 
 export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   const steps = props.steps ?? []
@@ -22,8 +21,6 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   const positions = calculatePositions(steps, direction, stepWidth, stepHeight, gap)
 
   const childNodes: LayoutNode[] = []
-  const titleHeight = 24
-  const descHeight = 16
 
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i]
@@ -35,46 +32,40 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
       height: stepHeight,
     }
 
+    const children: LayoutNode[] = [
+      // Step number (badge) - using a rect as background for the number
+      {
+        k: 'rect',
+        box: { x: 0, y: 0, width: 24, height: 24 },
+        part: `step[${i}].number`,
+        fill: { type: 'solid', color: ctx.resolveColor('accent').color },
+      },
+    ]
+
+    // Connector line (if not last)
+    if (i < steps.length - 1 && connector !== 'none') {
+      const connectorBox = calculateConnectorBox(positions[i], positions[i + 1], direction, stepWidth, stepHeight, gap)
+      children.push({
+        k: 'line',
+        box: connectorBox,
+        part: `step[${i}].connector`,
+        from: { x: connectorBox.x, y: connectorBox.y },
+        to: {
+          x: connectorBox.x + connectorBox.width,
+          y: connectorBox.y + connectorBox.height,
+        },
+        stroke: {
+          color: ctx.resolveColor('textMuted').color,
+          width: 2,
+        },
+      })
+    }
+
     const node: LayoutNode = {
       k: 'group',
       box: stepBox,
       part: `step[${i}]`,
-      children: [
-        // Step number (circle)
-        {
-          k: 'shape',
-          box: { x: 0, y: 0, width: 24, height: 24 },
-          part: `step[${i}].number`,
-          path: `M12 2L2 12l10 10 10-10-10-10zm0 1.8L9 12H5v2h4l-3 3h2l3-3v4h2V9H9V7l3-3z`,
-          fill: ctx.resolveColor('accent').color,
-        },
-        // Connector line (if not last)
-        ...(i < steps.length - 1 && connector !== 'none'
-          ? [
-              {
-                k: 'line',
-                box: calculateConnectorBox(positions[i], positions[i + 1], direction, stepWidth, stepHeight, gap),
-                part: `step[${i}].connector`,
-                style: {
-                  stroke: ctx.resolveColor('textMuted').color,
-                  strokeWidth: 2,
-                },
-              },
-            ]
-          : []),
-        // Title text
-        {
-          k: 'text',
-          box: { x: 0, y: stepHeight + 4, width: stepWidth, height: titleHeight },
-          part: `step[${i}].title`,
-          text: {
-            text: step.title,
-            fontSize: 16,
-            fontFamily: ctx.tokens.fontFamily ?? '"Source Sans Pro", sans-serif',
-            color: ctx.resolveColor('on').color,
-          },
-        },
-      ],
+      children,
     }
 
     childNodes.push(node)
@@ -93,10 +84,9 @@ function calculatePositions(
   direction: string,
   stepWidth: number,
   stepHeight: number,
-  gap: number
+  gap: number,
 ): { x: number; y: number }[] {
   const positions: { x: number; y: number }[] = []
-  const startX = 0
   let currentX = 0
   let currentY = 0
   let maxRowHeight = stepHeight + gap
@@ -125,13 +115,13 @@ function calculateConnectorBox(
   direction: string,
   stepWidth: number,
   stepHeight: number,
-  gap: number
+  gap: number,
 ): { x: number; y: number; width: number; height: number } {
   if (direction === 'horizontal') {
     return {
       x: from.x + stepWidth,
       y: from.y + stepHeight / 2 - 1,
-      width: to.x - from.x - stepWidth,
+      width: Math.max(0, to.x - from.x - stepWidth),
       height: 2,
     }
   } else {
@@ -139,7 +129,7 @@ function calculateConnectorBox(
       x: from.x + stepWidth / 2 - 1,
       y: from.y + stepHeight,
       width: 2,
-      height: to.y - from.y - stepHeight,
+      height: Math.max(0, to.y - from.y - stepHeight),
     }
   }
 }

@@ -8,10 +8,10 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {
   steps: {
-    type: { kind: 'object' },
+    type: { kind: 'text', maxChars: 2000 },
     role: 'content',
     label: 'Steps',
-    help: 'Array of step objects with title and description.',
+    help: 'Array of step objects with title and description. Parsed from JSON array.',
   },
   direction: {
     type: { kind: 'enum', values: ['horizontal', 'vertical'] },

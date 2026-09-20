@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.stack — vertical stack with gap.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   gap: {
@@ -10,6 +10,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Gap',
     help: 'Spacing between stacked children.',
+  },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks stacked vertically.',
   },
   sizing: {
     type: { kind: 'enum', values: ['equal', 'content'] },
@@ -21,10 +27,12 @@ export const schema: BlockSchema = {
 
 export interface StackProps extends Record<string, unknown> {
   gap: string
+  children?: BlockSpec[]
   sizing?: 'equal' | 'content'
 }
 
 export const defaults: StackProps = {
   gap: 'md',
+  children: [],
   sizing: 'equal',
 }

@@ -15,8 +15,8 @@ import type { BlockRegistry } from '../../../registry'
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
   const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
-  const sizingMode: 'equal' | 'content' = (props as unknown as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
-  const children: BlockSpec[] = (props as unknown as { children?: unknown[] }).children ?? []
+  const sizingMode: 'equal' | 'content' = (props as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
+  const children: BlockSpec[] = (props as { children?: BlockSpec[] }).children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height
