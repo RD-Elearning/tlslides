@@ -11,12 +11,20 @@ export const schema: BlockSchema = {
     label: 'Gap',
     help: 'Spacing between stacked children.',
   },
+  sizing: {
+    type: { kind: 'enum', values: ['equal', 'content'] },
+    role: 'option',
+    label: 'Sizing',
+    help: 'How to distribute space among children: equal (same size) or content (sized to intrinsic).',
+  },
 }
 
 export interface StackProps extends Record<string, unknown> {
   gap: string
+  sizing?: 'equal' | 'content'
 }
 
 export const defaults: StackProps = {
   gap: 'md',
+  sizing: 'equal',
 }

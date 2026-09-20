@@ -323,3 +323,164 @@ export function createLayoutContext(
 
   return ctx
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Intrinsic size measurement (Phase 4 V4.1)                                       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Measure the intrinsic (natural) size of a block's content.
+ * This is used by containers with `sizing: 'content'` to distribute space
+ * based on each child's preferred dimensions.
+ *
+ * When the block definition provides an `intrinsicSize` function, it is used
+ * directly. Otherwise, falls back to calling `layout()` with a probe box
+ * and reading the resulting dimensions.
+ *
+ * @param spec The block spec to measure.
+ * @param ctx The layout context for measurement.
+ * @param registry Optional registry to look up block definitions.
+ * @returns The intrinsic size of the block's content.
+ */
+export function measureIntrinsicSize(
+  spec: BlockSpec,
+  ctx: LayoutContext,
+  registry?: BlockRegistry
+): Size {
+  // First, check if the block definition has an intrinsicSize function
+  if (registry) {
+    const def = registry.get(spec.type)
+    if (def?.intrinsicSize) {
+      return def.intrinsicSize(spec.props, ctx)
+    }
+  }
+
+  // Fallback: derive from layout() with a minimal probe box
+  // Text blocks will measure their content; layout blocks will return their preferred size
+  const probeBox: Size = { width: ctx.box.width, height: ctx.box.height }
+  const probeCtx = createLayoutContext({
+    ...ctx,
+    box: probeBox,
+  })
+
+  // Create a minimal child context and call layout
+  const def = registry?.get(spec.type)
+  if (def?.layout) {
+    const node = def.layout(spec.props as Record<string, unknown>, probeCtx)
+    return { width: node.box.width, height: node.box.height }
+  }
+
+  // Final fallback: minimal size for unknown types
+  return { width: 100, height: 100 }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Space distribution algorithm (Phase 4 V4.2)                                     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Distribution modes for container children.
+ */
+export type SizingMode = 'equal' | 'content'
+
+/**
+ * Result of space distribution for each child.
+ */
+export interface DistributedSize {
+  /** Final size for this child slot. */
+  size: Size
+  /** Whether this child is sized to content (not just stretched). */
+  isContentSized: boolean
+}
+
+/**
+ * Distribute space among children in a container.
+ *
+ * For `equal` mode: all children get the same share of available space.
+ * For `content` mode: children are sized to their intrinsic size, with
+ * extra space distributed proportionally (similar to flex-grow behavior).
+ *
+ * @param availableSize The total space available for distribution.
+ * @param childrenCount Number of children to distribute space among.
+ * @param gap Size of gap between children.
+ * @param mode Distribution mode: 'equal' or 'content'.
+ * @param intrinsicSizes Optional intrinsic sizes for each child (used in 'content' mode).
+ * @returns Array of distributed sizes for each child.
+ */
+export function distributeSpace(
+  availableSize: Size,
+  childrenCount: number,
+  gap: number,
+  mode: SizingMode = 'equal',
+  intrinsicSizes?: Size[]
+): DistributedSize[] {
+  if (childrenCount === 0) {
+    return []
+  }
+
+  // Determine if we're distributing horizontally or vertically based on which dimension varies
+  const isHorizontal = availableSize.height === 0 || (availableSize.width !== 0 && availableSize.height === 0)
+  const mainAvailable = isHorizontal ? availableSize.width : availableSize.height
+  const crossSize = isHorizontal ? availableSize.height : availableSize.width
+
+  // Calculate total gap space
+  const totalGap = Math.max(0, (childrenCount - 1) * gap)
+  const remainingSpace = Math.max(0, mainAvailable - totalGap)
+
+  // Equal distribution mode (default)
+  if (mode === 'equal') {
+    const childMainSize = remainingSpace / childrenCount
+    return Array.from({ length: childrenCount }, () => ({
+      size: isHorizontal
+        ? { width: childMainSize, height: crossSize }
+        : { width: crossSize, height: childMainSize },
+      isContentSized: false,
+    }))
+  }
+
+  // Content-based distribution
+  if (!intrinsicSizes || intrinsicSizes.length < childrenCount) {
+    // Not enough intrinsic sizes, fall back to equal distribution
+    const childMainSize = remainingSpace / childrenCount
+    return Array.from({ length: childrenCount }, () => ({
+      size: isHorizontal
+        ? { width: childMainSize, height: crossSize }
+        : { width: crossSize, height: childMainSize },
+      isContentSized: false,
+    }))
+  }
+
+  // Calculate total intrinsic main dimension
+  const totalIntrinsicMain = intrinsicSizes.reduce((sum, s) => {
+    return sum + (isHorizontal ? s.width : s.height)
+  }, 0)
+
+  if (totalIntrinsicMain <= 0) {
+    // Invalid intrinsic sizes, fall back to equal
+    const childMainSize = remainingSpace / childrenCount
+    return Array.from({ length: childrenCount }, () => ({
+      size: isHorizontal
+        ? { width: childMainSize, height: crossSize }
+        : { width: crossSize, height: childMainSize },
+      isContentSized: false,
+    }))
+  }
+
+  // Distribute proportionally to intrinsic sizes
+  const results: DistributedSize[] = []
+  const scaleFactor = remainingSpace / totalIntrinsicMain
+
+  for (let i = 0; i < childrenCount; i++) {
+    const intrinsicMain = isHorizontal ? intrinsicSizes[i].width : intrinsicSizes[i].height
+    const childMainSize = Math.max(1, intrinsicMain * scaleFactor)
+
+    results.push({
+      size: isHorizontal
+        ? { width: childMainSize, height: crossSize }
+        : { width: crossSize, height: childMainSize },
+      isContentSized: true,
+    })
+  }
+
+  return results
+}

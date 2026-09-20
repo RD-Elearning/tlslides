@@ -4,16 +4,17 @@
  *
  * Compares the estimated text widths and line counts from measure.ts against
  * the browser's real getBoundingClientRect() measurements. Fails if predicted
- * width is off by more than 2%, or if predicted line count differs.
+ * width is off by more than 2%, or if the predicted line count differs.
  *
- * Expected output: Reports the worst-case error rate. If CJK cannot hit 2%,
- * documents the actual tolerance achieved.
+ * This scenario creates text blocks and measures them through the layout system
+ * to verify that the Inter font metrics in measure.ts accurately predict
+ * browser-rendered text dimensions.
  */
 
 const path = require('path')
 
 module.exports = {
-  route: '/#/develop',
+  route: '/develop',
   known: [],
   async run(page) {
     const pageId = await page.evaluate(() => window.app.currentPageId)
@@ -37,24 +38,28 @@ module.exports = {
     const results = await page.evaluate(({ pageId, testStrings, sizes }) => {
       const app = window.app
 
-      const errors = []
-      const measurements = []
+      const discrepancies = []
+      let worstError = 0
+      let worstString = ''
+      let worstSize = 0
+      let worstType = ''
 
       for (const size of sizes) {
         for (const text of testStrings) {
           // Create a text block with the test string
-          const blockId = `metrics-test-${size}-${text.replace(/[^a-z0-9]/gi, '_')}`
+          const blockId = `metrics-test-${size}-${text.replace(/[^a-z0-9_\u4e00-\u9fff\u3040-\u30ff]/gi, '_')}`
 
           app.createShapes({
             id: blockId,
             type: 'text',
             parentId: pageId,
-            point: [100, 100],
+            point: [100, 100 + (sizes.indexOf(size) * 100)], // Stagger Y positions
             text,
             style: { color: 'black' },
             sizes: { min: size, preferred: size },
           })
 
+          // Select the block to ensure it renders
           app.select(blockId)
         }
       }
@@ -62,38 +67,37 @@ module.exports = {
       // Wait for blocks to render
       return new Promise((resolve) => {
         setTimeout(() => {
-          // Measure actual vs predicted widths
-          const lines = document.querySelectorAll('[data-part="text"] div[style*="position: absolute"]')
+          // Measure each text block
+          const textBlocks = document.querySelectorAll('[data-shape-id^="metrics-test-"] .tl-shape[data-part="text"]')
 
-          const discrepancies = []
-          let worstError = 0
-          let worstString = ''
-          let worstSize = 0
+          textBlocks.forEach((block) => {
+            const blockId = block.dataset.shapeId
+            const textEl = block.querySelector('div[style*="position: absolute"]')
+            if (!textEl) return
 
-          lines.forEach((line) => {
-            const textContent = line.textContent || ''
-            const style = getComputedStyle(line.parentElement || line)
-            const fontSize = parseFloat(style.fontSize)
-
-            // Get actual measured width from bounding rect
-            const rect = line.getBoundingClientRect()
+            const rect = textEl.getBoundingClientRect()
             const measuredWidth = rect.width
+            const fontSize = parseFloat(getComputedStyle(textEl.parentElement || textEl).fontSize)
 
-            // Compare with predicted width from layout
-            // Note: This requires the measure.ts logic to be accessible
-            // For now, we just collect measurements
-
-            const predictedWidth = rect.width // Placeholder - would need actual prediction
+            // The predicted width is the layout's box width (stored in the group box)
+            const groupBox = block.closest('[data-part="root"]')
+            const predictedWidth = groupBox
+              ? Math.max(1, parseFloat(getComputedStyle(groupBox).width) || 1)
+              : 1
 
             if (predictedWidth > 0 && measuredWidth > 0) {
               const error = Math.abs(predictedWidth - measuredWidth) / measuredWidth
               if (error > worstError) {
                 worstError = error
-                worstString = textContent
+                worstString = textEl.textContent || ''
                 worstSize = fontSize
+                worstType = blockId.startsWith('metrics-test-28') ? 'Latin' :
+                           blockId.startsWith('metrics-test-36') ? 'Long' :
+                           blockId.includes('CJK') ? 'CJK' : 'Latin'
               }
               discrepancies.push({
-                text: textContent,
+                blockId,
+                text: textEl.textContent || '',
                 fontSize,
                 predicted: predictedWidth,
                 measured: measuredWidth,
@@ -104,7 +108,7 @@ module.exports = {
 
           // Take screenshots for visual verification
           const screenshotPromises = []
-          for (let i = 0; i < 5; i++) {
+          for (let i = 0; i < 3; i++) {
             screenshotPromises.push(
               page.screenshot({
                 path: path.join(__dirname, '..', 'shots', `metrics-check-${i}.png`),
@@ -114,27 +118,43 @@ module.exports = {
 
           Promise.all(screenshotPromises).then(() => {
             resolve({
-              measurements: discrepancies,
+              discrepancies,
               worstError: worstError * 100,
               worstString: worstString,
               worstSize: worstSize,
+              worstType: worstType,
               errorCount: discrepancies.length,
             })
           })
-        }, 500)
+        }, 800)
       })
     }, { pageId, testStrings, sizes })
 
     // Take full-page screenshot
-    await page.setViewportSize({ width: 1920, height: 1080 })
+    await page.setViewportSize({ width: 1920, height: 1200 })
     await page.screenshot({
       path: path.join(__dirname, '..', 'shots', 'metrics-check.png'),
       fullPage: true,
     })
 
+    console.log('\n=== Metrics Check Results ===')
+    console.log(`Worst error: ${results.worstError.toFixed(2)}%`)
+    console.log(`Worst string: "${results.worstString}" at size ${results.worstSize}px (${results.worstType})`)
+    console.log(`Total measurements: ${results.errorCount}`)
+
     if (results.worstError > 2) {
       console.error(`WARNING: Worst error ${results.worstError.toFixed(2)}% exceeds 2% threshold`)
-      console.error(`Affected string: "${results.worstString}" at size ${results.worstSize}`)
+    } else {
+      console.log('All measurements within 2% tolerance ✓')
+    }
+
+    // Filter discrepancies for reporting
+    const highErrors = results.discrepancies.filter(d => d.error > 2)
+    if (highErrors.length > 0) {
+      console.log('\nHigh-error measurements (>2%):')
+      highErrors.forEach(d => {
+        console.log(`  ${d.blockId}: "${d.text}" predicted=${d.predicted.toFixed(1)}px measured=${d.measured.toFixed(1)}px error=${d.error.toFixed(2)}%`)
+      })
     }
 
     return {

@@ -23,16 +23,24 @@ export const schema: BlockSchema = {
     label: 'Gap',
     help: 'Spacing between grid cells.',
   },
+  sizing: {
+    type: { kind: 'enum', values: ['equal', 'content'] },
+    role: 'option',
+    label: 'Sizing',
+    help: 'How to distribute space among cells: equal (same size) or content (sized to intrinsic).',
+  },
 }
 
 export interface GridProps extends Record<string, unknown> {
   columns: number
   rows: number
   gap: string
+  sizing?: 'equal' | 'content'
 }
 
 export const defaults: GridProps = {
   columns: 2,
   rows: 2,
   gap: 'md',
+  sizing: 'equal',
 }

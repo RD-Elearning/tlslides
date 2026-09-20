@@ -277,6 +277,11 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
 
   /** Escape hatch: return a TDShape array when a block cannot be expressed as LayoutNode. */
   toShapes?(props: P, box: Box, ctx: LayoutContext): TDShape[]
+
+  /** V4.1: Return intrinsic size of the block's content. Optional — containers use this
+   *  for flex-like distribution. Falls back to calling layout() with a probe box
+   *  when not implemented. */
+  intrinsicSize?(props: P, ctx: LayoutContext): Size
 }
 
 /**

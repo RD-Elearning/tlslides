@@ -595,6 +595,7 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 | \`columns\` | no | number (min 1, max 12) | Number of grid columns. |
 | \`rows\` | no | number (min 1, max 12) | Number of grid rows. |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between grid cells. |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among cells: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
 {
@@ -684,6 +685,7 @@ Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between row children. |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
 {
@@ -821,6 +823,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between stacked children. |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
 {
@@ -830,6 +833,29 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
     \\"gap\\": \\"md\\"
   },
   \\"children\\": []
+}
+\`\`\`
+
+### \`tls.m.icon\` — Icon
+
+SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
+
+**When:** Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. Ideal for feature grids, labels, and decorative elements.
+**Avoid:** Do not use for images or photographs. For decorative graphics without specific meaning, use tls.m.decoration instead.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | yes | icon | Choose from available icons: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert. |
+| \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_icon_1\\",
+  \\"type\\": \\"tls.m.icon\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"color\\": \\"accent\\"
+  }
 }
 \`\`\`
 
@@ -1227,7 +1253,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 35,
+  "blockCount": 36,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1254,6 +1280,7 @@ Object {
     "tls.l.spacer",
     "tls.l.split",
     "tls.l.stack",
+    "tls.m.icon",
     "tls.m.image",
     "tls.t.body",
     "tls.t.bullets",

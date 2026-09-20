@@ -358,12 +358,12 @@ describe('CJK text line breaking', () => {
 
 describe('CJK + Latin mixed text', () => {
   it('measures CJK wider than Latin (different rates)', () => {
-    // Pure Latin: "AAAA" at fontSize 28, charWidth ~28*0.55 = 15.4 per char
+    // Pure Latin: "AAAA" at fontSize 28, charWidth ~28*INTER_AVG_WIDTH = 15.4 per char
     const latinOnly = estimateMetrics('AAAA', SANS_STYLE)
     // Pure CJK: "中中中中" at fontSize 28, charWidth ~28*1.0 = 28 per char
     const cjkOnly = estimateMetrics('中中中中', SANS_STYLE)
 
-    // CJK should be wider because each CJK char is ~1.0em vs Latin's ~0.55em.
+    // CJK should be wider because each CJK char is ~1.0em vs Latin's ~INTER_AVG_WIDTHem.
     expect(cjkOnly.width).toBeGreaterThan(latinOnly.width)
   })
 
@@ -411,13 +411,13 @@ describe('CJK + Latin mixed text', () => {
 
   it('CJK+Latin mixed width produces correct total measurement', () => {
     // "AB中中" = 2 Latin + 2 CJK
-    // Latin width per char: 28 * 0.55 = 15.4
+    // Latin width per char: 28 * 0.5385 ≈ 15.08
     // CJK width per char: 28 * 1.0 = 28
-    // Total: 2*15.4 + 2*28 = 30.8 + 56 = 86.8
+    // Total: 2*15.08 + 2*28 ≈ 30.16 + 56 = 86.16 → 86 (rounded)
     const m = estimateMetrics('AB中中', SANS_STYLE)
 
     expect(m.lines.length).toBe(1)
-    expect(m.lines[0].width).toBeCloseTo(86.8, 0)
+    expect(m.lines[0].width).toBeCloseTo(86.16, 0)
   })
 
   it('handles CJK text mixed with explicit newlines', () => {
@@ -438,9 +438,12 @@ describe('CJK + Latin mixed text', () => {
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 describe('line width calculation', () => {
+  // Inter font average width is 0.5385 em (from generated metrics)
+  const INTER_AVG_WIDTH = 0.5385
+
   it('all-Latin line width matches character count × latinWidth', () => {
     const m = estimateMetrics('ABCDEF', SANS_STYLE)
-    const expectedWidth = 6 * 28 * 0.55 // 6 chars × fontSize × sans avg
+    const expectedWidth = 6 * 28 * INTER_AVG_WIDTH // 6 chars × fontSize × Inter avg
     expect(m.lines[0].width).toBe(Math.round(expectedWidth))
   })
 
@@ -452,7 +455,7 @@ describe('line width calculation', () => {
 
   it('total width is sum of Latin and CJK portions', () => {
     const m = estimateMetrics('A中B', SANS_STYLE)
-    const expectedWidth = 28 * 0.55 + 28 + 28 * 0.55 // Latin + CJK + Latin
+    const expectedWidth = 28 * INTER_AVG_WIDTH + 28 + 28 * INTER_AVG_WIDTH // Latin (Inter) + CJK + Latin (Inter)
     expect(m.lines[0].width).toBe(Math.round(expectedWidth))
   })
 })
