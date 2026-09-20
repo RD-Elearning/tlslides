@@ -1,8 +1,10 @@
 /**
  * Schema and defaults for tls.l.grid — grid with columns/rows.
+ *
+ * Phase 4.2: Added children support for flex-like cell sizing.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   columns: {
@@ -23,6 +25,12 @@ export const schema: BlockSchema = {
     label: 'Gap',
     help: 'Spacing between grid cells.',
   },
+  children: {
+    type: { kind: 'object' },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks arranged in grid cells (row-major order).',
+  },
   sizing: {
     type: { kind: 'enum', values: ['equal', 'content'] },
     role: 'option',
@@ -35,6 +43,7 @@ export interface GridProps extends Record<string, unknown> {
   columns: number
   rows: number
   gap: string
+  children?: BlockSpec[]
   sizing?: 'equal' | 'content'
 }
 
@@ -42,5 +51,6 @@ export const defaults: GridProps = {
   columns: 2,
   rows: 2,
   gap: 'md',
+  children: [],
   sizing: 'equal',
 }

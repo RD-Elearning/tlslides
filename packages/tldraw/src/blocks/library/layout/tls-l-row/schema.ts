@@ -1,8 +1,10 @@
 /**
  * Schema and defaults for tls.l.row — horizontal row with gap.
+ *
+ * Phase 4.2: Added per-child sizing support (fill/auto/weight).
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   gap: {
@@ -10,6 +12,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Gap',
     help: 'Spacing between row children.',
+  },
+  children: {
+    type: { kind: 'object' },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks arranged horizontally.',
   },
   sizing: {
     type: { kind: 'enum', values: ['equal', 'content'] },
@@ -21,10 +29,12 @@ export const schema: BlockSchema = {
 
 export interface RowProps extends Record<string, unknown> {
   gap: string
+  children?: BlockSpec[]
   sizing?: 'equal' | 'content'
 }
 
 export const defaults: RowProps = {
   gap: 'md',
+  children: [],
   sizing: 'equal',
 }
