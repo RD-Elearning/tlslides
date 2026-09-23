@@ -520,6 +520,90 @@ Vertical column chart with zero baseline. _(family: data; keywords: chart, bar, 
 }
 \`\`\`
 
+### \`tls.d.donut\` — Donut Chart
+
+Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, data, visualization)_
+
+**When:** Use to display proportional data in a donut chart format.
+**Avoid:** Do not use for detailed data tables — use a table or list instead.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`slices\` | no | list of object () (0–6 items) | Data slices for the donut chart. Max 6 slices; excess grouped into \\"Other\\". |
+| \`total\` | no | number | Total value for percentage calculation. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_donut_1\\",
+  \\"type\\": \\"tls.d.donut\\",
+  \\"props\\": {
+    \\"slices\\": [
+      {
+        \\"value\\": 30,
+        \\"color\\": \\"accent1\\"
+      },
+      {
+        \\"value\\": 25,
+        \\"color\\": \\"accent2\\"
+      },
+      {
+        \\"value\\": 25,
+        \\"color\\": \\"accent3\\"
+      },
+      {
+        \\"value\\": 20,
+        \\"color\\": \\"accent4\\"
+      }
+    ],
+    \\"total\\": 100
+  },
+  \\"children\\": []
+}
+\`\`\`
+
+### \`tls.g.steps\` — Steps Diagram
+
+Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
+
+**When:** Use to illustrate a multi-step process or workflow.
+**Avoid:** Do not use for single concepts — use a heading or icon instead.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | no | text (max 2000 chars) | Array of step objects with title and description. Parsed from JSON array. |
+| \`direction\` | no | enum: horizontal \\\\| vertical | Layout direction for steps. |
+| \`connector\` | no | enum: line \\\\| arrow \\\\| none | Type of connector between steps. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_steps_1\\",
+  \\"type\\": \\"tls.g.steps\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"title\\": \\"Setup\\",
+        \\"description\\": \\"Initialize the environment\\"
+      },
+      {
+        \\"title\\": \\"Configure\\",
+        \\"description\\": \\"Set up your preferences\\"
+      },
+      {
+        \\"title\\": \\"Run\\",
+        \\"description\\": \\"Execute the main process\\"
+      },
+      {
+        \\"title\\": \\"Review\\",
+        \\"description\\": \\"Verify the results\\"
+      }
+    ],
+    \\"direction\\": \\"horizontal\\",
+    \\"connector\\": \\"line\\"
+  },
+  \\"children\\": []
+}
+\`\`\`
+
 ### \`tls.l.card\` — Card
 
 Filled container with configurable padding. _(family: layout; keywords: card, container, padding, filled)_
@@ -595,6 +679,7 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 | \`columns\` | no | number (min 1, max 12) | Number of grid columns. |
 | \`rows\` | no | number (min 1, max 12) | Number of grid rows. |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between grid cells. |
+| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks arranged in grid cells (row-major order). |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among cells: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -685,6 +770,7 @@ Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between row children. |
+| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks arranged horizontally. |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -823,6 +909,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between stacked children. |
+| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks stacked vertically. |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -854,6 +941,32 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
   \\"type\\": \\"tls.m.icon\\",
   \\"props\\": {
     \\"icon\\": \\"zap\\",
+    \\"color\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.icon-label\` — Icon Label
+
+Icon with text label beneath. _(family: media; keywords: icon, label, button, nav, link)_
+
+**When:** Use to label a feature, action, or section with an icon and brief text.
+**Avoid:** Do not use for long descriptions — use tls.t.body instead.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | yes | text (max 50 chars) | Choose from the icon set: zap, shield, globe, check, etc. |
+| \`label\` | yes | text (max 100 chars) | Keep to 1-3 words. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default color role. |
+| \`size\` | no | enum: sm \\\\| md \\\\| lg | Size of the icon+label group. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_il_1\\",
+  \\"type\\": \\"tls.m.icon-label\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"label\\": \\"Power\\",
     \\"color\\": \\"accent\\"
   }
 }
@@ -1170,6 +1283,29 @@ Slide title with inline styling, autofit, and truncation. _(family: text; keywor
 }
 \`\`\`
 
+### \`tls.x.page-number\` — Page Number
+
+Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
+
+**When:** Use to indicate the current page position in a multi-slide document.
+**Avoid:** Do not use as a content block — this is chrome only.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | yes | number (min 1) | Typically 1-2 digits. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_page_1\\",
+  \\"type\\": \\"tls.x.page-number\\",
+  \\"props\\": {
+    \\"number\\": 1,
+    \\"align\\": \\"center\\"
+  }
+}
+\`\`\`
+
 ## Worked example — a valid slide
 
 Zero coordinates, zero colour values, zero font sizes. Region names come from the layout (\`two-column\` → \`title\`, \`left\`, \`right\`); block types and slots come from the tables above.
@@ -1253,7 +1389,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 36,
+  "blockCount": 40,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1266,6 +1402,8 @@ Object {
     "tls.c.steps",
     "tls.c.testimonial",
     "tls.d.bar",
+    "tls.d.donut",
+    "tls.g.steps",
     "tls.l.card",
     "tls.l.field",
     "tls.l.footer",
@@ -1281,6 +1419,7 @@ Object {
     "tls.l.split",
     "tls.l.stack",
     "tls.m.icon",
+    "tls.m.icon-label",
     "tls.m.image",
     "tls.t.body",
     "tls.t.bullets",
@@ -1291,6 +1430,7 @@ Object {
     "tls.t.subtitle",
     "tls.t.takeaway",
     "tls.t.title",
+    "tls.x.page-number",
   ],
   "colorRoleCount": 12,
   "colorRoleIds": Array [

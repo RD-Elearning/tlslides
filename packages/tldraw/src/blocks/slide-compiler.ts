@@ -23,7 +23,7 @@
  */
 
 import type { ComponentShape } from '~types'
-import type { Box, Paint, ResolvedTokens, SlideSpec, SurfaceContext } from './types'
+import type { Box, Paint, ResolvedTokens, SlideSpec, Size, SurfaceContext } from './types'
 import { blockToShape } from './shape-bridge'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
@@ -127,6 +127,9 @@ export function compileSlide(
   const gap = tokens.space.md
 
   // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
+  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
+  // F3.1: one fresh memo cache per compile pass.
+  const intrinsicSizeCache = new Map<string, Size>()
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
@@ -139,6 +142,7 @@ export function compileSlide(
         tokens,
         surface: MINIMAL_SURFACE,
         registry,
+        intrinsicSizeCache, // F3.1: scoped memo cache
       })
 
       const blockHeights = blocks.map((block) => {
@@ -251,6 +255,7 @@ export function compileSlide(
         tokens,
         surface: MINIMAL_SURFACE,
         registry,
+        intrinsicSizeCache, // F3.1: reuse scoped memo cache
       })
 
       blockHeights = blocks.map((block) => {
@@ -293,17 +298,17 @@ export function compileSlide(
     // Determine y-start for this region
     // V2.1: When registry provided, use re-flowed position. Otherwise, use layout position with alignment.
     let startY: number
+    let offset = 0
+    if (regionAlign === 'center') {
+      offset = Math.max(0, leftoverInRegion / 2)
+    } else if (regionAlign === 'end') {
+      offset = Math.max(0, leftoverInRegion)
+    }
     if (hasRegistry) {
-      // Use the re-flowed y-position from Pass 2
-      startY = flowedY
+      // Use the re-flowed y-position from Pass 2 — apply alignment offset too (F3.2)
+      startY = flowedY + offset
     } else {
       // Use original position with alignment offset
-      let offset = 0
-      if (regionAlign === 'center') {
-        offset = Math.max(0, leftoverInRegion / 2)
-      } else if (regionAlign === 'end') {
-        offset = Math.max(0, leftoverInRegion)
-      }
       startY = regionBox.y + offset
     }
 

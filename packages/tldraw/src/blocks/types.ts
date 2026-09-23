@@ -566,6 +566,8 @@ export interface LayoutContext {
   depth: number
   /** True when laying out for export/thumbnail; false for live editor. */
   headless: boolean
+  /** F3.1: memo cache for intrinsic size measurement, scoped to one compile pass. */
+  intrinsicSizeCache?: Map<string, Size>
 }
 
 /**

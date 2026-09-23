@@ -309,6 +309,7 @@ export function createLayoutContext(
         headless,
         style: childStyle,
         theme: options.theme,
+        intrinsicSizeCache: options.intrinsicSizeCache, // F3.1: propagate memo cache
       })
 
       const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
@@ -319,6 +320,7 @@ export function createLayoutContext(
     icon: iconFn,
     depth,
     headless,
+    intrinsicSizeCache: options.intrinsicSizeCache, // F3.1: scoped memo cache
   }
 
   return ctx
@@ -337,16 +339,55 @@ export function createLayoutContext(
  * directly. Otherwise, falls back to calling `layout()` with a probe box
  * and reading the resulting dimensions.
  *
+ * F3.1 hardening:
+ * - Respects `ctx.depth` — refuses to measure past `MAX_DEPTH = 4`.
+ * - Memoises results by `(type, props-hash, box)` scoped to one compile pass
+ *   (the `intrinsicSizeCache` WeakMap on the context).
+ * - Wraps `def.layout(...)` in try/catch — a malformed block layout must never
+ *   crash the slide compiler; it returns the fallback size instead.
+ *
  * @param spec The block spec to measure.
  * @param ctx The layout context for measurement.
  * @param registry Optional registry to look up block definitions.
  * @returns The intrinsic size of the block's content.
  */
+
+/**
+ * Simple deterministic hash of an arbitrary JSON-serialisable value.
+ * Used to key the memo cache without external dependencies.
+ */
+function hashValue(value: unknown): string {
+  const json = JSON.stringify(value)
+  let hash = 0
+  for (let i = 0; i < json.length; i++) {
+    hash = (hash * 31 + json.charCodeAt(i)) | 0
+  }
+  return `${hash}`
+}
+
 export function measureIntrinsicSize(
   spec: BlockSpec,
   ctx: LayoutContext,
   registry?: BlockRegistry
 ): Size {
+  // F3.1: Depth guard — refuse to measure past MAX_DEPTH.
+  // This prevents runaway recursion when nested containers measure each other.
+  if (ctx.depth !== undefined && ctx.depth > MAX_DEPTH) {
+    return { width: 100, height: 100 }
+  }
+
+  // F3.1: Memo — key by (type, props-hash, box). Scoped to one compile pass
+  // via the cache carried on LayoutContext.
+  const boxKey = `${ctx.box.width}:${ctx.box.height}`
+  const cacheKey = `${spec.type}:${hashValue(spec.props)}:${boxKey}`
+
+  if (ctx.intrinsicSizeCache) {
+    const cached = ctx.intrinsicSizeCache.get(cacheKey)
+    if (cached) {
+      return { ...cached }
+    }
+  }
+
   // First, check if the block definition has an intrinsicSize function
   if (registry) {
     const def = registry.get(spec.type)
@@ -366,12 +407,26 @@ export function measureIntrinsicSize(
   // Create a minimal child context and call layout
   const def = registry?.get(spec.type)
   if (def?.layout) {
-    const node = def.layout(spec.props as Record<string, unknown>, probeCtx)
-    return { width: node.box.width, height: node.box.height }
+    // F3.1: try/catch around layout() — never crash the compiler for a bad block.
+    try {
+      const node = def.layout(spec.props as Record<string, unknown>, probeCtx)
+      const result = { width: node.box.width, height: node.box.height }
+      // F3.1: write to cache.
+      if (ctx.intrinsicSizeCache) {
+        ctx.intrinsicSizeCache.set(cacheKey, { ...result })
+      }
+      return result
+    } catch {
+      // A layout function threw — return fallback so the slide still renders.
+    }
   }
 
   // Final fallback: minimal size for unknown types
-  return { width: 100, height: 100 }
+  const fallback: Size = { width: 100, height: 100 }
+  if (ctx.intrinsicSizeCache) {
+    ctx.intrinsicSizeCache.set(cacheKey, { ...fallback })
+  }
+  return fallback
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
