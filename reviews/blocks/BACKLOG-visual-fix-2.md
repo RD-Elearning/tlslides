@@ -977,6 +977,59 @@ no-op (still R13-bucket).
 
 ---
 
+## 8.0 Correction to G6/G7: "root-cause-A" was already fixed — slide 1's overlap has a different, now-diagnosed cause
+
+**Every mention of "root-cause-A" as the cause of slide 1's overlap, in §6 and §7 above, is
+wrong.** This was caught by actually opening a browser and measuring, not by re-reading old docs
+— exactly the mistake this whole document's own culture warns against, committed by this same
+pass. Leaving the wrong text above rather than editing it out, per this document's convention of
+correcting forward instead of rewriting history; treat every "root-cause-A" reference in §6/§7 as
+superseded by this section.
+
+**What's actually true:** `git log -p -1 -S "line.top ??" -- packages/tldraw/src/blocks/
+render-dom.tsx` shows commit `0339ee73` ("V1.1–V1.4: Fix text vertical-position bug in DOM
+renderer", 2026-09-19 13:00:04) already changed `render-dom.tsx`'s line-positioning from
+`top: line.baseline` to `top: line.top ?? line.baseline - node.style.size * node.style.lineHeight
+* 0.8`, and `measure.ts`'s three metrics providers (`estimateMetrics`, `canvasMetrics`,
+`tableMetrics`) all populate `line.top = Math.round(i * lineHeight)` unconditionally. **Root-cause-A
+was fixed before this session started** — this is phase V1 from `BACKLOG-visual.md`'s original
+V1–V8 plan, which `CLAUDE.md` itself already lists as landed. Confirmed empirically too: a debug
+scenario dumping every line-`div`'s own `top`/`height` on `demo-deck-q3`'s slide 1 shows the two
+title lines positioned at `top: 0` and `top: 118` (in slide units) inside their text container —
+correctly stacked, `118 ≈` one `lineHeight`, exactly right. The DOM renderer is not the bug.
+
+**What is actually wrong, found by the same debug session:** the title block's own **reported
+box height is dishonest.** `tls-t-title/layout.ts:102` (`box: { ...inner, height:
+Math.min(textHeight, inner.height) }`) and its final return at `:122-127` clamp the block's
+returned height down to `inner.height` — the height it was *given* — even when the real measured
+text (`textHeight`) needs more. Concretely, on slide 1: the `title` region is statically sized to
+`titleRegionH = tokens.type.title.size + tokens.space.lg = 96 + 32 = 128` slide units
+(`slide-layouts.ts:64`, `layoutTitle()`), commented **"these heights are MINIMUMS; regions will
+expand when registry provided"** (V2.2). The title's autofit loop
+(`tls-t-title/layout.ts:79-84`) shrinks the font in 4% steps but gives up once `scale` drops to
+`0.76` (the `while (... && scale > 0.79)` condition is false at that point) — at that scale the
+title still needs 2 lines and does not fit in 128. The *intended* behaviour per the V2.2 comment
+is: report the true (larger) height, let `slide-compiler.ts`'s V2.1 two-pass reflow see that the
+region's natural height (from Pass 1's `def.layout()` probe) exceeds its static box, and expand
+the region to fit — exactly the mechanism that already correctly fixed the `sl_06` collision in
+G5. Instead, the `Math.min(...)` clamp makes the Pass-1 probe report back **exactly 128, never
+more**, so `regionNaturalHeights.get('title') <= regionBox.height` is always true, `needsReFlow`
+never triggers for this region, and the title's real ~155-slide-unit-tall content renders anyway
+(the DOM lines are positioned correctly *relative to each other*, per the confirmed-fixed
+renderer) — into a region only 128 tall, spilling into the subtitle's box below it, which the
+`overlap-audit` tool [correctly] reports as this slide's `96y` px of text overflow (the largest
+of any slide).
+
+**This is the same class of bug as the `sl_06` `tls.m.image` collision fixed in G5 — a block's
+own reported height doesn't match what it actually renders — except the failure mode is the
+opposite direction:** `tls.m.image` *over*-reported (always claims the full given height, even
+when it doesn't need it); `tls-t-title`/`tls-t-body`/`tls-t-caption`/`tls-x-page-number`
+*under*-report (clamp down to the given height even when they need more). Both defeat the same
+V2.1 reflow mechanism, from opposite directions. The fix for this direction is written up as
+**§8.4 below**, replacing the old (wrong) "fix render-dom.tsx" entry.
+
+---
+
 ## 8. G8 — planned, not started
 
 Every remaining known defect, each investigated enough to name the real cause (not guessed),
@@ -1091,42 +1144,84 @@ All in files this backlog's own passes never touched. Exact list (re-verify with
       number is recorded here with a reason if some can't safely be zeroed (e.g. `old-doc-2.ts`).
 - [ ] No warning count regression (baseline: not chasing this, but don't make it materially worse).
 
-### 8.4 Root-cause-A: DOM renderer positions a text line's `baseline` as CSS `top` · M · MEDIUM-HIGH risk (shared render path)
+### 8.4 Text blocks under-report their own height when they don't fit, defeating V2.1 reflow · S-M · LOW-MEDIUM risk (4 named files, not a shared render path)
 
-`render-dom.tsx:545-552` — `style={{ position: 'absolute', top: `${line.baseline}px`, ... }}`.
-`measure.ts:337,345` computes `baseline = i * lineHeight + 0.8 * lineHeight` (a true baseline
-offset — distance from the text box's top to the glyph baseline). `render-svg.ts:257` consumes the
-same number correctly (`y="${node.box.y + line.baseline}"` is exactly what SVG `<text y>` means).
-The DOM renderer's per-line `<div>` already has `lineHeight` set via CSS
-(`render-dom.tsx:533`), so a line positioned at `top: baseline` sits `0.8·lineHeight` **too low** —
-this is what makes slide 1's title paint through its subtitle, and is the majority contributor to
-`overlap-audit`'s 10 remaining `totalOverflow` entries.
+**Supersedes the old "fix render-dom.tsx" entry — see §8.0 for why that diagnosis was wrong.**
+The DOM renderer is fine; four block `layout()` functions lie about their own size.
 
-**Proposed fix, minimal:** in `render-dom.tsx`'s per-line map, use `top: ${line.baseline - 0.8 *
-lineHeight}px` (recovering the top-of-line-box position `measure.ts` started from), or — more
-robust to a future change in `measure.ts`'s constant — thread the per-line "top" value through
-alongside `baseline` instead of re-deriving `0.8·lineHeight` in two files. `TextLine.top?: number`
-already exists on the type (`types.ts` — "Optional for backward compatibility with older persisted
-data") but nothing currently *writes* it; populating it in `measure.ts` and having
-`render-dom.tsx` prefer `line.top ?? (line.baseline - 0.8 * lineHeight)` would be the least
-guess-prone fix, and is additive (no schema/version bump — this is derived layout data, not
-persisted spec).
+**The exact mechanism, worked through on slide 1 (`demo-deck-q3`, `b_01_title`):**
 
-**Why this is flagged MEDIUM-HIGH despite the code change being a few lines:** this function
-renders *every* text node in the product. A wrong sign or off-by-a-constant here doesn't fail
-loudly — it silently shifts every line of text on every slide by some pixel amount, and only shows
-up as "looks a bit off" rather than a crash or a failing assertion. Verify with the tooling already
-in hand rather than by eye alone:
+1. `slide-layouts.ts:64`, `layoutTitle()`: `titleRegionH = tokens.type.title.size +
+   tokens.space.lg = 96 + 32 = 128` slide units. Comment at `:63`: *"these heights are MINIMUMS;
+   regions will expand when registry provided"* (V2.2) — i.e. 128 is deliberately a starting
+   guess, not a hard cap; the reflow mechanism below is what's supposed to correct it.
+2. `slide-compiler.ts` Pass 1 calls `tls-t-title`'s `layout()` with `measureCtx.box.height = 128`
+   (the static region height) to get its "natural height" for `regionNaturalHeights`.
+3. Inside `tls-t-title/layout.ts:79-84`, the autofit loop shrinks font `scale` in 4% steps
+   while `m.height > inner.height (128)`, but the loop condition is `scale > 0.79` — it stops
+   trying once `scale` reaches `0.76`, **whether or not the text now fits**. For "Margin fell on
+   infrastructure" at this slide's font, it still doesn't fit at `0.76` (needs 2 lines,
+   ~155 slide units).
+4. `layout.ts:102` then returns `box: { ...inner, height: Math.min(textHeight, inner.height) }`
+   — i.e. `Math.min(155, 128) = 128`. **The function reports exactly the height it was given,
+   never more, regardless of whether its content actually fits.** Same clamp again at `:111`
+   (rule position) and `:122-127` (the group's own returned height).
+5. Because Pass 1 sees `naturalHeight (128) <= regionBox.height (128)`, `needsReFlow` never
+   becomes `true` for this region (`slide-compiler.ts`'s `needsReFlow` check). The region keeps
+   its static 128-tall box. The DOM renderer then correctly draws both text lines *relative to
+   each other* (confirmed by dumping line `top` values: `0` and `118`, ≈1 lineHeight apart, right)
+   — but the second line spills ~27 slide units past the 128-tall box into whatever sits below
+   it (the subtitle), because nothing ever told the compiler the title needed 155.
+
+**The exact same `Math.min(x, inner.height)` clamp — same bug, same mechanism — exists in three
+more files** (`grep -rln 'Math\.min([a-zA-Z.]*[Hh]eight, *inner\.height\|Math\.min([a-zA-Z.]*[Hh]eight, *ctx\.box\.height' packages/tldraw/src/blocks/library/`, verified, exactly these four and no others):
+
+| File | Lines | Note |
+|---|---|---|
+| `library/text/tls-t-title/layout.ts` | 102, 111, 122 | worked through above |
+| `library/text/tls-t-body/layout.ts` | 69, 76, 102 | **already self-documented as an open question** — its own file doc comment at `:9-12` reads: *"V2.3: The Math.min(m.height, inner.height) clamps content to available space. With V2.1 two-pass region resolution, content can now overflow region bounds when intrinsic height exceeds allocated height. This clamping may need to be conditional based on whether a registry is provided for measurement."* This phase is the resolution of that exact, already-written TODO. |
+| `library/text/tls-t-caption/layout.ts` | 32, 39 | same pattern |
+| `library/chrome/tls-x-page-number/layout.ts` | 22, 28 | same pattern |
+
+**Why this is lower risk than it looks, and a smaller, more mechanical fix than the old
+render-dom.tsx entry assumed:** this does **not** touch a shared rendering path used by every
+block — it's 4 named files, each a self-contained `layout()` function, each already isolated by
+its own `.spec.ts`. The fix is: **remove the `Math.min(x, inner.height)` clamp and use the true
+measured height directly**, in all four files, at all listed lines (the text node's own `box`,
+any position computed from it like the title's `ruleY`, and the function's final returned group
+`box`).
+
+**The one real question worth settling before coding — already checked, verified by reading
+`slide-compiler.ts:249-276` directly, not guessed:** does removing the clamp ever cause a *worse*
+regression where **no registry is provided** (Pass 1 never runs, nothing can reflow to
+compensate)? No. `slide-compiler.ts:249`: `if (registry && blocks.length > 0) { ... } else {
+blockHeights = blocks.map(() => -1) }` — in the no-registry branch, `blockHeights` is *every*
+entry set to `-1` (the fallback marker), and `def.layout()` is **never called at all** for
+measurement; `finalHeights` becomes a pure equal-split of `regionBox.height`
+(`remainingForFallback / fallbackCount`, `:280-282`). A block's own returned `box.height` is
+consulted only inside the `registry &&` branch — exactly the branch V2.1's reflow already exists
+to handle. So the "no registry" path cannot regress either way, and **the clamp can simply be
+removed unconditionally**, not made conditional on registry presence as the `tls-t-body` comment
+at `:9-12` speculated it might need to be — that speculation turned out to be unnecessary once
+traced through, and the fix is simpler than the code's own comment expected.
 
 **Done when:**
-- [ ] `overlap-audit`'s `totalOverflow` measured *before* the change (currently **10**, see G7's
-      §7.3) and *after* — must drop, and ideally hit 0 or close to it for `demo-deck-q3`.
-- [ ] `colorful-blocks-demo`'s 10 slides re-screenshotted and opened; specifically check slides
-      that *don't* currently show visible overflow, to catch a sign error that makes a
-      previously-fine slide newly wrong (this is the exact risk this fix carries).
-- [ ] Full suite green (any DOM-rendering snapshot test that pins exact pixel positions will need
-      re-review, not blind `-u`).
-- [ ] Production `tsc` = 0.
+- [ ] All four files' `Math.min(x, inner.height)` calls (12 call sites total, per the table above)
+      removed/changed to use the unclamped measured value.
+- [ ] `overlap-audit`'s `totalOverflow`, measured *before* (**10**, current committed state — see
+      `git log`/G7 §7.3 for the exact per-slide breakdown: `sl_01:96y, sl_02:3y, sl_03:5y,
+      sl_04:12y×4, sl_06:12y, sl_07:3y, sl_08:3y`) and *after* — must drop; slide 1's `96y` in
+      particular should go to (near) `0` since that's the one worked through above.
+- [ ] `demo-deck-q3`'s `deck-slide-1.png` re-screenshotted (`node tools/visual/shoot.js
+      deck-demo`) and opened: title and subtitle no longer touch.
+- [ ] Every existing `.spec.ts` for the four touched blocks still passes unmodified (they're each
+      isolated — a real regression here would show up as one of *these* four suites failing, not
+      some distant one).
+- [ ] `collision.spec.ts` and `overlap-audit`'s block/design-overlap counts stay at 0 — a region
+      that now *correctly* grows should never make it collide with a sibling; if it does, some
+      other region's gap/positioning math has its own bug, worth a fresh investigation rather
+      than papering over here.
+- [ ] Full suite green, production `tsc` = 0.
 
 ### 8.5 `tls.l.row` `sizing: 'content'` is a no-op · M · MEDIUM risk (shared measurement function)
 
@@ -1183,8 +1278,11 @@ R13 as already decided) rather than folding it into a "fix the remaining issues"
 
 ### 8.7 Recommended order
 
-8.1 → 8.3 → 8.2 → 8.5 → 8.4 → 8.6. Cheapest and lowest-risk first (8.1, 8.3), then the one with a
-design decision to settle before coding (8.2), then the two shared-function fixes in ascending
-risk (8.5 before 8.4 — 8.5's blast radius is one function's callers, 8.4's is every text node in
-the product), and 8.6 last because it is new feature work, not a fix, and was already deferred
-once.
+**8.1 → 8.3 → 8.4 → 8.2 → 8.5 → 8.6.** Revised from an earlier draft of this plan that had 8.4
+much later, under the wrong assumption that it touched a shared render path (see §8.0 — it
+doesn't; it's 4 named, independently-tested `layout()` files). Cheapest and lowest-risk first
+(8.1, 8.3), then 8.4 — now well-scoped and high-value: it fixes the single most visible remaining
+defect (slide 1's overlap) and the mechanism is fully traced, not guessed. Then 8.2 (needs a
+design decision before coding). Then 8.5 (shared-function risk: `measureIntrinsicSize` has
+multiple callers, more diffuse blast radius than 8.4's four self-contained files). 8.6 last —
+new feature work, not a fix, already deferred once.
