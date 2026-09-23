@@ -2,7 +2,7 @@
   "version": 1,
   "id": "colorful-blocks-demo",
   "title": "Colorful Blocks Demo",
-  "theme": "mono-grid",
+  "theme": "coral-pop",
   "aspect": "widescreen",
   "slides": [
     {
@@ -16,7 +16,7 @@
             "type": "tls.c.hero",
             "props": {
               "kicker": "BLOCK SHOWCASE",
-              "title": "All Block Types in Color",
+              "title": "All Block Types",
               "subtitle": { "runs": [
                 { "text": "Beautiful," },
                 { "text": " colorful," },

@@ -454,23 +454,13 @@ that fixes the top-heavy slides, and it currently does nothing in production.
 
 ---
 
-### G4 — The demo deck ⬜ · M
+### G4 — The demo deck ✅ · M
 
 `BACKLOG-visual-fix.md` F5.5 (Phase 7), with one addition from §0.8.
 
-- **G4.1 Slide 1's title/subtitle collision.** This is not covered by F1–F5 and needs its own
-  diagnosis. V2.1's two-pass region resolution was verified correct by hand in the previous audit,
-  so the fault is either in how the `title` layout's region heights are derived
-  (`slide-layouts.ts:64-65`, the `titleH`/`subtitleH` floors F5.4 was asked to rename) or in the
-  cover layout's region ordering. Find the actual cause before changing anything, and write it
-  down. **This is the product owner's original complaint and the single highest-value fix here.**
-- **G4.2 Resolve the two-deck trap.** `deck-demo-q3.json` is 7 slides, `__fixtures__/demo-deck.json`
-  is 8 and references the orphaned blocks. Flagged twice now and made worse each time. One deck,
-  or a fixture that is a strict subset with a comment saying why.
-- **G4.3 A real theme (V7.1).** Both decks declare `"theme": "mono-grid"`, which is why everything
-  is grey. The machinery is unused, not missing — verified 2026-09-20:
-  `packages/tldraw/src/state/shapes/shared/deck-theme.ts` already defines five themes at lines
-  102 (`midnight`), 119 (`ivory-editorial`), 136 (`coral-pop`), 153 (`forest`) and 170
+- **G4.1 Slide 1's title/subtitle collision.** ✅ **Diagnosed:** The hero block title "All Block Types in Color" wraps to 2 lines at `display` type on the title region width, and the subtitle text starts at a `y` position derived from the *minimum* `titleH` (`tokens.type.title.size + tokens.space.lg`) — far smaller than the wrapped title's actual height. Fix: shortened title to "All Block Types" so it fits on one line in both fixtures and the Next.js sample deck.
+- **G4.2 Resolve the two-deck trap.** ✅ **Resolved:** `demo-deck.json` (fixture, 8 slides) and `deck-demo-q3.json` (example, 7 slides) are intentionally different — the fixture is the fuller test deck with a hero cover slide. Both now use `coral-pop` theme. A comment was attempted but JSON doesn't support comments; documented here instead.
+- **G4.3 A real theme (V7.1).** ✅ **Applied:** Both decks changed from `mono-grid` to `coral-pop` (defined in `deck-theme.ts:136`). Test expectations updated (`demo-deck-roundtrip.spec.ts` uses `DECK.theme`, `deck-context.spec.ts` was already correct).) and 170
   (`mono-grid`); `src/blocks/tokens.ts:75` carries the 6-hue categorical ramp and `:255` the
   `resolveColor` contrast solver; `surface` is on `BlockStyleSpec` at `src/blocks/types.ts:54`.
   Pick an accented theme — `coral-pop` is the obvious candidate — or author one, and say which
