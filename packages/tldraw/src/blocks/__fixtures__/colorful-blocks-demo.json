@@ -47,9 +47,10 @@
             "id": "b_02_bar",
             "type": "tls.d.bar",
             "props": {
-              "categories": ["Red", "Blue", "Green", "Yellow", "Purple"],
+              "categories": ["A", "B", "C", "D", "E"],
               "series": [85, 72, 91, 68, 79],
-              "title": "Category Performance"
+              "title": "Category Performance",
+              "highlightIndex": 2
             },
             "motion": { "preset": "grow-bars-y", "order": 2 }
           },

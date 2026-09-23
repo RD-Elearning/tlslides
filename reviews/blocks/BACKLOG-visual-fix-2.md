@@ -565,8 +565,8 @@ reason.
 | `tls.l.row` per-child `'fill'`/`'auto'`/weight sizing | **deferred to R13** | only the per-container `'equal'`/`'content'` toggle exists; per-child variants were never built | `BACKLOG-visual-fix.md`, carried forward |
 | `tls.l.row` `sizing: 'content'` producing a visually different layout from `'equal'` | **not fixed, disclosed** | root-caused to `measureIntrinsicSize`'s probe-width bug (see G5 container-flex note) — same class of fix as the per-child sizing work above, same R13 bucket | G5, this pass |
 | root-cause-A (DOM renderer treats text `baseline` as CSS `top`) | **not fixed, disclosed** | `render-dom.tsx:545-552`; a renderer-wide fix affecting every text node in the product, explicitly out of this pass's scope; already an accepted scope cut per `BACKLOG-demo.md:541-543`. Still the cause of slide 1's visible title/subtitle overlap (see G6) | G6, this pass |
-| bar chart categorical colour (`tls.d.bar`) | **not fixed, disclosed** | `colorful-blocks-demo` slide 2's 5 bars (Red/Blue/Green/Yellow/Purple) all render the same accent hue — not greyscale/black any more, but not a categorical ramp either | G6, this pass |
-| diagram family exemplar (`tls.g.steps`) | **not fixed, disclosed** | `colorful-blocks-demo` slide 6 renders only a title and 4 unlabelled colour swatches — the steps diagram's own content does not render | G6, this pass |
+| bar chart categorical colour (`tls.d.bar`) | **investigated, not a bug — deck fixture fixed instead** | `assignSeriesColors`'s single-series-uses-accent rule (`_engine/series-color.ts`, "04 §4.8") is deliberate: a bar chart's `series` is one data series (one value per category), and per-series colour is the documented convention — a categorical rainbow was never `tls.d.bar`'s design. The actual defect was `colorful-blocks-demo.json`'s own authoring: category labels literally named "Red"/"Blue"/"Green"/"Yellow"/"Purple", promising a per-bar rainbow the block was never built to render. Fixed by renaming the categories to `A`–`E` and setting `highlightIndex: 2`, in both fixture copies — the same accent-vs-neutral highlight pattern `demo-deck-q3`'s own (already-correct) chart already uses. See G7 below. | G7, follow-up pass |
+| diagram family exemplar (`tls.g.steps`) | **fixed** | `layout.ts` built a step-number badge and a connector but never emitted a `title`/`description` text node at all — the step content was simply missing from the tree, not mis-styled. Rewrote it to render both, plus the badge's own number glyph (previously an unlabelled coloured square), and switched the connector from a `k:'line'` node to a `k:'rect'` (`tls.c.steps`'s own already-documented DOM/SVG line-geometry parity lesson) with a real arrowhead for `connector: 'arrow'`. See G7 below. | G7, follow-up pass |
 
 ---
 
@@ -888,3 +888,89 @@ already-accepted scope cut this pass did not touch) and two exemplar defects new
 actually opening every screenshot (the bar chart's non-categorical colour, the diagram block's
 missing content) — neither of which this pass's assigned scope (G5 browser items + this sign-off)
 covers fixing. A partial, honestly-reported result, per this document's own rule.
+
+**Update, same day, follow-up pass:** the two exemplar defects above are now fixed — see §7.
+Criteria 3 and 4 (§6.2) both move from PARTIALLY MET to MET. Criteria 1 and 2 (slide 1's
+text-on-text overlap, root-cause-A) are unchanged — still not met, still out of this pass's scope.
+**Revised score: 5 of 7 fully met, 2 of 7 not met** (up from 3 fully met / 2 partial / 2 not met).
+
+---
+
+## 7. G7 — follow-up: diagram block and bar chart colour
+
+Requested directly after the G6 sign-off above, to close the two PARTIALLY MET criteria it
+disclosed rather than leave them as known gaps.
+
+### 7.1 `tls.g.steps` (diagram family) — real defect, fixed
+
+`packages/tldraw/src/blocks/library/diagram/tls-g-steps/layout.ts` built a step-number badge
+(a plain filled rect, no digit) and, if `connector !== 'none'`, a connector between badges — and
+**never emitted a `title` or `description` text node at all**. `colorful-slide-6.png` showing only
+a heading and four unlabelled colour squares was not a styling problem; the step content was
+simply never in the layout tree.
+
+Fixed:
+- Added `title` and `description` text nodes per step (`ctx.resolveText('body')` /
+  `ctx.resolveText('caption')`, matching the pattern every other text-bearing block in this
+  library uses — `ctx.measureText` for wrapping, `propPath` so the AI/editor can address the
+  field).
+- Added the step's own number as a centred text glyph inside the badge (`alignVertically` from
+  `layout/vertical-align.ts` for vertical centring, `ctx.resolveColor('surface')` on
+  `ctx.resolveColor('accent')` for contrast) — previously the "numbered" in "numbered process
+  diagram" wasn't actually numbered.
+- Switched the connector from a `k:'line'` node to a `k:'rect'` fill. `tls.c.steps` (the composite
+  family's own, working steps block) already carries this exact lesson in its own file doc: *"a
+  horizontal line's box height and its SVG endpoint geometry disagree; rects keep DOM/SVG geometry
+  parity by construction."* The original `tls.g.steps` connector used `k:'line'` and was heading
+  toward the same class of bug the moment it actually rendered a visible line.
+- Added a real arrowhead (`k:'path'`, a small filled triangle) for `connector: 'arrow'` — the
+  schema has declared `'line' | 'arrow' | 'none'` since it was written, but `'arrow'` and `'line'`
+  rendered identically (nothing) either way.
+- Column width is now derived from `ctx.box.width` (up to 4 per row before wrapping), not a fixed
+  `120`/`200` absolute pixel width — the block resizes with its container instead of a fixed size
+  that could overflow or float in unused space, matching the product owner's "blocks must resize
+  like HTML" scope goal.
+
+**Verification:** `tls-g-steps.spec.ts` (2 tests, unchanged, still pass), production `tsc` = 0,
+full suite 172/172 suites green. `colorful-blocks-demo`'s own diagram slide
+(`b_06_steps`: Design → Build → Test → Deploy, `connector: 'arrow'`) re-rendered: all four steps
+show a numbered badge, title, and description, joined by arrowed connectors. Screenshot opened
+and confirmed by eye.
+
+### 7.2 `tls.d.bar` categorical colour — investigated, not a bug; fixture fixed instead
+
+`_engine/series-color.ts`'s `assignSeriesColors` has a documented rule (comment cites "04 §4.8"):
+a **single-series** chart uses `tokens.color.accent` for every bar, never a categorical rainbow —
+multi-hue `categorical[]` is reserved for a chart with 2+ actual data series. `tls.d.bar` takes one
+`series` array (one number per category) plus an optional `highlightIndex`, so it is, by design,
+always a single-series chart. This is not a bug: `demo-deck-q3`'s own chart (slide 3, "Gross
+margin, three quarters") already uses exactly this grey-bars-plus-one-accent-highlight pattern
+correctly, and it was never flagged as broken.
+
+The actual defect was in the deck fixture, not the block: `colorful-blocks-demo.json`'s chart
+slide named its categories `"Red"`, `"Blue"`, `"Green"`, `"Yellow"`, `"Purple"` — explicitly
+promising a per-bar rainbow that `tls.d.bar` was never built to render, then rendering all five in
+one accent colour and reading as broken. Renamed the categories to generic `"A"`–`"E"` (both fixture
+copies: `packages/tldraw/src/blocks/__fixtures__/colorful-blocks-demo.json` and
+`examples/nextjs-sample/data/decks/colorful-blocks-demo.json`, kept identical per G1's rule) and
+added `"highlightIndex": 2` so the slide demonstrates the chart's real, intended visual grammar —
+one bar in `accent`, the rest in `neutral` — instead of a mismatched, misleading label set.
+`tls.d.bar`'s own code was not touched.
+
+**Verification:** `tls-d-bar.spec.ts` (42 tests, unchanged, still pass — none of them pinned the
+old category strings). Screenshot opened: bars now read A/B/C/D/E, the tallest (C, 91) is coral,
+the rest grey — a deliberate, legible highlight, not an unstyled flat chart.
+
+### 7.3 Gate sweep after G7
+
+| Gate | Result |
+|---|---|
+| `tsc` production `src/` | **0** |
+| `build:packages` | **exit 0, 9/9** |
+| `jest` (`packages/tldraw`) | **172 suites, 2542 pass / 77 todo / 0 fail** (unchanged from G6 — no test pinned the old, broken behaviour) |
+| `overlap-audit` scenario | **exit 0**, `{totalBlockOverlaps: 0, totalDesignOverlaps: 0, totalOverflow: 10}` — unchanged; this pass touched neither collision nor overflow |
+| `colorful-blocks-demo` scenario | **exit 0**, 10/10 slides screenshotted, opened, described above |
+
+**Scope cuts, unchanged by this follow-up:** root-cause-A (still out of scope, still causing
+slide 1's overlap), `tls.l.row` per-child sizing (still R13), `tls.l.row` `sizing: 'content'`
+no-op (still R13-bucket).
