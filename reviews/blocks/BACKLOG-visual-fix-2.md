@@ -974,3 +974,217 @@ the rest grey — a deliberate, legible highlight, not an unstyled flat chart.
 **Scope cuts, unchanged by this follow-up:** root-cause-A (still out of scope, still causing
 slide 1's overlap), `tls.l.row` per-child sizing (still R13), `tls.l.row` `sizing: 'content'`
 no-op (still R13-bucket).
+
+---
+
+## 8. G8 — planned, not started
+
+Every remaining known defect, each investigated enough to name the real cause (not guessed),
+with a difficulty/risk call and a recommended order. **Nothing in this section has been
+implemented.** Work top to bottom — each phase is independent unless noted, but doing the cheap,
+low-risk ones first means the OOM guard and full-suite gate get exercised more often on smaller
+diffs.
+
+### 8.1 `tls.l.section` fills its full given height in a multi-block `blank` region · XS · LOW risk
+
+**Confirmed same bug class as the G5 `sl_06` fix**, not a new one. `colorful-blocks-demo.json`
+slide `sl_05` stacks three blocks in one `blank`/`content` region: title, `tls.c.feature-grid`,
+then `tls.l.section` (`"title": "Section Example"`, yellow `style.surface`). `tls-l-section/
+layout.ts:33` returns `box: { x: 0, y: 0, width: W, height: H }` — `H = ctx.box.height`, the *full*
+height it's given, not `contentY + contentH` (its own measured content). Exactly the same
+fill-vs-intrinsic confusion `tls.m.image` had. Probed at the full region height during Pass 1, it
+reports that back as "natural," the region's cumulative height exceeds the 1080 frame, and the
+section's yellow surface is clipped at the bottom edge (confirmed by eye,
+`tools/visual/shots/colorful-slide-5.png`).
+
+**Proposed fix (fixture-level, same pattern as `sl_06`):** give `sl_05` a layout with a bounded
+region for the section instead of stacking three growing blocks in one `blank` region — e.g. move
+the section into its own `text`-style secondary region, or cap the feature-grid/section pairing
+under `two-column`/`image-top`-shaped regions the same way `sl_06` was moved to `image-top`.
+Needs a look at what layout id actually gives three stacked-but-bounded regions, or whether two
+is enough (title could stay as the layout's own `title` region; grid+section could go in one
+bounded `content` region only if their combined natural height is verified to fit).
+**Do not "fix" this by editing `tls-l-section/layout.ts` to report a smaller height** — a section
+that fills its box is not itself wrong (many valid uses want a full-bleed coloured panel); the
+fixture asking three growing blocks to share one unbounded region is the actual mistake, same
+conclusion as G5.
+
+**Done when:**
+- [ ] `sl_05`'s content fits within the 1080 frame — verify by adding a temporary debug `it()` (or
+      reusing the pattern from G5's investigation) that dumps `document.pages['sl_05'].shapes`
+      point/size and asserts every shape's `y + height <= 1080`, or simpler: extend
+      `collision.spec.ts`-style checking to also assert frame-bounds (see 8.1a below) — OR at
+      minimum, screenshot `colorful-slide-5.png` again and confirm the yellow bar's bottom edge is
+      not cut by the viewport.
+- [ ] `collision.spec.ts` and `overlap-audit` both still pass (0 block/design overlaps) after the
+      layout change — a bounded-region fix must not introduce a *new* collision.
+- [ ] Full suite green, production `tsc` = 0.
+
+**8.1a, optional, worth doing at the same time:** `collision.spec.ts` currently only checks
+pairwise overlap, not frame-bounds overflow (`shape.y + shape.height > frame.height`). Since this
+exact defect (`sl_06` earlier, `sl_05` now) is "a block extends past the visible frame," a third
+assertion in that same spec — every shape's bottom/right edge `<=` the frame's height/width —
+would have caught both without needing a screenshot. Cheap to add (`collision.spec.ts` already
+computes every shape's rect) and directly prevents this class of regression from being
+reintroduced by a future deck edit.
+
+### 8.2 `tls.m.image` never actually loads an image in the Next.js sample · S · LOW-MEDIUM risk
+
+**Not a network/sandbox limitation — confirmed by testing:** `curl` to `picsum.photos` from this
+box returns a real `302` (network is fine). The real cause: `tls-m-image/layout.ts`'s `url =
+ctx.resolveAsset?.(props.src)` — and `resolveAsset` is `undefined` by default
+(`layout-child.ts:68`'s own doc comment: *"Resolve an asset id to a renderable URL. Returns
+`undefined` by default."*). Nothing under `examples/nextjs-sample/` or
+`packages/tldraw/src/components/DeckViewer/` ever passes a `resolveAsset` implementation into the
+compile/render path (`grep -rn resolveAsset examples/nextjs-sample packages/tldraw/src/components/
+DeckViewer` returns nothing). So `node.url` is **always** `undefined` for every `tls.m.image` in
+this app, regardless of what `props.src` holds — the dashed-frame-plus-alt-text placeholder
+(`render-dom.tsx:580-581`'s own documented fallback) is not a bug in the renderer; it is the
+renderer doing exactly what it was told, because nothing upstream ever resolves the asset.
+
+**Design question to settle before implementing** (this is a real fork, not a detail):
+- **Option A — treat an already-absolute URL as pre-resolved.** In `tls-m-image/layout.ts`,
+  when `props.src` starts with `http://`, `https://`, or `/`, use it directly as `node.url` without
+  going through `ctx.resolveAsset` at all. Simplest, smallest diff, fixes this fixture immediately.
+  Downside: blurs the "spec never stores pixels, only asset ids" rule (README's governing rule 2)
+  — an author could put a raw URL in `src` and it would "just work," which the architecture may
+  not want to encourage.
+- **Option B — wire up a real `resolveAsset` in the Next.js sample.** Add a resolver (even a
+  trivial pass-through one) where `examples/nextjs-sample` builds its layout context / calls
+  `deckSpecToDocument`/`<DeckViewer>`, so asset resolution is the host's job, as the architecture
+  intends, and the fixture's `src` stays a stand-in for "the id the host's real asset service would
+  resolve." More correct long-term, slightly more code, and needs finding every call site that
+  builds a `LayoutContext` for this app (`deck-document.ts`'s `deckSpecToDocument`, plus wherever
+  `<DeckViewer>`/the editor route constructs its own context) so both `/edit` and `/view` resolve
+  consistently.
+
+**Recommendation:** Option B is the architecturally correct one (matches the "asset lookup is the
+host's business" design already documented on `CreateLayoutContextOptions.asset`/`resolveAsset`),
+but needs a `LLM-ARCHITECTURE.md`/README check for whether "asset id" was ever meant to allow a raw
+URL as a valid id (if so, Option A is just implementing what the design already allows and is
+XS-sized, not S). **Read `reviews/blocks/LLM-ARCHITECTURE.md` and the README's governing rules
+before picking** — do not guess.
+
+**Done when:**
+- [ ] Decision recorded here (A or B) with a one-line reason.
+- [ ] `colorful-slide-8.png` (Media Blocks) re-screenshotted and opened: both images show real
+      pixels, not a dashed frame or alt text.
+- [ ] No other block's asset resolution regresses (`tls-m-icon` doesn't use `resolveAsset` at all,
+      so it's unaffected; confirm nothing else does before/after).
+- [ ] Full suite green, production `tsc` = 0.
+
+### 8.3 eslint error count: 24, baseline 20 · XS · LOW risk
+
+All in files this backlog's own passes never touched. Exact list (re-verify with `eslint src/
+--ext .ts,.tsx` before starting — this is a snapshot, not a guarantee it hasn't drifted further):
+
+| File | Fix |
+|---|---|
+| `src/blocks/library/catalog-conformance.spec.ts:16-19` | 4× `Require statement not part of import statement` — convert `require(...)` to `import` |
+| `src/components/InlineEditor/InlineEditor.tsx:44`, `src/components/Presentation/PresentationRuntime.tsx:207`, and one more `:561` in an unnamed file from the grep — re-run to get all three | `Definition for rule 'react-hooks/exhaustive-deps' was not found` — either register `eslint-plugin-react-hooks` in `.eslintrc`'s `plugins`, or delete the stale `// eslint-disable-next-line react-hooks/exhaustive-deps` comments if the hook no longer needs the suppression |
+| `src/components/Presentation/PresentationRuntime.tsx:141`, `src/state/render/renderSvgToPng.spec.ts:11` | `Unexpected empty arrow/method function` — give the empty function a body comment or a real no-op statement, whichever the surrounding code intends |
+| `src/state/templates.spec.ts:83` | `Unnecessary semicolon` — delete it |
+| `src/test/documents/old-doc-2.ts:15610-15622` | `This number literal will lose precision at runtime` — this is a large captured test fixture (a `TDDocument` snapshot); confirm these are genuinely meant to be that precise before truncating literals, or add a targeted `eslint-disable` with a reason, since editing a captured document fixture's numbers can silently change what a snapshot test asserts |
+
+**Done when:**
+- [ ] `eslint src/ --ext .ts,.tsx` error count is **≤ 20** (the original baseline), or an honest new
+      number is recorded here with a reason if some can't safely be zeroed (e.g. `old-doc-2.ts`).
+- [ ] No warning count regression (baseline: not chasing this, but don't make it materially worse).
+
+### 8.4 Root-cause-A: DOM renderer positions a text line's `baseline` as CSS `top` · M · MEDIUM-HIGH risk (shared render path)
+
+`render-dom.tsx:545-552` — `style={{ position: 'absolute', top: `${line.baseline}px`, ... }}`.
+`measure.ts:337,345` computes `baseline = i * lineHeight + 0.8 * lineHeight` (a true baseline
+offset — distance from the text box's top to the glyph baseline). `render-svg.ts:257` consumes the
+same number correctly (`y="${node.box.y + line.baseline}"` is exactly what SVG `<text y>` means).
+The DOM renderer's per-line `<div>` already has `lineHeight` set via CSS
+(`render-dom.tsx:533`), so a line positioned at `top: baseline` sits `0.8·lineHeight` **too low** —
+this is what makes slide 1's title paint through its subtitle, and is the majority contributor to
+`overlap-audit`'s 10 remaining `totalOverflow` entries.
+
+**Proposed fix, minimal:** in `render-dom.tsx`'s per-line map, use `top: ${line.baseline - 0.8 *
+lineHeight}px` (recovering the top-of-line-box position `measure.ts` started from), or — more
+robust to a future change in `measure.ts`'s constant — thread the per-line "top" value through
+alongside `baseline` instead of re-deriving `0.8·lineHeight` in two files. `TextLine.top?: number`
+already exists on the type (`types.ts` — "Optional for backward compatibility with older persisted
+data") but nothing currently *writes* it; populating it in `measure.ts` and having
+`render-dom.tsx` prefer `line.top ?? (line.baseline - 0.8 * lineHeight)` would be the least
+guess-prone fix, and is additive (no schema/version bump — this is derived layout data, not
+persisted spec).
+
+**Why this is flagged MEDIUM-HIGH despite the code change being a few lines:** this function
+renders *every* text node in the product. A wrong sign or off-by-a-constant here doesn't fail
+loudly — it silently shifts every line of text on every slide by some pixel amount, and only shows
+up as "looks a bit off" rather than a crash or a failing assertion. Verify with the tooling already
+in hand rather than by eye alone:
+
+**Done when:**
+- [ ] `overlap-audit`'s `totalOverflow` measured *before* the change (currently **10**, see G7's
+      §7.3) and *after* — must drop, and ideally hit 0 or close to it for `demo-deck-q3`.
+- [ ] `colorful-blocks-demo`'s 10 slides re-screenshotted and opened; specifically check slides
+      that *don't* currently show visible overflow, to catch a sign error that makes a
+      previously-fine slide newly wrong (this is the exact risk this fix carries).
+- [ ] Full suite green (any DOM-rendering snapshot test that pins exact pixel positions will need
+      re-review, not blind `-u`).
+- [ ] Production `tsc` = 0.
+
+### 8.5 `tls.l.row` `sizing: 'content'` is a no-op · M · MEDIUM risk (shared measurement function)
+
+Root cause already isolated in G5's `container-flex.js` note: `measureIntrinsicSize`'s fallback
+probe (`layout-child.ts:403`) uses `probeBox: Size = { width: ctx.box.width, height:
+ctx.box.height }` — the box it was *given* — not an unbounded one. A text block's `layout()`
+fills whatever width it's handed (it doesn't have a real "shrink to natural width" mode), so it
+reports the probe's own width back as its "intrinsic" width. Both a 5-character label and a
+120-character paragraph measure identically wide when probed this way, so `tls-l-row/layout.ts`'s
+`'content'` branch — which scales children proportionally to their measured intrinsic widths —
+degenerates to the same 50/50 split as `'equal'`.
+
+**Proposed fix:** give text blocks (starting with `tls.t.body`, the one exercised by
+`container-flex.js`) a real `intrinsicSize` export that measures at an effectively-unbounded width
+(e.g. `Number.MAX_SAFE_INTEGER` or a large sentinel like `100000`) to get the natural single-line
+width, the way `tls-m-icon/layout.ts` already has its own `intrinsicSize` for a fixed 24×24 —
+`measureIntrinsicSize` already prefers `def.intrinsicSize` over the generic probe fallback
+(`layout-child.ts:394-399`) when one exists, so this needs no change to the shared function itself,
+only a new export on the text blocks that don't have one yet.
+
+**Why MEDIUM, not XS:** `measureIntrinsicSize` is called from multiple containers (`tls-l-row`,
+and potentially `tls-l-stack`/`tls-l-grid` if they grow a `'content'` mode later), and a text
+block's `intrinsicSize` return value will also affect anything else that ever calls it — verify
+`grep -rn measureIntrinsicSize packages/tldraw/src/blocks` for every current call site before
+assuming this is row-only.
+
+**Done when:**
+- [ ] `container-flex.js` re-run: the `'content'` row visibly differs from the `'equal'` row (the
+      short label's column is now narrow, the paragraph's column wide) — screenshot opened,
+      described.
+- [ ] A new unit test in `tls-l-row.spec.ts` (or a new `tls-l-row-content-sizing.spec.ts`) asserts
+      the two children get measurably different widths in `'content'` mode with a short-vs-long
+      pair, so this doesn't silently regress again.
+- [ ] All pre-existing `'child positioning'`/`'equal'`-mode tests still pass **unmodified** (§1.5's
+      rule: weakening or deleting one of them fails the phase).
+- [ ] Full suite green, production `tsc` = 0.
+
+### 8.6 `tls.l.row` per-child sizing (`fill`/`auto`/weight) · L · new feature, not a bug
+
+Unchanged from every prior mention (`BACKLOG-visual-fix.md` F4.3, this document's own scope-cut
+register). Requires: schema changes (`RowProps` per-child `sizing`/weight, additive), a real
+flex-distribution algorithm (`distributeSpace` in `layout-child.ts:467` already exists and is
+dead code — imported by `tls-l-row/layout.ts` but never called; check whether it already
+implements the right algorithm before writing a new one), and new tests. This is the only item
+here that is genuinely new work rather than a bug fix — size it as its own phase (or defer to
+R13 as already decided) rather than folding it into a "fix the remaining issues" pass.
+
+**Done when (unchanged from BACKLOG-visual-fix.md's original F4.3 ask):**
+- [ ] A container mixes an `'auto'` child with a `'fill'` child and each gets the right width, in
+      a real test, not just a screenshot.
+- [ ] `distributeSpace` is either the mechanism used, or is deleted with a stated reason if a
+      different approach is taken (§1.5: dead code that pretends to be live is a finding, not a
+      detail).
+
+### 8.7 Recommended order
+
+8.1 → 8.3 → 8.2 → 8.5 → 8.4 → 8.6. Cheapest and lowest-risk first (8.1, 8.3), then the one with a
+design decision to settle before coding (8.2), then the two shared-function fixes in ascending
+risk (8.5 before 8.4 — 8.5's blast radius is one function's callers, 8.4's is every text node in
+the product), and 8.6 last because it is new feature work, not a fix, and was already deferred
+once.
