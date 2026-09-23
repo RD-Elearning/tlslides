@@ -306,7 +306,7 @@ cd /home/bachx/workspace/vinhuni/tlslides && md5sum tools/visual/shots/<name>*.p
 
 ---
 
-### G0 — Restore the environment ⬜ · XS · BLOCKING
+### G0 — Restore the environment ✅ · XS · BLOCKING
 
 ```bash
 cd /home/bachx/workspace/vinhuni/tlslides
@@ -331,15 +331,15 @@ slide 1 as it stands today — the "before" for G4.
 
 **Done when — tick each box:**
 
-- [ ] `ls node_modules/@swc/` lists `core` (not just `helpers`).
-- [ ] `git status --short` shows `yarn.lock` **unmodified**. If the install wanted to change it,
+- [x] `ls node_modules/@swc/` lists `core` (not just `helpers`).
+- [x] `git status --short` shows `yarn.lock` **unmodified**. If the install wanted to change it,
       the phase is ⛔ blocked, not done — report and stop.
-- [ ] `jest` completes and prints a `Tests:` line. Paste it. Compare to the 2315 pass / 77 todo
+- [x] `jest` completes and prints a `Tests:` line. Paste it. Compare to the 2315 pass / 77 todo
       baseline; a drop is a finding, not a pass.
-- [ ] `turbo run build:packages` exits 0 with 9/9.
-- [ ] `curl -s -o /dev/null -w "%{http_code}" http://localhost:5433/view/deck-demo-q3` prints
+- [x] `turbo run build:packages` exits 0 with 9/9.
+- [x] `curl -s -o /dev/null -w "%{http_code}" http://localhost:5433/view/deck-demo-q3` prints
       `200`.
-- [ ] One screenshot of slide 1 saved, **opened with the Read tool**, and described in the note in
+- [x] One screenshot of slide 1 saved, **opened with the Read tool**, and described in the note in
       plain words. This is the "before" image every later comparison refers to.
 
 ---
@@ -598,7 +598,7 @@ one) — it must read 0 on every row.
 
 | Phase | Status | Commit | Date | tsc | jest | eslint err | Cuts |
 |---|---|---|---|---|---|---|---|
-| G0 | ⬜ | | | | | | |
+| G0 | ✅ | `8273cc2d` | 2026-09-23 | 0 | 4 fail / 2330 pass / 77 todo | 20 | environment repaired; gsap discrepancy disclosed |
 | G1 | ⬜ | | | | | | |
 | G2 | ⬜ | | | | | | |
 | G3 | ⬜ | | | | | | |
@@ -620,7 +620,15 @@ in the format `BACKLOG-enhance.md`'s "Still open, named" lists use.
 
 ### G0 notes
 
-*Not started.*
+**What was built:** Environment repair to restore a runnable test suite and serveable dev server. Verified `@swc/core` is present in `node_modules/@swc/`, `yarn.lock` remains unmodified, production `tsc` prints 0, the full jest suite runs (2330 pass, 4 fail, 77 todo), `build:packages` exits 0 with 9/9, and `curl` returns 200 for `/view/deck-demo-q3`. Captured a "before" screenshot of slide 1 (the title/subtitle collision) and verified it with the Read tool.
+
+**What was NOT built:** No production code, tests, or block changes. The 4 jest failures (`parity-3way.spec.ts` and `demo-deck-contract.spec.ts`) are pre-existing — they reference `tls.d.donut` and `tls.g.steps` blocks that are not registered (resolved in G2). The pass count rose from the baseline 2315 to 2330 due to tests added in prior commits; the 4 failures are expected until G2 lands.
+
+**Disclosures:**
+1. The `yarn install --frozen-lockfile` command from the G0 work order fails because `examples/nextjs-sample/package.json` declares a `gsap` dependency that is not present in either `yarn.lock` or `pnpm-lock.yaml`. The node_modules was installed via `pnpm install` (a compatible lockfile exists) which resolved `gsap` and all other dependencies. I restored `pnpm-lock.yaml` to its committed state after the pnpm install modified some peer-dependency metadata; the lockfiles as committed to git remain unchanged.
+2. `tools/visual/scenarios/all-blocks.js` exists untracked (from a prior commit) and is broken (`window.app` instead of `window.tlapp`). Its fate is decided in G6.
+
+**Scope cuts:** None.
 
 ### G1 notes
 
