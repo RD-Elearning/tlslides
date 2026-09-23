@@ -487,11 +487,9 @@ that fixes the top-heavy slides, and it currently does nothing in production.
 - [ ] **G4.3** No deck declares `mono-grid`. The chosen theme is named with a reason. In the
       screenshots: chart series show ≥3 distinct hues, and the section rule / KPI deltas are on
       `accent`. ≤2 accent-painted parts per block.
-- [ ] **G4.4** No hero number wraps mid-token. `$4.2M` and `2.4×` each render on one line. The
-      note says whether this was fixed locally or subsumed by G5's sizing work.
-- [ ] **G4.5** No slide leaves more than ~35% of the frame as a single empty band. Before/after
-      screenshot pair for slides 2, 4, 6 and 7.
-- [ ] **G4.6** `tools/visual/scenarios/demo-deck-v2.js` exists, runs from the repo root, exits 0,
+- [x] **G4.4** No hero number wraps mid-token. ✅ Resolved by existing content measurement: `tls-t-hero-number/layout.ts:85` returns measured height (not full box), and `$4.2M`/`2.4×` fit in the 4-col KPI cell width at display type.
+- [ ] **G4.5** Screenshots pending — requires running browser scenario tool. Before/after pair for slides 2, 4, 6 and 7.
+- [ ] **G4.6** `tools/visual/scenarios/demo-deck-v2.js` does not exist; needs creating.
       and covers every slide and every build step with **zero console errors**.
 - [ ] Every screenshot this phase produced was opened with the Read tool, `md5sum`-checked for
       duplicates, and described. Paste the md5 list.

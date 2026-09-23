@@ -1,7 +1,8 @@
 /**
  * Schema and defaults for tls.l.row — horizontal row with gap.
  *
- * Phase 4.2: Added per-child sizing support (fill/auto/weight).
+ * Phase 4.2: Added per-child sizing support via `sizing` ('equal' | 'content').
+ * Per-child fill/auto/weight variants (Phase 4.3) not yet implemented.
  */
 
 import type { BlockSchema, BlockSpec } from '../../../types'

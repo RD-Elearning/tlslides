@@ -61,14 +61,14 @@ function layoutTitle(frame: { width: number; height: number }, tokens: ResolvedT
   const ca = contentArea(frame, tokens)
   const g = gutter(tokens)
   // V2.2: These heights are MINIMUMS; regions will expand when registry provided
-  const titleH = tokens.type.title.size + tokens.space.lg
-  const subtitleH = tokens.type.subheading.size + tokens.space.sm
-  const totalH = titleH + g + subtitleH
+  const titleRegionH = tokens.type.title.size + tokens.space.lg
+  const subtitleRegionH = tokens.type.subheading.size + tokens.space.sm
+  const totalH = titleRegionH + g + subtitleRegionH
   const startY = ca.y + Math.max(0, (ca.height - totalH) / 2)
 
   return {
-    title: { x: ca.x, y: startY, width: ca.width, height: titleH },
-    subtitle: { x: ca.x, y: startY + titleH + g, width: ca.width, height: subtitleH },
+    title: { x: ca.x, y: startY, width: ca.width, height: titleRegionH },
+    subtitle: { x: ca.x, y: startY + titleRegionH + g, width: ca.width, height: subtitleRegionH },
   }
 }
 
@@ -79,14 +79,14 @@ function layoutTitle(frame: { width: number; height: number }, tokens: ResolvedT
 function layoutSection(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
   const ca = contentArea(frame, tokens)
   const g = gutter(tokens)
-  const titleH = sectionTitleBand(tokens)
-  const subtitleH = tokens.type.lead.size + tokens.space.sm
-  const totalH = titleH + g + subtitleH
+  const sectionTitleRegionH = sectionTitleBand(tokens)
+  const sectionSubtitleRegionH = tokens.type.lead.size + tokens.space.sm
+  const totalH = sectionTitleRegionH + g + sectionSubtitleRegionH
   const startY = ca.y + Math.max(0, (ca.height - totalH) / 2)
 
   return {
-    title: { x: ca.x, y: startY, width: ca.width, height: titleH },
-    subtitle: { x: ca.x, y: startY + titleH + g, width: ca.width, height: subtitleH },
+    title: { x: ca.x, y: startY, width: ca.width, height: sectionTitleRegionH },
+    subtitle: { x: ca.x, y: startY + sectionTitleRegionH + g, width: ca.width, height: sectionSubtitleRegionH },
   }
 }
 
@@ -310,14 +310,14 @@ function layoutQuote(frame: { width: number; height: number }, tokens: ResolvedT
   const quoteW = Math.round(ca.width * 0.7)
   const quoteX = ca.x + Math.round((ca.width - quoteW) / 2)
   // V2.2: Height assumes ~3 lines; region can grow with measured content
-  const quoteH = tokens.type.lead.size * 3 + tokens.space.lg // room for ~3 lines of lead text
+  const quoteRegionH = tokens.type.lead.size * 3 + tokens.space.lg // minimum for ~3 lines of lead text
   const attrH = tokens.type.caption.size + tokens.space.sm
-  const totalH = quoteH + g + attrH
+  const totalH = quoteRegionH + g + attrH
   const startY = ca.y + Math.max(0, (ca.height - totalH) / 2)
 
   return {
-    quote: { x: quoteX, y: startY, width: quoteW, height: quoteH },
-    attribution: { x: quoteX, y: startY + quoteH + g, width: quoteW, height: attrH },
+    quote: { x: quoteX, y: startY, width: quoteW, height: quoteRegionH },
+    attribution: { x: quoteX, y: startY + quoteRegionH + g, width: quoteW, height: attrH },
   }
 }
 
