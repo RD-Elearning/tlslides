@@ -15,19 +15,27 @@ import { textBlocks } from './text'
 // Data + chart blocks — populated when E3/E4 land.
 import { dataBlocks } from './data'
 
+// Diagram blocks — process and structure diagrams (R14).
+import { diagramBlocks } from './diagram'
+
 // Composite blocks — html-kind and multi-part composites (R2).
 import { compositeBlocks } from './composite'
 
 // Media blocks — image block and future media types (R8).
 import { mediaBlocks } from './media'
 
+// Chrome blocks — page chrome elements (R14).
+import { chromeBlocks } from './chrome'
+
 /** All built-in block definitions. */
 export const BUILT_IN_BLOCKS: BlockDefinition[] = [
   ...layoutBlocks,
   ...textBlocks,
   ...dataBlocks,
+  ...diagramBlocks,
   ...compositeBlocks,
   ...mediaBlocks,
+  ...chromeBlocks,
 ]
 
 /**
@@ -49,8 +57,14 @@ export { textBlocks } from './text'
 // Re-export data blocks for direct access. (W1 — `blocks/index.ts` wire-up.)
 export { dataBlocks } from './data'
 
+// Re-export diagram blocks for direct access.
+export { diagramBlocks } from './diagram'
+
 // Re-export composite blocks for direct access.
 export { compositeBlocks } from './composite'
 
 // Re-export media blocks for direct access.
 export { mediaBlocks } from './media'
+
+// Re-export chrome blocks for direct access.
+export { chromeBlocks } from './chrome'

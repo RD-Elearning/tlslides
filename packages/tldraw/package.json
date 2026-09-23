@@ -86,7 +86,7 @@
     "transform": {
       "^.+\\.(tsx|jsx|ts|js|mjs)?$": [
         "@swc-node/jest",
-        { "module": "commonjs" }
+        { "module": "commonjs", "swcOptions": { "jsc": { "parser": { "syntax": "typescript" } } } }
       ]
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
