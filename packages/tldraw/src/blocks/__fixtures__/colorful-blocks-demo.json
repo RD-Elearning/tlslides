@@ -86,8 +86,8 @@
         "left": [
           {
             "id": "b_03_heading",
-            "type": "tls.t.heading",
-            "props": { "text": "Heading 1", "level": 1, "color": "accent1" },
+            "type": "tls.t.title",
+            "props": { "text": "Heading 1", "size": "subheading", "color": "accent1" },
             "motion": { "preset": "fade-up", "order": 2 }
           },
           {
@@ -272,7 +272,7 @@
           },
           {
             "id": "b_07_stack",
-            "type": "tls-l.stack",
+            "type": "tls.l.stack",
             "props": {
               "gap": 12,
               "children": [
@@ -285,7 +285,7 @@
           },
           {
             "id": "b_07_grid",
-            "type": "tls-l.grid",
+            "type": "tls.l.grid",
             "props": {
               "columns": 3,
               "gap": 8,
