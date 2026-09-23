@@ -1,11 +1,19 @@
 /* eslint-disable no-console */
 /**
- * R0 regression test — the six-slide demo deck viewed through <DeckViewer>.
+ * R0 regression test — the demo deck viewed through <DeckViewer>.
  *
  * Screenshots every slide at its final build step and asserts that no two text
  * nodes' bounding boxes intersect (the F1 overlap bug). Also verifies the
  * data-slide-index / data-build-step attributes (F6) and that the viewer
  * renders all slides.
+ *
+ * Reads `examples/nextjs-sample/data/decks/deck-demo-q3.json` — the deck this scenario's own
+ * `/view/deck-demo-q3` route actually serves — not `packages/tldraw/src/blocks/__fixtures__/
+ * demo-deck.json`. The two are a deliberately different pair (G4.2: the fixture is a fuller
+ * 8-slide test deck with a hero cover slide; the example is the 7-slide deck Next.js actually
+ * ships). Reading the fixture here made this scenario loop one slide past what the app serves,
+ * producing a `deck-slide-8.png` that was really just a second screenshot of slide 7 — the exact
+ * "duplicate screenshot committed as evidence" failure BACKLOG-visual-fix-2.md §0.8/§1.2 documents.
  *
  * Run:  node tools/visual/shoot.js deck-demo
  * Requires:  cd examples/nextjs-sample && npx next dev -p 5433
@@ -14,13 +22,12 @@ const path = require('path')
 const { deckSpecToDocument, computeBuildSteps } = require('@tlslides/tldraw')
 
 const DECK = require(
-  path.join(__dirname, '..', '..', '..', 'packages', 'tldraw', 'src', 'blocks', '__fixtures__', 'demo-deck.json')
+  path.join(__dirname, '..', '..', '..', 'examples', 'nextjs-sample', 'data', 'decks', 'deck-demo-q3.json')
 )
 
 const SLIDE_IDS = DECK.slides.map((s) => s.id)
 
-// Updated for Phase 7: Now 8 slides with new exemplars
-const EXPECTED_SLIDE_COUNT = 8
+const EXPECTED_SLIDE_COUNT = DECK.slides.length
 
 /**
  * How many manual (onClick) ArrowRight presses are needed per slide to reach

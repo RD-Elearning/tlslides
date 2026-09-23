@@ -6,9 +6,9 @@ import type { BlockSchema } from '../../../types'
 
 export const schema: BlockSchema = {
   icon: {
-    type: { kind: 'text', maxChars: 50 },
+    type: { kind: 'icon' },
     role: 'content',
-    label: 'Icon name',
+    label: 'Icon',
     help: 'The icon to display.',
     required: true,
     guidance: 'Choose from the icon set: zap, shield, globe, check, etc.',
@@ -32,7 +32,6 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Size',
     help: 'Size of the icon+label group.',
-    default: 'md',
   },
 }
 

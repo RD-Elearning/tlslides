@@ -382,7 +382,8 @@ export class ArrowUtil extends TDShapeUtil<T, E> {
   }
 
   onDoubleClickHandle = (shape: T, handle: Partial<T['handles']>): Partial<T> | void => {
-    switch (handle) {
+    const key = Object.keys(handle)[0] as keyof T['handles'] | undefined
+    switch (key) {
       case 'bend': {
         return {
           bend: 0,

@@ -955,7 +955,7 @@ Icon with text label beneath. _(family: media; keywords: icon, label, button, na
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`icon\` | yes | text (max 50 chars) | Choose from the icon set: zap, shield, globe, check, etc. |
+| \`icon\` | yes | icon | Choose from the icon set: zap, shield, globe, check, etc. |
 | \`label\` | yes | text (max 100 chars) | Keep to 1-3 words. |
 | \`color\` | no | color (role or theme token — never hex) | Override the default color role. |
 | \`size\` | no | enum: sm \\\\| md \\\\| lg | Size of the icon+label group. |

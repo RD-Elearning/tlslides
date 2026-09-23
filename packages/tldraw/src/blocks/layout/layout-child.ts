@@ -77,6 +77,8 @@ export interface CreateLayoutContextOptions {
   style?: BlockStyleSpec
   /** The deck theme, used only to resolve `theme:`-sentinel literals (`'theme:accent1'`). */
   theme?: DeckTheme
+  /** Memo cache for `measureIntrinsicSize`, scoped to one compile pass. */
+  intrinsicSizeCache?: Map<string, Size>
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

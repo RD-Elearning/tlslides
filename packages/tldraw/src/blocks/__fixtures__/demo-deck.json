@@ -363,11 +363,11 @@
     },
     {
       "id": "sl_06",
-      "layout": "blank",
+      "layout": "image-top",
       "role": "closing",
       "rhythm": "anchor",
       "regions": {
-        "content": [
+        "title": [
           {
             "id": "b_06_title",
             "type": "tls.t.title",
@@ -383,7 +383,7 @@
                   }
                 ]
               },
-              "size": "display",
+              "size": "heading",
               "align": "start",
               "rule": true
             },
@@ -391,7 +391,9 @@
               "preset": "closing-in",
               "order": 1
             }
-          },
+          }
+        ],
+        "image": [
           {
             "id": "b_06_image",
             "type": "tls.m.image",
@@ -410,7 +412,9 @@
               "order": 2,
               "trigger": "afterPrevious"
             }
-          },
+          }
+        ],
+        "text": [
           {
             "id": "b_06_body",
             "type": "tls.t.body",

@@ -214,6 +214,35 @@ module.exports = {
     const totalDesignOverlaps = Object.values(results).reduce((n, r) => n + (r.designOverlaps ? r.designOverlaps.length : 0), 0)
     const totalOverflow = Object.values(results).reduce((n, r) => n + (r.overflow ? r.overflow.length : 0), 0)
 
+    // This is a gate, not just a report: a scenario that exits 0 while two blocks paint on top
+    // of each other is the exact failure mode BACKLOG-visual-fix-2.md §0.10 documented
+    // (screenshots committed as "proof" for slides nobody actually checked). shoot.js only turns
+    // page/console errors into a non-zero exit, so the check has to throw here to become a real
+    // CI gate.
+    //
+    // Text overflow is measured and reported (`summary.totalOverflow`, per-slide `overflow[]`)
+    // but does NOT fail the gate: it is root-cause-A from BACKLOG-visual.md §1.2 (the DOM
+    // renderer positions a text line's `baseline` as a CSS `top`, so every text node renders
+    // ~0.8×lineHeight lower than its measured box) — an already-accepted, documented scope cut
+    // (BACKLOG-demo.md:541-543), not a regression this gate should block commits on. Failing the
+    // gate on it would make it permanently red for a known, unfixed, out-of-scope defect instead
+    // of a real signal.
+    if (totalBlockOverlaps > 0 || totalDesignOverlaps > 0) {
+      const lines = []
+      for (const [slideId, r] of Object.entries(results)) {
+        if (r.blockOverlaps && r.blockOverlaps.length) {
+          for (const o of r.blockOverlaps) lines.push(`${slideId}: block overlap ${o.a} × ${o.b} (${o.area}px²)`)
+        }
+        if (r.designOverlaps && r.designOverlaps.length) {
+          for (const o of r.designOverlaps) lines.push(`${slideId}: design overlap ${o.a} × ${o.b} (${o.area}px²)`)
+        }
+      }
+      throw new Error(
+        `overlap-audit found ${totalBlockOverlaps} block overlap(s), ${totalDesignOverlaps} design overlap(s):\n` +
+          lines.join('\n')
+      )
+    }
+
     return {
       totalSlides: SLIDE_IDS.length,
       slideResults: results,

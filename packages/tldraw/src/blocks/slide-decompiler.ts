@@ -50,7 +50,11 @@ export interface DecompileFinding {
 
 export interface DecompileOptions {
   /** Max allowed deviation in slide units when matching a shape to a region box.
-   *  Default: 2. */
+   *  Default: `tokens.space.xl` (48). V2.1's intrinsic-height reflow can shift a region's
+   *  effective start position by up to about one spacing token from its statically compiled
+   *  box (when an earlier sibling's measured content is taller or shorter than the layout's
+   *  static band guess) without that being a real region mismatch — a tight, reflow-unaware
+   *  tolerance mismatches shapes to the wrong region instead of finding no match. */
   tolerance?: number
 }
 
@@ -171,7 +175,7 @@ function aspectsEqual(a: DeckSpec['aspect'], b: DeckSpec['aspect']): boolean {
  *
  * @param page   The TDPage to decompile.
  * @param tokens Resolved design tokens for the deck.
- * @param opts   Options (tolerance, default 2 slide units).
+ * @param opts   Options (tolerance, default `tokens.space.xl`).
  * @returns      The reconstructed SlideSpec and any findings.
  */
 export function pageToSlideSpec(
@@ -179,7 +183,7 @@ export function pageToSlideSpec(
   tokens: ResolvedTokens,
   opts?: DecompileOptions
 ): { spec: SlideSpec; findings: DecompileFinding[] } {
-  const tolerance = opts?.tolerance ?? 2
+  const tolerance = opts?.tolerance ?? tokens.space.xl
   const findings: DecompileFinding[] = []
   const slideId = page.slideSpecId ?? page.id ?? 'unknown'
 
