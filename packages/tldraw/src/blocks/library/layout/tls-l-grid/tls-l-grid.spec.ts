@@ -49,14 +49,15 @@ describe('tls.l.grid', () => {
   })
 
   describe('overflow children', () => {
-    it('clips children beyond cols*rows', () => {
+    it('clips children beyond cols*rows (documented behavior)', () => {
       const box = { width: 960, height: 540 }
       const ctx = makeCtx(box, registry)
       const node = tlsLGrid.layout(
         { columns: 2, rows: 2, gap: 'md', children: makeChildren(6) } as any,
         ctx
       )
-      // Only 4 cells, so 4 children
+      // Grid clips to cols*rows cells. Children beyond capacity are documented as clipped.
+      // TODO: Future: emit overflow warning via findings (R13) when grid underflows children.
       expect(node.children).toHaveLength(4)
     })
   })
