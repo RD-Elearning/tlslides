@@ -71,6 +71,7 @@
       "^.+\\.(tsx|jsx|ts|js|mjs)?$": [
         "@swc-node/jest",
         {
+          "module": "commonjs",
           "dynamicImport": true,
           "experimentalDecorators": true,
           "emitDecoratorMetadata": true

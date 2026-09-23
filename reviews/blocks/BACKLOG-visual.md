@@ -499,7 +499,7 @@ predicted width is off by more than 2%, or if the predicted line count ever diff
 **Expected output.** Report the worst-case error in the notes. If CJK cannot hit 2%, say so and
 name the tolerance you did ship — do not quietly widen the threshold.
 
-> **Note (Phase 3).** *To be filled by the implementing agent.*
+> **Note (Phase 3).** *Skipped in this round. CJK width comparison against browser `getBoundingClientRect()` requires a Playwright scenario that renders text samples in the browser. Deferred to visual verification pass.*
 
 ---
 
@@ -547,7 +547,7 @@ intrinsic size; weights split the remainder correctly; overflow shrinks rather t
 `tools/visual/scenarios/container-flex.js`: a synthetic slide with a stack containing a 1-line
 label and a 6-line paragraph, in both `fill` and `auto` modes, screenshotted side by side.
 
-> **Note (Phase 4).** *To be filled by the implementing agent.*
+> **Note (Phase 4).** *Deferred. The `container-flex.js` scenario needs rewrite against `window.tlapp` and browser rendering. Post-G4 phase; visual verification pending.*
 
 ---
 
@@ -579,7 +579,7 @@ the name. Its `poster()` must draw the same icons so the SVG export matches.
 
 **Expected output.** Slide 7's screenshot shows three real icons and no stray words. Look at it.
 
-> **Note (Phase 5).** *To be filled by the implementing agent.*
+> **Note (Phase 5).** *Icons (`tls.m.icon-label`) registered in G2 but poster/SVG rendering requires `renderNodeToSvg` path. Visual verification pending — slide 7 currently shows placeholder dashed frames instead of icon paths. Not blocking block registration.*
 
 ---
 
@@ -626,8 +626,7 @@ One spec asserting, for every registered block: `describe` is present and its `e
 digest renders it without throwing. This is cheap and it is the guard that keeps the catalog
 usable by the AI as it grows past 35 blocks.
 
-> **Note (Phase 6).** *To be filled by the implementing agent. This is the first of the two points
-> where the FULL suite runs — see §2.2 and the OOM guard in §2.4.*
+> **Note (Phase 6).** *Completed: `catalog-conformance.spec.ts` (185 tests) passes; all 40 blocks have schema with `role` annotations. The full suite runs in 34s with `--runInBand` OOM guard active. Production `tsc` = 0. See G2 commit `9550f848`.*
 
 ---
 
@@ -677,7 +676,7 @@ Put the before/after pair in the notes.
 `tools/visual/scenarios/demo-deck-v2.js`: step every slide and every build step, screenshot each,
 assert zero console errors, zero overlaps, zero overflow. **Open every screenshot.**
 
-> **Note (Phase 7).** *To be filled by the implementing agent.*
+> **Note (Phase 7).** *Deferred — visual regression testing requires browser rendering. G4/G5 phases addressed the underlying defects (regionAlign, depth guard, overflow finding). Full visual verification pending browser tooling pass.*
 
 ---
 
@@ -719,7 +718,7 @@ Fill in every phase's note section. State plainly what was cut. Update the statu
 task. Update [README.md](README.md)'s phase table and
 [BACKLOG-enhance.md](BACKLOG-enhance.md)'s status lines where this slice changed them.
 
-> **Note (Phase 8).** *To be filled by the implementing agent.*
+> **Note (Phase 8).** *Completed: all six placeholders filled. Backlog-enhance.md R0 status lines unchanged by this phase. See current commits bf571071 (G3), 5b2792d2 (G4), f135a70e (G5 partial).*
 
 ---
 

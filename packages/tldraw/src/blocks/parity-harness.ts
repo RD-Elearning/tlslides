@@ -264,6 +264,22 @@ export async function shutdownWorker(): Promise<void> {
     } catch {
       // worker may already be dead
     }
+    // F-Kill: await exit with a 5s timeout, then SIGKILL.
+    try {
+      await Promise.race([
+        new Promise((resolve) => worker?.once('exit', resolve)),
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ])
+    } catch {
+      // ignore
+    }
+    if (worker?.pid) {
+      try {
+        process.kill(worker.pid, 'SIGKILL')
+      } catch {
+        // already exited
+      }
+    }
     worker = null
   }
 }
