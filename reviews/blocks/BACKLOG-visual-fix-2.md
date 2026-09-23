@@ -555,6 +555,11 @@ reason.
 | V6.4 `tls.v.counter` | cut in `d7f9c295` | *"tls.t.hero-number is Tier A equivalent"* — stated in the commit message only | `BACKLOG-visual-fix.md`, retroactively |
 | `tls.x.page-number` | **undecided** | directory created empty; block never written. G2.1 must either write it or cut it here | this document |
 | `tls.m.icon-label` | **undecided** | directory created empty; block never written. G2.1 must either write it or cut it here | this document |
+| G4.5 screenshots | **deferred** | requires browser tooling — 4 slide pairs (slides 2, 4, 6, 7) | this phase |
+| G4.6 demo-deck-v2.js | **deferred** | requires scenario rewrite + browser tooling | this phase |
+| G5 container-flex.js | **deferred** | needs `window.tlapp` harness contract rewrite + browser render | this phase |
+| G5 slide collision spec | **deferred** | needs browser render for visual overlap detection | this phase |
+| G5 overlap-audit gate | **deferred** | needs browser to inject + screenshot overlap | this phase |
 
 ---
 
@@ -570,9 +575,9 @@ one) — it must read 0 on every row.
 | G1 | ✅ | `TBD` | 2026-09-23 | 0 | conformance 185 pass | 20 | fixed tls-l.stack→tls.l.stack, tls-l.grid→tls.l.grid, tls.t.heading→tls.t.title in both deck copies; slide 5 clip deferred to G4 sizing |
 | G2 | ✅ | `TBD` | 2026-09-23 | 0 | 185 pass (conformance spec) | 20 | moved donut→data, created chrome/ and diagram/, wrote tls.m.icon-label; fixed swc-node/jest tsconfig |
 | G3 | ✅ | `TBD` | 2026-09-23 | 0 | 4 pass + 2523 total pass | 20 | F3.1: measureIntrinsicSize depth guard (MAX_DEPTH=4), memo cache, try/catch; F3.2: regionAlign applied in registry branch; snapshots updated (8 new blocks) |
-| G4 | ⬜ | | | | | | |
-| G5 | ⬜ | | | | | | |
-| G6 | ⬜ | | | | | | |
+| G4 | ✅ | `5b2792d2` | 2026-09-23 | 0 | 2523 pass | 0 | title shortened, theme coral-pop, two-deck trap documented |
+| G5 | ⏸️ (partial) | `53a9eb85` | 2026-09-23 | 0 | 18 core suites + 2523 total pass | 0 | jest config fix, SIGKILL timeout, layout renames; browser items deferred |
+| G6 | ⏸️ | | | | | | pending browser tooling |
 
 Reference row, the state this document was written against:
 
@@ -620,18 +625,44 @@ in the format `BACKLOG-enhance.md`'s "Still open, named" lists use.
 
 ---
 
-### G3 notes\n\n**What was built:** F3.1 (measureIntrinsicSize hardening) + F3.2 (regionAlign fix).\n- F3.1: Added `MAX_DEPTH = 4` guard, `intrinsicSizeCache` memo on LayoutContext, try/catch around `def.layout()` in `layout-child.ts:345-375`. Cache created in `slide-compiler.ts` and propagated to child contexts.\n- F3.2: Applied `regionAlign` offset in registry branch (`startY = flowedY + offset`), not just the no-registry branch.\n- Updated `capability-digest` snapshots (8 new blocks added to catalog).\n\n**What was NOT built:** No remaining work for G3.\n\n**Scope cuts:** None.\n\n### G4 notes
+### G3 notes
 
-*Not started.*
+**What was built:** F3.1 (measureIntrinsicSize hardening) + F3.2 (regionAlign fix).
+- F3.1: Added `MAX_DEPTH = 4` guard, `intrinsicSizeCache` memo on LayoutContext, try/catch around `def.layout()` in `layout-child.ts:345-375`. Cache created in `slide-compiler.ts` and propagated to child contexts.
+- F3.2: Applied `regionAlign` offset in registry branch (`startY = flowedY + offset`), not just the no-registry branch.
+- Updated `capability-digest` snapshots (8 new blocks added to catalog).
+
+**What was NOT built:** No remaining work for G3.
+
+**Scope cuts:** None.
 
 ### G4 notes
 
-*Not started.*
+**What was built:** Fixed demo deck defects from the product owner.
+- G4.1: Shortened hero title "All Block Types in Color" → "All Block Types" to fix title/subtitle text collision on slide 1
+- G4.3: Changed theme from `mono-grid` → `coral-pop` in both `demo-deck.json` and `colorful-blocks-demo.json` + Next.js sample
+- G4.2: Documented that the two deck files are intentionally different (8-slide fixture vs 7-slide example)
+- G4.4: Verified hero-number blocks (`tls.t.hero-number`) don't wrap mid-token — `layout.ts:85` returns measured content height that fits in KPI cell width
+
+**What was NOT built:** G4.5 (screenshots) and G4.6 (demo-deck-v2.js scenario) deferred — require browser tooling
+
+**Scope cuts:** None. Theme and title changes made in both fixture + example copies.
 
 ### G5 notes
 
-*Not started.*
+**What was built (partial — code-only items):**
+- `packages/core/package.json`: Added `"module": "commonjs"` to swc-node/jest transform config. Before: 0 suites discovered. After: 18 passed, 159 tests.
+- `parity-harness.ts:260`: `shutdownWorker()` now awaits exit with 5s timeout, falls back to `SIGKILL`
+- `slide-layouts.ts`: Renamed `titleH`→`titleRegionH`, `subtitleH`→`subtitleRegionH`, `quoteH`→`quoteRegionH`; removed "room for ~3 lines" comment
+- `tls-l-grid.spec.ts:52`: Documented clipping behavior with TODO for overflow warning
+- `tls-l-row/schema.ts:4`: Fixed false comment about per-child sizing
+- `BACKLOG-visual.md`: Filled all 6 "To be filled by the implementing agent" placeholders
+
+**What was NOT built (browser-dependent):**
+- container-flex.js scenario rewrite, slide collision spec, overlap-audit.js gate
+
+**Scope cuts:** Per-child sizing (fill/auto/weight) for tls.l.row deferred to R13.
 
 ### G6 notes
 
-*Not started.*
+*Pending — sign-off requires visual verification (before/after screenshots) blocked on browser tooling.*
