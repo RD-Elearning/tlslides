@@ -165,7 +165,7 @@ const PreviewOuter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLD
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: 'var(--tl-color-surface, #f8f8f8)',
-          border: '1px solid var(--tl-color-ui',
+          border: '1px solid var(--tl-color-ui)',
           borderRadius: '6px',
           overflow: 'hidden',
           ...props.style,

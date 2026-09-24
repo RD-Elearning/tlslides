@@ -82,32 +82,27 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
   /**
    * Update a `$block.style` or `$block.motion` field.
    *
-   * H1: Reset = write `undefined` (deep-merge keeps omitted keys). When value is `undefined`,
-   * the key is deleted from the section object. When the section becomes empty, it is
-   * removed entirely from `$block`.
+   * H1: Reset = write `undefined` explicitly. Deep-merge (`Utils.deepMerge`) only overwrites
+   * keys actually present on the patch object — an *omitted* key leaves the old value
+   * untouched, so `delete`-ing the key here would silently no-op a per-field reset. The key
+   * must stay in the patch with value `undefined`; every reader already checks `!== undefined`
+   * (README pitfall 2, verified against `layout-child.ts`'s `ctx.style?.padding !== undefined`).
+   *
+   * Every object here is freshly copied (never the live shape's own `props`/`$block`/section
+   * object) — mutating the store's shape in place before `updateShapes` runs would corrupt
+   * undo/redo, since the "before" snapshot would already reflect the "after" state.
    */
   const updateBlockMeta = React.useCallback(
     (key: 'style' | 'motion', path: string, value: unknown) => {
       if (!shape) return
       const currentProps = shape.props as Record<string, unknown>
-      const currentMeta = (currentProps.$block as Record<string, unknown> | undefined) ?? {}
-      const currentSection = (currentMeta[key] as Record<string, unknown> | undefined) ?? {}
+      const currentMeta = { ...((currentProps.$block as Record<string, unknown> | undefined) ?? {}) }
+      const currentSection = { ...((currentMeta[key] as Record<string, unknown> | undefined) ?? {}) }
 
-      const newSection = { ...currentSection }
-      if (value === undefined) {
-        // Delete the key — deep-merge keeps omitted keys (README pitfall 2).
-        delete newSection[path]
-        if (Object.keys(newSection).length === 0) {
-          delete currentMeta[key]
-        } else {
-          currentMeta[key] = newSection
-        }
-      } else {
-        newSection[path] = value
-        currentMeta[key] = newSection
-      }
+      currentSection[path] = value
+      currentMeta[key] = currentSection
 
-      const newProps = { ...currentProps, $block: { ...currentMeta } }
+      const newProps = { ...currentProps, $block: currentMeta }
       tldraw.updateShapes({ id: shape.id, props: newProps })
     },
     [shape, tldraw],
@@ -381,6 +376,7 @@ const PaddingSelector: React.FC<{
   const [customValue, setCustomValue] = React.useState('')
 
   const handleTokenSelect = (token: string) => {
+    if (token === 'custom') return // display-only option for the current numeric/tuple value
     if (token === 'none') {
       onChange(undefined)
     } else {
@@ -399,6 +395,11 @@ const PaddingSelector: React.FC<{
   return (
     <PaddingSelectorContainer>
       <PaddingTokenSelect value={valueToToken(value)} onChange={(e) => handleTokenSelect(e.target.value)}>
+        {(typeof value === 'number' || Array.isArray(value)) && (
+          // A numeric/tuple override has no matching space token — without this
+          // option the <select> shows blank instead of the real current value.
+          <option value="custom">Custom ({Array.isArray(value) ? value.join('/') : value}px)</option>
+        )}
         {SPACE_TOKENS.map((t) => (
           <option key={t} value={t}>
             {t === 'none' ? 'None' : t}

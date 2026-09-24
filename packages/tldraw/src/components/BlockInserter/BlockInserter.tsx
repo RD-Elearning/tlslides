@@ -135,7 +135,7 @@ export const BlockInserter: React.FC<BlockInserterProps> = ({ onInsert, onClose 
   }, [])
 
   return (
-    <InserterOverlay onClick={onClose}>
+    <InserterOverlay>
       <InserterContainer
         className="tls-block-inserter"
         onClick={(e) => e.stopPropagation()}
@@ -206,8 +206,6 @@ interface BlockCardProps {
 }
 
 const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
-  const [expanded, setExpanded] = React.useState(false)
-
   return (
     <Card
       className="tls-block-card"
@@ -218,8 +216,6 @@ const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
         e.stopPropagation()
         onClick()
       }}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
       draggable={true}
       onDragStart={(e) => {
         // H5: HTML5 DnD — set the block type as the drag data.
@@ -231,7 +227,7 @@ const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
         e.stopPropagation()
       }}
     >
-      {expanded && def.size.preferred ? (
+      {def.size.preferred ? (
         <PreviewContainer>
           <BlockPreview def={def} width={width} />
         </PreviewContainer>
@@ -254,6 +250,14 @@ function getFamilyIcon(family: BlockFamily): string {
 
 /* ── Styled components ───────────────────────────────────────────────────────── */
 
+// pointerEvents: 'none' — this overlay sits as a DOM sibling of the canvas
+// Renderer, not an ancestor, so it must not intercept hit-testing: a native
+// drag-and-drop 'drop' event is targeted by hit-testing at the pointer
+// position, and if this div caught it, it would never bubble to the
+// Renderer/TldrawApp.onDrop underneath. Closing on an outside click is
+// instead handled by the document-level mousedown listener above, which
+// still fires normally (pointer-events only affects hit-testing, not
+// listeners on ancestors like `document`).
 const InserterOverlay = styled('div', {
   position: 'fixed',
   top: 0,
@@ -266,6 +270,7 @@ const InserterOverlay = styled('div', {
   justifyContent: 'flex-start',
   padding: '56px 16px 16px',
   zIndex: 1000,
+  pointerEvents: 'none',
 })
 
 const InserterContainer = styled('div', {
@@ -278,6 +283,7 @@ const InserterContainer = styled('div', {
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
+  pointerEvents: 'auto',
 })
 
 const InserterSearch = styled('input', {
