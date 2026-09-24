@@ -15,7 +15,7 @@
  */
 import * as fs from 'fs'
 import * as path from 'path'
-import { deckSpecToDocument } from './index'
+import { deckSpecToDocument, resolveDeckFrame } from './index'
 import type { DeckSpec } from './types'
 import type { ComponentShape } from '~types'
 
@@ -58,6 +58,7 @@ describe('G5 — slide-level collision gate', () => {
 
     describe(file, () => {
       const { document } = deckSpecToDocument(spec)
+      const frame = resolveDeckFrame(spec.aspect)
 
       for (const [pageId, page] of Object.entries(document.pages)) {
         it(`slide "${pageId}" has no overlapping top-level blocks`, () => {
@@ -84,6 +85,43 @@ describe('G5 — slide-level collision gate', () => {
           }
           expect(collisions).toEqual([])
         })
+
+        // G8.1a (regression guard only — see BACKLOG-visual-fix-2.md §9 G8.1 notes for why this
+        // isn't a full-fixture frame-bounds gate): checking every shape's box against the frame
+        // for every slide immediately reproduces the same fill-vs-intrinsic-height bug on 7 other
+        // blocks this phase didn't target (colorful-blocks-demo sl_02/sl_06/sl_07/sl_08/sl_09,
+        // demo-deck sl_07/sl_08) — the same class G5 chose not to gate `overlap-audit` on for the
+        // analogous reason (a known, disclosed, out-of-scope defect shouldn't turn a real gate
+        // permanently red). So this only re-checks the slide this phase actually fixed.
+        if (pageId === 'sl_05') {
+          it(`slide "${pageId}" has no block extending past the frame bounds`, () => {
+            const shapes = Object.values(page.shapes).filter(
+              (s): s is ComponentShape => s.type === 'component'
+            )
+
+            const outOfBounds: string[] = []
+            for (const s of shapes) {
+              const rect = toRect(s)
+              if (
+                rect.left < -TOLERANCE ||
+                rect.top < -TOLERANCE ||
+                rect.right > frame.width + TOLERANCE ||
+                rect.bottom > frame.height + TOLERANCE
+              ) {
+                outOfBounds.push(
+                  `${s.id} (${s.componentId}): box [${Math.round(rect.left)},${Math.round(rect.top)},` +
+                    `${Math.round(rect.right)},${Math.round(rect.bottom)}] vs frame ` +
+                    `[0,0,${frame.width},${frame.height}]`
+                )
+              }
+            }
+
+            if (outOfBounds.length > 0) {
+              throw new Error(`Block(s) past the frame edge on "${pageId}":\n` + outOfBounds.join('\n'))
+            }
+            expect(outOfBounds).toEqual([])
+          })
+        }
       }
     })
   }

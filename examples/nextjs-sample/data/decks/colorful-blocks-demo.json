@@ -172,16 +172,18 @@
     },
     {
       "id": "sl_05",
-      "layout": "blank",
+      "layout": "image-top",
       "role": "content",
       "regions": {
-        "content": [
+        "title": [
           {
             "id": "b_05_title",
             "type": "tls.t.title",
             "props": { "text": { "runs": [{ "text": "Color Blocks (tls-c-*)" }] }, "size": "heading" },
             "motion": { "preset": "fade-up", "order": 1 }
-          },
+          }
+        ],
+        "image": [
           {
             "id": "b_05_grid",
             "type": "tls.c.feature-grid",
@@ -210,7 +212,9 @@
               ]
             },
             "motion": { "preset": "stagger-children", "order": 2 }
-          },
+          }
+        ],
+        "text": [
           {
             "id": "b_05_section",
             "type": "tls.l.section",
