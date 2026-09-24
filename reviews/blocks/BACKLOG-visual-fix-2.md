@@ -588,6 +588,7 @@ one) — it must read 0 on every row.
 | G8.1 | ✅ | `09bd7faa` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 24 | sl_05 moved `blank`→`image-top` (bounded regions) in both fixture copies; collision.spec.ts gained a sl_05-scoped frame-bounds regression test (not a full-fixture gate — see §9); disclosed 7 other slides with the same bug, out of scope |
 | G8.3 | ✅ | `dad5a3fa` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | fixed all 24 named eslint errors: 6 `require()`→`import` in catalog-conformance.spec.ts, 3 stale/dead `react-hooks/exhaustive-deps` disable comments deleted (plugin never registered in `.eslintrc`, so the rule can never fire — provably dead), 3 empty-function bodies given real no-op comments, 1 extra semicolon removed, 13 `no-loss-of-precision` errors on captured fixture data wrapped in a scoped disable/enable block with a reason instead of edited |
 | G8.4 | ✅ | `533d5038` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | removed the `Math.min(x, inner.height)` height clamp from all 4 named files (12 sites); fixed a resulting regression in `tls-c-steps/layout.ts` (not one of the 4 — a downstream consumer whose own step-height budgeting relied on the clamp; disclosed in §9); sl_01 overlap-audit overflow 96px→9px |
+| G8.2 | ✅ | `TBD` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | found `resolveAsset` was already wired in 2 real places (not unwired, as first diagnosed); the actual gap was neither implementing the schema's own "asset id or URL" promise; added shared `resolveAssetUrl` helper, wired into both; `colorful-slide-8.png` now shows real image pixels |
 
 *eslint error count: the 24 errors are pre-existing, in files this pass never touched (`catalog-conformance.spec.ts` require-style, stale `react-hooks/exhaustive-deps` disable-comments in `InlineEditor.tsx`/`PresentationRuntime.tsx` referencing a rule not registered in `.eslintrc`, `old-doc-2.ts` numeric-literal precision, `templates.spec.ts` semicolon, `renderSvgToPng.spec.ts` empty function). The ledger's "20" baseline was carried forward unverified since G0; 24 is the honest, currently-measured number. Not a regression from this pass — none of the flagged lines are in a file this pass edited.
 
@@ -1101,7 +1102,7 @@ to **only `sl_05`** — a regression guard for the slide this item actually fixe
 sweeping gate. The other 7 are a disclosed finding for a future item (candidate: "G9 — bound every
 `blank`-layout region that stacks more than one growing block"), not fixed here.
 
-### 8.2 `tls.m.image` never actually loads an image in the Next.js sample · S · LOW-MEDIUM risk
+### 8.2 `tls.m.image` never actually loads an image in the Next.js sample ✅ · S · LOW-MEDIUM risk
 
 **Not a network/sandbox limitation — confirmed by testing:** `curl` to `picsum.photos` from this
 box returns a real `302` (network is fine). The real cause: `tls-m-image/layout.ts`'s `url =
@@ -1139,12 +1140,31 @@ XS-sized, not S). **Read `reviews/blocks/LLM-ARCHITECTURE.md` and the README's g
 before picking** — do not guess.
 
 **Done when:**
-- [ ] Decision recorded here (A or B) with a one-line reason.
-- [ ] `colorful-slide-8.png` (Media Blocks) re-screenshotted and opened: both images show real
-      pixels, not a dashed frame or alt text.
-- [ ] No other block's asset resolution regresses (`tls-m-icon` doesn't use `resolveAsset` at all,
-      so it's unaffected; confirm nothing else does before/after).
-- [ ] Full suite green, production `tsc` = 0.
+- [x] Decision recorded here (A or B) with a one-line reason. **Neither pure A nor pure B as
+      framed — see §9 for the full story.** The investigation found the premise wrong:
+      `resolveAsset` is **not** unwired — it's implemented identically in two real places
+      (`packages/tldraw/src/blocks/deck-context.ts`'s `deckLayoutContext`, used by `DeckViewer`
+      and the export path, and `packages/tldraw/src/hooks/useDeckTokens.ts`'s
+      `useBlockLayoutContext`, used by the live editor's `ComponentUtil`), both doing
+      `assets?.[id]?.src` — a real `document.assets`-keyed lookup. The doc's own `grep -rn
+      resolveAsset examples/nextjs-sample packages/tldraw/src/components/DeckViewer` search
+      missed this because the real implementation lives in `packages/tldraw/src/blocks/` and
+      `packages/tldraw/src/hooks/`, neither of which that grep's path list covered. The actual gap:
+      `tls-m-image/schema.ts`'s own doc comment already promises `src` may be "an asset id **or
+      URL**," but neither resolver implemented the "or URL" half — a raw `https://picsum.photos/…`
+      string was being looked up as an *id* against `document.assets` (which the deck JSON never
+      populates), always missing. **Decision: Option B, completed** — added a shared
+      `resolveAssetUrl(id, assets)` helper in `deck-context.ts` that checks for an
+      already-absolute URL/path first and falls back to the real asset-table lookup, then pointed
+      both existing resolvers at it instead of each re-implementing the same one-liner (avoiding
+      yet another "two inline copies" drift risk). `tls-m-image/layout.ts` itself is untouched —
+      it stays asset-scheme-agnostic exactly as its own file doc already promised.
+- [x] `colorful-slide-8.png` (Media Blocks) re-screenshotted and opened: both images show real
+      pixels (a crane/barge photo, a second image below it), not a dashed frame or alt text.
+- [x] No other block's asset resolution regresses (`tls-m-icon` doesn't use `resolveAsset` at all,
+      so it's unaffected; `grep -rln resolveAsset packages/tldraw/src` before/after shows the same
+      2 real implementations, now sharing one helper instead of two independent one-liners).
+- [x] Full suite green, production `tsc` = 0. 172/172 suites, 2544 pass / 77 todo / 0 fail.
 
 ### 8.3 eslint error count: 24, baseline 20 ✅ · XS · LOW risk
 
@@ -1504,5 +1524,52 @@ warnings — no warning-count change). Targeted tests for every touched file
 `migrate.spec.ts` for the `old-doc-2.ts` fixture) — 245+8 pass. Full suite: 172/172 suites, 2544
 pass / 77 todo / 0 fail (unchanged from G8.1 — this item touched no test assertions). Production
 `tsc` = 0; total `tsc` (incl. spec files) unchanged at 298.
+
+**Scope cuts:** None.
+
+### G8.2 notes
+
+**What was built:** Re-investigated the premise before touching code, per §1.2's rule that a
+screenshot/claim only counts once actually checked. The item's own text said `resolveAsset` was
+never wired in anywhere; a fresh `grep -rln resolveAsset packages/tldraw/src` (not scoped to the
+two paths the item's original grep checked) found it **was** wired, identically, in two real
+places: `packages/tldraw/src/blocks/deck-context.ts`'s `deckLayoutContext` (used by `DeckViewer`
+and the headless export path, per that file's own doc comment) and `packages/tldraw/src/hooks/
+useDeckTokens.ts`'s `useBlockLayoutContext` (used by the live editor's `ComponentUtil`) — both
+doing `(id) => assets?.[id]?.src`, a real lookup against `TDDocument.assets` (the pre-existing
+tldraw image/video upload asset table, `types.ts:848-862`). The item's original `grep -rn
+resolveAsset examples/nextjs-sample packages/tldraw/src/components/DeckViewer` missed both,
+because neither implementation lives under either of those two paths.
+
+The actual gap, found by reading `tls-m-image/schema.ts`'s own doc comment (*"The `src` slot holds
+an asset id **or URL**; the layout function resolves it via `ctx.resolveAsset()`"*) against what
+the two resolvers actually did: neither implemented the "or URL" half. `colorful-blocks-demo.json`
+puts a real, absolute `https://picsum.photos/...` URL directly in `src` (not an id registered in
+`document.assets`, which the deck JSON has no mechanism to populate anyway), so both resolvers'
+`assets?.[url]?.src` lookup always missed — not because nothing was wired, but because the wired
+resolvers only handled half of what the schema had already promised callers.
+
+**Decision — Option B, completed, not Option A:** added one shared helper,
+`resolveAssetUrl(id, assets)`, in `deck-context.ts` — checks for an already-absolute URL/root-
+relative path first (`/^(https?:\/\/|\/)/`), falls back to the real `assets[id].src` table lookup
+otherwise — and pointed both existing resolvers at it instead of each re-implementing the same
+one-line lookup (which were already, in effect, two independent copies of the same logic, a smaller
+instance of the "two inline copies" drift risk this whole backlog keeps naming). `tls-m-image/
+layout.ts` itself is untouched: it still just calls `ctx.resolveAsset?.(props.src)` and stays
+asset-scheme-agnostic, exactly as its own file doc already promised — the "id or URL" decision
+lives entirely in the host-level resolver, matching the architecturally-intended split
+(`CreateLayoutContextOptions.resolveAsset`'s own doc: *"asset lookup is the host's business"*).
+
+**Verification:** `colorful-slide-8.png` re-screenshotted and opened: both images render real
+photo pixels (a crane/barge scene, a second image below it) — no dashed frame, no "Random colorful
+image" placeholder text. `tls-m-image.spec.ts` (unmodified) and `deck-context.spec.ts`
+(unmodified) both pass — 31 tests. `ComponentUtil`'s 3 spec suites (19 tests) pass, confirming the
+live-editor path is unaffected. `collision.spec.ts` 21/21, `overlap-audit` exit 0 (0/0 overlaps,
+`totalOverflow` unchanged at 10 — this item never touched geometry). Full suite: 172/172 suites,
+2544 pass / 77 todo / 0 fail. Production `tsc` = 0.
+
+**What was NOT built:** No change to `document.assets` population itself (still empty for these
+deck fixtures — the URL-passthrough path is what actually resolves them; a real asset-upload flow
+that populates `document.assets` for `tls.m.image` remains future work, unnamed by this item).
 
 **Scope cuts:** None.

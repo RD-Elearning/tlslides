@@ -3,6 +3,7 @@ import { useTldrawApp } from './useTldrawApp'
 import { useBlockRegistry } from './useBlockRegistry'
 import { resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
+import { resolveAssetUrl } from '~blocks/deck-context'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
@@ -94,7 +95,10 @@ export function useBlockLayoutContext(
         depth,
         style,
         // R8 — the live editor resolves media asset ids through the document's asset table.
-        resolveAsset: (id: string) => assets?.[id]?.src,
+        // G8.2: shares `resolveAssetUrl` with `deckLayoutContext` (DeckViewer's own context
+        // builder) so the "asset id or already-absolute URL" resolution can't drift between the
+        // editor and the read-only viewer (BACKLOG-visual-fix-2.md §8.2).
+        resolveAsset: (id: string) => resolveAssetUrl(id, assets),
         // Container blocks resolve `props.children` through the registry.
         registry: blockRegistry,
       }),

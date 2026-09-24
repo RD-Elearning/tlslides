@@ -16,7 +16,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now`, `Math.random`.
  */
 
-import type { TDDocument, SlideBackground } from '~types'
+import type { TDAssets, TDDocument, SlideBackground } from '~types'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { resolveTokens, surfaceFromBackground } from './tokens'
@@ -25,6 +25,24 @@ import { BLOCK_PROP_KEY } from './shape-bridge'
 import type { BlockStyleSpec, Box, LayoutContext, Size } from './types'
 import type { BlockRegistry } from './registry'
 import type { ComponentShape } from '~types'
+
+/** An already-absolute URL or root-relative path — used as-is, never looked up. */
+const ABSOLUTE_URL_RE = /^(https?:\/\/|\/)/
+
+/**
+ * Resolve a media block's `src` prop (`tls.m.image`, and any future asset-bearing block) to a
+ * renderable URL. `tls-m-image/schema.ts`'s own doc comment already promises `src` may hold
+ * *either* a real asset id (looked up in the document's own `TDAssets` table, the pre-existing
+ * tldraw image/video upload mechanism) *or* an already-absolute URL, used as-is. This is the one
+ * place that promise is kept, so the two meanings can't drift apart across the editor and the
+ * read-only viewer (G8.2, BACKLOG-visual-fix-2.md §8.2 — the design fork was real; this is
+ * Option B, with the "or URL" half of the schema's own contract implemented here rather than
+ * inside the block, which stays asset-scheme-agnostic as its file doc already promises).
+ */
+export function resolveAssetUrl(id: string, assets: TDAssets | undefined): string | undefined {
+  if (ABSOLUTE_URL_RE.test(id)) return id
+  return assets?.[id]?.src
+}
 
 /**
  * Build a `LayoutContext` from a document and a block's box.
@@ -81,8 +99,9 @@ export function deckLayoutContext(
     theme,
     // R8 — resolve an asset id to its renderable URL from the document's own asset table,
     // so `tls.m.image` (and any future media block) renders the real image rather than the
-    // dashed fallback frame.
-    resolveAsset: (id: string) => doc.assets?.[id]?.src,
+    // dashed fallback frame. G8.2: also accepts an already-absolute URL, per the schema's own
+    // documented "asset id or URL" contract — see `resolveAssetUrl` above.
+    resolveAsset: (id: string) => resolveAssetUrl(id, doc.assets),
     // Container blocks (card/section/overlay/…) resolve their `props.children` through this.
     registry: opts.registry,
   })
