@@ -68,7 +68,7 @@ be 0.
 | B2 | ✅ done | 0c2484a8 | 2026-09-24 | 0 | container specs + catalog-conformance + safe-area + section + validate-deck-spec | 174 suites, 2594 passed | capability-digest budget raised 56k→57k for 8 children slots |
 | B3 | ✅ done | 7f6c5c7d | 2026-09-24 | 0 | layoutBlock + withBox + 6 call sites + layout-block.spec.ts | 175 suites, 2604 passed | layoutChild reads spec.style; cache key includes style hash
 | B4 | ✅ done | fa670b69 | 2026-09-24 | 0 | toggles + isShown + conformance gate + 5 block retrofits | 175 suites, 2765 passed | big-stat animate already null-guarded
-| B5 | ✅ done | (pending commit) | 2026-09-24 | 0 | define-composite + stat-card + catalog-conformance + demo integration | 177 suites, 2752 passed pre-fix; full suite runs again on this commit | demo slide + docs added; 3 real tsc bugs found in review (B2 missing `id`, B3 wrong `$block` path + `align:'end'` no-op, B5 registration variance) and fixed — see per-task ledgers |
+| B5 | ✅ done | 41bd90e8 | 2026-09-24 | 0 | define-composite + stat-card + catalog-conformance + demo integration | 177 suites, 2753 passed | demo slide + docs added; 3 real tsc bugs found in review (B2 missing `id`, B3 wrong `$block` path + `align:'end'` no-op, B5 registration variance) and fixed — see per-task ledgers |
 | B6 | ⬜ | — | — | — | — | — | |
 | B7 | ⬜ | — | — | — | — | — | |
 
