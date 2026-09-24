@@ -317,6 +317,16 @@ export function createLayoutContext(
       const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
       return { k: 'group' as const, box, children: [childNode] }
     },
+    // G8.5: bound the same way `layoutChild` above is — `registry` stays a closure variable,
+    // never a raw field a block can read off `ctx` (matches this file's own `layoutChild`
+    // pattern and 04-block-anatomy.md's documented `LayoutContext` shape, neither of which
+    // exposes the registry directly). Fixes a real, previously-undiagnosed bug: `tls-l-row`/
+    // `tls-l-stack`/`tls-l-grid`'s `sizing: 'content'` mode read `(ctx as any).registry`, a
+    // field `LayoutContext` never had — `content` mode fell back to `equal` unconditionally for
+    // every deck ever compiled, not only when a text block's intrinsic size happened to be a
+    // no-op (BACKLOG-visual-fix-2.md §8.5 — found while testing that item's own fix, when a new
+    // `tls.t.body.intrinsicSize` export changed nothing because this call was never reached).
+    measureIntrinsicSize: (spec: BlockSpec): Size => measureIntrinsicSize(spec, ctx, registry),
     asset: assetFn,
     resolveAsset: resolveAssetFn,
     icon: iconFn,

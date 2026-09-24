@@ -7,7 +7,7 @@
 
 import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
-import { layout } from './layout'
+import { layout, intrinsicSize } from './layout'
 import { motion } from './motion'
 
 export const tlsTBody: BlockDefinition = {
@@ -34,5 +34,6 @@ export const tlsTBody: BlockDefinition = {
   defaults,
   size: { preferred: [800, 200], min: [200, 40] },
   layout: layout as BlockDefinition['layout'],
+  intrinsicSize: intrinsicSize as BlockDefinition['intrinsicSize'],
   motion,
 }

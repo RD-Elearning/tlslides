@@ -9,8 +9,6 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { StackProps } from './schema'
-import { measureIntrinsicSize } from '../../../layout/layout-child'
-import type { BlockRegistry } from '../../../registry'
 
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -25,9 +23,6 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   // Calculate available height after gaps
   const totalGap = n > 1 ? gap * (n - 1) : 0
   const availableHeight = Math.max(0, H - totalGap)
-
-  // Get registry for intrinsic size measurement (if available via context)
-  const registry = (ctx as unknown as { registry?: BlockRegistry }).registry
 
   // Calculate distributed sizes for each child based on sizing mode
   const sizes: { height: number; y: number }[] = []
@@ -44,10 +39,10 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   } else {
     // Content-based distribution: measure intrinsic heights
     const intrinsicSizes: { height: number }[] = []
-    
-    if (registry && n > 0) {
+
+    if (ctx.measureIntrinsicSize && n > 0) {
       for (const child of children) {
-        const intrinsic = measureIntrinsicSize(child, ctx, registry)
+        const intrinsic = ctx.measureIntrinsicSize(child)
         intrinsicSizes.push({ height: Math.max(intrinsic.height, 50) }) // minimum 50px
       }
     }

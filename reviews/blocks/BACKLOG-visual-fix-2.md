@@ -589,6 +589,7 @@ one) — it must read 0 on every row.
 | G8.3 | ✅ | `dad5a3fa` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | fixed all 24 named eslint errors: 6 `require()`→`import` in catalog-conformance.spec.ts, 3 stale/dead `react-hooks/exhaustive-deps` disable comments deleted (plugin never registered in `.eslintrc`, so the rule can never fire — provably dead), 3 empty-function bodies given real no-op comments, 1 extra semicolon removed, 13 `no-loss-of-precision` errors on captured fixture data wrapped in a scoped disable/enable block with a reason instead of edited |
 | G8.4 | ✅ | `533d5038` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | removed the `Math.min(x, inner.height)` height clamp from all 4 named files (12 sites); fixed a resulting regression in `tls-c-steps/layout.ts` (not one of the 4 — a downstream consumer whose own step-height budgeting relied on the clamp; disclosed in §9); sl_01 overlap-audit overflow 96px→9px |
 | G8.2 | ✅ | `428cf510` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | found `resolveAsset` was already wired in 2 real places (not unwired, as first diagnosed); the actual gap was neither implementing the schema's own "asset id or URL" promise; added shared `resolveAssetUrl` helper, wired into both; `colorful-slide-8.png` now shows real image pixels |
+| G8.5 | ✅ | `TBD` | 2026-09-24 | 0 | 173 suites, 2546 pass / 77 todo / 0 fail | 0 | found a deeper, previously-undiagnosed bug: `ctx.registry` was never a real `LayoutContext` field, so row/stack/grid's `content` mode never even reached `measureIntrinsicSize` — added a proper `ctx.measureIntrinsicSize()` bound method (mirrors `layoutChild`'s own pattern) and rewired all 3 containers to it; gave `tls.t.body` a real `intrinsicSize` (unwrapped width for row weighting, wrapped-at-box-width height for stack weighting); `container-flex.js` now shows a real visual difference between `equal` and `content` rows |
 
 *eslint error count: the 24 errors are pre-existing, in files this pass never touched (`catalog-conformance.spec.ts` require-style, stale `react-hooks/exhaustive-deps` disable-comments in `InlineEditor.tsx`/`PresentationRuntime.tsx` referencing a rule not registered in `.eslintrc`, `old-doc-2.ts` numeric-literal precision, `templates.spec.ts` semicolon, `renderSvgToPng.spec.ts` empty function). The ledger's "20" baseline was carried forward unverified since G0; 24 is the honest, currently-measured number. Not a regression from this pass — none of the flagged lines are in a file this pass edited.
 
@@ -1284,7 +1285,7 @@ traced through, and the fix is simpler than the code's own comment expected.
 - [x] Full suite green, production `tsc` = 0. 172/172 suites, 2544 pass / 77 todo / 0 fail (after
       the `tls-c-steps` fix below — 2 tests failed transiently mid-item, both fixed, not left red).
 
-### 8.5 `tls.l.row` `sizing: 'content'` is a no-op · M · MEDIUM risk (shared measurement function)
+### 8.5 `tls.l.row` `sizing: 'content'` is a no-op ✅ · M · MEDIUM risk (shared measurement function)
 
 Root cause already isolated in G5's `container-flex.js` note: `measureIntrinsicSize`'s fallback
 probe (`layout-child.ts:403`) uses `probeBox: Size = { width: ctx.box.width, height:
@@ -1310,15 +1311,23 @@ block's `intrinsicSize` return value will also affect anything else that ever ca
 assuming this is row-only.
 
 **Done when:**
-- [ ] `container-flex.js` re-run: the `'content'` row visibly differs from the `'equal'` row (the
+- [x] `container-flex.js` re-run: the `'content'` row visibly differs from the `'equal'` row (the
       short label's column is now narrow, the paragraph's column wide) — screenshot opened,
-      described.
-- [ ] A new unit test in `tls-l-row.spec.ts` (or a new `tls-l-row-content-sizing.spec.ts`) asserts
+      described. `equal` row: both children roughly half-width, the paragraph wraps to 3 lines.
+      `content` row: "Short" gets a narrow column (narrow enough that it itself wraps to 2 lines —
+      see §9 for why that's the existing proportional-scale algorithm working as designed, not a
+      new defect), the paragraph gets nearly the full row width and wraps to only ~2 lines.
+      Visibly, unmistakably different from the `equal` row now.
+- [x] A new unit test in `tls-l-row.spec.ts` (or a new `tls-l-row-content-sizing.spec.ts`) asserts
       the two children get measurably different widths in `'content'` mode with a short-vs-long
-      pair, so this doesn't silently regress again.
-- [ ] All pre-existing `'child positioning'`/`'equal'`-mode tests still pass **unmodified** (§1.5's
-      rule: weakening or deleting one of them fails the phase).
-- [ ] Full suite green, production `tsc` = 0.
+      pair, so this doesn't silently regress again. **`tls-l-row-content-sizing.spec.ts`** created:
+      asserts the long child's width `>` 3× the short child's, and (separately) that `'equal'`
+      mode still splits 50/50 — both pass.
+- [x] All pre-existing `'child positioning'`/`'equal'`-mode tests still pass **unmodified**: 41
+      tests across `tls-l-row.spec.ts`, `tls-l-stack.spec.ts`, `tls-l-grid.spec.ts`, `tls-t-body.
+      spec.ts` — all pass, none edited.
+- [x] Full suite green, production `tsc` = 0. 173 suites (+1, the new spec file), 2546 pass (+2)
+      / 77 todo / 0 fail.
 
 ### 8.6 `tls.l.row` per-child sizing (`fill`/`auto`/weight) · L · new feature, not a bug
 
@@ -1573,3 +1582,87 @@ deck fixtures — the URL-passthrough path is what actually resolves them; a rea
 that populates `document.assets` for `tls.m.image` remains future work, unnamed by this item).
 
 **Scope cuts:** None.
+
+### G8.5 notes
+
+**A deeper, previously-undiagnosed bug found while implementing the item's own prescribed fix:**
+the item's plan — "give `tls.t.body` a real `intrinsicSize` export... `measureIntrinsicSize`
+already prefers `def.intrinsicSize`... this needs no change to the shared function itself" — was
+tried exactly as written first. It compiled, all existing tests passed, and the new regression
+test (below) still failed: the two children came out exactly equal-width. Traced empirically (a
+throwaway debug spec dumping `Object.keys(ctx)` from a real `createLayoutContext(...)` call, not
+guessed): `LayoutContext` **has no `registry` field** — `tls-l-row`/`tls-l-stack`/`tls-l-grid`'s
+`content`-mode code all read `(ctx as unknown as { registry?: BlockRegistry }).registry`, a cast
+onto a field that was never actually there. `registry` is a `CreateLayoutContextOptions` input,
+consumed only inside `layoutChild`'s own closure — it was never propagated onto the `ctx` object
+those three containers receive. So `if (registry && n > 0)` was **always false**, and `content`
+mode fell back to `equal` unconditionally, for every deck ever compiled — not intermittently, and
+not specifically because of the probe-width issue G5's `container-flex.js` note named as the root
+cause. That earlier diagnosis (plausible-sounding, but not verified against the actual code path)
+turns out to have been incomplete, in the same spirit as §8.0's correction of the "root-cause-A"
+misdiagnosis — caught here the same way, by actually running the mechanism rather than re-trusting
+an earlier written conclusion.
+
+**What was built, beyond the item's original plan, to make the prescribed fix actually reachable:**
+- `LayoutContext` (`types.ts`) gained a new optional bound method,
+  `measureIntrinsicSize?(spec: BlockSpec): Size` — deliberately a *method*, not a raw `registry`
+  field, matching `layoutChild`'s own existing pattern and 04-block-anatomy.md's documented
+  `LayoutContext` shape (neither exposes the registry object itself to a block; a block only ever
+  gets to *do things with* the registry through a bound context method). Implemented in
+  `createLayoutContext` (`layout-child.ts`) as a one-line closure calling the existing standalone
+  `measureIntrinsicSize(spec, ctx, registry)` — no logic duplicated, no change to that function's
+  own body.
+- `tls-l-row`, `tls-l-stack`, `tls-l-grid` (`layout.ts` in each) all rewired from the broken
+  `(ctx as unknown as {...}).registry` cast + a direct call to the standalone
+  `measureIntrinsicSize` import, to `ctx.measureIntrinsicSize?.(child)`. Removed the now-dead
+  `BlockRegistry` type import and the standalone `measureIntrinsicSize` import from all three
+  (kept `distributeSpace`'s import in `tls-l-row` unchanged — still dead code, still G8.6/R13's
+  concern, not touched here).
+- `tls.t.body` (`library/text/tls-t-body/layout.ts` + `index.ts`) gained a real `intrinsicSize`
+  export, per the item's original ask — but computing **two different numbers from one pass**
+  rather than a single shared value, after checking (per the item's own "verify every current call
+  site" instruction) that `tls-l-stack`'s `content` mode reads `.height`, not `.width`: `width` is
+  measured **unwrapped** (`ctx.measureText` with no `maxWidth` — never breaks a line) for
+  `tls.l.row`'s column-weighting use; `height` is measured **at the container's given box width**
+  for `tls.l.stack`'s row-weighting use. A single unwrapped-single-line value for both would have
+  under-reported a paragraph's true wrapped height and silently changed `tls.l.stack`'s `content`
+  mode — a regression in a mode this item wasn't asked to touch, avoided by not assuming the two
+  containers want the same shape of number.
+
+**Verification:** `container-flex.js` re-run against the real harness (`window.tlapp`,
+`/edit/deck-demo-q3`, real `tls.l.row`/`tls.t.body` block ids) — exit 0, no console errors,
+screenshot opened. The `equal` row: both children ~half-width, the paragraph wraps to 3 lines. The
+`content` row: the short label's column visibly shrinks (narrow enough that "Short" itself now
+wraps to 2 lines — see the disclosed nuance below), the paragraph's column visibly grows to near
+the full row width and wraps to only ~2 lines. Unmistakably different from the `equal` row, unlike
+before this item where the two rows were visually identical.
+
+**Disclosed, not a defect:** the short label wrapping onto 2 lines in the `content` row is the
+*existing* proportional-scale algorithm (`scale = contextWidth / totalIntrinsic`, unchanged by
+this item) doing exactly what it's written to do — the fully-unwrapped paragraph's intrinsic
+width is enormous relative to a 5-character label, so the label's *proportional share* of the row
+ends up narrower than its own one-line width, and it wraps. A "never let a child's column go below
+its own one-line width" refinement would need per-child minimums beyond a flat 50-unit floor —
+that's the per-child `fill`/`auto`/weight sizing work already named and deferred to R13 (G8.6,
+below), not a regression this item introduced.
+
+**Verification, tests:** new `tls-l-row-content-sizing.spec.ts` (2 tests): the long child's width
+is asserted `> 3×` the short child's in `content` mode (passes only after the real fix — failed
+with the registry bug present, confirming the test actually exercises the bug); `equal` mode still
+splits 50/50 (regression guard against the fix touching the untouched path). All pre-existing
+`tls-l-row.spec.ts`/`tls-l-stack.spec.ts`/`tls-l-grid.spec.ts`/`tls-t-body.spec.ts` tests pass
+**unmodified** (41 tests). `collision.spec.ts` 21/21, `overlap-audit` exit 0 (0/0 overlaps,
+`totalOverflow` unchanged at 10). `deck-demo`/`colorful-blocks-demo` scenarios both exit 0
+(neither deck currently uses `sizing: 'content'`, so no visual change expected or seen there).
+Full suite: 173 suites (+1), 2546 pass (+2) / 77 todo / 0 fail. Production `tsc` = 0. (Total `tsc`
+incl. spec files reads 303, up from the 298 last recorded — verified via `git stash` that this
+drift is **not** from this item: the count was already 303 with every G8.5 change reverted,
+i.e. it happened somewhere between G8.2 and here and was never re-measured in between; a
+pre-existing, disclosed-here, not-this-item's-doing drift, not a new regression.)
+
+**What was NOT built:** Per-child `fill`/`auto`/weight sizing (`tls.l.row`'s `RowProps`) — still
+deferred to R13, unchanged. `distributeSpace` — still dead code, still G8.6's question to answer,
+not touched here.
+
+**Scope cuts:** None beyond the pre-existing R13 deferral, restated for clarity, not newly cut
+here.

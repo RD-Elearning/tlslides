@@ -13,7 +13,7 @@
  * unconditionally safe to remove (BACKLOG-visual-fix-2.md §8.4).
  */
 
-import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
+import type { LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import type { BodyProps } from './schema'
 
 /**
@@ -110,4 +110,31 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
   // Multi-column: measure each column and take the max height.
   const maxColHeight = children.reduce((max, child) => Math.max(max, child.box.height), 0)
   return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: maxColHeight }, part: 'root', children }
+}
+
+/**
+ * G8.5: intrinsic size for `content`-mode flex distribution (`tls.l.row`/`tls.l.stack`/
+ * `tls.l.grid`). Before this existed, `measureIntrinsicSize`'s fallback probe measured this
+ * block at the *container's own given width* (`ctx.box.width`, the same width as every sibling),
+ * so a short label and a long paragraph both reported back that same width as their own
+ * "intrinsic" size — `content` mode degenerated into the same 50/50 split as `equal` mode
+ * (BACKLOG-visual-fix-2.md §8.5, root-caused in G5's `container-flex.js` note).
+ *
+ * Two different numbers for two different callers, both derived from one measurement pass:
+ * - `width`: the *unwrapped* natural width (`ctx.measureText` with no `maxWidth` never breaks a
+ *   line — see `measure.ts`'s "No maxWidth: each logical line is one visual line"). This is what
+ *   `tls.l.row`'s `content` mode uses to weight relative column widths — a five-word label is
+ *   genuinely narrower than a five-sentence paragraph, and now reports so.
+ * - `height`: measured *at the container's given width* (`ctx.box.width`, the same box this
+ *   function receives) — the height this text would actually take if given the full row/stack/
+ *   grid width to wrap into. This is what `tls.l.stack`'s `content` mode uses to weight relative
+ *   row heights; using the unwrapped single-line height there instead would under-report a
+ *   paragraph that wraps to several lines, regressing a mode this change didn't set out to touch.
+ */
+export function intrinsicSize(props: BodyProps, ctx: LayoutContext): Size {
+  const style = ctx.resolveText('body' as TypeToken)
+  const text = props.text
+  const unwrapped = ctx.measureText(text, style)
+  const wrapped = ctx.measureText(text, style, ctx.box.width)
+  return { width: unwrapped.width, height: wrapped.height }
 }

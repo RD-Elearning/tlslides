@@ -9,8 +9,7 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RowProps } from './schema'
-import { distributeSpace, measureIntrinsicSize } from '../../../layout/layout-child'
-import type { BlockRegistry } from '../../../registry'
+import { distributeSpace } from '../../../layout/layout-child'
 
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -26,12 +25,9 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const totalGap = n > 1 ? gap * (n - 1) : 0
   const availableWidth = Math.max(0, W - totalGap)
 
-  // Get registry for intrinsic size measurement (if available via context)
-  const registry = (ctx as unknown as { registry?: BlockRegistry }).registry
-
   // Calculate distributed sizes for each child based on sizing mode
   const sizes: { width: number; x: number }[] = []
-  
+
   if (sizingMode === 'equal' || n === 0) {
     // Equal distribution
     const childWidth = n > 0 ? availableWidth / n : 0
@@ -45,10 +41,10 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
     // Content-based distribution: measure intrinsic widths
     const contextWidth = availableWidth
     const intrinsicSizes: { width: number }[] = []
-    
-    if (registry && n > 0) {
+
+    if (ctx.measureIntrinsicSize && n > 0) {
       for (const child of children) {
-        const intrinsic = measureIntrinsicSize(child, ctx, registry)
+        const intrinsic = ctx.measureIntrinsicSize(child)
         intrinsicSizes.push({ width: Math.max(intrinsic.width, 50) }) // minimum 50px
       }
     }

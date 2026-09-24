@@ -555,6 +555,14 @@ export interface LayoutContext {
   measureText(text: string | RichText, style: ResolvedTextStyle, maxWidth?: number): TextMetrics
   /** Lay a child block out inside `box`, returning its node. Containers only. */
   layoutChild(spec: BlockSpec, box: Box): LayoutNode
+  /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
+   *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
+   *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
+   *  way `layoutChild` is (registry access stays internal to the context, never a raw field a
+   *  block can introspect); implemented by `createLayoutContext` in terms of the standalone
+   *  `measureIntrinsicSize` in `layout/layout-child.ts`. Optional so a hand-built `LayoutContext`
+   *  in a test doesn't have to implement it. */
+  measureIntrinsicSize?(spec: BlockSpec): Size
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided

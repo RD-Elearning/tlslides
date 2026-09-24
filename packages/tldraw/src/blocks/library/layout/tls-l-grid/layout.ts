@@ -10,8 +10,6 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { GridProps } from './schema'
-import type { BlockRegistry } from '../../../registry'
-import { measureIntrinsicSize } from '../../../layout/layout-child'
 
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
@@ -24,9 +22,6 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const W = ctx.box.width
   const H = ctx.box.height
 
-  // Get registry for intrinsic size measurement
-  const registry = (ctx as unknown as { registry?: BlockRegistry }).registry
-
   // Calculate available space after gaps
   const totalColGap = cols > 1 ? gap * (cols - 1) : 0
   const totalRowGap = rows > 1 ? gap * (rows - 1) : 0
@@ -35,9 +30,10 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
 
   // Measure intrinsic sizes for content-based distribution
   let intrinsicSizes: { width: number; height: number }[] | undefined
-  if (sizingMode === 'content' && registry && children.length > 0) {
+  if (sizingMode === 'content' && ctx.measureIntrinsicSize && children.length > 0) {
+    const measure = ctx.measureIntrinsicSize
     intrinsicSizes = children.slice(0, cols * rows).map((child) => {
-      return measureIntrinsicSize(child, ctx, registry)
+      return measure(child)
     })
   }
 
