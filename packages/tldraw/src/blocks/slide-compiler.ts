@@ -29,6 +29,7 @@ import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
+import { layoutBlock } from './layout/layout-child'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -149,7 +150,23 @@ export function compileSlide(
         const def = registry.get(block.type)
         if (!def) return -1
         try {
-          const node = def.layout(block.props as Record<string, unknown>, measureCtx)
+          // B3-H1: if the block has instance style overrides (padding/align), build a
+          // per-block ctx so layoutBlock can apply them. Otherwise keep the shared ctx.
+          const blockStyle = block.props.$block?.style
+          const usePerBlock =
+            blockStyle !== undefined &&
+            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
+          const ctx = usePerBlock
+            ? createLayoutContext({
+                box: { width: regionBox.width, height: regionBox.height },
+                tokens,
+                surface: MINIMAL_SURFACE,
+                registry,
+                intrinsicSizeCache,
+                style: blockStyle,
+              })
+            : measureCtx
+          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
           return node.box.height
         } catch {
           return -1
@@ -265,12 +282,24 @@ export function compileSlide(
           return -1
         }
         try {
-          const node = def.layout(block.props as Record<string, unknown>, measureCtx)
-          // Read the root node's box.height — every text block already measures;
-          // containers report their preferred height.
+          // B3-H1: per-block ctx when instance style overrides are present.
+          const blockStyle = block.props.$block?.style
+          const usePerBlock =
+            blockStyle !== undefined &&
+            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
+          const ctx = usePerBlock
+            ? createLayoutContext({
+                box: { width: regionBox.width, height: regionBox.height },
+                tokens,
+                surface: MINIMAL_SURFACE,
+                registry,
+                intrinsicSizeCache,
+                style: blockStyle,
+              })
+            : measureCtx
+          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
           return node.box.height
         } catch {
-          // Block layout threw: fallback to equal split.
           return -1
         }
       })

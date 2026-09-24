@@ -15,6 +15,7 @@ import { styled } from '@stitches/react'
 import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
 import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { getAtPath, setAtPath } from '~blocks/prop-path'
+import { layoutBlock } from '~blocks/layout/layout-child'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 import { InlineEditor } from '~components/InlineEditor'
@@ -156,7 +157,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             props
           : props
         blockNode = renderNodeToDom(
-          blockDef.layout(layoutProps as Record<string, unknown>, layoutCtx),
+          layoutBlock(blockDef, layoutProps as Record<string, unknown>, layoutCtx),
         )
       }
 

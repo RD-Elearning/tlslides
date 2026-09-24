@@ -563,6 +563,12 @@ export interface LayoutContext {
    *  `measureIntrinsicSize` in `layout/layout-child.ts`. Optional so a hand-built `LayoutContext`
    *  in a test doesn't have to implement it. */
   measureIntrinsicSize?(spec: BlockSpec): Size
+  /** H6: create a child context with a different box, preserving all providers/style/surface.
+   *  Used by `layoutBlock` to inset a block's own padding without breaking closure-bound
+   *  methods (`measureIntrinsicSize`, `layoutChild` resample their parent fill against the
+   *  original `options.box` — a spread copy would leak the outer box into them). Optional so
+   *  hand-built test contexts don't have to implement it. */
+  withBox?(size: Size): LayoutContext
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided

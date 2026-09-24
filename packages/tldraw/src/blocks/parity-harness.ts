@@ -39,6 +39,7 @@ import type {
 } from './types'
 import { renderNodeToSvg } from './render-svg'
 import { createLayoutContext } from './layout'
+import { layoutBlock } from './layout/layout-child'
 import { resolveTokens } from './tokens'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -397,7 +398,7 @@ export async function assertParity(
     tokens: TEST_TOKENS,
     surface: TEST_SURFACE,
   })
-  const node = definition.layout(props, ctx)
+  const node = layoutBlock(definition, props, ctx)
 
   // 2. Build DOM HTML directly from LayoutNode (bypasses React)
   const domHtml = nodeToDomHtml(node, box)

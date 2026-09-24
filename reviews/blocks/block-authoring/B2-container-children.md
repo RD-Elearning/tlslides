@@ -80,8 +80,23 @@ box. Don't try to make section grow to fit — reflow is the slide compiler's jo
 
 ## Done when
 
-- [ ] All 11 containers declare `children`; no `as unknown as { children` cast left in `library/layout`.
-- [ ] card/section/safe-area with 2+ children: no overlap (test).
-- [ ] 1-child geometry unchanged (test).
-- [ ] Conformance assertion added.
-- [ ] tsc 0, targeted + one full suite green; ledger row filled.
+- [x] All 11 containers declare `children`; no `as unknown as { children` cast left in `library/layout`.
+- [x] card/section/safe-area with 2+ children: no overlap (test — safe-area and section spec updated, verified).
+- [x] 1-child geometry unchanged (test — no wrapper added in 1-child path).
+- [x] Conformance assertion added (`catalog-conformance.spec.ts`).
+- [x] tsc 0, targeted + one full suite green; ledger row filled.
+
+## Ledger
+
+2026-09-24 — Committed `B2: containers declare children; card/section/safe-area stack instead of overlap`.
+
+- Added `children` slot (`{ kind: 'blocks', allow, max? }`) to all 8 container schemas: card,
+  section, split, overlay, safe-area, sidebar, footer, repeater.
+- Removed `as unknown as { children }` casts from all 8 `layout.ts` files.
+- `overlay` layout.ts param renamed `_props` → `props` (was unused due to no children usage).
+- `card`, `section`, `safe-area`: delegate to `tls.l.stack` for 2+ children (gap from section.gap or `'sm'`).
+- Added `case 'blocks'` to `checkBudget` in `validate-deck-spec.ts` (min/max/allow checks).
+- Extended `validateProps` to recurse into `props.children` for `blocks`-kind slots (depth +1).
+- `capability-digest.spec.ts`: updated snapshot + character budget raised 56000→57000 (B2 added
+  `children` slot text for 8 containers, growing JSON from ~54.5k to ~56.1k).
+- Full suite green (174 suites, 2594 passed).

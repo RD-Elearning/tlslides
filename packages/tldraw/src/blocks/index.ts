@@ -30,6 +30,7 @@ export {
   createMetricsProvider,
   isCJK,
   createLayoutContext,
+  layoutBlock,
   autofitText,
   renderList,
   alignVertically,

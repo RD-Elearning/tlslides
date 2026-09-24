@@ -8,6 +8,7 @@
  */
 
 import type {
+  BlockDefinition,
   BlockSpec,
   BlockStyleSpec,
   Box,
@@ -24,6 +25,7 @@ import type {
   SurfaceContext,
   TextStyleSpec,
   TypeToken,
+  SpaceToken,
 } from '../types'
 import type { DeckTheme } from '~types'
 import type { BlockRegistry } from '../registry'
@@ -314,7 +316,7 @@ export function createLayoutContext(
         intrinsicSizeCache: options.intrinsicSizeCache, // F3.1: propagate memo cache
       })
 
-      const childNode = def.layout(spec.props as Record<string, unknown>, childCtx)
+      const childNode = layoutBlock(def, spec.props as Record<string, unknown>, childCtx)
       return { k: 'group' as const, box, children: [childNode] }
     },
     // G8.5: bound the same way `layoutChild` above is — `registry` stays a closure variable,
@@ -327,6 +329,17 @@ export function createLayoutContext(
     // no-op (BACKLOG-visual-fix-2.md §8.5 — found while testing that item's own fix, when a new
     // `tls.t.body.intrinsicSize` export changed nothing because this call was never reached).
     measureIntrinsicSize: (spec: BlockSpec): Size => measureIntrinsicSize(spec, ctx, registry),
+    /**
+     * H6: build a child context with a different box. All providers, the style overrides and the
+     * effective surface are preserved verbatim — only `box` changes. Implemented as a fresh
+     * `createLayoutContext` call (not a spread) so closure-bound methods resample against the
+     * new box, fixing the padding-too-wide trap recorded in B3-H6.
+     */
+    withBox: (size: Size): LayoutContext =>
+      createLayoutContext({
+        ...options,
+        box: size,
+      }),
     asset: assetFn,
     resolveAsset: resolveAssetFn,
     icon: iconFn,
@@ -388,10 +401,11 @@ export function measureIntrinsicSize(
     return { width: 100, height: 100 }
   }
 
-  // F3.1: Memo — key by (type, props-hash, box). Scoped to one compile pass
-  // via the cache carried on LayoutContext.
+  // F3.1: Memo — key by (type, props-hash, style-hash, box). Scoped to one compile pass
+  // via the cache carried on LayoutContext. Style must be in the key because two children with
+  // the same props but different padding share a cache slot otherwise (B3-H2).
   const boxKey = `${ctx.box.width}:${ctx.box.height}`
-  const cacheKey = `${spec.type}:${hashValue(spec.props)}:${boxKey}`
+  const cacheKey = `${spec.type}:${hashValue(spec.props)}:${hashValue(ctx.style ?? null)}:${boxKey}`
 
   if (ctx.intrinsicSizeCache) {
     const cached = ctx.intrinsicSizeCache.get(cacheKey)
@@ -400,30 +414,33 @@ export function measureIntrinsicSize(
     }
   }
 
-  // First, check if the block definition has an intrinsicSize function
-  if (registry) {
-    const def = registry.get(spec.type)
-    if (def?.intrinsicSize) {
-      return def.intrinsicSize(spec.props, ctx)
+  const def = registry?.get(spec.type)
+
+  // First, check if the block definition has an intrinsicSize function.
+  if (def?.intrinsicSize) {
+    let result = def.intrinsicSize(spec.props, ctx)
+    // B3-H2: add padding to the intrinsic size so containers distribute space correctly.
+    if (ctx.style?.padding !== undefined) {
+      const [padV, padH] = resolvePadding(ctx.style.padding, ctx.tokens.space)
+      result = { width: result.width + padH * 2, height: result.height + padV * 2 }
     }
+    if (ctx.intrinsicSizeCache) {
+      ctx.intrinsicSizeCache.set(cacheKey, { ...result })
+    }
+    return result
   }
 
-  // Fallback: derive from layout() with a minimal probe box
-  // Text blocks will measure their content; layout blocks will return their preferred size
+  // Fallback: derive from layoutBlock with a minimal probe box (B3: layoutBlock applies padding).
   const probeBox: Size = { width: ctx.box.width, height: ctx.box.height }
   const probeCtx = createLayoutContext({
     ...ctx,
     box: probeBox,
   })
 
-  // Create a minimal child context and call layout
-  const def = registry?.get(spec.type)
   if (def?.layout) {
-    // F3.1: try/catch around layout() — never crash the compiler for a bad block.
     try {
-      const node = def.layout(spec.props as Record<string, unknown>, probeCtx)
+      const node = layoutBlock(def, spec.props as Record<string, unknown>, probeCtx)
       const result = { width: node.box.width, height: node.box.height }
-      // F3.1: write to cache.
       if (ctx.intrinsicSizeCache) {
         ctx.intrinsicSizeCache.set(cacheKey, { ...result })
       }
@@ -550,4 +567,128 @@ export function distributeSpace(
   }
 
   return results
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* layoutBlock — lay out a placed block honouring instance padding + align          */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Resolve a `SpaceToken | number | [number, number]` padding value into a concrete
+ * `[block, inline]` tuple (vertical, horizontal) using the context's resolved space scale.
+ * - A space token is looked up in `ctx.tokens.space`.
+ * - A bare number is applied uniformly.
+ * - A `[block, inline]` tuple is returned as-is.
+ */
+function resolvePadding(
+  padding: SpaceToken | number | [number, number],
+  space: Record<SpaceToken, number>
+): [number, number] {
+  if (typeof padding === 'number') return [padding, padding]
+  if (Array.isArray(padding)) return [padding[0], padding[1]]
+  return [space[padding], space[padding]]
+}
+
+/**
+ * Lay out a placed block honouring its instance box style (`padding`, `align`).
+ *
+ * - **No padding and no align** → returns `def.layout(props, ctx)` unchanged. This is the
+ *   identity invariant: every existing slide's geometry is untouched when no style override
+ *   is set.
+ * - **Padding** → insets the box using `insetBox`, builds an inner ctx via `ctx.withBox`
+ *   (preserving providers/style/surface, only changing the box so closure methods resample
+ *   correctly), calls `def.layout`, and wraps the result in groups so the outer box reports
+ *   the true content height + vertical padding.
+ * - **Align** (`'center'` when content is shorter than the inner box) → offsets the inner
+ *   content group vertically within the padded area.
+ *
+ * For Tier B (host nodes) the same wrapper insets the box for both DOM and poster, keeping
+ * parity automatic — no CSS padding is added in templates.
+ *
+ * H3: the outer group carries the inner node's original `part` (so motion's `data-part="root"`
+ * still wraps the whole visible block), and the inner node's `part` is cleared.
+ */
+export function layoutBlock(
+  def: BlockDefinition,
+  props: Record<string, unknown>,
+  ctx: LayoutContext
+): LayoutNode {
+  const style = ctx.style
+  const hasPadding = style !== undefined && style.padding !== undefined
+  const hasAlign = style !== undefined && style.align !== undefined && style.align !== 'start'
+
+  // Identity invariant: no style override → call layout directly, zero geometry change.
+  if (!hasPadding && !hasAlign) {
+    return def.layout(props, ctx)
+  }
+
+  // Resolve padding into [vertical, horizontal].
+  const [padV, padH] = hasPadding
+    ? resolvePadding(style!.padding as SpaceToken | number | [number, number], ctx.tokens.space)
+    : [0, 0]
+
+  // Inset the box for the inner content (origin at 0,0 in the block's local space).
+  const innerSize: Size = {
+    width: Math.max(0, ctx.box.width - padH * 2),
+    height: Math.max(0, ctx.box.height - padV * 2),
+  }
+
+  // Build an inner context with only the box changed.
+  // H6: use ctx.withBox if available so closure-bound methods resample against the new box.
+  const innerCtx: LayoutContext = ctx.withBox
+    ? ctx.withBox({ width: innerSize.width, height: innerSize.height })
+    : (() => {
+        // Fallback for hand-built test contexts without withBox — rare but possible.
+        return createLayoutContext({
+          box: { width: innerSize.width, height: innerSize.height },
+          tokens: ctx.tokens,
+          surface: ctx.surface,
+          registry: (ctx as unknown as { _registry?: never })._registry,
+          measureText: ctx.measureText,
+          resolveColor: ctx.resolveColor,
+          resolveText: ctx.resolveText,
+          asset: ctx.asset,
+          resolveAsset: ctx.resolveAsset,
+          icon: ctx.icon,
+          depth: ctx.depth,
+          headless: ctx.headless,
+          style: ctx.style,
+          intrinsicSizeCache: ctx.intrinsicSizeCache,
+        })
+      })()
+
+  // Let the block lay out inside the inset box.
+  const innerNode = def.layout(props, innerCtx)
+
+  // Compute vertical alignment offset.
+  // Align only applies when content is shorter than the inner box (H4).
+  const reportedHeight = innerNode.box.height
+  const freeSpace = Math.max(0, innerSize.height - reportedHeight)
+  let alignOffsetY = 0
+  if (hasAlign && style!.align === 'center') {
+    alignOffsetY = freeSpace / 2
+  }
+
+  // H3: move the inner root's `part` to the outer group; clear it on the inner node.
+  const innerPart = innerNode.part
+  innerNode.part = undefined
+
+  // The inner node sits at (padH, padV + alignOffset) within the outer group.
+  // A group's children are positioned relative to the group's own origin (0,0),
+  // so the inner group's box origin is the padding offset, and the inner node
+  // stays at its own 0,0 within that.
+  const totalHeight = reportedHeight + padV * 2
+
+  return {
+    k: 'group',
+    box: { x: 0, y: 0, width: ctx.box.width, height: totalHeight },
+    part: innerPart,
+    children: [
+      {
+        k: 'group',
+        box: { x: padH, y: padV + alignOffsetY, width: innerSize.width, height: innerSize.height },
+        children: [innerNode],
+      },
+    ],
+  }
 }

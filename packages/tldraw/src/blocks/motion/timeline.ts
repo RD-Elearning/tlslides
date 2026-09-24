@@ -21,6 +21,7 @@ import { DURATION_TOKENS } from './tokens'
 import type { BlockSpec, BlockDefinition, LayoutNode, SlideSpec, ResolvedTokens, Size } from '../types'
 import type { BlockRegistry } from '../registry'
 import { createLayoutContext } from '../layout'
+import { layoutBlock } from '../layout/layout-child'
 import { resolveTokens } from '../tokens'
 import { compileSlide } from '../slide-compiler'
 import { shapeToBlock } from '../shape-bridge'
@@ -243,7 +244,7 @@ export function countLayoutParts(
   // Slow path: glob patterns → call layout to count actual instances.
   const ctx = getPartCountContext(registry)
   try {
-    const node = def.layout(spec.props as Record<string, unknown>, ctx)
+    const node = layoutBlock(def, spec.props as Record<string, unknown>, ctx)
     return countPartNodes(node)
   } catch {
     return parts.length

@@ -65,7 +65,7 @@ be 0.
 | Task | Status | Commit | Date | tsc | Targeted tests | Full suite | Notes |
 |---|---|---|---|---|---|---|---|
 | B1 | ✅ done | d7ccb69d5e1881af50f4ec90588564272960c522 | 2026-09-24 | 0 | render-dom-nested-host + 4 Tier B specs + host-registry + parity + collision + slide-compiler | 174 suites, 2554 passed | Screenshot pending · see TODO-screenshots.md |
-| B2 | ⬜ | — | — | — | — | — | |
+| B2 | ✅ done | 0c2484a8 | 2026-09-24 | 0 | container specs + catalog-conformance + safe-area + section + validate-deck-spec | 174 suites, 2594 passed | capability-digest budget raised 56k→57k for 8 children slots |
 | B3 | ⬜ | — | — | — | — | — | |
 | B4 | ⬜ | — | — | — | — | — | |
 | B5 | ⬜ | — | — | — | — | — | |

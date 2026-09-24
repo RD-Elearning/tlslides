@@ -19,6 +19,7 @@ import { shapeToBlock } from '~blocks/shape-bridge'
 import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
+import { layoutBlock } from '~blocks/layout/layout-child'
 import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
@@ -205,7 +206,7 @@ function BlockContent({
   props: Record<string, unknown>
   ctx: LayoutContext
 }) {
-  return <React.Fragment>{renderNodeToDom(blockDef.layout(props, ctx))}</React.Fragment>
+  return <React.Fragment>{renderNodeToDom(layoutBlock(blockDef, props, ctx))}</React.Fragment>
 }
 
 interface BlockBoundaryState {
