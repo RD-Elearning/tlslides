@@ -32,6 +32,7 @@ export {
   isCJK,
   createLayoutContext,
   layoutBlock,
+  defineCompositeBlock,
   autofitText,
   renderList,
   alignVertically,
@@ -44,6 +45,7 @@ export type {
   AutofitResult,
   ListMarker,
   ListOpts,
+  CompositeBlockConfig,
 } from './layout'
 export { renderNodeToDom, paintToCSS, BlockRenderer, HOST_CSS_VARS } from './render-dom'
 export type { BlockRendererProps, HostLayoutContextValue } from './render-dom'

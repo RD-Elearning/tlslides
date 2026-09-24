@@ -445,7 +445,8 @@ describe('R7 — capability digest v2', () => {
       // R9/R10 grew the catalog from 25 to 35 blocks; measured 43,987 chars.
       // Held to 52k for the same reason recorded on the structured-data test
       // below. R7's remedy ("split per family") is the named follow-up.
-      const charBudget = 52000
+      // B4 + B5 (toggles + stat-card) grew the markdown to ~52.7k.
+      const charBudget = 54000
       expect(markdown.length).toBeLessThanOrEqual(charBudget)
     })
 
@@ -468,7 +469,8 @@ describe('R7 — capability digest v2', () => {
       // showSubtitle/showCta on hero, showLabel/showContext on big-stat,
       // showKicker/showTitle/showBody on image-text, showDelta/showLabel/showSparkline
       // on kpi-tile): digest grew to ~57.9k.
-      const charBudget = 58000
+      // B5 added tls.c.stat-card (composite with defineCompositeBlock): digest grew to ~59.9k.
+      const charBudget = 60000
       expect(json.length).toBeLessThanOrEqual(charBudget)
     })
   })

@@ -6,7 +6,7 @@
  * in the registry.
  *
  * The count assertion is the gate against the "orphaned block" class of bug
- * that shipped in §0.4 — today's figure is 39 registered, 0 orphaned.
+ * that shipped in §0.4 — today's figure is 41 registered, 0 orphaned.
  */
 
 import * as fs from 'fs'
@@ -16,9 +16,23 @@ import { BlockRegistry } from '../registry'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { capabilityDigest } from '../capability-digest'
 import { makeCtx, makeRegistry, collectParts } from './layout/test-helpers'
-import type { LayoutNode } from '../types'
+import type { LayoutNode, BlockSpec } from '../types'
 
-const EXPECTED_BLOCK_COUNT = 40
+/**
+ * Recursively walk a BlockSpec tree and collect all block `type` strings.
+ * Each child in `children` is itself a BlockSpec that may have nested children.
+ */
+function collectSpecTypes(spec: BlockSpec): string[] {
+  const types: string[] = [spec.type]
+  if (spec.children && Array.isArray(spec.children)) {
+    for (const child of spec.children) {
+      types.push(...collectSpecTypes(child))
+    }
+  }
+  return types
+}
+
+const EXPECTED_BLOCK_COUNT = 41
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()
@@ -175,6 +189,33 @@ describe('block catalog conformance', () => {
               expect(html).not.toContain(`data-part="${part}"`)
               expect(html).not.toContain(`data-part="${part}[`)
             }
+          }
+        })
+
+        it('Tier A composite build() does not contain Tier B children', () => {
+          // B5 conformance: a Tier A composite cannot use Tier B blocks in its
+          // build() output — it must be pure layout composables.
+          if (def.tier !== 'A' || def.family !== 'composite') return
+          if (!def.describe?.example) return
+
+          // Use the block's defaults as the build props (matches describe.example
+          // semantics for composite blocks).
+          const props = def.defaults || (def.describe.example.props as any) || {}
+          const spec = (def as any).build?.(props as any)
+          if (!spec) return
+
+          // Walk the full tree and check every child type resolves to a Tier A block.
+          const childTypes = collectSpecTypes(spec)
+          for (const type of childTypes) {
+            const childDef = registry.get(type)
+            if (!childDef) continue // unknown types fail a different assertion
+            // The root type is the composite itself (Tier A by definition here);
+            // only child types need scanning.
+            if (type === def.type) continue
+            expect(childDef.tier).toBe(
+              'A',
+              `Tier A composite "${def.type}" cannot contain Tier B child "${type}"`
+            )
           }
         })
       })

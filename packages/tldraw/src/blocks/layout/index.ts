@@ -17,6 +17,8 @@ export type { MeasureTextProvider, MetricsProviderChoice, MinimalCanvasContext }
 export { createLayoutContext } from './layout-child'
 export type { CreateLayoutContextOptions } from './layout-child'
 export { layoutBlock } from './layout-child'
+export { defineCompositeBlock } from './define-composite'
+export type { CompositeBlockConfig } from './define-composite'
 export { autofitText } from './autofit'
 export type { AutofitResult } from './autofit'
 export { renderList } from './lists'

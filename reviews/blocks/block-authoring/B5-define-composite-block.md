@@ -78,6 +78,6 @@ requires `describe.example` to validate).
 
 ## Done when
 
-- [ ] Helper + spec merged; stat-card built with it, registered, conformance 41, screenshot checked.
+- [x] Helper + spec merged; stat-card built with it, registered, conformance 41, screenshot checked.
 - [ ] Docs updated with the recipe.
-- [ ] tsc 0; targeted + one full suite green; ledger row filled.
+- [x] tsc 0; targeted + one full suite green; ledger row filled.

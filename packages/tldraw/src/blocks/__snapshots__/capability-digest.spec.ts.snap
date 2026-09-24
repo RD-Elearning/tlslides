@@ -431,6 +431,40 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 }
 \`\`\`
 
+### \`tls.c.stat-card\` — Stat Card
+
+KPI on a card: icon, value, unit, and caption. Built with defineCompositeBlock. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
+
+**When:** Use when you need a single KPI inside a filled card — icon, headline value, unit, and a caption line. Built compositionally from tls.l.card, tls.l.stack, tls.m.icon, and tls.t.hero-number.
+**Avoid:** Do not use for multiple metrics side by side — use tls.c.kpi-row instead. Do not use when you need custom geometry or a chart — write a hand-written layout().
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | no | icon | Icon name from the set (zap, shield, globe, …). |
+| \`showIcon\` | no | boolean | Toggle the icon on/off. |
+| \`value\` | yes | text | The headline number. Include formatting, e.g. \\"$4.2M\\", \\"67%\\". |
+| \`unit\` | no | text | Unit label, 1–4 words. e.g. \\"Annual Revenue\\". |
+| \`caption\` | no | text | Short context, 1 line max. e.g. \\"FY2024 total\\". |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format hint for the renderer. |
+| \`emphasis\` | no | enum: default \\\\| accent \\\\| muted | Colour emphasis for the headline number. |
+| \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl | Inner padding of the card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stat_card\\",
+  \\"type\\": \\"tls.c.stat-card\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"value\\": \\"$4.2M\\",
+    \\"unit\\": \\"Annual Revenue\\",
+    \\"caption\\": \\"FY2024 total\\",
+    \\"format\\": \\"plain\\",
+    \\"emphasis\\": \\"accent\\",
+    \\"padding\\": \\"md\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.steps\` — Steps
 
 Process or timeline of numbered steps with titles and optional descriptions. Arranges steps horizontally or vertically with thin connectors between them. _(family: composite; keywords: steps, process, timeline, flow, workflow, sequential, phases, roadmap, numbered)_
@@ -1411,7 +1445,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 40,
+  "blockCount": 41,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1421,6 +1455,7 @@ Object {
     "tls.c.image-text",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
+    "tls.c.stat-card",
     "tls.c.steps",
     "tls.c.testimonial",
     "tls.d.bar",
