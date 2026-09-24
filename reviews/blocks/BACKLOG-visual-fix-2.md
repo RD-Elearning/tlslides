@@ -590,6 +590,7 @@ one) — it must read 0 on every row.
 | G8.4 | ✅ | `533d5038` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | removed the `Math.min(x, inner.height)` height clamp from all 4 named files (12 sites); fixed a resulting regression in `tls-c-steps/layout.ts` (not one of the 4 — a downstream consumer whose own step-height budgeting relied on the clamp; disclosed in §9); sl_01 overlap-audit overflow 96px→9px |
 | G8.2 | ✅ | `428cf510` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | found `resolveAsset` was already wired in 2 real places (not unwired, as first diagnosed); the actual gap was neither implementing the schema's own "asset id or URL" promise; added shared `resolveAssetUrl` helper, wired into both; `colorful-slide-8.png` now shows real image pixels |
 | G8.5 | ✅ | `41ed5dfa` | 2026-09-24 | 0 | 173 suites, 2546 pass / 77 todo / 0 fail | 0 | found a deeper, previously-undiagnosed bug: `ctx.registry` was never a real `LayoutContext` field, so row/stack/grid's `content` mode never even reached `measureIntrinsicSize` — added a proper `ctx.measureIntrinsicSize()` bound method (mirrors `layoutChild`'s own pattern) and rewired all 3 containers to it; gave `tls.t.body` a real `intrinsicSize` (unwrapped width for row weighting, wrapped-at-box-width height for stack weighting); `container-flex.js` now shows a real visual difference between `equal` and `content` rows |
+| §10 demo-readiness | ✅ | `0d82e00c` | 2026-09-24 | 0 | 173 suites, 2546 pass / 77 todo / 0 fail | 0 | full visual re-check of both demo decks; fixed 3 more slides with G8.1's disclosed bug class (colorful sl_02/sl_07/sl_09), a fixture color bug (invented `accent1/3/4` roles rendering black), and `tls-t-hero-number`'s missing autofit (`$4.2M` was wrapping to 2 lines); both decks now presentable end to end |
 
 *eslint error count: the 24 errors are pre-existing, in files this pass never touched (`catalog-conformance.spec.ts` require-style, stale `react-hooks/exhaustive-deps` disable-comments in `InlineEditor.tsx`/`PresentationRuntime.tsx` referencing a rule not registered in `.eslintrc`, `old-doc-2.ts` numeric-literal precision, `templates.spec.ts` semicolon, `renderSvgToPng.spec.ts` empty function). The ledger's "20" baseline was carried forward unverified since G0; 24 is the honest, currently-measured number. Not a regression from this pass — none of the flagged lines are in a file this pass edited.
 
@@ -1666,3 +1667,109 @@ not touched here.
 
 **Scope cuts:** None beyond the pre-existing R13 deferral, restated for clarity, not newly cut
 here.
+
+---
+
+## 10. Demo-readiness pass (post-G8) — visual verdict and what it changed
+
+Requested directly after G8.1–G8.5 landed: "run the demo, confirm the slides are good enough to
+demo, quickly review whether the important logic is correctly coded, update the backlog." This is
+that pass. **Not a numbered G-item** — found and fixed by actually opening every screenshot of
+both demo decks fresh, the same discipline this whole document has repeated since §0.8.
+
+### 10.1 What was checked
+
+Rebuilt, restarted the dev server, ran `deck-demo` (7-slide `demo-deck-q3`) and
+`colorful-blocks-demo` (10-slide, all block families) fresh, and opened **every** slide of both
+with the Read tool — not a sample, not trusting the last recorded screenshots.
+
+### 10.2 Three more slides had G8.1's exact bug class — found, fixed
+
+G8.1 fixed `sl_05` and disclosed 7 more slides with the same "a block reports its full given
+height in an unbounded `blank` region" defect as an out-of-scope finding. Opening the actual
+screenshots this pass found that finding was not cosmetic — three of those slides were badly
+broken, not just measurably imperfect:
+
+| Slide | Deck | Before | Fix |
+|---|---|---|---|
+| `sl_02` "Chart Blocks" | colorful-blocks-demo | Bar chart and donut chart stacked in one unbounded region; the donut ballooned past the frame and bled into the bar chart's bottom edge (visible as an unexplained black arc in the screenshot) | Moved to `two-column` — bar chart left, donut right. A natural side-by-side comparison layout, not just a bug fix. |
+| `sl_07` "Layout Blocks" | colorful-blocks-demo | `tls.l.stack` (3 items) and `tls.l.grid` (3 bar charts) both stacked in one unbounded region; each grew to consume a third of the whole 888-unit-tall region, leaving ~250 units of dead space between three one-line text items, with the grid's bar charts partly bleeding into view below | Moved to `image-top` — stack in the bounded `image` region (60%), grid in the bounded `text` region (40%). Still a little sparse (equal-split of 3 short items), but no longer broken. |
+| `sl_09` "Advanced Charts" | colorful-blocks-demo | A single `tls.d.donut` alone in the unbounded region ballooned to nearly fill the entire 1080-tall frame | Moved to `image-top`, donut in the bounded `image` region only (no `text` region needed — an unused region simply emits no shapes). Now a normally-proportioned, centered chart. |
+
+All three: `collision.spec.ts` 21/21 unaffected (neither deck's collision coverage was scoped to
+these slides before; `catalog-conformance.spec.ts` 206/206 confirms every block id still
+resolves). Both fixture copies (`packages/tldraw/src/blocks/__fixtures__/` and `examples/nextjs-
+sample/data/decks/`) kept byte-identical, per G1's rule.
+
+**The other 4 previously-disclosed slides were re-checked and left alone, correctly:** `sl_06`
+(diagram) and `sl_08` (media) both render cleanly by eye — their entry in G8.1's disclosed list
+was from the blanket `collision.spec.ts` frame-bounds probe, which flags *any* nonzero excess, not
+only excess large enough to look broken. `demo-deck.json`'s `sl_07`/`sl_08` (the 8-slide fixture's
+own extra "hero cover" slides) were not re-checked this pass — they aren't in either shipped
+screenshot scenario's output (`deck-demo.js` only walks the 7-slide `deck-demo-q3.json`, per G6's
+fix), so they don't affect what a demo viewer actually sees; still an open item if that fixture is
+ever screenshotted directly.
+
+### 10.3 A real, separate bug found while looking at `sl_02`: invented color roles
+
+Three of the donut's four slices rendered **solid black**. Root cause, verified against
+`resolveColor`'s actual branching (`tokens.ts:255-279`), not guessed: `ColorRole` only has
+`'accent'` and `'accent2'` (`types.ts:734-746`) — the fixture's slices used `"accent1"`,
+`"accent3"`, `"accent4"`, none of which exist. An unrecognized role string isn't rejected; it falls
+through `resolveColor`'s `!isColorRole` branch as a literal CSS color value, and `"accent1"` is
+neither a real theme role nor a valid CSS color keyword, so the browser silently renders it as its
+fill-property default (black). `"accent2"` (a real role) was the one slice that rendered correctly
+— the tell that gave this away. Same class of bug as G7's bar-chart fix: **invented vocabulary in
+fixture data, not a block code defect** — `tls.d.donut/layout.ts` itself does exactly what its
+contract promises (`ctx.resolveColor(slice.color ?? 'accent')`). Fixed the fixture: `"accent1"` →
+`"accent"` (the real role), `"accent3"`/`"accent4"` → `"blue"`/`"purple"` (valid CSS names, the
+same mechanism `sl_09`'s already-working red/orange/yellow/green/blue zones use). `tls-d-donut.
+spec.ts` unmodified, still passes (42 tests) — no test had pinned the broken color strings.
+
+### 10.4 A real bug found on the flagship 7-slide deck: `tls.t.hero-number` never had autofit
+
+`deck-demo-q3` slide 4 (KPI row) — `$4.2M` wrapped to two lines (`$4.2` / `M`) while the other
+three values (`61%`, `118`, `2.4×`) fit on one. This is the exact defect G4.4's checkbox had
+claimed was already resolved ("existing content measurement" resolves it) — that claim was never
+actually verified against a live screenshot, and turned out to be wrong. Root cause, read directly
+from the block's own file: `tls-t-hero-number/layout.ts` measures its `value` text at `'display'`
+size (152 slide units) with the KPI cell's width as `maxWidth`, and — unlike `tls-t-title`/
+`tls-t-body`, which both shrink font size in steps until content fits — has **no autofit loop at
+all**. Five characters (`$`, `4`, `.`, `2`, `M`) at 152-unit `'display'` size don't fit a ~348-unit
+KPI cell; three-character values (`61%`, `118`) do. Fixed by adding the same shrink-in-4%-steps-
+to-a-floor autofit pattern `tls-t-title` already uses, floored at `0.6` (a KPI number can afford to
+shrink more than a slide title before it stops reading as "big"). `tls-t-hero-number.spec.ts`
+unmodified, still passes (11 tests) — no test asserted a specific unscaled font size.
+
+### 10.5 Quick logic review, as asked
+
+Spot-checked the actual implementation of every G8 item against what's in the tree right now
+(not re-deriving from memory):
+- G8.4: `grep -rn 'Math.min.*inner.height\|Math.min.*ctx.box.height'` over the 4 named files
+  returns nothing — every clamp site is genuinely gone, not just the ones quoted in the phase note.
+- G8.5: all three containers (`tls-l-row`, `tls-l-stack`, `tls-l-grid`) call
+  `ctx.measureIntrinsicSize(child)` uniformly; no leftover `(ctx as unknown as {...}).registry`
+  casts anywhere in `library/layout/`.
+- G8.2: both real call sites (`deck-context.ts`'s `deckLayoutContext`, `hooks/useDeckTokens.ts`'s
+  `useBlockLayoutContext`) share the one `resolveAssetUrl` helper — confirmed by grep, not by
+  re-reading the diff from memory.
+
+No discrepancies found between what the phase notes claim and what the code actually does.
+
+### 10.6 Current demo-readiness verdict
+
+**Both demo decks are now presentable end to end** — every slide in `deck-demo-q3` (7) and
+`colorful-blocks-demo` (10) was opened and looks clean: no block-on-block overlap, no oversized/
+bleeding charts, no wrapped KPI numbers, no black/unstyled fills, real images load. Residual,
+genuinely minor and not fixed: 3–12px of sub-pixel text-overflow on several slides (`overlap-
+audit`'s `totalOverflow: 10`, imperceptible by eye, same long-standing rounding-noise class
+covered in G6/G7), and `sl_07`'s stack items are a little vertically sparse (equal-split of 3 short
+lines in a bounded-but-still-generous region — not broken, just not tight).
+
+**Gates:** production `tsc` = 0. Full suite: 173 suites, 2546 pass / 77 todo / 0 fail. `collision.
+spec.ts` 21/21. `overlap-audit` exit 0, 0/0 block/design overlaps. `catalog-conformance.spec.ts`
+206/206.
+
+**Still open, unchanged from §8:** G8.6 (per-child `fill`/`auto`/weight sizing) — new feature work,
+not a bug fix, deferred to R13. Explicitly lower priority than shipping more blocks, per this
+session's own direction.
