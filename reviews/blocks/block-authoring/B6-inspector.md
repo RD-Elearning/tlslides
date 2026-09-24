@@ -51,6 +51,32 @@ File: `components/BlockInspector/BlockInspector.tsx` (365 lines, one file today 
 7. Every edit is one `updateShapes` call → one undo step. Slider drags: commit on release (or
    throttle) so a drag isn't 60 undo steps.
 
+## ⚠️ Hard parts — decisions already made
+
+**H1. Reset = write `undefined`, not omit.** `updateShapes` deep-merges (README pitfall 2).
+Per-field reset: `props: { ...shape.props, $block: { ...meta, style: { ...meta.style, accent: undefined } } }`.
+Reset all: `$block: { ...meta, style: undefined }`. Readers already use `!== undefined`.
+**H2. Lists/arrays replace wholesale.** For `list`/`series`/`object` edits, compute the full new
+array/object with `setAtPath` on a clone and send the whole top-level prop.
+**H3. Swatch colours must ignore the instance override.** `ctx.resolveColor` from
+`useBlockLayoutContext(box, { style })` returns the *override* for `accent`/`text`/`surface`. For
+swatches build a second ctx **without** `style` (`useBlockLayoutContext(box, {})`) and resolve
+each role there; use the styled ctx only for "current effective colour".
+**H4. `on` means the `text` role.** `style.on` overrides `resolveColor('text')` (see
+`wrappedResolveColor` in `layout-child.ts`). Label it "Text colour" in the UI.
+**H5. Space tokens** are `'3xs','2xs','xs','sm','md','lg','xl','2xl','3xl','4xl'` (see
+`tls-l-stack/schema.ts`); padding control = "None" (writes `undefined`) + those + custom number.
+**H6. Undo granularity.** One `app.updateShapes` call = one history entry. For sliders and
+colour-drag use local React state while dragging and call `updateShapes` on `pointerup`/`change`
+end only. The native `<input type=color>` fires `input` continuously — commit on `change`.
+**H7. `ColorPicker` bug:** `type: 'color'` is inside the stitches CSS object → not an attribute.
+Pass `type="color"` as a JSX attribute.
+**H8. Motion presets list:** import the preset ids from `blocks/motion/presets.ts`
+(`MOTION_PRESETS` keys); filter out `isAmbient` ones only if the current UI can't preview them.
+**H9. Don't edit block props for `role: 'option'` color fields with role names that aren't
+`ColorRole`** — e.g. `tls.d.donut` slice colours accept palette names (`blue`, `purple`) too;
+for `kind: 'color'` fields offer roles + custom hex only (never invent a name).
+
 ## Tests
 
 - Component tests (React Testing Library, see existing `components/**/*.spec.tsx` for setup):

@@ -29,12 +29,50 @@
    `children` declares a `children` slot of kind `'blocks'` (read the schema; a static list of the
    11 container types is fine if introspecting the source is awkward).
 
+## ⚠️ Hard parts — decisions already made
+
+**H1. The validator does not look inside `props.children` at all** (verified in
+`blocks/validate-deck-spec.ts`): it recurses only into the top-level `BlockSpec.children`
+(~l.515) — which no layout renders — and `checkBudget` has **no `case 'blocks'`**, so
+`min`/`max`/`allow` on a `blocks` slot are never enforced. An unknown type nested in
+`props.children` passes validation today. Undeclared `children` props only produce a
+`slot/unknown` **warning**. So step "validation warns per `max`" in this plan requires new
+validator code:
+- add `case 'blocks'` to `checkBudget`: not an array → error `block/malformed`; length > `max`
+  → **warning** `slot/over-max` (match the `level`/`rule` naming style of the `list` case);
+  `< min` → warning; a child whose `family` (via registry) isn't in `allow` → warning.
+- in `validateProps`, for every slot of kind `blocks`, recurse `validateBlockTree` into each
+  element with `depth + 1`, the same way the `block.children` branch does (reuse it; pass the
+  same `ancestorIds/ancestorRefs/seenBlockIds` so cycle + duplicate-id checks work).
+- **Do not** remove the `BlockSpec.children` branch (other decks may use it); leave a comment
+  that `props.children` is the rendered channel.
+Re-run `catalog-conformance.spec.ts` — the newly-validated nested examples may surface real
+warnings in existing fixtures; errors must be fixed, warnings disclosed in the ledger note.
+Expect: `colorful-blocks-demo.json` sl_07 stack uses `gap: 12` (a number) where the schema says
+enum — that's an existing mismatch; report it, fix the fixture (`'sm'`) only if the validator
+now flags it as an error.
+
+**H2. Stack delegation adds one depth level.** `card → (synthetic stack) → children` means a
+child that used to be at depth d is now at d+1. Only delegate when `children.length > 1`
+(1-child path unchanged). Add a test: card with 2 children whose second child is itself a
+`tls.l.row` with 2 text children → no depth-overflow node in the tree.
+
+**H3. Which `sizing` for the synthetic stack.** Use `'content'`. Known limitation (from G8.5):
+"fill"-type blocks (`tls.m.image`, `tls.d.donut`, `tls.l.section`) report their full given
+height as intrinsic, so an image + caption in a card may give the image almost all the space.
+Test `title + body` (must look right) and `image + caption` (record what happens; if the
+caption gets < one line of height, switch that case to `'equal'` only when any child is a
+media/data block — keep it simple, one `if`).
+
+**H4. Section's `contentBox` height** is `H - contentY`; the synthetic stack gets exactly that
+box. Don't try to make section grow to fit — reflow is the slide compiler's job.
+
 ## Tests
 
 - Per block spec: 2 children → their boxes don't intersect (card, section, safe-area).
 - 1 child → geometry identical to before (compare to a value captured before the change).
-- `split`/`sidebar`/`footer` with 3 children → validation warns/errors per `max` (check how
-  `validateDeckSpec` reports `max` for `row`, match it).
+- `split`/`sidebar`/`footer` with 3 children → `slot/over-max` warning (new validator code, H1).
+- Unknown type nested in `props.children` → `block/unknown-type` finding (new, H1).
 - Targeted specs of the 8 blocks + `catalog-conformance.spec.ts` + `collision.spec.ts`; full suite
   once.
 - Visual: `colorful-blocks-demo` sl_05 uses `tls.l.section` with one child — re-shoot, confirm

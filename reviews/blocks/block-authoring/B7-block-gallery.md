@@ -53,6 +53,40 @@ summary text, search. Click → inserts `def.defaults` at the viewport centre vi
 5. Close behaviour: gallery stays open after insert when docked (users add several blocks);
    Escape closes.
 
+## ⚠️ Hard parts — decisions already made
+
+**H1. Hook calls per card.** `useBlockLayoutContext(box, opts)` is a hook (uses tokens, surface,
+store, registry). Call it inside `BlockPreview` (one per card) — fine for 40 cards. Box =
+`{ x: 0, y: 0, width: preferredW, height: preferredH }`; the surface it samples is the page
+background at that box, which is what a freshly dropped block will sit on.
+**H2. Tier B previews: no live HTML.** Render `def.poster!(props, ctx)` through
+`renderNodeToDom` (it contains no `host` nodes) — never `def.layout()` for Tier B in the gallery
+(that returns a `host` node and would mount the template + animation hooks 4× in a menu).
+**H3. Scaling.** Render at preferred size inside a wrapper with
+`transform: scale(s); transform-origin: 0 0`, outer box `width = cardW`, `height = preferredH * s`,
+`overflow: hidden`, `pointer-events: none`. Text measurement is in slide units, so scaling after
+layout keeps it exact.
+**H4. Drop coordinates.** `app.getPagePoint(point)` expects a point in the **canvas's own
+screen space** (the space of `app.centerPoint`), not `clientX/Y`. Use
+`const r = canvasEl.getBoundingClientRect(); point = [e.clientX - r.left, e.clientY - r.top]`.
+(The existing `app.onDrop` passes raw `clientX/clientY` for files — only correct when the editor
+sits at the viewport origin; don't copy that.)
+**H5. Hook into the existing drop handler, don't add a second one.** `Tldraw.tsx` ~l.641 wires
+`onDrop={app.onDrop}` (`TldrawApp.ts` ~l.3755, handles files). Extend the flow: in that handler
+(or a wrapper passed instead of it), check
+`e.dataTransfer.types.includes('application/x-tls-block')` **first** → insert block; else fall
+through to the file path. Also `dragover` must `preventDefault()` when that type is present or
+`drop` never fires.
+**H6. Id regeneration must be recursive:** `props.children[].id` (and nested again) — duplicate
+ids across instances trip the validator's duplicate-id check (`seenBlockIds`) once B2 lands.
+Write `cloneSpecWithFreshIds(spec)` (walk `props` for any `blocks` slot arrays).
+**H7. Strip style:** delete `spec.style` from the clone (the example may carry one) so the block
+lands on theme colours; literal colours inside props (e.g. donut slice `color: 'blue'`) stay —
+they're content, not style.
+**H8. Insert position clamp.** Clamp the dropped box so it stays inside the slide frame
+(`resolveDeckFrame` — see how `collision.spec.ts` gets the frame) — dropping near an edge
+otherwise leaves half the block off-slide.
+
 ## Tests
 
 - Component test: gallery renders one card per registered block (40 today; assert against

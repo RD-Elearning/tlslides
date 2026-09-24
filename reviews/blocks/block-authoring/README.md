@@ -74,6 +74,33 @@ be 0.
 
 ---
 
+## ⚠️ Pitfalls that apply to every task (verified 2026-09-24 — read before starting)
+
+1. **The git pre-commit hook runs `yarn test`** (`.husky/pre-commit` → `turbo run test`, every
+   package, the full jest suite). Committing *is* a full-suite run. Kill `parity-worker`
+   processes before `git commit` (OOM guard), commit **once per task**, never `--no-verify`
+   unless the user says so.
+2. **tldraw state updates deep-merge; they never delete.** `app.updateShapes` → `Utils.deepMerge`
+   (`packages/core/src/utils/utils.ts` ~l.1271): an omitted key is **kept**, arrays are replaced
+   wholesale, objects are merged. To remove a key ("reset to theme") you must write the key with
+   value `undefined` explicitly. Every reader must treat `undefined` as absent (`!== undefined`,
+   not `in`).
+3. **Where block data lives on a shape:** `blockToShape` (`blocks/shape-bridge.ts`) puts
+   `spec.props` at the top level of `shape.props` and `{ id, style, motion, children }` under
+   `shape.props.$block`. So layouts receive props **including** a `$block` key — ignore it, never
+   iterate props blindly.
+4. **Two "children" channels exist; only one is real.** Every container layout reads
+   **`props.children`** (the one to use). `BlockSpec.children` (top-level field) is what
+   `validateDeckSpec` recurses into, and it is **never rendered**. See B2.
+5. **Nested child style:** `layoutChild` reads a child's style only from
+   `child.props.$block.style` — a nested `{ type, props, style }` in deck JSON has its `style`
+   **silently ignored**. See B3 step 0.
+6. **Depth cap:** `MAX_DEPTH = 4` in `layout-child.ts` (and `MAX_NESTING_DEPTH` in the
+   validator). B2 (stack delegation) and B5 (composites) each add levels. Past the cap
+   `layoutChild` returns an error node, not a crash — tests must assert it's absent.
+7. **Byte-identical rule** for `colorful-blocks-demo.json`: edit the fixture copy, then `cp` it
+   to `examples/nextjs-sample/data/decks/`. Never hand-edit both.
+
 ## Side findings (not tasks; fix opportunistically, disclose if touched)
 
 - `tls.c.feature-grid` cells have no `color` field, but `colorful-blocks-demo.json` sl_05 sets

@@ -30,19 +30,38 @@ export function defineCompositeBlock<P>(cfg: CompositeBlockConfig<P>): BlockDefi
   then re-tag the returned root group `part: 'root'`.
 - Generated `intrinsicSize(props, ctx)` = `ctx.measureIntrinsicSize?.(cfg.build(props))` so the
   composite participates in `sizing: 'content'` and V2.1 reflow.
-- `tier: 'A'` if every block type in the built tree is Tier A, else `'B'` — compute from the tree
-  at registration time using `describe.example`/`defaults`, or simply require the author to pass
-  `tier` (simpler; choose and document).
-- Parts: child parts are nested under wrapper groups; document that motion `parts` target the
-  **child ids** the author gives in `build()` (e.g. `id: 'value'` → part). Check how
-  `motion/timeline.ts` resolves parts through `layoutChild` wrapper groups before deciding; if ids
-  don't surface as parts, have the generated layout set `part = spec.id` on each wrapper group
-  (walk the tree once).
+- `tier`: **the author passes it** (required field). A conformance assertion walks
+  `build(describe.example.props)` and fails if any node type in it is Tier B while the composite
+  says `'A'`.
+- **Motion (decided): v1 animates the composite as one unit.** `layoutChild` wrapper groups
+  carry **no** `part`, so child ids don't surface as parts, and adding `part: spec.id` inside
+  `layoutChild` would change `data-part` output for every existing container (motion regressions
+  across both demo decks). So: `motion` = `{ preset, parts: ['root'] }`-style recipe on the
+  composite only; per-child choreography is out of scope (write it in the ledger as a follow-up).
 - Toggles: `build()` simply omits a child when `!isShown(props, 'showX')` — reflow is automatic
   because the stack/row container lays out what's there.
 - Depth: a composite adds 1–2 levels; `MAX_DEPTH = 4`. Document it; conformance must catch a
   composite whose example hits the depth-overflow node (grep how depth overflow is reported in
   `layout-child.ts` and assert it's absent).
+
+## ⚠️ Hard parts — decisions already made
+
+**H1. `build()` must be pure and deterministic** — same props → deep-equal tree, fixed child ids
+(`'icon'`, `'value'`…), no `Math.random`/`Date.now` (the layout purity rule; `measureIntrinsicSize`
+caches by `hashValue(props)`).
+**H2. Depth budget.** A composite placed in a region sits at depth 0; `card`(1) →
+`stack`(2) → leaf(3). Placed inside a user's `row` it's one deeper. Rule for authors (put it in
+the docs): **at most two container levels inside `build()`**. Conformance: lay out the example
+at `depth: 1` and assert no depth-overflow node.
+**H3. Theme colours.** Don't put colours in `build()` output except role names (`'accent'`), so
+the composite follows the slide theme; the instance `style` of the composite reaches its root
+only — children resolve roles against the resampled surface automatically (`layoutChild`).
+**H4. `intrinsicSize` signature** is `(props, ctx) => Size` and is only called through
+`measureIntrinsicSize`; `ctx.measureIntrinsicSize` exists on every ctx since G8.5 — no registry
+access needed.
+**H5. Registration:** a composite is an ordinary `BlockDefinition`; it goes into
+`composite/index.ts` → `BUILT_IN_BLOCKS` like any block, and needs `describe` (conformance
+requires `describe.example` to validate).
 
 ## Deliverables
 

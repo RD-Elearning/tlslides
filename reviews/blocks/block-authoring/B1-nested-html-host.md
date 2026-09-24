@@ -47,6 +47,43 @@ those vars per instance, so overrides are ignored in the live DOM (but honoured 
 5. Check `render-svg.ts` (`case 'host'`) and `parity-harness.ts` (`case 'host'`) still type-check
    and ignore the new fields (they render the poster).
 
+## ⚠️ Hard parts — decisions already made (follow these, don't re-decide)
+
+**H1. Where CSS vars come from today.** `HostMount` puts `hostCssVarStyle(tokens, surface)` as
+**inline style** on the host root div (`render-dom.tsx` ~l.144 and the returned `<div style>`).
+It sets `--tls-on: tokens.color.text` and `--tls-accent: tokens.color.accent` straight from the
+theme — **not contrast-solved** against the surface — plus `--tls-surface` from the *top-level
+shape's* surface. For a nested host, all three are the parent shape's values → wrong.
+**Decision:** don't use `root.style.setProperty`. Merge `node.vars` **after**
+`hostCssVarStyle(...)` in that same inline style object (`{ ...hostCssVarStyle(...), ...node.vars }`).
+React then owns them, updates/removal are automatic, no cleanup code.
+
+**H2. When to emit `vars` (the regression trap).** If every Tier B node always emits vars from
+`ctx.resolveColor`, top-level blocks change colour (contrast-solved `text` ≠ raw
+`tokens.color.text`) → visual diffs on shipped slides. **Rule:** emit `vars` only when
+`ctx.depth > 0` (nested) **or** `ctx.style` sets `on`/`accent`/`surface`. Otherwise
+`vars` is `undefined` and today's output is untouched. Mapping (real names in `CSS_VAR_MAP`):
+`'--tls-on' ← ctx.resolveColor('text').color`, `'--tls-accent' ← ctx.resolveColor('accent').color`,
+`'--tls-text-muted' ← ctx.resolveColor('textMuted').color`,
+`'--tls-surface'` and `'--tls-surface-color' ← ctx.resolveColor('surface').color` (only when
+`ctx.style.surface` is set or nested). `ctx.resolveColor` already applies instance overrides.
+
+**H3. Which props to put on the node.** Use the `props` argument the auto-layout receives (for a
+top-level shape that is `shape.props` incl. the `$block` key; for a child it is `child.props`).
+In `HostMount`: `const hostProps = nodeProps ?? layoutCtx?.props ?? {}`.
+
+**H4. `HostMount` change detection.** The update effect compares `JSON.stringify(hostProps)` and
+box size, deps `[hostProps, box.width, box.height]`. `node.props` is a new object on every
+render (layout re-runs) — that's fine because of the JSON compare; do **not** add
+`React.memo` custom comparators. Vars need no effect (H1: they're inline style).
+
+**H5. `renderNodeToDom` case `'host'`** must pass `props={node.props}` and `vars={node.vars}`
+to `HostMount`; extend `HostMountProps`. `render-svg.ts` and `parity-harness.ts` `case 'host'`
+use `poster` only — they compile unchanged; don't touch them beyond types.
+
+**H6. Nested host inside a group is positioned by its own `box`** (absolute inside the parent
+group div) — already correct, no change.
+
 ## Tests
 
 - New nested-host test from step 1 passes.

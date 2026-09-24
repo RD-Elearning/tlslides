@@ -52,10 +52,60 @@ Replace every direct `def.layout(...)` call that lays out a **placed block** wit
 Grep again before starting (`grep -rn "\.layout(" --include=*.ts* src | grep -v spec | grep -v library/`)
 — the table is from 2026-09-24. Blocks calling `ctx.layoutChild` get it for free.
 
-Also remove hard-coded outer padding from the 4 Tier B templates **only if** it's an outer
-wrapper padding (`testimonial`'s `padding:48px` on the root) — replace it with the same default
-through `defaults`/style so the block looks identical by default. If that's not cleanly possible,
-leave it and disclose.
+Leave the Tier B templates' own internal spacing alone (see H7).
+
+## ⚠️ Hard parts — decisions already made
+
+**Step 0 (do first): nested child style is dropped today.** `layoutChild` (`layout-child.ts`
+~l.276) reads the child's style only from `spec.props.$block.style`. A deck JSON child written as
+`{ type, props, style: { padding: 'md' } }` loses its `style`. Fix:
+`const childStyle = (spec.style ?? childMeta?.style) as BlockStyleSpec | undefined`. Also add
+`spec.style` to `measureIntrinsicSize`'s cache key (`${spec.type}:${hashValue(spec.props)}:...`
+→ include `hashValue(spec.style ?? null)`), otherwise two children with the same props but
+different padding share a cached size.
+
+**H1. The slide compiler's measure pass has no instance style.** `slide-compiler.ts` ~l.141
+builds **one** `measureCtx` per region without `style`, then calls `def.layout` per block. With
+padding, the natural height would be measured *without* padding → overlap after reflow.
+Decision: inside the per-block loop, when `block.style?.padding !== undefined || block.style?.align !== undefined`,
+build a per-block ctx (`createLayoutContext({ ...same options, style: block.style })`) and call
+`layoutBlock(def, props, thatCtx)`; otherwise keep the shared ctx (cheap path). Same at ~l.268.
+
+**H2. `measureIntrinsicSize`'s `def.intrinsicSize` shortcut** (~l.404) returns early and would
+skip padding. Add the padding to its result there too (width + horizontal, height + vertical),
+or route through a shared `applyPaddingToSize` helper. Test it via a `row` with
+`sizing: 'content'` containing a padded `tls.t.body` (body has `intrinsicSize` since G8.5).
+
+**H3. Coordinates.** A `group` node's children are positioned **relative to the group's box**
+(that's how `layoutChild` wraps: `{ k: 'group', box, children: [childNode] }` with the child
+at 0,0). So the padded wrapper is: outer `{ k:'group', box:{x:0,y:0,width:W,height:reportedH+padV}, part: <inner.part>, children:[ { k:'group', box:{x:padL,y:padT+alignOffset,width:innerW,height:innerH}, children:[inner] } ] }`.
+Move the inner root's `part` (usually `'root'`) to the outer group and clear it on the inner
+node, so motion's `data-part="root"` still wraps the whole visible block, not just the content.
+
+**H4. `align` only works for blocks that report a content height.** Fill-type blocks (image,
+donut, section, stack…) report the full box height, so free space = 0 and align does nothing.
+That's correct behaviour — document it in the `BlockStyleSpec.align` JSDoc; don't "fix" it.
+
+**H5. Editor context for the top-level shape** already passes `style` (`ComponentUtil` →
+`useBlockLayoutContext(box, { style: blockStyle })`; DeckViewer → `contextForBlock` reads
+`$block.style`) — verified. `layoutBlock` just reads `ctx.style`.
+
+**H6. The inset inner ctx — do NOT use `{ ...ctx, box: inner }`.** Verified trap: ctx methods
+are closures over the *original* ctx/options — `ctx.measureIntrinsicSize` is bound as
+`(spec) => measureIntrinsicSize(spec, ctx, registry)` with the **outer** `ctx` (so it probes at
+the outer, un-padded width), and `layoutChild` resamples gradients against `options.box`. A
+spread copy would keep the outer box inside those closures → padded containers measure children
+too wide. **Decision:** add an optional bound method to `LayoutContext` (additive, like G8.5's
+`measureIntrinsicSize`): `withBox?(size: Size): LayoutContext`, implemented inside
+`createLayoutContext` as `(size) => createLayoutContext({ ...options, box: size })`. `layoutBlock`
+calls `ctx.withBox ? ctx.withBox(inner) : { ...ctx, box: inner }` (fallback only for hand-built
+test ctxs). Keep `style` in the options — the block still needs `on`/`accent`/`surface`;
+`layoutBlock` must not apply padding twice (it's only called at placement sites and in
+`layoutChild`, never from inside a block's own `layout()`).
+
+**H7. Tier B.** The host node's box is inset by the wrapper → HTML content gets the padding for
+free, poster too. Don't add CSS padding. `testimonial`'s built-in `padding:48px`: leave it (it's
+internal spacing of that design); note it, move on.
 
 ## Tests
 

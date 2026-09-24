@@ -45,6 +45,37 @@ no `toggles`.
 Update each retrofitted block's `describe.when`/guidance if the AI should know about the switch;
 update `size.preferred` only if the default appearance changes (it shouldn't).
 
+## ⚠️ Hard parts — decisions already made
+
+**H1. Tier B must hide in three places, not one:** `template()` (live DOM), `poster()` (export/
+SVG — otherwise export shows the hidden element), and `animate()` (must not crash when a part
+is missing). Hero's `animate` uses `querySelectorAll('[data-part]')` → safe. `big-stat`'s
+`bigStatAnimate` (`tls-c-big-stat/index.ts` ~l.86) grabs `labelEl`/`contextEl` by
+`querySelector` — read the whole function and null-guard every use before adding
+`showLabel`/`showContext`. `testimonial` animate: same check for attribution parts.
+
+**H2. Parity:** Tier A parity specs compare DOM vs SVG from the same tree → automatic. For
+Tier B, add to the gate: poster tree has no node with the hidden part either.
+
+**H3. Keep "empty text = hidden" too.** Shown = `isShown(props, 'showKicker') && !!props.kicker`.
+Don't make the toggle the only switch — existing decks rely on empty-means-hidden.
+
+**H4. Motion timing over-counts slightly.** `countLayoutParts` (`motion/timeline.ts` ~l.229)
+uses the recipe's declared part count on the fast path, so a hidden part still adds one stagger
+step to the block's show duration. Accept it (a few hundred ms); note it in the ledger. Don't
+change timeline code in this task.
+
+**H5. Conformance gate mechanics.** Tier A: `def.layout(exampleProps, ctx)` and walk the tree
+for `part`. Tier B: call `def.html!.template(props, tplCtx)` with a stub
+`tplCtx = { esc: s => s, cssVar: r => \`var(--tls-${r})\`, box, tokens }` (tokens via
+`resolveTokens(BUILT_IN_DECK_THEMES[...])` as `tls-c-hero/index.ts`'s `derivePreferredSize`
+does) and assert the string has no `data-part="<part>"`; plus the poster walk (H2). A
+`toggles` value must match a real part name: also assert the part **is** present when the
+toggle is `true` (catches typos in `toggles`).
+
+**H6. `SlotSpec` is shared by the AI digest** (`capabilityDigest()`): check it prints the new
+field sensibly or ignores it; `catalog-conformance` already asserts the digest doesn't throw.
+
 ## Tests
 
 - The generic conformance gate (above) — this is the main test.
