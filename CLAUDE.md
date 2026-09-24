@@ -24,6 +24,10 @@ Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)
 slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; `BACKLOG-enhance.md` (R0–R16) shipped
 R0–R13 and parked R14–R16.
 
+**Next work list: [reviews/blocks/block-authoring/README.md](reviews/blocks/block-authoring/README.md)**
+(B1–B7 — nested HTML blocks, container children, padding/align, element toggles,
+`defineCompositeBlock`, inspector, block gallery); one detail file per task.
+
 The visual-fidelity slice has been attempted twice and is on its third plan. The **current work
 list is [reviews/blocks/BACKLOG-visual-fix-2.md](reviews/blocks/BACKLOG-visual-fix-2.md)**
 (G0–G6) — start there. Its §0 is the verified state of the tree (of the earlier V1–V8 and F0–F6

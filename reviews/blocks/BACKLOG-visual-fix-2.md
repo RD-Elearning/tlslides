@@ -29,7 +29,10 @@ black/unstyled fills, real images load. Full detail: archive §10.
 todo / 0 fail · `collision.spec.ts` 21/21 · `overlap-audit` exit 0, 0/0 block/design overlaps ·
 `catalog-conformance.spec.ts` 206/206.
 
-**Open work:** only **G8.6** below (per-child `fill`/`auto`/weight sizing for `tls.l.row`) — new
+**Next work (block authoring & insert UX — nesting, padding, element toggles, gallery,
+inspector):** **[block-authoring/README.md](block-authoring/README.md)** (B1–B7).
+
+**Open work in this file:** only **G8.6** below (per-child `fill`/`auto`/weight sizing for `tls.l.row`) — new
 feature work, not a bug fix, deferred to R13, lower priority than shipping more blocks per current
 direction.
 
