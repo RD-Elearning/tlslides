@@ -138,7 +138,12 @@ function createCSSTransitionDriver(): MotionDriver {
 
     timeline(steps: MotionStep[]): MotionHandle {
       // PresentationRuntime doesn't use timelines — stub.
-      return { cancel() {}, finished: Promise.resolve() }
+      return {
+        cancel() {
+          // no-op: this driver never starts a timeline, so there's nothing to cancel.
+        },
+        finished: Promise.resolve(),
+      }
     },
 
     cancelAll(): void {
@@ -204,7 +209,6 @@ export const PresentationRuntime = React.memo(function PresentationRuntime() {
     })
 
     prevBuildRef.current = { pageId, revealed: buildStep }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app, pageId, buildStep, reducedMotion])
 
   // Auto-advance chain (`afterPrevious`/a leading `withPrevious`) -------------------------

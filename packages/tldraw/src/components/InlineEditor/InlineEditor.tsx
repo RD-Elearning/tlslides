@@ -41,7 +41,6 @@ export const InlineEditor: React.FC<InlineEditorProps> = ({
     const selection = window.getSelection()
     selection?.removeAllRanges()
     selection?.addRange(range)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const commit = () => {

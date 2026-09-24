@@ -15607,6 +15607,11 @@ export default {
             [3.88, 268.53, 0.5],
             [0.97, 276.6, 0.5],
             [0, 281.48, 0.5],
+            // This is a captured `TDDocument` snapshot fixture — these x-values are genuine
+            // floating-point noise from a recorded freehand stroke, not authored precision.
+            // Truncating them would change what this fixture actually asserts, so the rule is
+            // disabled for this block rather than edited away (BACKLOG-visual-fix-2.md §8.3).
+            /* eslint-disable @typescript-eslint/no-loss-of-precision */
             [-5.684341886080802e-14, 284.41, 0.5],
             [-5.684341886080802e-14, 284.66, 0.5],
             [-5.684341886080802e-14, 284.93, 0.5],
@@ -15620,6 +15625,7 @@ export default {
             [-5.684341886080802e-14, 283.91, 0.5],
             [-5.684341886080802e-14, 283.66, 0.5],
             [-5.684341886080802e-14, 283.39, 0.5],
+            /* eslint-enable @typescript-eslint/no-loss-of-precision */
             [0.2399999999998954, 282.86, 0.5],
             [0.5099999999999341, 282.58, 0.5],
             [1.0599999999999454, 282.03000000000003, 0.5],

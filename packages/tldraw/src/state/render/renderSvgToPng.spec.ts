@@ -8,7 +8,9 @@ describe('renderSvgToPng', () => {
     // has no separate Node-only behaviour worth a second forced-environment file. jsdom logs a
     // "not implemented" console.error for the attempted `getContext('2d')` call — expected, and
     // silenced here so it doesn't read as a real test failure in CI output.
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op: deliberately silencing the expected jsdom "not implemented" log (see note above)
+    })
     try {
       await expect(renderSvgToPng('<svg></svg>', 100, 100)).resolves.toBeUndefined()
     } finally {

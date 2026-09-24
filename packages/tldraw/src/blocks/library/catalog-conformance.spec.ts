@@ -9,14 +9,12 @@
  * that shipped in §0.4 — today's figure is 39 registered, 0 orphaned.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const fs = require('fs')
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const path = require('path')
-const { BUILT_IN_BLOCKS, registerBuiltInBlocks } = require('./index')
-const { BlockRegistry } = require('../registry')
-const { validateDeckSpec } = require('../validate-deck-spec')
-const { capabilityDigest } = require('../capability-digest')
+import * as fs from 'fs'
+import * as path from 'path'
+import { BUILT_IN_BLOCKS, registerBuiltInBlocks } from './index'
+import { BlockRegistry } from '../registry'
+import { validateDeckSpec } from '../validate-deck-spec'
+import { capabilityDigest } from '../capability-digest'
 
 const EXPECTED_BLOCK_COUNT = 40
 

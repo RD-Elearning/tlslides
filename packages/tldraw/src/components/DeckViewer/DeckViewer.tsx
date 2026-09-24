@@ -558,7 +558,6 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     })
 
     prevBuildRef.current = { pageId: page.id, revealed: currentBuildStep }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, steps, currentBuildStep, reducedMotion, motionDriver, gsap])
 
   // Cancel every in-flight animation on unmount — an abandoned WAAPI animation holding
