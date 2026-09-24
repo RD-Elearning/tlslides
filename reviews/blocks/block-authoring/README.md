@@ -64,7 +64,7 @@ be 0.
 
 | Task | Status | Commit | Date | tsc | Targeted tests | Full suite | Notes |
 |---|---|---|---|---|---|---|---|
-| B1 | ⬜ | — | — | — | — | — | |
+| B1 | ✅ done | d7ccb69d5e1881af50f4ec90588564272960c522 | 2026-09-24 | 0 | render-dom-nested-host + 4 Tier B specs + host-registry + parity + collision + slide-compiler | 174 suites, 2554 passed | Screenshot pending · see TODO-screenshots.md |
 | B2 | ⬜ | — | — | — | — | — | |
 | B3 | ⬜ | — | — | — | — | — | |
 | B4 | ⬜ | — | — | — | — | — | |

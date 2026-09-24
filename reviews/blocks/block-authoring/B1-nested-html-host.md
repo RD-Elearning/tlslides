@@ -97,8 +97,8 @@ group div) — already correct, no change.
 
 ## Done when
 
-- [ ] A Tier B block nested in any container renders its own props in editor and viewer (test).
-- [ ] Instance `accent`/`on`/`surface` overrides are visible on a Tier B block's live DOM (test).
-- [ ] The 4 Tier B layouts share one host-node helper.
-- [ ] Screenshot of the nested slide opened and looks right.
-- [ ] tsc 0, eslint no new errors, targeted + one full suite green; ledger row filled.
+- [x] A Tier B block nested in any container renders its own props in editor and viewer (test).
+- [x] Instance `accent`/`on`/`surface` overrides are visible on a Tier B block's live DOM (test).
+- [x] The 4 Tier B layouts share one host-node helper.
+- [ ] Screenshot of the nested slide opened and looks right. (pending — see TODO-screenshots.md)
+- [x] tsc 0, eslint no new errors, targeted + one full suite green; ledger row filled.
