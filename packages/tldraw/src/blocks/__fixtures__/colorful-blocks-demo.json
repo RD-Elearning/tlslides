@@ -30,10 +30,10 @@
     },
     {
       "id": "sl_02",
-      "layout": "blank",
+      "layout": "two-column",
       "role": "content",
       "regions": {
-        "content": [
+        "title": [
           {
             "id": "b_02_title",
             "type": "tls.t.title",
@@ -42,7 +42,9 @@
               "size": "heading"
             },
             "motion": { "preset": "fade-up", "order": 1 }
-          },
+          }
+        ],
+        "left": [
           {
             "id": "b_02_bar",
             "type": "tls.d.bar",
@@ -53,16 +55,18 @@
               "highlightIndex": 2
             },
             "motion": { "preset": "grow-bars-y", "order": 2 }
-          },
+          }
+        ],
+        "right": [
           {
             "id": "b_02_donut",
             "type": "tls.d.donut",
             "props": {
               "slices": [
-                { "value": 40, "color": "accent1", "label": "Revenue" },
-                { "value": 30, "color": "accent2", "label": "Cost" },
-                { "value": 20, "color": "accent3", "label": "Profit" },
-                { "value": 10, "color": "accent4", "label": "Other" }
+                { "value": 40, "color": "accent", "label": "Revenue" },
+                { "value": 30, "color": "blue", "label": "Cost" },
+                { "value": 20, "color": "accent2", "label": "Profit" },
+                { "value": 10, "color": "purple", "label": "Other" }
               ],
               "total": 100
             },
@@ -265,16 +269,18 @@
     },
     {
       "id": "sl_07",
-      "layout": "blank",
+      "layout": "image-top",
       "role": "content",
       "regions": {
-        "content": [
+        "title": [
           {
             "id": "b_07_title",
             "type": "tls.t.title",
             "props": { "text": { "runs": [{ "text": "Layout Blocks (tls-l-*)" }] }, "size": "heading" },
             "motion": { "preset": "fade-up", "order": 1 }
-          },
+          }
+        ],
+        "image": [
           {
             "id": "b_07_stack",
             "type": "tls.l.stack",
@@ -287,7 +293,9 @@
               ]
             },
             "motion": { "preset": "fade-up", "order": 2 }
-          },
+          }
+        ],
+        "text": [
           {
             "id": "b_07_grid",
             "type": "tls.l.grid",
@@ -344,16 +352,18 @@
     },
     {
       "id": "sl_09",
-      "layout": "blank",
+      "layout": "image-top",
       "role": "content",
       "regions": {
-        "content": [
+        "title": [
           {
             "id": "b_09_title",
             "type": "tls.t.title",
             "props": { "text": { "runs": [{ "text": "Advanced Charts" }] }, "size": "heading" },
             "motion": { "preset": "fade-up", "order": 1 }
-          },
+          }
+        ],
+        "image": [
           {
             "id": "b_09_large_donut",
             "type": "tls.d.donut",

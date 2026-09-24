@@ -8,6 +8,13 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { HeroNumberProps } from './schema'
 
+/**
+ * Apply a scale factor to a resolved text style. Mirrors `tls-t-title`'s own helper.
+ */
+function withScale(style: ReturnType<LayoutContext['resolveText']>, scale: number) {
+  return { ...style, scale, size: style.size * scale }
+}
+
 export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   const pad = ctx.tokens.space.md
   const gapUnit = ctx.tokens.space.sm
@@ -27,11 +34,22 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
         ? ctx.resolveColor('textMuted')
         : ctx.resolveColor('text')
 
-  const valueStyle = ctx.resolveText('display', {
+  const baseValueStyle = ctx.resolveText('display', {
     letterSpacing: -0.04,
   })
 
-  const valueMetrics = ctx.measureText(props.value, valueStyle, cw)
+  // Autofit: a hero number is a single emphasised value, never meant to wrap — shrink in 4%
+  // steps to a 0.6 floor until it fits on one line at the KPI cell's given width. Mirrors
+  // `tls-t-title`'s own autofit loop; this block never had one, so a value a few characters
+  // longer than its siblings (e.g. "$4.2M" next to "61%"/"118"/"2.4×") would wrap to two lines
+  // (BACKLOG-visual-fix-2.md — found while reviewing the demo deck for visual quality).
+  let scale = 1
+  let valueMetrics = ctx.measureText(props.value, baseValueStyle, cw)
+  while (valueMetrics.lines.length > 1 && scale > 0.6) {
+    scale -= 0.04
+    valueMetrics = ctx.measureText(props.value, withScale(baseValueStyle, scale), cw)
+  }
+  const valueStyle = scale < 1 ? withScale(baseValueStyle, scale) : baseValueStyle
   const valueHeight = valueMetrics.height
 
   children.push({
