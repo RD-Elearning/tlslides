@@ -100,7 +100,10 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
   const nodes: LayoutNode[] = [{
     k: 'text',
     part: 'text',
-    box: { ...inner, height: Math.min(textHeight, inner.height) },
+    // G8.4: report the true measured height, not clamped to the given box — a clamp here
+    // defeats V2.1's two-pass reflow, which relies on this value to know a region needs to
+    // grow (BACKLOG-visual-fix-2.md §8.0/§8.4).
+    box: { ...inner, height: textHeight },
     lines: finalLines,
     style: scaledStyle,
     propPath: 'text',
@@ -108,7 +111,7 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
 
   // Optional decorative rule
   if (props.rule) {
-    const ruleY = Math.min(textHeight, inner.height) + ctx.tokens.space.sm
+    const ruleY = textHeight + ctx.tokens.space.sm
     nodes.push({
       k: 'rect',
       part: 'rule',
@@ -119,7 +122,7 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
   }
 
   // Compute the intrinsic content height: text height + optional rule.
-  const textNodeHeight = Math.min(textHeight, inner.height)
+  const textNodeHeight = textHeight
   let contentHeight = textNodeHeight
   if (props.rule) {
     contentHeight = textNodeHeight + ctx.tokens.space.sm + 6 // rule height

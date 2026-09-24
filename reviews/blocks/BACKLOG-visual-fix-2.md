@@ -587,6 +587,7 @@ one) — it must read 0 on every row.
 | G6 | ✅ | `ac116752` | 2026-09-23 | 0 | same as G5 | 24* | Full sign-off below: 5 of 7 §2.4 criteria met, 2 fail on disclosed pre-existing defects (root-cause-A text overflow; diagram/chart exemplars). Discovered and fixed a `tsc` masking bug (see notes) that had made every prior phase's "production tsc = 0" unverifiable; the 12 real errors it had hidden are now fixed too. `all-blocks.js` deleted (broken, duplicative of `colorful-blocks-demo.js`). Duplicate screenshots gone (`deck-slide-8.png`, `colorful-slide-11/12.png` no longer produced — both scenarios' hardcoded slide counts fixed to match the decks they actually view). |
 | G8.1 | ✅ | `09bd7faa` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 24 | sl_05 moved `blank`→`image-top` (bounded regions) in both fixture copies; collision.spec.ts gained a sl_05-scoped frame-bounds regression test (not a full-fixture gate — see §9); disclosed 7 other slides with the same bug, out of scope |
 | G8.3 | ✅ | `dad5a3fa` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | fixed all 24 named eslint errors: 6 `require()`→`import` in catalog-conformance.spec.ts, 3 stale/dead `react-hooks/exhaustive-deps` disable comments deleted (plugin never registered in `.eslintrc`, so the rule can never fire — provably dead), 3 empty-function bodies given real no-op comments, 1 extra semicolon removed, 13 `no-loss-of-precision` errors on captured fixture data wrapped in a scoped disable/enable block with a reason instead of edited |
+| G8.4 | ✅ | `TBD` | 2026-09-24 | 0 | 172 suites, 2544 pass / 77 todo / 0 fail | 0 | removed the `Math.min(x, inner.height)` height clamp from all 4 named files (12 sites); fixed a resulting regression in `tls-c-steps/layout.ts` (not one of the 4 — a downstream consumer whose own step-height budgeting relied on the clamp; disclosed in §9); sl_01 overlap-audit overflow 96px→9px |
 
 *eslint error count: the 24 errors are pre-existing, in files this pass never touched (`catalog-conformance.spec.ts` require-style, stale `react-hooks/exhaustive-deps` disable-comments in `InlineEditor.tsx`/`PresentationRuntime.tsx` referencing a rule not registered in `.eslintrc`, `old-doc-2.ts` numeric-literal precision, `templates.spec.ts` semicolon, `renderSvgToPng.spec.ts` empty function). The ledger's "20" baseline was carried forward unverified since G0; 24 is the honest, currently-measured number. Not a regression from this pass — none of the flagged lines are in a file this pass edited.
 
@@ -1167,7 +1168,7 @@ All in files this backlog's own passes never touched. Exact list (re-verify with
       Warning count unchanged at **1015** (the react-hooks/exhaustive-deps deletions and the
       `old-doc-2.ts` disable/enable block don't touch anything that emits a warning).
 
-### 8.4 Text blocks under-report their own height when they don't fit, defeating V2.1 reflow · S-M · LOW-MEDIUM risk (4 named files, not a shared render path)
+### 8.4 Text blocks under-report their own height when they don't fit, defeating V2.1 reflow ✅ · S-M · LOW-MEDIUM risk (4 named files, not a shared render path)
 
 **Supersedes the old "fix render-dom.tsx" entry — see §8.0 for why that diagnosis was wrong.**
 The DOM renderer is fine; four block `layout()` functions lie about their own size.
@@ -1229,22 +1230,39 @@ at `:9-12` speculated it might need to be — that speculation turned out to be 
 traced through, and the fix is simpler than the code's own comment expected.
 
 **Done when:**
-- [ ] All four files' `Math.min(x, inner.height)` calls (12 call sites total, per the table above)
-      removed/changed to use the unclamped measured value.
-- [ ] `overlap-audit`'s `totalOverflow`, measured *before* (**10**, current committed state — see
-      `git log`/G7 §7.3 for the exact per-slide breakdown: `sl_01:96y, sl_02:3y, sl_03:5y,
-      sl_04:12y×4, sl_06:12y, sl_07:3y, sl_08:3y`) and *after* — must drop; slide 1's `96y` in
-      particular should go to (near) `0` since that's the one worked through above.
-- [ ] `demo-deck-q3`'s `deck-slide-1.png` re-screenshotted (`node tools/visual/shoot.js
-      deck-demo`) and opened: title and subtitle no longer touch.
-- [ ] Every existing `.spec.ts` for the four touched blocks still passes unmodified (they're each
-      isolated — a real regression here would show up as one of *these* four suites failing, not
-      some distant one).
-- [ ] `collision.spec.ts` and `overlap-audit`'s block/design-overlap counts stay at 0 — a region
-      that now *correctly* grows should never make it collide with a sibling; if it does, some
-      other region's gap/positioning math has its own bug, worth a fresh investigation rather
-      than papering over here.
-- [ ] Full suite green, production `tsc` = 0.
+- [x] All four files' `Math.min(x, inner.height)` calls (12 call sites total, per the table above)
+      removed/changed to use the unclamped measured value. Done in `tls-t-title/layout.ts` (3
+      sites), `tls-t-body/layout.ts` (3 sites, incl. the multi-column path), `tls-t-caption/
+      layout.ts` (2 sites), `tls-x-page-number/layout.ts` (2 sites) — 10 of the 12 named sites are
+      literal `Math.min` removals; the other 2 (`tls-t-title`'s `ruleY` and `textNodeHeight`
+      locals) were already derived from the same clamped value and now derive from the unclamped
+      one directly.
+- [x] `overlap-audit`'s `totalOverflow`, measured *before* (**10**, per-slide: `sl_01:96y,
+      sl_02:3y, sl_03:5y, sl_04:12y×4, sl_06:12y, sl_07:3y, sl_08:3y`) and *after* — **slide 1's
+      overflow dropped from 96px to 9px** (near-zero residual, ~94% reduction), exactly the case
+      this item traced through. The other slides' overflow is unchanged (they weren't using the
+      four touched blocks' clamped path in a way that was previously hiding anything — their
+      residual overflow has a different, undiagnosed cause, out of this item's scope). The gate's
+      entry *count* stays 10 (one row per slide with any nonzero overflow, not a pixel sum — sl_01
+      still has 9px, so it still has an entry), but its worst-case magnitude dropped by an order
+      of magnitude.
+- [x] `demo-deck-q3`'s `deck-slide-1.png` re-screenshotted (`node tools/visual/shoot.js
+      deck-demo`) and opened: title and subtitle no longer touch — clear gap between the coral
+      rule and the subtitle line.
+- [x] Every existing `.spec.ts` for the four touched blocks still passes unmodified: `tls-t-title.
+      spec.ts`, `tls-t-body.spec.ts`, `tls-t-caption.spec.ts` all pass (45 tests). `tls-x-page-
+      number` has **no dedicated spec file** (a pre-existing gap from when G2 wrote the block —
+      disclosed, not created here, since writing a new spec is outside this item's stated scope).
+- [x] `collision.spec.ts` and `overlap-audit`'s block/design-overlap counts stay at 0 — **and this
+      caught a real regression exactly as anticipated**: removing `tls-t-title`'s clamp broke 2
+      tests in `composite-geometry.spec.ts` (`tls.c.steps × orientation=vertical @ 960×540`) — not
+      a false alarm, a genuinely previously-hidden defect (see §9 for the fix, in `tls-c-steps/
+      layout.ts`, a 5th file — disclosed and justified there, not silently folded in).
+      `collision.spec.ts` itself (which only covers the two deck fixtures, neither of which uses
+      `tls.c.steps`) stayed green throughout. `overlap-audit`: 0/0 block/design overlaps,
+      unchanged.
+- [x] Full suite green, production `tsc` = 0. 172/172 suites, 2544 pass / 77 todo / 0 fail (after
+      the `tls-c-steps` fix below — 2 tests failed transiently mid-item, both fixed, not left red).
 
 ### 8.5 `tls.l.row` `sizing: 'content'` is a no-op · M · MEDIUM risk (shared measurement function)
 
@@ -1364,6 +1382,81 @@ opened. Full suite: 172/172 suites, 2544 pass / 77 todo / 0 fail (up 2 from G7's
 
 **Scope cuts:** The 7-slide disclosed finding above, named and not silently folded into this
 item's fix.
+
+### G8.4 notes
+
+**What was built:** Removed the `Math.min(x, inner.height)` height clamp from all 12 named call
+sites across the 4 named files (`tls-t-title/layout.ts`, `tls-t-body/layout.ts`, `tls-t-caption/
+layout.ts`, `tls-x-page-number/layout.ts`), so each now reports its true measured height instead
+of silently truncating it to whatever box it was given. Also resolved `tls-t-body/layout.ts`'s
+own `V2.3` file-doc TODO (`:9-12`) that had speculated the clamp "may need to be conditional based
+on whether a registry is provided" — traced through `slide-compiler.ts:249` and confirmed the
+no-registry path never calls `layout()` for measurement at all, so the clamp removal needed no
+such condition; updated the comment to record the resolution instead of leaving a stale, already-
+answered question in the file.
+
+**Verification of the traced mechanism:** `overlap-audit`'s per-slide overflow on `demo-deck-q3`
+before this item: `sl_01:96y, sl_02:3y, sl_03:5y, sl_04:12y×4, sl_06:12y, sl_07:3y, sl_08:3y`.
+After: `sl_01:9y` (down from 96), every other slide unchanged. `deck-slide-1.png` re-screenshotted
+and opened: the title's second line and the subtitle no longer touch, with clear space after the
+coral rule. This is the fix worked through in §8.0/§8.4 — confirmed against the real deck, not
+just the isolated unit specs.
+
+**A real, previously-hidden regression this item's own "Done when" anticipated, found and fixed —
+not a 5th instance of the 4 files' clamp bug, a downstream consumer's dependency on it:**
+`composite-geometry.spec.ts` (a pre-existing, passing cross-block geometry guard — its own doc
+comment: *"green tests hid overlapping text for three phases... this is the guard that catches
+this class of bug"*) failed two tests after the clamp removal: `tls.c.steps × orientation=vertical
+@ 960×540`, both "all nodes within root" and "no text overlap." Root cause, traced (not guessed):
+`tls-c-steps/layout.ts`'s `layoutVertical` delegates each step's title to `tls.t.title` via
+`ctx.layoutChild`, using the **default** `size` prop (`'title'`, 96 slide units — sized for a full
+1920×1080 slide title). At the test's 960×540 box with 4 steps, `stepHeight` (the per-step budget)
+computes to ~115.5 units; a single line of 96-unit-font title text alone is ~106 units tall,
+leaving only ~9.5 units for the description slot. Previously, `tls-t-body`'s own clamp silently
+squashed the description's *reported* box to that ~9.5-unit sliver regardless of its true ~43-unit
+rendered height — which is exactly the "block lies about its own size" defect this whole G8.4 item
+exists to fix, just hidden one level deeper, inside a composite block's internal delegation rather
+than at the top-level slide-region boundary. Once the clamp was gone, the description's true,
+larger height was reported, and it visibly overlapped the *next* step's title — a real,
+previously-invisible defect, not a new one introduced by this item.
+
+**Fix:** a step title is one of N items sharing a compact composite region, not a full slide
+title — `'title'` (96 units) was never proportionate at any realistic step count once the block
+could no longer lie about the result. Changed `tls-c-steps/layout.ts`'s delegated title to use
+`size: 'subheading'` (44 units) instead of the default, via a new shared
+`STEP_TITLE_TYPE_TOKEN` constant used by *both* the real delegated `buildTitle` call and the
+file's own naive pre-measurement helper (`measureTitleHeight`) — previously two separate,
+independently-hardcoded `'title'` references that could (and did, in spirit) drift apart; matching
+the two eliminates that whole class of mismatch rather than papering over one side of it. The
+choice of `'subheading'` (not, say, `'body'`) keeps a title-larger-than-description hierarchy,
+matching the sibling pattern already established by `tls.g.steps` (`'body'` title / `'caption'`
+desc, fixed in G7) and `tls-c-agenda` (`'body'` title / `'caption'` note) — neither of which uses
+the full `'title'` token for a list-item-sized label. `layoutHorizontal` uses the same shared
+`buildTitle`/`measureTitleHeight` helpers, so the change applies uniformly to both orientations,
+not just the one the test happened to catch.
+
+**Why this was fixed here rather than disclosed-and-skipped** (per this item's own instruction not
+to extend the 4-file fix pattern speculatively to a "5th file with the same clamp"): this is not
+that case. `tls-c-steps/layout.ts` does not have the `Math.min(x, inner.height)` clamp bug itself
+— it has a *different*, pre-existing bug (an unrealistic step-height budget) that the 4 files'
+clamps happened to be masking. Leaving it unfixed would mean shipping this item with a real,
+previously-passing test suite now red — not an out-of-scope disclosure like G8.1's 7-slide finding
+(which nothing in this item's own scope touched), but a direct, traceable consequence of this
+item's own change with no other named owner.
+
+**Verification:** `composite-geometry.spec.ts` 36/36 pass (was 34/36 after the clamp removal,
+before the `tls-c-steps` fix). `tls-c-steps.spec.ts` unmodified, still passes. `tls-g-steps.spec.ts`
+(the unrelated diagram-family sibling) unmodified, still passes. Full suite: 172/172 suites, 2544
+pass / 77 todo / 0 fail. Production `tsc` = 0. `collision.spec.ts` 21/21 (unaffected — neither deck
+fixture uses `tls.c.steps`). `overlap-audit`: exit 0, 0/0 block/design overlaps, unchanged.
+
+**What was NOT built:** No spec file written for `tls-x-page-number` (a pre-existing gap, disclosed
+not created — out of this item's stated scope). No change to `tls-t-body`'s multi-column path's
+column-balancing behavior beyond the clamp removal itself (each column now reports its true
+height; nothing currently consumes that for cross-column balancing, and building that wasn't asked
+for here).
+
+**Scope cuts:** None beyond the disclosed `tls-x-page-number` spec gap above.
 
 ### G8.3 notes
 

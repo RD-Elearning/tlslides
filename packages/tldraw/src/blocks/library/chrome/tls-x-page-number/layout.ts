@@ -19,11 +19,11 @@ export function layout(props: PageNumberProps, ctx: LayoutContext): LayoutNode {
   const textNode: LayoutNode = {
     k: 'text',
     part: 'text',
-    box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, ctx.box.height) },
+    box: { x: 0, y: 0, width: ctx.box.width, height: m.height },
     lines: m.lines,
     style,
     propPath: 'number',
   }
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, ctx.box.height) }, part: 'root', children: [textNode] }
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children: [textNode] }
 }

@@ -6,10 +6,11 @@
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  *
- * V2.3: The Math.min(m.height, inner.height) clamps content to available space.
- * With V2.1 two-pass region resolution, content can now overflow region bounds
- * when intrinsic height exceeds allocated height. This clamping may need to be
- * conditional based on whether a registry is provided for measurement.
+ * G8.4 (resolved the V2.3 TODO above): the block reports its true measured height, unclamped.
+ * The no-registry path never calls `layout()` for measurement at all (`slide-compiler.ts`'s
+ * fallback branch sets every block height to -1 and equal-splits the region), so there was no
+ * regression case to make the clamp conditional on — the clamp was traced and found to be
+ * unconditionally safe to remove (BACKLOG-visual-fix-2.md §8.4).
  */
 
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
@@ -66,14 +67,14 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
     const textNode: LayoutNode = {
       k: 'text',
       part: 'text',
-      box: { ...inner, height: Math.min(m.height, inner.height) },
+      box: { ...inner, height: m.height },
       lines: m.lines,
       style: currentStyle,
       propPath: 'text',
     }
 
     // Return measured content height, not the full available box height.
-    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, inner.height) }, part: 'root', children: [textNode] }
+    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children: [textNode] }
   }
 
   // Multi-column: split text by newlines, or if no newlines, split by space
@@ -99,7 +100,7 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
     children.push({
       k: 'text',
       part: `text[${col}]`,
-      box: { ...colBox, height: Math.min(m.height, colBox.height) },
+      box: { ...colBox, height: m.height },
       lines: m.lines,
       style: resolvedStyle,
       propPath: 'text',

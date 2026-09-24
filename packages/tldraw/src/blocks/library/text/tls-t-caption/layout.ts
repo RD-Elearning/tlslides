@@ -29,12 +29,12 @@ export function layout(props: CaptionProps, ctx: LayoutContext): LayoutNode {
   const textNode: LayoutNode = {
     k: 'text',
     part: 'text',
-    box: { ...inner, height: Math.min(m.height, inner.height) },
+    box: { ...inner, height: m.height },
     lines: m.lines,
     style: resolvedStyle,
     propPath: 'text',
   }
 
   // Return measured content height, not the full available box height.
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: Math.min(m.height, inner.height) }, part: 'root', children: [textNode] }
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children: [textNode] }
 }

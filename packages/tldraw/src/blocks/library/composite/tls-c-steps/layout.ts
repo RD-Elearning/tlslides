@@ -22,6 +22,16 @@ import type { StepsProps } from './schema'
 const CONNECTOR_THICKNESS = 2
 const CONNECTOR_GAP = 12
 const MARKER_SIZE = 28
+// G8.4: a step's title is one of N items sharing a compact region, not a full slide title —
+// `'title'` (96 slide units, sized for a 1920×1080 frame) never fit N-per-row/column at any
+// realistic step count once tls.t.title stopped silently clamping its own reported height to
+// whatever box it was given (BACKLOG-visual-fix-2.md §8.4). `'subheading'` still reads larger
+// than the description below it (tls.t.body, fixed at the 'body' token), matching the
+// title-bigger-than-description hierarchy tls.g.steps and tls.c.agenda already use for the same
+// kind of item. Shared by the naive pre-measurement below and the real delegated layout so the
+// two never drift apart again (the exact "two inline measurement copies" class of bug named in
+// §0.6).
+const STEP_TITLE_TYPE_TOKEN = 'subheading'
 
 /**
  * Format a step number as a marker string.
@@ -56,7 +66,7 @@ function buildMarker(
  * Measure the intrinsic height of a title text (for layout positioning).
  */
 function measureTitleHeight(title: string, width: number, ctx: LayoutContext): number {
-  const style = ctx.resolveText('title', { letterSpacing: -0.03 })
+  const style = ctx.resolveText(STEP_TITLE_TYPE_TOKEN, { letterSpacing: -0.03 })
   const m = ctx.measureText(title, style, width)
   return m.height
 }
@@ -85,7 +95,7 @@ function buildTitle(
   const spec: BlockSpec = {
     id: `step-${index}-title`,
     type: 'tls.t.title',
-    props: { text: title },
+    props: { text: title, size: STEP_TITLE_TYPE_TOKEN },
   }
   const wrapper = ctx.layoutChild(spec, { x, y, width: w, height: availableH })
   // Override the wrapper group's part with our step-specific part name.
