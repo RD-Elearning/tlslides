@@ -17,7 +17,8 @@ describe('tls.l.safe-area', () => {
       )
       assertValidNode(node)
       expect(node.k).toBe('group')
-      expect(node.children).toHaveLength(2)
+      // 2 children -> delegated to a stack group, so 1 direct child (the group)
+      expect(node.children).toHaveLength(1)
     })
   })
 

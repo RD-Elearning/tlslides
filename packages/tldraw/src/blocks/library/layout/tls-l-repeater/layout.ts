@@ -5,7 +5,7 @@
  * specified direction. Otherwise, placeholder rects are emitted.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RepeaterProps } from './schema'
 
 export function layout(props: RepeaterProps, ctx: LayoutContext): LayoutNode {
@@ -13,7 +13,7 @@ export function layout(props: RepeaterProps, ctx: LayoutContext): LayoutNode {
   const direction = (props.direction ?? 'y') as 'x' | 'y'
   const gapToken = (props.gap ?? 'sm') as SpaceToken
   const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
   const template = children.length > 0 ? children[0] : null
 
   const W = ctx.box.width

@@ -6,14 +6,14 @@
  * is a Paint (gradient), the background rect uses that paint directly.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { CardProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
   const padding = ctx.tokens.space[paddingToken] ?? ctx.tokens.space.md
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height
@@ -30,9 +30,13 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
     surfaceFill = { type: 'solid', color: surfaceColor }
   }
 
-  const childNodes: LayoutNode[] = children.map((child) => {
-    return ctx.layoutChild(child, contentBox)
-  })
+  let childNodes: LayoutNode[]
+  if (children.length > 1) {
+    // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
+    childNodes = [ctx.layoutChild({ type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
+  } else {
+    childNodes = children.map((child) => ctx.layoutChild(child, contentBox))
+  }
 
   return {
     k: 'group',

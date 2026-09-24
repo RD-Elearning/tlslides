@@ -5,14 +5,14 @@
  * in the remaining space below.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { SectionProps } from './schema'
 
 export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   const title = props.title ?? 'Section'
   const gapToken = (props.gap ?? 'sm') as SpaceToken
   const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height
@@ -53,9 +53,13 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   }
 
   const contentBox = { x: 0, y: contentY, width: W, height: contentH }
-  const childNodes: LayoutNode[] = children.map((child) => {
-    return ctx.layoutChild(child, contentBox)
-  })
+  let childNodes: LayoutNode[]
+  if (children.length > 1) {
+    // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
+    childNodes = [ctx.layoutChild({ type: 'tls.l.stack', props: { gap, children, sizing: 'content' } }, contentBox)]
+  } else {
+    childNodes = children.map((child) => ctx.layoutChild(child, contentBox))
+  }
 
   return {
     k: 'group',

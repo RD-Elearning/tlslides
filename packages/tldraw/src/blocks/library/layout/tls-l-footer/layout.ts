@@ -5,7 +5,7 @@
  * the bottom area holds the footer, separated by a gutter.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { FooterProps } from './schema'
 import { splitBox } from '../../../layout/box-model'
 
@@ -13,7 +13,7 @@ export function layout(props: FooterProps, ctx: LayoutContext): LayoutNode {
   const footerHeight = props.footerHeight ?? 120
   const gutterToken = (props.gutter ?? 'md') as SpaceToken
   const gutter = ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height

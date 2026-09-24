@@ -5,7 +5,7 @@
  * at most two children (one per panel).
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { SplitProps } from './schema'
 import { splitBox } from '../../../layout/box-model'
 
@@ -14,7 +14,7 @@ export function layout(props: SplitProps, ctx: LayoutContext): LayoutNode {
   const gutterToken = (props.gutter ?? 'md') as SpaceToken
   const gutter = ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md
   const axis = (props.axis ?? 'x') as 'x' | 'y'
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height

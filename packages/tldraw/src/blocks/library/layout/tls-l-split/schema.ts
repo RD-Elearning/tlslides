@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.split — two-panel split with ratio/gutter.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   ratio: {
@@ -23,12 +23,19 @@ export const schema: BlockSchema = {
     label: 'Axis',
     help: 'Split direction: x (left/right) or y (top/bottom).',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 2 },
+    role: 'content',
+    label: 'Children',
+    help: 'Two child blocks, one per panel.',
+  },
 }
 
 export interface SplitProps extends Record<string, unknown> {
   ratio: number
   gutter: string
   axis: string
+  children?: BlockSpec[]
 }
 
 export const defaults: SplitProps = {

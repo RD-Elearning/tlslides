@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.sidebar — sidebar + main content.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   sidebarWidth: {
@@ -23,12 +23,19 @@ export const schema: BlockSchema = {
     label: 'Sidebar Side',
     help: 'Place the sidebar on the start (left) or end (right) side.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 2 },
+    role: 'content',
+    label: 'Children',
+    help: 'First child is sidebar, second is main content.',
+  },
 }
 
 export interface SidebarProps extends Record<string, unknown> {
   sidebarWidth: number
   gutter: string
   sidebarSide: string
+  children?: BlockSpec[]
 }
 
 export const defaults: SidebarProps = {

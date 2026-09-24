@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.card — filled container with padding.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   padding: {
@@ -11,10 +11,17 @@ export const schema: BlockSchema = {
     label: 'Padding',
     help: 'Inner padding of the card.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks laid out inside the card.',
+  },
 }
 
 export interface CardProps extends Record<string, unknown> {
   padding: string
+  children?: BlockSpec[]
 }
 
 export const defaults: CardProps = {

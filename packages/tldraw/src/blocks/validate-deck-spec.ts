@@ -18,7 +18,7 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
-import type { Box, BlockDefinition, BlockStyleSpec, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
+import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
 import { levenshtein, nearestName } from './nearest-name'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 
@@ -501,7 +501,7 @@ function validateBlockTree(
   }
 
   if (def) {
-    validateProps(block.props, def, path, findings)
+    validateProps(block.props, def, path, reg, seenBlockIds, findings, ancestorIds, ancestorRefs, depth, tokens)
     validateStyle(block.style, def.type, `${path}.style`, tokens, findings)
   } else if (block.props !== undefined && !isRecord(block.props)) {
     findings.push({
@@ -547,7 +547,18 @@ function validateBlockTree(
 /* Prop / slot validation                                                           */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-function validateProps(propsRaw: unknown, def: BlockDefinition, blockPath: string, findings: DeckFinding[]): void {
+function validateProps(
+  propsRaw: unknown,
+  def: BlockDefinition,
+  blockPath: string,
+  reg: BlockRegistry,
+  seenBlockIds: Set<string>,
+  findings: DeckFinding[],
+  ancestorIds: string[],
+  ancestorRefs: unknown[],
+  depth: number,
+  tokens: ResolvedTokens
+): void {
   const schema = def.schema ?? {}
   const slotNames = Object.keys(schema)
 
@@ -580,6 +591,26 @@ function validateProps(propsRaw: unknown, def: BlockDefinition, blockPath: strin
     }
     if (value !== undefined && value !== null) {
       checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings)
+
+      // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
+      // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
+      if (slotSpec.type.kind === 'blocks' && Array.isArray(value)) {
+        const nextAncestorIds = typeof props.id === 'string' && props.id.length > 0 ? [...ancestorIds, props.id] : ancestorIds
+        const nextAncestorRefs = [...ancestorRefs, propsRaw]
+        value.forEach((childRaw, ci) => {
+          validateBlockTree(
+            childRaw,
+            `${blockPath}.props.${slotName}[${ci}]`,
+            reg,
+            seenBlockIds,
+            findings,
+            nextAncestorIds,
+            nextAncestorRefs,
+            depth + 1,
+            tokens
+          )
+        })
+      }
     }
   }
 
@@ -790,6 +821,34 @@ function checkBudget(
             } short of the required minimum of ${slotType.min}.`,
           })
         }
+      }
+      break
+    }
+    case 'blocks': {
+      if (Array.isArray(value)) {
+        if (slotType.max !== undefined && value.length > slotType.max) {
+          findings.push({
+            level: 'warning',
+            rule: 'slot/over-max',
+            path,
+            message: `Block "${blockType}"'s "${slotName}" slot accepts at most ${slotType.max} child(ren); ${value.length} given.`,
+          })
+        }
+        if (slotType.min !== undefined && value.length < slotType.min) {
+          findings.push({
+            level: 'warning',
+            rule: 'slot/under-min',
+            path,
+            message: `Block "${blockType}"'s "${slotName}" slot requires at least ${slotType.min} child(ren); ${value.length} given.`,
+          })
+        }
+      } else if (value !== undefined && value !== null) {
+        findings.push({
+          level: 'error',
+          rule: 'block/malformed',
+          path,
+          message: `Block "${blockType}"'s "${slotName}" slot must be an array of blocks; got ${describeType(value)}.`,
+        })
       }
       break
     }

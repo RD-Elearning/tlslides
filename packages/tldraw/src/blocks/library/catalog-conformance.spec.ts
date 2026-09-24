@@ -81,6 +81,30 @@ describe('block catalog conformance', () => {
             expect(def.poster).toBeDefined()
           }
         })
+
+        it('container blocks declare a children slot of kind blocks', () => {
+          // Every layout-family block that reads children must declare a `children` slot.
+          // Static list of the 11 container types (from the review: B2 problem statement).
+          const containerTypes = new Set([
+            'tls.l.row',
+            'tls.l.stack',
+            'tls.l.grid',
+            'tls.l.split',
+            'tls.l.card',
+            'tls.l.section',
+            'tls.l.overlay',
+            'tls.l.safe-area',
+            'tls.l.sidebar',
+            'tls.l.footer',
+            'tls.l.repeater',
+          ])
+          if (containerTypes.has(def.type)) {
+            const slot = def.schema?.children
+            expect(slot).toBeDefined()
+            expect(slot?.type?.kind).toBe('blocks')
+            expect(slot?.role).toBe('content')
+          }
+        })
       })
     }
   })

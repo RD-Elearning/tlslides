@@ -4,11 +4,11 @@
  * Every child fills the full box, layered in document order (last child on top).
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, Paint } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { OverlayProps } from './schema'
 
-export function layout(_props: OverlayProps, ctx: LayoutContext): LayoutNode {
-  const children = (_props as unknown as { children?: BlockSpec[] }).children ?? []
+export function layout(props: OverlayProps, ctx: LayoutContext): LayoutNode {
+  const children = props.children ?? []
   const W = ctx.box.width
   const H = ctx.box.height
   const fullBox = { x: 0, y: 0, width: W, height: H }

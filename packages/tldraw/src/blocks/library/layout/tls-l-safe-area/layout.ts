@@ -6,14 +6,14 @@
  * in headless mode the children are laid out without the inset.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { SafeAreaProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 
 export function layout(props: SafeAreaProps, ctx: LayoutContext): LayoutNode {
   const insetToken = (props.inset ?? 'md') as SpaceToken
   const inset = ctx.tokens.space[insetToken] ?? ctx.tokens.space.md
-  const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const children = props.children ?? []
 
   const W = ctx.box.width
   const H = ctx.box.height
@@ -22,9 +22,13 @@ export function layout(props: SafeAreaProps, ctx: LayoutContext): LayoutNode {
   // In editor mode, inset by the token. In headless (export), lay out at full size.
   const contentBox = ctx.headless ? outerBox : insetBox(outerBox, inset)
 
-  const childNodes: LayoutNode[] = children.map((child) => {
-    return ctx.layoutChild(child, contentBox)
-  })
+  let childNodes: LayoutNode[]
+  if (children.length > 1) {
+    // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
+    childNodes = [ctx.layoutChild({ type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
+  } else {
+    childNodes = children.map((child) => ctx.layoutChild(child, contentBox))
+  }
 
   return {
     k: 'group',

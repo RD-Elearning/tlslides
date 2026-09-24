@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.repeater — repeats template for each item.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   count: {
@@ -23,12 +23,19 @@ export const schema: BlockSchema = {
     label: 'Gap',
     help: 'Spacing between repeated items.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 1 },
+    role: 'content',
+    label: 'Children',
+    help: 'Template child to repeat. First child only — it is rendered count times.',
+  },
 }
 
 export interface RepeaterProps extends Record<string, unknown> {
   count: number
   direction: string
   gap: string
+  children?: BlockSpec[]
 }
 
 export const defaults: RepeaterProps = {

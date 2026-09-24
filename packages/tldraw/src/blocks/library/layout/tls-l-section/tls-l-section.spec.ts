@@ -24,8 +24,8 @@ describe('tls.l.section', () => {
       )
       assertValidNode(node)
       expect(node.k).toBe('group')
-      // surface + title + divider + 2 children = 5 nodes
-      expect(asGroup(node).children).toHaveLength(5)
+      // surface + title + divider + 1 stack group (containing 2 children) = 4 nodes
+      expect(asGroup(node).children).toHaveLength(4)
     })
   })
 

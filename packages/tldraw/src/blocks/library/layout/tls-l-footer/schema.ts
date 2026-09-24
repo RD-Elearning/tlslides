@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.footer — content + footer.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   footerHeight: {
@@ -17,11 +17,18 @@ export const schema: BlockSchema = {
     label: 'Gutter',
     help: 'Spacing between main content and footer.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 2 },
+    role: 'content',
+    label: 'Children',
+    help: 'First child is main content, second is the footer.',
+  },
 }
 
 export interface FooterProps extends Record<string, unknown> {
   footerHeight: number
   gutter: string
+  children?: BlockSpec[]
 }
 
 export const defaults: FooterProps = {

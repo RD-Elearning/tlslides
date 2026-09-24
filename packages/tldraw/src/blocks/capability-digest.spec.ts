@@ -461,7 +461,10 @@ describe('R7 — capability digest v2', () => {
       // R7's stated remedy for further growth ("split per family") is the named
       // follow-up and is better done once the catalog stops moving (R11–R16 add
       // no blocks).
-      const charBudget = 56000
+      // B2 added `children` slot declarations to 8 layout containers (card, section,
+      // split, overlay, safe-area, sidebar, footer, repeater): digest grew from
+      // ~54.5k to ~56.1k.
+      const charBudget = 57000
       expect(json.length).toBeLessThanOrEqual(charBudget)
     })
   })

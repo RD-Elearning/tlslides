@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.section — titled section.
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   title: {
@@ -17,11 +17,18 @@ export const schema: BlockSchema = {
     label: 'Gap',
     help: 'Spacing between title and children.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks laid out below the title.',
+  },
 }
 
 export interface SectionProps extends Record<string, unknown> {
   title: string
   gap: string
+  children?: BlockSpec[]
 }
 
 export const defaults: SectionProps = {

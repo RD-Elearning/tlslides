@@ -2,7 +2,7 @@
  * Schema and defaults for tls.l.safe-area — content safe area (editorOnly).
  */
 
-import type { BlockSchema } from '../../../types'
+import type { BlockSchema, BlockSpec } from '../../../types'
 
 export const schema: BlockSchema = {
   inset: {
@@ -11,10 +11,17 @@ export const schema: BlockSchema = {
     label: 'Inset',
     help: 'Safe-area inset on all sides.',
   },
+  children: {
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    role: 'content',
+    label: 'Children',
+    help: 'Child blocks laid out inside the safe area.',
+  },
 }
 
 export interface SafeAreaProps extends Record<string, unknown> {
   inset: string
+  children?: BlockSpec[]
 }
 
 export const defaults: SafeAreaProps = {
