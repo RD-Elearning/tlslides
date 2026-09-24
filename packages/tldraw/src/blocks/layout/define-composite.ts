@@ -58,7 +58,7 @@ export interface CompositeBlockConfig<P extends Record<string, unknown>> {
  */
 export function defineCompositeBlock<P extends Record<string, unknown>>(
   cfg: CompositeBlockConfig<P>
-): BlockDefinition<P> {
+): BlockDefinition {
   const family = cfg.family ?? 'composite'
 
   // Generated layout: delegate to layoutChild, re-tag root part.

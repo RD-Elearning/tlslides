@@ -115,3 +115,20 @@ tls-l-sidebar,tls-l-footer}` — a leftover from a shell brace-expansion that fa
 grep for it in `types.ts` first. This exact mistake (inventing `"accent1"`/`"accent3"`/`"accent4"`
 as if they were real `ColorRole`s) shipped a demo slide with 3 of 4 chart segments rendering
 solid black — see [BACKLOG-visual-fix-2-archive.md](BACKLOG-visual-fix-2-archive.md) §10.3.
+
+### Composite in 20 lines
+
+Skip step 3 (write `layout.ts` by hand) when the new block is purely an **arrangement of blocks
+that already exist** — a card with an icon, a number and a caption. `defineCompositeBlock()`
+(`blocks/layout/define-composite.ts`) turns a pure `build(props) → BlockSpec` function into a full
+`BlockDefinition`: it generates `layout()` via `ctx.layoutChild` and `intrinsicSize()` via
+`ctx.measureIntrinsicSize`, so there is no box arithmetic to write. `tls.c.stat-card`
+(`library/composite/tls-c-stat-card/`) is the reference example — a `tls.l.card` → `tls.l.stack` →
+[`tls.m.icon`, `tls.t.hero-number`] tree, ~20 lines of `build()`. Full recipe and rules (purity,
+depth budget, `tier` is author-declared not inferred, motion animates as one unit in v1) in
+[guides/blocks-authoring.md](../../guides/blocks-authoring.md) §2.8 and
+[block-authoring/B5-define-composite-block.md](block-authoring/B5-define-composite-block.md).
+
+Use a hand-written `layout()` instead when the block needs new geometry (a chart, custom shape,
+non-standard text measurement); use Tier B (`kind: 'html'`) when the design genuinely needs CSS
+the layout primitives can't produce.

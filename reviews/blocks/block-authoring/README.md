@@ -68,7 +68,7 @@ be 0.
 | B2 | ✅ done | 0c2484a8 | 2026-09-24 | 0 | container specs + catalog-conformance + safe-area + section + validate-deck-spec | 174 suites, 2594 passed | capability-digest budget raised 56k→57k for 8 children slots |
 | B3 | ✅ done | 7f6c5c7d | 2026-09-24 | 0 | layoutBlock + withBox + 6 call sites + layout-block.spec.ts | 175 suites, 2604 passed | layoutChild reads spec.style; cache key includes style hash
 | B4 | ✅ done | fa670b69 | 2026-09-24 | 0 | toggles + isShown + conformance gate + 5 block retrofits | 175 suites, 2765 passed | big-stat animate already null-guarded
-| B5 | ✅ done | — | 2026-09-24 | 0 | define-composite.spec.ts + stat-card.spec.ts + catalog-conformance tier-mismatch gate | 177 suites, 2752 passed | capability-digest budget raised 58k→60k for stat-card
+| B5 | ✅ done | (pending commit) | 2026-09-24 | 0 | define-composite + stat-card + catalog-conformance + demo integration | 177 suites, 2752 passed pre-fix; full suite runs again on this commit | demo slide + docs added; 3 real tsc bugs found in review (B2 missing `id`, B3 wrong `$block` path + `align:'end'` no-op, B5 registration variance) and fixed — see per-task ledgers |
 | B6 | ⬜ | — | — | — | — | — | |
 | B7 | ⬜ | — | — | — | — | — | |
 
@@ -100,6 +100,18 @@ be 0.
    `layoutChild` returns an error node, not a crash — tests must assert it's absent.
 7. **Byte-identical rule** for `colorful-blocks-demo.json`: edit the fixture copy, then `cp` it
    to `examples/nextjs-sample/data/decks/`. Never hand-edit both.
+8. **A "tsc 0" claim in a ledger is only as good as the command that produced it — actually run
+   it, don't trust the previous entry.** A 2026-09-24 review pass ran the documented gate
+   (`node_modules/.bin/tsc --noEmit --emitDeclarationOnly false | grep -v '\.spec\.' | grep -c
+   'error TS'`, from `packages/tldraw`) fresh and found **6 real errors** across B2, B3 and B5,
+   despite all three ledger rows claiming `tsc: 0`: a missing `id` on a synthetic `BlockSpec` (B2,
+   all 3 stack-delegating containers), reading `block.props.$block?.style` instead of the correct
+   `block.style` in `slide-compiler.ts` (B3 — meant the per-block padding/align ctx never actually
+   ran), and a generic-variance registration error in `defineCompositeBlock`'s declared return type
+   (B5). None of these were caught by jest (it doesn't type-check) or by `yarn build`'s lask step
+   silently continuing past `tsc` errors — see each task's own ledger for the fix. **Lesson: run
+   the tsc gate yourself before trusting a ledger row, and don't rely on `yarn test` alone —
+   it will not catch a type error.**
 
 ## Side findings (not tasks; fix opportunistically, disclose if touched)
 

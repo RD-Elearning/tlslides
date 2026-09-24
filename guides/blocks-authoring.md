@@ -261,6 +261,73 @@ one module-level registry from `registerBuiltInBlocks` and takes no `registry` p
 (`DeckViewer.tsx`, "Shared block registry"), so a host block renders in the editor but not in the
 viewer. R1 adds `registry` and `hostRegistry` props to the viewer beside the editor's.
 
+### 2.8 Composite in 20 lines — `defineCompositeBlock()`
+
+When a new block is really just an **arrangement of existing blocks** — a card with an icon, a
+number and a caption — skip `layout.ts` entirely and describe the arrangement as a spec tree.
+`defineCompositeBlock()` (`blocks/layout/define-composite.ts`) generates `layout()` and
+`intrinsicSize()` for you from a pure `build(props) → BlockSpec` function.
+
+```ts
+// tls-c-stat-card/index.ts — the whole block, minus schema boilerplate
+import { defineCompositeBlock } from '../../../layout/define-composite'
+import { isShown } from '../../../schema-helpers'
+
+function buildStatCard(props: StatCardProps): BlockSpec {
+  const children: BlockSpec[] = []
+  if (isShown(props, 'showIcon') && props.icon) {
+    children.push({ id: 'icon', type: 'tls.m.icon', props: { icon: props.icon, color: 'accent' } })
+  }
+  children.push({ id: 'value', type: 'tls.t.hero-number', props: {
+    value: props.value, unit: props.unit, caption: props.caption,
+  } })
+  return {
+    id: 'stat-card', type: 'tls.l.card',
+    props: { padding: props.padding ?? 'md', children, sizing: 'content' },
+  }
+}
+
+export const tlsCStatCard = defineCompositeBlock({
+  type: 'tls.c.stat-card', name: 'Stat Card', family: 'composite', tier: 'A',
+  summary: 'KPI on a card: icon, value, unit, and caption.',
+  keywords: ['stat', 'card', 'kpi', 'metric'],
+  schema, defaults, size: { preferred: [320, 200], min: [160, 120] },
+  describe: { when: '…', avoid: '…', example: { id: 'b_stat_card', type: 'tls.c.stat-card', props: defaults } },
+  build: buildStatCard,
+})
+```
+
+That is the full block — no box arithmetic, no `ctx.measureText`. `build()` returns a tree of
+*registered* block types (here `tls.l.card` → `tls.l.stack` → `tls.m.icon` + `tls.t.hero-number`);
+`defineCompositeBlock` lays it out via `ctx.layoutChild`, re-tags the root `part` to `'root'`, and
+wires `intrinsicSize` through `ctx.measureIntrinsicSize` so the composite works inside
+`sizing: 'content'` containers. Toggling an element off (`showIcon: false`) is just omitting it
+from the array the stack container reflows the rest automatically.
+
+Rules for `build()` (see `reviews/blocks/block-authoring/B5-define-composite-block.md` for the
+full rationale):
+
+- **Pure and deterministic.** Same `props` → deep-equal tree, fixed child ids. No `Math.random`/
+  `Date.now` — `measureIntrinsicSize` caches by a hash of `props`.
+- **At most two container levels** inside `build()` (a composite already adds one to the depth the
+  caller places it at; `MAX_DEPTH` is 4).
+- **Only role names for colour** (`'accent'`, not a literal hex) so the composite follows the
+  slide theme.
+- **`tier` is a field you pass, not something inferred** — `'A'` if every block in the tree is
+  Tier A, `'B'` if any is HTML-only. A conformance check in `catalog-conformance.spec.ts` fails the
+  build if they disagree.
+- **Motion is one unit in v1** — the composite animates as `part: 'root'`; children inside a
+  `layoutChild` wrapper don't surface as individually-targetable parts. Per-child choreography is
+  a known follow-up, not something to hand-roll here.
+
+**When to use which:**
+
+| Approach | Use when |
+|---|---|
+| `defineCompositeBlock` | The block is an arrangement of blocks that already exist — a card, a row, a labeled stat. No new drawing. |
+| Hand-written `layout()` (§2.3) | You need new geometry: a chart, a custom shape, text measured against a non-standard box, anything `ctx.layoutChild` can't express. |
+| Tier B / `kind: 'html'` (§2.6) | The design genuinely needs CSS (gradients, blend modes, a specific font-rendering trick) that the layout primitives can't produce. |
+
 ---
 
 ## 3. FastAPI + LLM integration — how a model picks blocks

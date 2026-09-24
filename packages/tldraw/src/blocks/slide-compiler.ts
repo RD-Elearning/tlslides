@@ -152,7 +152,10 @@ export function compileSlide(
         try {
           // B3-H1: if the block has instance style overrides (padding/align), build a
           // per-block ctx so layoutBlock can apply them. Otherwise keep the shared ctx.
-          const blockStyle = block.props.$block?.style
+          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style` —
+          // that reserved key only exists on rendered editor shapes, see block-authoring
+          // README pitfall #3/#5).
+          const blockStyle = block.style
           const usePerBlock =
             blockStyle !== undefined &&
             (blockStyle.padding !== undefined || blockStyle.align !== undefined)
@@ -283,7 +286,8 @@ export function compileSlide(
         }
         try {
           // B3-H1: per-block ctx when instance style overrides are present.
-          const blockStyle = block.props.$block?.style
+          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style`).
+          const blockStyle = block.style
           const usePerBlock =
             blockStyle !== undefined &&
             (blockStyle.padding !== undefined || blockStyle.align !== undefined)

@@ -79,5 +79,33 @@ requires `describe.example` to validate).
 ## Done when
 
 - [x] Helper + spec merged; stat-card built with it, registered, conformance 41, screenshot checked.
-- [ ] Docs updated with the recipe.
+- [x] Docs updated with the recipe.
 - [x] tsc 0; targeted + one full suite green; ledger row filled.
+- [x] Added to a demo deck fixture (both copies byte-identical), screenshot verified, PNG deleted.
+
+## Demo integration + docs (2026-09-24, completing the 2 deferred deliverables)
+
+1. **Demo slide.** `sl_11` in `colorful-blocks-demo.json` (both copies) changed from `layout:
+   'blank'` (single `content` region) to `layout: 'two-column'` (`title`/`left`/`right`), with the
+   existing `tls.c.big-stat`-in-a-card on the left and the new `tls.c.stat-card` on the right.
+   First attempt stacked title + big-stat card + stat-card in one `blank` region — that overflowed
+   the 1080px slide frame (verified by screenshot, not assumed); switched to `two-column` (same
+   pattern as `sl_02`) to fix it. Screenshot confirms: coral card, `zap` icon, `$4.2M` in accent
+   colour, "Annual Revenue" / "FY2024 total", padding all correct. PNG viewed then deleted per
+   instructions — not committed.
+2. **Docs.** Added "Composite in 20 lines" to `reviews/blocks/CURRENT-STATE.md` (under "Before
+   writing a new block") and §2.8 to `guides/blocks-authoring.md`, both using `tls.c.stat-card` as
+   the worked example, with a table of when to use `defineCompositeBlock` vs. hand-written
+   `layout()` vs. Tier B.
+3. **Bug found while integrating (not part of the original B5 commit):** `composite/index.ts`
+   failed to type-check — `BlockDefinition<StatCardProps>` (the type `defineCompositeBlock`
+   declared its return as) isn't assignable to the untyped `BlockDefinition[]` array every other
+   block registers into, because of `Component`'s contravariant parameter. Every other block in
+   the codebase sidesteps this by declaring itself as the untyped `BlockDefinition` and casting
+   just `layout`/`intrinsicSize` (`as BlockDefinition['layout']`); `defineCompositeBlock` was
+   declared to return the typed `BlockDefinition<P>` instead. Fixed by changing its return type to
+   the untyped `BlockDefinition`, matching every other block's pattern. This was a real (non-spec)
+   `tsc` error the "tsc: 0" ledger claim missed — see the sibling note in B3's file for the other
+   two (B2, B3) found in the same pass. Confirmed production `tsc` = 0 after the fix, full build
+   (`yarn build` in `packages/tldraw`) succeeds, and targeted specs (`define-composite`,
+   `tls-c-stat-card`, `catalog-conformance`) still green.

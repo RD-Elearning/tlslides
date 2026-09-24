@@ -100,3 +100,16 @@ box. Don't try to make section grow to fit — reflow is the slide compiler's jo
 - `capability-digest.spec.ts`: updated snapshot + character budget raised 56000→57000 (B2 added
   `children` slot text for 8 containers, growing JSON from ~54.5k to ~56.1k).
 - Full suite green (174 suites, 2594 passed).
+
+## Post-commit review fix (2026-09-24, same day, separate pass)
+
+The synthetic stack delegation in `card`/`safe-area`/`section` layout.ts
+(`ctx.layoutChild({ type: 'tls.l.stack', props: {...} }, contentBox)`) was missing the required
+`id` field on the synthetic `BlockSpec` — a **real (non-spec) `tsc` error**
+(`Property 'id' is missing in type '{...}' but required in type 'BlockSpec'`) that the original
+commit's "tsc 0" claim missed; jest doesn't type-check, so the 174-suite green run never caught
+it. Fixed: added `id: '$stack'` to all three call sites. This id is synthetic (built inside
+`layout()`, never part of deck JSON), so it isn't seen by the validator and can't collide with a
+real block id. Re-verified with `node_modules/.bin/tsc --noEmit --emitDeclarationOnly false |
+grep -v spec | grep -c 'error TS'` → 0, and targeted specs (card/safe-area/section/
+catalog-conformance/collision) green.

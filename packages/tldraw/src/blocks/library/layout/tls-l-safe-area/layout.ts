@@ -25,7 +25,7 @@ export function layout(props: SafeAreaProps, ctx: LayoutContext): LayoutNode {
   let childNodes: LayoutNode[]
   if (children.length > 1) {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
-    childNodes = [ctx.layoutChild({ type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
+    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
   } else {
     childNodes = children.map((child) => ctx.layoutChild(child, contentBox))
   }

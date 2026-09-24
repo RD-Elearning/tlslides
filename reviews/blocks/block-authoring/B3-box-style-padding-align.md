@@ -146,3 +146,30 @@ internal spacing of that design); note it, move on.
 ## Side findings
 
 - `testimonial` block has hard-coded `padding: 48px` internal to its template — left as-is per H7.
+
+## Post-commit review fixes (2026-09-24, same day, separate pass)
+
+Reviewing the implementation surfaced two real bugs the original commit's "tsc 0" claim missed
+(both confirmed via `node_modules/.bin/tsc --noEmit --emitDeclarationOnly false` — the exact
+production gate command — which reported **6 non-spec errors**, not 0, before these fixes):
+
+1. **`align: 'end'` was a no-op.** `layoutBlock`'s align branch only handled `'center'`
+   (`alignOffsetY = freeSpace / 2`); `'end'` fell through to the default `0`, identical to
+   `'start'`, even though `BlockStyleSpec.align` declares `'end'` as valid. Fixed: added an
+   `else if (style.align === 'end') alignOffsetY = freeSpace`. Added a test
+   (`layout-block.spec.ts`, "align end: offsets content to the bottom of the inner box").
+2. **`slide-compiler.ts`'s H1 per-block ctx never engaged.** Both call sites read
+   `block.props.$block?.style` — but `block` here is a deck-JSON `BlockSpec` (from
+   `spec.regions[...]`), where `style` is a **top-level field** (`BlockSpec.style`), not something
+   under `props.$block`. `$block` is a reserved runtime key that only exists on rendered editor
+   *shapes* (`blockToShape`'s output), never on deck-JSON blocks. So `blockStyle` was always
+   `undefined`, `usePerBlock` was always `false`, and the shared (no-style) `measureCtx` was used
+   unconditionally — padding never counted toward natural height in the slide compiler, contrary
+   to this file's own "Compiler: a block with padding in a region reports natural height including
+   padding" test claim. Fixed: `const blockStyle = block.style` at both sites (`slide-compiler.ts`
+   ~l.155, ~l.286). This was also a real (non-spec) `tsc` error (`Property 'style' does not exist
+   on type '{}'`) that a correctly-run production tsc gate would have caught.
+
+Targeted tests re-run after fix: `layout-block.spec.ts`, `slide-compiler.spec.ts` — green.
+Production `tsc` now 0 (confirmed with the documented gate command, including the B2 and B5 fixes
+below, which surfaced in the same tsc run).

@@ -667,6 +667,8 @@ export function layoutBlock(
   let alignOffsetY = 0
   if (hasAlign && style!.align === 'center') {
     alignOffsetY = freeSpace / 2
+  } else if (hasAlign && style!.align === 'end') {
+    alignOffsetY = freeSpace
   }
 
   // H3: move the inner root's `part` to the outer group; clear it on the inner node.

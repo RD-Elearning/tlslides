@@ -409,10 +409,18 @@
     },
     {
       "id": "sl_11",
-      "layout": "blank",
+      "layout": "two-column",
       "role": "content",
       "regions": {
-        "content": [
+        "title": [
+          {
+            "id": "b_11_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Composite Blocks (defineCompositeBlock)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "left": [
           {
             "id": "b_11_card",
             "type": "tls.l.card",
@@ -433,7 +441,25 @@
             },
             "style": {
               "surface": "card"
-            }
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_11_stat_card",
+            "type": "tls.c.stat-card",
+            "props": {
+              "icon": "zap",
+              "showIcon": true,
+              "value": "$4.2M",
+              "unit": "Annual Revenue",
+              "caption": "FY2024 total",
+              "format": "plain",
+              "emphasis": "accent",
+              "padding": "md"
+            },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" }
           }
         ]
       }

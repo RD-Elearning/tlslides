@@ -191,6 +191,21 @@ describe('layoutBlock', () => {
     expect(node.children[0].box.y).toBeCloseTo(expectedInnerY, 0)
   })
 
+  it('align end: offsets content to the bottom of the inner box', () => {
+    const def = makeShortBlock() // reports height 200, much less than ctx.box.height
+    const pad = TEST_TOKENS.space.md // 24
+    const ctx = makeCtx({ style: { padding: 'md' as SpaceToken, align: 'end' } })
+    const node = layoutBlock(def, {}, ctx)
+
+    expect(node.k).toBe('group')
+    // Inner box height = ctx.box.height - 2*pad = 1080 - 48 = 1032
+    // Content height = 200, free space = 1032 - 200 = 832
+    // Align offset = 832 (full free space, content pushed to the bottom)
+    // Inner group y = pad + alignOffset = 24 + 832 = 856
+    const expectedInnerY = pad + (1080 - pad * 2 - 200)
+    expect(node.children[0].box.y).toBeCloseTo(expectedInnerY, 0)
+  })
+
   it('moves part from inner node to outer group (H3)', () => {
     const def = makeRectBlock()
     const ctx = makeCtx({ style: { padding: 'md' as SpaceToken } })
