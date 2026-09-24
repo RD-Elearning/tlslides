@@ -1,3 +1,7 @@
 export { BlockInserter } from './BlockInserter'
 export type { BlockInserterProps } from './BlockInserter'
 export { BlockInserterPanel } from './BlockInserterPanel'
+export { BlockPreview } from './BlockPreview'
+export type { BlockPreviewProps } from './BlockPreview'
+export { useInsertBlock, buildInsertSpec } from './useInsertBlock'
+export type { InsertResult } from './useInsertBlock'

@@ -1,55 +1,53 @@
 import * as React from 'react'
-import { Utils } from '@tlslides/core'
 import { useTldrawApp, useBlockRegistry } from '~hooks'
 import { styled } from '~styles'
-import { blockToShape } from '~blocks/shape-bridge'
-import type { BlockSpec } from '~blocks/types'
 import { BlockInserter } from './BlockInserter'
+import { useInsertBlock } from './useInsertBlock'
 
-// R13 — a "+" trigger button plus the floating palette it opens. Inserting a block clones its
-// `defaults` (the definition's own "good-looking with no input" instance — see
-// `BlockDefinition.defaults` in `blocks/types.ts`) into a `BlockSpec` and runs it through
-// `blockToShape`, the same bridge `compileSlide` uses, so an inserted block is indistinguishable
-// from one that came out of a compiled DeckSpec.
+// B7 — the "+" trigger button plus the gallery panel it opens. Click a block card
+// or drag one onto the canvas to insert it; the gallery stays open so users can
+// add several blocks in a row.
 export const BlockInserterPanel = React.memo(function BlockInserterPanel() {
   const app = useTldrawApp()
   const blockRegistry = useBlockRegistry()
   const [open, setOpen] = React.useState(false)
   const buttonRef = React.useRef<HTMLButtonElement>(null)
-  const [anchor, setAnchor] = React.useState<{ x: number; y: number } | null>(null)
+  const insertBlock = useInsertBlock()
 
   const handleOpen = () => {
-    const rect = buttonRef.current?.getBoundingClientRect()
-    setAnchor(rect ? { x: rect.left + rect.width / 2, y: rect.top } : null)
     setOpen(true)
   }
 
-  const handleSelect = (blockType: string) => {
-    const def = blockRegistry?.get(blockType)
-    if (!def) {
-      setOpen(false)
-      return
-    }
-    const [width, height] = def.size.preferred
-    const center = app.getPagePoint(app.centerPoint, app.currentPageId)
-    const spec: BlockSpec = {
-      type: def.type,
-      id: Utils.uniqueId(),
-      props: JSON.parse(JSON.stringify(def.defaults)),
-    }
-    const shape = blockToShape(
-      spec,
-      { x: center[0] - width / 2, y: center[1] - height / 2, width, height },
-      // `blockToShape`'s own default `parentId` is the literal string `"page"` — meaningless
-      // here, where each slide is its own page keyed by its slide id. Without this, the shape
-      // is parented to a page that doesn't exist and the app throws in unrelated shape-tree code
-      // that assumes every shape's parent page is real.
-      { parentId: app.currentPageId, definitionMotion: def.motion }
-    )
-    app.createShapes(shape)
-    app.select(shape.id)
-    setOpen(false)
+  const handleInsert = (type: string) => {
+    insertBlock(type)
+    // B7 step 4: gallery stays open after insert (docked mode).
   }
+
+  const handleClose = () => setOpen(false)
+
+  // Keyboard shortcut: "+" or "p" opens the gallery
+  React.useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.key === '+' || e.key === '=') && e.ctrlKey) {
+        setOpen((o) => !o)
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [])
+
+  // B7 H5: wire the drop callback onto the app so onDrop can reach us.
+  // The app calls this with canvas screen-space coords ([clientX - rect.left, clientY - rect.top]);
+  // we convert to page-space via app.getPagePoint.
+  React.useEffect(() => {
+    app.onBlockDrop = (type, screenPoint) => {
+      const pagePoint = app.getPagePoint(screenPoint, app.currentPageId)
+      insertBlock(type, pagePoint as [number, number])
+    }
+    return () => {
+      app.onBlockDrop = null
+    }
+  }, [app, insertBlock])
 
   if (!blockRegistry) return null
 
@@ -63,12 +61,9 @@ export const BlockInserterPanel = React.memo(function BlockInserterPanel() {
       >
         +
       </TriggerButton>
-      <BlockInserter
-        position={anchor}
-        visible={open}
-        onSelect={handleSelect}
-        onClose={() => setOpen(false)}
-      />
+      {open && (
+        <BlockInserter onInsert={handleInsert} onClose={handleClose} visible={open} />
+      )}
     </>
   )
 })

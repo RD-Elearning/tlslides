@@ -1,26 +1,32 @@
 /**
- * Block Inserter palette component.
+ * Block Inserter gallery component.
  *
- * R13 implementation - provides a floating palette that shows available
- * block types when the user clicks the "+" button or presses a shortcut.
- * Displays blocks grouped by family (Text, Layout, Composite, etc.)
- * with icons, names, and descriptions.
+ * B7 implementation — a docked-left panel (~400px) showing every registered block
+ * as a card with a live preview thumbnail, name, and summary. Blocks are grouped
+ * by family with tab navigation, and a search bar filters across all families.
+ *
+ * Inserting happens via:
+ *  - **Click** on a card → `onInsert(type)` (inset at viewport centre)
+ *  - **Drag-and-drop** with `application/x-tls-block` mime type → handled by the
+ *    canvas drop zone, which calls `onInsert(type, pagePoint)`
+ *
+ * The gallery stays open after insert (docked mode — users add several blocks).
+ * Escape closes it.
  */
 
 import * as React from 'react'
 import { styled } from '../../styles'
 import { useBlockRegistry } from '../../hooks'
-import type { BlockFamily } from '../../blocks/types'
+import { BlockPreview } from './BlockPreview'
+import type { BlockDefinition, BlockFamily } from '../../blocks/types'
 
 export interface BlockInserterProps {
-  /** Position of the inserter (client coordinates) */
-  position: { x: number; y: number } | null
-  /** Whether the inserter is visible */
-  visible: boolean
-  /** Called when a block type is selected */
-  onSelect: (blockType: string) => void
-  /** Called to close the inserter */
+  /** Called when a block is selected for insertion. */
+  onInsert: (type: string) => void
+  /** Called to close the gallery. */
   onClose: () => void
+  /** Whether the gallery is visible. */
+  visible: boolean
 }
 
 // Family display names and icons
@@ -35,200 +41,218 @@ const FAMILY_INFO: Record<BlockFamily, { name: string; icon: string }> = {
   live: { name: 'Live', icon: '⚡' },
 }
 
+/** Width of each gallery card in CSS px. */
+const CARD_WIDTH = 160
+/** Height of each preview thumbnail in CSS px. */
+const PREVIEW_HEIGHT = 100
+/** Gap between preview image and text in the card. */
+const CARD_PADDING = 8
+
 /**
- * Block Inserter component - shows a floating palette of available blocks
+ * Block Inserter gallery — shows every registered block as a card with a live
+ * preview thumbnail, name, and summary.
  */
-export const BlockInserter: React.FC<BlockInserterProps> = ({
-  position,
-  visible,
-  onSelect,
-  onClose,
-}) => {
+export const BlockInserter: React.FC<BlockInserterProps> = ({ onInsert, onClose }) => {
   const blockRegistry = useBlockRegistry()
   const [searchQuery, setSearchQuery] = React.useState('')
+  const [activeFamily, setActiveFamily] = React.useState<BlockFamily | 'all'>('all')
 
-  // Get all block definitions, grouped by family
+  // Groups: family → def[]
   const blocksByFamily = React.useMemo(() => {
-    if (!blockRegistry) return {}
-    
-    const groups: Record<string, Array<{ id: string; name: string; summary?: string; keywords?: string[] }>> = {}
+    if (!blockRegistry) return new Map<BlockFamily, BlockDefinition[]>()
 
-    blockRegistry.list().forEach((def) => {
-      const family = def.family
-      if (!groups[family]) {
-        groups[family] = []
-      }
-      groups[family].push({
-        id: def.type,
-        name: def.name,
-        summary: def.summary,
-        keywords: def.keywords,
-      })
-    })
-    
+    const groups = new Map<BlockFamily, BlockDefinition[]>()
+    for (const def of blockRegistry.list()) {
+      const arr = groups.get(def.family) ?? []
+      arr.push(def)
+      groups.set(def.family, arr)
+    }
     return groups
   }, [blockRegistry])
 
-  // Filter blocks by search query
+  // Families that have at least one block (for tab rendering).
+  // Drop 'live' from chips if it has 0 blocks (B7 plan).
+  const availableFamilies = Array.from(blocksByFamily.keys()).filter(
+    (f) => f !== 'live' || (blocksByFamily.get(f)?.length ?? 0) > 0,
+  )
+
+  // Filtered blocks based on search + active family.
   const filteredBlocks = React.useMemo(() => {
-    if (!searchQuery.trim()) {
-      return blocksByFamily
+    if (!blockRegistry) return []
+
+    let all = blockRegistry.list()
+
+    // Family filter
+    if (activeFamily !== 'all') {
+      all = all.filter((def) => def.family === activeFamily)
+    } else {
+      // Exclude 'live' family when showing 'all' if it's empty (per B7 plan).
+      all = all.filter((def) => def.family !== 'live' || (blocksByFamily.get('live')?.length ?? 0) > 0)
     }
-    
-    const query = searchQuery.toLowerCase()
-    const result: Record<string, Array<{ id: string; name: string; summary?: string; keywords?: string[] }>> = {}
-    
-    Object.entries(blocksByFamily).forEach(([family, blocks]) => {
-      const filtered = blocks.filter((block) => {
-        if (block.name.toLowerCase().includes(query)) return true
-        if (block.keywords?.some((k) => k.toLowerCase().includes(query))) return true
-        if (block.summary?.toLowerCase().includes(query)) return true
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      all = all.filter((def) => {
+        if (def.name.toLowerCase().includes(query)) return true
+        if (def.summary?.toLowerCase().includes(query)) return true
+        if (def.keywords?.some((k) => k.toLowerCase().includes(query))) return true
         return false
       })
-      if (filtered.length > 0) {
-        result[family] = filtered
-      }
-    })
-    
-    return result
-  }, [searchQuery, blocksByFamily])
+    }
 
-  // Handle click outside to close
+    return all
+  }, [blockRegistry, searchQuery, activeFamily, blocksByFamily])
+
+  // Click-outside to close
   React.useEffect(() => {
-    if (!visible) return
-    
     const handleClickOutside = (e: MouseEvent) => {
-      // Check if click is outside the inserter
       const target = e.target as Element
-      if (target.closest('.block-inserter-container')) {
+      if (target.closest('.tls-block-inserter')) {
         return
       }
       onClose()
     }
-    
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [visible, onClose])
 
-  // Keyboard shortcuts
-  React.useEffect(() => {
-    if (!visible) return
-    
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
       }
     }
-    
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [visible, onClose])
 
-  if (!visible || !position) return null
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [onClose])
+
+  // Focus the search input when the gallery opens
+  const searchRef = React.useRef<HTMLInputElement>(null)
+  React.useEffect(() => {
+    searchRef.current?.focus()
+  }, [])
 
   return (
     <InserterOverlay onClick={onClose}>
-      <InserterContainer 
-        className="block-inserter-container"
-        style={{
-          position: 'fixed',
-          left: position.x,
-          top: position.y,
-          transform: 'translate(-50%, -100%)',
-          zIndex: 1000,
-        }}
+      <InserterContainer
+        className="tls-block-inserter"
+        onClick={(e) => e.stopPropagation()}
       >
         <InserterSearch
+          ref={searchRef}
           placeholder="Search blocks..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          autoFocus
         />
-        
-        <InserterContent>
-          {Object.entries(filteredBlocks).map(([family, blocks]) => {
-            const info = FAMILY_INFO[family as BlockFamily] || { name: family, icon: '📦' }
+
+        <FamilyTabs>
+          <FamilyTab
+            active={activeFamily === 'all'}
+            onClick={() => setActiveFamily('all')}
+          >
+            All
+          </FamilyTab>
+          {availableFamilies.map((family) => {
+            const info = FAMILY_INFO[family]
+            const count = blocksByFamily.get(family)?.length ?? 0
             return (
-              <FamilySection key={family}>
-                <FamilyHeader>
-                  <FamilyIcon>{info.icon}</FamilyIcon>
-                  <FamilyName>{info.name}</FamilyName>
-                  <FamilyCount>({blocks.length})</FamilyCount>
-                </FamilyHeader>
-                
-                {blocks.map((block) => (
-                  <BlockItem
-                    key={block.id}
-                    block={block}
-                    family={family}
-                    onClick={() => onSelect(block.id)}
-                    query={searchQuery}
-                  />
-                ))}
-              </FamilySection>
+              <FamilyTab
+                key={family}
+                active={activeFamily === family}
+                onClick={() => setActiveFamily(family)}
+              >
+                {info.icon} {info.name} ({count})
+              </FamilyTab>
             )
           })}
-          
-          {Object.keys(filteredBlocks).length === 0 && searchQuery && (
+        </FamilyTabs>
+
+        <InserterContent>
+          {filteredBlocks.length === 0 ? (
             <NoResults>
-              No blocks found matching "{searchQuery}"
+              {searchQuery
+                ? `No blocks match "${searchQuery}"`
+                : 'No blocks in this family'}
             </NoResults>
+          ) : (
+            <BlockGrid>
+              {filteredBlocks.map((def) => (
+                <BlockCard
+                  key={def.type}
+                  def={def}
+                  width={CARD_WIDTH}
+                  onClick={() => onInsert(def.type)}
+                />
+              ))}
+            </BlockGrid>
           )}
         </InserterContent>
+        <InserterFooter>
+          <kbd>Esc</kbd> to close · Drag blocks to canvas
+        </InserterFooter>
       </InserterContainer>
     </InserterOverlay>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────── */
-/* Sub-components                                                                  */
-/* ─────────────────────────────────────────────────────────────────────────────── */
+/* ── BlockCard ───────────────────────────────────────────────────────────────── */
 
-function BlockItem({ block, family, onClick, query }: { 
-  block: { id: string; name: string; summary?: string; keywords?: string[] }
-  family: string
+interface BlockCardProps {
+  def: BlockDefinition
+  width: number
   onClick: () => void
-  query: string
-}) {
-  const highlightMatch = (text: string) => {
-    if (!query.trim()) return text
-    const regex = new RegExp(`(${query})`, 'gi')
-    return text.split(regex).map((part, i) => {
-      if (part.toLowerCase() === query.toLowerCase()) {
-        return <mark key={i} style={{ backgroundColor: 'yellow' }}>{part}</mark>
-      }
-      return part
-    })
-  }
+}
+
+const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
+  const [expanded, setExpanded] = React.useState(false)
 
   return (
-    <BlockItemStyled 
-      onClick={onClick}
-      title={block.summary}
+    <Card
+      className="tls-block-card"
+      data-testid="block-card"
+      data-block-type={def.type}
+      hasPreview={!!def.describe?.example || !!def.defaults}
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      draggable={true}
+      onDragStart={(e) => {
+        // H5: HTML5 DnD — set the block type as the drag data.
+        e.dataTransfer.setData('application/x-tls-block', def.type)
+        // Set a transparent drag image so the default ghost doesn't show.
+        const blank = new Image()
+        blank.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+        e.dataTransfer.setDragImage(blank, 0, 0)
+        e.stopPropagation()
+      }}
     >
-      <BlockIcon>{getBlockIcon(family)}</BlockIcon>
-      <BlockInfo>
-        <BlockName>{highlightMatch(block.name)}</BlockName>
-        {block.summary && (
-          <BlockSummary>{highlightMatch(block.summary)}</BlockSummary>
-        )}
-      </BlockInfo>
-    </BlockItemStyled>
+      {expanded && def.size.preferred ? (
+        <PreviewContainer>
+          <BlockPreview def={def} width={width} />
+        </PreviewContainer>
+      ) : (
+        <PreviewPlaceholder>
+          <span>{getFamilyIcon(def.family)}</span>
+        </PreviewPlaceholder>
+      )}
+      <CardText>
+        <CardName title={def.name}>{def.name}</CardName>
+        {def.summary && <CardSummary>{def.summary}</CardSummary>}
+      </CardText>
+    </Card>
   )
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────── */
-/* Utils                                                                         */
-/* ─────────────────────────────────────────────────────────────────────────────── */
-
-function getBlockIcon(family: string): string {
-  const info = FAMILY_INFO[family as BlockFamily]
-  return info ? info.icon : '📦'
+function getFamilyIcon(family: BlockFamily): string {
+  return FAMILY_INFO[family]?.icon ?? '📦'
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────── */
-/* Styled Components                                                             */
-/* ─────────────────────────────────────────────────────────────────────────────── */
+/* ── Styled components ───────────────────────────────────────────────────────── */
 
 const InserterOverlay = styled('div', {
   position: 'fixed',
@@ -236,21 +260,23 @@ const InserterOverlay = styled('div', {
   left: 0,
   right: 0,
   bottom: 0,
-  backgroundColor: 'rgba(0,0,0,0.1)',
+  backgroundColor: 'rgba(0,0,0,0.3)',
   display: 'flex',
   alignItems: 'flex-start',
-  justifyContent: 'center',
-  padding: '20px',
-  zIndex: 100,
+  justifyContent: 'flex-start',
+  padding: '56px 16px 16px',
+  zIndex: 1000,
 })
 
 const InserterContainer = styled('div', {
-  width: '320px',
-  maxHeight: '80vh',
+  width: '400px',
+  maxHeight: 'calc(100vh - 72px)',
   backgroundColor: '$bg',
   border: '1px solid $border',
   borderRadius: '8px',
   boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  display: 'flex',
+  flexDirection: 'column',
   overflow: 'hidden',
 })
 
@@ -263,77 +289,122 @@ const InserterSearch = styled('input', {
   outline: 'none',
   backgroundColor: '$bg',
   color: '$text',
+  boxSizing: 'border-box',
 })
 
-const InserterContent = styled('div', {
-  overflowY: 'auto',
-  maxHeight: '400px',
-})
-
-const FamilySection = styled('div', {
-  padding: '8px 0',
-})
-
-const FamilyHeader = styled('div', {
+const FamilyTabs = styled('div', {
   display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  padding: '8px 16px',
-  backgroundColor: '$bgHover',
+  gap: '4px',
+  padding: '8px 12px',
+  borderBottom: '1px solid $border',
+  overflowX: 'auto',
+  flexShrink: 0,
+})
+
+const FamilyTab = styled('button', {
+  padding: '6px 12px',
+  borderRadius: '4px',
+  border: '1px solid transparent',
+  background: 'transparent',
+  fontSize: '12px',
   fontWeight: 500,
-  fontSize: '12px',
   color: '$textMuted',
-})
-
-const FamilyIcon = styled('span', {
-  fontSize: '14px',
-})
-
-const FamilyName = styled('span', {
-  flex: 1,
-})
-
-const FamilyCount = styled('span', {
-  color: '$textMuted',
-  fontSize: '12px',
-})
-
-const BlockItemStyled = styled('div', {
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '8px',
-  padding: '12px 16px',
   cursor: 'pointer',
-  transition: 'background 0.15s',
-  
+  whiteSpace: 'nowrap',
+  transition: 'all 0.15s',
+
+  variants: {
+    active: {
+      true: {
+        backgroundColor: '$bgHover',
+        color: '$text',
+        borderColor: '$border',
+      },
+    },
+  },
+
   '&:hover': {
-    background: '$bgHover',
+    backgroundColor: '$bgHover',
+    color: '$text',
   },
 })
 
-const BlockIcon = styled('span', {
-  fontSize: '18px',
-  marginTop: '2px',
-})
-
-const BlockInfo = styled('div', {
+const InserterContent = styled('div', {
   flex: 1,
-  minWidth: 0,
+  overflowY: 'auto',
 })
 
-const BlockName = styled('span', {
-  display: 'block',
+const BlockGrid = styled('div', {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)',
+  gap: '8px',
+  padding: '12px',
+})
+
+const Card = styled('div', {
+  display: 'flex',
+  flexDirection: 'column',
+  cursor: 'pointer',
+  borderRadius: '6px',
+  border: '1px solid transparent',
+  transition: 'border-color 0.15s, background 0.15s',
+  boxSizing: 'border-box',
+
+  '&:hover': {
+    borderColor: '$border',
+    backgroundColor: '$bgHover',
+  },
+
+  variants: {
+    hasPreview: {
+      true: {},
+    },
+  },
+})
+
+const PreviewContainer = styled('div', {
+  width: '100%',
+  height: `${PREVIEW_HEIGHT}px`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderBottom: '1px solid $border',
+  boxSizing: 'border-box',
+  overflow: 'hidden',
+})
+
+const PreviewPlaceholder = styled('div', {
+  width: '100%',
+  height: `${PREVIEW_HEIGHT}px`,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderBottom: '1px solid $border',
+  fontSize: '24px',
+})
+
+const CardText = styled('div', {
+  padding: `${CARD_PADDING}px`,
+  boxSizing: 'border-box',
+})
+
+const CardName = styled('div', {
   fontWeight: 500,
   fontSize: '14px',
   color: '$text',
   marginBottom: '2px',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 })
 
-const BlockSummary = styled('span', {
-  display: 'block',
-  fontSize: '12px',
+const CardSummary = styled('div', {
+  fontSize: '11px',
   color: '$textMuted',
   lineHeight: 1.3,
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
 })
 
 const NoResults = styled('div', {
@@ -341,4 +412,13 @@ const NoResults = styled('div', {
   textAlign: 'center',
   color: '$textMuted',
   fontSize: '14px',
+})
+
+const InserterFooter = styled('div', {
+  padding: '8px 16px',
+  fontSize: '11px',
+  color: '$textMuted',
+  textAlign: 'center',
+  borderTop: '1px solid $border',
+  flexShrink: 0,
 })
