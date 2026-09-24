@@ -112,3 +112,16 @@ export function assertValidNode(node: LayoutNode): void {
   expect(node.box.width).toBeGreaterThanOrEqual(0)
   expect(node.box.height).toBeGreaterThanOrEqual(0)
 }
+
+/** Collect all part names from a LayoutNode tree (DFS). */
+export function collectParts(node: LayoutNode): string[] {
+  const result: string[] = []
+  function walk(n: LayoutNode) {
+    if (n.part) result.push(n.part)
+    if (n.k === 'group' && n.children) {
+      for (const c of n.children) walk(c)
+    }
+  }
+  walk(node)
+  return result
+}

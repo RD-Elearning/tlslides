@@ -14,6 +14,7 @@
 import type { HtmlTemplateContext } from '../../../types'
 import type { BigStatProps } from './schema'
 import { formatValue } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 export function template(props: BigStatProps, ctx: HtmlTemplateContext): string {
   const valueText = formatValue(props)
@@ -33,18 +34,20 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
   )
 
   // Label
-  parts.push(
-    `<div data-part="label" style="` +
-      `font-family:var(--tls-font-family);` +
-      `font-size:var(--tls-type-body);` +
-      `line-height:1.4;` +
-      `color:${ctx.cssVar('text-muted')};` +
-      `margin-bottom:8px;` +
-    `">${ctx.esc(props.label)}</div>`
-  )
+  if (isShown(props, 'showLabel')) {
+    parts.push(
+      `<div data-part="label" style="` +
+        `font-family:var(--tls-font-family);` +
+        `font-size:var(--tls-type-body);` +
+        `line-height:1.4;` +
+        `color:${ctx.cssVar('text-muted')};` +
+        `margin-bottom:8px;` +
+      `">${ctx.esc(props.label)}</div>`
+    )
+  }
 
   // Context (optional)
-  if (props.context) {
+  if (isShown(props, 'showContext') && props.context) {
     parts.push(
       `<div data-part="context" style="` +
         `font-family:var(--tls-font-family);` +

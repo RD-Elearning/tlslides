@@ -19,10 +19,13 @@ export interface ImageTextProps extends Record<string, unknown> {
   imageRatio: number
   /** Kicker / eyebrow label above the title. */
   kicker?: string
+  showKicker?: boolean
   /** Title text. */
   title: string
+  showTitle?: boolean
   /** Body text. */
   body?: string
+  showBody?: boolean
   /** Gap between image and text columns in left/right mode. */
   gutter?: string
 }
@@ -61,6 +64,13 @@ export const schema: BlockSchema = {
     label: 'Kicker',
     guidance: 'Short label above the title: section name, category, or status. 1–4 words.',
   },
+  showKicker: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Kicker',
+    help: 'Toggle the kicker label on/off.',
+    toggles: 'kicker',
+  },
   title: {
     type: { kind: 'text', maxChars: 120 },
     role: 'content',
@@ -68,11 +78,25 @@ export const schema: BlockSchema = {
     required: true,
     guidance: 'A concise slide title. 3–10 words. Never a full sentence.',
   },
+  showTitle: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Title',
+    help: 'Toggle the title text on/off.',
+    toggles: 'title',
+  },
   body: {
     type: { kind: 'text', maxChars: 500 },
     role: 'content',
     label: 'Body',
     guidance: '1–3 sentences of supporting body copy.',
+  },
+  showBody: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Body',
+    help: 'Toggle the body text on/off.',
+    toggles: 'body',
   },
   gutter: {
     type: { kind: 'enum', values: ['xs', 'sm', 'md', 'lg', 'xl'] },

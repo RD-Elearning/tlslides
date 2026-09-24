@@ -14,10 +14,13 @@ export interface KpiTileProps extends Record<string, unknown> {
   value: number
   /** Optional change indicator (e.g. +12, -5). */
   delta?: number
+  showDelta?: boolean
   /** Short label for the metric, 1–3 words. */
   label: string
+  showLabel?: boolean
   /** Optional sparkline data — an array of numbers for a mini line chart. */
   sparkline?: number[]
+  showSparkline?: boolean
   /** Polarity: which direction is "good". 'upGood' = higher is better (default).
    *  'downGood' = lower is better (e.g. churn, cost, latency). */
   polarity?: 'upGood' | 'downGood'
@@ -39,15 +42,29 @@ export const schema: BlockSchema = {
     label: 'Delta',
     guidance: 'Change indicator. Positive = improved, negative = declined (relative to polarity).',
   },
+  showDelta: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Delta',
+    help: 'Toggle the change indicator on/off.',
+    toggles: 'delta',
+  },
   label: {
     type: { kind: 'text', maxChars: 30 },
     role: 'content',
     label: 'Label',
     guidance: 'Metric name. 1–3 words, never a sentence.',
   },
+  showLabel: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Label',
+    help: 'Toggle the metric label on/off.',
+    toggles: 'label',
+  },
   sparkline: {
     type: {
-      kind: 'list',
+       kind: 'list',
       of: { kind: 'number' },
       min: 2,
       max: 20,
@@ -55,6 +72,13 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Sparkline data',
     guidance: '2–20 numbers for a mini trend line. Omit for a single-point metric.',
+  },
+  showSparkline: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Sparkline',
+    help: 'Toggle the sparkline chart on/off.',
+    toggles: 'sparkline',
   },
   polarity: {
     type: { kind: 'enum', values: ['upGood', 'downGood'] },

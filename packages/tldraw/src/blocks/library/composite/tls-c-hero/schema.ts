@@ -17,9 +17,13 @@ export type HeroVariant = 'classic' | 'split' | 'gradient-sweep'
 
 export interface HeroProps extends Record<string, unknown> {
   kicker?: string
+  showKicker?: boolean
   title: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean; color?: string; size?: number }> }
+  showTitle?: boolean
   subtitle?: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean; color?: string; size?: number }> }
+  showSubtitle?: boolean
   cta?: string
+  showCta?: boolean
   variant?: HeroVariant
 }
 
@@ -29,6 +33,13 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Kicker',
     guidance: 'Short label above the title: section name, category, or status. 1–4 words.',
+  },
+  showKicker: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Kicker',
+    help: 'Toggle the kicker label on/off.',
+    toggles: 'kicker',
   },
   title: {
     type: { kind: 'richText', maxChars: 120 },
@@ -43,11 +54,25 @@ export const schema: BlockSchema = {
     label: 'Subtitle',
     guidance: 'Supporting line: date, audience, or context. 3–12 words.',
   },
+  showSubtitle: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Subtitle',
+    help: 'Toggle the subtitle on/off.',
+    toggles: 'subtitle',
+  },
   cta: {
     type: { kind: 'text', maxChars: 40 },
     role: 'option',
     label: 'Call to action',
     guidance: 'Optional button text. Short imperative, 2–4 words.',
+  },
+  showCta: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show CTA',
+    help: 'Toggle the call-to-action button on/off.',
+    toggles: 'cta',
   },
   variant: {
     type: { kind: 'enum', values: ['classic', 'split', 'gradient-sweep'] },

@@ -14,6 +14,7 @@ import type { BlockDefinition, LayoutContext, CapacityReport } from '../../../ty
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { isShown } from '../../../schema-helpers'
 
 /**
  * capacity() — reports whether the tile's value/label/delta fit the box
@@ -41,15 +42,15 @@ function capacity(
   const valueMetrics = ctx.measureText(formatted, valueStyle, innerWidth)
 
   const delta = props.delta
-  const hasDelta = delta != null
+  const hasDelta = isShown(props, 'showDelta') && delta != null
   const deltaStyle = ctx.resolveText('caption')
   const deltaText = delta != null ? `${delta >= 0 ? '+' : ''}${delta}` : ''
   const deltaMetrics = ctx.measureText(deltaText, deltaStyle, innerWidth)
 
+  const showLabel = isShown(props, 'showLabel')
   const xs = ctx.tokens.space.xs
   const totalHeight =
-    labelMetrics.height +
-    xs +
+    (showLabel ? labelMetrics.height + xs : 0) +
     valueMetrics.height +
     xs +
     (hasDelta ? deltaMetrics.height : 0)

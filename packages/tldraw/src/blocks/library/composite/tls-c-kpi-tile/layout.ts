@@ -19,6 +19,7 @@
 import type { LayoutContext, LayoutNode, Stroke } from '../../../types'
 import type { KpiTileProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
+import { isShown } from '../../../schema-helpers'
 
 /**
  * Format a number for display based on the format hint.
@@ -81,18 +82,20 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
   let y = inner.y
 
-  // --- label (top, muted) ---
-  const labelStyle = ctx.resolveText('caption')
-  const labelText = props.label ?? ''
-  const labelMetrics = ctx.measureText(labelText, labelStyle, inner.width)
-  children.push({
-    k: 'text',
-    part: 'label',
-    box: { x: inner.x, y, width: inner.width, height: labelMetrics.height },
-    lines: labelMetrics.lines,
-    style: { ...labelStyle, color: ctx.resolveColor('textMuted').color },
-  })
-  y += labelMetrics.height + ctx.tokens.space.xs
+// --- label (top, muted) ---
+  if (isShown(props, 'showLabel')) {
+    const labelStyle = ctx.resolveText('caption')
+    const labelText = props.label ?? ''
+    const labelMetrics = ctx.measureText(labelText, labelStyle, inner.width)
+    children.push({
+      k: 'text',
+      part: 'label',
+      box: { x: inner.x, y, width: inner.width, height: labelMetrics.height },
+      lines: labelMetrics.lines,
+      style: { ...labelStyle, color: ctx.resolveColor('textMuted').color },
+    })
+    y += labelMetrics.height + ctx.tokens.space.xs
+  }
 
   // --- value (big number) ---
   const valueStyle = ctx.resolveText('heading')
@@ -108,7 +111,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   y += valueMetrics.height + ctx.tokens.space.xs
 
   // --- delta row (optional) ---
-  if (delta != null) {
+  if (isShown(props, 'showDelta') && delta != null) {
     const deltaStyle = ctx.resolveText('caption')
     const sign = delta >= 0 ? '+' : ''
     const deltaText = `${sign}${delta}`
@@ -120,7 +123,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
 
     // When sparkline is present, delta takes left portion; sparkline takes right.
     const sparklineData = props.sparkline
-    const hasSparkline = Array.isArray(sparklineData) && sparklineData.length >= 2
+    const hasSparkline = isShown(props, 'showSparkline') && Array.isArray(sparklineData) && sparklineData.length >= 2
 
     if (hasSparkline && sparklineData) {
       const sparkWidth = Math.round(inner.width * 0.4)
@@ -160,7 +163,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   } else {
     // No delta: optional standalone sparkline below value
     const sparklineData = props.sparkline
-    if (Array.isArray(sparklineData) && sparklineData.length >= 2) {
+    if (isShown(props, 'showSparkline') && Array.isArray(sparklineData) && sparklineData.length >= 2) {
       const sparkHeight = 40
       const sparkWidth = inner.width
       const d = sparklinePath(sparklineData, sparkWidth, sparkHeight)

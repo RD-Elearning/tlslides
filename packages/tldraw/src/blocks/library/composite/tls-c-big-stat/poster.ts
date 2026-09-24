@@ -13,6 +13,7 @@
 import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { BigStatProps } from './schema'
 import { formatValue } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
@@ -35,21 +36,23 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
   y += mValue.height + ctx.tokens.space.sm
 
   // Label
-  const labelStyle = ctx.resolveText('body')
-  const labelColor = ctx.resolveColor('textMuted').color
-  const labelResolved = { ...labelStyle, color: labelColor }
-  const mLabel = ctx.measureText(props.label, labelResolved, w)
-  children.push({
-    k: 'text',
-    part: 'label',
-    box: { x: 0, y, width: w, height: mLabel.height },
-    lines: mLabel.lines,
-    style: labelResolved,
-  })
-  y += mLabel.height + ctx.tokens.space.sm
+  if (isShown(props, 'showLabel')) {
+    const labelStyle = ctx.resolveText('body')
+    const labelColor = ctx.resolveColor('textMuted').color
+    const labelResolved = { ...labelStyle, color: labelColor }
+    const mLabel = ctx.measureText(props.label, labelResolved, w)
+    children.push({
+      k: 'text',
+      part: 'label',
+      box: { x: 0, y, width: w, height: mLabel.height },
+      lines: mLabel.lines,
+      style: labelResolved,
+    })
+    y += mLabel.height + ctx.tokens.space.sm
+  }
 
   // Context (optional)
-  if (props.context) {
+  if (isShown(props, 'showContext') && props.context) {
     const ctxStyle = ctx.resolveText('caption')
     const ctxColor = ctx.resolveColor('textMuted').color
     const ctxResolved = { ...ctxStyle, color: ctxColor }

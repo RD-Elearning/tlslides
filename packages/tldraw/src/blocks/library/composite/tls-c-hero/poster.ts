@@ -10,6 +10,7 @@
 import type { LayoutContext, LayoutNode, Paint, RichText } from '../../../types'
 import type { HeroProps } from './schema'
 import { richTextToPlain } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
@@ -17,7 +18,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   const w = ctx.box.width
 
   // Kicker (optional)
-  if (props.kicker) {
+  if (isShown(props, 'showKicker') && props.kicker) {
     const kickerStyle = ctx.resolveText('caption', { letterSpacing: 0.08 })
     const kickerColor = ctx.resolveColor('accent').color
     const kickerResolved = { ...kickerStyle, color: kickerColor }
@@ -49,7 +50,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   y += mTitle.height + ctx.tokens.space.md
 
   // Subtitle (optional)
-  if (props.subtitle) {
+  if (isShown(props, 'showSubtitle') && props.subtitle) {
     const subStyle = ctx.resolveText('subheading')
     const subColor = ctx.resolveColor('textMuted').color
     const subResolved = { ...subStyle, color: subColor }
@@ -65,7 +66,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   }
 
   // CTA (optional)
-  if (props.cta) {
+  if (isShown(props, 'showCta') && props.cta) {
     const ctaStyle = ctx.resolveText('body')
     const ctaColor = ctx.resolveColor('text').color
     const ctaResolved = { ...ctaStyle, color: ctaColor }

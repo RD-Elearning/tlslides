@@ -17,6 +17,7 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { ImageTextProps } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 /** Minimum height for the image area in slide units. */
 const MIN_IMAGE_DIM = 80
@@ -183,7 +184,7 @@ function buildTextCluster(
   let y = 0
   const gap = ctx.tokens.space.sm
 
-  if (props.kicker) {
+  if (isShown(props, 'showKicker') && props.kicker) {
     const kickerNode = renderKicker(props.kicker, width, ctx, y)
     // Leave room for the gap after this node so y doesn't overshoot maxHeight.
     const available = Math.max(0, maxHeight - y - gap)
@@ -197,7 +198,7 @@ function buildTextCluster(
     }
   }
 
-  if (props.title) {
+  if (isShown(props, 'showTitle') && props.title) {
     const titleNode = renderTitle(props.title, width, ctx, y)
     const available = Math.max(0, maxHeight - y - gap)
     const clampedHeight = Math.min(titleNode.box.height, available)
@@ -210,7 +211,7 @@ function buildTextCluster(
     }
   }
 
-  if (props.body) {
+  if (isShown(props, 'showBody') && props.body) {
     // Allocate remaining height to body
     const bodyHeight = Math.max(0, maxHeight - y)
     const bodyNode = renderBody(props.body, width, ctx, y)

@@ -7,9 +7,12 @@
 
 import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { SectionProps } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   const title = props.title ?? 'Section'
+  const showTitle = isShown(props, 'showTitle')
+  const showDivider = isShown(props, 'showDivider')
   const gapToken = (props.gap ?? 'sm') as SpaceToken
   const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm
   const children = props.children ?? []
@@ -27,29 +30,39 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   // Measure title text
   const titleStyle = ctx.resolveText('subheading')
   const titleMetrics = ctx.measureText(title, titleStyle, W)
-  const titleH = titleMetrics.height || titleStyle.size * titleStyle.lineHeight
+  const titleH = showTitle ? (titleMetrics.height || titleStyle.size * titleStyle.lineHeight) : 0
 
-  const dividerY = titleH + gap * 0.5
-  const dividerEndY = dividerY + gap * 0.5
+  // Compute offsets based on what's visible (reflow when elements are hidden).
+  const dividerY = showTitle ? titleH + gap * 0.5 : 0
+  const dividerEndY = showDivider ? dividerY + gap * 0.5 : dividerY
   const contentY = dividerEndY + gap
   const contentH = Math.max(0, H - contentY)
 
-  const titleNode: LayoutNode = {
-    k: 'text',
-    box: { x: 0, y: 0, width: W, height: titleH },
-    part: 'title',
-    lines: titleMetrics.lines,
-    style: titleStyle,
-  }
+  // Build the body children: surface rect, optional title, optional divider.
+  const bodyChildren: LayoutNode[] = [
+    { k: 'rect', part: 'surface', box: { x: 0, y: 0, width: W, height: H }, fill: surfacePaint },
+  ]
 
   // A hairline rule drawn as a thin rect, matching `tls.t.title`'s own `rule` part — a `line`
   // node's SVG geometry is only its endpoints, so a horizontal line's box height (the gap band)
   // and its rendered height disagree; a rect keeps DOM/SVG geometry parity by construction.
-  const dividerNode: LayoutNode = {
-    k: 'rect',
-    box: { x: 0, y: dividerY, width: W, height: 1 },
-    part: 'divider',
-    fill: { type: 'solid', color: ctx.resolveColor('line').color },
+  if (showTitle) {
+    bodyChildren.push({
+      k: 'text',
+      box: { x: 0, y: 0, width: W, height: titleH },
+      part: 'title',
+      lines: titleMetrics.lines,
+      style: titleStyle,
+    })
+  }
+
+  if (showDivider) {
+    bodyChildren.push({
+      k: 'rect',
+      box: { x: 0, y: dividerY, width: W, height: 1 },
+      part: 'divider',
+      fill: { type: 'solid', color: ctx.resolveColor('line').color },
+    })
   }
 
   const contentBox = { x: 0, y: contentY, width: W, height: contentH }
@@ -65,16 +78,6 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: W, height: H },
     part: 'root',
-    children: [
-      {
-        k: 'rect',
-        part: 'surface',
-        box: { x: 0, y: 0, width: W, height: H },
-        fill: surfacePaint,
-      },
-      titleNode,
-      dividerNode,
-      ...childNodes,
-    ],
+    children: [...bodyChildren, ...childNodes],
   }
 }

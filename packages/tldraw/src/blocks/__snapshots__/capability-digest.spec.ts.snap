@@ -156,7 +156,9 @@ Big number slide. One enormous headline metric with a short label and optional c
 |---|---|---|---|
 | \`value\` | yes | number | The headline number to display. Any numeric value. |
 | \`label\` | yes | text (max 40 chars) | Short label describing the number. 1–4 words, e.g. \\"Total Revenue\\". |
+| \`showLabel\` | no | boolean | Toggle the label below the value on/off. |
 | \`context\` | no | text (max 60 chars) | Optional supporting line below the label (e.g. \\"vs last quarter\\"). |
+| \`showContext\` | no | boolean | Toggle the context line on/off. |
 | \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234). |
 | \`prefix\` | no | text (max 4 chars) | Optional prefix before the number (e.g. \\"$\\", \\"€\\"). Max 4 chars. |
 | \`suffix\` | no | text (max 4 chars) | Optional suffix after the number (e.g. \\"%\\", \\"M\\"). Max 4 chars. |
@@ -278,9 +280,12 @@ Opening slide. One idea in the title, no full sentence; subtitle gives date/audi
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`kicker\` | no | text (max 60 chars) | Short label above the title: section name, category, or status. 1–4 words. |
+| \`showKicker\` | no | boolean | Toggle the kicker label on/off. |
 | \`title\` | yes | richText (max 120 chars) | A concise slide title. Bold one key word for emphasis. Never a full sentence. Max 120 chars. |
 | \`subtitle\` | no | richText | Supporting line: date, audience, or context. 3–12 words. |
+| \`showSubtitle\` | no | boolean | Toggle the subtitle on/off. |
 | \`cta\` | no | text (max 40 chars) | Optional button text. Short imperative, 2–4 words. |
+| \`showCta\` | no | boolean | Toggle the call-to-action button on/off. |
 | \`variant\` | no | enum: classic \\\\| split \\\\| gradient-sweep | Visual style: \\"classic\\" (default) standard hero with staggered part reveal; \\"split\\" split-title reveal where halves slide in from opposite sides; \\"gradient-sweep\\" a decorative gradient sweeps in behind the title on reveal. |
 
 \`\`\`json
@@ -326,8 +331,11 @@ Image beside or above a text cluster (kicker + title + body). Configurable place
 | \`placement\` | no | enum: left \\\\| right \\\\| top | Where the image sits relative to the text cluster. |
 | \`imageRatio\` | no | number (min 0.2, max 0.8) | Fraction of the box given to the image (left/right splits width, top splits height). |
 | \`kicker\` | no | text (max 60 chars) | Short label above the title: section name, category, or status. 1–4 words. |
+| \`showKicker\` | no | boolean | Toggle the kicker label on/off. |
 | \`title\` | yes | text (max 120 chars) | A concise slide title. 3–10 words. Never a full sentence. |
+| \`showTitle\` | no | boolean | Toggle the title text on/off. |
 | \`body\` | no | text (max 500 chars) | 1–3 sentences of supporting body copy. |
+| \`showBody\` | no | boolean | Toggle the body text on/off. |
 | \`gutter\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg \\\\| xl | Gap between the image and the text cluster. |
 
 \`\`\`json
@@ -401,8 +409,11 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 |---|---|---|---|
 | \`value\` | yes | number (min -1000000000000, max 1000000000000) | The headline metric number. Use a plain number; formatting is applied by the block. |
 | \`delta\` | no | number | Change indicator. Positive = improved, negative = declined (relative to polarity). |
+| \`showDelta\` | no | boolean | Toggle the change indicator on/off. |
 | \`label\` | no | text (max 30 chars) | Metric name. 1–3 words, never a sentence. |
+| \`showLabel\` | no | boolean | Toggle the metric label on/off. |
 | \`sparkline\` | no | list of number (2–20 items) | 2–20 numbers for a mini trend line. Omit for a single-point metric. |
+| \`showSparkline\` | no | boolean | Toggle the sparkline chart on/off. |
 | \`polarity\` | no | enum: upGood \\\\| downGood | Which direction is \\"good\\". upGood = higher is better (revenue). downGood = lower is better (churn). |
 | \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number formatting hint. |
 
@@ -822,6 +833,8 @@ Titled section with divider and content area. _(family: layout; keywords: sectio
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`title\` | no | text (max 100 chars) | Section heading text. |
+| \`showTitle\` | no | boolean | Toggle the section title on/off. |
+| \`showDivider\` | no | boolean | Toggle the divider line below the title on/off. |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between title and children. |
 | \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks laid out below the title. |
 

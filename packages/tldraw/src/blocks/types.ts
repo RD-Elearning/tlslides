@@ -319,6 +319,9 @@ export interface SlotSpec {
   required?: boolean
   /** Guidance for the AI: "One metric name, 1–3 words. Never a sentence." */
   guidance?: string
+  /** B4: when set, this boolean slot toggles the visibility of the element named by
+   *  this `part` value. The slot key must start with `show` (e.g. `showKicker`). */
+  toggles?: string
 }
 
 /**

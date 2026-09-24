@@ -93,4 +93,57 @@ describe('tls.l.section', () => {
       expect(asGroup(node).children).toHaveLength(3) // surface + title + divider
     })
   })
+
+  describe('showTitle toggle', () => {
+    it('showTitle: false removes the title node and reflows content up', () => {
+      const ctx = makeCtx({ width: 960, height: 540 }, registry)
+      const node = tlsLSection.layout(
+        { title: 'Hello', gap: 'sm', showTitle: false, showDivider: true, children: makeChildren(0) } as any,
+        ctx
+      )
+      const children = asGroup(node).children
+      // surface + divider (no title) = 2
+      expect(children).toHaveLength(2)
+      expect(children[0].part).toBe('surface')
+      expect(children[1].part).toBe('divider')
+      // Divider y should be 0 (no title above it).
+      const divider = children[1] as Extract<LayoutNode, { k: 'rect' }>
+      expect(divider.box.y).toBe(0)
+    })
+
+    it('showTitle defaults to true (absent → shown)', () => {
+      const ctx = makeCtx({ width: 960, height: 540 }, registry)
+      const node = tlsLSection.layout(
+        { title: 'Hello', gap: 'sm', children: [] } as any,
+        ctx
+      )
+      const title = asGroup(node).children[1]
+      expect(title.part).toBe('title')
+    })
+  })
+
+  describe('showDivider toggle', () => {
+    it('showDivider: false removes the divider node and reflows content up', () => {
+      const ctx = makeCtx({ width: 960, height: 540 }, registry)
+      const node = tlsLSection.layout(
+        { title: 'Hello', gap: 'sm', showTitle: true, showDivider: false, children: makeChildren(0) } as any,
+        ctx
+      )
+      const children = asGroup(node).children
+      // surface + title (no divider) = 2
+      expect(children).toHaveLength(2)
+      expect(children[0].part).toBe('surface')
+      expect(children[1].part).toBe('title')
+    })
+
+    it('showDivider defaults to true (absent → shown)', () => {
+      const ctx = makeCtx({ width: 960, height: 540 }, registry)
+      const node = tlsLSection.layout(
+        { title: 'Hello', gap: 'sm', children: [] } as any,
+        ctx
+      )
+      const divider = asGroup(node).children[2]
+      expect(divider.part).toBe('divider')
+    })
+  })
 })

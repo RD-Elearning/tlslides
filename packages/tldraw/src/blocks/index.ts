@@ -6,6 +6,7 @@
 export * from './types'
 export { BlockRegistry, createBlockComponents } from './registry'
 export { blockToShape, shapeToBlock, BLOCK_PROP_KEY } from './shape-bridge'
+export { isShown } from './schema-helpers'
 // P19 — design tokens v2 (`reviews/blocks/02-design-language.md`).
 export type { DeckTokens } from './tokens'
 export { resolveTokens, resolveColor, surfaceFromBackground, surfaceFromPaint } from './tokens'

@@ -464,7 +464,11 @@ describe('R7 — capability digest v2', () => {
       // B2 added `children` slot declarations to 8 layout containers (card, section,
       // split, overlay, safe-area, sidebar, footer, repeater): digest grew from
       // ~54.5k to ~56.1k.
-      const charBudget = 57000
+      // B4 added `toggles` slots (showTitle/showDivider on section, showKicker/showTitle/
+      // showSubtitle/showCta on hero, showLabel/showContext on big-stat,
+      // showKicker/showTitle/showBody on image-text, showDelta/showLabel/showSparkline
+      // on kpi-tile): digest grew to ~57.9k.
+      const charBudget = 58000
       expect(json.length).toBeLessThanOrEqual(charBudget)
     })
   })

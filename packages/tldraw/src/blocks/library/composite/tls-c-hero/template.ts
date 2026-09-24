@@ -16,6 +16,7 @@
 import type { HtmlTemplateContext } from '../../../types'
 import type { HeroProps } from './schema'
 import { richTextToPlain } from './schema'
+import { isShown } from '../../../schema-helpers'
 
 /**
  * Extract plain text from rich-text, HTML-escaping each run via ctx.esc().
@@ -106,7 +107,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
   const parts: string[] = []
 
   // Kicker (optional) — same for all variants
-  if (props.kicker) {
+  if (isShown(props, 'showKicker') && props.kicker) {
     parts.push(
       `<div data-part="kicker" style="` +
         `font-family:var(--tls-font-family);` +
@@ -121,7 +122,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
   }
 
   // Title (required)
-  if (props.title) {
+  if (props.title && isShown(props, 'showTitle')) {
     if (variant === 'split') {
       // Split variant: two halves that animate from opposite sides
       const [firstHalf, secondHalf] = splitTitleForVariant(props.title, ctx.esc)
@@ -155,7 +156,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
   }
 
   // Subtitle (optional) — same for all variants
-  if (props.subtitle) {
+  if (isShown(props, 'showSubtitle') && props.subtitle) {
     parts.push(
       `<div data-part="subtitle" style="` +
         `font-family:var(--tls-font-family);` +
@@ -168,7 +169,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
   }
 
   // CTA (optional) — same for all variants
-  if (props.cta) {
+  if (isShown(props, 'showCta') && props.cta) {
     const ctaText = richTextToPlain(props.cta)
     parts.push(
       `<div data-part="cta" style="` +

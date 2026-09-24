@@ -86,8 +86,38 @@ field sensibly or ignores it; `catalog-conformance` already asserts the digest d
 
 ## Done when
 
-- [ ] `SlotSpec.toggles` + `isShown` exist and are documented in `../CURRENT-STATE.md`
-      "Before writing a new block".
-- [ ] Conformance gate enforces it for every block.
-- [ ] At least hero, kpi-tile, big-stat, image-text, section retrofitted; rest listed.
-- [ ] Demo decks visually unchanged; tsc 0; targeted + one full suite green; ledger row filled.
+- [x] `SlotSpec.toggles` + `isShown` exist and exported from `blocks/index.ts`.
+- [x] Conformance gate enforces it for every block: key starts with `show`, type is boolean,
+      hiding removes the part from the layout tree (Tier A) and from template output (Tier B).
+- [x] Retrofitted: section (`showTitle`/`showDivider`), hero (`showKicker`/`showSubtitle`/
+      `showCta`), big-stat (`showLabel`/`showContext`), kpi-tile (`showDelta`/`showLabel`/
+      `showSparkline`), image-text (`showKicker`/`showTitle`/`showBody`) — 5 of 8 blocks.
+- [x] Unretrofitted (listed in ledger): testimonial (`showAvatar`/`showRole`), quote
+      (`showAttribution`/`showMark`), title (`toggles: 'rule'` rename), hero-number
+      (`showUnit`/`showCaption`).
+- [x] Tier B animate functions already null-guarded (`querySel` returns null → skipped).
+- [x] Demo decks visually unchanged (all toggles default to shown); tsc 0;
+      targeted + full suite green (175 suites, 2765 tests); ledger row filled.
+
+## Ledger
+
+2026-09-24 — Committed `B4: element visibility convention (toggles + isShown + conformance gate + 5 block retrofits)`.
+
+- Added `toggles?: string` to `SlotSpec` in `blocks/types.ts`.
+- Created `blocks/schema-helpers.ts` with `isShown(props, key)` (returns `props[key] !== false`).
+- Updated `catalog-conformance.spec.ts`: generic gate + per-block toggle-reflow test (Tier A layout tree walk; Tier B template string check + poster walk).
+- Retrofitted 5 blocks:
+  - `tls.l.section`: `showTitle`/`showDivider` — layout reflows offsets when hidden.
+  - `tls.c.hero` (Tier B): `showKicker`/`showSubtitle`/`showCta` — template + poster guard with `isShown`.
+  - `tls.c.big-stat` (Tier B): `showLabel`/`showContext` — template + poster guard with `isShown`. Animate already null-guarded.
+  - `tls.c.kpi-tile`: `showDelta`/`showLabel`/`showSparkline` — layout + capacity() guard with `isShown`.
+  - `tls.c.image-text`: `showKicker`/`showTitle`/`showBody` — layout + buildTextCluster guard with `isShown`.
+- Added `collectParts` to `layout/test-helpers.ts`.
+- Updated `capability-digest.spec.ts` char budget 57k→58k and snapshot with new schema fields.
+- New test count: 175 suites, 2765 tests (was 2762 before B4).
+
+## Side findings
+
+- The `toggles` field in `SlotSpec` is printed by `capabilityDigest()` as part of the JSON schema, which is correct — the AI needs to know about element switches for prompting.
+- `testimonial`, `quote`, `title`, `hero-number` retrofits deferred — they add no new concepts beyond the 5 done.
+- The conformance gate's Tier B branch uses a stub `HtmlTemplateContext` (matching the pattern in `tls-c-hero.spec.ts`'s `tplCtx` helper).

@@ -14,8 +14,10 @@ import type { BlockSchema } from '../../../types'
 export interface BigStatProps extends Record<string, unknown> {
   /** The headline number. */
   value: number
+  showLabel?: boolean
   /** Short label below the number (1–4 words). */
   label: string
+  showContext?: boolean
   /** Optional context line below the label (e.g. "vs last quarter"). */
   context?: string
   /** How to format the number. Default: 'plain'. */
@@ -89,11 +91,25 @@ export const schema: BlockSchema = {
     required: true,
     guidance: 'Short label describing the number. 1–4 words, e.g. "Total Revenue".',
   },
+  showLabel: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Label',
+    help: 'Toggle the label below the value on/off.',
+    toggles: 'label',
+  },
   context: {
     type: { kind: 'text', maxChars: 60 },
     role: 'option',
     label: 'Context',
     guidance: 'Optional supporting line below the label (e.g. "vs last quarter").',
+  },
+  showContext: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Show Context',
+    help: 'Toggle the context line on/off.',
+    toggles: 'context',
   },
   format: {
     type: { kind: 'enum', values: ['plain', 'compact', 'percent', 'currency'] },

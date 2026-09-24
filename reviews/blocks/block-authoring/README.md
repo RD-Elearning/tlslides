@@ -67,7 +67,7 @@ be 0.
 | B1 | ✅ done | d7ccb69d5e1881af50f4ec90588564272960c522 | 2026-09-24 | 0 | render-dom-nested-host + 4 Tier B specs + host-registry + parity + collision + slide-compiler | 174 suites, 2554 passed | Screenshot pending · see TODO-screenshots.md |
 | B2 | ✅ done | 0c2484a8 | 2026-09-24 | 0 | container specs + catalog-conformance + safe-area + section + validate-deck-spec | 174 suites, 2594 passed | capability-digest budget raised 56k→57k for 8 children slots |
 | B3 | ✅ done | 7f6c5c7d | 2026-09-24 | 0 | layoutBlock + withBox + 6 call sites + layout-block.spec.ts | 175 suites, 2604 passed | layoutChild reads spec.style; cache key includes style hash
-| B4 | ⬜ | — | — | — | — | — | |
+| B4 | ✅ done |  | 2026-09-24 | 0 | toggles + isShown + conformance gate + 5 block retrofits | 175 suites, 2765 passed | big-stat animate already null-guarded
 | B5 | ⬜ | — | — | — | — | — | |
 | B6 | ⬜ | — | — | — | — | — | |
 | B7 | ⬜ | — | — | — | — | — | |

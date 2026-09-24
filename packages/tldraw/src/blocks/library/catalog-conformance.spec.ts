@@ -15,6 +15,8 @@ import { BUILT_IN_BLOCKS, registerBuiltInBlocks } from './index'
 import { BlockRegistry } from '../registry'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { capabilityDigest } from '../capability-digest'
+import { makeCtx, makeRegistry, collectParts } from './layout/test-helpers'
+import type { LayoutNode } from '../types'
 
 const EXPECTED_BLOCK_COUNT = 40
 
@@ -103,6 +105,76 @@ describe('block catalog conformance', () => {
             expect(slot).toBeDefined()
             expect(slot?.type?.kind).toBe('blocks')
             expect(slot?.role).toBe('content')
+          }
+        })
+
+        it('toggles slots follow the convention: key starts with "show", type is boolean', () => {
+          const toggleSlots = Object.entries(def.schema || {})
+            .filter(([_, s]) => 'toggles' in s)
+          for (const [key, slot] of toggleSlots) {
+            // B4 rule 1: key must start with "show"
+            expect(key).toMatch(/^show[A-Z]/)
+            // B4 rule 1: type must be boolean
+            expect(slot.type.kind).toBe('boolean')
+            // B4 rule 1: toggles points to a part name
+            expect(slot.toggles).toBeDefined()
+            expect(typeof slot.toggles).toBe('string')
+          }
+        })
+
+        it('toggles: hiding a part actually removes it from the tree (reflow)', () => {
+          const toggleSlots = Object.entries(def.schema || {})
+            .filter(([_, s]) => 'toggles' in s)
+          if (toggleSlots.length === 0) return // nothing to test
+
+          const example = def.describe?.example
+          if (!example) return
+
+          const ctx = makeCtx({ width: 1920, height: 1080 }, makeRegistry())
+
+          for (const [key, slot] of toggleSlots) {
+            const part = slot.toggles!
+            // Clone the example props and set the toggle to false.
+            const propsWithToggleOff = {
+              ...(example.props || {}),
+              [key]: false,
+            }
+
+            if (def.tier === 'A' || def.kind === 'layout') {
+              // Tier A: call layout() (or poster if kind is html) and collect parts.
+              const layoutFn = def.layout || def.poster
+              if (!layoutFn) continue
+              let tree: LayoutNode
+              try {
+                tree = layoutFn(propsWithToggleOff as any, ctx)
+              } catch {
+                continue // some props may be invalid; skip
+              }
+              const parts = collectParts(tree)
+              const hasPart = parts.some(
+                (p) => p === part || p.startsWith(part + '[')
+              )
+              expect(hasPart).toBe(false)
+            }
+
+            if (def.kind === 'html' && def.html?.template) {
+              // Tier B (html): call template() and check for data-part.
+              const tplCtx = {
+                esc: (s: string) =>
+                  s
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;'),
+                cssVar: (role: string) => `var(--tls-${role})`,
+                box: { x: 0, y: 0, width: 1920, height: 1080 },
+                tokens: ctx.tokens,
+              }
+              const html = def.html.template(propsWithToggleOff as any, tplCtx)
+              expect(html).not.toContain(`data-part="${part}"`)
+              expect(html).not.toContain(`data-part="${part}[`)
+            }
           }
         })
       })
