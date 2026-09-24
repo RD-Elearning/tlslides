@@ -119,8 +119,30 @@ internal spacing of that design); note it, move on.
 
 ## Done when
 
-- [ ] `layoutBlock` exists and is the only way placed blocks are laid out (grep shows no stray
+- [x] `layoutBlock` exists and is the only way placed blocks are laid out (grep shows no stray
       direct call outside `layoutBlock` itself and specs).
-- [ ] No-style identity invariant tested; all existing geometry specs unchanged.
-- [ ] padding (token / number / tuple) and align work for Tier A and Tier B (tests).
-- [ ] tsc 0, targeted + one full suite green, overlap-audit exit 0; ledger row filled.
+- [x] No-style identity invariant tested (`layout-block.spec.ts`); all existing geometry specs unchanged.
+- [x] padding (token / number / tuple) and align work for Tier A and Tier B (tests in `layout-block.spec.ts`).
+- [x] tsc 0, targeted + one full suite green (175 suites, 2604 passed), overlap-audit exit 0; ledger row filled.
+
+## Ledger
+
+2026-09-24 — Committed `B3: layoutBlock wrapper applies instance padding + align to all blocks`.
+
+- Added `layoutBlock` to `blocks/layout/layout-child.ts`: identity-invariant fast path (no style →
+  `def.layout` directly), padding via inset + group wrapper, align center offsets content when shorter
+  than inner box, part moves to outer group (H3).
+- Added `withBox()` to `LayoutContext` interface + implementation in `createLayoutContext` (H6).
+- Added `resolvePadding` helper for SpaceToken/number/tuple resolution.
+- `layoutChild` and `measureIntrinsicSize` now call `layoutBlock` instead of `def.layout` directly.
+- Cache key in `measureIntrinsicSize` now includes `hashValue(spec.style ?? null)` for distinct padding.
+- `intrinsicSize` shortcut adds padding to the result (H2).
+- Updated call sites: `ComponentUtil.tsx`, `DeckViewer.tsx`, `slide-compiler.ts` (2 sites, with per-block
+  ctx per H1), `motion/timeline.ts`, `parity-harness.ts`.
+- Exported `layoutBlock` from `blocks/layout/index.ts` and `blocks/index.ts`.
+- New test suite: `layout-block.spec.ts` (10 tests, all passing).
+- Block style read from `spec.style ?? spec.props.$block?.style` in `layoutChild` (Step 0 fix).
+
+## Side findings
+
+- `testimonial` block has hard-coded `padding: 48px` internal to its template — left as-is per H7.
