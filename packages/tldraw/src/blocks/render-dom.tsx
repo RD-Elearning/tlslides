@@ -289,6 +289,10 @@ interface HostMountProps {
   render: string
   box: Box
   part?: string
+  /** Per-instance props for this host node. When absent, falls back to HostLayoutContext.props. */
+  props?: Record<string, unknown>
+  /** Per-instance CSS custom property overrides. Merged into the inline style after hostCssVarStyle. */
+  vars?: Record<string, string>
 }
 
 /**
@@ -312,6 +316,8 @@ const HostMount = React.memo(function HostMount({
   render,
   box,
   part,
+  props: nodeProps,
+  vars: nodeVars,
 }: HostMountProps) {
   const registry = React.useContext(HostRegistryContext)
   const blockRegistry = useBlockRegistry()
@@ -320,13 +326,19 @@ const HostMount = React.memo(function HostMount({
   const disposerRef = React.useRef<(() => void) | void | null>(null)
   const rendererRef = React.useRef<HostRenderer | null>(null)
   const prevPropsJsonRef = React.useRef<string>('')
+  const prevVarsJsonRef = React.useRef<string>('')
   const prevBoxSizeRef = React.useRef<string>('')
   const mountedRef = React.useRef<boolean>(false)
 
   const tokens = layoutCtx?.tokens
   const surface = layoutCtx?.surface
-  const hostProps = layoutCtx?.props ?? {}
+  const hostProps = nodeProps ?? layoutCtx?.props ?? {}
   const headless = layoutCtx?.headless ?? false
+
+  // H1: Merge nodeVars after hostCssVarStyle so per-instance overrides win.
+  // React owns these via inline style, so updates/removal are automatic.
+  const hostCssVars = tokens && surface ? hostCssVarStyle(tokens, surface) : {}
+  const mergedVars = { ...hostCssVars, ...(nodeVars ?? {}) }
 
   // Build the HostRenderContext
   const ctx: HostRenderContext = React.useMemo(() => ({
@@ -387,11 +399,13 @@ const HostMount = React.memo(function HostMount({
     if (!renderer.update) return
 
     const propsJson = JSON.stringify(hostProps)
+    const varsJson = JSON.stringify(nodeVars ?? {})
     const boxSize = `${box.width}x${box.height}`
 
     // Skip if nothing structurally changed
     if (
       prevPropsJsonRef.current === propsJson &&
+      prevVarsJsonRef.current === varsJson &&
       prevBoxSizeRef.current === boxSize
     ) {
       return
@@ -401,15 +415,17 @@ const HostMount = React.memo(function HostMount({
     // skip — the mount effect above already called mount().
     if (prevPropsJsonRef.current === '') {
       prevPropsJsonRef.current = propsJson
+      prevVarsJsonRef.current = varsJson
       prevBoxSizeRef.current = boxSize
       return
     }
 
     prevPropsJsonRef.current = propsJson
+    prevVarsJsonRef.current = varsJson
     prevBoxSizeRef.current = boxSize
 
     renderer.update(root, ctx)
-  }, [hostProps, box.width, box.height])
+  }, [hostProps, nodeVars, box.width, box.height])
 
   const hasRenderer = (registry?.has(render) ?? false) || (() => {
     if (!blockRegistry) return false
@@ -426,7 +442,7 @@ const HostMount = React.memo(function HostMount({
         top: `${box.y}px`,
         width: `${box.width}px`,
         height: `${box.height}px`,
-        ...(tokens && surface ? hostCssVarStyle(tokens, surface) : {}),
+        ...mergedVars,
       }}
       data-render={render}
       {...(hasRenderer ? {} : { 'data-host-missing': render })}
@@ -679,6 +695,8 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           render={node.render}
           box={node.box}
           part={node.part}
+          props={node.props}
+          vars={node.vars}
         />
       )
     }

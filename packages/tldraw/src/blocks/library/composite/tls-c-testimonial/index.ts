@@ -19,6 +19,7 @@ import { motion } from './motion'
 import { createLayoutContext } from '../../../layout/layout-child'
 import { resolveTokens } from '../../../tokens'
 import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
+import { htmlHostNode } from '../../../html-block'
 
 /** Summary for the AI: what this block is and when to use it. */
 const TESTIMONIAL_SUMMARY =
@@ -32,15 +33,7 @@ const TESTIMONIAL_SUMMARY =
  * export; the host renderer supplies the live DOM.
  */
 function testimonialLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  const p = props as import('./schema').TestimonialProps
-  const posterNode = poster(p, ctx)
-  return {
-    k: 'host',
-    box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
-    part: 'root',
-    render: 'tls.c.testimonial',
-    poster: posterNode,
-  } as LayoutNode
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.testimonial', props, ctx)
 }
 
 /**

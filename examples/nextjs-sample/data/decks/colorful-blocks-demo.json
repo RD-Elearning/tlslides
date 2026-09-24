@@ -406,6 +406,37 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_11",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_11_card",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_11_big_stat",
+                  "type": "tls.c.big-stat",
+                  "props": {
+                    "value": 4200000,
+                    "label": "Revenue",
+                    "format": "compact",
+                    "prefix": "$"
+                  }
+                }
+              ]
+            },
+            "style": {
+              "surface": "card"
+            }
+          }
+        ]
+      }
     }
   ]
 }

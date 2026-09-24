@@ -394,7 +394,7 @@ export type LayoutNode =
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
-  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode }
+  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode; props?: Record<string, unknown>; vars?: Record<string, string> }
 
 /**
  * A 2D box: origin at top-left, measured in slide units (1920×1080 frame).
