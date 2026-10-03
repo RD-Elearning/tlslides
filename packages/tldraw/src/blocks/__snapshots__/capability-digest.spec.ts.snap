@@ -1164,6 +1164,44 @@ Spider chart: up to three shapes over three to eight axes, with grid rings and v
 }
 \`\`\`
 
+### \`tls.d.ranking\` — Ranking
+
+Leaderboard rows: position, name, value bar and value, with medals for the top three. _(family: data; keywords: ranking, leaderboard, top 10, top n, best, league table)_
+
+**When:** Top-N lists, leaderboards, top products.
+**Avoid:** No ranking intent (tls.d.bar). Many columns: tls.d.table.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, note) (3–10 items) | Any order: sorted by value unless sort is none. |
+| \`showBars\` | no | boolean |  |
+| \`medals\` | no | boolean |  |
+| \`sort\` | no | enum: desc \\\\| asc \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ranking\\",
+  \\"type\\": \\"tls.d.ranking\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Aurora\\",
+        \\"value\\": 4820
+      },
+      {
+        \\"label\\": \\"Beacon\\",
+        \\"value\\": 3910
+      },
+      {
+        \\"label\\": \\"Cobalt\\",
+        \\"value\\": 2740
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.scatter\` — Scatter Plot
 
 Points on nice x and y axes; group colours, quadrant lines, trend line, point labels. _(family: data; keywords: scatter, correlation, xy, plot, quadrant, regression)_
@@ -2720,7 +2758,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 73,
+  "blockCount": 74,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2748,6 +2786,7 @@ Object {
     "tls.d.progress-bar",
     "tls.d.progress-ring",
     "tls.d.radar",
+    "tls.d.ranking",
     "tls.d.scatter",
     "tls.d.scorecard",
     "tls.d.slope",

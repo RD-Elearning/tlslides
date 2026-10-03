@@ -23,7 +23,7 @@ export const tlsDBar: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Column or horizontal bar chart of one series',
-  related: ['tls.d.donut', 'tls.d.line', 'tls.d.grouped-bar'],
+  related: ['tls.d.donut', 'tls.d.line', 'tls.d.grouped-bar', 'tls.d.ranking'],
   describe: {
     when: 'Use to compare values across categories — 1–20 bars, single series. Set orientation to horizontal when category labels are long.',
     avoid: 'Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).',
