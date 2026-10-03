@@ -79,6 +79,12 @@ describe('tls.t.kv-list', () => {
     expect(one(tree, 'key[3]').x).toBeGreaterThan(500)
   })
 
+  it('short keys never wrap in a narrow two-column cell (key column keeps its content width)', () => {
+    const items = [{ key: 'Region', value: 'EMEA' }, { key: 'Seats', value: '25' }, { key: 'Status', value: 'On track' }, { key: 'Budget', value: '$1.2M' }]
+    const tree = lay({ items, columns: '2', leader: 'none' }, 544, 360)
+    for (let i = 0; i < 4; i++) expect((one(tree, `key[${i}]`).node as any).lines).toHaveLength(1)
+  })
+
   it('capacity: reflow to two columns when wide, then truncate', () => {
     const items = Array.from({ length: 10 }, (_, i) => ({ key: `Key ${i}`, value: `Value ${i}` }))
     const r = tlsTKvList.capacity!({ ...(tlsTKvList.defaults as any), items } as any, { width: 1000, height: 100 }, ctx(1000, 100))

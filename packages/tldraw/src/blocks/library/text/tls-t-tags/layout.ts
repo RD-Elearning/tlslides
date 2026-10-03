@@ -50,7 +50,9 @@ function compute(props: TagsProps, ctx: LayoutContext, width: number) {
     }
     const style: ResolvedTextStyle = { ...base, color: ink }
     const m = ctx.measureText(label, style, Math.max(1, w - 2 * padX))
-    const tw = Math.min(w, Math.ceil(Math.min(m.width, w - 2 * padX)) + 2 * padX)
+    // estimateMetrics is an average-glyph-width heuristic (real text can be wider by a third), so
+    // the pill gets 12% slack and the label is anchored at the left padding, never centred.
+    const tw = Math.min(w, Math.ceil(Math.min(m.width * 1.12, w - 2 * padX)) + 2 * padX)
     return { i, w: tw, h: m.height + 2 * padY, lines: m.lines, th: m.height, style, color, fill, stroke }
   })
 
@@ -88,7 +90,7 @@ function compute(props: TagsProps, ctx: LayoutContext, width: number) {
       nodes.push({
         k: 'text',
         part: `tag[${t.i}].label`,
-        box: { x: x + (t.w - Math.min(t.w - 2 * padX, Math.ceil(t.lines.reduce((m, l) => Math.max(m, l.width), 0)))) / 2, y: y + (h - t.th) / 2, width: Math.max(1, t.w - 2 * padX), height: t.th },
+        box: { x: x + padX, y: y + (h - t.th) / 2, width: Math.max(1, t.w - 2 * padX), height: t.th },
         lines: t.lines,
         style: t.style,
         propPath: `items.${t.i}`,

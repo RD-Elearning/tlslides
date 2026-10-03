@@ -464,6 +464,172 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_12",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_12_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P1 lists",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_12_numbered",
+            "type": "tls.t.numbered",
+            "props": {
+              "items": [
+                "Define the audience",
+                "State the **one** message",
+                "Prove it with data"
+              ],
+              "markerStyle": "badge",
+              "markerTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_12_checklist",
+            "type": "tls.t.checklist",
+            "props": {
+              "items": [
+                {
+                  "text": "Outline drafted",
+                  "state": "done"
+                },
+                {
+                  "text": "Charts reviewed",
+                  "state": "done"
+                },
+                {
+                  "text": "Demo rehearsed",
+                  "state": "open"
+                },
+                {
+                  "text": "Legal sign-off",
+                  "state": "blocked"
+                }
+              ],
+              "doneStyle": "strike"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_12_iconlist",
+            "type": "tls.m.icon-list",
+            "props": {
+              "items": [
+                {
+                  "icon": "rocket",
+                  "title": "Launch faster",
+                  "text": "Weeks, not quarters."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Stay secure",
+                  "text": "Audit trails built in."
+                },
+                {
+                  "icon": "chart-line",
+                  "title": "See impact",
+                  "text": "Live dashboards."
+                }
+              ],
+              "iconStyle": "circle",
+              "iconTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_12_statement",
+            "type": "tls.t.statement",
+            "props": {
+              "text": "Make the **simplest** option the **default**.",
+              "attribution": "Design principle",
+              "size": "lg",
+              "emphasis": "accent"
+            },
+            "motion": {
+              "preset": "words-in",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_12_definition",
+            "type": "tls.t.definition",
+            "props": {
+              "term": "Heuristic",
+              "pronunciation": "/hyoo-RIS-tik/",
+              "partOfSpeech": "noun",
+              "definition": "A **rule of thumb** that finds a good-enough answer fast.",
+              "example": "Pick the shortest line.",
+              "layout": "stacked"
+            },
+            "motion": {
+              "preset": "title-then-body",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_12_callout",
+            "type": "tls.t.callout",
+            "props": {
+              "title": "Heads up",
+              "text": "Figures are **preliminary** until the audit closes.",
+              "variant": "warning",
+              "fill": "tint"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 7
+            }
+          },
+          {
+            "id": "b_12_footnote",
+            "type": "tls.t.footnote",
+            "props": {
+              "items": [
+                "Company filings, FY2025"
+              ],
+              "marker": "source"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 8
+            }
+          }
+        ]
+      }
     }
   ]
 }

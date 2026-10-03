@@ -43,11 +43,11 @@ function compute(props: KvListProps, ctx: LayoutContext, width: number) {
   const keyMax = Math.max(0, ...items.map((p) => ctx.measureText(p.key, keyStyle).width))
   const valMax = Math.max(0, ...items.map((p) => ctx.measureText(p.value, valStyle).width))
   const [kw] = solveColumns(
-    [{ min: gw * 0.2, weight: 0 }, { min: gw * 0.25, weight: 1 }],
+    [{ min: Math.min(keyMax, gw * 0.45), weight: 0 }, { min: gw * 0.25, weight: 1 }],
     Math.max(1, gw - inner),
     [keyMax, valMax]
   )
-  const keyW = Math.max(1, Math.round(kw))
+  const keyW = Math.max(1, Math.ceil(kw) + 1)
   const valX = keyW + inner
   const valW = Math.max(1, gw - valX)
 
