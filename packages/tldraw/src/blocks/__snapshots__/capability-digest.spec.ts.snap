@@ -945,6 +945,48 @@ Ring filled to value / max with the figure in the centre, plus label and caption
 }
 \`\`\`
 
+### \`tls.d.radar\` — Radar Chart
+
+Spider chart: up to three shapes over three to eight axes, with grid rings and values. _(family: data; keywords: radar, spider, profile, skills, scores, criteria)_
+
+**When:** Profiles on several criteria (skills, product scores).
+**Avoid:** More than 3 series or 8 axes (use tls.d.compare-table); exact values (use tls.d.grouped-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`axes\` | yes | list of text (max 24 chars) (3–8 items) | Criteria around the dial, in order. |
+| \`series\` | yes | list of object (name, values) (1–3 items) | One shape each; one value per axis. |
+| \`max\` | no | number | Default: the largest value, rounded up. |
+| \`fill\` | no | boolean |  |
+| \`rings\` | no | number | Grid rings, 1-8. Default 4. |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_radar\\",
+  \\"type\\": \\"tls.d.radar\\",
+  \\"props\\": {
+    \\"axes\\": [
+      \\"Speed\\",
+      \\"Cost\\",
+      \\"Quality\\",
+      \\"Support\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Ours\\",
+        \\"values\\": [
+          8,
+          6,
+          9,
+          7
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.scatter\` — Scatter Plot
 
 Points on nice x and y axes; group colours, quadrant lines, trend line, point labels. _(family: data; keywords: scatter, correlation, xy, plot, quadrant, regression)_
@@ -2334,7 +2376,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 64,
+  "blockCount": 65,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2357,6 +2399,7 @@ Object {
     "tls.d.pie",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
+    "tls.d.radar",
     "tls.d.scatter",
     "tls.d.sparkline",
     "tls.d.stacked-bar",
