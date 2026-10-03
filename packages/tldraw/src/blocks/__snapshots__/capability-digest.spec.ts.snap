@@ -945,6 +945,52 @@ Ring filled to value / max with the figure in the centre, plus label and caption
 }
 \`\`\`
 
+### \`tls.d.scatter\` — Scatter Plot
+
+Points on nice x and y axes; group colours, quadrant lines, trend line, point labels. _(family: data; keywords: scatter, correlation, xy, plot, quadrant, regression)_
+
+**When:** Correlation, positioning of items on two measures.
+**Avoid:** Qualitative positioning (use tls.g.matrix-2x2).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of object (x, y, label, group) (3–60 items) |  |
+| \`quadrants\` | no | boolean | Cross lines at the middle of each axis. |
+| \`trendline\` | no | boolean | Least-squares fit. |
+| \`labelPoints\` | no | enum: none \\\\| highlighted \\\\| all |  |
+| \`highlightIndex\` | no | number (min -1) | Point to emphasise; others dim. -1 = none. |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_scatter\\",
+  \\"type\\": \\"tls.d.scatter\\",
+  \\"props\\": {
+    \\"points\\": [
+      {
+        \\"x\\": 1,
+        \\"y\\": 3
+      },
+      {
+        \\"x\\": 2,
+        \\"y\\": 5
+      },
+      {
+        \\"x\\": 3,
+        \\"y\\": 4
+      },
+      {
+        \\"x\\": 4,
+        \\"y\\": 8
+      }
+    ],
+    \\"trendline\\": true
+  }
+}
+\`\`\`
+
 ### \`tls.d.sparkline\` — Sparkline
 
 Axis-free trend line with optional label, area tint, end dot and last value or change. _(family: data; keywords: sparkline, trend, mini chart, inline, tile)_
@@ -2288,7 +2334,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 63,
+  "blockCount": 64,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2311,6 +2357,7 @@ Object {
     "tls.d.pie",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
+    "tls.d.scatter",
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
