@@ -4499,6 +4499,33 @@ Page number chrome element for slide footers. _(family: chrome; keywords: page, 
 }
 \`\`\`
 
+### \`tls.x.rule\` — Rule
+
+A thin divider line, horizontal or vertical, plain or accent gradient, or a short accent bar. _(family: chrome; keywords: rule, divider, line, separator, accent bar, underline)_
+
+**When:** Separating areas on free layouts, and a short accent bar under a heading.
+**Avoid:** Inside a container that already draws its own divider (use tls.l.section).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`weight\` | no | enum: hairline \\\\| md \\\\| bold | hairline 2, md 4, bold 8 slide units. |
+| \`tone\` | no | enum: line \\\\| accent \\\\| gradient | gradient runs from accent to accent2. |
+| \`length\` | no | enum: full \\\\| short | short is a 64 px bar at the start, e.g. under a heading. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_rule\\",
+  \\"type\\": \\"tls.x.rule\\",
+  \\"props\\": {
+    \\"axis\\": \\"horizontal\\",
+    \\"weight\\": \\"md\\",
+    \\"tone\\": \\"accent\\",
+    \\"length\\": \\"short\\"
+  }
+}
+\`\`\`
+
 ## Worked example — a valid slide
 
 Zero coordinates, zero colour values, zero font sizes. Region names come from the layout (\`two-column\` → \`title\`, \`left\`, \`right\`); block types and slots come from the tables above.
@@ -4582,7 +4609,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 122,
+  "blockCount": 123,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4706,6 +4733,7 @@ Object {
     "tls.x.footer-text",
     "tls.x.logo-mark",
     "tls.x.page-number",
+    "tls.x.rule",
   ],
   "colorRoleCount": 12,
   "colorRoleIds": Array [

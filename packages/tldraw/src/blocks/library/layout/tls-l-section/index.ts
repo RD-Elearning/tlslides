@@ -20,7 +20,7 @@ export const tlsLSection: BlockDefinition = {
   category: 'structure',
   scope: 'element',
   shortDescription: 'Titled area with a divider above its children',
-  related: ['tls.l.card'],
+  related: ['tls.l.card', 'tls.x.rule'],
   describe: {
     when: 'Use to introduce a named subsection within a region with a title + divider.',
     avoid: 'Do not use for the slide title (use tls.t.title) or for a filled panel without a heading (use tls.l.card).',
