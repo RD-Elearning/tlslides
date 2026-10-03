@@ -9,6 +9,7 @@
 
 import type { Box, LayoutContext, LayoutNode } from '../../../types'
 import type { BarChartProps } from './schema'
+import { layoutHorizontal } from './layout-horizontal'
 import { linearScale, niceTicks, barDomain } from '../_engine/linear-scale'
 import { computeYAxis } from '../_engine/axis-layout'
 import { assignSeriesColors, highlightColor } from '../_engine/series-color'
@@ -38,6 +39,7 @@ const TITLE_GAP = 8
  * Compute bar positions and return a LayoutNode tree for a vertical column chart.
  */
 export function layout(props: BarChartProps, ctx: LayoutContext): LayoutNode {
+  if (props.orientation === 'horizontal') return layoutHorizontal(props, ctx)
   const { categories, series, highlightIndex = -1, title } = props
   const n = categories.length
   if (n === 0) {

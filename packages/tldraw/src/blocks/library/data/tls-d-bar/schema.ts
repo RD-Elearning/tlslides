@@ -1,5 +1,5 @@
 /**
- * Schema and defaults for tls.d.bar — vertical column chart (Tier A).
+ * Schema and defaults for tls.d.bar — column or horizontal bar chart (Tier A).
  *
  * Baseline is always zero (04 §4.8). NaN/null values are omitted with a note,
  * never silently coerced to zero.
@@ -28,6 +28,12 @@ export const schema: BlockSchema = {
     label: 'Highlight index',
     help: 'Index of the bar to highlight with accent color. -1 = none.',
   },
+  orientation: {
+    type: { kind: 'enum', values: ['vertical', 'horizontal'] },
+    role: 'option',
+    label: 'Orientation',
+    help: 'vertical = columns (default); horizontal = bars with category labels on the left, best for long labels.',
+  },
   title: {
     type: { kind: 'text', maxChars: 120 },
     role: 'content',
@@ -46,6 +52,8 @@ export interface BarChartProps extends Record<string, unknown> {
   series: Array<number | null | undefined>
   /** Index of the bar to highlight. -1 = none (default). */
   highlightIndex?: number
+  /** `vertical` (default) draws columns; `horizontal` draws bars with labels on the left. */
+  orientation?: 'vertical' | 'horizontal'
   /** Optional chart title. */
   title?: string
 }

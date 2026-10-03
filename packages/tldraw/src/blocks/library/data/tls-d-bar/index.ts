@@ -1,5 +1,5 @@
 /**
- * tls.d.bar — vertical column chart (Tier A).
+ * tls.d.bar — column chart, or horizontal bar chart with `orientation` (Tier A).
  *
  * Baseline is always zero. Single series uses `accent`, not `categorical[0]`.
  * NaN/null values are omitted with a gap marker, never silently coerced to zero.
@@ -18,14 +18,14 @@ export const tlsDBar: BlockDefinition = {
   name: 'Column Chart',
   family: 'data',
   tier: 'A',
-  summary: 'Vertical column chart of one series with a zero baseline and value labels.',
-  keywords: ['chart', 'bar', 'column', 'data', 'graph', 'vertical'],
+  summary: 'Column or horizontal bar chart of one series on a zero baseline, with gridlines and an optional highlighted bar.',
+  keywords: ['chart', 'bar', 'column', 'data', 'graph', 'vertical', 'horizontal'],
   category: 'chart',
   scope: 'group',
-  shortDescription: 'Column or bar chart of one series with value labels',
+  shortDescription: 'Column or horizontal bar chart of one series',
   related: ['tls.d.donut'],
   describe: {
-    when: 'Use to compare values across categories — 1–20 bars, single series.',
+    when: 'Use to compare values across categories — 1–20 bars, single series. Set orientation to horizontal when category labels are long.',
     avoid: 'Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).',
     example: {
       id: 'b_bar',

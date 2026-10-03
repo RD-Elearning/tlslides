@@ -532,9 +532,9 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 
 ### \`tls.d.bar\` — Column Chart
 
-Vertical column chart of one series with a zero baseline and value labels. _(family: data; keywords: chart, bar, column, data, graph, vertical)_
+Column or horizontal bar chart of one series on a zero baseline, with gridlines and an optional highlighted bar. _(family: data; keywords: chart, bar, column, data, graph, vertical, horizontal)_
 
-**When:** Use to compare values across categories — 1–20 bars, single series.
+**When:** Use to compare values across categories — 1–20 bars, single series. Set orientation to horizontal when category labels are long.
 **Avoid:** Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).
 
 | Slot | Required | Type | Guidance |
@@ -542,6 +542,7 @@ Vertical column chart of one series with a zero baseline and value labels. _(fam
 | \`categories\` | yes | list of text (1–20 items) | Category labels along the X axis. |
 | \`series\` | yes | series of number (max 6) | Numeric values for each bar. Use null/NaN for missing data. |
 | \`highlightIndex\` | no | number (min -1) | Index of the bar to highlight with accent color. -1 = none. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal | vertical = columns (default); horizontal = bars with category labels on the left, best for long labels. |
 | \`title\` | no | text (max 120 chars) | Chart title, shown above the chart area. |
 
 \`\`\`json

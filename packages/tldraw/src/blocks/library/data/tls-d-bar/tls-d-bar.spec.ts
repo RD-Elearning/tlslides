@@ -463,3 +463,122 @@ describe('chart engine: series colors', () => {
     })
   })
 })
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* P0.9 — orientation: 'horizontal'                                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('tls.d.bar horizontal (P0.9)', () => {
+  const registry = makeRegistry()
+  const box = { width: 960, height: 540 }
+  const props = (over: Partial<BarChartProps> = {}): BarChartProps => ({
+    categories: ['North America', 'Europe', 'Asia Pacific', 'Latin America'],
+    series: [120, 90, 150, 40],
+    orientation: 'horizontal',
+    ...over,
+  })
+  const kids = (p: BarChartProps, size = box) => asGroup(tlsDBar.layout(p as any, makeCtx(size, registry))).children
+
+  it('default orientation is vertical: omitting it is byte-identical to explicit vertical', () => {
+    const base = { categories: ['Q1', 'Q2', 'Q3'], series: [64, 64, 61], highlightIndex: 2, title: 'Revenue' }
+    const a = tlsDBar.layout(base as any, makeCtx(box, registry))
+    const b = tlsDBar.layout({ ...base, orientation: 'vertical' } as any, makeCtx(box, registry))
+    expect(JSON.stringify(b)).toBe(JSON.stringify(a))
+    expect(tlsDBar.defaults).not.toHaveProperty('orientation')
+  })
+
+  it('schema offers vertical and horizontal', () => {
+    expect(tlsDBar.schema.orientation.type).toEqual({ kind: 'enum', values: ['vertical', 'horizontal'] })
+    expect(tlsDBar.schema.orientation.role).toBe('option')
+  })
+
+  it('bars grow rightwards from a vertical zero baseline, one row per category', () => {
+    const c = kids(props())
+    const bars = c.filter((n) => n.part?.startsWith('bar/'))
+    expect(bars).toHaveLength(4)
+    const base = c.find((n) => n.part === 'axis/baseline')!
+    expect(base.k === 'line' && base.from.x === base.to.x).toBe(true)
+    for (const b of bars) expect(b.box.x).toBeCloseTo(base.box.x, 6)
+    // widths proportional to values: 150 is the widest, 40 the narrowest
+    expect(bars[2].box.width).toBeGreaterThan(bars[0].box.width)
+    expect(bars[0].box.width / bars[3].box.width).toBeCloseTo(120 / 40, 6)
+    // rows stack top to bottom in category order without overlapping
+    for (let i = 1; i < bars.length; i++) expect(bars[i].box.y).toBeGreaterThanOrEqual(bars[i - 1].box.y + bars[i - 1].box.height)
+  })
+
+  it('category labels are on the left of the bars and vertically centred on their bar', () => {
+    const c = kids(props())
+    const labels = c.filter((n) => n.part?.startsWith('label/'))
+    const bars = c.filter((n) => n.part?.startsWith('bar/'))
+    expect(labels).toHaveLength(4)
+    labels.forEach((l, i) => {
+      expect(l.box.x + l.box.width).toBeLessThanOrEqual(bars[i].box.x)
+      expect(l.box.y + l.box.height / 2).toBeCloseTo(bars[i].box.y + bars[i].box.height / 2, 6)
+    })
+  })
+
+  it('long labels wrap to at most 2 lines and the cut line ends with an ellipsis', () => {
+    const long = 'A very long category label that cannot possibly fit on two short lines of the label column'
+    const c = kids(props({ categories: [long, 'Short', 'Mid label here', 'x'] }), { width: 600, height: 400 })
+    const first = c.filter((n) => n.part?.startsWith('label/'))[0]
+    expect(first.k === 'text' && first.lines.length).toBe(2)
+    expect(first.k === 'text' && first.lines[1].text.endsWith('…')).toBe(true)
+    const short = c.filter((n) => n.part?.startsWith('label/'))[1]
+    expect(short.k === 'text' && short.lines.length).toBe(1)
+  })
+
+  it('labels never take more than 30% of the chart width, and bars stay inside the box', () => {
+    const c = kids(props({ categories: ['x'.repeat(80), 'b', 'c', 'd'] }))
+    for (const n of c) {
+      expect(n.box.x).toBeGreaterThanOrEqual(-1e-6)
+      expect(n.box.x + n.box.width).toBeLessThanOrEqual(box.width + 1e-6)
+    }
+    const l = c.find((n) => n.part?.startsWith('label/'))!
+    expect(l.box.width).toBeLessThanOrEqual((box.width - 48) * 0.3 + 1e-6)
+  })
+
+  it('has vertical gridlines, tick labels along the bottom, and an optional title', () => {
+    const c = kids(props({ title: 'Revenue by region' }))
+    const grid = c.filter((n) => n.part?.startsWith('gridline/'))
+    expect(grid.length).toBeGreaterThan(0)
+    for (const g of grid) expect(g.k === 'line' && g.from.x === g.to.x).toBe(true)
+    const axis = c.filter((n) => n.part?.startsWith('axis/label-'))
+    expect(axis.length).toBeGreaterThan(1)
+    const bars = c.filter((n) => n.part?.startsWith('bar/'))
+    const lowestBar = Math.max(...bars.map((b) => b.box.y + b.box.height))
+    for (const a of axis) expect(a.box.y).toBeGreaterThanOrEqual(lowestBar)
+    // each tick label is centred on its gridline / baseline x
+    const base = c.find((n) => n.part === 'axis/baseline')!
+    const zero = axis[0]
+    expect(zero.box.x + zero.box.width / 2).toBeCloseTo(base.box.x, 6)
+    expect(c.find((n) => n.part === 'title')).toBeDefined()
+  })
+
+  it('null / NaN values leave a gap marker, not a bar', () => {
+    const c = kids(props({ series: [10, null, NaN, 5] }))
+    expect(c.filter((n) => n.part?.startsWith('bar/gap-')).map((n) => n.part)).toEqual(['bar/gap-1', 'bar/gap-2'])
+    expect(c.filter((n) => /^bar\/\d+$/.test(n.part ?? ''))).toHaveLength(2)
+  })
+
+  it('highlight recolours one bar to accent and mutes the rest; no highlight = all accent', () => {
+    const ctx = makeCtx(box, registry)
+    const fills = (p: BarChartProps) =>
+      asGroup(tlsDBar.layout(p as any, ctx)).children.filter((n) => /^bar\/\d+$/.test(n.part ?? '')).map((n) => (n.k === 'rect' && n.fill && n.fill.type === 'solid' ? n.fill.color : ''))
+    const plain = fills(props())
+    expect(new Set(plain).size).toBe(1)
+    const hl = fills(props({ highlightIndex: 1 }))
+    expect(hl[1]).toBe(plain[0])
+    expect(hl[0]).not.toBe(hl[1])
+    expect(hl[0]).toBe(hl[2])
+  })
+
+  it('empty categories give an empty root; valid tree at 3 sizes', () => {
+    expect(kids(props({ categories: [], series: [] }))).toEqual([])
+    for (const { box: b } of SIZES) assertValidNode(tlsDBar.layout(props() as any, makeCtx(b, registry)))
+  })
+
+  it('DOM and SVG agree for a horizontal chart (parity probe)', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsDBar, props({ title: 'Revenue by region', highlightIndex: 2 }), box)
+  })
+})
