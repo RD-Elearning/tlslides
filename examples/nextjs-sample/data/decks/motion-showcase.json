@@ -1,0 +1,722 @@
+{
+  "version": 1,
+  "id": "motion-showcase",
+  "title": "Motion showcase: expressive, subtle, static",
+  "theme": "midnight",
+  "aspect": "widescreen",
+  "motionStyle": "subtle",
+  "slides": [
+    {
+      "id": "ms_01",
+      "layout": "blank",
+      "role": "cover",
+      "motionStyle": "expressive",
+      "notes": "Expressive: kinetic title. Words rise one by one, the rule draws, orbs drift in.",
+      "regions": {
+        "content": [
+          {
+            "id": "b01_kt",
+            "type": "tls.c.kinetic-title",
+            "props": {
+              "kicker": "Khoa Công nghệ Thông tin · Seminar",
+              "title": "Chuyển động có chủ đích",
+              "highlight": "có chủ đích",
+              "subtitle": "Một bộ slide, ba mức chuyển động: expressive, subtle và static",
+              "align": "center",
+              "decoration": "orbs"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_02",
+      "layout": "timeline",
+      "motionStyle": "expressive",
+      "notes": "Expressive: the ring draws, the number counts up, supporting figures pop in.",
+      "regions": {
+        "title": [
+          {
+            "id": "b02_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Một con số nói thay cả slide — expressive"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b02_spot",
+            "type": "tls.c.stat-spotlight",
+            "props": {
+              "value": "92%",
+              "progress": 92,
+              "label": "Sinh viên có việc làm",
+              "context": "trong vòng 6 tháng sau khi tốt nghiệp, khóa 2025",
+              "stats": [
+                {
+                  "value": "1.250",
+                  "label": "Cựu sinh viên được khảo sát"
+                },
+                {
+                  "value": "4,6/5",
+                  "label": "Mức hài lòng với chương trình"
+                },
+                {
+                  "value": "+18%",
+                  "label": "So với khóa 2020"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_03",
+      "layout": "timeline",
+      "motionStyle": "subtle",
+      "notes": "Same block, subtle: one calm fade, the number is shown at its final value.",
+      "regions": {
+        "title": [
+          {
+            "id": "b03_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Một con số nói thay cả slide — subtle"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b03_spot",
+            "type": "tls.c.stat-spotlight",
+            "props": {
+              "value": "92%",
+              "progress": 92,
+              "label": "Sinh viên có việc làm",
+              "context": "trong vòng 6 tháng sau khi tốt nghiệp, khóa 2025",
+              "stats": [
+                {
+                  "value": "1.250",
+                  "label": "Cựu sinh viên được khảo sát"
+                },
+                {
+                  "value": "4,6/5",
+                  "label": "Mức hài lòng với chương trình"
+                },
+                {
+                  "value": "+18%",
+                  "label": "So với khóa 2020"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_04",
+      "layout": "two-column",
+      "motionStyle": "expressive",
+      "notes": "Expressive layout blocks: title words-in, bars grow one by one, bullets stagger. Chained without clicks.",
+      "regions": {
+        "title": [
+          {
+            "id": "b04_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Kết quả học tập — expressive"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b04_bar",
+            "type": "tls.d.bar",
+            "props": {
+              "categories": [
+                "HK1",
+                "HK2",
+                "HK3",
+                "HK4"
+              ],
+              "series": [
+                6.8,
+                7.2,
+                7.6,
+                8.1
+              ],
+              "highlightIndex": 3,
+              "title": "Điểm trung bình (thang 10)"
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b04_list",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                {
+                  "text": "Lớp học đảo ngược từ học kỳ 2"
+                },
+                {
+                  "text": "Bài tập nhóm thay cho thi giữa kỳ"
+                },
+                {
+                  "text": "Phản hồi sau mỗi buổi qua LMS"
+                }
+              ],
+              "marker": "dash",
+              "spacing": "md"
+            }
+          },
+          {
+            "id": "b04_take",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "Điểm tăng đều mỗi học kỳ sau khi đổi cách dạy.",
+              "tone": "positive",
+              "label": "Kết luận",
+              "icon": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_05",
+      "layout": "two-column",
+      "motionStyle": "subtle",
+      "notes": "Same content, subtle: every block fades in together with a small offset.",
+      "regions": {
+        "title": [
+          {
+            "id": "b05_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Kết quả học tập — subtle"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b05_bar",
+            "type": "tls.d.bar",
+            "props": {
+              "categories": [
+                "HK1",
+                "HK2",
+                "HK3",
+                "HK4"
+              ],
+              "series": [
+                6.8,
+                7.2,
+                7.6,
+                8.1
+              ],
+              "highlightIndex": 3,
+              "title": "Điểm trung bình (thang 10)"
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b05_list",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                {
+                  "text": "Lớp học đảo ngược từ học kỳ 2"
+                },
+                {
+                  "text": "Bài tập nhóm thay cho thi giữa kỳ"
+                },
+                {
+                  "text": "Phản hồi sau mỗi buổi qua LMS"
+                }
+              ],
+              "marker": "dash",
+              "spacing": "md"
+            }
+          },
+          {
+            "id": "b05_take",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "Điểm tăng đều mỗi học kỳ sau khi đổi cách dạy.",
+              "tone": "positive",
+              "label": "Kết luận",
+              "icon": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_06",
+      "layout": "timeline",
+      "motionStyle": "expressive",
+      "notes": "Journey: the path draws left to right, each milestone pops when the line reaches it.",
+      "regions": {
+        "title": [
+          {
+            "id": "b06_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Lộ trình bốn năm đại học"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b06_j",
+            "type": "tls.c.journey",
+            "props": {
+              "milestones": [
+                {
+                  "when": "Năm 1",
+                  "title": "Nền tảng",
+                  "text": "Toán, lập trình và tư duy máy tính"
+                },
+                {
+                  "when": "Năm 2",
+                  "title": "Chuyên ngành",
+                  "text": "Cấu trúc dữ liệu, cơ sở dữ liệu, mạng"
+                },
+                {
+                  "when": "Năm 3",
+                  "title": "Thực tập",
+                  "text": "Ba tháng tại doanh nghiệp đối tác"
+                },
+                {
+                  "when": "Năm 4",
+                  "title": "Khóa luận",
+                  "text": "Đề tài nghiên cứu cùng giảng viên"
+                },
+                {
+                  "when": "Ra trường",
+                  "title": "Sự nghiệp",
+                  "text": "Kỹ sư, nhà nghiên cứu, khởi nghiệp"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_07",
+      "layout": "timeline",
+      "motionStyle": "expressive",
+      "notes": "Feature reveal: cards flip up from a 3D tilt one after another, icons bounce.",
+      "regions": {
+        "title": [
+          {
+            "id": "b07_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Sáu năng lực sinh viên đạt được — expressive"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b07_f",
+            "type": "tls.c.feature-reveal",
+            "props": {
+              "items": [
+                {
+                  "icon": "brain",
+                  "title": "Tư duy phản biện",
+                  "text": "Đặt câu hỏi đúng trước khi tìm câu trả lời."
+                },
+                {
+                  "icon": "users",
+                  "title": "Làm việc nhóm",
+                  "text": "Dự án thật với vai trò rõ ràng trong nhóm."
+                },
+                {
+                  "icon": "code",
+                  "title": "Kỹ năng số",
+                  "text": "Lập trình, dữ liệu và công cụ cộng tác."
+                },
+                {
+                  "icon": "lightbulb",
+                  "title": "Sáng tạo",
+                  "text": "Biến ý tưởng thành nguyên mẫu trong một tuần."
+                },
+                {
+                  "icon": "message",
+                  "title": "Giao tiếp",
+                  "text": "Trình bày rõ ràng trước lớp và doanh nghiệp."
+                },
+                {
+                  "icon": "graduation-cap",
+                  "title": "Tự học",
+                  "text": "Học suốt đời với lộ trình cá nhân hóa."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_08",
+      "layout": "kpi-row",
+      "motionStyle": "expressive",
+      "notes": "Expressive KPI tiles: each tile counts up, chained left to right.",
+      "regions": {
+        "title": [
+          {
+            "id": "b08_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Tuyển sinh 2026 — expressive"
+            }
+          }
+        ],
+        "kpi1": [
+          {
+            "id": "b08_k1",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 2450,
+              "delta": 12,
+              "label": "Thí sinh trúng tuyển",
+              "polarity": "upGood",
+              "format": "plain"
+            }
+          }
+        ],
+        "kpi2": [
+          {
+            "id": "b08_k2",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 0.94,
+              "delta": 3,
+              "label": "Tỉ lệ nhập học",
+              "polarity": "upGood",
+              "format": "percent"
+            }
+          }
+        ],
+        "kpi3": [
+          {
+            "id": "b08_k3",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 38,
+              "delta": 6,
+              "label": "Ngành đào tạo",
+              "polarity": "upGood",
+              "format": "plain"
+            }
+          }
+        ],
+        "kpi4": [
+          {
+            "id": "b08_k4",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 0.11,
+              "delta": -2,
+              "label": "Bỏ học năm nhất",
+              "polarity": "downGood",
+              "format": "percent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_09",
+      "layout": "kpi-row",
+      "motionStyle": "subtle",
+      "notes": "Same tiles, subtle: a quick fade, numbers already final.",
+      "regions": {
+        "title": [
+          {
+            "id": "b09_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Tuyển sinh 2026 — subtle"
+            }
+          }
+        ],
+        "kpi1": [
+          {
+            "id": "b09_k1",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 2450,
+              "delta": 12,
+              "label": "Thí sinh trúng tuyển",
+              "polarity": "upGood",
+              "format": "plain"
+            }
+          }
+        ],
+        "kpi2": [
+          {
+            "id": "b09_k2",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 0.94,
+              "delta": 3,
+              "label": "Tỉ lệ nhập học",
+              "polarity": "upGood",
+              "format": "percent"
+            }
+          }
+        ],
+        "kpi3": [
+          {
+            "id": "b09_k3",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 38,
+              "delta": 6,
+              "label": "Ngành đào tạo",
+              "polarity": "upGood",
+              "format": "plain"
+            }
+          }
+        ],
+        "kpi4": [
+          {
+            "id": "b09_k4",
+            "type": "tls.c.kpi-tile",
+            "props": {
+              "value": 0.11,
+              "delta": -2,
+              "label": "Bỏ học năm nhất",
+              "polarity": "downGood",
+              "format": "percent"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_10",
+      "layout": "two-column",
+      "motionStyle": "static",
+      "notes": "Static: a dense handout slide. Nothing moves, so it prints and reads the same.",
+      "regions": {
+        "title": [
+          {
+            "id": "b10_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Tài liệu phát tay — static"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b10_table",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Học phần"
+                },
+                {
+                  "label": "Tín chỉ",
+                  "kind": "number"
+                },
+                {
+                  "label": "Đánh giá",
+                  "kind": "rating"
+                },
+                {
+                  "label": "Bắt buộc",
+                  "kind": "check"
+                }
+              ],
+              "rows": [
+                [
+                  "Nhập môn lập trình",
+                  "3",
+                  "4",
+                  "yes"
+                ],
+                [
+                  "Cấu trúc dữ liệu",
+                  "4",
+                  "5",
+                  "yes"
+                ],
+                [
+                  "Cơ sở dữ liệu",
+                  "3",
+                  "4",
+                  "yes"
+                ],
+                [
+                  "Học máy",
+                  "3",
+                  "5",
+                  "partial"
+                ],
+                [
+                  "Thiết kế giao diện",
+                  "2",
+                  "3",
+                  "no"
+                ],
+                [
+                  "Khởi nghiệp số",
+                  "2",
+                  "4",
+                  "no"
+                ]
+              ],
+              "density": "compact",
+              "header": "bold",
+              "rules": "horizontal"
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b10_body",
+            "type": "tls.t.body",
+            "props": {
+              "text": "Bảng tóm tắt các học phần chính của năm thứ hai. Sinh viên đăng ký tối thiểu 18 tín chỉ mỗi học kỳ; học phần tự chọn mở khi đủ 25 sinh viên.",
+              "columns": 1,
+              "align": "start"
+            }
+          },
+          {
+            "id": "b10_list",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                {
+                  "text": "Hạn đăng ký: tuần 2 của học kỳ"
+                },
+                {
+                  "text": "Rút học phần: trước tuần 6"
+                },
+                {
+                  "text": "Liên hệ cố vấn học tập khi cần"
+                }
+              ],
+              "marker": "dot",
+              "spacing": "sm"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_11",
+      "layout": "two-column",
+      "motionStyle": "expressive",
+      "notes": "Expressive chart: the lines draw across the plot, then the takeaway pops.",
+      "regions": {
+        "title": [
+          {
+            "id": "b11_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Đăng ký học trực tuyến tăng nhanh"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b11_line",
+            "type": "tls.d.line",
+            "props": {
+              "categories": [
+                "2021",
+                "2022",
+                "2023",
+                "2024",
+                "2025",
+                "2026"
+              ],
+              "series": [
+                {
+                  "name": "Trực tuyến",
+                  "values": [
+                    12,
+                    19,
+                    28,
+                    37,
+                    49,
+                    61
+                  ]
+                },
+                {
+                  "name": "Trực tiếp",
+                  "values": [
+                    88,
+                    81,
+                    72,
+                    63,
+                    51,
+                    39
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b11_take",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "Năm 2025 lần đầu số đăng ký trực tuyến vượt trực tiếp.",
+              "tone": "accent",
+              "label": "Điểm chính",
+              "icon": ""
+            }
+          },
+          {
+            "id": "b11_body",
+            "type": "tls.t.body",
+            "props": {
+              "text": "Số liệu: tỉ lệ % lượt đăng ký học phần theo hình thức học.",
+              "columns": 1,
+              "align": "start"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ms_12",
+      "layout": "blank",
+      "role": "closing",
+      "motionStyle": "expressive",
+      "notes": "Closing. Deck default is subtle; this slide opts into expressive.",
+      "regions": {
+        "content": [
+          {
+            "id": "b12_close",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Cảm ơn các bạn!",
+              "text": "Đặt motionStyle cho cả bộ slide, rồi ghi đè ở từng slide khi cần.",
+              "cta": "Thử ngay trong trình soạn thảo",
+              "contacts": [
+                "khoacntt@example.edu.vn"
+              ],
+              "variant": "centered",
+              "ctaStyle": "button"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
