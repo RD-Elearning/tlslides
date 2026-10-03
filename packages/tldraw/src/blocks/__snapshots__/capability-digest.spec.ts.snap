@@ -1458,6 +1458,38 @@ Numbered points in order, one or two columns. _(family: text; keywords: numbered
 }
 \`\`\`
 
+### \`tls.t.qa\` — Q and A
+
+Question and answer pairs with Q/A badges or numbers. _(family: text; keywords: faq, questions, answers, q&a, review, objections)_
+
+**When:** FAQ slides, review questions in a lecture, objection handling.
+**Avoid:** A multiple-choice question (use tls.c.quiz).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (q, a) (1–5 items) | Questions as the audience would ask them; answers one to two sentences. |
+| \`marker\` | no | enum: qa \\\\| numbered \\\\| none | qa shows \\"Q\\" and \\"A\\" badges; numbered numbers the questions. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_qa\\",
+  \\"type\\": \\"tls.t.qa\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"q\\": \\"Is it free?\\",
+        \\"a\\": \\"Yes, for individuals.\\"
+      },
+      {
+        \\"q\\": \\"Can I export?\\",
+        \\"a\\": \\"To **PDF** and PPTX.\\"
+      }
+    ],
+    \\"marker\\": \\"qa\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.quote\` — Quote
 
 Pull quote with decorative quotation glyph, attribution, and role. _(family: text; keywords: quote, blockquote, pull-quote, attribution, testimonial)_
@@ -1752,7 +1784,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 50,
+  "blockCount": 51,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1797,6 +1829,7 @@ Object {
     "tls.t.kicker",
     "tls.t.kv-list",
     "tls.t.numbered",
+    "tls.t.qa",
     "tls.t.quote",
     "tls.t.statement",
     "tls.t.subtitle",

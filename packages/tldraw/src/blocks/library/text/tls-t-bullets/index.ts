@@ -21,7 +21,7 @@ export const tlsTBullets: BlockDefinition = {
   category: 'list',
   scope: 'element',
   shortDescription: 'Bulleted points with dot, dash or chevron markers and indent levels',
-  related: ['tls.t.body', 'tls.t.numbered', 'tls.t.checklist', 'tls.m.icon-list', 'tls.t.kv-list', 'tls.t.tags'],
+  related: ['tls.t.body', 'tls.t.numbered', 'tls.t.checklist', 'tls.m.icon-list', 'tls.t.kv-list', 'tls.t.tags', 'tls.t.qa'],
   describe: {
     when: 'Use for 2–8 short items that the audience should scan, not read.',
     avoid: 'Do not use for sentences of prose (use tls.t.body), for ordered process steps (use tls.c.steps) or for icon-led feature cells (use tls.c.feature-grid). More than 8 items means two slides.',
