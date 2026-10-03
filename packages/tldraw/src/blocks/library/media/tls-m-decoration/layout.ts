@@ -151,7 +151,7 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
     d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.06), rotation, 160)
   } else if (shape === 'ring') {
     stroke = Math.max(2, R * 0.16)
-    d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.04), 0, 359.9)
+    d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.04), 0, 360) + 'Z'
   } else if (shape === 'wave') d = wavePath(W, H, quarter, seed)
   else if (shape === 'corner') d = cornerPath(W, H, quarter)
   else d = dotsPath(W, H).d

@@ -287,15 +287,13 @@ function renderNodeInner(
       }
       // Missing-asset fallback: dashed rect with alt text.
       const rx = typeof node.radius === 'number' ? ` rx="${node.radius}" ry="${node.radius}"` : ''
-      // Wrapped in one <g> so the node stays a single element in the SVG tree (one layout node,
-      // one slot), which keeps the parity probe's tree walk aligned.
       return (
-        `<g><rect x="${node.box.x}" y="${node.box.y}" ` +
+        `<rect x="${node.box.x}" y="${node.box.y}" ` +
         `width="${node.box.width}" height="${node.box.height}"${rx} ` +
         `${styleAttr('fill:none;stroke:#999;stroke-width:2;stroke-dasharray:6 3')}/>` +
         `<text x="${node.box.x + node.box.width / 2}" y="${node.box.y + node.box.height / 2}" ` +
         `${styleAttr('font-family:system-ui,sans-serif;font-size:14px;fill:#999;text-anchor:middle;dominant-baseline:central')}>` +
-        `${escapeXml(node.alt)}</text></g>`
+        `${escapeXml(node.alt)}</text>`
       )
     }
 

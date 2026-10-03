@@ -2905,6 +2905,7 @@ Portrait in a circle, rounded or square frame with name and role; initials when 
 | \`shape\` | no | enum: circle \\\\| rounded \\\\| square |  |
 | \`size\` | no | enum: md \\\\| sm \\\\| lg \\\\| xl |  |
 | \`layout\` | no | enum: stacked \\\\| inline | stacked = text under the portrait; inline = text beside it. |
+| \`align\` | no | enum: center \\\\| start | Stacked layout only. |
 | \`ring\` | no | boolean |  |
 | \`showName\` | no | boolean |  |
 | \`showRole\` | no | boolean |  |

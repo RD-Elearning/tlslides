@@ -21,6 +21,7 @@ export const schema: BlockSchema = {
     label: 'Layout',
     help: 'stacked = text under the portrait; inline = text beside it.',
   },
+  align: { type: { kind: 'enum', values: ['center', 'start'] }, role: 'option', label: 'Alignment', help: 'Stacked layout only.' },
   ring: { type: { kind: 'boolean' }, role: 'option', label: 'Accent ring' },
   showName: { type: { kind: 'boolean' }, role: 'option', label: 'Show name', toggles: 'name' },
   showRole: { type: { kind: 'boolean' }, role: 'option', label: 'Show role', toggles: 'role' },
@@ -33,6 +34,7 @@ export interface AvatarProps extends Record<string, unknown> {
   shape?: 'circle' | 'rounded' | 'square'
   size?: 'md' | 'sm' | 'lg' | 'xl'
   layout?: 'stacked' | 'inline'
+  align?: 'center' | 'start'
   ring?: boolean
   showName?: boolean
   showRole?: boolean
@@ -45,5 +47,6 @@ export const defaults: AvatarProps = {
   shape: 'circle',
   size: 'md',
   layout: 'stacked',
+  align: 'center',
   ring: false,
 }

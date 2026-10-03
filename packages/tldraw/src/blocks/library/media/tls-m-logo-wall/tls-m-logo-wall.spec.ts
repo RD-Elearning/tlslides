@@ -101,6 +101,11 @@ describe('tls.m.logo-wall', () => {
     expect(leavesOf(lay({ heading: '' }), 'heading')).toHaveLength(0)
   })
 
+  it('a tall block does not stretch the cells into tall plates', () => {
+    const t = lay({ logos: logos(6, () => 2), cols: '3', plates: true }, 900, 1000)
+    for (const p of leavesOf(t, 'plate')) expect(p.height).toBeLessThanOrEqual(p.width * 0.7 + 0.5)
+  })
+
   it('plates draw one plate per logo behind it; dividers sit between columns only', () => {
     const tree = lay({ logos: logos(6, () => 2), cols: '3', plates: true, dividers: true })
     expect(leavesOf(tree, 'plate')).toHaveLength(6)

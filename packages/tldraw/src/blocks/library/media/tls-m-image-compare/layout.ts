@@ -61,7 +61,8 @@ export function layout(props: ImageCompareProps, ctx: LayoutContext): LayoutNode
         box: { x: half - r, y: H / 2 - r, width: 2 * r, height: 2 * r },
         fill: { type: 'solid', color: lineColor },
         stroke: { color: ctx.resolveColor('accent').color, width: 4 },
-        radius: r,
+        // the DOM adds the border outside the box, so the radius must cover it to stay a circle
+        radius: r + 4,
       })
     }
   } else {

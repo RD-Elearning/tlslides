@@ -51,7 +51,7 @@ export const defaults: ProfileCardProps = {
 /** Build the spec tree: card > (stack | row) > avatar + text blocks. Pure. */
 function buildProfileCard(props: ProfileCardProps): BlockSpec {
   const side = props.layout === 'side'
-  const align = side ? 'start' : 'center'
+  const align = 'start' // tls.t.title / tls.t.caption ignore `align`, so the card is start-aligned throughout
   const text: BlockSpec[] = [
     { id: 'name', type: 'tls.t.title', props: { text: String(props.name ?? ''), size: 'subheading', align } },
   ]
@@ -63,7 +63,7 @@ function buildProfileCard(props: ProfileCardProps): BlockSpec {
   const avatar: BlockSpec = {
     id: 'photo',
     type: 'tls.m.avatar',
-    props: { image: props.image ?? '', name: String(props.name ?? ''), size: side ? 'xl' : 'lg', showName: false, showRole: false },
+    props: { image: props.image ?? '', name: String(props.name ?? ''), size: side ? 'xl' : 'lg', align: 'start', showName: false, showRole: false },
   }
   const body: BlockSpec = side
     ? {

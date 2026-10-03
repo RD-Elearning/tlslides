@@ -23,6 +23,7 @@ export function layout(props: AvatarProps, ctx: LayoutContext): LayoutNode {
   const H = side(ctx.box.height)
   const size = enumOf(props.size, ['md', 'sm', 'lg', 'xl'] as const, 'md')
   const shape = enumOf(props.shape, ['circle', 'rounded', 'square'] as const, 'circle')
+  const start = props.align === 'start'
   const mode = enumOf(props.layout, ['stacked', 'inline'] as const, 'stacked')
   const name = str(props.name).trim()
   const role = str(props.role).trim()
@@ -42,17 +43,17 @@ export function layout(props: AvatarProps, ctx: LayoutContext): LayoutNode {
     const roleH = showRole ? linesHeight(ctx, role, roleS, W, 1) : 0
     const textH = nameH + roleH + (nameH && roleH ? 4 : 0)
     const s = Math.max(1, Math.min(want, W, H - (textH ? textH + gap : 0)))
-    out.push(...photo((W - s) / 2, 0, s))
+    out.push(...photo(start ? 0 : (W - s) / 2, 0, s))
     contentH = s
     let y = s + gap
     if (showName) {
-      const p = placeLines(ctx, name, nameS, { x: 0, y, width: W }, 'center', 1, 'name')
+      const p = placeLines(ctx, name, nameS, { x: 0, y, width: W }, start ? 'start' : 'center', 1, 'name')
       out.push(...p.nodes)
       y += p.height + 4
       contentH = y - 4
     }
     if (showRole) {
-      const p = placeLines(ctx, role, roleS, { x: 0, y, width: W }, 'center', 1, 'role')
+      const p = placeLines(ctx, role, roleS, { x: 0, y, width: W }, start ? 'start' : 'center', 1, 'role')
       out.push(...p.nodes)
       contentH = y + p.height
     }

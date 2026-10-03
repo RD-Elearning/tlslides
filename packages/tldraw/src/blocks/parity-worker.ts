@@ -77,6 +77,16 @@ async function annotateSvg(
           for (let i = 0; i < lKids.length && si < kids.length; i++) {
             walk(kids[si], lKids[i])
             si++
+            // A missing-asset image renders as TWO siblings (dashed <rect> + <text>): the text
+            // belongs to the same layout node, so step over it to keep the walk aligned.
+            if (
+              lKids[i].k === 'image' &&
+              !lKids[i].url &&
+              si < kids.length &&
+              kids[si].tagName.toLowerCase() === 'text'
+            ) {
+              si++
+            }
           }
         }
       }

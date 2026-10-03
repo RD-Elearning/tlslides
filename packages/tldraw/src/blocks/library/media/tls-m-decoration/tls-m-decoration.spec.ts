@@ -106,6 +106,10 @@ describe('tls.m.decoration', () => {
     for (const shape of ['blob', 'wave', 'corner', 'dots']) expect((pathOf(lay({ shape })).node as any).fill).toBeDefined()
   })
 
+  it('the ring path is closed (no seam where it starts and ends)', () => {
+    expect(dOf(lay({ shape: 'ring' })).endsWith('Z')).toBe(true)
+  })
+
   it('a zero-size or hostile box gives a valid tree', () => {
     for (const shape of shapes) {
       expect(() => lay({ shape, rotation: NaN, seed: Infinity } as any, 0, 0)).not.toThrow()

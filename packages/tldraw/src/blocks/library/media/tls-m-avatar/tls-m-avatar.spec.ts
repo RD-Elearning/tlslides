@@ -101,6 +101,14 @@ describe('tls.m.avatar', () => {
     expect(leavesOf(inl, 'role')[0].y).toBeGreaterThan(leavesOf(inl, 'name')[0].y)
   })
 
+  it('align start puts the portrait and the text on the left edge (stacked)', () => {
+    const t = lay({ layout: 'stacked', align: 'start' })
+    expect(leavesOf(t, 'photo')[0].x).toBe(0)
+    expect(leavesOf(t, 'name')[0].x).toBe(0)
+    expect(leavesOf(t, 'role')[0].x).toBe(0)
+    expect(leavesOf(lay({ layout: 'stacked', align: 'center' }), 'photo')[0].x).toBeGreaterThan(0)
+  })
+
   it('ring adds an accent disc behind and shrinks the photo inside it', () => {
     const c = ctxNoAssets(420, 240)
     const plain = leavesOf(lay({ ring: false }), 'photo').find((l) => l.k === 'rect' && l.part === 'photo')!

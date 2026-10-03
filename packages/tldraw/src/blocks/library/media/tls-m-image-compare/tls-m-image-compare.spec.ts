@@ -72,6 +72,11 @@ describe('tls.m.image-compare', () => {
       expect(leavesOf(lay({ mode: 'split', divider: false }), 'divider')).toHaveLength(0)
     })
 
+    it('the handle radius covers its border, so it renders as a circle', () => {
+      const h = leavesOf(lay({ mode: 'split' }), 'divider.handle')[0].node as any
+      expect(h.radius).toBeGreaterThanOrEqual(h.box.width / 2 + h.stroke.width)
+    })
+
     it('labels sit in their own half, the after label right-anchored', () => {
       const t = lay({ mode: 'split' })
       const lb = leavesOf(t, 'before.label').find((l) => l.k === 'text')!

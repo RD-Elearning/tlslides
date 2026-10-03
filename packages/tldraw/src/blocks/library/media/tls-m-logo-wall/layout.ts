@@ -71,7 +71,8 @@ export function layout(props: LogoWallProps, ctx: LayoutContext): LayoutNode {
   }
   const areaH = Math.max(1, H - top)
   const cw = Math.max(1, (W - gap * (r.cols - 1)) / r.cols)
-  const ch = Math.max(1, (areaH - gap * (r.rows - 1)) / r.rows)
+  // cells stay wide-ish: a tall region does not stretch them into tall plates
+  const ch = Math.max(1, Math.min((areaH - gap * (r.rows - 1)) / r.rows, cw * 0.7))
   const p = Math.round(Math.min(cw, ch) * 0.14)
   const iw = Math.max(1, cw - 2 * p)
   const ih = Math.max(1, Math.min(ch - 2 * p, iw * 0.5, 160))
