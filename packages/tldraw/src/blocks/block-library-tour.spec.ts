@@ -34,4 +34,16 @@ describe('block-library-tour deck', () => {
     for (const s of deck.slides) for (const list of Object.values<any[]>(s.regions)) for (const b of list) if (b.type === 'tls.c.quiz') reveals.add(b.props.reveal)
     expect([...reveals].sort()).toEqual(['none', 'shown'])
   })
+
+  it('uses every shipped P6 chrome block, nested inside layout containers', () => {
+    const used = new Set<string>()
+    const walk = (list: any[]) => {
+      for (const b of list) {
+        used.add(b.type)
+        if (Array.isArray(b.props?.children)) walk(b.props.children)
+      }
+    }
+    for (const s of deck.slides) for (const list of Object.values<any[]>(s.regions)) walk(list)
+    for (const t of ['footer-text', 'logo-mark', 'header', 'rule', 'watermark', 'page-number']) expect(used.has(`tls.x.${t}`)).toBe(true)
+  })
 })

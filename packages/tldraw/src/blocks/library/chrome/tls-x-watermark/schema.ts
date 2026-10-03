@@ -16,7 +16,7 @@ export const schema: BlockSchema = {
     type: { kind: 'enum', values: ['faint', 'soft'] },
     role: 'option',
     label: 'Strength',
-    help: 'faint is a barely visible 7% tint, soft 14%.',
+    help: 'faint is a barely visible 6% tint, soft 11%.',
   },
 }
 

@@ -2,7 +2,7 @@
  * Pure layout for tls.x.watermark — one large, faint, horizontal line of text centred in its box.
  *
  * The text is sized to fill about 90% of the box width (and 80% of its height) and drawn in the
- * `text` colour at 7% / 14% alpha (`rgba`). `LayoutNode` has no rotation, so there is no diagonal
+ * `text` colour at 6% / 11% alpha (`rgba`). `LayoutNode` has no rotation, so there is no diagonal
  * variant: the plan's `angle: diagonal` is blocked on that. Place the block first in its region (or
  * under the content) so the content reads on top of it.
  *
@@ -16,7 +16,7 @@ import { side } from '../../media/_kit'
 import { tryHexToRgb } from '../../../color-math'
 import { runNode, textWidth } from '../_kit'
 
-export const ALPHA = { faint: 0.07, soft: 0.14 } as const
+export const ALPHA = { faint: 0.06, soft: 0.11 } as const
 
 /** `rgba(...)` of a hex colour at `alpha`; anything that is not a hex colour is returned unchanged. */
 export function withAlpha(color: string, alpha: number): string {

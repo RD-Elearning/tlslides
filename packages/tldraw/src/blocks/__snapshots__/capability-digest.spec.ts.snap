@@ -4563,7 +4563,7 @@ Large faint horizontal text such as DRAFT or CONFIDENTIAL, centred and sized to 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`text\` | yes | text (max 20 chars) | One short word or phrase, usually upper case: DRAFT, CONFIDENTIAL. |
-| \`opacity\` | no | enum: faint \\\\| soft | faint is a barely visible 7% tint, soft 14%. |
+| \`opacity\` | no | enum: faint \\\\| soft | faint is a barely visible 6% tint, soft 11%. |
 
 \`\`\`json
 {

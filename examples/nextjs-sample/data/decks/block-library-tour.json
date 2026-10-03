@@ -1887,6 +1887,236 @@
       }
     },
     {
+      "id": "tl_28",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_28",
+            "type": "tls.l.footer",
+            "props": {
+              "footerHeight": 90,
+              "gutter": "md",
+              "children": [
+                {
+                  "id": "b_tl_28_stack",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "gap": "md",
+                    "sizing": "content",
+                    "children": [
+                      {
+                        "id": "b_tl_28_h",
+                        "type": "tls.x.header",
+                        "props": {
+                          "label": "Chapter 2: Methods",
+                          "meta": "BIO 201",
+                          "showRule": true,
+                          "tone": "accent"
+                        }
+                      },
+                      {
+                        "id": "b_tl_28_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Sampling design",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "b_tl_28_r",
+                        "type": "tls.x.rule",
+                        "props": {
+                          "axis": "horizontal",
+                          "weight": "md",
+                          "tone": "gradient",
+                          "length": "short"
+                        }
+                      },
+                      {
+                        "id": "b_tl_28_b",
+                        "type": "tls.t.bullets",
+                        "props": {
+                          "items": [
+                            {
+                              "text": "Stratify by faculty so small groups are not lost"
+                            },
+                            {
+                              "text": "Draw 40 students per stratum at random"
+                            },
+                            {
+                              "text": "Re-weight the results to the full population"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "b_tl_28_foot",
+                  "type": "tls.l.split",
+                  "props": {
+                    "ratio": 0.62,
+                    "axis": "x",
+                    "gutter": "md",
+                    "children": [
+                      {
+                        "id": "b_tl_28_ft",
+                        "type": "tls.x.footer-text",
+                        "props": {
+                          "items": [
+                            "Annual review 2026",
+                            "Vinh University",
+                            "Confidential"
+                          ],
+                          "align": "start",
+                          "separator": "dot",
+                          "showRule": true
+                        }
+                      },
+                      {
+                        "id": "b_tl_28_end",
+                        "type": "tls.l.split",
+                        "props": {
+                          "ratio": 0.4,
+                          "axis": "x",
+                          "gutter": "md",
+                          "children": [
+                            {
+                              "id": "b_tl_28_pn",
+                              "type": "tls.x.page-number",
+                              "props": {
+                                "number": 28,
+                                "align": "end"
+                              }
+                            },
+                            {
+                              "id": "b_tl_28_logo",
+                              "type": "tls.x.logo-mark",
+                              "props": {
+                                "image": "/demo/logo-1.svg",
+                                "alt": "Acme Corp",
+                                "ratio": 4,
+                                "size": "md",
+                                "corner": "bottom-right"
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_29",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_29",
+            "type": "tls.l.overlay",
+            "props": {
+              "children": [
+                {
+                  "id": "b_tl_29_wm",
+                  "type": "tls.x.watermark",
+                  "props": {
+                    "text": "DRAFT",
+                    "opacity": "faint"
+                  }
+                },
+                {
+                  "id": "b_tl_29_stack",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "gap": "md",
+                    "sizing": "content",
+                    "children": [
+                      {
+                        "id": "b_tl_29_h",
+                        "type": "tls.x.header",
+                        "props": {
+                          "label": "Proposal v0.3",
+                          "meta": "Internal",
+                          "showRule": false,
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "id": "b_tl_29_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Rules and a draft stamp",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "b_tl_29_r1",
+                        "type": "tls.x.rule",
+                        "props": {
+                          "axis": "horizontal",
+                          "weight": "hairline",
+                          "tone": "line",
+                          "length": "full"
+                        }
+                      },
+                      {
+                        "id": "b_tl_29_r2",
+                        "type": "tls.x.rule",
+                        "props": {
+                          "axis": "horizontal",
+                          "weight": "bold",
+                          "tone": "accent",
+                          "length": "short"
+                        }
+                      },
+                      {
+                        "id": "b_tl_29_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "The watermark sits under the content; the rules above show hairline, and a bold accent bar."
+                        }
+                      },
+                      {
+                        "id": "b_tl_29_f",
+                        "type": "tls.x.footer-text",
+                        "props": {
+                          "items": [
+                            "Not for distribution",
+                            "Draft 0.3"
+                          ],
+                          "align": "spread",
+                          "separator": "none",
+                          "showRule": false
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "tl_17",
       "layout": "blank",
       "role": "closing",
