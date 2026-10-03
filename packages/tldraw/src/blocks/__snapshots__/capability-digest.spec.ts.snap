@@ -1272,6 +1272,67 @@ Two labelled numbers with a connector and a coloured change pill (percent or abs
 }
 \`\`\`
 
+### \`tls.d.table\` — Table
+
+Table with header, aligned numbers, status dots, ratings and a totals row. _(family: data; keywords: table, grid, rows, columns, spreadsheet, schedule, specs)_
+
+**When:** Exact values in rows and columns (schedules, specs, results).
+**Avoid:** Fewer than 3 values (tls.c.kpi-row). Options vs criteria: tls.d.compare-table.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`columns\` | yes | list of object (label, kind, align, width) (1–8 items) | Set kind: number for figures. |
+| \`rows\` | yes | list of list of text (max 60 chars) (1–14 items) | One string per column. |
+| \`footer\` | no | list of text (max 40 chars) |  |
+| \`zebra\` | no | boolean |  |
+| \`rules\` | no | enum: horizontal \\\\| head \\\\| none |  |
+| \`header\` | no | enum: filled \\\\| bold \\\\| none |  |
+| \`emphasisRow\` | no | number (min -1) |  |
+| \`emphasisCol\` | no | number (min -1) |  |
+| \`density\` | no | enum: default \\\\| compact |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`showFooter\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_table\\",
+  \\"type\\": \\"tls.d.table\\",
+  \\"props\\": {
+    \\"columns\\": [
+      {
+        \\"label\\": \\"Plan\\"
+      },
+      {
+        \\"label\\": \\"Seats\\",
+        \\"kind\\": \\"number\\"
+      },
+      {
+        \\"label\\": \\"Price\\",
+        \\"kind\\": \\"number\\"
+      }
+    ],
+    \\"rows\\": [
+      [
+        \\"Starter\\",
+        \\"5\\",
+        \\"$49\\"
+      ],
+      [
+        \\"Team\\",
+        \\"25\\",
+        \\"$199\\"
+      ]
+    ],
+    \\"footer\\": [
+      \\"Total\\",
+      \\"30\\",
+      \\"$248\\"
+    ],
+    \\"zebra\\": true
+  }
+}
+\`\`\`
+
 ### \`tls.d.trend-badge\` — Trend Badge
 
 Pill with a triangle arrow and a signed change, coloured by direction and polarity. _(family: data; keywords: trend, badge, delta, change, arrow, up, down)_
@@ -2522,7 +2583,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 69,
+  "blockCount": 70,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2553,6 +2614,7 @@ Object {
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
+    "tls.d.table",
     "tls.d.trend-badge",
     "tls.d.waterfall",
     "tls.g.steps",

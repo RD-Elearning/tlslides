@@ -17,7 +17,7 @@ export const tlsTKvList: BlockDefinition = {
   category: 'list',
   scope: 'element',
   shortDescription: 'Key and value pairs in two aligned columns, with optional dotted leaders',
-  related: ['tls.t.bullets', 'tls.t.definition'],
+  related: ['tls.t.bullets', 'tls.t.definition', 'tls.d.table'],
   describe: {
     when: 'Specs, facts, terms and conditions, a schedule of times.',
     avoid: 'Multi-column data (use tls.d.table).',
