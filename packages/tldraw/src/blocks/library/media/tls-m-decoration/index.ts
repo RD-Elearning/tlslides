@@ -17,7 +17,7 @@ export const tlsMDecoration: BlockDefinition = {
   category: 'decoration',
   scope: 'element',
   shortDescription: 'Decorative blob, arc, ring, dot grid or wave in a theme colour',
-  related: ['tls.m.image'],
+  related: ['tls.m.pattern'],
   describe: {
     when: 'Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.',
     avoid: 'Anything that carries meaning (use a real block, e.g. tls.t.statement); texture over dense text.',
