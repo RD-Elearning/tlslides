@@ -17,7 +17,7 @@ export const tlsDTable: BlockDefinition = {
   category: 'table',
   scope: 'group',
   shortDescription: 'Table with header row, aligned numbers, zebra rows and an emphasised row',
-  related: ['tls.d.compare-table', 'tls.d.scorecard', 'tls.d.ranking', 'tls.t.kv-list'],
+  related: ['tls.d.compare-table', 'tls.d.scorecard', 'tls.d.ranking', 'tls.d.heatmap', 'tls.t.kv-list'],
   describe: {
     when: 'Exact values in rows and columns (schedules, specs, results).',
     avoid: 'Fewer than 3 values (tls.c.kpi-row). Options vs criteria: tls.d.compare-table.',

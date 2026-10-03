@@ -923,6 +923,52 @@ Side-by-side columns or bars per category, one colour per series. _(family: data
 }
 \`\`\`
 
+### \`tls.d.heatmap\` — Heatmap
+
+Rows by columns of cells shaded by value, with optional numbers and a legend. _(family: data; keywords: heatmap, matrix, intensity, grid, correlation, weekday hour)_
+
+**When:** Patterns across two dimensions (weekday by hour, team by skill).
+**Avoid:** Exact values (tls.d.table). One dimension: tls.d.bar.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`rows\` | yes | list of text (max 24 chars) (2–12 items) |  |
+| \`cols\` | yes | list of text (max 16 chars) (2–12 items) | Short: they sit above narrow cells. |
+| \`values\` | yes | list of list of number | values[row][col]; missing or non-numeric = empty cell. |
+| \`ramp\` | no | enum: accent \\\\| diverging | diverging: negative / zero / positive |
+| \`showValues\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_heatmap\\",
+  \\"type\\": \\"tls.d.heatmap\\",
+  \\"props\\": {
+    \\"rows\\": [
+      \\"Mon\\",
+      \\"Tue\\"
+    ],
+    \\"cols\\": [
+      \\"AM\\",
+      \\"PM\\",
+      \\"Eve\\"
+    ],
+    \\"values\\": [
+      [
+        3,
+        8,
+        5
+      ],
+      [
+        4,
+        9,
+        2
+      ]
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.line\` — Line Chart
 
 Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
@@ -2758,7 +2804,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 74,
+  "blockCount": 75,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2780,6 +2826,7 @@ Object {
     "tls.d.funnel-chart",
     "tls.d.gauge",
     "tls.d.grouped-bar",
+    "tls.d.heatmap",
     "tls.d.line",
     "tls.d.pie",
     "tls.d.pricing",

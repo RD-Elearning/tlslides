@@ -17,7 +17,7 @@ export const tlsDGroupedBar: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Side-by-side bars per category, one colour per series',
-  related: ['tls.d.bar', 'tls.d.stacked-bar', 'tls.d.line'],
+  related: ['tls.d.bar', 'tls.d.stacked-bar', 'tls.d.line', 'tls.d.heatmap'],
   describe: {
     when: 'Comparing 2-4 series across categories (region by year).',
     avoid: 'One series (use tls.d.bar); parts of a total (use tls.d.stacked-bar).',
