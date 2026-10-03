@@ -159,6 +159,12 @@ async function measureContainer(
             }
           }
         }
+        // A DOM `path` node is an <svg> wrapper (data-part) around a <path> that carries the fill.
+        if (!fill) {
+          const inner = el.querySelector(':scope > path')
+          const m = inner ? (inner.getAttribute('style') || '').match(/fill:\s*([^;]+)/) : null
+          if (m && m[1] !== 'none') fill = m[1]
+        }
         // Also check computed border for DOM elements
         if (!strokeStyle) {
           const bw = computed.borderWidth

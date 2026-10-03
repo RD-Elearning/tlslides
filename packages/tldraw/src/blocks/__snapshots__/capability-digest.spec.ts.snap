@@ -607,6 +607,75 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
 }
 \`\`\`
 
+### \`tls.d.progress-bar\` — Progress Bars
+
+Labelled bars filled to value / target, with percent or value text. _(family: data; keywords: progress, completion, target, goal, bar, percent)_
+
+**When:** Completion of goals, budgets spent, survey agreement levels.
+**Avoid:** Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, max) (1–6 items) | Progress toward a target: value / max. Short labels. |
+| \`showValue\` | no | enum: percent \\\\| value \\\\| none |  |
+| \`thickness\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`tone\` | no | enum: accent \\\\| status | status = red/amber/green by progress. |
+| \`labelPos\` | no | enum: above \\\\| left | left saves height. |
+| \`track\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_progress\\",
+  \\"type\\": \\"tls.d.progress-bar\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Hiring plan\\",
+        \\"value\\": 72
+      },
+      {
+        \\"label\\": \\"Budget\\",
+        \\"value\\": 41,
+        \\"max\\": 60
+      }
+    ],
+    \\"tone\\": \\"status\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.progress-ring\` — Progress Ring
+
+Ring filled to value / max with the figure in the centre, plus label and caption. _(family: data; keywords: progress, ring, dial, percent, completion, score)_
+
+**When:** One completion rate or score shown as a dial.
+**Avoid:** Shares of several parts (use tls.d.donut); several bars (use tls.d.progress-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number | Ring fills to value / max. |
+| \`max\` | no | number | Value that fills the ring. Default 100. |
+| \`label\` | no | text (max 40 chars) | What it measures. |
+| \`caption\` | no | text (max 80 chars) | One line of context. |
+| \`thickness\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`cap\` | no | enum: round \\\\| flat |  |
+| \`tone\` | no | enum: accent \\\\| status | status = red/amber/green by progress. |
+| \`format\` | no | enum: percent \\\\| plain \\\\| compact \\\\| currency | percent = share of max. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ring\\",
+  \\"type\\": \\"tls.d.progress-ring\\",
+  \\"props\\": {
+    \\"value\\": 68,
+    \\"label\\": \\"Course completion\\",
+    \\"caption\\": \\"34 of 50 lessons\\",
+    \\"tone\\": \\"status\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -1784,7 +1853,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 51,
+  "blockCount": 53,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1799,6 +1868,8 @@ Object {
     "tls.c.testimonial",
     "tls.d.bar",
     "tls.d.donut",
+    "tls.d.progress-bar",
+    "tls.d.progress-ring",
     "tls.g.steps",
     "tls.l.card",
     "tls.l.field",
