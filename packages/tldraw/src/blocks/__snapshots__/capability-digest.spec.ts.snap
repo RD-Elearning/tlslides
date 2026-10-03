@@ -887,6 +887,39 @@ Multiple-choice question with lettered options; the correct answer is highlighte
 }
 \`\`\`
 
+### \`tls.c.quote-image\` — Quote over photo
+
+Large quote set over a full-bleed photo with a dark scrim, with name and role. _(family: composite; keywords: quote, inspirational, full bleed, photo, scrim, statement, big quote)_
+
+**When:** An emotional or inspirational quote as a full slide.
+**Avoid:** A customer testimonial with a face: tls.c.testimonial.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 160 chars) | 1-10 words describing the photo. |
+| \`quote\` | yes | richText (max 200 chars) | One or two sentences. |
+| \`name\` | no | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) |  |
+| \`anchor\` | no | enum: bottom-left \\\\| center \\\\| left | Where the text sits on the photo. |
+| \`scrim\` | no | enum: medium \\\\| strong | strong = darker wash for busy photos. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quote_image\\",
+  \\"type\\": \\"tls.c.quote-image\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"alt\\": \\"Students working together\\",
+    \\"quote\\": \\"Statistics lets data speak in sentences.\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"anchor\\": \\"bottom-left\\",
+    \\"scrim\\": \\"medium\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.recap\` — Recap
 
 Numbered key points to remember, closed by one takeaway line. _(family: composite; keywords: recap, summary, key points, what we learned, takeaways, review, wrap up)_
@@ -4490,7 +4523,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 119,
+  "blockCount": 120,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4512,6 +4545,7 @@ Object {
     "tls.c.problem-solution",
     "tls.c.profile-card",
     "tls.c.quiz",
+    "tls.c.quote-image",
     "tls.c.recap",
     "tls.c.stat-card",
     "tls.c.steps",

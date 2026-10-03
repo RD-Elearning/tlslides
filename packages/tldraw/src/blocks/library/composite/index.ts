@@ -29,6 +29,7 @@ import { tlsCRecap } from './tls-c-recap'
 import { tlsCCaseStudy } from './tls-c-case-study'
 import { tlsCProblemSolution } from './tls-c-problem-solution'
 import { tlsCContact } from './tls-c-contact'
+import { tlsCQuoteImage } from './tls-c-quote-image'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -57,6 +58,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCCaseStudy,
   tlsCProblemSolution,
   tlsCContact,
+  tlsCQuoteImage,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -84,3 +86,4 @@ export { tlsCRecap } from './tls-c-recap'
 export { tlsCCaseStudy } from './tls-c-case-study'
 export { tlsCProblemSolution } from './tls-c-problem-solution'
 export { tlsCContact } from './tls-c-contact'
+export { tlsCQuoteImage } from './tls-c-quote-image'
