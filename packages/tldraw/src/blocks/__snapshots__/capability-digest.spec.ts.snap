@@ -177,6 +177,42 @@ Big number slide. One enormous headline metric with a short label and optional c
 }
 \`\`\`
 
+### \`tls.c.cards\` — Cards
+
+Row of 2-4 equal cards, each led by an icon, number or image, then title and text. _(family: composite; keywords: cards, pillars, benefits, offerings, three columns, features, icon cards)_
+
+**When:** Three pillars, key benefits or offerings, each with a short paragraph.
+**Avoid:** More than 4 items or icon-only entries: tls.c.feature-grid. Plain points: tls.t.bullets.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`cards\` | yes | list of object (icon, number, image, title, text) (2–4 items) | Each: title!, text, and the field named by lead (icon, number or image). |
+| \`lead\` | no | enum: icon \\\\| number \\\\| image \\\\| none | What tops each card. |
+| \`tone\` | no | enum: surface \\\\| alt \\\\| outline \\\\| accent-first | accent-first fills only the first card. |
+| \`align\` | no | enum: start \\\\| center |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cards\\",
+  \\"type\\": \\"tls.c.cards\\",
+  \\"props\\": {
+    \\"cards\\": [
+      {
+        \\"icon\\": \\"target\\",
+        \\"title\\": \\"Clear goals\\",
+        \\"text\\": \\"One question per session.\\"
+      },
+      {
+        \\"icon\\": \\"check\\",
+        \\"title\\": \\"Honest results\\",
+        \\"text\\": \\"What a result shows.\\"
+      }
+    ],
+    \\"lead\\": \\"icon\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.closing\` — Closing
 
 Closing slide: thank-you title, call to action, contacts and a presenter. _(family: composite; keywords: closing, thank you, questions, end slide, contact, call to action, next step)_
@@ -340,7 +376,7 @@ Section break: big section number, title and one-line intro. _(family: composite
 Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
 
 **When:** Use to show 2–6 feature highlights in a grid layout — each cell has an icon, title, and short description. Good for capability overviews, service lists, or product feature showcases.
-**Avoid:** Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for more than 6 items (use tls.t.bullets).
+**Avoid:** Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for 2-4 framed cards with a paragraph each (use tls.c.cards).
 
 **Parts:** \`cell[*].icon\`, \`cell[*].title\`, \`cell[*].desc\`
 
@@ -4113,10 +4149,11 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 109,
+  "blockCount": 110,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
+    "tls.c.cards",
     "tls.c.closing",
     "tls.c.comparison",
     "tls.c.cover",

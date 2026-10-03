@@ -19,6 +19,7 @@ import { tlsCProfileCard } from './tls-c-profile-card'
 import { tlsCCover } from './tls-c-cover'
 import { tlsCDivider } from './tls-c-divider'
 import { tlsCClosing } from './tls-c-closing'
+import { tlsCCards } from './tls-c-cards'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -37,6 +38,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCCover,
   tlsCDivider,
   tlsCClosing,
+  tlsCCards,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -54,3 +56,4 @@ export { tlsCProfileCard } from './tls-c-profile-card'
 export { tlsCCover } from './tls-c-cover'
 export { tlsCDivider } from './tls-c-divider'
 export { tlsCClosing } from './tls-c-closing'
+export { tlsCCards } from './tls-c-cards'

@@ -212,13 +212,13 @@ export const tlsCFeatureGrid: BlockDefinition = {
   category: 'list',
   scope: 'group',
   shortDescription: 'Grid of icon + title + description cells',
-  related: ['tls.m.icon-label', 'tls.m.icon-list'],
+  related: ['tls.m.icon-label', 'tls.m.icon-list', 'tls.c.cards'],
   describe: {
     when:
       'Use to show 2–6 feature highlights in a grid layout — each cell has ' +
       'an icon, title, and short description. Good for capability overviews, ' +
       'service lists, or product feature showcases.',
-    avoid: 'Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for more than 6 items (use tls.t.bullets).',
+    avoid: 'Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for 2-4 framed cards with a paragraph each (use tls.c.cards).',
     example: {
       id: 'b_feature_grid',
       type: 'tls.c.feature-grid',
