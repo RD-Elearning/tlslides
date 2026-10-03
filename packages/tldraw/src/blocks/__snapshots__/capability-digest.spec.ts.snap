@@ -1670,6 +1670,51 @@ Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(
 }
 \`\`\`
 
+### \`tls.g.cycle\` — Cycle
+
+Steps arranged on a ring with arrows that loop back to the first step. _(family: diagram; keywords: cycle, loop, pdca, lifecycle, feedback, circular)_
+
+**When:** Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.
+**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, text, icon) (3–6 items) | Steps in loop order, the first sits at the top. |
+| \`center\` | no | text (max 30 chars) | Name of the loop. |
+| \`direction\` | no | enum: clockwise \\\\| counter |  |
+| \`nodeStyle\` | no | enum: circle \\\\| card | circle = numbered or icon node with the label outside. |
+| \`arrowStyle\` | no | enum: arc \\\\| none |  |
+| \`showCenter\` | no | boolean |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cycle\\",
+  \\"type\\": \\"tls.g.cycle\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Plan\\",
+        \\"text\\": \\"Set the goal\\"
+      },
+      {
+        \\"label\\": \\"Do\\",
+        \\"text\\": \\"Try the change\\"
+      },
+      {
+        \\"label\\": \\"Check\\",
+        \\"text\\": \\"Measure it\\"
+      },
+      {
+        \\"label\\": \\"Act\\",
+        \\"text\\": \\"Keep what works\\"
+      }
+    ],
+    \\"center\\": \\"PDCA\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -2847,7 +2892,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 76,
+  "blockCount": 77,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2887,6 +2932,7 @@ Object {
     "tls.d.trend-badge",
     "tls.d.waterfall",
     "tls.g.chevrons",
+    "tls.g.cycle",
     "tls.g.steps",
     "tls.l.card",
     "tls.l.field",
