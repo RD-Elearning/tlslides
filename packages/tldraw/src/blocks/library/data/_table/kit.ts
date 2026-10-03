@@ -186,6 +186,10 @@ export interface TableInput {
   emphasisName?: string
   /** Also paint the emphasised column's header cell in the accent (compare-table `winner`). */
   emphasisHead?: boolean
+  /** Semantic cell part names per column: `cell-r-c` becomes `<name>[r]` (default `row[r].c<c>`). */
+  cellNames?: ReadonlyArray<string>
+  /** Restyle a built cell node (bold values, muted notes). Receives its row and column. */
+  restyle?: (node: LayoutNode, row: number, col: number) => LayoutNode
   format?: string
 }
 
@@ -196,12 +200,12 @@ export interface TableBuilt {
   rowGap: number
 }
 
-const rename = (part: string | undefined): string | undefined => {
+const renamer = (names?: ReadonlyArray<string>) => (part: string | undefined): string | undefined => {
   if (!part) return part
   let m = /^row-(\d+)$/.exec(part)
   if (m) return `row[${m[1]}]`
   m = /^cell-(\d+)-(\d+)(.*)$/.exec(part)
-  if (m) return `row[${m[1]}].c${m[2]}${m[3]}`
+  if (m) return names?.[Number(m[2])] ? `${names[Number(m[2])]}[${m[1]}]${m[3]}` : `row[${m[1]}].c${m[2]}${m[3]}`
   m = /^head-(\d+)(.*)$/.exec(part)
   if (m) return `head[${m[1]}]${m[2]}`
   m = /^(rule|zebra)-(\d+)$/.exec(part)
@@ -217,6 +221,7 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
 }
 
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
+  const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
   const ctx = compact ? compactCtx(ctx0) : ctx0
   const sp = ctx.tokens.space
@@ -296,7 +301,9 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
         const cells = ch.children.map((n) => {
           const winnerHead = isHead && o.emphasisHead === true && emphCol >= 0 && n.part === `head-${emphCol}`
           const styled = winnerHead ? boldHeader(n, onColor(ctx, c.accent)) : isHead && header === 'bold' ? boldHeader(n, c.text) : isHead && headFill ? boldHeader(n, headInk) : footRow && isFooter(ch.part) ? boldHeader(n, c.text) : n
-          return { ...styled, part: rename(n.part) } as LayoutNode
+          const cm = /^cell-(\d+)-(\d+)/.exec(n.part ?? '')
+          const out = cm && o.restyle ? o.restyle(styled, Number(cm[1]), Number(cm[2])) : styled
+          return { ...out, part: rename(n.part) } as LayoutNode
         })
         if (isFooter(ch.part)) {
           content.push({ k: 'rect', part: 'footer.rule', box: { x: 0, y: ch.box.y - rowGap / 2 - 0.5, width: W, height: 1 }, fill: { type: 'solid', color: c.line } })

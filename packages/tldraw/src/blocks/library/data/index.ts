@@ -26,9 +26,10 @@ import { tlsDBubble } from './tls-d-bubble'
 import { tlsDBulletChart } from './tls-d-bullet-chart'
 import { tlsDTable } from './tls-d-table'
 import { tlsDCompareTable } from './tls-d-compare-table'
+import { tlsDScorecard } from './tls-d-scorecard'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -52,3 +53,4 @@ export { tlsDBubble } from './tls-d-bubble'
 export { tlsDBulletChart } from './tls-d-bullet-chart'
 export { tlsDTable } from './tls-d-table'
 export { tlsDCompareTable } from './tls-d-compare-table'
+export { tlsDScorecard } from './tls-d-scorecard'

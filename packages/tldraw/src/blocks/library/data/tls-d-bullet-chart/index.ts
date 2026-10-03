@@ -17,7 +17,7 @@ export const tlsDBulletChart: BlockDefinition = {
   category: 'metric',
   scope: 'group',
   shortDescription: 'Bars against target markers over qualitative range bands',
-  related: ['tls.d.progress-bar', 'tls.d.bar'],
+  related: ['tls.d.progress-bar', 'tls.d.bar', 'tls.d.scorecard'],
   describe: {
     when: 'Several KPIs each against its own target.',
     avoid: 'Progress with no target (use tls.d.progress-bar).',
