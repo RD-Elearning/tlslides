@@ -17,7 +17,7 @@ export const tlsXLogoMark: BlockDefinition = {
   category: 'chrome',
   scope: 'element',
   shortDescription: 'Small corner logo repeated on content slides',
-  related: ['tls.m.logo'],
+  related: ['tls.m.logo', 'tls.x.header'],
   describe: {
     when: 'Brand presence on every content slide: a small mark in a corner.',
     avoid: 'A featured or large logo (use tls.m.logo).',

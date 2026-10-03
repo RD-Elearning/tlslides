@@ -20,7 +20,7 @@ export const tlsTTitle: BlockDefinition = {
   category: 'heading',
   scope: 'element',
   shortDescription: 'Slide title, auto-fitted, with optional rule',
-  related: ['tls.t.subtitle', 'tls.t.kicker'],
+  related: ['tls.t.subtitle', 'tls.t.kicker', 'tls.x.header'],
   describe: {
     when: 'Use as the primary heading on every content slide — the single most important text.',
     avoid: 'Do not use for an opening slide (use tls.c.hero), for a secondary line (use tls.t.subtitle) or for a small label above a title (use tls.t.kicker).',

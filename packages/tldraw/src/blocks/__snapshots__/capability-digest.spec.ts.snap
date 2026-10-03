@@ -4447,6 +4447,33 @@ One muted footer line of up to three short items with separators and an optional
 }
 \`\`\`
 
+### \`tls.x.header\` — Header
+
+A thin running header: a label at the left, meta at the right, optional hairline below. _(family: chrome; keywords: header, running header, section label, course code, chapter, chrome)_
+
+**When:** A consistent running header on content slides: course code, chapter, client name.
+**Avoid:** The slide title (use tls.t.title).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | no | text (max 40 chars) | Section, chapter or course code, shown at the left. |
+| \`meta\` | no | text (max 40 chars) | Client, date or version, shown at the right. |
+| \`showRule\` | no | boolean |  |
+| \`tone\` | no | enum: muted \\\\| accent | accent colours the label only; the meta stays muted. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_header\\",
+  \\"type\\": \\"tls.x.header\\",
+  \\"props\\": {
+    \\"label\\": \\"Chapter 2: Methods\\",
+    \\"meta\\": \\"BIO 201\\",
+    \\"showRule\\": true,
+    \\"tone\\": \\"accent\\"
+  }
+}
+\`\`\`
+
 ### \`tls.x.logo-mark\` — Logo Mark
 
 A small logo pinned to one corner of its box, fitted and never cropped. _(family: chrome; keywords: logo, brand, corner, watermark, chrome, every slide)_
@@ -4609,7 +4636,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 123,
+  "blockCount": 124,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4731,6 +4758,7 @@ Object {
     "tls.t.takeaway",
     "tls.t.title",
     "tls.x.footer-text",
+    "tls.x.header",
     "tls.x.logo-mark",
     "tls.x.page-number",
     "tls.x.rule",

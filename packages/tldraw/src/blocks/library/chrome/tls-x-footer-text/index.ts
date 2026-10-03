@@ -17,7 +17,7 @@ export const tlsXFooterText: BlockDefinition = {
   category: 'chrome',
   scope: 'element',
   shortDescription: 'Footer line with deck title, author or date, separated by dots',
-  related: ['tls.t.footnote', 'tls.x.page-number', 'tls.l.footer'],
+  related: ['tls.t.footnote', 'tls.x.page-number', 'tls.l.footer', 'tls.x.header'],
   describe: {
     when: 'Repeating a deck title, event name, date or confidentiality note at the bottom of slides.',
     avoid: 'Sources and notes about the content (use tls.t.footnote).',
