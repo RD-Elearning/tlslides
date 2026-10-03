@@ -17,7 +17,7 @@ export const tlsDFunnelChart: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Tapering stages sized by value, with drop-off between stages',
-  related: ['tls.d.bar', 'tls.d.waterfall'],
+  related: ['tls.d.bar', 'tls.d.waterfall', 'tls.g.funnel'],
   describe: {
     when: 'Conversion pipelines with real numbers.',
     avoid: 'A qualitative funnel without values (use tls.g.funnel).',

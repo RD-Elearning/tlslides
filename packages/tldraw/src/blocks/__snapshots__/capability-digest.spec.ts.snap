@@ -1715,6 +1715,42 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
 }
 \`\`\`
 
+### \`tls.g.funnel\` — Funnel
+
+Narrowing stages from broad to focused, with a note per stage and no numbers. _(family: diagram; keywords: funnel, stages, narrowing, selection, pipeline)_
+
+**When:** Order with narrowing: marketing funnel, selection process (no numbers).
+**Avoid:** Funnels with real values (use tls.d.funnel-chart).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stages\` | yes | list of object (label, text) (3–6 items) | Broadest stage first. No numbers needed. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
+| \`notes\` | no | enum: side \\\\| inside | side = beside (vertical) or below (horizontal). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_funnel_g\\",
+  \\"type\\": \\"tls.g.funnel\\",
+  \\"props\\": {
+    \\"stages\\": [
+      {
+        \\"label\\": \\"Aware\\",
+        \\"text\\": \\"People who hear about us\\"
+      },
+      {
+        \\"label\\": \\"Interested\\",
+        \\"text\\": \\"Visit and read\\"
+      },
+      {
+        \\"label\\": \\"Customer\\",
+        \\"text\\": \\"Pay and stay\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.roadmap\` — Roadmap
 
 Lanes of bars across periods, coloured by status, with a today line. _(family: diagram; keywords: roadmap, gantt, plan, schedule, lanes, quarters)_
@@ -3001,7 +3037,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 79,
+  "blockCount": 80,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3042,6 +3078,7 @@ Object {
     "tls.d.waterfall",
     "tls.g.chevrons",
     "tls.g.cycle",
+    "tls.g.funnel",
     "tls.g.roadmap",
     "tls.g.steps",
     "tls.g.timeline",
