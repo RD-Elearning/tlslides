@@ -23,7 +23,7 @@ while layouts emit indexed parts (`bar/0`, `item[2].text`) under recipe names `b
 | # | Item | Priority | Status | Commit | Notes |
 |---|---|---|---|---|---|
 | 7.0 | This plan + README row | must | ✅ | | |
-| 7.1 | `motionStyle` on deck + slide (compiler, viewer, validator, schema, digest) | must | ⬜ | | |
+| 7.1 | `motionStyle` on deck + slide (compiler, viewer, validator, schema, digest) | must | ✅ | (this commit) | 25 tests in `motion/motion-style.spec.ts`; digest snapshot +2 lines; index 15,501 / 20k, top-8 detail unchanged 11,985 |
 | 7.2 | `tls.c.kinetic-title` | must | ⬜ | | |
 | 7.3 | `tls.c.stat-spotlight` | must | ⬜ | | |
 | 7.4 | `tls.c.journey` | should | ⬜ | | |

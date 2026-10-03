@@ -23,13 +23,15 @@
  */
 
 import type { ComponentShape } from '~types'
-import type { Box, Paint, ResolvedTokens, SlideSpec, Size, SurfaceContext } from './types'
-import { blockToShape } from './shape-bridge'
+import type { BlockDefinition, BlockSpec, Box, MotionStyle, Paint, ResolvedTokens, SlideSpec, Size, SurfaceContext } from './types'
+import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
 import { layoutBlock } from './layout/layout-child'
+import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
+import { deriveShapeAnimation } from './motion/resolve-motion'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -101,9 +103,12 @@ export function compileSlide(
   spec: SlideSpec,
   frame: { width: number; height: number },
   tokens: ResolvedTokens,
-  registry?: BlockRegistry
+  registry?: BlockRegistry,
+  opts?: CompileSlideOptions
 ): CompileSlideResult {
   const findings: CompileFinding[] = []
+  // P7: blocks with no own `motion` that a slide/deck motion style may animate.
+  const styleCandidates: StyleCandidate[] = []
   const slideId = spec.id
 
   // 1. Resolve layout regions.
@@ -377,6 +382,7 @@ export function compileSlide(
         definitionMotion: blockDef?.motion,
       })
       shapes.push(shape)
+      if (blockDef && block.motion === undefined) styleCandidates.push({ shape, block, def: blockDef, box })
       currentY += blockHeight + gap
     }
   }
@@ -390,8 +396,15 @@ export function compileSlide(
         definitionMotion: blockDef?.motion,
       })
       shapes.push(shape)
+      if (blockDef && entry.block.motion === undefined) {
+        styleCandidates.push({ shape, block: entry.block, def: blockDef, box: entry.box })
+      }
     }
   }
+
+  // 5. P7 — motion style. Only when a style is set; absent = the output above, untouched.
+  const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
+  if (motionStyle) applyMotionStyle(motionStyle, styleCandidates)
 
   return {
     shapes,
@@ -408,6 +421,40 @@ export function compileSlide(
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Internal helpers                                                                 */
 /* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** Options for `compileSlide`. */
+export interface CompileSlideOptions {
+  /** The deck's `motionStyle`; the slide's own `motionStyle` wins over it. */
+  motionStyle?: MotionStyle
+}
+
+interface StyleCandidate {
+  shape: ComponentShape
+  block: BlockSpec
+  def: BlockDefinition
+  box: Box
+}
+
+/**
+ * P7 — give every block with no own `motion` the motion its slide's style implies, in reading
+ * order. The derived spec goes to `$block.styleMotion` (plus `$block.motionStyle` for the html
+ * runtime), never to `$block.motion`, so `documentToDeckSpec` returns what was authored.
+ */
+function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[]): void {
+  const ordered = [...candidates].sort((a, b) => readingOrder(a.box, b.box))
+  let index = 0
+  for (const c of ordered) {
+    const motion = styleBlockMotion(style, c.def.motion, index)
+    if (!motion) continue
+    const animation = deriveShapeAnimation(motion, c.def.motion)
+    if (!animation) continue
+    index++
+    c.shape.animation = animation
+    const meta = c.shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+    meta.styleMotion = motion
+    meta.motionStyle = style
+  }
+}
 
 /** Minimal surface context for measurement — neutral white, no image. */
 const MINIMAL_SURFACE: SurfaceContext = {

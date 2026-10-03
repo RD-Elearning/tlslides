@@ -118,7 +118,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
 
   spec.slides.forEach((slideSpec, index) => {
     const pageId = slideSpec.id
-    const result = compileSlide(slideSpec, frame, tokens, registry)
+    const result = compileSlide(slideSpec, frame, tokens, registry, { motionStyle: spec.motionStyle })
     findings.push(...result.findings)
 
     const shapes: Record<string, ComponentShape> = {}
@@ -140,6 +140,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       slideSpecId: result.slideSpecId,
       masterId: result.masterId,
     }
+    if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     pages[pageId] = page
 
     pageStates[pageId] = {
@@ -163,6 +164,8 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       ? Object.fromEntries(spec.masters.map((m) => [m.name, m]))
       : undefined,
   }
+
+  if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
 
   return { document, findings }
 }

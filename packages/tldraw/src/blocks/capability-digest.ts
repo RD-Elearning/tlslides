@@ -344,6 +344,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
     lines.push('Set `motion.preset` on any block. Every preset below plays (no-op excluded).')
     lines.push('')
+    lines.push(MOTION_STYLE_LINE)
+    lines.push('')
     for (const mp of data.motion) {
       const chainNote = mp.isChained ? ` (chains: ${mp.chain?.join(' → ')})` : ''
       const ambientNote = mp.isAmbient ? ' (loops)' : ''
@@ -490,6 +492,11 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
     })
 }
 
+/** P7 — one line telling the planner how to use deck/slide motion styles. */
+const MOTION_STYLE_LINE =
+  'Motion style: set `motionStyle` on the deck or a slide (slide wins) instead of per-block `motion`: ' +
+  '`expressive` for covers, key numbers and section openers; `subtle` for dense content; `static` for print/handouts.'
+
 /**
  * Markdown catalog index, meant to be the planner's first look at the library: the picking rule,
  * the scope rules, then one section per category and one line per block
@@ -513,6 +520,8 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
   lines.push('')
   lines.push('Line format: `type · category · scope · item range — what the viewer sees`. Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('')
+  lines.push(MOTION_STYLE_LINE)
   lines.push('')
   for (const cat of BLOCK_CATEGORIES) {
     const inCat = entries.filter((e) => e.category === cat)

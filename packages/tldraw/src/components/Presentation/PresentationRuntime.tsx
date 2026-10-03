@@ -3,7 +3,7 @@ import { useTldrawApp } from '~hooks'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import { AnimationEffect, TDSnapshot } from '~types'
 import type { ShapeAnimation } from '~types'
-import { shapeToBlock } from '~blocks/shape-bridge'
+import { shapeToRevealBlock } from '~blocks/shape-bridge'
 import { BlockRegistry } from '~blocks/registry'
 import { registerBuiltInBlocks } from '~blocks/library'
 import { playBlockReveal } from '~blocks/motion/play-reveal'
@@ -192,7 +192,7 @@ export const PresentationRuntime = React.memo(function PresentationRuntime() {
         if (isRevealed) {
           if (isNewlyRevealed) {
             // Use playBlockReveal when we have the block spec + definition (R5).
-            const blockSpec = shapeToBlock(shape)
+            const blockSpec = shapeToRevealBlock(shape)
             const blockDef = blockSpec ? sharedRegistry.get(blockSpec.type) : undefined
             if (blockSpec && blockDef) {
               playBlockReveal(el, blockSpec, blockDef, { driver: cssDriver, reducedMotion: false })

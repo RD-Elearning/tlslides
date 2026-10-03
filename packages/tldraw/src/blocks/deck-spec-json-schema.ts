@@ -12,6 +12,7 @@ import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import type { SlotSpec, SlotType } from './types'
+import { MOTION_STYLES } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -77,6 +78,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         type: 'array',
         items: slideSchema(reg, blockTypeSchemas, layoutIds),
       },
+      motionStyle: MOTION_STYLE_SCHEMA,
     },
     additionalProperties: false,
   }
@@ -132,6 +134,7 @@ function slideSchema(
       notes: { type: 'string', description: 'Speaker notes.' },
       skip: { type: 'boolean' },
       masterId: { type: 'string' },
+      motionStyle: MOTION_STYLE_SCHEMA,
     },
     additionalProperties: false,
   }
@@ -174,6 +177,15 @@ function blockSchema(
     additionalProperties: false,
     oneOf: blockTypeSchemas,
   }
+}
+
+/** P7 — deck/slide `motionStyle` (slide wins). */
+const MOTION_STYLE_SCHEMA: Record<string, unknown> = {
+  type: 'string',
+  enum: [...MOTION_STYLES],
+  description:
+    'How much the slide moves when blocks have no own motion: expressive (covers, key numbers, ' +
+    'section openers), subtle (dense content), static (print/handout).',
 }
 
 /** Keeps the recursive `children` schema finite (and the object graph acyclic). */

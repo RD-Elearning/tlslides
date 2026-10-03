@@ -19,6 +19,8 @@ import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
+import { MOTION_STYLES } from './types'
+import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
@@ -171,6 +173,9 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
   }
   const frame = resolveFrameForValidation(s.aspect)
 
+  // P7: motionStyle (deck level; the slide level is checked in validateSlide).
+  checkMotionStyle(s.motionStyle, 'motionStyle', 'DeckSpec', findings)
+
   // Tokens used only to read back real region names from each layout's compile() — the
   // *values* inside are irrelevant to validation, only the shape (which keys exist) is.
   const tokens = resolveTokens(DEFAULT_DECK_THEME, isRecord(s.tokens) ? (s.tokens as DeckTokens) : undefined)
@@ -279,6 +284,8 @@ function validateSlide(
     })
   }
 
+  checkMotionStyle(slide.motionStyle, `${slidePath}.motionStyle`, `Slide "${slideLabel}"`, findings)
+
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
 
@@ -377,6 +384,23 @@ function validateSlide(
       })
     }
   }
+}
+
+/** P7 — `motionStyle` must be one of `MOTION_STYLES`; anything else is ignored at compile time. */
+function checkMotionStyle(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
+  if (value === undefined || isMotionStyle(value)) return
+  const raw = typeof value === 'string' ? value : ''
+  const suggestion = raw ? nearestName(raw, [...MOTION_STYLES]) : undefined
+  findings.push({
+    level: 'warning',
+    rule: 'motion/unknown-style',
+    path,
+    message:
+      `${owner} has motionStyle ${stringifyForMessage(value)}, which is not a motion style and is ignored.` +
+      (suggestion ? ` Did you mean "${suggestion}"?` : '') +
+      ` Use one of: ${MOTION_STYLES.join(', ')}.`,
+    suggestion,
+  })
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

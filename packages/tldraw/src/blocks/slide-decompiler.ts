@@ -303,6 +303,9 @@ export function pageToSlideSpec(
   if (page.masterId !== undefined) {
     spec.masterId = page.masterId
   }
+  if (page.motionStyle !== undefined) {
+    spec.motionStyle = page.motionStyle
+  }
 
   return { spec, findings }
 }
@@ -368,17 +371,16 @@ export function documentToDeckSpec(
     }
   }
 
-  return {
-    spec: {
-      version: 1,
-      id: doc.id,
-      title: doc.name,
-      theme: (doc.theme ?? theme) as unknown as DeckSpec['theme'],
-      aspect,
-      tokens: doc.tokens as Record<string, unknown> | undefined,
-      masters: doc.masters ? Object.values(doc.masters) : undefined,
-      slides,
-    },
-    findings,
+  const deckSpec: DeckSpec = {
+    version: 1,
+    id: doc.id,
+    title: doc.name,
+    theme: (doc.theme ?? theme) as unknown as DeckSpec['theme'],
+    aspect,
+    tokens: doc.tokens as Record<string, unknown> | undefined,
+    masters: doc.masters ? Object.values(doc.masters) : undefined,
+    slides,
   }
+  if (doc.motionStyle !== undefined) deckSpec.motionStyle = doc.motionStyle
+  return { spec: deckSpec, findings }
 }

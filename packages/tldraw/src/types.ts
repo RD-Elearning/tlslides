@@ -181,6 +181,8 @@ export interface TDDocument {
   // Phase D1 — block composition. Optional master definitions keyed by name. A document
   // without `masters` loads and renders exactly as before — no migration, no version bump.
   masters?: Record<string, MasterSpec>
+  // P7 — the deck's authored `DeckSpec.motionStyle`, carried for the round trip only.
+  motionStyle?: 'static' | 'subtle' | 'expressive'
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -256,6 +258,9 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   // Phase D2 — block layout. Optional slide-spec ID and layout identifier.
   slideSpecId?: string
   layout?: string
+  // P7 — the slide's authored `SlideSpec.motionStyle`, carried so `documentToDeckSpec` can
+  // return it. Playback does not read it: the compiler already baked it into each shape.
+  motionStyle?: 'static' | 'subtle' | 'expressive'
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

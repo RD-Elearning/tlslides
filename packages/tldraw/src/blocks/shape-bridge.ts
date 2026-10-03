@@ -36,6 +36,11 @@ interface BlockMetadata {
   style?: BlockStyleSpec
   motion?: BlockMotionSpec
   children?: BlockSpec[]
+  /** P7 — motion derived from the slide's `motionStyle` by `compileSlide`. Never authored, never
+   *  returned by `shapeToBlock`; playback reads it through `shapeToRevealBlock`. */
+  styleMotion?: BlockMotionSpec
+  /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
+  motionStyle?: 'subtle' | 'expressive'
 }
 
 /**
@@ -207,7 +212,8 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   // lossless.
   const animation = shapeObj.animation as ShapeAnimation | undefined
   if (animation) {
-    const implied = resolveBlockMotion(spec.motion ?? {}, {})
+    // P7: a style-derived animation is implied by `$block.styleMotion`, not a divergence.
+    const implied = resolveBlockMotion(spec.motion ?? meta.styleMotion ?? {}, {})
     const diverged =
       animation.effect !== implied.effect ||
       animation.trigger !== implied.trigger ||
@@ -237,4 +243,33 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   }
 
   return spec
+}
+
+/**
+ * P7 — the block spec playback should use: `shapeToBlock`, plus the style-derived motion as
+ * `motion` when the block has none of its own. Only for reveal code (DeckViewer,
+ * PresentationRuntime); never persist its result.
+ */
+export function shapeToRevealBlock(shape: unknown): BlockSpec | undefined {
+  const spec = shapeToBlock(shape)
+  if (!spec || spec.motion !== undefined) return spec
+  const meta = blockMetaOf(shape)
+  if (meta?.styleMotion) spec.motion = JSON.parse(JSON.stringify(meta.styleMotion))
+  return spec
+}
+
+/**
+ * P7 — the motion style an html block's `animate()` should honour (`BlockMotionRuntime.style`):
+ * `'subtle'` only when the compiler derived the block's motion from a subtle slide; otherwise
+ * `'expressive'` (the pre-P7 behaviour, also used for explicit block `motion`).
+ */
+export function revealStyleOf(shape: unknown): 'subtle' | 'expressive' {
+  return blockMetaOf(shape)?.motionStyle === 'subtle' ? 'subtle' : 'expressive'
+}
+
+function blockMetaOf(shape: unknown): BlockMetadata | undefined {
+  if (!shape || typeof shape !== 'object') return undefined
+  const props = (shape as Record<string, unknown>).props as Record<string, unknown> | undefined
+  const meta = props?.[BLOCK_PROP_KEY]
+  return meta && typeof meta === 'object' ? (meta as BlockMetadata) : undefined
 }

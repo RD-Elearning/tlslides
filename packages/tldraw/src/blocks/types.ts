@@ -249,6 +249,10 @@ export interface BlockMotionRuntime {
   /** True when `prefers-reduced-motion: reduce` is active. `animate()` should skip
    *  animation and call `onComplete()` immediately. */
   reducedMotion: boolean
+  /** P7 — the slide's motion style for this block. `'subtle'`: play one calm fade, show numbers
+   *  at their final value, no choreography. `'expressive'` (or absent, for back-compat): the
+   *  block's full showy timeline. Set by the viewer from the compiled `$block.motionStyle`. */
+  style?: 'subtle' | 'expressive'
   /** MUST be called when the animation completes (or is skipped for reduced motion).
    *  The viewer awaits this promise for build-step chaining. Idempotent. */
   onComplete(): void
@@ -355,7 +359,24 @@ export interface MotionRecipe {
   parts?: string[]
   /** Default motion preset. */
   preset?: MotionPresetId
+  /** P7 — the showy preset used when the slide's `motionStyle` is `'expressive'` and the block
+   *  has no own `motion`. Absent = `preset`. Must be an existing preset id. */
+  expressive?: MotionPresetId
+  /** P7 — how long the block's expressive timeline runs, in ms (html blocks with a long GSAP
+   *  timeline). Used as the block's duration under `'expressive'` so the next block in the
+   *  chain waits for it. Absent = the preset's duration. */
+  expressiveMs?: number
 }
+
+/**
+ * P7 — how much a slide (or the whole deck) moves. Applied by `compileSlide` to blocks that
+ * have no own `motion`: `static` = nothing animates; `subtle` = a short fade per block, all
+ * together; `expressive` = each block's showy recipe, chained in reading order without clicks.
+ */
+export type MotionStyle = 'static' | 'subtle' | 'expressive'
+
+/** The closed set of `MotionStyle` values (validator, JSON schema, digest). */
+export const MOTION_STYLES: readonly MotionStyle[] = ['static', 'subtle', 'expressive']
 
 /**
  * Schema of valid content for a block. Drives inserter UI, AI prompting, and linting.
@@ -900,6 +921,8 @@ export interface SlideSpec {
   skip?: boolean
   /** References a reusable `MasterSpec` by name. */
   masterId?: string
+  /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
+  motionStyle?: MotionStyle
 }
 
 /**
@@ -945,4 +968,6 @@ export interface DeckSpec {
   masters?: MasterSpec[]
   /** Ordered slides. */
   slides: SlideSpec[]
+  /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
+  motionStyle?: MotionStyle
 }

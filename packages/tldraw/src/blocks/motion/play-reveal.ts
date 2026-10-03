@@ -110,6 +110,36 @@ function blockEntranceKeyframes(effect: AnimationEffect): MotionKeyframes {
   return kf
 }
 
+/**
+ * The DOM elements one recipe part addresses, and whether they came from an indexed match.
+ *
+ * 1. Exact `data-part="<name>"` matches (the pre-P7 behaviour, unchanged).
+ * 2. Otherwise (P7) the part's indexed elements: `bar` matches `bar/0`, `bar/1`…; a glob such
+ *    as `item[*].text` matches `item[0].text`, `item[1].text`…. Layouts emit indexed parts while
+ *    recipes name the family, so without this most part choreography never found an element.
+ */
+export function partElements(el: HTMLElement, partName: string): { els: HTMLElement[]; indexed: boolean } {
+  const exact = Array.from(el.querySelectorAll<HTMLElement>(`[data-part="${cssEscapeAttr(partName)}"]`))
+  if (exact.length > 0) return { els: exact, indexed: false }
+  const all = Array.from(el.querySelectorAll<HTMLElement>('[data-part]'))
+  let match: (p: string) => boolean
+  if (partName.includes('[*]')) {
+    const re = new RegExp('^' + partName.split('[*]').map(escapeRegExp).join('\\[\\d+\\]') + '$')
+    match = (p) => re.test(p)
+  } else {
+    match = (p) => p.startsWith(partName + '/') || (p.startsWith(partName) && /^\[\d+\]/.test(p.slice(partName.length)))
+  }
+  return { els: all.filter((n) => match(n.getAttribute('data-part') ?? '')), indexed: true }
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function cssEscapeAttr(s: string): string {
+  return s.replace(/["\\]/g, '\\$&')
+}
+
 // --- Public API ---------------------------------------------------------------
 
 /**
@@ -138,10 +168,9 @@ export function playBlockReveal(
     driver.set(el, blockVisibleState(blockMotion.effect ?? undefined))
     // Also settle any parts to visible.
     for (const pm of partMotions) {
-      const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
-      partEls.forEach((partEl) => {
-        driver.set(partEl as HTMLElement, { opacity: 1, translate: '0px 0px', scale: 1 })
-      })
+      for (const partEl of partElements(el, pm.partName).els) {
+        driver.set(partEl, { opacity: 1, translate: '0px 0px', scale: 1 })
+      }
     }
     return
   }
@@ -149,10 +178,9 @@ export function playBlockReveal(
   // 3. Set hidden state on ALL parts synchronously, before the block becomes visible.
   //    Parts are children of `el`, so they're invisible while the block is at opacity: 0.
   for (const pm of partMotions) {
-    const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
-    partEls.forEach((partEl) => {
-      driver.set(partEl as HTMLElement, hiddenStateFromKeyframes(pm.keyframes))
-    })
+    for (const partEl of partElements(el, pm.partName).els) {
+      driver.set(partEl, hiddenStateFromKeyframes(pm.keyframes))
+    }
   }
 
   // 4. Set hidden state on the block container.
@@ -171,8 +199,11 @@ export function playBlockReveal(
 
   // 6. Play part-level animations with stagger.
   for (const pm of partMotions) {
-    const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
-    partEls.forEach((partEl) => {
+    const { els: partEls, indexed } = partElements(el, pm.partName)
+    partEls.forEach((partEl, elementIndex) => {
+      // P7: indexed elements of one part stagger by the preset's step (exact matches keep
+      // the part's own delay, as before).
+      const delay = pm.delayMs + (indexed ? elementIndex * (pm.staggerMs ?? 0) : 0)
       // Count-up: intercept onUpdate to tween textContent.
       if (pm.presetId === 'count-up') {
         const targetText = partEl.textContent ?? '0'
@@ -183,7 +214,7 @@ export function playBlockReveal(
 
         driver.play(partEl as HTMLElement, pm.keyframes, {
           duration: pm.durationMs,
-          delay: pm.delayMs,
+          delay,
           easing: pm.easing,
           fill: 'forwards',
           onUpdate: (progress: number) => {
@@ -194,7 +225,7 @@ export function playBlockReveal(
       } else {
         driver.play(partEl as HTMLElement, pm.keyframes, {
           duration: pm.durationMs,
-          delay: pm.delayMs,
+          delay,
           easing: pm.easing,
           fill: 'forwards',
         })

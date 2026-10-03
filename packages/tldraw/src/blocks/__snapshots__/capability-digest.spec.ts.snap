@@ -43,6 +43,8 @@ Gradient shape: \`Paint: { type: 'solid', color } | { type: 'linearGradient', an
 
 Set \`motion.preset\` on any block. Every preset below plays (no-op excluded).
 
+Motion style: set \`motionStyle\` on the deck or a slide (slide wins) instead of per-block \`motion\`: \`expressive\` for covers, key numbers and section openers; \`subtle\` for dense content; \`static\` for print/handouts.
+
 - **fade** _text-reveal_ — 250ms, triggers: withPrevious, afterPrevious, onClick
 - **fade-up** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
 - **fade-down** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick

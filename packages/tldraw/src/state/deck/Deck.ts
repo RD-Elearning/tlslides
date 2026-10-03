@@ -176,7 +176,7 @@ export class Deck {
     // 4. Compile the spec into shapes + metadata.
     const registry = new BlockRegistry()
     registerBuiltInBlocks(registry)
-    const result = compileSlide(spec, frame, tokens, registry)
+    const result = compileSlide(spec, frame, tokens, registry, { motionStyle: this.app.document.motionStyle })
 
     // 5. Apply page-level metadata.
     if (result.background !== undefined) {

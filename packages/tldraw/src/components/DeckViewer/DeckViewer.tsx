@@ -15,7 +15,7 @@ import type { BlockDefinition } from '~blocks/types'
 import type { LayoutContext } from '~blocks/types'
 import { deckSpecToDocument } from '~blocks/deck-document'
 import { deckLayoutContext, contextForBlock } from '~blocks/deck-context'
-import { shapeToBlock } from '~blocks/shape-bridge'
+import { revealStyleOf, shapeToBlock, shapeToRevealBlock } from '~blocks/shape-bridge'
 import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
@@ -27,7 +27,7 @@ import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
-import { playBlockReveal } from '~blocks/motion/play-reveal'
+import { partElements, playBlockReveal } from '~blocks/motion/play-reveal'
 import { resolvePartMotion } from '~blocks/motion/resolve-motion'
 
 /**
@@ -435,7 +435,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
         // R3: check if this block has animate() and should be handled via the runtime
         const shape = page.shapes[shapeId]
-        const blockSpec = shape ? shapeToBlock(shape) : undefined
+        // P7: the reveal spec carries the style-derived motion when the block has none.
+        const blockSpec = shape ? shapeToRevealBlock(shape) : undefined
         const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined
         const hasAnimate = blockDef?.kind === 'html' && !!blockDef.html?.animate
 
@@ -491,6 +492,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               ease: 'cubic-bezier(0.22, 1, 0.36, 1)', // smoothOut
             },
             reducedMotion: false,
+            style: revealStyleOf(shape),
             onComplete: () => {
               // Idempotent resolve
               const resolve = animateCompletersRef.current.get(shapeId)
@@ -558,10 +560,9 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               if (blockSpec && blockDef) {
                 const partMotions = resolvePartMotion(blockSpec.motion, blockDef.motion)
                 for (const pm of partMotions) {
-                  const partEls = el.querySelectorAll(`[data-part="${pm.partName}"]`)
-                  partEls.forEach((partEl) => {
-                    motionDriver.set(partEl as HTMLElement, { opacity: 1, translate: '0px 0px', scale: 1 })
-                  })
+                  for (const partEl of partElements(el, pm.partName).els) {
+                    motionDriver.set(partEl, { opacity: 1, translate: '0px 0px', scale: 1 })
+                  }
                 }
               }
             }

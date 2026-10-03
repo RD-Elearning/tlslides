@@ -177,6 +177,9 @@ export interface ResolvedPartMotion {
   /** The resolved preset id for this part — used by `playBlockReveal` to detect
    *  special presets like `count-up` that need a textContent tween. */
   presetId?: string
+  /** P7 — the preset's per-item stagger, applied by `playBlockReveal` between the indexed
+   *  elements one recipe part matches (`bar` → `bar/0`, `bar/1`…). */
+  staggerMs?: number
 }
 
 /**
@@ -256,6 +259,7 @@ export function resolvePartMotion(
       easing: partEasing,
       isAmbient,
       presetId: partPresetId,
+      ...(staggerMs > 0 ? { staggerMs } : {}),
     }
   })
 }
