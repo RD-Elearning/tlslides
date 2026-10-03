@@ -745,6 +745,42 @@ Card with a portrait, name, role, short bio and a contact line; portrait above o
 }
 \`\`\`
 
+### \`tls.c.quiz\` — Quiz
+
+Multiple-choice question with lettered options; the correct answer is highlighted. _(family: composite; keywords: quiz, multiple choice, question, knowledge check, poll, test, answer)_
+
+**When:** Knowledge checks in lectures and training.
+**Avoid:** Open questions with a written answer: tls.t.qa.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`question\` | yes | richText (max 200 chars) | One clear question. |
+| \`options\` | yes | list of text (max 80 chars) (2–5 items) | Short, parallel answers; lettered A-E automatically. |
+| \`answer\` | yes | number (min 0, max 4) | Zero-based index into options (0 = A). |
+| \`explanation\` | no | text (max 200 chars) | Why the answer is right. |
+| \`layout\` | no | enum: list \\\\| grid | grid = two columns. |
+| \`reveal\` | no | enum: shown \\\\| none | shown highlights the answer; none hides it. No click reveal. |
+| \`showExplanation\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quiz\\",
+  \\"type\\": \\"tls.c.quiz\\",
+  \\"props\\": {
+    \\"question\\": \\"Which measure resists outliers?\\",
+    \\"options\\": [
+      \\"The mean\\",
+      \\"The median\\",
+      \\"The range\\"
+    ],
+    \\"answer\\": 1,
+    \\"explanation\\": \\"The median ignores how far the extremes are.\\",
+    \\"layout\\": \\"list\\",
+    \\"reveal\\": \\"shown\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.stat-card\` — Stat Card
 
 KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
@@ -4319,7 +4355,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 114,
+  "blockCount": 115,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4337,6 +4373,7 @@ Object {
     "tls.c.kpi-tile",
     "tls.c.objectives",
     "tls.c.profile-card",
+    "tls.c.quiz",
     "tls.c.stat-card",
     "tls.c.steps",
     "tls.c.team",

@@ -17,7 +17,7 @@ export const tlsTQa: BlockDefinition = {
   category: 'learning',
   scope: 'element',
   shortDescription: 'Question and answer pairs with Q and A badges',
-  related: ['tls.t.bullets', 'tls.t.definition'],
+  related: ['tls.t.bullets', 'tls.t.definition', 'tls.c.quiz'],
   describe: {
     when: 'FAQ slides, review questions in a lecture, objection handling.',
     avoid: 'A multiple-choice question (use tls.c.quiz).',
