@@ -680,6 +680,38 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 }
 \`\`\`
 
+### \`tls.c.objectives\` — Objectives
+
+Learning objectives or goals as a numbered, checked or icon list with an intro line. _(family: composite; keywords: objectives, learning outcomes, goals, aims, by the end, lecture start, workshop)_
+
+**When:** Start of a lecture, workshop or project: what the audience will achieve.
+**Avoid:** A list of topics to cover: tls.c.agenda.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`intro\` | no | text (max 120 chars) | \\"By the end of this session you will be able to\\". |
+| \`items\` | yes | list of text (max 120 chars) (2–6 items) | Start each with a verb. |
+| \`marker\` | no | enum: numbered \\\\| check \\\\| icon |  |
+| \`icon\` | no | icon | For marker icon. |
+| \`cols\` | no | enum: 1 \\\\| 2 | Two columns for numbered and check. |
+| \`showIntro\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_objectives\\",
+  \\"type\\": \\"tls.c.objectives\\",
+  \\"props\\": {
+    \\"intro\\": \\"By the end you will be able to:\\",
+    \\"items\\": [
+      \\"Describe a sample\\",
+      \\"Choose a fitting chart\\",
+      \\"Run a two-sample test\\"
+    ],
+    \\"marker\\": \\"numbered\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.profile-card\` — Profile Card
 
 Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
@@ -4287,7 +4319,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 113,
+  "blockCount": 114,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4303,6 +4335,7 @@ Object {
     "tls.c.image-text",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
+    "tls.c.objectives",
     "tls.c.profile-card",
     "tls.c.stat-card",
     "tls.c.steps",
