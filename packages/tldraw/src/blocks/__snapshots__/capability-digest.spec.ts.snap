@@ -1029,6 +1029,48 @@ Icon with text label beneath. _(family: media; keywords: icon, label, button, na
 }
 \`\`\`
 
+### \`tls.m.icon-list\` — Icon list
+
+Stacked points, each with its own icon, title and short description. _(family: media; keywords: icons, benefits, features, list, points)_
+
+**When:** 3–6 benefits or features where each needs a recognisable icon, stacked in a column.
+**Avoid:** A grid of features (use tls.c.feature-grid); points without icons (use tls.t.bullets).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (icon, title, text) (2–6 items) | Title 2–5 words; description one short sentence. Pick an icon that names the idea. |
+| \`iconStyle\` | no | enum: plain \\\\| circle \\\\| square | circle and square put the icon on a tinted shape. |
+| \`iconTone\` | no | enum: accent \\\\| accent2 \\\\| text |  |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_iconlist\\",
+  \\"type\\": \\"tls.m.icon-list\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"icon\\": \\"rocket\\",
+        \\"title\\": \\"Fast start\\",
+        \\"text\\": \\"Live in a week.\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"Secure\\",
+        \\"text\\": \\"Audit trails included.\\"
+      },
+      {
+        \\"icon\\": \\"sparkles\\",
+        \\"title\\": \\"Polished\\",
+        \\"text\\": \\"Looks right out of the box.\\"
+      }
+    ],
+    \\"iconStyle\\": \\"circle\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.image\` — Image
 
 Image with cover/contain fit, focal point, and optional caption. _(family: media; keywords: image, photo, picture, media, visual)_
@@ -1517,7 +1559,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 43,
+  "blockCount": 44,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1549,6 +1591,7 @@ Object {
     "tls.l.stack",
     "tls.m.icon",
     "tls.m.icon-label",
+    "tls.m.icon-list",
     "tls.m.image",
     "tls.t.body",
     "tls.t.bullets",

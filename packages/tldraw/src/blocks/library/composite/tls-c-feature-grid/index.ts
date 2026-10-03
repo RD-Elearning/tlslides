@@ -212,7 +212,7 @@ export const tlsCFeatureGrid: BlockDefinition = {
   category: 'list',
   scope: 'group',
   shortDescription: 'Grid of icon + title + description cells',
-  related: ['tls.m.icon-label'],
+  related: ['tls.m.icon-label', 'tls.m.icon-list'],
   describe: {
     when:
       'Use to show 2–6 feature highlights in a grid layout — each cell has ' +
