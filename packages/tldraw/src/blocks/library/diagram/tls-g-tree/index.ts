@@ -17,7 +17,7 @@ export const tlsGTree: BlockDefinition = {
   category: 'hierarchy',
   scope: 'group',
   shortDescription: 'Org chart or hierarchy of boxes linked from one root, top-down or left-right',
-  related: ['tls.g.flow', 'tls.g.hub-spoke'],
+  related: ['tls.g.flow', 'tls.g.hub-spoke', 'tls.g.breakdown', 'tls.g.layers'],
   describe: {
     when: 'Parent/child: org charts, taxonomies, the decomposition of a goal into parts.',
     avoid: 'Ordered steps or decisions with branches (use tls.g.flow).',

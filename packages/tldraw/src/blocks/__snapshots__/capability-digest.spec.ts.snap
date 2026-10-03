@@ -1658,6 +1658,47 @@ Before and after panels joined by an arrow, each with a tag, title, text and opt
 }
 \`\`\`
 
+### \`tls.g.breakdown\` — Breakdown
+
+One whole box split into 2-6 parts with values, joined by a curly brace; can show each share. _(family: diagram; keywords: breakdown, split, components, cost, composition, parts of a whole)_
+
+**When:** Parent/child, one level: a cost breakdown or the components of one metric.
+**Avoid:** Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`whole\` | yes | object (label, value) | The thing being split: {label, value?}, e.g. {label: \\"Total cost\\", value: \\"$120k\\"}. |
+| \`parts\` | yes | list of object (label, value, note) (2–6 items) | {label, value?, note?} per part. Values like \\"$40k\\" or \\"25%\\". |
+| \`direction\` | no | enum: LR \\\\| TB | LR = whole left, parts right; TB = whole on top. |
+| \`showShare\` | no | boolean | Adds each part as % of the sum when every value is numeric. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_breakdown\\",
+  \\"type\\": \\"tls.g.breakdown\\",
+  \\"props\\": {
+    \\"whole\\": {
+      \\"label\\": \\"Total cost\\",
+      \\"value\\": \\"$120k\\"
+    },
+    \\"parts\\": [
+      {
+        \\"label\\": \\"People\\",
+        \\"value\\": \\"$70k\\"
+      },
+      {
+        \\"label\\": \\"Cloud\\",
+        \\"value\\": \\"$30k\\"
+      },
+      {
+        \\"label\\": \\"Tools\\",
+        \\"value\\": \\"$20k\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.chevrons\` — Chevron Process
 
 Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(family: diagram; keywords: chevrons, phases, process, arrows, stages, method)_
@@ -3491,7 +3532,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 91,
+  "blockCount": 92,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3531,6 +3572,7 @@ Object {
     "tls.d.trend-badge",
     "tls.d.waterfall",
     "tls.g.before-after",
+    "tls.g.breakdown",
     "tls.g.chevrons",
     "tls.g.cycle",
     "tls.g.flow",
