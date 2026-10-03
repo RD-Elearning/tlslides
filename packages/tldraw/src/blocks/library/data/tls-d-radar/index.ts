@@ -17,7 +17,7 @@ export const tlsDRadar: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Spider chart comparing series across radial axes',
-  related: ['tls.d.grouped-bar', 'tls.d.bar'],
+  related: ['tls.d.grouped-bar', 'tls.d.bar', 'tls.d.compare-table'],
   describe: {
     when: 'Profiles on several criteria (skills, product scores).',
     avoid: 'More than 3 series or 8 axes (use tls.d.compare-table); exact values (use tls.d.grouped-bar).',

@@ -699,6 +699,56 @@ Per-KPI value bar with a target tick over shaded range bands, with labels and va
 }
 \`\`\`
 
+### \`tls.d.compare-table\` — Comparison Table
+
+Options as columns, criteria as rows, with ticks, crosses or dot ratings and a highlighted winner. _(family: data; keywords: compare, matrix, features, competitors, versus, tick, rating)_
+
+**When:** Us vs competitors, plan features, tool selection.
+**Avoid:** Free-form pros and cons (tls.c.comparison). Prices: tls.d.pricing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`options\` | yes | list of text (max 24 chars) (2–5 items) | Column headers: the things compared. |
+| \`criteria\` | yes | list of text (max 40 chars) (2–12 items) | Row labels, one per row of cells. |
+| \`cells\` | yes | list of list of text (max 30 chars) | cells[criterion][option]: yes, no, partial, 1-5 or short text. |
+| \`cellKind\` | no | enum: check \\\\| rating \\\\| text | check: ticks and crosses; rating: dots; text: as written |
+| \`winner\` | no | number (min -1) |  |
+| \`zebra\` | no | boolean |  |
+| \`density\` | no | enum: default \\\\| compact |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_compare\\",
+  \\"type\\": \\"tls.d.compare-table\\",
+  \\"props\\": {
+    \\"options\\": [
+      \\"Ours\\",
+      \\"Rival\\"
+    ],
+    \\"criteria\\": [
+      \\"Offline mode\\",
+      \\"Open API\\",
+      \\"SSO\\"
+    ],
+    \\"cells\\": [
+      [
+        \\"yes\\",
+        \\"no\\"
+      ],
+      [
+        \\"yes\\",
+        \\"partial\\"
+      ],
+      [
+        \\"yes\\",
+        \\"yes\\"
+      ]
+    ],
+    \\"winner\\": 0
+  }
+}
+\`\`\`
+
 ### \`tls.d.donut\` — Donut Chart
 
 Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, data, visualization)_
@@ -2583,7 +2633,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 70,
+  "blockCount": 71,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2600,6 +2650,7 @@ Object {
     "tls.d.bar",
     "tls.d.bubble",
     "tls.d.bullet-chart",
+    "tls.d.compare-table",
     "tls.d.donut",
     "tls.d.funnel-chart",
     "tls.d.gauge",

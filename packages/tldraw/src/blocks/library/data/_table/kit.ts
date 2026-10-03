@@ -32,7 +32,8 @@ import {
 import { iconLeaf } from '../../text/_engine/icon'
 import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK } from '../_chart/kit'
 
-export type ColKind = 'text' | 'number' | 'status' | 'rating' | 'check'
+export type ColKind = 'text' | 'number' | 'status' | 'rating' | 'check' | 'checkOrRating' | 'ratingOrCheck'
+/** The kinds an author may name (the two `...Or...` kinds are internal: compare-table cells). */
 export const COL_KINDS: ColKind[] = ['text', 'number', 'status', 'rating', 'check']
 
 /* ───────────────────────────── cell parsing ───────────────────────────── */
@@ -84,7 +85,7 @@ export function cellText(v: unknown): string {
  * One body cell. `part` is the engine part (`cell-<r>-<c>`; it is renamed to a bracket name later).
  * A cell that does not fit its column kind falls back to plain text.
  */
-export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: LayoutContext, format?: string): TableCell {
+export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: LayoutContext, format?: string, place?: IconPlace): TableCell {
   const text = cellText(raw)
   switch (kind) {
     case 'number': {
@@ -101,9 +102,17 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       const n = parseNumber(raw)
       return n && n.value >= 0 && n.value <= 10 ? { kind: 'rating', value: n.value } : { kind: 'text', text }
     }
+    case 'checkOrRating':
+    case 'ratingOrCheck': {
+      const first = kind === 'checkOrRating' ? 'check' : 'rating'
+      const second = first === 'check' ? 'rating' : 'check'
+      const a = parseCell(raw, first, part, ctx, format, place)
+      if (typeof a === 'object' && a.kind !== 'text') return a
+      return parseCell(raw, second, part, ctx, format, place)
+    }
     case 'check': {
       const v = parseCheck(text)
-      return v ? checkCell(v, part, ctx) : { kind: 'text', text }
+      return v ? checkCell(v, part, ctx, place) : { kind: 'text', text }
     }
     default:
       return { kind: 'text', text }
@@ -112,15 +121,36 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
 
 const CHECK_ICON = { yes: ['check-circle', 'positive'], no: ['x-circle', 'negative'], partial: ['minus', 'neutral'] } as const
 
+/**
+ * Where an injected icon sits in its column. The engine hands a `node` cell only a left-anchored
+ * box, so alignment is done here from the solved column width (`widths` is filled after solving).
+ */
+export interface IconPlace {
+  col: number
+  align: CellAlign
+  pad: number
+  widths: number[]
+}
+
 /** A tick / cross / dash drawn as a scaled icon (a `node` cell, so the engine only reserves room). */
-export function checkCell(v: 'yes' | 'no' | 'partial', part: string, ctx: LayoutContext): TableCell {
+export function checkCell(v: 'yes' | 'no' | 'partial', part: string, ctx: LayoutContext, place?: IconPlace): TableCell {
   const size = Math.round(ctx.resolveText('body').size * 1.1)
   const [icon, role] = CHECK_ICON[v]
-  return { kind: 'node', width: size, height: size, build: (box: Box) => iconLeaf(icon, { ...box, width: size, height: size }, ctx.resolveColor(role).color, part) }
+  return {
+    kind: 'node',
+    width: size,
+    height: size,
+    build: (box: Box) => {
+      const inner = place ? Math.max(0, (place.widths[place.col] ?? 0) - place.pad * 2) : size
+      const free = Math.max(0, inner - size)
+      const dx = place?.align === 'center' ? free / 2 : place?.align === 'end' ? free : 0
+      return iconLeaf(icon, { x: box.x + dx, y: box.y, width: size, height: size }, ctx.resolveColor(role).color, part)
+    },
+  }
 }
 
 export function defaultAlign(kind: ColKind): CellAlign {
-  return kind === 'number' ? 'end' : kind === 'check' ? 'center' : 'start'
+  return kind === 'number' ? 'end' : kind === 'check' || kind === 'checkOrRating' || kind === 'ratingOrCheck' ? 'center' : 'start'
 }
 
 export function alignOf(v: unknown, kind: ColKind): CellAlign {
@@ -152,8 +182,10 @@ export interface TableInput {
   header?: 'filled' | 'bold' | 'none'
   emphasisRow?: number
   emphasisCol?: number
-  /** Role used for emphasis tints. Default accent. */
-  emphasisRole?: 'accent' | 'accent2'
+  /** Part name of the emphasised column tint (`emphasis` -> `emphasis.col`; anything else is used as is). */
+  emphasisName?: string
+  /** Also paint the emphasised column's header cell in the accent (compare-table `winner`). */
+  emphasisHead?: boolean
   format?: string
 }
 
@@ -194,12 +226,14 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
   const header = o.header === 'bold' || o.header === 'none' ? o.header : 'filled'
   const W = Math.max(1, o.width)
 
-  const bodyRows = o.rows.map((r, ri) => Array.from({ length: cols }, (_, c) => parseCell(r?.[c], o.kinds[c] ?? 'text', `cell-${ri}-${c}`, ctx, o.format)))
+  const aligns = Array.from({ length: cols }, (_, c) => alignOf(o.aligns?.[c], o.kinds[c] ?? 'text'))
+  const widths: number[] = []
+  const placeOf = (c: number): IconPlace => ({ col: c, align: aligns[c], pad: cellPad, widths })
+  const bodyRows = o.rows.map((r, ri) => Array.from({ length: cols }, (_, c) => parseCell(r?.[c], o.kinds[c] ?? 'text', `cell-${ri}-${c}`, ctx, o.format, placeOf(c))))
   const nBody = bodyRows.length
-  const footRow = o.footer && o.footer.length > 0 ? Array.from({ length: cols }, (_, c) => parseCell(o.footer![c], o.kinds[c] ?? 'text', `cell-${nBody}-${c}`, ctx, o.format)) : undefined
+  const footRow = o.footer && o.footer.length > 0 ? Array.from({ length: cols }, (_, c) => parseCell(o.footer![c], o.kinds[c] ?? 'text', `cell-${nBody}-${c}`, ctx, o.format, placeOf(c))) : undefined
   const head: TableCell[] | undefined = o.head && header !== 'none' ? Array.from({ length: cols }, (_, c) => ({ kind: 'text' as const, text: cellText(o.head![c]) })) : undefined
   const rows = footRow ? [...bodyRows, footRow] : bodyRows
-  const aligns = Array.from({ length: cols }, (_, c) => alignOf(o.aligns?.[c], o.kinds[c] ?? 'text'))
 
   const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none' } as const
   const measured = measureColumns({ head, rows, cellPad }, ctx).map((w) => w * 1.06)
@@ -212,14 +246,14 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
     rows.forEach((r) => take(r[c]))
     return Math.min(W * 0.4, Math.ceil(w * TEXT_SLACK) + cellPad * 2)
   })
-  const widths = solveColumns(
+  widths.push(...solveColumns(
     Array.from({ length: cols }, (_, c) => ({
       min: o.kinds[c] === 'text' ? words[c] : Math.min(measured[c] ?? 0, W / cols),
       weight: o.weights?.[c] ?? (o.kinds[c] === 'text' || o.kinds[c] === undefined ? 1 : 0),
     })),
     W,
     measured
-  )
+  ))
   const spec: TableSpec = { ...base, widths }
   const raw = layoutTable(spec, ctx)
   const measure = measureTable(spec, ctx)
@@ -229,7 +263,7 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
     text: ctx.resolveColor('text').color,
     surface: ctx.resolveColor('surface').color,
     line: ctx.resolveColor('line').color,
-    accent: ctx.resolveColor(o.emphasisRole ?? 'accent').color,
+    accent: ctx.resolveColor('accent').color,
   }
   const lineRect = (n: LayoutNode): LayoutNode => ({
     k: 'rect',
@@ -259,7 +293,11 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
       else if (ch.k === 'line') content.push({ ...lineRect(ch), part: rename(ch.part) })
       else if (ch.k === 'group') {
         const isHead = ch.part === 'head'
-        const cells = ch.children.map((n) => ({ ...(isHead && header === 'bold' ? boldHeader(n, c.text) : isHead && headFill ? boldHeader(n, headInk) : footRow && isFooter(ch.part) ? boldHeader(n, c.text) : n), part: rename(n.part) }) as LayoutNode)
+        const cells = ch.children.map((n) => {
+          const winnerHead = isHead && o.emphasisHead === true && emphCol >= 0 && n.part === `head-${emphCol}`
+          const styled = winnerHead ? boldHeader(n, onColor(ctx, c.accent)) : isHead && header === 'bold' ? boldHeader(n, c.text) : isHead && headFill ? boldHeader(n, headInk) : footRow && isFooter(ch.part) ? boldHeader(n, c.text) : n
+          return { ...styled, part: rename(n.part) } as LayoutNode
+        })
         if (isFooter(ch.part)) {
           content.push({ k: 'rect', part: 'footer.rule', box: { x: 0, y: ch.box.y - rowGap / 2 - 0.5, width: W, height: 1 }, fill: { type: 'solid', color: c.line } })
         }
@@ -277,7 +315,12 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
   }
   if (emphCol >= 0) {
     const x = widths.slice(0, emphCol).reduce((a, b) => a + b, 0)
-    backs.push({ k: 'rect', part: 'emphasis.col', box: { x, y: bodyTop > 0 ? bodyTop - rowGap / 2 : 0, width: widths[emphCol] ?? 0, height: Math.max(0, H - (bodyTop > 0 ? bodyTop - rowGap / 2 : 0)) }, fill: { type: 'solid', color: tint } })
+    const name = o.emphasisName ?? 'emphasis'
+    const top = bodyTop > 0 ? bodyTop - rowGap / 2 : 0
+    backs.push({ k: 'rect', part: name === 'emphasis' ? 'emphasis.col' : name, box: { x, y: top, width: widths[emphCol] ?? 0, height: Math.max(0, H - top) }, fill: { type: 'solid', color: tint } })
+    if (o.emphasisHead && measure.headHeight > 0) {
+      backs.push({ k: 'rect', part: `${name === 'emphasis' ? 'emphasis' : name}.head`, box: { x, y: 0, width: widths[emphCol] ?? 0, height: top }, fill: { type: 'solid', color: c.accent } })
+    }
   }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
   return { tree, measure, widths, rowGap }
