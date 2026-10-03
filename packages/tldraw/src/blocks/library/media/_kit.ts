@@ -165,3 +165,15 @@ export function altFindings(items: Array<{ src: unknown; alt: unknown; part?: st
   })
   return out
 }
+
+/**
+ * Width / height of a logo: the explicit `ratio` slot, else the natural size recorded in the
+ * asset table (`ctx.asset`), else `undefined` (unknown). Clamped to 0.2..8.
+ */
+export function logoRatio(ctx: LayoutContext, src: unknown, ratio: unknown): number | undefined {
+  const r = typeof ratio === 'number' ? ratio : typeof ratio === 'string' && ratio.trim() !== '' ? Number(ratio) : NaN
+  if (Number.isFinite(r) && r > 0) return clamp(r, 0.2, 8)
+  const id = str(src).trim()
+  const a = id ? ctx.asset?.(id) : undefined
+  return a && a.width > 0 && a.height > 0 ? clamp(a.width / a.height, 0.2, 8) : undefined
+}

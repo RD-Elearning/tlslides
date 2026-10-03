@@ -84,6 +84,20 @@ describe('deckLayoutContext — asset resolution (B.5 item 15)', () => {
   })
 })
 
+describe('deckLayoutContext — ctx.asset() (natural image size)', () => {
+  it('returns the asset table size, and undefined for unknown or zero-sized assets', () => {
+    const doc = makeDoc()
+    doc.assets = {
+      wide: { id: 'wide', type: TDAssetType.Image, src: '/w.png', size: [400, 100] },
+      empty: { id: 'empty', type: TDAssetType.Image, src: '/e.png', size: [0, 0] },
+    } as TDDocument['assets']
+    const ctx = deckLayoutContext(doc, { x: 0, y: 0, width: 600, height: 400 }, { headless: true })
+    expect(ctx.asset('wide')).toEqual({ width: 400, height: 100 })
+    expect(ctx.asset('empty')).toBeUndefined()
+    expect(ctx.asset('nope')).toBeUndefined()
+  })
+})
+
 describe('deck-context — demo slide 2 gradient reaches the viewer/editor path (B.5 item 7)', () => {
   it('the section block resolves its gradient surface through contextForBlock', () => {
     const deck = JSON.parse(

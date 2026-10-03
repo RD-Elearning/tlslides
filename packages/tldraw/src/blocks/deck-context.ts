@@ -102,6 +102,12 @@ export function deckLayoutContext(
     // dashed fallback frame. G8.2: also accepts an already-absolute URL, per the schema's own
     // documented "asset id or URL" contract — see `resolveAssetUrl` above.
     resolveAsset: (id: string) => resolveAssetUrl(id, doc.assets),
+    // The asset table records each image's natural size; `ctx.asset()` hands it to blocks that
+    // need an aspect ratio (logo, logo-wall), so they never have to guess it.
+    asset: (id: string) => {
+      const size = doc.assets?.[id]?.size
+      return Array.isArray(size) && size[0] > 0 && size[1] > 0 ? { width: size[0], height: size[1] } : undefined
+    },
     // Container blocks (card/section/overlay/…) resolve their `props.children` through this.
     registry: opts.registry,
   })
