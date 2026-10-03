@@ -1627,6 +1627,49 @@ Bridge chart: floating bars for changes, full bars for totals, optional connecto
 }
 \`\`\`
 
+### \`tls.g.chevrons\` — Chevron Process
+
+Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(family: diagram; keywords: chevrons, phases, process, arrows, stages, method)_
+
+**When:** Order: phases of a project or method, with an optional \\"we are here\\".
+**Avoid:** Steps that need descriptions longer than one line (use tls.c.steps). Dated phases go in tls.g.roadmap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, text) (3–7 items) | Phases in order, left to right. |
+| \`currentIndex\` | no | number (min -1, max 20) | 0-based index of the phase to highlight; -1 for none. |
+| \`fill\` | no | enum: gradient \\\\| single \\\\| series | gradient = accent to accent2. |
+| \`textPlacement\` | no | enum: inside \\\\| below | below gives longer notes more room. |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_chevrons\\",
+  \\"type\\": \\"tls.g.chevrons\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Discover\\",
+        \\"text\\": \\"Research the need\\"
+      },
+      {
+        \\"label\\": \\"Design\\",
+        \\"text\\": \\"Shape the concept\\"
+      },
+      {
+        \\"label\\": \\"Build\\",
+        \\"text\\": \\"Make it real\\"
+      },
+      {
+        \\"label\\": \\"Launch\\",
+        \\"text\\": \\"Release and learn\\"
+      }
+    ],
+    \\"currentIndex\\": 1
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -2804,7 +2847,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 75,
+  "blockCount": 76,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2843,6 +2886,7 @@ Object {
     "tls.d.table",
     "tls.d.trend-badge",
     "tls.d.waterfall",
+    "tls.g.chevrons",
     "tls.g.steps",
     "tls.l.card",
     "tls.l.field",

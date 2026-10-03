@@ -127,7 +127,7 @@ export const tlsCSteps: BlockDefinition = {
   category: 'process',
   scope: 'slide',
   shortDescription: 'Full process slide: numbered steps with titles and descriptions',
-  related: ['tls.g.steps'],
+  related: ['tls.g.steps', 'tls.g.chevrons'],
   describe: {
     when:
       'Use to show a process, workflow, or timeline with 2–8 numbered steps that the audience reads in sequence.',
