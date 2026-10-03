@@ -500,6 +500,18 @@ function validateBlockTree(
     }
   }
 
+  if (def && def.scope === 'slide' && depth > 1) {
+    findings.push({
+      level: 'warning',
+      rule: 'block/scope-nested',
+      path,
+      message:
+        `Block "${def.type}" has slide scope (it fills the whole content area) but is nested inside another block. ` +
+        `Place it alone in a slide region, or use a group- or element-scope sibling here.` +
+        (def.related && def.related.length ? ` Related blocks: ${def.related.join(', ')}.` : ''),
+    })
+  }
+
   if (def) {
     validateProps(block.props, def, path, reg, seenBlockIds, findings, ancestorIds, ancestorRefs, depth, tokens)
     validateStyle(block.style, def.type, `${path}.style`, tokens, findings)

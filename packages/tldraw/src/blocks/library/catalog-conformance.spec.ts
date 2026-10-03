@@ -13,10 +13,11 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { BUILT_IN_BLOCKS, registerBuiltInBlocks } from './index'
 import { BlockRegistry } from '../registry'
+import { BLOCK_CATEGORIES, BLOCK_SCOPES } from '../types'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { capabilityDigest } from '../capability-digest'
 import { makeCtx, makeRegistry, collectParts } from './layout/test-helpers'
-import type { LayoutNode, BlockSpec } from '../types'
+import type { LayoutNode, BlockSpec, BlockDefinition } from '../types'
 
 /**
  * Recursively walk a BlockSpec tree and collect all block `type` strings.
@@ -40,8 +41,104 @@ function freshBuiltInRegistry(): BlockRegistry {
   return registry
 }
 
+/** P0.2 — rules for the semantic metadata every built-in block must carry. */
+const SHORT_DESC_DENYLIST = /\b(tier|html|poster|delegat\w*|defineComposite\w*|editorOnly)\b|layout\(|`|\b\d+\s*[–-]\s*\d+\b/i
+
+/** Returns the list of rule violations for one definition's metadata (empty = conforming). */
+export function metadataViolations(def: BlockDefinition, reg: BlockRegistry): string[] {
+  const out: string[] = []
+  if (!def.category || !(BLOCK_CATEGORIES as readonly string[]).includes(def.category)) {
+    out.push(`category "${def.category}" is not in BLOCK_CATEGORIES`)
+  }
+  if (!def.scope || !(BLOCK_SCOPES as readonly string[]).includes(def.scope)) {
+    out.push(`scope "${def.scope}" is not element|group|slide`)
+  }
+  const sd = def.shortDescription
+  if (typeof sd !== 'string') {
+    out.push('shortDescription is missing')
+  } else {
+    if (sd.length < 12 || sd.length > 90) out.push(`shortDescription length ${sd.length} not in 12..90`)
+    if (sd.endsWith('.')) out.push('shortDescription ends with a period')
+    if (SHORT_DESC_DENYLIST.test(sd)) out.push(`shortDescription matches the denylist: "${sd}"`)
+  }
+  for (const rel of def.related ?? []) {
+    if (rel === def.type) out.push(`related lists the block itself`)
+    else if (!reg.has(rel)) out.push(`related "${rel}" does not resolve in the registry`)
+  }
+  return out
+}
+
+/** Collect {type, depth} for every block in a deck fixture, walking both child channels. */
+function collectNested(deck: any): Array<{ type: string; depth: number }> {
+  const out: Array<{ type: string; depth: number }> = []
+  const visit = (b: any, depth: number) => {
+    if (!b || typeof b !== 'object') return
+    out.push({ type: b.type, depth })
+    for (const c of Array.isArray(b.children) ? b.children : []) visit(c, depth + 1)
+    for (const c of Array.isArray(b.props?.children) ? b.props.children : []) visit(c, depth + 1)
+  }
+  for (const slide of deck.slides ?? []) {
+    for (const b of slide.blocks ?? []) visit(b, 0)
+    for (const list of Object.values(slide.regions ?? {})) for (const b of list as any[]) visit(b, 0)
+    for (const f of slide.free ?? []) visit(f?.block, 0)
+  }
+  return out
+}
+
 describe('block catalog conformance', () => {
   const registry = freshBuiltInRegistry()
+
+  describe('P0.2 metadata gates', () => {
+    for (const def of BUILT_IN_BLOCKS) {
+      it(`"${def.type}" has conforming category/scope/shortDescription/related`, () => {
+        expect(metadataViolations(def, registry)).toEqual([])
+      })
+    }
+
+    it('metadataViolations rejects deliberately bad metadata (the gate itself works)', () => {
+      const base = BUILT_IN_BLOCKS[0]
+      const bad = (patch: Partial<BlockDefinition>) => metadataViolations({ ...base, ...patch } as BlockDefinition, registry)
+      expect(bad({ category: 'nonsense' as any })).not.toEqual([])
+      expect(bad({ scope: 'huge' as any })).not.toEqual([])
+      expect(bad({ shortDescription: undefined })).not.toEqual([])
+      expect(bad({ shortDescription: 'Too short' })).not.toEqual([])
+      expect(bad({ shortDescription: 'A block that is rendered as Tier B html with a poster.' })).not.toEqual([])
+      expect(bad({ shortDescription: 'Shows between 3-8 items in a tidy row.' })).not.toEqual([])
+      expect(bad({ shortDescription: 'Ends with a period, which is not allowed.' })).not.toEqual([])
+      expect(bad({ shortDescription: 'x'.repeat(91) })).not.toEqual([])
+      expect(bad({ related: ['tls.nope.missing'] })).not.toEqual([])
+      expect(bad({ related: [base.type] })).not.toEqual([])
+    })
+
+    it('no two blocks share an identical shortDescription', () => {
+      const seen = new Map<string, string>()
+      for (const def of BUILT_IN_BLOCKS) {
+        const sd = def.shortDescription ?? ''
+        expect(seen.get(sd)).toBeUndefined()
+        seen.set(sd, def.type)
+      }
+    })
+
+    it('every category with at least one block appears in listByCategory()', () => {
+      const grouped = registry.listByCategory()
+      for (const cat of new Set(BUILT_IN_BLOCKS.map((b) => b.category))) {
+        expect(grouped.get(cat!)?.length).toBeGreaterThan(0)
+      }
+      const total = Array.from(grouped.values()).reduce((n, l) => n + l.length, 0)
+      expect(total).toBe(BUILT_IN_BLOCKS.length)
+    })
+
+    it('no slide-scope block is nested inside another block in any fixture deck', () => {
+      const fixtures = ['demo-deck.json', 'colorful-blocks-demo.json'].map((f) =>
+        JSON.parse(fs.readFileSync(path.resolve(__dirname, '../__fixtures__', f), 'utf-8'))
+      )
+      for (const deck of fixtures) {
+        for (const { type, depth } of collectNested(deck)) {
+          if (depth > 0) expect([type, registry.get(type)?.scope]).not.toEqual([type, 'slide'])
+        }
+      }
+    })
+  })
 
   describe('BUILT_IN_BLOCKS', () => {
     it('has the expected hardened count', () => {

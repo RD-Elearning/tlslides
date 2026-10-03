@@ -566,3 +566,56 @@ describe('validateDeckSpec — style contrast baseline (B.5 item 4)', () => {
     expect(hits[0].path).toBe('slides[0].regions.content[0].style.surface')
   })
 })
+
+describe('validateDeckSpec — block/scope-nested warning (P0.2)', () => {
+  function registryWithSlideBlock(): BlockRegistry {
+    const reg = new BlockRegistry()
+    for (const def of defaultBlockRegistry().list()) reg.register(def)
+    reg.register({
+      type: 'zzz.slide-probe',
+      name: 'Slide probe',
+      family: 'composite',
+      tier: 'A',
+      summary: 'probe',
+      keywords: [],
+      category: 'cover',
+      scope: 'slide',
+      related: ['tls.c.hero'],
+      schema: {},
+      defaults: {},
+      size: { preferred: [400, 300], min: [200, 150] },
+      layout: () => ({ k: 'group', box: { x: 0, y: 0, width: 400, height: 300 }, children: [] }),
+      motion: { parts: [] },
+    })
+    return reg
+  }
+
+  function deckWith(blocks: unknown[]): DeckSpec {
+    const deck = clone(validDeck())
+    deck.slides[0].regions.left = blocks as BlockSpec[]
+    return deck
+  }
+
+  it('does not warn when a slide-scope block sits directly in a region', () => {
+    const deck = deckWith([{ id: 'p1', type: 'zzz.slide-probe', props: {} }])
+    expect(byRule(findingsOf(deck, registryWithSlideBlock()), 'block/scope-nested')).toHaveLength(0)
+  })
+
+  it('warns (not errors) when a slide-scope block is nested via props.children', () => {
+    const deck = deckWith([
+      { id: 's1', type: 'tls.l.stack', props: { children: [{ id: 'p1', type: 'zzz.slide-probe', props: {} }] } },
+    ])
+    const hits = byRule(findingsOf(deck, registryWithSlideBlock()), 'block/scope-nested')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].level).toBe('warning')
+    expect(hits[0].path).toBe('slides[0].regions.left[0].props.children[0]')
+    expect(hits[0].message).toContain('tls.c.hero')
+  })
+
+  it('warns when nested via BlockSpec.children', () => {
+    const deck = deckWith([
+      { id: 's1', type: 'tls.l.stack', props: {}, children: [{ id: 'p1', type: 'zzz.slide-probe', props: {} }] },
+    ])
+    expect(byRule(findingsOf(deck, registryWithSlideBlock()), 'block/scope-nested')).toHaveLength(1)
+  })
+})
