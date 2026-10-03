@@ -37,9 +37,19 @@ export function htmlHostNode(
 ): LayoutNode {
   const posterNode = posterFn(props, ctx)
 
+  // The outer box height must be the poster's *intrinsic* content height, not the
+  // region box height it was given. Each poster's own doc comment says it "must be
+  // honest about height: compileSlide stacks regions by measured height" (see e.g.
+  // tls-c-hero/poster.ts) — but that only holds if the height actually reaches
+  // compileSlide's measurement pass (slide-compiler.ts calls `layoutBlock` → here).
+  // Echoing back `ctx.box.height` made every Tier B block report exactly the height
+  // it was handed, so a region sized for a single-line title (e.g. the "title"
+  // region of the `title` slide layout) never grows to fit a taller composite like
+  // `tls.c.hero` (kicker + title + subtitle stacked) — the extra content overflows
+  // the shape's fixed box and gets clipped instead of the region re-flowing.
   const node: LayoutNode = {
     k: 'host',
-    box: { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height },
+    box: { x: 0, y: 0, width: ctx.box.width, height: posterNode.box.height },
     part: 'root',
     render: type,
     poster: posterNode,

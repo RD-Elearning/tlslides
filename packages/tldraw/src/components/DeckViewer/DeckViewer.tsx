@@ -349,7 +349,17 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     [isStepControlled, onBuildStepChange]
   )
 
+  // Which way the last navigation moved. The auto-advance chain effect below re-checks
+  // `steps[currentBuildStep]` every time `currentBuildStep` changes, so it can't otherwise
+  // tell "we just revealed the previous step, chain forward" from "the visitor pressed
+  // back into a step that happens to be `auto`" — both land on the same index. Only the
+  // forward case should re-fire the chain; retreating into an auto step must stick there,
+  // or "back" instantly snaps forward again and looks like it does nothing. Defaults to
+  // 'forward' so the existing reveal-on-mount behavior for an auto first step is unchanged.
+  const navDirectionRef = React.useRef<'forward' | 'backward'>('forward')
+
   const advance = React.useCallback(() => {
+    navDirectionRef.current = 'forward'
     if (currentBuildStep < steps.length) {
       setStep(currentBuildStep + 1)
       return
@@ -359,6 +369,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   }, [currentBuildStep, steps.length, pages, currentSlideIndex, setStep, setSlide])
 
   const retreat = React.useCallback(() => {
+    navDirectionRef.current = 'backward'
     if (currentBuildStep > 0) {
       setStep(currentBuildStep - 1)
       return
@@ -371,9 +382,13 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     }
   }, [currentBuildStep, pages, currentSlideIndex, setStep, setSlide])
 
-  const goHome = React.useCallback(() => setSlide(firstPresentableIndex(pages), 0), [pages, setSlide])
+  const goHome = React.useCallback(() => {
+    navDirectionRef.current = 'forward'
+    setSlide(firstPresentableIndex(pages), 0)
+  }, [pages, setSlide])
 
   const goEnd = React.useCallback(() => {
+    navDirectionRef.current = 'forward'
     const last = lastPresentableIndex(pages)
     const lastPage = pages[last]
     const lastSteps = lastPage ? computeBuildSteps(lastPage) : []
@@ -574,6 +589,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   React.useEffect(() => {
     if (!page) return
+    if (navDirectionRef.current === 'backward') return
     const nextIndex = currentBuildStep
     const nextStep = steps[nextIndex]
     if (!nextStep || !nextStep.auto) return

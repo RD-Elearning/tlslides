@@ -12,7 +12,7 @@
 import * as React from 'react'
 import * as fs from 'fs'
 import * as path from 'path'
-import { render, fireEvent, cleanup } from '@testing-library/react'
+import { render, fireEvent, cleanup, act } from '@testing-library/react'
 import { DeckViewer } from './DeckViewer'
 import type { DeckSpec, BlockSpec } from '~blocks/types'
 import type { MotionDriver, MotionHandle, MotionKeyframes, MotionOptions, MotionState } from '~blocks/motion/driver'
@@ -389,5 +389,62 @@ describe('DeckViewer navigation', () => {
     expect(container.textContent).toContain('Slide Two')
     fireEvent.keyDown(viewer, { key: 'Home' })
     expect(container.textContent).toContain('Slide Zero')
+  })
+
+  // Regression: retreating into a build step that reveals itself automatically (any
+  // trigger other than 'onClick') used to immediately snap forward again, because the
+  // auto-advance-chain effect re-checked `steps[currentBuildStep]` on every change with
+  // no way to tell "just retreated here" from "just arrived here by advancing" — both
+  // land on the same index. From the visitor's side, "back" did nothing.
+  it('retreating into an auto build step stays there instead of auto-chaining forward again', () => {
+    mockMatchMedia(true) // reducedMotion: true → chain delay is 0ms, so a stray re-fire is instant
+    const spec: DeckSpec = {
+      version: 1,
+      id: 'retreat-into-auto-step-test',
+      title: 'Retreat into auto step test',
+      theme: 'mono-grid',
+      aspect: 'widescreen',
+      slides: [
+        {
+          id: 's0',
+          layout: 'blank',
+          regions: {
+            content: [
+              // First cue always starts its own auto step, regardless of trigger.
+              titleBlock('b0', 'Part One', { order: 1 }),
+              // Explicit 'onClick': a manual step the visitor must advance past.
+              titleBlock('b1', 'Part Two', { order: 2, trigger: 'onClick' }),
+              // 'afterPrevious': chains forward on its own once step 1 is revealed.
+              titleBlock('b2', 'Part Three', { order: 3, trigger: 'afterPrevious' }),
+            ],
+          },
+        },
+      ],
+    }
+
+    jest.useFakeTimers()
+    try {
+      const { container } = render(<DeckViewer spec={spec} driver={NOOP_DRIVER} />)
+      const viewer = container.querySelector('[data-testid="deck-viewer"]') as HTMLElement
+
+      // Mount: step 0 (b0) auto-reveals immediately; step 1 (b1) is manual, so it stops there.
+      act(() => { jest.runOnlyPendingTimers() })
+      expect(viewer.dataset.buildStep).toBe('1')
+
+      // Advance past the manual step: reveals b1, then auto-chains straight through the
+      // 'afterPrevious' step to reveal b2 too (fully built: step === count).
+      fireEvent.keyDown(viewer, { key: 'ArrowRight' })
+      act(() => { jest.runOnlyPendingTimers() })
+      expect(viewer.dataset.buildStep).toBe(viewer.dataset.buildStepCount)
+
+      // Retreat once: should land back on step 2 (b2's step un-revealed again) — and STAY
+      // there. Running any pending timers must not snap it forward again.
+      fireEvent.keyDown(viewer, { key: 'ArrowLeft' })
+      act(() => { jest.runOnlyPendingTimers() })
+      expect(viewer.dataset.buildStep).toBe('2')
+      expect(viewer.dataset.buildStep).not.toBe(viewer.dataset.buildStepCount)
+    } finally {
+      jest.useRealTimers()
+    }
   })
 })
