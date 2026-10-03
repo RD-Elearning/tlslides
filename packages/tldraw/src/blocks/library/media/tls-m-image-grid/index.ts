@@ -17,7 +17,7 @@ export const tlsMImageGrid: BlockDefinition = {
   category: 'media',
   scope: 'group',
   shortDescription: 'Grid of images in even cells or a feature pattern, with captions',
-  related: ['tls.m.image', 'tls.c.image-text'],
+  related: ['tls.m.image', 'tls.c.image-text', 'tls.m.logo-wall'],
   describe: {
     when: 'Several photos of equal importance: portfolio, event photos, product shots, a gallery.',
     avoid: 'One image plus text (use tls.c.image-text); one image (use tls.m.image).',

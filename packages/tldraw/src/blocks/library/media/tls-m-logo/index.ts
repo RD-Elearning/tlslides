@@ -17,7 +17,7 @@ export const tlsMLogo: BlockDefinition = {
   category: 'brand',
   scope: 'element',
   shortDescription: 'Single logo fitted inside a fixed height, never cropped',
-  related: ['tls.m.image'],
+  related: ['tls.m.logo-wall', 'tls.m.image'],
   describe: {
     when: 'One brand mark: partner, client, sponsor, the presenter organisation.',
     avoid: 'Several logos (use tls.m.logo-wall); a photo (use tls.m.image).',

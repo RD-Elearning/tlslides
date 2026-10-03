@@ -3113,6 +3113,51 @@ One logo fitted inside a fixed height, never cropped, with an optional plate. _(
 }
 \`\`\`
 
+### \`tls.m.logo-wall\` — Logo Wall
+
+Even grid of logos at equal height or equal area, with an optional heading, plates and dividers. _(family: media; keywords: logos, clients, partners, sponsors, trusted by, integrations)_
+
+**When:** Clients, partners, sponsors, integrations, accreditations.
+**Avoid:** Fewer than 3 logos (use tls.m.logo); photos (use tls.m.image-grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`heading\` | no | text (max 60 chars) | e.g. \\"Trusted by\\". |
+| \`logos\` | yes | list of object (image, alt, ratio) (3–16 items) | 3-16 items {image, alt (brand name), ratio? (width / height, for equal weight)}. |
+| \`cols\` | no | enum: auto \\\\| 3 \\\\| 4 \\\\| 5 \\\\| 6 |  |
+| \`uniform\` | no | enum: height \\\\| area | height = same height; area = same visual area (needs ratio). |
+| \`plates\` | no | boolean |  |
+| \`dividers\` | no | boolean |  |
+| \`showHeading\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_logo_wall\\",
+  \\"type\\": \\"tls.m.logo-wall\\",
+  \\"props\\": {
+    \\"heading\\": \\"Trusted by\\",
+    \\"logos\\": [
+      {
+        \\"image\\": \\"asset-a\\",
+        \\"alt\\": \\"Northwind\\",
+        \\"ratio\\": 4
+      },
+      {
+        \\"image\\": \\"asset-b\\",
+        \\"alt\\": \\"Globex\\",
+        \\"ratio\\": 1
+      },
+      {
+        \\"image\\": \\"asset-c\\",
+        \\"alt\\": \\"Initech\\",
+        \\"ratio\\": 3
+      }
+    ],
+    \\"uniform\\": \\"area\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.body\` — Body
 
 Paragraph body text with RichText, autofit, and multi-column. _(family: text; keywords: body, paragraph, text, prose, copy, description)_
@@ -3798,7 +3843,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 100,
+  "blockCount": 101,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3881,6 +3926,7 @@ Object {
     "tls.m.image",
     "tls.m.image-grid",
     "tls.m.logo",
+    "tls.m.logo-wall",
     "tls.t.body",
     "tls.t.bullets",
     "tls.t.callout",
