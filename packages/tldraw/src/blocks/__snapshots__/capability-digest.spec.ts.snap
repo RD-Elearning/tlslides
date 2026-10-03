@@ -676,6 +676,42 @@ Ring filled to value / max with the figure in the centre, plus label and caption
 }
 \`\`\`
 
+### \`tls.d.stat-compare\` — Stat Compare
+
+Two labelled numbers with a connector and a coloured change pill (percent or absolute). _(family: data; keywords: compare, before, after, versus, change, delta, year)_
+
+**When:** Before vs after, last year vs this year, us vs benchmark.
+**Avoid:** More than two values (use tls.c.kpi-row or tls.d.bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`left\` | yes | object (label, value) |  |
+| \`right\` | yes | object (label, value) |  |
+| \`caption\` | no | text (max 100 chars) | One line of context. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`delta\` | no | enum: percent \\\\| absolute \\\\| none |  |
+| \`polarity\` | no | enum: upGood \\\\| downGood \\\\| neutral | Which direction is good; neutral = no colour. |
+| \`connector\` | no | enum: arrow \\\\| vs \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stat_compare\\",
+  \\"type\\": \\"tls.d.stat-compare\\",
+  \\"props\\": {
+    \\"left\\": {
+      \\"label\\": \\"2024\\",
+      \\"value\\": 4200
+    },
+    \\"right\\": {
+      \\"label\\": \\"2025\\",
+      \\"value\\": 5460
+    },
+    \\"format\\": \\"compact\\",
+    \\"caption\\": \\"Annual revenue\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -1853,7 +1889,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 53,
+  "blockCount": 54,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1870,6 +1906,7 @@ Object {
     "tls.d.donut",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
+    "tls.d.stat-compare",
     "tls.g.steps",
     "tls.l.card",
     "tls.l.field",
