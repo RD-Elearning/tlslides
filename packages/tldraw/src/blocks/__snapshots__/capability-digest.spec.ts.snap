@@ -230,7 +230,7 @@ Side-by-side columns, each with a title and a list of items, to contrast options
 Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(family: composite; keywords: cover, title slide, opening, first slide, intro, lecture title, photo)_
 
 **When:** First slide of a deck or talk.
-**Avoid:** A text-only opener with a button: use tls.c.hero.
+**Avoid:** Text-only opener with a button: tls.c.hero. Mid-deck sections: tls.c.divider.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -261,6 +261,36 @@ Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(fa
     \\"image\\": \\"/demo/photo-1.svg\\",
     \\"logo\\": \\"/demo/logo-1.svg\\",
     \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.divider\` — Section Divider
+
+Section break: big section number, title and one-line intro. _(family: composite; keywords: divider, section, chapter, part, break, agenda item, transition slide)_
+
+**When:** Between major parts of a deck or chapters of a lecture.
+**Avoid:** The first slide: use tls.c.cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | no | text (max 8 chars) | \\"01\\", \\"II\\" or \\"Part 2\\". |
+| \`title\` | yes | text (max 60 chars) |  |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`variant\` | no | enum: numeral \\\\| field \\\\| minimal | field = accent background; minimal = no number. |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`showNumber\` | no | boolean |  |
+| \`showSubtitle\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_divider\\",
+  \\"type\\": \\"tls.c.divider\\",
+  \\"props\\": {
+    \\"number\\": \\"02\\",
+    \\"title\\": \\"Describing data\\",
+    \\"subtitle\\": \\"Centre, spread and shape\\",
+    \\"variant\\": \\"numeral\\"
   }
 }
 \`\`\`
@@ -4043,12 +4073,13 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 107,
+  "blockCount": 108,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
     "tls.c.comparison",
     "tls.c.cover",
+    "tls.c.divider",
     "tls.c.feature-grid",
     "tls.c.hero",
     "tls.c.image-text",

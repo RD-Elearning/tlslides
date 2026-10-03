@@ -202,13 +202,13 @@ const composite = defineCompositeBlock<CoverProps>({
   category: 'cover',
   scope: 'slide',
   shortDescription: 'Title slide with kicker, title, subtitle and meta line, centred, split or over a photo',
-  related: ['tls.c.hero'],
+  related: ['tls.c.hero', 'tls.c.divider'],
   schema,
   defaults,
   size: { preferred: [1600, 800], min: [640, 360] },
   describe: {
     when: 'First slide of a deck or talk.',
-    avoid: 'A text-only opener with a button: use tls.c.hero.',
+    avoid: 'Text-only opener with a button: tls.c.hero. Mid-deck sections: tls.c.divider.',
     example: {
       id: 'b_cover',
       type: 'tls.c.cover',
