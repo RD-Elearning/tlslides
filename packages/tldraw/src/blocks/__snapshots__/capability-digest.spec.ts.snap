@@ -431,6 +431,39 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 }
 \`\`\`
 
+### \`tls.c.profile-card\` — Profile Card
+
+Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
+
+**When:** Introducing one person in detail: speaker bio, lecturer, team lead.
+**Avoid:** A row of people (use tls.m.avatar-group or a grid of tls.m.avatar); only a name and role (use tls.m.avatar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | no | image | Asset id or URL; initials when empty. |
+| \`name\` | yes | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) | Title and organisation, 1-8 words. |
+| \`bio\` | no | text (max 200 chars) | 1-2 sentences. |
+| \`contact\` | no | text (max 60 chars) | Email, handle or site. |
+| \`layout\` | no | enum: stacked \\\\| side | stacked = portrait above; side = portrait left. |
+| \`tone\` | no | enum: alt \\\\| surface | alt = filled card; surface = open. |
+| \`showBio\` | no | boolean |  |
+| \`showContact\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_profile_card\\",
+  \\"type\\": \\"tls.c.profile-card\\",
+  \\"props\\": {
+    \\"image\\": \\"asset-lan\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"bio\\": \\"Leads the applied analytics group.\\",
+    \\"contact\\": \\"lan.tran@example.edu\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.stat-card\` — Stat Card
 
 KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
@@ -3735,7 +3768,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 98,
+  "blockCount": 99,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3745,6 +3778,7 @@ Object {
     "tls.c.image-text",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
+    "tls.c.profile-card",
     "tls.c.stat-card",
     "tls.c.steps",
     "tls.c.testimonial",

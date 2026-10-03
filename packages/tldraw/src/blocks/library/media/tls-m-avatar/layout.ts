@@ -33,6 +33,7 @@ export function layout(props: AvatarProps, ctx: LayoutContext): LayoutNode {
   const gap = ctx.tokens.space[size === 'sm' ? 'xs' : 'sm']
   const want = AVATAR_PX[size]
   const out: LayoutNode[] = []
+  let contentH = 0
   const photo = (x: number, y: number, s: number) =>
     avatarLeaves(ctx, { name, src: props.image, x, y, size: s, shape, part: 'photo', ring: props.ring === true })
 
@@ -42,22 +43,30 @@ export function layout(props: AvatarProps, ctx: LayoutContext): LayoutNode {
     const textH = nameH + roleH + (nameH && roleH ? 4 : 0)
     const s = Math.max(1, Math.min(want, W, H - (textH ? textH + gap : 0)))
     out.push(...photo((W - s) / 2, 0, s))
+    contentH = s
     let y = s + gap
     if (showName) {
       const p = placeLines(ctx, name, nameS, { x: 0, y, width: W }, 'center', 1, 'name')
       out.push(...p.nodes)
       y += p.height + 4
+      contentH = y - 4
     }
-    if (showRole) out.push(...placeLines(ctx, role, roleS, { x: 0, y, width: W }, 'center', 1, 'role').nodes)
+    if (showRole) {
+      const p = placeLines(ctx, role, roleS, { x: 0, y, width: W }, 'center', 1, 'role')
+      out.push(...p.nodes)
+      contentH = y + p.height
+    }
+    if (!showName && !showRole) contentH = s
   } else {
     const s = Math.max(1, Math.min(want, H, W * 0.5))
-    out.push(...photo(0, (H - s) / 2 > 0 && !(showName || showRole) ? (H - s) / 2 : Math.max(0, (H - s) / 2), s))
     const x = s + ctx.tokens.space.md
     const tw = Math.max(1, W - x)
     const nameH = showName ? linesHeight(ctx, name, nameS, tw, 1) : 0
     const roleH = showRole ? linesHeight(ctx, role, roleS, tw, 1) : 0
     const total = nameH + roleH + (nameH && roleH ? 4 : 0)
-    let y = Math.max(0, (H - total) / 2)
+    contentH = Math.max(s, total)
+    out.push(...photo(0, (contentH - s) / 2, s))
+    let y = (contentH - total) / 2
     if (showName) {
       const p = placeLines(ctx, name, nameS, { x, y, width: tw }, 'start', 1, 'name')
       out.push(...p.nodes)
@@ -65,5 +74,6 @@ export function layout(props: AvatarProps, ctx: LayoutContext): LayoutNode {
     }
     if (showRole) out.push(...placeLines(ctx, role, roleS, { x, y, width: tw }, 'start', 1, 'role').nodes)
   }
-  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: out }
+  // The root is as tall as its content (never taller than the box), so stacks and cards can size it.
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: Math.min(H, contentH) }, children: out }
 }
