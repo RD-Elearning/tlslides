@@ -191,6 +191,18 @@ export function textNode(
   return { k: 'text', part, box: { x: box.x, y: box.y, width: Math.max(1, box.width), height: m.height }, lines: m.lines, style: s }
 }
 
+/** One start-anchored line, ellipsised when it does not fit `box.width`; the box is one line tall. */
+export function oneLine(
+  ctx: LayoutContext,
+  text: string,
+  s: ResolvedTextStyle,
+  box: { x: number; y: number; width: number },
+  part: string
+): LayoutNode {
+  const m = ctx.measureText(text, s, Math.max(1, box.width))
+  return { k: 'text', part, box: { x: box.x, y: box.y, width: Math.max(1, box.width), height: lineH(s) }, lines: clipLines(m.lines, 1), style: s }
+}
+
 /** Placed text with start / center / end alignment inside `box`. */
 export function textAligned(
   ctx: LayoutContext,
@@ -360,7 +372,8 @@ export function valueAxisLeft(
   const lh = lineH(s)
   axis.ticks.forEach((t, i) => {
     const ty = y(t)
-    const isBase = i === 0 || Math.abs(t) < 1e-9
+    const zeroInRange = axis.min < -1e-9 && axis.max > 1e-9
+    const isBase = zeroInRange ? Math.abs(t) < 1e-9 : i === 0
     if (o.gridlines || isBase) {
       nodes.push(solidRect({ x: plot.x, y: ty - (isBase ? AXIS_W : GRID_W) / 2, width: plot.width, height: isBase ? AXIS_W : GRID_W }, isBase ? o.c.line : o.c.grid, `grid[${i}]`))
     }

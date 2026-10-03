@@ -908,6 +908,41 @@ Ring filled to value / max with the figure in the centre, plus label and caption
 }
 \`\`\`
 
+### \`tls.d.sparkline\` — Sparkline
+
+Axis-free trend line with optional label, area tint, end dot and last value or change. _(family: data; keywords: sparkline, trend, mini chart, inline, tile)_
+
+**When:** A trend hint next to a number, in tables or tiles.
+**Avoid:** A chart someone must read values from (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`values\` | yes | list of number (3–60 items) | Ordered values, oldest first. |
+| \`label\` | no | text (max 30 chars) |  |
+| \`fill\` | no | boolean | Tint the area under the line. |
+| \`endDot\` | no | boolean |  |
+| \`showLast\` | no | enum: none \\\\| value \\\\| delta | delta = last minus first. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spark\\",
+  \\"type\\": \\"tls.d.sparkline\\",
+  \\"props\\": {
+    \\"values\\": [
+      4,
+      6,
+      5,
+      8,
+      9,
+      12
+    ],
+    \\"label\\": \\"Signups\\",
+    \\"showLast\\": \\"delta\\"
+  }
+}
+\`\`\`
+
 ### \`tls.d.stacked-bar\` — Stacked Bar Chart
 
 Stacked columns or bars; optional 100% scaling, totals and segment labels. _(family: data; keywords: stacked, composition, total, share, bar, column, chart)_
@@ -2171,7 +2206,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 60,
+  "blockCount": 61,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2193,6 +2228,7 @@ Object {
     "tls.d.pie",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
+    "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
     "tls.g.steps",
