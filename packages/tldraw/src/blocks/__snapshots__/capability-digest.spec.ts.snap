@@ -1033,6 +1033,45 @@ Points on nice x and y axes; group colours, quadrant lines, trend line, point la
 }
 \`\`\`
 
+### \`tls.d.slope\` — Slope Chart
+
+Slope chart: one line per item between a start and an end column, with values and names. _(family: data; keywords: slope, before after, rank change, two points, rise, fall)_
+
+**When:** Change between exactly two points for several items.
+**Avoid:** Many time points (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`startLabel\` | yes | text (max 20 chars) | Left column, e.g. 2023. |
+| \`endLabel\` | yes | text (max 20 chars) | Right column, e.g. 2025. |
+| \`items\` | yes | list of object (name, start, end) (2–10 items) |  |
+| \`highlight\` | no | enum: none \\\\| risers \\\\| fallers | Others are dimmed. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_slope\\",
+  \\"type\\": \\"tls.d.slope\\",
+  \\"props\\": {
+    \\"startLabel\\": \\"2023\\",
+    \\"endLabel\\": \\"2025\\",
+    \\"items\\": [
+      {
+        \\"name\\": \\"North\\",
+        \\"start\\": 40,
+        \\"end\\": 58
+      },
+      {
+        \\"name\\": \\"South\\",
+        \\"start\\": 55,
+        \\"end\\": 47
+      }
+    ],
+    \\"highlight\\": \\"risers\\"
+  }
+}
+\`\`\`
+
 ### \`tls.d.sparkline\` — Sparkline
 
 Axis-free trend line with optional label, area tint, end dot and last value or change. _(family: data; keywords: sparkline, trend, mini chart, inline, tile)_
@@ -2404,7 +2443,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 66,
+  "blockCount": 67,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2429,6 +2468,7 @@ Object {
     "tls.d.progress-ring",
     "tls.d.radar",
     "tls.d.scatter",
+    "tls.d.slope",
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",

@@ -17,7 +17,7 @@ export const tlsDLine: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Lines over ordered categories, one per series, labelled at the line ends',
-  related: ['tls.d.bar', 'tls.d.area'],
+  related: ['tls.d.bar', 'tls.d.area', 'tls.d.slope'],
   describe: {
     when: 'Change over time, trends, comparing trajectories.',
     avoid: 'Unordered categories (use tls.d.bar); only two time points (use tls.d.slope).',
