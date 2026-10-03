@@ -21,31 +21,31 @@ overlap; 6 series use 6 distinct hues; highlightIndex dims the others via `highl
 
 | # | Block | Category | Priority | Status | Commit | Blocked / notes |
 |---|---|---|---|---|---|---|
-| 1 | `tls.d.progress-bar` | metric | must | ⬜ | | |
-| 2 | `tls.d.progress-ring` | metric | must | ⬜ | | |
-| 3 | `tls.d.stat-compare` | metric | must | ⬜ | | |
-| 4 | `tls.d.line` | chart | must | ⬜ | | |
-| 5 | `tls.d.area` | chart | must | ⬜ | | |
-| 6 | `tls.d.grouped-bar` | chart | must | ⬜ | | |
-| 7 | `tls.d.stacked-bar` | chart | must | ⬜ | | |
-| 8 | `tls.d.pie` | chart | must | ⬜ | | |
+| 1 | `tls.d.progress-bar` | metric | must | ✅ | 04a3c49a | Parts are `row[i].label/track/fill/value`. `showValue: value` prints the number, `percent` the share of target (unclamped: 120% reads 120%). Fill clamps to the track. |
+| 2 | `tls.d.progress-ring` | metric | must | ✅ | 04a3c49a, 76f0ac64 | Round caps = arc shortened by half a stroke plus a dot at each end (`arc.start`/`arc.end`); >100% closes the ring and adds a `warning` dot (`overflow`). Motion `grow-segments`. A full ring is drawn as two half arcs: one near-360 arc renders as a blob (see session log). |
+| 3 | `tls.d.stat-compare` | metric | must | ✅ | e475a81b | Values share one auto-fitted size. Delta pill is hidden for a percent change from a zero base. Count-up targets the two value parts. |
+| 4 | `tls.d.line` | chart | must | ✅ | afe37101 | Shared `_chart/line-family`. `axisTitleX/Y` not built (no rotated text in the layout vocabulary; x title would cost digest chars). `valueLabels` is read by the layout (`end` appends the last value to the end label) but not declared in the schema, to stay under the digest budget. `baseline: auto` crops the axis unless the data is near zero. |
+| 5 | `tls.d.area` | chart | must | ✅ | afe37101 | Same engine as line. Overlap fills sit in a half-transparent group (Paint has no alpha). Negatives clamp to 0 in stacked/percent. No end labels: legend only. `axisTitleX/Y` not built. |
+| 6 | `tls.d.grouped-bar` | chart | must | ✅ | cfae9202 | Shared `_chart/bar-family` (both orientations). `highlightIndex` keeps one category in colour and dims the rest with a 40% tint of each series colour (not `highlightColor`, which would erase the series hues). Value labels are all-or-nothing, dropped when any would not fit. Category labels are clipped (ellipsis), never thinned. |
+| 7 | `tls.d.stacked-bar` | chart | must | ✅ | cfae9202 | `normalize` = 100% (negatives count as 0), `totals` above each bar. `valueLabels` offers `inside` only (segments labelled one by one when big enough). |
+| 8 | `tls.d.pie` | chart | must | ✅ | 76b3ec57 | Outside labels with leaders, nudged apart per side; `inside` falls back to outside per slice; a box too small for outside labels falls back to the legend. >6 slices fold into a neutral "Other" and a lint warning. `highlightIndex` uses `highlightColor` (accent + neutral), index refers to the author order even after sorting. |
 | 9 | `tls.d.table` | table | must | ⬜ | | |
 | 10 | `tls.d.compare-table` | comparison | must | ⬜ | | |
 | 11 | `tls.d.pricing` | comparison | must | ⬜ | | |
 | 12 | `tls.d.scorecard` | table | must | ⬜ | | |
-| 13 | `tls.d.gauge` | metric | should | ⬜ | | |
-| 14 | `tls.d.sparkline` | chart | should | ⬜ | | |
-| 15 | `tls.d.waterfall` | chart | should | ⬜ | | |
-| 16 | `tls.d.funnel-chart` | chart | should | ⬜ | | |
-| 17 | `tls.d.scatter` | chart | should | ⬜ | | |
-| 18 | `tls.d.radar` | chart | should | ⬜ | | |
+| 13 | `tls.d.gauge` | metric | should | ✅ | 55545cb3 | Bands are annular sectors from `ringArcPath`. Needle is a triangle path + hub dot; `marker` is a ringed dot on the band. Tick labels sit outside the arc at the scale ends and band boundaries; `showTicks` toggles part `tick`. |
+| 14 | `tls.d.sparkline` | chart | should | ✅ | c91189ed | `showLast: delta` = last minus first (positive/negative role). Gaps in the data split the line. Needs a real region size: stretched to a 560x400 cell it looks sparse (put several in a `tls.l.stack`). |
+| 15 | `tls.d.waterfall` | chart | should | ✅ | e62149ee | A total with no number takes the running total. Labels above every bar (a decrease label above its top as well). Category labels clipped, never thinned. |
+| 16 | `tls.d.funnel-chart` | chart | should | ✅ | 51e86445 | `funnel` = centred trapezoids meeting edge to edge, `bars` = left-aligned bars. Value inside the shape when it fits, else just outside. Drop-off column on the right. |
+| 17 | `tls.d.scatter` | chart | should | ✅ | c393c518 | `highlightIndex` also drives `labelPoints: highlighted`. A label that would collide is skipped, never stacked. No axis titles. |
+| 18 | `tls.d.radar` | chart | should | ✅ | 7a964197 | Ring values are printed along axis 0 (outermost only when rings are too close). Values clamp to [0, max]. Shapes in a half-transparent group. |
 | 19 | `tls.d.ranking` | table | should | ⬜ | | |
 | 20 | `tls.d.heatmap` | chart | should | ⬜ | | |
-| 21 | `tls.d.trend-badge` | metric | could | ⬜ | | |
-| 22 | `tls.d.slope` | chart | could | ⬜ | | |
-| 23 | `tls.d.bubble` | chart | could | ⬜ | | |
-| 24 | `tls.d.bullet-chart` | metric | could | ⬜ | | |
-| — | Phase demo slides (metrics, charts, tables) + screenshots | | | ⬜ | | 3 slides |
+| 21 | `tls.d.trend-badge` | metric | could | ✅ | 1392b0bc | Arrow is a path (no glyph), zero change = flat dash. Type shrinks until the pill fits a short box. `format: percent` appends %. |
+| 22 | `tls.d.slope` | chart | could | ✅ | 81c2b543 | Labels nudged apart; a long name is clipped but its number is kept. `highlight` colours risers/fallers, dims the rest. |
+| 23 | `tls.d.bubble` | chart | could | ✅ | 5d608727 | Circle AREA is proportional to the value (min 5 px radius). Y domain is padded by the largest circle so none crosses the plot edge. Size legend = nested outline circles with values (labels only where they have a line to themselves). |
+| 24 | `tls.d.bullet-chart` | metric | could | ✅ | 3efa2df6 | Bands cover 60/20/20% of the scale (three greys); a missing scale max is derived from the data. Value and target clamp to the scale end. |
+| — | Phase demo slides (metrics, charts, tables) + screenshots | | | 🟨 | 04f5a87c, 3efa2df6 | Part A done: slides sl_13 "P2 metrics", sl_14 "P2 metrics, variants", sl_15 "P2 charts", sl_16 "P2 charts, more", sl_17 "P2 extras" (`tools/visual/scenarios/p2-data.js`, every PNG opened). The tables slide waits for part B. |
 
 ---
 
@@ -293,3 +293,15 @@ overlap; 6 series use 6 distinct hues; highlightIndex dims the others via `highl
 - [ ] Every chart passes the chart-rule lint (single series without a legend, ≤ 6 hues, zero
   baseline for bars).
 - [ ] Full suite, tsc 0, README counts and session log updated.
+
+**Part A status (L2 agent, 2026-10-03):** the 18 metric and chart blocks above are built, tested
+(each runs `standardBlockSuite` plus chart tests: no-data, long labels, six hues, highlight) and
+screenshotted. Still open for part B: `table`, `compare-table`, `pricing`, `scorecard`, `ranking`,
+`heatmap`, the tables demo slide, the full suite. The chart-rule box above is verified for the
+charts of part A only (single series: accent and no legend; at most 6 hues; zero baseline on the
+bars); heatmap is not built.
+
+**Shared code for part B:** `library/data/_chart/kit.ts` (series parsing, `niceAxis`, value axis,
+category labels with `clip`/`stride`, `ringArcPath`, `emptyState`, `capacityOf`, colour helpers),
+`schema-kit.ts` (slot fragments), `chart-test.ts` (test helpers). Heatmap and tables can reuse
+`emptyState`, `fmtNum`, `chartColors`, `categoryLabels`.
