@@ -4447,6 +4447,35 @@ One muted footer line of up to three short items with separators and an optional
 }
 \`\`\`
 
+### \`tls.x.logo-mark\` — Logo Mark
+
+A small logo pinned to one corner of its box, fitted and never cropped. _(family: chrome; keywords: logo, brand, corner, watermark, chrome, every slide)_
+
+**When:** Brand presence on every content slide: a small mark in a corner.
+**Avoid:** A featured or large logo (use tls.m.logo).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 80 chars) | The brand name. |
+| \`ratio\` | no | number (min 0.2, max 8) | Width / height of the logo file. Needed for corner placement; read from the asset when known. |
+| \`size\` | no | enum: sm \\\\| md |  |
+| \`corner\` | no | enum: top-right \\\\| top-left \\\\| bottom-right \\\\| bottom-left | Which corner of its box the logo sits in. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_logo_mark\\",
+  \\"type\\": \\"tls.x.logo-mark\\",
+  \\"props\\": {
+    \\"image\\": \\"asset-acme\\",
+    \\"alt\\": \\"Acme Corp\\",
+    \\"ratio\\": 3,
+    \\"size\\": \\"sm\\",
+    \\"corner\\": \\"top-right\\"
+  }
+}
+\`\`\`
+
 ### \`tls.x.page-number\` — Page Number
 
 Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
@@ -4553,7 +4582,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 121,
+  "blockCount": 122,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4675,6 +4704,7 @@ Object {
     "tls.t.takeaway",
     "tls.t.title",
     "tls.x.footer-text",
+    "tls.x.logo-mark",
     "tls.x.page-number",
   ],
   "colorRoleCount": 12,
