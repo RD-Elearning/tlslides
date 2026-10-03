@@ -16,9 +16,13 @@ export const tlsLGrid: BlockDefinition = {
   tier: 'A',
   summary: 'Grid layout with configurable columns, rows, and gap.',
   keywords: ['grid', 'columns', 'rows', 'table'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Grid of child blocks in fixed columns and rows',
+  related: ['tls.l.row', 'tls.l.repeater'],
   describe: {
     when: 'Use to arrange child blocks in a rows × columns grid.',
-    avoid: 'Do not use for simple two-column layouts — use tls.l.split instead.',
+    avoid: 'Do not use for a simple two-column layout (use tls.l.split) or for one line of items (use tls.l.row).',
     example: {
       id: 'b_grid',
       type: 'tls.l.grid',

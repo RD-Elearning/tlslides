@@ -19,9 +19,13 @@ export const tlsMImage: BlockDefinition = {
   tier: 'A',
   summary: 'Image with cover/contain fit, focal point, and optional caption.',
   keywords: ['image', 'photo', 'picture', 'media', 'visual'],
+  category: 'media',
+  scope: 'element',
+  shortDescription: 'Single image with cover/contain fit, focal point, optional caption',
+  related: ['tls.c.image-text'],
   describe: {
     when: 'Use to display a photograph, screenshot, or illustration with optional caption.',
-    avoid: 'Do not use for charts — use tls.d.bar. Do not use for placeholder backgrounds — use tls.l.field.',
+    avoid: 'Do not use for charts (use tls.d.bar), for background fills (use tls.l.field) or for an image with a text cluster (use tls.c.image-text).',
     example: {
       id: 'b_image',
       type: 'tls.m.image',

@@ -124,11 +124,14 @@ export const tlsCSteps: BlockDefinition = {
     'roadmap',
     'numbered',
   ],
+  category: 'process',
+  scope: 'slide',
+  shortDescription: 'Full process slide: numbered steps with titles and descriptions',
+  related: ['tls.g.steps'],
   describe: {
     when:
       'Use to show a process, workflow, or timeline with 2–8 numbered steps that the audience reads in sequence.',
-    avoid:
-      'Do not use for a simple list of items — use tls.t.bullets. Do not use for fewer than 2 steps — use tls.t.title.',
+    avoid: 'Do not use for a compact strip inside a region (use tls.g.steps), for a plain list (use tls.t.bullets) or for fewer than 2 steps (use tls.t.title).',
     example: {
       id: 'b_steps',
       type: 'tls.c.steps',

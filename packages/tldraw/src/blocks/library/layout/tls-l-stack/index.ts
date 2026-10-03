@@ -17,9 +17,13 @@ export const tlsLStack: BlockDefinition = {
   tier: 'A',
   summary: 'Vertical stack with gap.',
   keywords: ['stack', 'vertical', 'column', 'gap'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Vertical stack of child blocks with a gap',
+  related: ['tls.l.row', 'tls.l.grid'],
   describe: {
     when: 'Use to arrange child blocks vertically, one above the other.',
-    avoid: 'Do not use for horizontal arrangement — use tls.l.row instead.',
+    avoid: 'Do not use for horizontal arrangement (use tls.l.row) or for a grid of equal cells (use tls.l.grid).',
     example: {
       id: 'b_stack',
       type: 'tls.l.stack',

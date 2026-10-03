@@ -17,9 +17,12 @@ export const tlsLFooter: BlockDefinition = {
   tier: 'A',
   summary: 'Content + footer layout with configurable footer height.',
   keywords: ['footer', 'bottom', 'content', 'page'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Main content area above a fixed-height footer strip',
   describe: {
     when: 'Use to add a persistent footer strip below the main content area.',
-    avoid: 'Do not use for inline captions — use tls.t.caption instead.',
+    avoid: 'Do not use for an inline caption under one chart or image (use tls.t.caption).',
     example: {
       id: 'b_footer',
       type: 'tls.l.footer',

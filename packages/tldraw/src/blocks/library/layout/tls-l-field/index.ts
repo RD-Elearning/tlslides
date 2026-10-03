@@ -17,9 +17,12 @@ export const tlsLField: BlockDefinition = {
   tier: 'A',
   summary: 'Full-bleed background fill.',
   keywords: ['field', 'background', 'fill', 'full-bleed'],
+  category: 'decoration',
+  scope: 'element',
+  shortDescription: 'Full-bleed background colour or gradient behind other blocks',
   describe: {
     when: 'Use as a solid-color background layer behind other content in an overlay.',
-    avoid: 'Do not use for visible content — it renders only a filled rectangle.',
+    avoid: 'Do not use for visible content (it only paints a fill), or for a framed panel around content (use tls.l.card).',
     example: {
       id: 'b_field',
       type: 'tls.l.field',

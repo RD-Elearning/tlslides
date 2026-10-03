@@ -17,9 +17,13 @@ export const tlsLRow: BlockDefinition = {
   tier: 'A',
   summary: 'Horizontal row with gap.',
   keywords: ['row', 'horizontal', 'inline', 'gap'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Horizontal row of child blocks with a gap',
+  related: ['tls.l.stack', 'tls.l.grid'],
   describe: {
     when: 'Use to arrange child blocks horizontally, side by side.',
-    avoid: 'Do not use for vertical arrangement — use tls.l.stack instead.',
+    avoid: 'Do not use for vertical arrangement (use tls.l.stack) or for more than a few equal cells (use tls.l.grid).',
     example: {
       id: 'b_row',
       type: 'tls.l.row',

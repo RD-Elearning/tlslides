@@ -17,9 +17,13 @@ export const tlsMIcon: BlockDefinition = {
   tier: 'A',
   summary: 'SVG icon from the icon set, with optional color role.',
   keywords: ['icon', 'symbol', 'graphic', 'svg'],
+  category: 'media',
+  scope: 'element',
+  shortDescription: 'Single icon from the icon set in a theme colour',
+  related: ['tls.m.icon-label'],
   describe: {
     when: 'Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. Ideal for feature grids, labels, and decorative elements.',
-    avoid: 'Do not use for images or photographs. For decorative graphics without specific meaning, use tls.m.decoration instead.',
+    avoid: 'Do not use for photographs (use tls.m.image) or for an icon that needs a text label (use tls.m.icon-label).',
     example: {
       id: 'b_icon_1',
       type: 'tls.m.icon',

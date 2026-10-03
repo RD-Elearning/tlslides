@@ -446,7 +446,8 @@ describe('R7 — capability digest v2', () => {
       // Held to 52k for the same reason recorded on the structured-data test
       // below. R7's remedy ("split per family") is the named follow-up.
       // B4 + B5 (toggles + stat-card) grew the markdown to ~52.7k.
-      const charBudget = 54000
+      // P0.3: sharper describe.avoid text grew it to ~54.3k; P0.4 replaces both budgets with index/detail budgets.
+      const charBudget = 55000
       expect(markdown.length).toBeLessThanOrEqual(charBudget)
     })
 
@@ -470,7 +471,8 @@ describe('R7 — capability digest v2', () => {
       // showKicker/showTitle/showBody on image-text, showDelta/showLabel/showSparkline
       // on kpi-tile): digest grew to ~57.9k.
       // B5 added tls.c.stat-card (composite with defineCompositeBlock): digest grew to ~59.9k.
-      const charBudget = 60000
+      // P0.3: sharper describe.avoid text grew it to ~61.5k; P0.4 replaces this budget.
+      const charBudget = 62500
       expect(json.length).toBeLessThanOrEqual(charBudget)
     })
   })

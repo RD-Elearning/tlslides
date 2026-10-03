@@ -15,11 +15,15 @@ export const tlsLSafeArea: BlockDefinition = {
   name: 'Safe Area',
   family: 'layout',
   tier: 'A',
-  summary: 'Content safe area with configurable inset (editorOnly).',
+  summary: 'Content safe-area inset guide with a configurable margin. Editor-only: invisible in exported output.',
   keywords: ['safe-area', 'margin', 'inset', 'editor'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Content margin guide, visible in the editor only',
+  related: ['tls.l.grid-guide'],
   describe: {
     when: 'Use in the editor to visually define a content margin zone.',
-    avoid: 'Do not use in exported decks — it is editor-only and invisible in output.',
+    avoid: 'Do not use to space content in the final deck: it is invisible in output (use tls.l.stack gap or tls.l.card padding).',
     example: {
       id: 'b_safe',
       type: 'tls.l.safe-area',

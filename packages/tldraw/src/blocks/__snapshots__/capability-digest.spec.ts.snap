@@ -105,10 +105,10 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 
 ### \`tls.c.agenda\` — Agenda
 
-Agenda or table-of-contents slide. Numbered items with titles and optional notes. Use 3–8 items. Highlight the current topic with the \`current\` prop. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
+Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
 
 **When:** Use for a table-of-contents or agenda slide listing 3–8 topics. Set \`current\` to highlight the active topic.
-**Avoid:** Do not use for more than 8 items — split into two sections. Do not use for a timeline (use tls.g.timeline-h).
+**Avoid:** Do not use for more than 8 items (split into two sections), for a dated sequence (use tls.c.steps) or nested in another block: it fills the whole slide.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -148,7 +148,7 @@ Agenda or table-of-contents slide. Numbered items with titles and optional notes
 Big number slide. One enormous headline metric with a short label and optional context line. Use for KPIs, milestones, and hero stats. _(family: composite; keywords: stat, big, number, kpi, metric, hero, headline, count)_
 
 **When:** Use for a single hero statistic — one big number with a label and optional context.
-**Avoid:** Do not use for multiple metrics side by side — use tls.c.kpi-row instead.
+**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number) or nested in another block.
 
 **Parts:** \`value\`, \`label\`, \`context\`
 
@@ -179,10 +179,10 @@ Big number slide. One enormous headline metric with a short label and optional c
 
 ### \`tls.c.comparison\` — Comparison
 
-Side-by-side comparison of 2–3 columns, each with a title and a list of items. Use to contrast options, plans, or viewpoints. Highlight the recommended column with the \`highlight\` prop. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
+Side-by-side columns, each with a title and a list of items, to contrast options, plans or viewpoints. One column can be highlighted as the recommended one. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
 
 **When:** Use to compare 2–3 options, plans, or viewpoints side by side. Set \`highlight\` to draw attention to the recommended column.
-**Avoid:** Do not use for more than 3 columns — split into two slides. Do not use for sequential processes — use tls.c.steps.
+**Avoid:** Do not use for more than 3 columns (split into two slides) or for sequential processes (use tls.c.steps).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -230,7 +230,7 @@ Side-by-side comparison of 2–3 columns, each with a title and a list of items.
 Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
 
 **When:** Use to show 2–6 feature highlights in a grid layout — each cell has an icon, title, and short description. Good for capability overviews, service lists, or product feature showcases.
-**Avoid:** Do not use for single-row comparisons (use tls.c.comparison) or for more than 6 items (use tls.c.agenda or tls.c.steps).
+**Avoid:** Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for more than 6 items (use tls.t.bullets).
 
 **Parts:** \`cell[*].icon\`, \`cell[*].title\`, \`cell[*].desc\`
 
@@ -273,7 +273,7 @@ Grid of feature cells, each with an icon, title, and description. 2–6 cells ar
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
 
 **When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle. Pick variant \\"classic\\" for a standard hero, \\"split\\" when you want the title to reveal from two halves sliding in from opposite sides, or \\"gradient-sweep\\" for a decorative background gradient that sweeps in behind the title on reveal.
-**Avoid:** Do not use for content slides that have data or body text — use tls.t.title.
+**Avoid:** Do not use for content slides with data or body text (use tls.t.title) or nested inside another block: it fills the whole slide.
 
 **Parts:** \`kicker\`, \`title\`, \`subtitle\`, \`cta\`
 
@@ -322,7 +322,7 @@ Opening slide. One idea in the title, no full sentence; subtitle gives date/audi
 Image beside or above a text cluster (kicker + title + body). Configurable placement and image ratio. _(family: composite; keywords: image, text, photo, picture, editorial, side-by-side, layout, composite)_
 
 **When:** Use when a slide needs an image alongside or above explanatory text — editorial layouts, feature descriptions, team slides.
-**Avoid:** Do not use for image-only slides — use tls.m.image. Do not use for text-only slides — use tls.t.title + tls.t.body.
+**Avoid:** Do not use for an image-only slide (use tls.m.image) or a text-only slide (use tls.t.title + tls.t.body).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -355,10 +355,10 @@ Image beside or above a text cluster (kicker + title + body). Configurable place
 
 ### \`tls.c.kpi-row\` — KPI Row
 
-Row of 2–5 KPI tiles with equal-width split. Each tile delegates to tls.c.kpi-tile. _(family: composite; keywords: kpi, row, tiles, dashboard, metrics, numbers, stats)_
+Row of KPI tiles with an equal-width split, each showing value, change and label. _(family: composite; keywords: kpi, row, tiles, dashboard, metrics, numbers, stats)_
 
 **When:** Use to display 2–5 KPI metrics side-by-side in a row. Good for dashboards and summary slides.
-**Avoid:** Do not use for a single KPI — use tls.c.kpi-tile. Do not use for more than 5 KPIs — split across slides.
+**Avoid:** Do not use for a single KPI (use tls.c.kpi-tile) or for more than 5 KPIs (split across slides).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -403,7 +403,7 @@ Row of 2–5 KPI tiles with equal-width split. Each tile delegates to tls.c.kpi-
 Single KPI metric: headline number, change indicator, label, optional sparkline. Polarity-driven colour. _(family: composite; keywords: kpi, tile, metric, number, stat, value, delta, sparkline, dashboard)_
 
 **When:** Use to display a single KPI metric with its value, change indicator, and optional trend line.
-**Avoid:** Do not use for multiple KPIs side-by-side — use tls.c.kpi-row. Do not use for non-numeric hero text — use tls.t.title.
+**Avoid:** Do not use for several KPIs side by side (use tls.c.kpi-row), for a plain unframed number (use tls.t.hero-number) or for a metric with an icon (use tls.c.stat-card).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -433,10 +433,10 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 
 ### \`tls.c.stat-card\` — Stat Card
 
-KPI on a card: icon, value, unit, and caption. Built with defineCompositeBlock. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
+KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
 
 **When:** Use when you need a single KPI inside a filled card — icon, headline value, unit, and a caption line. Built compositionally from tls.l.card, tls.l.stack, tls.m.icon, and tls.t.hero-number.
-**Avoid:** Do not use for multiple metrics side by side — use tls.c.kpi-row instead. Do not use when you need custom geometry or a chart — write a hand-written layout().
+**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row) or for a metric with a change arrow or sparkline (use tls.c.kpi-tile).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -470,7 +470,7 @@ KPI on a card: icon, value, unit, and caption. Built with defineCompositeBlock. 
 Process or timeline of numbered steps with titles and optional descriptions. Arranges steps horizontally or vertically with thin connectors between them. _(family: composite; keywords: steps, process, timeline, flow, workflow, sequential, phases, roadmap, numbered)_
 
 **When:** Use to show a process, workflow, or timeline with 2–8 numbered steps that the audience reads in sequence.
-**Avoid:** Do not use for a simple list of items — use tls.t.bullets. Do not use for fewer than 2 steps — use tls.t.title.
+**Avoid:** Do not use for a compact strip inside a region (use tls.g.steps), for a plain list (use tls.t.bullets) or for fewer than 2 steps (use tls.t.title).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -506,7 +506,7 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
 Pull-quote testimonial with attribution. Quote text with speaker name, role, and optional avatar. Use for social proof, customer quotes, or endorsements. _(family: composite; keywords: testimonial, quote, pull-quote, endorsement, social-proof, attribution)_
 
 **When:** Use for a customer quote, testimonial, or endorsement — quote text with speaker name, role, and optional avatar.
-**Avoid:** Do not use for general block quotes or section dividers — use tls.t.title or a layout container.
+**Avoid:** Do not use for a plain pull quote without a named person (use tls.t.quote) or for an unattributed insight (use tls.t.takeaway).
 
 **Parts:** \`quote\`, \`avatar\`, \`name\`, \`role\`
 
@@ -532,10 +532,10 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 
 ### \`tls.d.bar\` — Column Chart
 
-Vertical column chart with zero baseline. _(family: data; keywords: chart, bar, column, data, graph, vertical)_
+Vertical column chart of one series with a zero baseline and value labels. _(family: data; keywords: chart, bar, column, data, graph, vertical)_
 
 **When:** Use to compare values across categories — 1–20 bars, single series.
-**Avoid:** Do not use for trends over time (use a line chart) or parts of a whole (use donut).
+**Avoid:** Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -570,7 +570,7 @@ Vertical column chart with zero baseline. _(family: data; keywords: chart, bar, 
 Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, data, visualization)_
 
 **When:** Use to display proportional data in a donut chart format.
-**Avoid:** Do not use for detailed data tables — use a table or list instead.
+**Avoid:** Do not use for detailed values or many categories (use tls.d.bar), or for a table of exact figures.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -611,7 +611,7 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
 
 **When:** Use to illustrate a multi-step process or workflow.
-**Avoid:** Do not use for single concepts — use a heading or icon instead.
+**Avoid:** Do not use for a full process slide with a description per step (use tls.c.steps), or for a single concept (use tls.m.icon-label).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -654,7 +654,7 @@ Numbered process diagram with animated step reveal. _(family: diagram; keywords:
 Filled container with configurable padding. _(family: layout; keywords: card, container, padding, filled)_
 
 **When:** Use to group children inside a visible, padded container.
-**Avoid:** Do not use for transparent grouping — use tls.l.stack without style.
+**Avoid:** Do not use for transparent grouping (use tls.l.stack without style) or for a titled area with a divider (use tls.l.section).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -677,7 +677,7 @@ Filled container with configurable padding. _(family: layout; keywords: card, co
 Full-bleed background fill. _(family: layout; keywords: field, background, fill, full-bleed)_
 
 **When:** Use as a solid-color background layer behind other content in an overlay.
-**Avoid:** Do not use for visible content — it renders only a filled rectangle.
+**Avoid:** Do not use for visible content (it only paints a fill), or for a framed panel around content (use tls.l.card).
 
 _No slots._
 
@@ -694,7 +694,7 @@ _No slots._
 Content + footer layout with configurable footer height. _(family: layout; keywords: footer, bottom, content, page)_
 
 **When:** Use to add a persistent footer strip below the main content area.
-**Avoid:** Do not use for inline captions — use tls.t.caption instead.
+**Avoid:** Do not use for an inline caption under one chart or image (use tls.t.caption).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -719,7 +719,7 @@ Content + footer layout with configurable footer height. _(family: layout; keywo
 Grid layout with configurable columns, rows, and gap. _(family: layout; keywords: grid, columns, rows, table)_
 
 **When:** Use to arrange child blocks in a rows × columns grid.
-**Avoid:** Do not use for simple two-column layouts — use tls.l.split instead.
+**Avoid:** Do not use for a simple two-column layout (use tls.l.split) or for one line of items (use tls.l.row).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -744,10 +744,10 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 
 ### \`tls.l.grid-guide\` — Grid Guide
 
-Alignment grid with configurable divisions (editorOnly). _(family: layout; keywords: grid, guide, alignment, editor)_
+Alignment grid guide with configurable divisions. Editor-only: invisible in exported output. _(family: layout; keywords: grid, guide, alignment, editor)_
 
 **When:** Use in the editor to show alignment guides for precise positioning.
-**Avoid:** Do not use in exported decks — it is editor-only and invisible in output.
+**Avoid:** Do not use to lay out content: it only draws guides in the editor (use tls.l.grid for real columns).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -768,7 +768,7 @@ Alignment grid with configurable divisions (editorOnly). _(family: layout; keywo
 Layered children z-stacked in the same box. _(family: layout; keywords: overlay, layer, stack, z-index)_
 
 **When:** Use to layer children on top of each other (backgrounds, watermarks).
-**Avoid:** Do not use for sequential layout — use tls.l.stack or tls.l.row.
+**Avoid:** Do not use for sequential layout (use tls.l.stack or tls.l.row) or for a plain background fill (use tls.l.field).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -788,7 +788,7 @@ Layered children z-stacked in the same box. _(family: layout; keywords: overlay,
 Repeats a template child for each item in a given direction. _(family: layout; keywords: repeater, repeat, loop, list)_
 
 **When:** Use to lay out the same template block N times in a row or column.
-**Avoid:** Do not use when children are all different — use tls.l.stack or tls.l.grid.
+**Avoid:** Do not use when the children differ from each other (use tls.l.stack or tls.l.grid).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -815,7 +815,7 @@ Repeats a template child for each item in a given direction. _(family: layout; k
 Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, gap)_
 
 **When:** Use to arrange child blocks horizontally, side by side.
-**Avoid:** Do not use for vertical arrangement — use tls.l.stack instead.
+**Avoid:** Do not use for vertical arrangement (use tls.l.stack) or for more than a few equal cells (use tls.l.grid).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -836,10 +836,10 @@ Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, ga
 
 ### \`tls.l.safe-area\` — Safe Area
 
-Content safe area with configurable inset (editorOnly). _(family: layout; keywords: safe-area, margin, inset, editor)_
+Content safe-area inset guide with a configurable margin. Editor-only: invisible in exported output. _(family: layout; keywords: safe-area, margin, inset, editor)_
 
 **When:** Use in the editor to visually define a content margin zone.
-**Avoid:** Do not use in exported decks — it is editor-only and invisible in output.
+**Avoid:** Do not use to space content in the final deck: it is invisible in output (use tls.l.stack gap or tls.l.card padding).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -862,7 +862,7 @@ Content safe area with configurable inset (editorOnly). _(family: layout; keywor
 Titled section with divider and content area. _(family: layout; keywords: section, title, heading, divider)_
 
 **When:** Use to introduce a named subsection within a region with a title + divider.
-**Avoid:** Do not use for the top-level slide title — use tls.t.title.
+**Avoid:** Do not use for the slide title (use tls.t.title) or for a filled panel without a heading (use tls.l.card).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -889,7 +889,7 @@ Titled section with divider and content area. _(family: layout; keywords: sectio
 Sidebar + main content layout with configurable width and side. _(family: layout; keywords: sidebar, panel, navigation, two-column)_
 
 **When:** Use to reserve a fixed-width panel on one side for navigation or meta content.
-**Avoid:** Do not use for equal-width columns — use tls.l.split or tls.l.grid.
+**Avoid:** Do not use for equal-width columns (use tls.l.split or tls.l.grid).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -916,7 +916,7 @@ Sidebar + main content layout with configurable width and side. _(family: layout
 Empty space for structural separation. _(family: layout; keywords: spacer, empty, gap, fill)_
 
 **When:** Use to push other blocks apart with intentional empty space.
-**Avoid:** Do not use when the gap property on a stack/row already provides spacing.
+**Avoid:** Do not use when the gap of a stack or row already provides the spacing.
 
 _No slots._
 
@@ -933,7 +933,7 @@ _No slots._
 Two-panel split with configurable ratio and gutter. _(family: layout; keywords: split, columns, two-panel, sidebar)_
 
 **When:** Use to divide a region into two panels (left/right or top/bottom).
-**Avoid:** Do not use for three or more panels — use tls.l.grid instead.
+**Avoid:** Do not use for three or more panels (use tls.l.grid) or for a narrow fixed-width side column (use tls.l.sidebar).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -960,7 +960,7 @@ Two-panel split with configurable ratio and gutter. _(family: layout; keywords: 
 Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, gap)_
 
 **When:** Use to arrange child blocks vertically, one above the other.
-**Avoid:** Do not use for horizontal arrangement — use tls.l.row instead.
+**Avoid:** Do not use for horizontal arrangement (use tls.l.row) or for a grid of equal cells (use tls.l.grid).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -984,7 +984,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
 
 **When:** Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. Ideal for feature grids, labels, and decorative elements.
-**Avoid:** Do not use for images or photographs. For decorative graphics without specific meaning, use tls.m.decoration instead.
+**Avoid:** Do not use for photographs (use tls.m.image) or for an icon that needs a text label (use tls.m.icon-label).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1007,7 +1007,7 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
 Icon with text label beneath. _(family: media; keywords: icon, label, button, nav, link)_
 
 **When:** Use to label a feature, action, or section with an icon and brief text.
-**Avoid:** Do not use for long descriptions — use tls.t.body instead.
+**Avoid:** Do not use for long descriptions (use tls.t.body) or for a grid of icon + title + description cells (use tls.c.feature-grid).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1033,7 +1033,7 @@ Icon with text label beneath. _(family: media; keywords: icon, label, button, na
 Image with cover/contain fit, focal point, and optional caption. _(family: media; keywords: image, photo, picture, media, visual)_
 
 **When:** Use to display a photograph, screenshot, or illustration with optional caption.
-**Avoid:** Do not use for charts — use tls.d.bar. Do not use for placeholder backgrounds — use tls.l.field.
+**Avoid:** Do not use for charts (use tls.d.bar), for background fills (use tls.l.field) or for an image with a text cluster (use tls.c.image-text).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1061,7 +1061,7 @@ Image with cover/contain fit, focal point, and optional caption. _(family: media
 Paragraph body text with RichText, autofit, and multi-column. _(family: text; keywords: body, paragraph, text, prose, copy, description)_
 
 **When:** Use for 1–3 sentences of body copy, descriptions, or prose.
-**Avoid:** Do not use for bullet lists (use tls.t.bullets) or captions (use tls.t.caption).
+**Avoid:** Do not use for bullet lists (use tls.t.bullets) or for small source lines under a chart (use tls.t.caption).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1101,7 +1101,7 @@ Paragraph body text with RichText, autofit, and multi-column. _(family: text; ke
 Bullet list with dot/dash/chevron/number markers and indent levels. _(family: text; keywords: bullets, list, items, points, markers, unordered)_
 
 **When:** Use for 2–8 short items that the audience should scan, not read.
-**Avoid:** Do not use for sentences of prose — use tls.t.body. More than 8 items means two slides.
+**Avoid:** Do not use for sentences of prose (use tls.t.body), for ordered process steps (use tls.c.steps) or for icon-led feature cells (use tls.c.feature-grid). More than 8 items means two slides.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1138,7 +1138,7 @@ Bullet list with dot/dash/chevron/number markers and indent levels. _(family: te
 Small caption text for images, charts, and media. _(family: text; keywords: caption, subtitle, description, label, small-text, source)_
 
 **When:** Use to label a chart, image, or data source — 5–15 words maximum.
-**Avoid:** Do not use for body text or slide titles.
+**Avoid:** Do not use for body text (use tls.t.body) or as a title (use tls.t.title or tls.t.subtitle).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1163,7 +1163,7 @@ Small caption text for images, charts, and media. _(family: text; keywords: capt
 Large KPI number with optional unit and caption. _(family: text; keywords: kpi, number, stat, metric, hero, display, count)_
 
 **When:** Use for one standout metric ($4.2M, 67%) that anchors a KPI slide.
-**Avoid:** Do not use for multiple metrics in a row — use a grid of hero-numbers instead.
+**Avoid:** Do not use for several metrics in a row (use tls.c.kpi-row), for a number with a change arrow or sparkline (use tls.c.kpi-tile), or when the number should fill the whole slide (use tls.c.big-stat).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1192,7 +1192,7 @@ Large KPI number with optional unit and caption. _(family: text; keywords: kpi, 
 Small label above the title with case and tracking options. _(family: text; keywords: kicker, eyebrow, label, category, tag, section)_
 
 **When:** Use as a small category or section label above the title.
-**Avoid:** Do not use for the slide title itself — use tls.t.title.
+**Avoid:** Do not use for the slide title itself (use tls.t.title) or for a sentence of explanation (use tls.t.subtitle).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1219,7 +1219,7 @@ Small label above the title with case and tracking options. _(family: text; keyw
 Pull quote with decorative quotation glyph, attribution, and role. _(family: text; keywords: quote, blockquote, pull-quote, attribution, testimonial)_
 
 **When:** Use to feature a direct quote with attribution from a named person.
-**Avoid:** Do not use for anonymous insights — use tls.t.takeaway instead.
+**Avoid:** Do not use for anonymous insights (use tls.t.takeaway) or for a customer quote with name, role and avatar (use tls.c.testimonial).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1246,7 +1246,7 @@ Pull quote with decorative quotation glyph, attribution, and role. _(family: tex
 Secondary heading below the title with RichText support. _(family: text; keywords: subtitle, subheading, secondary)_
 
 **When:** Use to add context, date, or audience below the title.
-**Avoid:** Do not use for long paragraphs — use tls.t.body instead.
+**Avoid:** Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1280,7 +1280,7 @@ Secondary heading below the title with RichText support. _(family: text; keyword
 Highlighted insight text with accent bar and optional label. _(family: text; keywords: takeaway, insight, callout, highlight, key-point)_
 
 **When:** Use to call out a key insight, conclusion, or \\"so what\\" from data.
-**Avoid:** Do not use for quotes from named people — use tls.t.quote instead.
+**Avoid:** Do not use for quotes from named people (use tls.t.quote) or for ordinary body text (use tls.t.body).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1306,7 +1306,7 @@ Highlighted insight text with accent bar and optional label. _(family: text; key
 Slide title with inline styling, autofit, and truncation. _(family: text; keywords: title, heading, hero, headline, slide)_
 
 **When:** Use as the primary heading on every content slide — the single most important text.
-**Avoid:** Do not use for section dividers (use tls.c.hero instead) or subtitles.
+**Avoid:** Do not use for an opening slide (use tls.c.hero), for a secondary line (use tls.t.subtitle) or for a small label above a title (use tls.t.kicker).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1344,7 +1344,7 @@ Slide title with inline styling, autofit, and truncation. _(family: text; keywor
 Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
 
 **When:** Use to indicate the current page position in a multi-slide document.
-**Avoid:** Do not use as a content block — this is chrome only.
+**Avoid:** Do not use as a content block: it is slide furniture only.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|

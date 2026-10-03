@@ -18,9 +18,13 @@ export const tlsLRepeater: BlockDefinition = {
   tier: 'A',
   summary: 'Repeats a template child for each item in a given direction.',
   keywords: ['repeater', 'repeat', 'loop', 'list'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Repeats one template child once per data item',
+  related: ['tls.l.grid'],
   describe: {
     when: 'Use to lay out the same template block N times in a row or column.',
-    avoid: 'Do not use when children are all different — use tls.l.stack or tls.l.grid.',
+    avoid: 'Do not use when the children differ from each other (use tls.l.stack or tls.l.grid).',
     example: {
       id: 'b_rep',
       type: 'tls.l.repeater',

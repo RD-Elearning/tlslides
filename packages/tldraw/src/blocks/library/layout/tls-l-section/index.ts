@@ -17,9 +17,13 @@ export const tlsLSection: BlockDefinition = {
   tier: 'A',
   summary: 'Titled section with divider and content area.',
   keywords: ['section', 'title', 'heading', 'divider'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Titled area with a divider above its children',
+  related: ['tls.l.card'],
   describe: {
     when: 'Use to introduce a named subsection within a region with a title + divider.',
-    avoid: 'Do not use for the top-level slide title — use tls.t.title.',
+    avoid: 'Do not use for the slide title (use tls.t.title) or for a filled panel without a heading (use tls.l.card).',
     example: {
       id: 'b_section',
       type: 'tls.l.section',

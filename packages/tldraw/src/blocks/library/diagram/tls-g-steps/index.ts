@@ -16,9 +16,13 @@ export const tlsGSteps: BlockDefinition = {
   tier: 'A',
   summary: 'Numbered process diagram with animated step reveal.',
   keywords: ['steps', 'process', 'workflow', 'diagram', 'flow'],
+  category: 'process',
+  scope: 'group',
+  shortDescription: 'Compact numbered step strip with thin connectors',
+  related: ['tls.c.steps'],
   describe: {
     when: 'Use to illustrate a multi-step process or workflow.',
-    avoid: 'Do not use for single concepts — use a heading or icon instead.',
+    avoid: 'Do not use for a full process slide with a description per step (use tls.c.steps), or for a single concept (use tls.m.icon-label).',
     example: {
       id: 'b_steps_1',
       type: 'tls.g.steps',

@@ -18,11 +18,15 @@ export const tlsDBar: BlockDefinition = {
   name: 'Column Chart',
   family: 'data',
   tier: 'A',
-  summary: 'Vertical column chart with zero baseline.',
+  summary: 'Vertical column chart of one series with a zero baseline and value labels.',
   keywords: ['chart', 'bar', 'column', 'data', 'graph', 'vertical'],
+  category: 'chart',
+  scope: 'group',
+  shortDescription: 'Column or bar chart of one series with value labels',
+  related: ['tls.d.donut'],
   describe: {
     when: 'Use to compare values across categories — 1–20 bars, single series.',
-    avoid: 'Do not use for trends over time (use a line chart) or parts of a whole (use donut).',
+    avoid: 'Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).',
     example: {
       id: 'b_bar',
       type: 'tls.d.bar',

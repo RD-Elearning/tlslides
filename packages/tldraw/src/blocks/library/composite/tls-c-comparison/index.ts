@@ -28,8 +28,7 @@ import { motion } from './motion'
 
 /** Summary for the AI: what this block is and when to use it. */
 const COMPARISON_SUMMARY =
-  'Side-by-side comparison of 2–3 columns, each with a title and a list of items. ' +
-  'Use to contrast options, plans, or viewpoints. Highlight the recommended column with the `highlight` prop.'
+  'Side-by-side columns, each with a title and a list of items, to contrast options, plans or viewpoints. One column can be highlighted as the recommended one.'
 
 export const tlsCComparison: BlockDefinition = {
   type: 'tls.c.comparison',
@@ -49,13 +48,14 @@ export const tlsCComparison: BlockDefinition = {
     'cons',
     'alternatives',
   ],
+  category: 'comparison',
+  scope: 'group',
+  shortDescription: 'Columns of titled item lists, one optionally highlighted',
   describe: {
     when:
       'Use to compare 2–3 options, plans, or viewpoints side by side. ' +
       'Set `highlight` to draw attention to the recommended column.',
-    avoid:
-      'Do not use for more than 3 columns — split into two slides. ' +
-      'Do not use for sequential processes — use tls.c.steps.',
+    avoid: 'Do not use for more than 3 columns (split into two slides) or for sequential processes (use tls.c.steps).',
     example: {
       id: 'b_comparison',
       type: 'tls.c.comparison',

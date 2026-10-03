@@ -428,13 +428,14 @@
               "padding": "md",
               "children": [
                 {
-                  "id": "b_11_big_stat",
-                  "type": "tls.c.big-stat",
+                  "id": "b_11_kpi_tile",
+                  "type": "tls.c.kpi-tile",
                   "props": {
                     "value": 4200000,
+                    "delta": 12.5,
                     "label": "Revenue",
-                    "format": "compact",
-                    "prefix": "$"
+                    "polarity": "upGood",
+                    "format": "compact"
                   }
                 }
               ]

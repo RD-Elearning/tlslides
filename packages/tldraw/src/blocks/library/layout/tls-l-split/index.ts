@@ -17,9 +17,13 @@ export const tlsLSplit: BlockDefinition = {
   tier: 'A',
   summary: 'Two-panel split with configurable ratio and gutter.',
   keywords: ['split', 'columns', 'two-panel', 'sidebar'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Two panes side by side or stacked, with an adjustable ratio',
+  related: ['tls.l.sidebar'],
   describe: {
     when: 'Use to divide a region into two panels (left/right or top/bottom).',
-    avoid: 'Do not use for three or more panels — use tls.l.grid instead.',
+    avoid: 'Do not use for three or more panels (use tls.l.grid) or for a narrow fixed-width side column (use tls.l.sidebar).',
     example: {
       id: 'b_split',
       type: 'tls.l.split',

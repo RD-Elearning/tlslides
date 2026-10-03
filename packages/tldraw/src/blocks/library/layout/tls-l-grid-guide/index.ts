@@ -15,11 +15,15 @@ export const tlsLGridGuide: BlockDefinition = {
   name: 'Grid Guide',
   family: 'layout',
   tier: 'A',
-  summary: 'Alignment grid with configurable divisions (editorOnly).',
+  summary: 'Alignment grid guide with configurable divisions. Editor-only: invisible in exported output.',
   keywords: ['grid', 'guide', 'alignment', 'editor'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Column alignment guide, visible in the editor only',
+  related: ['tls.l.safe-area'],
   describe: {
     when: 'Use in the editor to show alignment guides for precise positioning.',
-    avoid: 'Do not use in exported decks — it is editor-only and invisible in output.',
+    avoid: 'Do not use to lay out content: it only draws guides in the editor (use tls.l.grid for real columns).',
     example: {
       id: 'b_gguide',
       type: 'tls.l.grid-guide',

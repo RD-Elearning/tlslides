@@ -16,9 +16,12 @@ export const tlsLSpacer: BlockDefinition = {
   tier: 'A',
   summary: 'Empty space for structural separation.',
   keywords: ['spacer', 'empty', 'gap', 'fill'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Empty gap between neighbouring blocks',
   describe: {
     when: 'Use to push other blocks apart with intentional empty space.',
-    avoid: 'Do not use when the gap property on a stack/row already provides spacing.',
+    avoid: 'Do not use when the gap of a stack or row already provides the spacing.',
     example: {
       id: 'b_spacer',
       type: 'tls.l.spacer',

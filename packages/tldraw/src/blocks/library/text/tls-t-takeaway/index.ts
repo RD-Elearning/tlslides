@@ -14,9 +14,13 @@ export const tlsTTakeaway: BlockDefinition = {
   tier: 'A',
   summary: 'Highlighted insight text with accent bar and optional label.',
   keywords: ['takeaway', 'insight', 'callout', 'highlight', 'key-point'],
+  category: 'emphasis',
+  scope: 'element',
+  shortDescription: 'Highlighted insight with accent bar and label',
+  related: ['tls.t.quote'],
   describe: {
     when: 'Use to call out a key insight, conclusion, or "so what" from data.',
-    avoid: 'Do not use for quotes from named people — use tls.t.quote instead.',
+    avoid: 'Do not use for quotes from named people (use tls.t.quote) or for ordinary body text (use tls.t.body).',
     example: {
       id: 'b_take',
       type: 'tls.t.takeaway',

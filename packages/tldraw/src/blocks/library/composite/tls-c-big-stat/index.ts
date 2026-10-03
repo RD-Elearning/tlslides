@@ -227,9 +227,13 @@ export const tlsCBigStat: BlockDefinition = {
   kind: 'html',
   summary: BIG_STAT_SUMMARY,
   keywords: ['stat', 'big', 'number', 'kpi', 'metric', 'hero', 'headline', 'count'],
+  category: 'metric',
+  scope: 'slide',
+  shortDescription: 'One giant headline number filling the slide, with label and context',
+  related: ['tls.t.hero-number'],
   describe: {
     when: 'Use for a single hero statistic — one big number with a label and optional context.',
-    avoid: 'Do not use for multiple metrics side by side — use tls.c.kpi-row instead.',
+    avoid: 'Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number) or nested in another block.',
     example: {
       id: 'b_big_stat',
       type: 'tls.c.big-stat',

@@ -16,9 +16,13 @@ export const tlsDDonut: BlockDefinition = {
   tier: 'A',
   summary: 'Donut chart with colored slices.',
   keywords: ['chart', 'donut', 'pie', 'data', 'visualization'],
+  category: 'chart',
+  scope: 'group',
+  shortDescription: 'Ring of slices showing shares of a whole, with centre label',
+  related: ['tls.d.bar'],
   describe: {
     when: 'Use to display proportional data in a donut chart format.',
-    avoid: 'Do not use for detailed data tables — use a table or list instead.',
+    avoid: 'Do not use for detailed values or many categories (use tls.d.bar), or for a table of exact figures.',
     example: {
       id: 'b_donut_1',
       type: 'tls.d.donut',

@@ -17,9 +17,13 @@ export const tlsMIconLabel: BlockDefinition = {
   tier: 'A',
   summary: 'Icon with text label beneath.',
   keywords: ['icon', 'label', 'button', 'nav', 'link'],
+  category: 'media',
+  scope: 'element',
+  shortDescription: 'Icon with a short label beneath',
+  related: ['tls.m.icon'],
   describe: {
     when: 'Use to label a feature, action, or section with an icon and brief text.',
-    avoid: 'Do not use for long descriptions — use tls.t.body instead.',
+    avoid: 'Do not use for long descriptions (use tls.t.body) or for a grid of icon + title + description cells (use tls.c.feature-grid).',
     example: {
       id: 'b_il_1',
       type: 'tls.m.icon-label',

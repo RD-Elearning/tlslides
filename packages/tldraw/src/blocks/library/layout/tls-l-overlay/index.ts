@@ -17,9 +17,13 @@ export const tlsLOverlay: BlockDefinition = {
   tier: 'A',
   summary: 'Layered children z-stacked in the same box.',
   keywords: ['overlay', 'layer', 'stack', 'z-index'],
+  category: 'structure',
+  scope: 'element',
+  shortDescription: 'Children layered on top of each other in one box',
+  related: ['tls.l.field'],
   describe: {
     when: 'Use to layer children on top of each other (backgrounds, watermarks).',
-    avoid: 'Do not use for sequential layout — use tls.l.stack or tls.l.row.',
+    avoid: 'Do not use for sequential layout (use tls.l.stack or tls.l.row) or for a plain background fill (use tls.l.field).',
     example: {
       id: 'b_overlay',
       type: 'tls.l.overlay',

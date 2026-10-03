@@ -170,9 +170,13 @@ export const tlsCTestimonial: BlockDefinition = {
   kind: 'html',
   summary: TESTIMONIAL_SUMMARY,
   keywords: ['testimonial', 'quote', 'pull-quote', 'endorsement', 'social-proof', 'attribution'],
+  category: 'people',
+  scope: 'group',
+  shortDescription: 'Customer quote with name, role and avatar',
+  related: ['tls.t.quote'],
   describe: {
     when: 'Use for a customer quote, testimonial, or endorsement — quote text with speaker name, role, and optional avatar.',
-    avoid: 'Do not use for general block quotes or section dividers — use tls.t.title or a layout container.',
+    avoid: 'Do not use for a plain pull quote without a named person (use tls.t.quote) or for an unattributed insight (use tls.t.takeaway).',
     example: {
       id: 'b_testimonial',
       type: 'tls.c.testimonial',

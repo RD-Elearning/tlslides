@@ -98,9 +98,13 @@ export const tlsCImageText: BlockDefinition = {
   tier: 'A',
   summary: 'Image beside or above a text cluster (kicker + title + body). Configurable placement and image ratio.',
   keywords: ['image', 'text', 'photo', 'picture', 'editorial', 'side-by-side', 'layout', 'composite'],
+  category: 'media',
+  scope: 'group',
+  shortDescription: 'Image beside or above a kicker, title and body',
+  related: ['tls.m.image'],
   describe: {
     when: 'Use when a slide needs an image alongside or above explanatory text — editorial layouts, feature descriptions, team slides.',
-    avoid: 'Do not use for image-only slides — use tls.m.image. Do not use for text-only slides — use tls.t.title + tls.t.body.',
+    avoid: 'Do not use for an image-only slide (use tls.m.image) or a text-only slide (use tls.t.title + tls.t.body).',
     example: {
       id: 'b_image_text',
       type: 'tls.c.image-text',

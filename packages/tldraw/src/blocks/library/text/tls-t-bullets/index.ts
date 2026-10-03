@@ -18,9 +18,13 @@ export const tlsTBullets: BlockDefinition = {
   tier: 'A',
   summary: 'Bullet list with dot/dash/chevron/number markers and indent levels.',
   keywords: ['bullets', 'list', 'items', 'points', 'markers', 'unordered'],
+  category: 'list',
+  scope: 'element',
+  shortDescription: 'Bulleted points with dot, dash or chevron markers and indent levels',
+  related: ['tls.t.body'],
   describe: {
     when: 'Use for 2–8 short items that the audience should scan, not read.',
-    avoid: 'Do not use for sentences of prose — use tls.t.body. More than 8 items means two slides.',
+    avoid: 'Do not use for sentences of prose (use tls.t.body), for ordered process steps (use tls.c.steps) or for icon-led feature cells (use tls.c.feature-grid). More than 8 items means two slides.',
     example: {
       id: 'b_bullets',
       type: 'tls.t.bullets',

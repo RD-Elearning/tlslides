@@ -56,11 +56,15 @@ export const tlsCKpiRow: BlockDefinition = {
   name: 'KPI Row',
   family: 'composite',
   tier: 'A',
-  summary: 'Row of 2–5 KPI tiles with equal-width split. Each tile delegates to tls.c.kpi-tile.',
+  summary: 'Row of KPI tiles with an equal-width split, each showing value, change and label.',
   keywords: ['kpi', 'row', 'tiles', 'dashboard', 'metrics', 'numbers', 'stats'],
+  category: 'metric',
+  scope: 'group',
+  shortDescription: 'Equal-width row of KPI tiles',
+  related: ['tls.c.kpi-tile'],
   describe: {
     when: 'Use to display 2–5 KPI metrics side-by-side in a row. Good for dashboards and summary slides.',
-    avoid: 'Do not use for a single KPI — use tls.c.kpi-tile. Do not use for more than 5 KPIs — split across slides.',
+    avoid: 'Do not use for a single KPI (use tls.c.kpi-tile) or for more than 5 KPIs (split across slides).',
     example: {
       id: 'b_kpi_row',
       type: 'tls.c.kpi-row',

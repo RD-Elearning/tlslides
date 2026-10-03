@@ -147,8 +147,12 @@ export const tlsCStatCard = defineCompositeBlock({
   name: 'Stat Card',
   family: 'composite',
   tier: 'A',
-  summary: 'KPI on a card: icon, value, unit, and caption. Built with defineCompositeBlock.',
+  summary: 'KPI on a card: icon, headline value, unit and caption.',
   keywords: ['stat', 'card', 'kpi', 'metric', 'number', 'composite'],
+  category: 'metric',
+  scope: 'element',
+  shortDescription: 'Card with icon, headline value, unit and caption',
+  related: ['tls.c.kpi-tile'],
   schema,
   defaults,
   size: { preferred: [320, 200], min: [160, 120] },
@@ -156,9 +160,7 @@ export const tlsCStatCard = defineCompositeBlock({
     when:
       'Use when you need a single KPI inside a filled card — icon, headline value, unit, and a caption line. ' +
       'Built compositionally from tls.l.card, tls.l.stack, tls.m.icon, and tls.t.hero-number.',
-    avoid:
-      'Do not use for multiple metrics side by side — use tls.c.kpi-row instead. ' +
-      'Do not use when you need custom geometry or a chart — write a hand-written layout().',
+    avoid: 'Do not use for several metrics side by side (use tls.c.kpi-row) or for a metric with a change arrow or sparkline (use tls.c.kpi-tile).',
     example: {
       id: 'b_stat_card',
       type: 'tls.c.stat-card',

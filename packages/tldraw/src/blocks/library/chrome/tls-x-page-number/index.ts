@@ -17,9 +17,12 @@ export const tlsXPageNumber: BlockDefinition = {
   tier: 'A',
   summary: 'Page number chrome element for slide footers.',
   keywords: ['page', 'number', 'footer', 'pagination'],
+  category: 'chrome',
+  scope: 'element',
+  shortDescription: 'Slide number, alone or as "3 / 24"',
   describe: {
     when: 'Use to indicate the current page position in a multi-slide document.',
-    avoid: 'Do not use as a content block — this is chrome only.',
+    avoid: 'Do not use as a content block: it is slide furniture only.',
     example: {
       id: 'b_page_1',
       type: 'tls.x.page-number',

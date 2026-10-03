@@ -79,9 +79,13 @@ export const tlsCKpiTile: BlockDefinition = {
   tier: 'A',
   summary: 'Single KPI metric: headline number, change indicator, label, optional sparkline. Polarity-driven colour.',
   keywords: ['kpi', 'tile', 'metric', 'number', 'stat', 'value', 'delta', 'sparkline', 'dashboard'],
+  category: 'metric',
+  scope: 'element',
+  shortDescription: 'KPI tile: value, change arrow, label, optional sparkline',
+  related: ['tls.c.stat-card', 'tls.c.kpi-row'],
   describe: {
     when: 'Use to display a single KPI metric with its value, change indicator, and optional trend line.',
-    avoid: 'Do not use for multiple KPIs side-by-side — use tls.c.kpi-row. Do not use for non-numeric hero text — use tls.t.title.',
+    avoid: 'Do not use for several KPIs side by side (use tls.c.kpi-row), for a plain unframed number (use tls.t.hero-number) or for a metric with an icon (use tls.c.stat-card).',
     example: {
       id: 'b_kpi_tile',
       type: 'tls.c.kpi-tile',

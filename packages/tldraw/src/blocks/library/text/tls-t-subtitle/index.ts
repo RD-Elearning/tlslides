@@ -17,9 +17,13 @@ export const tlsTSubtitle: BlockDefinition = {
   tier: 'A',
   summary: 'Secondary heading below the title with RichText support.',
   keywords: ['subtitle', 'subheading', 'secondary'],
+  category: 'heading',
+  scope: 'element',
+  shortDescription: 'Secondary line under the title',
+  related: ['tls.t.title'],
   describe: {
     when: 'Use to add context, date, or audience below the title.',
-    avoid: 'Do not use for long paragraphs — use tls.t.body instead.',
+    avoid: 'Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title).',
     example: {
       id: 'b_sub',
       type: 'tls.t.subtitle',

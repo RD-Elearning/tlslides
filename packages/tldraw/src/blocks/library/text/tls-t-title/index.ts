@@ -17,9 +17,13 @@ export const tlsTTitle: BlockDefinition = {
   tier: 'A',
   summary: 'Slide title with inline styling, autofit, and truncation.',
   keywords: ['title', 'heading', 'hero', 'headline', 'slide'],
+  category: 'heading',
+  scope: 'element',
+  shortDescription: 'Slide title, auto-fitted, with optional rule',
+  related: ['tls.t.subtitle', 'tls.t.kicker'],
   describe: {
     when: 'Use as the primary heading on every content slide — the single most important text.',
-    avoid: 'Do not use for section dividers (use tls.c.hero instead) or subtitles.',
+    avoid: 'Do not use for an opening slide (use tls.c.hero), for a secondary line (use tls.t.subtitle) or for a small label above a title (use tls.t.kicker).',
     example: {
       id: 'b_title',
       type: 'tls.t.title',

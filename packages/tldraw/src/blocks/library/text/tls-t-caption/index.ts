@@ -18,9 +18,13 @@ export const tlsTCaption: BlockDefinition = {
   tier: 'A',
   summary: 'Small caption text for images, charts, and media.',
   keywords: ['caption', 'subtitle', 'description', 'label', 'small-text', 'source'],
+  category: 'text',
+  scope: 'element',
+  shortDescription: 'Small explanatory line for an image or chart',
+  related: ['tls.t.body'],
   describe: {
     when: 'Use to label a chart, image, or data source — 5–15 words maximum.',
-    avoid: 'Do not use for body text or slide titles.',
+    avoid: 'Do not use for body text (use tls.t.body) or as a title (use tls.t.title or tls.t.subtitle).',
     example: {
       id: 'b_cap',
       type: 'tls.t.caption',

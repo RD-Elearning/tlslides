@@ -16,9 +16,13 @@ export const tlsTQuote: BlockDefinition = {
   tier: 'A',
   summary: 'Pull quote with decorative quotation glyph, attribution, and role.',
   keywords: ['quote', 'blockquote', 'pull-quote', 'attribution', 'testimonial'],
+  category: 'emphasis',
+  scope: 'element',
+  shortDescription: 'Pull quote with a large quote mark and attribution',
+  related: ['tls.c.testimonial'],
   describe: {
     when: 'Use to feature a direct quote with attribution from a named person.',
-    avoid: 'Do not use for anonymous insights — use tls.t.takeaway instead.',
+    avoid: 'Do not use for anonymous insights (use tls.t.takeaway) or for a customer quote with name, role and avatar (use tls.c.testimonial).',
     example: {
       id: 'b_quote',
       type: 'tls.t.quote',

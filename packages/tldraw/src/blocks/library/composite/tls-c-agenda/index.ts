@@ -16,8 +16,7 @@ import { motion } from './motion'
 
 /** Summary for the AI: what this block is and when to use it. */
 const AGENDA_SUMMARY =
-  'Agenda or table-of-contents slide. Numbered items with titles and optional notes. ' +
-  'Use 3–8 items. Highlight the current topic with the `current` prop.'
+  'Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted.'
 
 export const tlsCAgenda: BlockDefinition = {
   type: 'tls.c.agenda',
@@ -26,9 +25,12 @@ export const tlsCAgenda: BlockDefinition = {
   tier: 'A',
   summary: AGENDA_SUMMARY,
   keywords: ['agenda', 'toc', 'table of contents', 'outline', 'topics', 'schedule', 'items'],
+  category: 'agenda',
+  scope: 'slide',
+  shortDescription: 'Numbered agenda items with notes; current item highlighted',
   describe: {
     when: 'Use for a table-of-contents or agenda slide listing 3–8 topics. Set `current` to highlight the active topic.',
-    avoid: 'Do not use for more than 8 items — split into two sections. Do not use for a timeline (use tls.g.timeline-h).',
+    avoid: 'Do not use for more than 8 items (split into two sections), for a dated sequence (use tls.c.steps) or nested in another block: it fills the whole slide.',
     example: {
       id: 'b_agenda',
       type: 'tls.c.agenda',
