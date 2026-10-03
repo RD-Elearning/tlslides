@@ -19,7 +19,7 @@ export const tlsGSteps: BlockDefinition = {
   category: 'process',
   scope: 'group',
   shortDescription: 'Compact numbered step strip with thin connectors',
-  related: ['tls.c.steps', 'tls.g.chevrons', 'tls.g.cycle'],
+  related: ['tls.c.steps', 'tls.g.chevrons', 'tls.g.cycle', 'tls.g.flow'],
   describe: {
     when: 'Use to illustrate a multi-step process or workflow.',
     avoid: 'Do not use for a full process slide with a description per step (use tls.c.steps), or for a single concept (use tls.m.icon-label).',

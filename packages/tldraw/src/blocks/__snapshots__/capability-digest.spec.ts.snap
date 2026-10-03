@@ -1715,6 +1715,66 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
 }
 \`\`\`
 
+### \`tls.g.flow\` — Flowchart
+
+Flowchart: steps, decisions, start and end joined by labelled arrows; unknown ids are reported. _(family: diagram; keywords: flowchart, flow, decision, branch, algorithm, approval)_
+
+**When:** Order with branches: decision logic, algorithms, approval paths.
+**Avoid:** A straight sequence (use tls.g.steps or tls.g.chevrons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`nodes\` | yes | list of object (id, label, kind) (2–12 items) |  |
+| \`edges\` | yes | list of object (from, to, label) (1–16 items) | Every from/to must be a node id. |
+| \`direction\` | no | enum: LR \\\\| TB | LR = left to right, TB = top to bottom. |
+| \`routing\` | no | enum: elbow \\\\| straight |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_flow\\",
+  \\"type\\": \\"tls.g.flow\\",
+  \\"props\\": {
+    \\"nodes\\": [
+      {
+        \\"id\\": \\"a\\",
+        \\"label\\": \\"Request\\",
+        \\"kind\\": \\"start\\"
+      },
+      {
+        \\"id\\": \\"b\\",
+        \\"label\\": \\"Valid?\\",
+        \\"kind\\": \\"decision\\"
+      },
+      {
+        \\"id\\": \\"c\\",
+        \\"label\\": \\"Process\\"
+      },
+      {
+        \\"id\\": \\"d\\",
+        \\"label\\": \\"Reject\\",
+        \\"kind\\": \\"end\\"
+      }
+    ],
+    \\"edges\\": [
+      {
+        \\"from\\": \\"a\\",
+        \\"to\\": \\"b\\"
+      },
+      {
+        \\"from\\": \\"b\\",
+        \\"to\\": \\"c\\",
+        \\"label\\": \\"Yes\\"
+      },
+      {
+        \\"from\\": \\"b\\",
+        \\"to\\": \\"d\\",
+        \\"label\\": \\"No\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.funnel\` — Funnel
 
 Narrowing stages from broad to focused, with a note per stage and no numbers. _(family: diagram; keywords: funnel, stages, narrowing, selection, pipeline)_
@@ -3079,7 +3139,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 81,
+  "blockCount": 82,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3120,6 +3180,7 @@ Object {
     "tls.d.waterfall",
     "tls.g.chevrons",
     "tls.g.cycle",
+    "tls.g.flow",
     "tls.g.funnel",
     "tls.g.milestones",
     "tls.g.roadmap",
