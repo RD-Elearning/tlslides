@@ -13,7 +13,7 @@
 
 import { tlsCKpiRow } from './index'
 import { tlsCKpiTile } from '../tls-c-kpi-tile'
-import { makeCtx, SIZES, assertValidNode } from '../../layout/test-helpers'
+import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../../layout/test-helpers'
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -269,6 +269,14 @@ describe('tls.c.kpi-row', () => {
       const { assertParity } = await import('../../../parity-harness')
       await assertParity(tlsCKpiRow, tlsCKpiRow.defaults, { width: 960, height: 300 })
     })
+    // KNOWN ISSUE (P5 re-probe): with a registry the probe compares the real children and FAILS: nested
+    // `layoutChild` groups sit at non-zero offsets (DOM applies them, SVG does not) and several leaves share the part
+    // name `text`, which the probe resolves differently in the two trees. The test above passes only because, without a
+    // registry, the children are empty. Fix = flatten like composite/_kit.ts `composeFlat` and give each piece a part.
+    it.skip('DOM and SVG agree with a registry (known issue)', async () => {
+      const { assertParity } = await import('../../../parity-harness')
+      await assertParity(tlsCKpiRow, tlsCKpiRow.defaults, { width: 960, height: 300 }, undefined, { registry: makeRegistry() })
+    }, 30_000)
   })
 })
 

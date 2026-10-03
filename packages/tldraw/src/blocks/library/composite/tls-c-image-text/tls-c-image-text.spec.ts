@@ -13,7 +13,7 @@
  */
 
 import { tlsCImageText } from './index'
-import { makeCtx, SIZES, assertValidNode } from '../../layout/test-helpers'
+import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../../layout/test-helpers'
 import { validateDeckSpec } from '../../../validate-deck-spec'
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
@@ -463,6 +463,9 @@ describe('tls.c.image-text parity', () => {
       tlsCImageText,
       tlsCImageText.defaults,
       { width: 1200, height: 600 },
+      undefined,
+      // With a registry, so `ctx.layoutChild` lays real children out (without one the probe compares empty trees).
+      { registry: makeRegistry() },
     )
   }, 30_000)
 })

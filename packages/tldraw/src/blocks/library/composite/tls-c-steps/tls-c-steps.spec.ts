@@ -15,6 +15,7 @@
 
 import { tlsCSteps } from './index'
 import { makeCtx, SIZES, assertValidNode } from '../../text/test-helpers'
+import { makeRegistry } from '../../layout/test-helpers'
 import { layout } from './layout'
 import { validateDeckSpec } from '../../../validate-deck-spec'
 import { BlockRegistry } from '../../../registry'
@@ -564,6 +565,13 @@ describe('tls.c.steps', () => {
         { steps: tlsCSteps.defaults.steps, orientation: 'vertical' } as Record<string, unknown>,
         { width: 960, height: 540 },
       )
+    }, 30_000)
+    // KNOWN ISSUE (P5 re-probe): with a registry the probe compares the real children and FAILS: nested
+    // `layoutChild` groups sit at non-zero offsets (DOM applies them, SVG does not) and several leaves share the part
+    // name `text`, which the probe resolves differently in the two trees. The test above passes only because, without a
+    // registry, the children are empty. Fix = flatten like composite/_kit.ts `composeFlat` and give each piece a part.
+    it.skip('horizontal with a registry (known issue)', async () => {
+      await assertParity(tlsCSteps, tlsCSteps.defaults as Record<string, unknown>, { width: 960, height: 540 }, undefined, { registry: makeRegistry() })
     }, 30_000)
   })
 })

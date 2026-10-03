@@ -13,6 +13,7 @@
 import type { BlockDefinition, BlockSchema, BlockSpec, LayoutContext, LayoutNode } from '../../../types'
 import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
+import { flattenNode } from '../_kit'
 
 export interface ProfileCardProps extends Record<string, unknown> {
   image?: string
@@ -132,8 +133,18 @@ function namePieces(node: LayoutNode, names: string[], state = { i: 0 }): Layout
   return node
 }
 
+/**
+ * The generated tree nests `layoutChild` groups at non-zero offsets, which the DOM renderer applies and the SVG
+ * renderer ignores (found by the registry-backed parity probe, P5 re-probe). Flatten it to absolute leaves under one
+ * root group at (0,0), the same shape `composite/_kit.ts` gives every P5 composite.
+ */
+function flatRoot(root: LayoutNode): LayoutNode {
+  const full = { x: 0, y: 0, width: root.box.width, height: root.box.height }
+  return { k: 'group', part: root.k === 'group' ? (root.part ?? 'root') : 'root', box: full, children: flattenNode(root, 0, 0, full) }
+}
+
 export const tlsCProfileCard: BlockDefinition = {
   ...composite,
   layout: ((props: ProfileCardProps, ctx: LayoutContext) =>
-    namePieces(composite.layout(props as never, ctx), shownTexts(props))) as BlockDefinition['layout'],
+    flatRoot(namePieces(composite.layout(props as never, ctx), shownTexts(props)))) as BlockDefinition['layout'],
 }

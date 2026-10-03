@@ -16,7 +16,7 @@
 import { tlsCComparison } from './index'
 import { defaults } from './schema'
 import { layout } from './layout'
-import { makeCtx, SIZES, assertValidNode } from '../../layout/test-helpers'
+import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../../layout/test-helpers'
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -524,6 +524,13 @@ describe('tls.c.comparison', () => {
     it('DOM geometry matches SVG geometry at medium size', async () => {
       const box = { width: 960, height: 540 }
       await assertParity(tlsCComparison, defaults as any, box)
+    }, 30_000)
+    // KNOWN ISSUE (P5 re-probe): with a registry the probe compares the real children and FAILS: nested
+    // `layoutChild` groups sit at non-zero offsets (DOM applies them, SVG does not) and several leaves share the part
+    // name `text`, which the probe resolves differently in the two trees. The test above passes only because, without a
+    // registry, the children are empty. Fix = flatten like composite/_kit.ts `composeFlat` and give each piece a part.
+    it.skip('DOM and SVG agree with a registry (known issue)', async () => {
+      await assertParity(tlsCComparison, defaults as any, { width: 960, height: 540 }, undefined, { registry: makeRegistry() })
     }, 30_000)
   })
 

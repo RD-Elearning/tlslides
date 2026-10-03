@@ -268,7 +268,7 @@ describe('tls.c.kpi-tile', () => {
   describe('assertParity', () => {
     it('DOM and SVG agree for defaults at medium size', async () => {
       const { assertParity } = await import('../../../parity-harness')
-      await assertParity(tlsCKpiTile, tlsCKpiTile.defaults, { width: 960, height: 540 })
+      await assertParity(tlsCKpiTile, tlsCKpiTile.defaults, { width: 960, height: 540 }, undefined, { registry: makeRegistry() })
     })
   })
 })

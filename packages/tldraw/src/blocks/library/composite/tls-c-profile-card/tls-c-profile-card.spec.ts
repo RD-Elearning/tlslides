@@ -29,9 +29,9 @@ const textOf = (tree: any, part: string) =>
     .map((l) => (l.node as any).lines.map((x: any) => x.text).join(''))
     .join('')
 
-// The DOM/SVG probe is off: nested `layoutChild` wrappers sit at non-zero offsets, which the SVG
-// renderer ignores (a known limit of every composite built on layoutChild).
-standardBlockSuite(tlsCProfileCard, { noCapacity: true, noParity: true })
+// The DOM/SVG probe needs the registry (a composite lays children out through `ctx.layoutChild`); `layout()`
+// flattens the nested groups so the SVG renderer, which ignores group offsets, agrees with the DOM.
+standardBlockSuite(tlsCProfileCard, { noCapacity: true, withRegistry: true })
 
 describe('tls.c.profile-card', () => {
   it('is a Tier A composite built from existing blocks (no hand-written layout)', () => {

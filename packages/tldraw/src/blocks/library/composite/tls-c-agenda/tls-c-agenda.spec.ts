@@ -448,7 +448,7 @@ describe('tls.c.agenda', () => {
   describe('parity', () => {
     it('DOM and SVG agree at medium size', async () => {
       const { assertParity } = await import('../../../parity-harness')
-      await assertParity(tlsCAgenda, defaults as any, { width: 960, height: 540 })
+      await assertParity(tlsCAgenda, defaults as any, { width: 960, height: 540 }, undefined, { registry })
     }, 30000)
   })
 })

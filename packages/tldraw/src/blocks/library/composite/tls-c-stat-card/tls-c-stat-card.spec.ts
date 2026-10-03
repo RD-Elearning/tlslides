@@ -97,4 +97,10 @@ describe('tls.c.stat-card', () => {
     // showIcon is absent from defaults — isShown returns true when key is absent
     expect(tlsCStatCard.defaults).not.toHaveProperty('showIcon')
   })
+
+  it('DOM and SVG agree at medium size (parity probe, with the registry so the children are real)', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsCStatCard as BlockDefinition, tlsCStatCard.defaults as any, { width: 960, height: 540 }, undefined, { registry })
+    await assertParity(tlsCStatCard as BlockDefinition, tlsCStatCard.describe!.example.props as any, { width: 960, height: 540 }, undefined, { registry })
+  }, 60_000)
 })
