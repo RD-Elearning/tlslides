@@ -17,7 +17,7 @@ export const tlsDProgressBar: BlockDefinition = {
   category: 'metric',
   scope: 'element',
   shortDescription: 'Labelled horizontal bars showing progress toward a target',
-  related: ['tls.d.bar', 'tls.d.progress-ring'],
+  related: ['tls.d.bar', 'tls.d.progress-ring', 'tls.d.bullet-chart'],
   describe: {
     when: 'Completion of goals, budgets spent, survey agreement levels.',
     avoid: 'Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring).',

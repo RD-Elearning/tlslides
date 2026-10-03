@@ -1590,6 +1590,285 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_17",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_17_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 extras",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_17_bullet",
+            "type": "tls.d.bullet-chart",
+            "props": {
+              "items": [
+                {
+                  "label": "Revenue",
+                  "value": 270,
+                  "target": 300,
+                  "max": 400
+                },
+                {
+                  "label": "Profit",
+                  "value": 22,
+                  "target": 20,
+                  "max": 30
+                },
+                {
+                  "label": "New customers",
+                  "value": 1200,
+                  "target": 1500,
+                  "max": 2000
+                }
+              ],
+              "format": "compact"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_17_slope",
+            "type": "tls.d.slope",
+            "props": {
+              "startLabel": "2023",
+              "endLabel": "2025",
+              "items": [
+                {
+                  "name": "North",
+                  "start": 40,
+                  "end": 58
+                },
+                {
+                  "name": "South",
+                  "start": 55,
+                  "end": 47
+                },
+                {
+                  "name": "East",
+                  "start": 31,
+                  "end": 44
+                },
+                {
+                  "name": "West",
+                  "start": 62,
+                  "end": 50
+                }
+              ],
+              "highlight": "risers"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_17_bubble",
+            "type": "tls.d.bubble",
+            "props": {
+              "points": [
+                {
+                  "x": 12,
+                  "y": 8,
+                  "r": 40,
+                  "label": "Alpha"
+                },
+                {
+                  "x": 28,
+                  "y": 22,
+                  "r": 120,
+                  "label": "Beta"
+                },
+                {
+                  "x": 45,
+                  "y": 15,
+                  "r": 75,
+                  "label": "Gamma"
+                },
+                {
+                  "x": 60,
+                  "y": 38,
+                  "r": 200,
+                  "label": "Delta"
+                },
+                {
+                  "x": 78,
+                  "y": 30,
+                  "r": 60,
+                  "label": "Epsilon"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_17_badges",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_17_badge_a",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": 12.5,
+                    "format": "percent",
+                    "label": "vs last quarter"
+                  }
+                },
+                {
+                  "id": "b_17_badge_b",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": -3.2,
+                    "format": "percent",
+                    "polarity": "downGood",
+                    "label": "churn",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "id": "b_17_badge_c",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": -420,
+                    "format": "compact",
+                    "label": "tickets",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "b_17_badge_d",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": 0,
+                    "format": "plain",
+                    "polarity": "neutral",
+                    "label": "flat"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_17_slope2",
+            "type": "tls.d.slope",
+            "props": {
+              "startLabel": "Q1",
+              "endLabel": "Q4",
+              "items": [
+                {
+                  "name": "Basic",
+                  "start": 80,
+                  "end": 64
+                },
+                {
+                  "name": "Plus",
+                  "start": 70,
+                  "end": 71
+                },
+                {
+                  "name": "Pro",
+                  "start": 40,
+                  "end": 63
+                },
+                {
+                  "name": "Team",
+                  "start": 30,
+                  "end": 22
+                },
+                {
+                  "name": "Max",
+                  "start": 52,
+                  "end": 40
+                }
+              ],
+              "highlight": "fallers",
+              "format": "plain"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_17_bubble2",
+            "type": "tls.d.bubble",
+            "props": {
+              "points": [
+                {
+                  "x": 1,
+                  "y": 2,
+                  "r": 10
+                },
+                {
+                  "x": 2,
+                  "y": 5,
+                  "r": 30
+                },
+                {
+                  "x": 4,
+                  "y": 3,
+                  "r": 60
+                },
+                {
+                  "x": 5,
+                  "y": 8,
+                  "r": 20
+                },
+                {
+                  "x": 7,
+                  "y": 6,
+                  "r": 90
+                },
+                {
+                  "x": 8,
+                  "y": 9,
+                  "r": 5
+                }
+              ],
+              "sizeLegend": false,
+              "gridlines": "none"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 7
+            }
+          }
+        ]
+      }
     }
   ]
 }

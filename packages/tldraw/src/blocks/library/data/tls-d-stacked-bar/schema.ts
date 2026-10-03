@@ -8,9 +8,9 @@ import type { BarFamilyProps } from '../_chart/bar-family'
 
 export const schema: BlockSchema = {
   categories: categoriesSlot(2, 12),
-  series: seriesSlot(2, 6, 'One segment per series.'),
+  series: seriesSlot(2, 6),
   orientation: enumSlot(['vertical', 'horizontal'], 'Orientation'),
-  normalize: boolSlot('100% stacked', 'Scale each bar to 100%.'),
+  normalize: boolSlot('100% stacked'),
   totals: boolSlot('Show totals'),
   valueLabels: valueLabelsSlot(['none', 'inside']),
   gridlines: gridlinesSlot(),

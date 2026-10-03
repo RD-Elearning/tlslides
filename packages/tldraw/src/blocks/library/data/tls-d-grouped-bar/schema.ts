@@ -9,7 +9,7 @@ import type { BarFamilyProps } from '../_chart/bar-family'
 export const schema: BlockSchema = {
   categories: categoriesSlot(2, 12),
   series: seriesSlot(2, 4),
-  orientation: enumSlot(['vertical', 'horizontal'], 'Orientation', 'horizontal suits long labels.'),
+  orientation: enumSlot(['vertical', 'horizontal'], 'Orientation'),
   groupGap: enumSlot(['md', 'sm', 'lg'], 'Group gap'),
   valueLabels: valueLabelsSlot(['none', 'end', 'inside']),
   gridlines: gridlinesSlot(),

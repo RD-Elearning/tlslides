@@ -84,6 +84,12 @@ describe('tls.d.slope', () => {
     assertChartSane(lay({ items }, { width: 300, height: 220 }), { width: 300, height: 220 })
   })
 
+  it('a long name is clipped but its value is always kept', () => {
+    const t = lay({ items: [{ name: 'An extraordinarily long item name indeed', start: 12, end: 34 }, { name: 'B', start: 1, end: 2 }] }, { width: 400, height: 300 })
+    expect(textsOf(t).some((s) => /…\s+12$/.test(s))).toBe(true)
+    expect(textsOf(t).some((s) => /^34\s+.*…$/.test(s))).toBe(true)
+  })
+
   it('capacity: more than ten items fails', () => {
     const r = tlsDSlope.capacity!({ items: Array.from({ length: 11 }, (_, i) => ({ name: `${i}`, start: 1, end: 2 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)

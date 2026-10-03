@@ -663,6 +663,42 @@ Scatter plot with circle area for a third value, optional labels and size legend
 }
 \`\`\`
 
+### \`tls.d.bullet-chart\` — Bullet Chart
+
+Per-KPI value bar with a target tick over shaded range bands, with labels and values. _(family: data; keywords: bullet, target, kpi, actual vs target, performance)_
+
+**When:** Several KPIs each against its own target.
+**Avoid:** Progress with no target (use tls.d.progress-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, target, max) (1–5 items) | Each KPI: actual value, its target, optional scale maximum. |
+| \`bands\` | no | enum: three \\\\| none | three = poor / ok / good shading. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bullet\\",
+  \\"type\\": \\"tls.d.bullet-chart\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Revenue\\",
+        \\"value\\": 270,
+        \\"target\\": 300,
+        \\"max\\": 400
+      },
+      {
+        \\"label\\": \\"Margin\\",
+        \\"value\\": 22,
+        \\"target\\": 20,
+        \\"max\\": 30
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.donut\` — Donut Chart
 
 Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, data, visualization)_
@@ -788,7 +824,7 @@ Half-circle dial: threshold bands, a needle or marker at the value, tick labels.
 
 ### \`tls.d.grouped-bar\` — Grouped Bar Chart
 
-Side-by-side columns or bars per category, one colour per series, zero baseline. _(family: data; keywords: grouped, clustered, bar, column, compare, series, chart)_
+Side-by-side columns or bars per category, one colour per series. _(family: data; keywords: grouped, clustered, bar, column, compare)_
 
 **When:** Comparing 2-4 series across categories (region by year).
 **Avoid:** One series (use tls.d.bar); parts of a total (use tls.d.stacked-bar).
@@ -797,7 +833,7 @@ Side-by-side columns or bars per category, one colour per series, zero baseline.
 |---|---|---|---|
 | \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
 | \`series\` | yes | list of object (name, values) (2–4 items) | One entry per series; values match categories. |
-| \`orientation\` | no | enum: vertical \\\\| horizontal | horizontal suits long labels. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
 | \`groupGap\` | no | enum: md \\\\| sm \\\\| lg |  |
 | \`valueLabels\` | no | enum: none \\\\| end \\\\| inside |  |
 | \`gridlines\` | no | enum: major \\\\| none |  |
@@ -1152,7 +1188,7 @@ Axis-free trend line with optional label, area tint, end dot and last value or c
 
 ### \`tls.d.stacked-bar\` — Stacked Bar Chart
 
-Stacked columns or bars; optional 100% scaling, totals and segment labels. _(family: data; keywords: stacked, composition, total, share, bar, column, chart)_
+Stacked columns or bars with optional 100% scaling and totals. _(family: data; keywords: stacked, composition, total, share, bar)_
 
 **When:** Composition of a total across categories; with normalize, compare the mix.
 **Avoid:** Comparing individual series values (use tls.d.grouped-bar).
@@ -1160,9 +1196,9 @@ Stacked columns or bars; optional 100% scaling, totals and segment labels. _(fam
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
-| \`series\` | yes | list of object (name, values) (2–6 items) | One segment per series. |
+| \`series\` | yes | list of object (name, values) (2–6 items) | One entry per series; values match categories. |
 | \`orientation\` | no | enum: vertical \\\\| horizontal |  |
-| \`normalize\` | no | boolean | Scale each bar to 100%. |
+| \`normalize\` | no | boolean |  |
 | \`totals\` | no | boolean |  |
 | \`valueLabels\` | no | enum: none \\\\| inside |  |
 | \`gridlines\` | no | enum: major \\\\| none |  |
@@ -2486,7 +2522,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 68,
+  "blockCount": 69,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2502,6 +2538,7 @@ Object {
     "tls.d.area",
     "tls.d.bar",
     "tls.d.bubble",
+    "tls.d.bullet-chart",
     "tls.d.donut",
     "tls.d.funnel-chart",
     "tls.d.gauge",

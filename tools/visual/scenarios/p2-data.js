@@ -13,7 +13,7 @@ const DECK = require(
   path.join(__dirname, '..', '..', '..', 'examples', 'nextjs-sample', 'data', 'decks', 'colorful-blocks-demo.json')
 )
 const SHOTS = path.join(__dirname, '..', 'shots')
-const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15,sl_16').split(',')
+const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15,sl_16,sl_17').split(',')
 
 module.exports = {
   base: 'http://localhost:5433',
