@@ -21,19 +21,19 @@ error nodes; the text in every node respects its `maxChars` at `size.min`.
 
 | # | Block | Category | Priority | Status | Commit | Blocked / notes |
 |---|---|---|---|---|---|---|
-| 1 | `tls.g.chevrons` | process | must | ⬜ | | |
-| 2 | `tls.g.cycle` | process | must | ⬜ | | |
-| 3 | `tls.g.timeline` | timeline | must | ⬜ | | |
-| 4 | `tls.g.roadmap` | timeline | must | ⬜ | | |
+| 1 | `tls.g.chevrons` | process | must | ✅ | c581d2b7 | Parts `chevron[i]`/`label[i]`/`text[i]` (bracket convention, not `chevron-<i>`). Last segment keeps a pointed head. Current phase = full `accent`, others a 22% tint of their ramp colour. Notes inside narrow chevrons are clipped (guidance: use `textPlacement: below` for longer notes). Motion is `wipe-x` on the whole block. |
+| 2 | `tls.g.cycle` | process | must | ✅ | b58834f9 | Ring is a circle (circle nodes) or an ellipse (cards); arrows are elliptical arcs trimmed to the node edges plus a filled head, so no `arcPath`/`ringArcPath` needed. Parts `node[i]`, `arrow[i]`, `arrow[i].head`, `label[i]`, `text[i]`, `center`. 3-6 steps; cards cap their height at H/3 so neighbours cannot touch. |
+| 3 | `tls.g.timeline` | timeline | must | ✅ | 559a2a85 | Min card width kept at 180 (capacity); card width solved so same-side cards never touch (`(2W-g(N-1))/(N+1)` alternating, `(W-g(N-1))/N` one side). Cards are date/title/text parts (`date[i]`/`title[i]`/`text[i]`), no `card-<i>` part. Defaults to `alternate: true`. Vertical date column in the non-alternate vertical mode. |
+| 4 | `tls.g.roadmap` | timeline | must | ✅ | a4afbdf2 | Nested lanes/items validate; the digest shows only `object (name, items)`, so the item fields live in the `lanes` guidance text. Parts `lane[l]`, `bar[l][i]`, `bar[l][i].label`, `grid[j]`, `period[j]`, `today`. Bars are inset 1px so touching periods stay distinct. Extra: a status legend under the lanes (only when `statusColors` is on). Rows scale to the box height, floor = one text line. |
 | 5 | `tls.g.tree` | hierarchy | must | ⬜ | | |
 | 6 | `tls.g.pyramid` | hierarchy | must | ⬜ | | |
 | 7 | `tls.g.matrix-2x2` | comparison | must | ⬜ | | |
 | 8 | `tls.g.swot` | comparison | must | ⬜ | | composite over matrix-2x2 |
 | 9 | `tls.g.pros-cons` | comparison | must | ⬜ | | |
 | 10 | `tls.g.venn` | relationship | must | ⬜ | | |
-| 11 | `tls.g.flow` | process | should | ⬜ | | |
-| 12 | `tls.g.funnel` | process | should | ⬜ | | |
-| 13 | `tls.g.milestones` | timeline | should | ⬜ | | |
+| 11 | `tls.g.flow` | process | should | ✅ | a4ac5204 | `lint`: `flow/unknown-node` (error), `flow/cycle`, `flow/duplicate-id`, `flow/self-loop` (warnings); unknown/self/duplicate edges are skipped by `layout`. Back edges are cubic curves below (LR) or beside (TB) the nodes with a reserved margin. Known DAG-helper limit stays: an edge that skips layers can pass behind a node in an intermediate layer. Parts `node[<id>]`, `edge[<i>]` (index in the edges slot). |
+| 12 | `tls.g.funnel` | process | should | ✅ | 96fcb496 | Even taper to 30% of the first stage; `trapezoidPath` for vertical, own polygon for horizontal. Side notes get a hairline leader (`leader[i]`). |
+| 13 | `tls.g.milestones` | timeline | should | ✅ | a69129eb | Open (not done) diamonds are a surface fill plus accent stroke on one `path`. Vertical `labels: below` = date left, label right; `alternate` swaps sides of a centre line. |
 | 14 | `tls.g.hub-spoke` | relationship | should | ⬜ | | |
 | 15 | `tls.g.layers` | hierarchy | should | ⬜ | | |
 | 16 | `tls.g.before-after` | comparison | should | ⬜ | | |
@@ -42,7 +42,7 @@ error nodes; the text in every node respects its `maxChars` at `size.min`.
 | 19 | `tls.g.arrow` | decoration | could | ⬜ | | |
 | 20 | `tls.g.bracket` | relationship | could | ⬜ | | |
 | 21 | `tls.g.iceberg` | comparison | could | ⬜ | | |
-| — | Demo slides (process, timeline, hierarchy, strategy) + screenshots | | | ⬜ | | 4 slides |
+| — | Demo slides (process, timeline, hierarchy, strategy) + screenshots | | | 🔶 | 56bba414 | Part A slides sl_22-sl_28 (process x2, cycle+funnel, flow, timeline, vertical timeline+milestones, roadmap, milestones) in `colorful-blocks-demo.json`, scenario `tools/visual/scenarios/p3-diagram.js`, every PNG opened. Hierarchy and strategy slides belong to part B. |
 
 ---
 
@@ -270,6 +270,6 @@ error nodes; the text in every node respects its `maxChars` at `size.min`.
 ---
 
 ## Phase done when
-- [ ] Must blocks ✅; four demo slides screenshotted and opened.
+- [ ] Must blocks ✅ (part A: chevrons, cycle, timeline, roadmap done; tree, pyramid, matrix-2x2, swot, pros-cons, venn open); four demo slides screenshotted and opened (process and timeline slides done, hierarchy and strategy open).
 - [ ] Every block's `describe.when` starts with its relationship word.
 - [ ] Full suite, tsc 0, README counts and session log updated.
