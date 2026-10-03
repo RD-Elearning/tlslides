@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * L2 — the P2 demo slides (metrics, charts, charts 2, ...) of colorful-blocks-demo. Steps to each
+ * L2 — the P2 demo slides (metrics, charts, charts 2, extras, tables, pricing, donut check) of colorful-blocks-demo. Steps to each
  * slide id listed in SLIDES with reduced motion, shoots it at 1x, and a cropped 2x of the same
  * slide so labels can be inspected.
  *
@@ -13,7 +13,7 @@ const DECK = require(
   path.join(__dirname, '..', '..', '..', 'examples', 'nextjs-sample', 'data', 'decks', 'colorful-blocks-demo.json')
 )
 const SHOTS = path.join(__dirname, '..', 'shots')
-const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15,sl_16,sl_17').split(',')
+const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15,sl_16,sl_17,sl_18,sl_19,sl_20,sl_21').split(',')
 
 module.exports = {
   base: 'http://localhost:5433',

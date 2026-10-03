@@ -1869,6 +1869,704 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_18",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_18_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 tables",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_18_table",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Region"
+                },
+                {
+                  "label": "Revenue",
+                  "kind": "number"
+                },
+                {
+                  "label": "Growth",
+                  "kind": "number"
+                },
+                {
+                  "label": "Status",
+                  "kind": "status"
+                }
+              ],
+              "rows": [
+                [
+                  "North America",
+                  "4820",
+                  "12%",
+                  "good"
+                ],
+                [
+                  "Europe",
+                  "3150",
+                  "4%",
+                  "watch"
+                ],
+                [
+                  "Asia Pacific",
+                  "2740",
+                  "21%",
+                  "good"
+                ],
+                [
+                  "Latin America",
+                  "980",
+                  "-3%",
+                  "bad"
+                ],
+                [
+                  "Middle East",
+                  "640",
+                  "9%",
+                  "good"
+                ],
+                [
+                  "Revenue not reported",
+                  "n/a",
+                  "n/a",
+                  ""
+                ]
+              ],
+              "footer": [
+                "Total",
+                "12330",
+                "9%",
+                ""
+              ],
+              "zebra": true,
+              "emphasisRow": 2,
+              "format": "currency"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_18_compare",
+            "type": "tls.d.compare-table",
+            "props": {
+              "options": [
+                "Ours",
+                "Vendor A",
+                "Vendor B"
+              ],
+              "criteria": [
+                "Works offline",
+                "Single sign-on",
+                "Open API",
+                "Priority support",
+                "Audit log",
+                "Ease of use"
+              ],
+              "cells": [
+                [
+                  "yes",
+                  "no",
+                  "partial"
+                ],
+                [
+                  "yes",
+                  "yes",
+                  "no"
+                ],
+                [
+                  "yes",
+                  "partial",
+                  "yes"
+                ],
+                [
+                  "yes",
+                  "no",
+                  "no"
+                ],
+                [
+                  "yes",
+                  "yes",
+                  "partial"
+                ],
+                [
+                  "5",
+                  "3",
+                  "2"
+                ]
+              ],
+              "winner": 0
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_19",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_19_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 tables, more",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_19_score_pill",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Revenue",
+                  "value": "$4.2M",
+                  "target": "$4.0M",
+                  "status": "good"
+                },
+                {
+                  "label": "Churn",
+                  "value": "3.1%",
+                  "target": "2.5%",
+                  "status": "watch"
+                },
+                {
+                  "label": "NPS",
+                  "value": "41",
+                  "target": "50",
+                  "status": "bad"
+                },
+                {
+                  "label": "Uptime",
+                  "value": "99.97%",
+                  "target": "99.9%",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "pill",
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_19_ranking",
+            "type": "tls.d.ranking",
+            "props": {
+              "items": [
+                {
+                  "label": "Aurora Pro",
+                  "value": 4820,
+                  "note": "Enterprise"
+                },
+                {
+                  "label": "Beacon",
+                  "value": 3910
+                },
+                {
+                  "label": "Cobalt Lite",
+                  "value": 2740
+                },
+                {
+                  "label": "Drift",
+                  "value": 1980
+                },
+                {
+                  "label": "Ember",
+                  "value": 1210
+                }
+              ],
+              "format": "compact"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_19_heatmap",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Mon",
+                "Tue",
+                "Wed",
+                "Thu",
+                "Fri"
+              ],
+              "cols": [
+                "9am",
+                "11am",
+                "1pm",
+                "3pm",
+                "5pm"
+              ],
+              "values": [
+                [
+                  12,
+                  30,
+                  22,
+                  18,
+                  6
+                ],
+                [
+                  15,
+                  42,
+                  35,
+                  24,
+                  9
+                ],
+                [
+                  18,
+                  55,
+                  48,
+                  31,
+                  12
+                ],
+                [
+                  14,
+                  38,
+                  41,
+                  27,
+                  10
+                ],
+                [
+                  9,
+                  21,
+                  19,
+                  12,
+                  4
+                ]
+              ]
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_19_table_ck",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Plan"
+                },
+                {
+                  "label": "SSO",
+                  "kind": "check"
+                },
+                {
+                  "label": "Support",
+                  "kind": "rating"
+                },
+                {
+                  "label": "Seats",
+                  "kind": "number"
+                }
+              ],
+              "rows": [
+                [
+                  "Starter",
+                  "no",
+                  "2",
+                  "5"
+                ],
+                [
+                  "Team",
+                  "partial",
+                  "3",
+                  "25"
+                ],
+                [
+                  "Business",
+                  "yes",
+                  "4",
+                  "100"
+                ],
+                [
+                  "Enterprise",
+                  "yes",
+                  "5",
+                  "1000"
+                ]
+              ],
+              "density": "compact",
+              "header": "bold",
+              "rules": "horizontal"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_19_score_bar",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Onboarding time",
+                  "value": "4 days",
+                  "target": "5 days",
+                  "status": "good",
+                  "note": "Down from 9"
+                },
+                {
+                  "label": "Ticket backlog",
+                  "value": "212",
+                  "target": "150",
+                  "status": "bad",
+                  "note": "Hiring in progress"
+                },
+                {
+                  "label": "Release cadence",
+                  "value": "2 / wk",
+                  "target": "2 / wk",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "bar",
+              "showTarget": false,
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_19_heat_div",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Alpha",
+                "Beta",
+                "Gamma",
+                "Delta"
+              ],
+              "cols": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "values": [
+                [
+                  8,
+                  3,
+                  -2,
+                  -6
+                ],
+                [
+                  5,
+                  -1,
+                  4,
+                  9
+                ],
+                [
+                  -7,
+                  -4,
+                  0,
+                  2
+                ],
+                [
+                  1,
+                  6,
+                  -3,
+                  5
+                ]
+              ],
+              "ramp": "diverging"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_20",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_20_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 pricing",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_20_pricing",
+            "type": "tls.d.pricing",
+            "props": {
+              "plans": [
+                {
+                  "name": "Starter",
+                  "price": "Free",
+                  "description": "For trying things out",
+                  "features": [
+                    "1 project",
+                    "Community support",
+                    "Basic analytics"
+                  ],
+                  "cta": "Start free"
+                },
+                {
+                  "name": "Team",
+                  "price": "$29",
+                  "period": "/ month",
+                  "description": "For growing teams",
+                  "features": [
+                    "Unlimited projects",
+                    "Priority support",
+                    "Advanced analytics",
+                    "Shared workspaces"
+                  ],
+                  "cta": "Start trial",
+                  "featured": true
+                },
+                {
+                  "name": "Business",
+                  "price": "$99",
+                  "period": "/ month",
+                  "description": "For whole organisations",
+                  "features": [
+                    "SSO and audit log",
+                    "Dedicated manager",
+                    "Custom integrations"
+                  ],
+                  "cta": "Contact sales"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_21",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_21_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Donut fixed: 100, 50/50, 25/75, four slices, 70/20/10, 6/94",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_21_d1",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 100,
+                  "color": "accent"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_21_d2",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 50,
+                  "color": "accent"
+                },
+                {
+                  "value": 50,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 4
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_21_d3",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 25,
+                  "color": "accent"
+                },
+                {
+                  "value": 75,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_21_d4",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 30,
+                  "color": "accent"
+                },
+                {
+                  "value": 25,
+                  "color": "accent2"
+                },
+                {
+                  "value": 25,
+                  "color": "positive"
+                },
+                {
+                  "value": 20,
+                  "color": "warning"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_21_d5",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 70,
+                  "color": "accent"
+                },
+                {
+                  "value": 20,
+                  "color": "accent2"
+                },
+                {
+                  "value": 10,
+                  "color": "positive"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 7
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_21_d6",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 6,
+                  "color": "accent"
+                },
+                {
+                  "value": 94,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 8
+            }
+          }
+        ]
+      }
     }
   ]
 }
