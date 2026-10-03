@@ -530,6 +530,60 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 }
 \`\`\`
 
+### \`tls.d.area\` — Area Chart
+
+Area chart: overlapping, stacked or 100% stacked fills over ordered categories on a zero baseline. _(family: data; keywords: area, stacked, volume, composition, time, chart)_
+
+**When:** Volume over time, composition over time (stacked).
+**Avoid:** Precise comparison of series (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–24 items) | Ordered x labels (periods). |
+| \`series\` | yes | list of object (name, values) (1–6 items) | One entry per series; values match categories. |
+| \`mode\` | no | enum: overlap \\\\| stacked \\\\| percent | stacked adds series up; percent shows shares. |
+| \`curve\` | no | enum: linear \\\\| monotone |  |
+| \`opacity\` | no | enum: soft \\\\| solid |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_area\\",
+  \\"type\\": \\"tls.d.area\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"2022\\",
+      \\"2023\\",
+      \\"2024\\",
+      \\"2025\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Web\\",
+        \\"values\\": [
+          30,
+          38,
+          46,
+          58
+        ]
+      },
+      {
+        \\"name\\": \\"Mobile\\",
+        \\"values\\": [
+          12,
+          20,
+          31,
+          44
+        ]
+      }
+    ],
+    \\"mode\\": \\"stacked\\"
+  }
+}
+\`\`\`
+
 ### \`tls.d.bar\` — Column Chart
 
 Column or horizontal bar chart of one series on a zero baseline, with gridlines and an optional highlighted bar. _(family: data; keywords: chart, bar, column, data, graph, vertical, horizontal)_
@@ -604,6 +658,52 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
     \\"total\\": 100
   },
   \\"children\\": []
+}
+\`\`\`
+
+### \`tls.d.line\` — Line Chart
+
+Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
+
+**When:** Change over time, trends, comparing trajectories.
+**Avoid:** Unordered categories (use tls.d.bar); only two time points (use tls.d.slope).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–24 items) | Ordered x labels. |
+| \`series\` | yes | list of object (name, values) (1–6 items) | One line each; null = gap. |
+| \`curve\` | no | enum: linear \\\\| monotone |  |
+| \`markers\` | no | enum: none \\\\| last \\\\| all |  |
+| \`endLabels\` | no | boolean | Replaces the legend. |
+| \`baseline\` | no | enum: auto \\\\| zero |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Series to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_line\\",
+  \\"type\\": \\"tls.d.line\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"Q1\\",
+      \\"Q2\\",
+      \\"Q3\\",
+      \\"Q4\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Users\\",
+        \\"values\\": [
+          12,
+          18,
+          27,
+          40
+        ]
+      }
+    ]
+  }
 }
 \`\`\`
 
@@ -1889,7 +1989,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 54,
+  "blockCount": 56,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1902,8 +2002,10 @@ Object {
     "tls.c.stat-card",
     "tls.c.steps",
     "tls.c.testimonial",
+    "tls.d.area",
     "tls.d.bar",
     "tls.d.donut",
+    "tls.d.line",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
     "tls.d.stat-compare",

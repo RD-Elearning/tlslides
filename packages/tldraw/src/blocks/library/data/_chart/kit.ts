@@ -275,8 +275,8 @@ export function pathNode(ctx: LayoutContext, d: string, part: string, o: { fill?
 }
 
 /** Faded group: lets overlapping fills stay readable without an alpha channel on Paint. */
-export function faded(ctx: LayoutContext, opacity: number, part: string, children: LayoutNode[]): LayoutNode {
-  return { k: 'group', part, opacity, box: fullBox(ctx), children }
+export function faded(ctx: LayoutContext, opacity: number, children: LayoutNode[]): LayoutNode {
+  return { k: 'group', opacity, box: fullBox(ctx), children }
 }
 
 /* ───────────────────────────── colours ───────────────────────────── */
@@ -405,7 +405,14 @@ export function categoryLabels(
     const t = textAligned(ctx, cats[i], s, { x: centers[i] - w / 2, y, width: w * 0.96 }, 'center', part(i))
     // textAligned centres inside a box of width w*0.96 starting at x: re-centre on the band.
     const shift = (w - w * 0.96) / 2
-    nodes.push(...t.nodes.map((nd) => ({ ...nd, box: { ...nd.box, x: nd.box.x + shift } }) as LayoutNode))
+    // Keep edge labels inside the block: slide them in rather than letting them hang out.
+    const maxX = Math.max(0, ctx.box.width)
+    nodes.push(
+      ...t.nodes.map((nd) => {
+        const x = clamp(nd.box.x + shift, 0, Math.max(0, maxX - nd.box.width))
+        return { ...nd, box: { ...nd.box, x } } as LayoutNode
+      })
+    )
     height = Math.max(height, t.height)
   }
   return { nodes, height, stride }
