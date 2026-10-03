@@ -749,6 +749,39 @@ Learning objectives or goals as a numbered, checked or icon list with an intro l
 }
 \`\`\`
 
+### \`tls.c.problem-solution\` — Problem and solution
+
+A problem statement and its solution side by side, joined by an arrow. _(family: composite; keywords: problem, solution, pain point, pitch, proposal, challenge, fix, before and after)_
+
+**When:** Pitch and proposal slides framing a pain point and the answer to it.
+**Avoid:** A visual before and after: tls.g.before-after or tls.m.image-compare.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`problem\` | yes | object (title, text) | Fields: title, text. |
+| \`solution\` | yes | object (title, text) | Fields: title, text. |
+| \`showIcons\` | no | boolean |  |
+| \`style\` | no | enum: panels \\\\| callouts | callouts = danger and success notes. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ps\\",
+  \\"type\\": \\"tls.c.problem-solution\\",
+  \\"props\\": {
+    \\"problem\\": {
+      \\"title\\": \\"The problem\\",
+      \\"text\\": \\"Queues of **20 minutes** at peak hours.\\"
+    },
+    \\"solution\\": {
+      \\"title\\": \\"The solution\\",
+      \\"text\\": \\"Self-service kiosks: **under 4 minutes**.\\"
+    },
+    \\"showIcons\\": true,
+    \\"style\\": \\"panels\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.profile-card\` — Profile Card
 
 Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
@@ -4421,7 +4454,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 117,
+  "blockCount": 118,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4439,6 +4472,7 @@ Object {
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
     "tls.c.objectives",
+    "tls.c.problem-solution",
     "tls.c.profile-card",
     "tls.c.quiz",
     "tls.c.recap",

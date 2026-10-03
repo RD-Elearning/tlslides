@@ -17,7 +17,7 @@ export const tlsTCallout: BlockDefinition = {
   category: 'emphasis',
   scope: 'element',
   shortDescription: 'Boxed note marked as info, tip, warning, danger or success, with icon',
-  related: ['tls.t.takeaway', 'tls.t.statement'],
+  related: ['tls.t.takeaway', 'tls.t.statement', 'tls.c.problem-solution'],
   describe: {
     when: 'Warnings, tips, notes and caveats beside the main content.',
     avoid: 'The slide main conclusion (use tls.t.takeaway or tls.t.statement).',
