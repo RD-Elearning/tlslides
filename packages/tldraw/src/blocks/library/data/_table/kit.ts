@@ -352,3 +352,18 @@ export function tableCapacity(built: Pick<TableBuilt, 'measure' | 'rowGap'>, box
   }
 }
 
+
+/* ───────────────────────────── child layouts ───────────────────────────── */
+
+/**
+ * The leaves of a `ctx.layoutChild` result in the PARENT's coordinates. `layoutChild` wraps the
+ * child in a group at its box and the child's own tree is relative to that group: the DOM renderer
+ * honours the offset, the SVG renderer ignores it. Flattening to absolute leaves is correct in both.
+ * Meant for rect / text / icon leaves (a `path`'s `d` is not shifted).
+ */
+export function flattenChild(node: LayoutNode, dx = 0, dy = 0): LayoutNode[] {
+  const x = dx + node.box.x
+  const y = dy + node.box.y
+  if (node.k === 'group') return node.children.flatMap((c) => flattenChild(c, x, y))
+  return [{ ...node, box: { ...node.box, x, y } } as LayoutNode]
+}

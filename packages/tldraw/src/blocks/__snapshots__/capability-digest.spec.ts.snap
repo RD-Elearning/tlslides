@@ -1005,6 +1005,54 @@ Pie of up to six slices with outside, inside or legend labels and percentages. _
 }
 \`\`\`
 
+### \`tls.d.pricing\` — Pricing Plans
+
+Side-by-side plan cards: name, price, features and a button, one plan featured. _(family: data; keywords: pricing, plans, tiers, packages, subscription, offer)_
+
+**When:** Pricing tiers, packages, offer levels.
+**Avoid:** Many features across plans (tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`plans\` | yes | list of object (name, price, period, description, features, cta, featured) (2–4 items) | Mark one plan featured. Keep feature lists to a similar length. |
+| \`featuredStyle\` | no | enum: raised \\\\| outline \\\\| filled |  |
+| \`checkIcon\` | no | icon |  |
+| \`align\` | no | enum: top \\\\| stretch | stretch = equal height |
+| \`showCta\` | no | boolean |  |
+| \`showDescription\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pricing\\",
+  \\"type\\": \\"tls.d.pricing\\",
+  \\"props\\": {
+    \\"plans\\": [
+      {
+        \\"name\\": \\"Starter\\",
+        \\"price\\": \\"Free\\",
+        \\"features\\": [
+          \\"1 project\\",
+          \\"Community support\\"
+        ],
+        \\"cta\\": \\"Start\\"
+      },
+      {
+        \\"name\\": \\"Team\\",
+        \\"price\\": \\"$29\\",
+        \\"period\\": \\"/ month\\",
+        \\"description\\": \\"For teams\\",
+        \\"features\\": [
+          \\"Unlimited projects\\",
+          \\"Priority support\\"
+        ],
+        \\"cta\\": \\"Try\\",
+        \\"featured\\": true
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.progress-bar\` — Progress Bars
 
 Labelled bars filled to value / target, with percent or value text. _(family: data; keywords: progress, completion, target, goal, bar, percent)_
@@ -2672,7 +2720,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 72,
+  "blockCount": 73,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2696,6 +2744,7 @@ Object {
     "tls.d.grouped-bar",
     "tls.d.line",
     "tls.d.pie",
+    "tls.d.pricing",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
     "tls.d.radar",

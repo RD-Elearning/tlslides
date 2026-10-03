@@ -51,7 +51,7 @@ export const tlsCComparison: BlockDefinition = {
   category: 'comparison',
   scope: 'group',
   shortDescription: 'Columns of titled item lists, one optionally highlighted',
-  related: ['tls.d.compare-table'],
+  related: ['tls.d.compare-table', 'tls.d.pricing'],
   describe: {
     when:
       'Use to compare 2–3 options, plans, or viewpoints side by side. ' +

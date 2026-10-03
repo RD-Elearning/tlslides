@@ -17,7 +17,7 @@ export const tlsDCompareTable: BlockDefinition = {
   category: 'comparison',
   scope: 'group',
   shortDescription: 'Feature matrix of options against criteria, ticks, crosses or ratings',
-  related: ['tls.d.table', 'tls.d.radar', 'tls.c.comparison'],
+  related: ['tls.d.table', 'tls.d.pricing', 'tls.d.radar', 'tls.c.comparison'],
   describe: {
     when: 'Us vs competitors, plan features, tool selection.',
     avoid: 'Free-form pros and cons (tls.c.comparison). Prices: tls.d.pricing.',
