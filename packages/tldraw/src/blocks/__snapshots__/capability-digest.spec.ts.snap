@@ -1386,6 +1386,45 @@ Small label above the title with case and tracking options. _(family: text; keyw
 }
 \`\`\`
 
+### \`tls.t.kv-list\` — Key-value list
+
+Key and value pairs in aligned columns, with dotted or ruled leaders. _(family: text; keywords: specs, facts, key value, details, schedule, terms)_
+
+**When:** Specs, facts, terms and conditions, a schedule of times.
+**Avoid:** Multi-column data (use tls.d.table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (key, value) (2–10 items) | Short labels as keys; keep values to a phrase or a number with its unit. |
+| \`leader\` | no | enum: none \\\\| dots \\\\| rule | dots join key to value; rule draws a hairline under each row. |
+| \`valueAlign\` | no | enum: end \\\\| start |  |
+| \`keyTone\` | no | enum: muted \\\\| text |  |
+| \`columns\` | no | enum: 1 \\\\| 2 |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kv\\",
+  \\"type\\": \\"tls.t.kv-list\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"key\\": \\"Start\\",
+        \\"value\\": \\"09:00\\"
+      },
+      {
+        \\"key\\": \\"Break\\",
+        \\"value\\": \\"10:30\\"
+      },
+      {
+        \\"key\\": \\"Finish\\",
+        \\"value\\": \\"12:00\\"
+      }
+    ],
+    \\"leader\\": \\"rule\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.numbered\` — Numbered list
 
 Numbered points in order, one or two columns. _(family: text; keywords: numbered, ordered, ranked, reasons)_
@@ -1680,7 +1719,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 48,
+  "blockCount": 49,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1723,6 +1762,7 @@ Object {
     "tls.t.footnote",
     "tls.t.hero-number",
     "tls.t.kicker",
+    "tls.t.kv-list",
     "tls.t.numbered",
     "tls.t.quote",
     "tls.t.statement",

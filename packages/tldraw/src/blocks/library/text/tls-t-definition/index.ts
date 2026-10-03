@@ -17,7 +17,7 @@ export const tlsTDefinition: BlockDefinition = {
   category: 'text',
   scope: 'element',
   shortDescription: 'Term with its definition, optional pronunciation and example',
-  related: ['tls.t.body', 'tls.t.takeaway'],
+  related: ['tls.t.body', 'tls.t.takeaway', 'tls.t.kv-list'],
   describe: {
     when: 'Introducing a concept, glossary terms, vocabulary (lectures).',
     avoid: 'Several term and value pairs (use tls.t.kv-list).',
