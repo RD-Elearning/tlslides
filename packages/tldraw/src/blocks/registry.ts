@@ -1,5 +1,6 @@
 import * as React from 'react'
-import type { BlockDefinition, BlockFamily } from './types'
+import type { BlockCategory, BlockDefinition, BlockFamily } from './types'
+import { BLOCK_CATEGORIES } from './types'
 
 /**
  * Runtime registry for block definitions. Blocks must be registered before they can
@@ -60,6 +61,26 @@ export class BlockRegistry {
    */
   listByFamily(family: BlockFamily): BlockDefinition[] {
     return this.list().filter((def) => def.family === family)
+  }
+
+  /**
+   * Group definitions by semantic category, in `BLOCK_CATEGORIES` order. Blocks without a
+   * category (third-party blocks) go under 'structure'. Empty categories are omitted.
+   */
+  listByCategory(): Map<BlockCategory, BlockDefinition[]> {
+    const buckets = new Map<BlockCategory, BlockDefinition[]>()
+    for (const def of this.list()) {
+      const cat = def.category ?? 'structure'
+      const bucket = buckets.get(cat)
+      if (bucket) bucket.push(def)
+      else buckets.set(cat, [def])
+    }
+    const ordered = new Map<BlockCategory, BlockDefinition[]>()
+    for (const cat of BLOCK_CATEGORIES) {
+      const bucket = buckets.get(cat)
+      if (bucket) ordered.set(cat, bucket)
+    }
+    return ordered
   }
 }
 

@@ -88,12 +88,6 @@ every deck JSON fixture resolves in the registry.
 All layout, text, data, diagram, media, and chrome blocks are Tier A. In composite, `hero`,
 `feature-grid`, `testimonial`, and `big-stat` are Tier B (HTML); the other 6 are Tier A.
 
-**Housekeeping note:** `packages/tldraw/src/blocks/library/layout/` contains one empty stray
-directory literally named `{tls-l-stack,tls-l-row,tls-l-grid,tls-l-split,tls-l-overlay,tls-l-card,
-tls-l-section,tls-l-repeater,tls-l-spacer,tls-l-field,tls-l-safe-area,tls-l-grid-guide,
-tls-l-sidebar,tls-l-footer}` — a leftover from a shell brace-expansion that failed to expand
-(dated 2026-09-16). It is empty, unregistered, and harmless; safe to `rmdir` whenever convenient.
-
 ---
 
 ## Before writing a new block

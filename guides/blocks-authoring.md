@@ -187,6 +187,13 @@ export const tlsCKpiTile: BlockDefinition = {
 }
 ```
 
+**Catalog metadata (block-library plan).** Every built-in block also sets `category` (what it is
+for: one of `BLOCK_CATEGORIES`), `scope` (`element` | `group` | `slide`), `shortDescription` (at
+most 90 chars, what the viewer sees, no counts or implementation words) and optionally `related`
+(existing sibling types). `defineCompositeBlock` passes all four through. They drive the gallery
+tabs and the AI capability index; `catalog-conformance.spec.ts` enforces them. See
+[reviews/blocks/block-library/01-taxonomy.md](../reviews/blocks/block-library/01-taxonomy.md).
+
 ### 2.5 The spec file — what to assert
 
 1. `defaults` lays out without throwing under all five themes, light and dark.

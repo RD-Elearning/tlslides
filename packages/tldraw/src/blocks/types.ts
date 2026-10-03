@@ -133,6 +133,59 @@ export interface AmbientMotionSpec {
 /**
  * Supported block families. Blocks are grouped by structural purpose and rendering approach.
  */
+/**
+ * Semantic category: what a block is FOR (the family says how it is built). Closed set of 23;
+ * drives the gallery tabs and the AI capability index. See `reviews/blocks/block-library/01-taxonomy.md`.
+ */
+export type BlockCategory =
+  | 'structure' | 'heading' | 'text' | 'list' | 'emphasis'
+  | 'metric' | 'chart' | 'table' | 'comparison'
+  | 'process' | 'timeline' | 'hierarchy' | 'relationship'
+  | 'media' | 'people' | 'brand'
+  | 'cover' | 'divider' | 'agenda' | 'closing' | 'learning'
+  | 'chrome' | 'decoration'
+
+/** Placement scope: element = atom, group = self-contained unit for one region, slide = fills the content area (never nest). */
+export type BlockScope = 'element' | 'group' | 'slide'
+
+/** Category order used by the gallery and the AI index. */
+export const BLOCK_CATEGORIES: readonly BlockCategory[] = [
+  'structure', 'heading', 'text', 'list', 'emphasis',
+  'metric', 'chart', 'table', 'comparison',
+  'process', 'timeline', 'hierarchy', 'relationship',
+  'media', 'people', 'brand',
+  'cover', 'divider', 'agenda', 'closing', 'learning',
+  'chrome', 'decoration',
+]
+
+export const BLOCK_SCOPES: readonly BlockScope[] = ['element', 'group', 'slide']
+
+export const CATEGORY_INFO: Record<BlockCategory, { label: string; description: string }> = {
+  structure: { label: 'Structure', description: 'Invisible arrangement: stacks, grids, splits, guides' },
+  heading: { label: 'Headings', description: 'Text that names a slide or section' },
+  text: { label: 'Text', description: 'Running text and small print' },
+  list: { label: 'Lists', description: 'Several parallel items' },
+  emphasis: { label: 'Emphasis', description: 'One idea made to stand out' },
+  metric: { label: 'Metrics', description: 'One or a few numbers, possibly against a target' },
+  chart: { label: 'Charts', description: 'Quantitative chart with axes or slices' },
+  table: { label: 'Tables', description: 'Rows and columns of values' },
+  comparison: { label: 'Comparison', description: 'Two or more options set against each other' },
+  process: { label: 'Process', description: 'Ordered steps without dates' },
+  timeline: { label: 'Timeline', description: 'Ordered events with dates or periods' },
+  hierarchy: { label: 'Hierarchy', description: 'Parent/child or level structure' },
+  relationship: { label: 'Relationships', description: 'Overlap or connection between non-ordered things' },
+  media: { label: 'Media', description: 'Pictures and icons as the content' },
+  people: { label: 'People', description: 'Persons as the content' },
+  brand: { label: 'Brand', description: 'Logos' },
+  cover: { label: 'Covers', description: 'Deck or talk opener' },
+  divider: { label: 'Dividers', description: 'Section break between parts of a deck' },
+  agenda: { label: 'Agenda', description: "What's coming: agenda, contents, objectives" },
+  closing: { label: 'Closing', description: 'Ending: thanks, call to action, contact, recap' },
+  learning: { label: 'Learning', description: 'Teaching interactions' },
+  chrome: { label: 'Chrome', description: 'Slide furniture repeated on many slides' },
+  decoration: { label: 'Decoration', description: 'Visual-only shapes with no content' },
+}
+
 export type BlockFamily = 'layout' | 'text' | 'data' | 'diagram' | 'media' | 'composite' | 'chrome' | 'live'
 
 /**
@@ -221,6 +274,15 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   summary: string
   /** Keywords for inserter search and AI selection. */
   keywords: string[]
+  /** Semantic category: what the block is FOR. Drives the gallery tabs and the AI index. */
+  category?: BlockCategory
+  /** At most 90 chars. What the viewer sees, distinguishable from its category siblings. */
+  shortDescription?: string
+  /** element = an atom placed in a region/container; group = a self-contained unit that fills
+   *  one region; slide = designed to fill the whole content area (never nest it). */
+  scope?: BlockScope
+  /** Sibling block types worth considering instead. Each must resolve in the registry. */
+  related?: string[]
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide

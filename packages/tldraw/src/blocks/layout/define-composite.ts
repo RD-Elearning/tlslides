@@ -24,6 +24,8 @@ import type {
   MotionRecipe,
   Size,
   BlockFamily,
+  BlockCategory,
+  BlockScope,
 } from '../types'
 
 export interface CompositeBlockConfig<P extends Record<string, unknown>> {
@@ -31,6 +33,10 @@ export interface CompositeBlockConfig<P extends Record<string, unknown>> {
   name: string
   summary: string
   keywords: string[]
+  category?: BlockCategory
+  shortDescription?: string
+  scope?: BlockScope
+  related?: string[]
   family?: BlockFamily // default 'composite'
   /** 'A' = pure layout, exports headlessly. 'B' = DOM-only. Required — see B5-H3. */
   tier: 'A' | 'B'
@@ -93,6 +99,10 @@ export function defineCompositeBlock<P extends Record<string, unknown>>(
     tier: cfg.tier,
     summary: cfg.summary,
     keywords: cfg.keywords,
+    category: cfg.category,
+    shortDescription: cfg.shortDescription,
+    scope: cfg.scope,
+    related: cfg.related,
     describe: cfg.describe,
     schema: cfg.schema as BlockDefinition['schema'],
     defaults: cfg.defaults,
