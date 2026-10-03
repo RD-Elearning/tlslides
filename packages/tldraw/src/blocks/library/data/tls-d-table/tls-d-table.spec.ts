@@ -4,6 +4,7 @@
  */
 
 import { tlsDTable } from './index'
+import { numberWidthEm } from '../_table/kit'
 import { absoluteLeaves, allNodes, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
 
@@ -145,5 +146,33 @@ describe('tls.d.table', () => {
     const size = { width: 320, height: 160 }
     const t = lay({ rows: [['A', '1', '2', 'good']], footer: undefined, showFooter: false }, size)
     expect(JSON.stringify(t)).not.toMatch(/NaN|Infinity|undefined/)
+  })
+
+  it('a table that cannot fit its columns side by side steps down to compact text instead of wrapping words', () => {
+    const size = { width: 540, height: 400 }
+    const props = { columns: [{ label: 'Metric' }, { label: 'Actual', kind: 'number' }, { label: 'Target', kind: 'number' }, { label: 'Status', kind: 'status' }], rows: [['Revenue', '4,200,000', '4,000,000', 'good'], ['Churn', '3.1%', '2.5%', 'watch']], footer: undefined, showFooter: false }
+    const t = lay(props, size)
+    const wide = lay(props, { width: 1400, height: 400 })
+    expect((exact(t, 'row[0].c0').node as any).style.size).toBeLessThan((exact(wide, 'row[0].c0').node as any).style.size)
+    expect((exact(t, 'row[0].c3/label').node as any).lines.length).toBe(1)
+    expect((exact(t, 'row[0].c0').node as any).lines.length).toBe(1)
+  })
+
+  it('rating dots and icons sit on the vertical centre of the text line', () => {
+    const t = lay({ columns: [{ label: 'Name' }, { label: 'R', kind: 'rating' }, { label: 'C', kind: 'check' }], rows: [['Alpha', '3', 'yes']], showFooter: false })
+    const text = exact(t, 'row[0].c0')
+    const centre = text.y + (text.node as any).style.size * (text.node as any).style.lineHeight / 2
+    const dot = exact(t, 'row[0].c1/dot-0')
+    const icon = exact(t, 'row[0].c2')
+    expect(Math.abs(dot.y + dot.height / 2 - centre)).toBeLessThan(1.5)
+    expect(Math.abs(icon.y + icon.height / 2 - centre)).toBeLessThan(1.5)
+  })
+
+  it('numbers are measured with figure widths, so mixed-length numbers share a right edge', () => {
+    expect(numberWidthEm('$4,820')).toBeCloseTo(3.18, 1)
+    expect(numberWidthEm('1,000')).toBeLessThan(numberWidthEm('10,000'))
+    const t = lay({ columns: cols, rows: [['a', '$4,820'], ['b', '12%'], ['c', '1.2M']], footer: undefined, showFooter: false })
+    const edges = [0, 1, 2].map((r) => exact(t, `row[${r}].c1`)).map((l) => l.x + l.width)
+    expect(Math.max(...edges) - Math.min(...edges)).toBeLessThan(0.5)
   })
 })

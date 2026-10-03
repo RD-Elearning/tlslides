@@ -18,11 +18,13 @@ import { HEATMAP_MAX } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, ellipsize, emptyState, enumOf, fmtNum, lineH, mutedStyle, numOrNull, onColor, root, solidRect, str, style, textAligned, tintOf, TEXT_SLACK,
 } from '../_chart/kit'
+import { withNumberMetrics } from '../_table/kit'
 
 const MIN_CELL_W = 28
 const MIN_CELL_H = 24
 
-export function layout(props: HeatmapProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: HeatmapProps, ctx0: LayoutContext): LayoutNode {
+  const ctx = withNumberMetrics(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const rows = asArr<unknown>(props.rows).slice(0, HEATMAP_MAX).map(str)
@@ -76,7 +78,7 @@ export function layout(props: HeatmapProps, ctx: LayoutContext): LayoutNode {
     if (i % rowStride !== 0) return
     const y = headH + i * (ch + gap)
     const text = ellipsize(ctx, label, ls, Math.max(1, labelW / TEXT_SLACK))
-    nodes.push(...textAligned(ctx, text, ls, { x: 0, y: y + (ch - lh) / 2, width: labelW }, 'end', `row[${i}]`).nodes.slice(0, 1))
+    nodes.push(...textAligned(ctx, text, ls, { x: 0, y: y + (ch - lh) / 2, width: labelW }, 'start', `row[${i}]`).nodes.slice(0, 1))
   })
 
   const texts = grid.map((r) => r.map((v) => (v === null ? '' : fmtNum(v, props.format))))

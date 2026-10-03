@@ -157,6 +157,37 @@ export function alignOf(v: unknown, kind: ColKind): CellAlign {
   return v === 'start' || v === 'center' || v === 'end' ? v : defaultAlign(kind)
 }
 
+/* ───────────────────────────── number metrics ───────────────────────────── */
+
+const EM: Record<string, number> = { '1': 0.42, '.': 0.28, ',': 0.28, ':': 0.28, ' ': 0.28, '-': 0.36, '/': 0.38, '%': 0.88, '+': 0.58, x: 0.54, '×': 0.58, K: 0.64, M: 0.88, B: 0.66, k: 0.54, m: 0.88, b: 0.58 }
+const NUMERIC = /^[+\-$€£]?\d[\d.,]*\s?(%|[KMBkmb]|x|×)?$/
+
+/**
+ * Width of a numeric string in em, from sans-serif figure widths (digits ~0.58em, separators
+ * ~0.28em). `estimateMetrics` charges every glyph the same, so right-aligned columns of numbers
+ * drift by up to 10px; this model tracks the real glyphs of Inter-like faces within a few px.
+ */
+export function numberWidthEm(text: string): number {
+  let w = 0
+  for (const ch of text) w += EM[ch] ?? (/\d|[$€£]/.test(ch) ? 0.58 : 0.56)
+  return w
+}
+
+/** A context whose `measureText` knows figure widths, so numbers right-align on a common edge. */
+export function withNumberMetrics(ctx: LayoutContext): LayoutContext {
+  return {
+    ...ctx,
+    measureText: (text, style, maxWidth) => {
+      if (typeof text !== 'string' || !NUMERIC.test(text.trim())) return ctx.measureText(text, style, maxWidth)
+      const width = Math.round(numberWidthEm(text.trim()) * style.size * 10) / 10
+      // Numbers never wrap while they fit by the figure model (the flat estimate may disagree).
+      const m = ctx.measureText(text, style, width <= (maxWidth ?? Infinity) ? undefined : maxWidth)
+      if (m.lines.length !== 1) return m
+      return { ...m, width, lines: m.lines.map((l) => ({ ...l, width })) }
+    },
+  }
+}
+
 /* ───────────────────────────── density ───────────────────────────── */
 
 /** A context whose `body` and `caption` text resolve one token smaller (compact tables). */
@@ -213,6 +244,13 @@ const renamer = (names?: ReadonlyArray<string>) => (part: string | undefined): s
   return part
 }
 
+/** Icons and rating dots are top-anchored by the engine; centre them on the first text line. */
+function centreInLine(n: LayoutNode, lineHeight: number): LayoutNode {
+  const isDot = n.k === 'rect' && /\/dot-\d+$/.test(n.part ?? '')
+  if (n.k !== 'icon' && !isDot) return n
+  return { ...n, box: { ...n.box, y: n.box.y + Math.max(0, (lineHeight - n.box.height) / 2) } } as LayoutNode
+}
+
 function boldHeader(node: LayoutNode, color: string): LayoutNode {
   if (node.k === 'text') {
     return { ...node, lines: node.lines.map((l) => ({ ...l, runs: [{ text: l.text, bold: true, color }] })) }
@@ -220,10 +258,20 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
   return node
 }
 
+/**
+ * Lay out a table. A table whose columns cannot sit side by side at the requested width steps down
+ * to the compact density (smaller text and padding) before words start wrapping letter by letter.
+ */
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
+  const first = buildCore(ctx0, o)
+  if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return buildCore(ctx0, { ...o, density: 'compact' })
+  return first
+}
+
+function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
-  const ctx = compact ? compactCtx(ctx0) : ctx0
+  const ctx = withNumberMetrics(compact ? compactCtx(ctx0) : ctx0)
   const sp = ctx.tokens.space
   const cols = Math.max(1, o.kinds.length)
   const cellPad = compact ? sp.xs : sp.sm
@@ -243,6 +291,7 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
   const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none' } as const
   const measured = measureColumns({ head, rows, cellPad }, ctx).map((w) => w * 1.06)
   const bodyStyle = ctx.resolveText('body')
+  const lineHeightOf = bodyStyle.size * bodyStyle.lineHeight
   const words = Array.from({ length: cols }, (_, c) => {
     let w = 0
     const take = (cell: TableCell | undefined) => {
@@ -253,7 +302,7 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
   })
   widths.push(...solveColumns(
     Array.from({ length: cols }, (_, c) => ({
-      min: o.kinds[c] === 'text' ? words[c] : Math.min(measured[c] ?? 0, W / cols),
+      min: o.kinds[c] === 'text' ? words[c] : (measured[c] ?? 0),
       weight: o.weights?.[c] ?? (o.kinds[c] === 'text' || o.kinds[c] === undefined ? 1 : 0),
     })),
     W,
@@ -302,7 +351,8 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
           const winnerHead = isHead && o.emphasisHead === true && emphCol >= 0 && n.part === `head-${emphCol}`
           const styled = winnerHead ? boldHeader(n, onColor(ctx, c.accent)) : isHead && header === 'bold' ? boldHeader(n, c.text) : isHead && headFill ? boldHeader(n, headInk) : footRow && isFooter(ch.part) ? boldHeader(n, c.text) : n
           const cm = /^cell-(\d+)-(\d+)/.exec(n.part ?? '')
-          const out = cm && o.restyle ? o.restyle(styled, Number(cm[1]), Number(cm[2])) : styled
+          const centred = centreInLine(styled, lineHeightOf)
+          const out = cm && o.restyle ? o.restyle(centred, Number(cm[1]), Number(cm[2])) : centred
           return { ...out, part: rename(n.part) } as LayoutNode
         })
         if (isFooter(ch.part)) {
@@ -330,7 +380,7 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
     }
   }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
-  return { tree, measure, widths, rowGap }
+  return { tree, measure, widths, rowGap, natural: measured.reduce((a, b) => a + b, 0) }
 }
 
 /* ───────────────────────────── capacity ───────────────────────────── */

@@ -16,6 +16,7 @@ import { RANKING_MAX_ITEMS } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, clipLines, dot, emptyState, enumOf, fmtNum, lineH, mutedStyle, numOrNull, onColor, root, solidRect, str, style, textAligned, tintOf, TEXT_SLACK,
 } from '../_chart/kit'
+import { withNumberMetrics } from '../_table/kit'
 
 const MIN_ROW = 68
 const MAX_ROW = 92
@@ -37,7 +38,8 @@ function read(props: RankingProps): Entry[] {
   return items
 }
 
-export function layout(props: RankingProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: RankingProps, ctx0: LayoutContext): LayoutNode {
+  const ctx = withNumberMetrics(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const items = read(props)
