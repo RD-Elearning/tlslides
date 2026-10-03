@@ -1,6 +1,6 @@
 # P7 · Motion styles + showcase blocks — 1 schema field, 4 blocks, 1 demo deck
 
-**Status (2026-10-03):** in progress.
+**Status (2026-10-03):** ✅ done. 7.0-7.8 shipped; catalog 125 -> 129. Open items in §Known gaps.
 
 **Goal (user):** some slides should have striking, showy animation, others stay simple. Blocks
 must support both, and a demo deck must show it in the browser.
@@ -22,16 +22,15 @@ while layouts emit indexed parts (`bar/0`, `item[2].text`) under recipe names `b
 
 | # | Item | Priority | Status | Commit | Notes |
 |---|---|---|---|---|---|
-| 7.0 | This plan + README row | must | ✅ | | |
-| 7.1 | `motionStyle` on deck + slide (compiler, viewer, validator, schema, digest) | must | ✅ | (this commit) | 25 tests in `motion/motion-style.spec.ts`; digest snapshot +2 lines; index 15,501 / 20k, top-8 detail unchanged 11,985 |
-| 7.2 | `tls.c.kinetic-title` | must | ⬜ | | |
-| 7.3 | `tls.c.stat-spotlight` | must | ⬜ | | |
-| 7.4 | `tls.c.journey` | should | ⬜ | | |
-| 7.5 | `tls.c.feature-reveal` | should | ⬜ | | |
-| 7.6 | `MotionRecipe.expressive` on existing layout blocks | should | ⬜ | | |
-| 7.7 | Demo deck `motion-showcase.json` (fixture + sample copy) | must | ⬜ | | |
-| 7.8 | Browser pass: screenshots, video, mid-animation frames | must | ⬜ | | |
-
+| 7.0 | This plan + README row | must | ✅ | 65d6d809 | |
+| 7.1 | `motionStyle` on deck + slide (compiler, viewer, validator, schema, digest) | must | ✅ | 23d48e73 | `motion/motion-style.spec.ts` (28 tests incl. later count-up cases); digest snapshot +2 lines; index 15,501 / 20k after 7.1 |
+| 7.2 | `tls.c.kinetic-title` | must | ✅ | fcd8228c, 04974836 | cover, slide scope; detail 1,253 chars |
+| 7.3 | `tls.c.stat-spotlight` | must | ✅ | fcd8228c, 04974836 | metric, group scope; count-up parser handles `1.250`, `4,6/5`, `+18%`; detail 1,223 |
+| 7.4 | `tls.c.journey` | should | ✅ | fcd8228c, 04974836 | timeline, slide scope; 3-6 milestones, capacity(); detail 941 |
+| 7.5 | `tls.c.feature-reveal` | should | ✅ | fcd8228c, 04974836 | list, group scope; 3-6 cards, capacity(); detail 938 |
+| 7.6 | `MotionRecipe.expressive` on existing layout blocks | should | ✅ | a3342767 | title `words-in`, body `fade-up`, takeaway `pop`, kpi-tile `count-up` (charts/lists already ship grow-bars-y, stagger-lines, draw-path) |
+| 7.7 | Demo deck `motion-showcase.json` (fixture + sample copy) | must | ✅ | 713a5268, 04974836 | 12 slides, `/view/motion-showcase`, 0 findings from `validateDeckSpec` |
+| 7.8 | Browser pass: screenshots, video, mid-animation frames | must | ✅ | 04974836 | `tools/visual/scenarios/motion-showcase.js`; stills `shots/motion-ms_NN.png`, frames `shots/motion-ms_NN-mid-<ms>.png`, video `shots/motion-showcase.webm` (61 s) |
 ---
 
 ### 7.1 · `motionStyle` (additive, optional)
@@ -101,7 +100,26 @@ PNGs. Look at every PNG.
 ---
 
 ## Phase done when
-- [ ] 7.1 shipped with tests, back-compat proven by the existing compiler/demo specs.
-- [ ] Four showcase blocks shipped, parity probe passing, `EXPECTED_BLOCK_COUNT` bumped.
-- [ ] Demo deck validates; browser pass done with screenshots and video opened.
-- [ ] README counts and session log updated.
+- [x] 7.1 shipped with tests, back-compat proven by the existing compiler/demo specs (and an explicit
+  identical-output test on `demo-deck.json`).
+- [x] Four showcase blocks shipped, DOM/SVG parity probe passing for all four, `EXPECTED_BLOCK_COUNT` 129.
+- [x] Demo deck validates; browser pass done with screenshots, mid-frames and video opened (video
+  checked through an ffmpeg contact sheet).
+- [x] README counts and session log updated.
+- [ ] Full suite (not run: 6 GB machine). Targeted: 32 suites / 1,953 tests green, tsc 0.
+
+## Known gaps (honest list)
+
+- Expressive slides chain every block with `afterPrevious`, so a slide with many blocks takes as
+  long as all of them in a row (two-column chart slide: ~2.5 s). There is no overlap knob.
+- `expressiveMs` is static per block type; a journey with 3 or 6 milestones uses the same 3.4 s.
+- The html timelines ignore `rt.timing.durationMs` (an explicit block `duration` does not
+  speed them up); `rt.timing.delayMs` is honoured.
+- Part presets are still the old keyframes: `grow-bars-y` scales bars from their centre, not from
+  the baseline (no transform-origin in the driver vocabulary).
+- The `users` icon (and the other Tabler/Material filled glyphs) render garbled as outlines in html
+  templates and in the existing renderers; the deck uses `handshake`.
+- Posters approximate the live html (bold title widths, CSS wrapping); they pass parity but the SVG
+  export can differ from the browser by a few percent in line breaks.
+- The editor's `Deck.addSlideFromSpec` applies the document's `motionStyle`, but nothing in the
+  editor UI sets `motionStyle` yet (it round-trips through `documentToDeckSpec`).
