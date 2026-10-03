@@ -1976,6 +1976,41 @@ A central hub with 3-8 satellite cards on connecting lines, full circle or fanne
 }
 \`\`\`
 
+### \`tls.g.iceberg\` — Iceberg
+
+An iceberg split at the waterline: a few visible items on the tip, more hidden items underneath. _(family: diagram; keywords: iceberg, hidden, visible, symptoms, root causes, waterline)_
+
+**When:** Contrast of the visible (symptoms, results) against the hidden (causes, effort).
+**Avoid:** Two equal sides (use tls.g.pros-cons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`above\` | yes | object (label, items) | {label, items[1-4]}: what everyone sees. |
+| \`below\` | yes | object (label, items) | {label, items[1-6]}: what is hidden. |
+| \`waterline\` | no | enum: third \\\\| half | third = the tip takes a third of the height. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_iceberg\\",
+  \\"type\\": \\"tls.g.iceberg\\",
+  \\"props\\": {
+    \\"above\\": {
+      \\"label\\": \\"Seen\\",
+      \\"items\\": [
+        \\"Late deliveries\\"
+      ]
+    },
+    \\"below\\": {
+      \\"label\\": \\"Hidden\\",
+      \\"items\\": [
+        \\"Unclear ownership\\",
+        \\"Manual handoffs\\"
+      ]
+    }
+  }
+}
+\`\`\`
+
 ### \`tls.g.layers\` — Layers
 
 Stacked horizontal layers, each with a label, note and icon, flat or as slanted slabs. _(family: diagram; keywords: layers, stack, architecture, tech stack, osi, tiers)_
@@ -3588,7 +3623,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 94,
+  "blockCount": 95,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3636,6 +3671,7 @@ Object {
     "tls.g.flow",
     "tls.g.funnel",
     "tls.g.hub-spoke",
+    "tls.g.iceberg",
     "tls.g.layers",
     "tls.g.matrix-2x2",
     "tls.g.milestones",
