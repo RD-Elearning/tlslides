@@ -9,6 +9,7 @@ import { tlsMIcon } from './tls-m-icon'
 import { tlsMIconLabel } from './tls-m-icon-label'
 import { tlsMIconList } from './tls-m-icon-list'
 import { tlsMImageGrid } from './tls-m-image-grid'
+import { tlsMAvatar } from './tls-m-avatar'
 
 /** All built-in media block definitions. */
 export const mediaBlocks: BlockDefinition[] = [
@@ -17,6 +18,7 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMIconLabel,
   tlsMIconList,
   tlsMImageGrid,
+  tlsMAvatar,
 ]
 
 export { tlsMImage } from './tls-m-image'
@@ -24,3 +26,4 @@ export { tlsMIcon } from './tls-m-icon'
 export { tlsMIconLabel } from './tls-m-icon-label'
 export { tlsMIconList } from './tls-m-icon-list'
 export { tlsMImageGrid } from './tls-m-image-grid'
+export { tlsMAvatar } from './tls-m-avatar'

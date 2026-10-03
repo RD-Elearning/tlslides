@@ -2857,6 +2857,39 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 }
 \`\`\`
 
+### \`tls.m.avatar\` — Avatar
+
+Portrait in a circle, rounded or square frame with name and role; initials when there is no photo. _(family: media; keywords: avatar, portrait, person, speaker, author, profile, headshot)_
+
+**When:** Naming one speaker, author or contact person with a portrait.
+**Avoid:** Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | no | image | Asset id or URL. Without one the avatar shows the name initials. |
+| \`name\` | yes | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) | Job title or relation, 1-6 words. |
+| \`shape\` | no | enum: circle \\\\| rounded \\\\| square |  |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg \\\\| xl |  |
+| \`layout\` | no | enum: stacked \\\\| inline | stacked = text under the portrait; inline = text beside it. |
+| \`ring\` | no | boolean |  |
+| \`showName\` | no | boolean |  |
+| \`showRole\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_avatar\\",
+  \\"type\\": \\"tls.m.avatar\\",
+  \\"props\\": {
+    \\"image\\": \\"asset-speaker\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"size\\": \\"lg\\",
+    \\"ring\\": true
+  }
+}
+\`\`\`
+
 ### \`tls.m.icon\` — Icon
 
 SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
@@ -3702,7 +3735,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 97,
+  "blockCount": 98,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3777,6 +3810,7 @@ Object {
     "tls.l.spacer",
     "tls.l.split",
     "tls.l.stack",
+    "tls.m.avatar",
     "tls.m.icon",
     "tls.m.icon-label",
     "tls.m.icon-list",
