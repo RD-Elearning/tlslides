@@ -2976,6 +2976,47 @@ Image with cover/contain fit, focal point, and optional caption. _(family: media
 }
 \`\`\`
 
+### \`tls.m.image-grid\` — Image Grid
+
+Images in even cells, a feature layout or a mosaic, with captions. _(family: media; keywords: gallery, photos, grid, portfolio, images, mosaic)_
+
+**When:** Several photos of equal importance: portfolio, event photos, product shots, a gallery.
+**Avoid:** One image plus text (use tls.c.image-text); one image (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`images\` | yes | list of object (image, alt, caption) (2–9 items) | 2-9 items {image, alt (1-10 words), caption?}. |
+| \`pattern\` | no | enum: even \\\\| feature-left \\\\| feature-top \\\\| mosaic | feature-* enlarges the first image. |
+| \`cols\` | no | enum: auto \\\\| 2 \\\\| 3 \\\\| 4 | Pattern even only. |
+| \`gap\` | no | enum: sm \\\\| md \\\\| none |  |
+| \`radius\` | no | enum: md \\\\| none \\\\| lg |  |
+| \`captions\` | no | enum: below \\\\| overlay \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_grid\\",
+  \\"type\\": \\"tls.m.image-grid\\",
+  \\"props\\": {
+    \\"images\\": [
+      {
+        \\"image\\": \\"asset-lab\\",
+        \\"alt\\": \\"Students at lab benches\\",
+        \\"caption\\": \\"Lab session\\"
+      },
+      {
+        \\"image\\": \\"asset-field\\",
+        \\"alt\\": \\"Field trip group photo\\"
+      },
+      {
+        \\"image\\": \\"asset-demo\\",
+        \\"alt\\": \\"Project demo on stage\\"
+      }
+    ],
+    \\"pattern\\": \\"feature-left\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.body\` — Body
 
 Paragraph body text with RichText, autofit, and multi-column. _(family: text; keywords: body, paragraph, text, prose, copy, description)_
@@ -3661,7 +3702,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 96,
+  "blockCount": 97,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3740,6 +3781,7 @@ Object {
     "tls.m.icon-label",
     "tls.m.icon-list",
     "tls.m.image",
+    "tls.m.image-grid",
     "tls.t.body",
     "tls.t.bullets",
     "tls.t.callout",

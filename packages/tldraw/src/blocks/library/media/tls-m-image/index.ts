@@ -22,7 +22,7 @@ export const tlsMImage: BlockDefinition = {
   category: 'media',
   scope: 'element',
   shortDescription: 'Single image with cover/contain fit, focal point, optional caption',
-  related: ['tls.c.image-text'],
+  related: ['tls.c.image-text', 'tls.m.image-grid'],
   describe: {
     when: 'Use to display a photograph, screenshot, or illustration with optional caption.',
     avoid: 'Do not use for charts (use tls.d.bar), for background fills (use tls.l.field) or for an image with a text cluster (use tls.c.image-text).',

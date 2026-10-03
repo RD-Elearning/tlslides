@@ -101,7 +101,7 @@ export const tlsCImageText: BlockDefinition = {
   category: 'media',
   scope: 'group',
   shortDescription: 'Image beside or above a kicker, title and body',
-  related: ['tls.m.image'],
+  related: ['tls.m.image', 'tls.m.image-grid'],
   describe: {
     when: 'Use when a slide needs an image alongside or above explanatory text — editorial layouts, feature descriptions, team slides.',
     avoid: 'Do not use for an image-only slide (use tls.m.image) or a text-only slide (use tls.t.title + tls.t.body).',

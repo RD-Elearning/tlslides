@@ -268,21 +268,34 @@ function renderNodeInner(
       if (node.url) {
         const preserveAspectRatio =
           node.fit === 'cover' ? 'xMidYMid slice' : 'xMidYMid meet'
+        // A rounded image (an avatar is `radius = size / 2`) is clipped to a rounded rect, as the
+        // DOM renderer does with border-radius. Still one element, so it keeps one layout slot.
+        let clipAttr = ''
+        if (typeof node.radius === 'number' && node.radius > 0) {
+          const clipId = makeId(collector, `${prefix}ir`)
+          const r = Math.min(node.radius, node.box.width / 2, node.box.height / 2)
+          collector.defs.push(
+            `<clipPath id="${clipId}"><rect x="${node.box.x}" y="${node.box.y}" width="${node.box.width}" height="${node.box.height}" rx="${r}" ry="${r}"/></clipPath>`,
+          )
+          clipAttr = ` clip-path="url(#${clipId})"`
+        }
         return (
           `<image x="${node.box.x}" y="${node.box.y}" ` +
           `width="${node.box.width}" height="${node.box.height}" ` +
-          `href="${escapeXml(node.url)}" preserveAspectRatio="${preserveAspectRatio}"/>`
+          `href="${escapeXml(node.url)}" preserveAspectRatio="${preserveAspectRatio}"${clipAttr}/>`
         )
       }
       // Missing-asset fallback: dashed rect with alt text.
       const rx = typeof node.radius === 'number' ? ` rx="${node.radius}" ry="${node.radius}"` : ''
+      // Wrapped in one <g> so the node stays a single element in the SVG tree (one layout node,
+      // one slot), which keeps the parity probe's tree walk aligned.
       return (
-        `<rect x="${node.box.x}" y="${node.box.y}" ` +
+        `<g><rect x="${node.box.x}" y="${node.box.y}" ` +
         `width="${node.box.width}" height="${node.box.height}"${rx} ` +
         `${styleAttr('fill:none;stroke:#999;stroke-width:2;stroke-dasharray:6 3')}/>` +
         `<text x="${node.box.x + node.box.width / 2}" y="${node.box.y + node.box.height / 2}" ` +
         `${styleAttr('font-family:system-ui,sans-serif;font-size:14px;fill:#999;text-anchor:middle;dominant-baseline:central')}>` +
-        `${escapeXml(node.alt)}</text>`
+        `${escapeXml(node.alt)}</text></g>`
       )
     }
 
