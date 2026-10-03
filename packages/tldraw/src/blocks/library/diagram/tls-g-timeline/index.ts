@@ -17,7 +17,7 @@ export const tlsGTimeline: BlockDefinition = {
   category: 'timeline',
   scope: 'group',
   shortDescription: 'Dated events on one axis with a title and note per event; optional today marker',
-  related: ['tls.g.roadmap', 'tls.g.steps'],
+  related: ['tls.g.roadmap', 'tls.g.milestones', 'tls.g.steps'],
   describe: {
     when: 'Dated order: history, project timeline, course schedule.',
     avoid: 'Undated steps (use tls.g.steps). Overlapping periods go in tls.g.roadmap.',

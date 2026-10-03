@@ -1751,6 +1751,48 @@ Narrowing stages from broad to focused, with a note per stage and no numbers. _(
 }
 \`\`\`
 
+### \`tls.g.milestones\` — Milestones
+
+Key checkpoints as diamonds on a line, filled when done, each with a date and short label. _(family: diagram; keywords: milestones, checkpoints, dates, progress, deadlines)_
+
+**When:** Dated order of key checkpoints only (no descriptions).
+**Avoid:** Events that need descriptions (use tls.g.timeline).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (date, label, done) (2–8 items) | Checkpoints in date order; no descriptions. |
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`labels\` | no | enum: alternate \\\\| below | alternate = date and label swap sides; below = date above, label below. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_milestones\\",
+  \\"type\\": \\"tls.g.milestones\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"date\\": \\"Jan\\",
+        \\"label\\": \\"Kick-off\\",
+        \\"done\\": true
+      },
+      {
+        \\"date\\": \\"Mar\\",
+        \\"label\\": \\"Prototype\\",
+        \\"done\\": true
+      },
+      {
+        \\"date\\": \\"Jun\\",
+        \\"label\\": \\"Beta release\\"
+      },
+      {
+        \\"date\\": \\"Sep\\",
+        \\"label\\": \\"Launch\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.roadmap\` — Roadmap
 
 Lanes of bars across periods, coloured by status, with a today line. _(family: diagram; keywords: roadmap, gantt, plan, schedule, lanes, quarters)_
@@ -3037,7 +3079,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 80,
+  "blockCount": 81,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3079,6 +3121,7 @@ Object {
     "tls.g.chevrons",
     "tls.g.cycle",
     "tls.g.funnel",
+    "tls.g.milestones",
     "tls.g.roadmap",
     "tls.g.steps",
     "tls.g.timeline",
