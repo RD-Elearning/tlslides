@@ -22,9 +22,10 @@ import { tlsDScatter } from './tls-d-scatter'
 import { tlsDRadar } from './tls-d-radar'
 import { tlsDTrendBadge } from './tls-d-trend-badge'
 import { tlsDSlope } from './tls-d-slope'
+import { tlsDBubble } from './tls-d-bubble'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -44,3 +45,4 @@ export { tlsDScatter } from './tls-d-scatter'
 export { tlsDRadar } from './tls-d-radar'
 export { tlsDTrendBadge } from './tls-d-trend-badge'
 export { tlsDSlope } from './tls-d-slope'
+export { tlsDBubble } from './tls-d-bubble'

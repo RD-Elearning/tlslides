@@ -620,6 +620,49 @@ Column or horizontal bar chart of one series on a zero baseline, with gridlines 
 }
 \`\`\`
 
+### \`tls.d.bubble\` — Bubble Chart
+
+Scatter plot with circle area for a third value, optional labels and size legend. _(family: data; keywords: bubble, portfolio, three variables, size, market, scatter)_
+
+**When:** Portfolio views (market size by growth by share).
+**Avoid:** Two measures only (use tls.d.scatter).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of object (x, y, r, label) (3–30 items) |  |
+| \`sizeLegend\` | no | boolean | Reference circles at the right. |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bubble\\",
+  \\"type\\": \\"tls.d.bubble\\",
+  \\"props\\": {
+    \\"points\\": [
+      {
+        \\"x\\": 10,
+        \\"y\\": 5,
+        \\"r\\": 30,
+        \\"label\\": \\"A\\"
+      },
+      {
+        \\"x\\": 30,
+        \\"y\\": 20,
+        \\"r\\": 90,
+        \\"label\\": \\"B\\"
+      },
+      {
+        \\"x\\": 50,
+        \\"y\\": 12,
+        \\"r\\": 50,
+        \\"label\\": \\"C\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.donut\` — Donut Chart
 
 Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, data, visualization)_
@@ -2443,7 +2486,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 67,
+  "blockCount": 68,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2458,6 +2501,7 @@ Object {
     "tls.c.testimonial",
     "tls.d.area",
     "tls.d.bar",
+    "tls.d.bubble",
     "tls.d.donut",
     "tls.d.funnel-chart",
     "tls.d.gauge",

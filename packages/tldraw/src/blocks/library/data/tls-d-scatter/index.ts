@@ -17,7 +17,7 @@ export const tlsDScatter: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Points on two numeric axes, optionally grouped, with quadrant lines',
-  related: ['tls.d.line', 'tls.d.bar'],
+  related: ['tls.d.line', 'tls.d.bar', 'tls.d.bubble'],
   describe: {
     when: 'Correlation, positioning of items on two measures.',
     avoid: 'Qualitative positioning (use tls.g.matrix-2x2).',
