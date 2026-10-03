@@ -126,7 +126,8 @@ async function measureContainer(
 
         // Text lines: child divs (DOM) or tspans (SVG)
         const divs = el.querySelectorAll(':scope > div')
-        const tspans = el.querySelectorAll('tspan')
+        // Direct children only: a bold/coloured run is a nested <tspan> inside the line's <tspan>.
+        const tspans = el.querySelectorAll(':scope > tspan')
         let textLines: string[] = []
         if (divs.length > 0) {
           textLines = Array.from(divs).map((d) => d.textContent || '')

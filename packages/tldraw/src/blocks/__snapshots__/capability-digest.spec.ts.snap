@@ -1215,6 +1215,39 @@ Small label above the title with case and tracking options. _(family: text; keyw
 }
 \`\`\`
 
+### \`tls.t.numbered\` — Numbered list
+
+Numbered points in order, one or two columns. _(family: text; keywords: numbered, ordered, ranked, reasons)_
+
+**When:** Ordered points where the order or the count matters: \\"3 reasons\\", \\"5 rules\\".
+**Avoid:** Unordered points (use tls.t.bullets); process steps (use tls.g.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of richText (max 180 chars) (2–8 items) | Short sentences. Wrap a key phrase in **double asterisks** to bold it. |
+| \`markerStyle\` | no | enum: decimal \\\\| padded \\\\| roman \\\\| alpha \\\\| badge | badge puts the number in a filled circle. |
+| \`start\` | no | number (min 1) |  |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`columns\` | no | enum: 1 \\\\| 2 | Two balanced columns. |
+| \`markerTone\` | no | enum: accent \\\\| text \\\\| muted |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_numbered\\",
+  \\"type\\": \\"tls.t.numbered\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Define the audience\\",
+      \\"State the **one** message\\",
+      \\"Prove it with data\\",
+      \\"Ask for the decision\\"
+    ],
+    \\"markerStyle\\": \\"badge\\",
+    \\"markerTone\\": \\"accent\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.quote\` — Quote
 
 Pull quote with decorative quotation glyph, attribution, and role. _(family: text; keywords: quote, blockquote, pull-quote, attribution, testimonial)_
@@ -1446,7 +1479,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 41,
+  "blockCount": 42,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1484,6 +1517,7 @@ Object {
     "tls.t.caption",
     "tls.t.hero-number",
     "tls.t.kicker",
+    "tls.t.numbered",
     "tls.t.quote",
     "tls.t.subtitle",
     "tls.t.takeaway",
