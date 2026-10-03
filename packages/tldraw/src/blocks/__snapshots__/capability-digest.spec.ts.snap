@@ -2964,6 +2964,34 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
 }
 \`\`\`
 
+### \`tls.m.decoration\` — Decoration
+
+Decorative blob, arc, ring, dot grid, wave or corner in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent)_
+
+**When:** Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.
+**Avoid:** Anything that carries meaning (use a real block, e.g. tls.t.statement); texture over dense text.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner | Rotation turns blob and arc freely; wave and corner snap to quarter turns; ring and dots ignore it. |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
+| \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
+| \`rotation\` | no | number (min 0, max 359) | Degrees. |
+| \`seed\` | no | number (min 0, max 9999) | Same seed, same shape (blob, wave). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_decoration\\",
+  \\"type\\": \\"tls.m.decoration\\",
+  \\"props\\": {
+    \\"shape\\": \\"blob\\",
+    \\"tone\\": \\"accent2\\",
+    \\"opacity\\": \\"soft\\",
+    \\"seed\\": 7
+  }
+}
+\`\`\`
+
 ### \`tls.m.device-mock\` — Device Mock
 
 Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from rects. _(family: media; keywords: device, mockup, screenshot, browser, phone, laptop, tablet, app)_
@@ -3947,7 +3975,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 104,
+  "blockCount": 105,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4025,6 +4053,7 @@ Object {
     "tls.l.stack",
     "tls.m.avatar",
     "tls.m.avatar-group",
+    "tls.m.decoration",
     "tls.m.device-mock",
     "tls.m.icon",
     "tls.m.icon-label",
