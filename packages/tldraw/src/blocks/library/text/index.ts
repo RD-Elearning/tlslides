@@ -18,6 +18,7 @@ import { tlsTNumbered } from './tls-t-numbered'
 import { tlsTChecklist } from './tls-t-checklist'
 import { tlsTStatement } from './tls-t-statement'
 import { tlsTCallout } from './tls-t-callout'
+import { tlsTFootnote } from './tls-t-footnote'
 
 /** All built-in text block definitions. */
 export const textBlocks: BlockDefinition[] = [
@@ -34,6 +35,7 @@ export const textBlocks: BlockDefinition[] = [
   tlsTChecklist,
   tlsTStatement,
   tlsTCallout,
+  tlsTFootnote,
 ]
 
 export { tlsTTitle } from './tls-t-title'
@@ -49,3 +51,4 @@ export { tlsTNumbered } from './tls-t-numbered'
 export { tlsTChecklist } from './tls-t-checklist'
 export { tlsTStatement } from './tls-t-statement'
 export { tlsTCallout } from './tls-t-callout'
+export { tlsTFootnote } from './tls-t-footnote'

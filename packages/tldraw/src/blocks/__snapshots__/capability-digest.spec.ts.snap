@@ -1269,6 +1269,33 @@ Checklist with a done, open or blocked state per item. _(family: text; keywords:
 }
 \`\`\`
 
+### \`tls.t.footnote\` — Footnote
+
+Small-print source or footnote lines with an optional marker. _(family: text; keywords: footnote, source, reference, citation, small print)_
+
+**When:** Citing data sources under a chart or table, and footnotes.
+**Avoid:** A caption that describes an image (use tls.t.caption).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 200 chars) (1–4 items) | One source or note per line; no marker characters, the marker option adds them. |
+| \`marker\` | no | enum: none \\\\| number \\\\| asterisk \\\\| source | source prefixes the first line with \\"Source:\\". |
+| \`align\` | no | enum: start \\\\| end |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_footnote\\",
+  \\"type\\": \\"tls.t.footnote\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Eurostat, 2025\\"
+    ],
+    \\"marker\\": \\"source\\",
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.hero-number\` — Hero Number
 
 Large KPI number with optional unit and caption. _(family: text; keywords: kpi, number, stat, metric, hero, display, count)_
@@ -1619,7 +1646,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 46,
+  "blockCount": 47,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1658,6 +1685,7 @@ Object {
     "tls.t.callout",
     "tls.t.caption",
     "tls.t.checklist",
+    "tls.t.footnote",
     "tls.t.hero-number",
     "tls.t.kicker",
     "tls.t.numbered",
