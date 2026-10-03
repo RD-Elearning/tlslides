@@ -4154,6 +4154,566 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_42",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_42_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 gallery: image grid and compare",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_42_grid",
+            "type": "tls.m.image-grid",
+            "props": {
+              "images": [
+                {
+                  "image": "/demo/photo-1.svg",
+                  "alt": "Sunrise over orange hills",
+                  "caption": "Sunrise"
+                },
+                {
+                  "image": "/demo/photo-2.svg",
+                  "alt": "Blue hills at dusk",
+                  "caption": "Dusk"
+                },
+                {
+                  "image": "/demo/photo-3.svg",
+                  "alt": "Violet mountain range",
+                  "caption": "Peaks"
+                },
+                {
+                  "image": "/demo/photo-4.svg",
+                  "alt": "Green valley in the morning",
+                  "caption": "Valley"
+                },
+                {
+                  "image": "asset-not-uploaded-yet",
+                  "alt": "Photo not uploaded yet",
+                  "caption": "Missing"
+                }
+              ],
+              "pattern": "feature-left",
+              "captions": "overlay",
+              "gap": "md",
+              "radius": "md"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_42_cmp",
+            "type": "tls.m.image-compare",
+            "props": {
+              "before": {
+                "image": "/demo/before.svg",
+                "alt": "Dim room with grey sofa",
+                "label": "Before"
+              },
+              "after": {
+                "image": "/demo/after.svg",
+                "alt": "Bright room with coral sofa and plant",
+                "label": "After"
+              },
+              "mode": "split",
+              "divider": true
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_43",
+      "layout": "three-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_43_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 people: profile card, avatars, group",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "a": [
+          {
+            "id": "b_43_card",
+            "type": "tls.c.profile-card",
+            "props": {
+              "image": "/demo/portrait-1.svg",
+              "name": "Dr. Tran Thi Lan",
+              "role": "Head of Data Science",
+              "bio": "Leads the applied analytics group and teaches statistics for engineers.",
+              "contact": "lan.tran@example.edu",
+              "layout": "stacked",
+              "tone": "alt"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "b": [
+          {
+            "id": "b_43_stack1",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_av1",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-2.svg",
+                    "name": "Nguyen Van An",
+                    "role": "Senior lecturer",
+                    "layout": "inline",
+                    "size": "lg",
+                    "ring": true
+                  }
+                },
+                {
+                  "id": "b_43_av2",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "name": "Đặng Ánh Tuyết",
+                    "role": "Student representative",
+                    "layout": "inline",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "id": "b_43_av3",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-3.svg",
+                    "name": "Linh",
+                    "role": "Teaching assistant",
+                    "layout": "inline",
+                    "size": "lg",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "c": [
+          {
+            "id": "b_43_stack2",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_grp",
+                  "type": "tls.m.avatar-group",
+                  "props": {
+                    "people": [
+                      {
+                        "image": "/demo/portrait-1.svg",
+                        "name": "Lan Tran"
+                      },
+                      {
+                        "image": "/demo/portrait-2.svg",
+                        "name": "An Nguyen"
+                      },
+                      {
+                        "image": "/demo/portrait-3.svg",
+                        "name": "Linh Pham"
+                      },
+                      {
+                        "name": "Bao Chau"
+                      },
+                      {
+                        "image": "/demo/portrait-4.svg",
+                        "name": "Minh Anh"
+                      },
+                      {
+                        "name": "Quang Huy"
+                      },
+                      {
+                        "image": "/demo/portrait-5.svg",
+                        "name": "Thu Ha"
+                      },
+                      {
+                        "name": "Ngoc Han"
+                      }
+                    ],
+                    "max": 5,
+                    "size": "lg",
+                    "caption": "8 contributors"
+                  }
+                },
+                {
+                  "id": "b_43_av4",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-6.svg",
+                    "name": "Hoang Minh",
+                    "role": "Project owner",
+                    "size": "xl",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_44",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_44_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 brand: logo wall, logo and device mock",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_44_wall",
+            "type": "tls.m.logo-wall",
+            "props": {
+              "heading": "Trusted by",
+              "logos": [
+                {
+                  "image": "/demo/logo-1.svg",
+                  "alt": "Northwind",
+                  "ratio": 4
+                },
+                {
+                  "image": "/demo/logo-2.svg",
+                  "alt": "Globex",
+                  "ratio": 1
+                },
+                {
+                  "image": "/demo/logo-3.svg",
+                  "alt": "Initech",
+                  "ratio": 3
+                },
+                {
+                  "image": "/demo/logo-4.svg",
+                  "alt": "Umbrella",
+                  "ratio": 2
+                },
+                {
+                  "image": "/demo/logo-5.svg",
+                  "alt": "Hooli",
+                  "ratio": 1.5
+                },
+                {
+                  "image": "/demo/logo-6.svg",
+                  "alt": "Stark",
+                  "ratio": 3
+                }
+              ],
+              "uniform": "area",
+              "plates": true
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_44_right",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "md",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_44_logo",
+                  "type": "tls.m.logo",
+                  "props": {
+                    "image": "/demo/logo-1.svg",
+                    "alt": "Northwind",
+                    "ratio": 4,
+                    "maxHeight": "lg",
+                    "plate": "alt"
+                  }
+                },
+                {
+                  "id": "b_44_dev",
+                  "type": "tls.m.device-mock",
+                  "props": {
+                    "image": "/demo/screenshot-1.svg",
+                    "alt": "Analytics dashboard with cards and a bar chart",
+                    "url": "app.example.edu/dashboard",
+                    "device": "browser",
+                    "tone": "light",
+                    "shadow": true
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_45",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_45_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 decoration: six shapes",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_45_a",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "blob",
+              "tone": "accent",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 7
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_45_b",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "arc",
+              "tone": "accent2",
+              "opacity": "medium",
+              "rotation": 30,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_45_c",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "ring",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_45_d",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "dots",
+              "tone": "accent2",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_45_e",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "wave",
+              "tone": "accent",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 4
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_45_f",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "corner",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 90,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_46",
+      "layout": "four-up",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_46_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 pattern: dots, grid, lines, diagonal",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "q1": [
+          {
+            "id": "b_46_a",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "dots",
+              "scale": "md",
+              "tone": "accent",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "q2": [
+          {
+            "id": "b_46_b",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "grid",
+              "scale": "md",
+              "tone": "line",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ],
+        "q3": [
+          {
+            "id": "b_46_c",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "lines",
+              "scale": "sm",
+              "tone": "accent",
+              "opacity": "soft"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 4
+            }
+          }
+        ],
+        "q4": [
+          {
+            "id": "b_46_d",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "diagonal",
+              "scale": "md",
+              "tone": "line",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ]
+      }
     }
   ]
 }
