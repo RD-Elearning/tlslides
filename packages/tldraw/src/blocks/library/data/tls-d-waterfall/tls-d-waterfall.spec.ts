@@ -92,6 +92,12 @@ describe('tls.d.waterfall', () => {
     assertChartSane(t, { width: 640, height: 420 })
   })
 
+  it('every step keeps its label (clipped, not thinned out)', () => {
+    const t = lay({ steps: [{ label: 'Opening balance', value: 50, kind: 'total' }, { label: 'Expansion revenue', value: 10 }, { label: 'Contraction', value: -4 }, { label: 'Closing balance', value: 56, kind: 'total' }] }, { width: 480, height: 360 })
+    for (let i = 0; i < 4; i++) expect(absoluteLeaves(t).some((l) => l.part === `cat[${i}]`)).toBe(true)
+    assertChartSane(t, { width: 480, height: 360 })
+  })
+
   it('capacity: more than 12 steps fails', () => {
     const r = tlsDWaterfall.capacity!({ steps: Array.from({ length: 13 }, (_, i) => ({ label: `${i}`, value: 1 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)

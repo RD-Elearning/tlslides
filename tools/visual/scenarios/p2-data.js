@@ -13,7 +13,7 @@ const DECK = require(
   path.join(__dirname, '..', '..', '..', 'examples', 'nextjs-sample', 'data', 'decks', 'colorful-blocks-demo.json')
 )
 const SHOTS = path.join(__dirname, '..', 'shots')
-const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15').split(',')
+const WANT = (process.env.P2_SLIDES || 'sl_13,sl_14,sl_15,sl_16').split(',')
 
 module.exports = {
   base: 'http://localhost:5433',
@@ -34,7 +34,7 @@ module.exports = {
         await page.waitForTimeout(120)
         at++
       }
-      await page.waitForTimeout(1500)
+      await page.waitForTimeout(4500)
       const file = path.join(SHOTS, `p2-${id}.png`)
       await page.screenshot({ path: file })
       out[id] = file

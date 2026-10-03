@@ -129,11 +129,11 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx: Layou
     const probe = valueAxisLeft(ctx, { ...base, height: 100 }, axis, { format: fmt, gridlines, rightPad: 4, c })
     const bands = bandScale(cats, [probe.plot.x, probe.plot.x + probe.plot.width], gap)
     const centers = cats.map((_, i) => probe.plot.x + bands.step * i + bands.step / 2)
-    const lab0 = categoryLabels(ctx, cats, centers, bands.step, 0, (i) => `cat[${i}]`)
+    const lab0 = categoryLabels(ctx, cats, centers, bands.step, 0, (i) => `cat[${i}]`, { thin: 'clip' })
     const gapX = lab0.height > 0 ? lh / 2 + 6 : 0
     const ax = valueAxisLeft(ctx, { ...base, height: Math.max(0, base.height - lab0.height - gapX) }, axis, { format: fmt, gridlines, rightPad: 4, c })
     nodes.push(...ax.nodes)
-    nodes.push(...categoryLabels(ctx, cats, centers, bands.step, ax.plot.y + ax.plot.height + gapX, (i) => `cat[${i}]`).nodes)
+    nodes.push(...categoryLabels(ctx, cats, centers, bands.step, ax.plot.y + ax.plot.height + gapX, (i) => `cat[${i}]`, { thin: 'clip' }).nodes)
 
     const inner = mode === 'grouped' ? Math.min(4, bands.bandwidth * 0.08) : 0
     const barW = mode === 'grouped' ? Math.max(1, (bands.bandwidth - inner * (S - 1)) / S) : bands.bandwidth

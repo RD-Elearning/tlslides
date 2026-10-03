@@ -18,7 +18,6 @@ import type { Box, CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle,
 import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import { formatValue } from '../_engine/format-value'
-import { arcPath } from '../_engine/arc-path'
 import { MAX_HUES } from '../_engine/series-color'
 
 export { onColor, readableOn, tintOf }
@@ -329,7 +328,7 @@ export function seriesColors(ctx: LayoutContext, count: number): string[] {
 
 /** A deliberately quiet version of a colour for non-highlighted marks. */
 export function dimmed(c: ChartColors, color: string): string {
-  return tintOf(c.surface, color, 0.28)
+  return tintOf(c.surface, color, 0.4)
 }
 
 /* ───────────────────────────── cartesian pieces ───────────────────────────── */
@@ -395,9 +394,9 @@ export function categoryLabels(
   step: number,
   y: number,
   part: (i: number) => string,
-  color?: string
+  opts: { color?: string; thin?: 'stride' | 'clip' } = {}
 ): { nodes: LayoutNode[]; height: number; stride: number } {
-  const s = color ? style(ctx, 'footnote', color) : mutedStyle(ctx, 'footnote')
+  const s = opts.color ? style(ctx, 'footnote', opts.color) : mutedStyle(ctx, 'footnote')
   const n = cats.length
   if (n === 0 || !(step > 0)) return { nodes: [], height: 0, stride: 1 }
   const words = cats.map((c) => longestWord(ctx, c, s))
@@ -410,13 +409,18 @@ export function categoryLabels(
     }
     return true
   }
+  // `stride` thins the axis (right for a time axis); `clip` keeps every label and ellipsises the
+  // ones that do not fit (right when each category matters: bars, waterfall steps).
   let stride = 1
-  while (stride < n && !fits(stride)) stride++
+  if (opts.thin !== 'clip') while (stride < n && !fits(stride)) stride++
   const w = step * stride
+  const maxW = Math.max(1, (w * 0.96) / TEXT_SLACK)
   const nodes: LayoutNode[] = []
   let height = 0
   for (let i = 0; i < n; i += stride) {
-    const t = textAligned(ctx, cats[i], s, { x: centers[i] - w / 2, y, width: w * 0.96 }, 'center', part(i))
+    let text = cats[i]
+    if (opts.thin === 'clip') text = clipToWidth(ctx, text, s, maxW)
+    const t = textAligned(ctx, text, s, { x: centers[i] - w / 2, y, width: w * 0.96 }, 'center', part(i))
     // textAligned centres inside a box of width w*0.96 starting at x: re-centre on the band.
     const shift = (w - w * 0.96) / 2
     // Keep edge labels inside the block: slide them in rather than letting them hang out.
@@ -430,6 +434,28 @@ export function categoryLabels(
     height = Math.max(height, t.height)
   }
   return { nodes, height, stride }
+}
+
+/**
+ * `text` limited to two lines of `maxW`: wraps at spaces, and cuts any single word (or a third
+ * line) that still does not fit, ending it with an ellipsis.
+ */
+export function clipToWidth(ctx: LayoutContext, text: string, s: ResolvedTextStyle, maxW: number): string {
+  const cut = (word: string): string => {
+    if (ctx.measureText(word, s).width <= maxW) return word
+    let lo = 1
+    let hi = word.length
+    while (lo < hi) {
+      const mid = Math.ceil((lo + hi) / 2)
+      if (ctx.measureText(`${word.slice(0, mid)}…`, s).width <= maxW) lo = mid
+      else hi = mid - 1
+    }
+    return `${word.slice(0, lo)}…`
+  }
+  const words = text.split(/\s+/).filter(Boolean).map(cut)
+  const m = ctx.measureText(words.join(' '), s, maxW)
+  if (m.lines.length <= 2) return words.join(' ')
+  return clipLines(m.lines, 2).map((l) => l.text).join(' ')
 }
 
 /* ───────────────────────────── capacity ───────────────────────────── */
@@ -456,15 +482,26 @@ export function sizeOf(ctx: LayoutContext): Size {
 export { onColor as inkOn }
 
 /**
- * `arcPath`, safe for (nearly) full circles. An arc whose end point almost coincides with its start
- * is ill-conditioned: the renderer may pick the mirror-image centre and draw a blob. Anything over
- * 1.98 pi is therefore drawn as two halves.
+ * Annular sector (or a pie wedge when `rInner <= 0`) as ONE simple closed outline: outer arc
+ * clockwise, a radial edge in, the inner arc back counter-clockwise on the same circle, close.
+ *
+ * Why not `_engine/arcPath`: it cuts the hole with a second wedge whose arc is drawn start -> end
+ * with the opposite sweep flag. That is not the same circle reversed; SVG then picks the mirror
+ * circle and the inner edge bows the wrong way (barely visible on a quarter slice, obvious on a
+ * gauge band or a ring). A path that traces the outline once has no such ambiguity.
+ *
+ * Spans over 1.98 pi (a closed ring) are drawn as two halves: an arc whose end point almost
+ * coincides with its start is ill-conditioned and renders as a blob.
  */
 export function ringArcPath(cx: number, cy: number, rOuter: number, rInner: number, a0: number, a1: number): string {
   const span = a1 - a0
   if (span > Math.PI * 1.98) {
     const mid = a0 + span / 2
-    return `${arcPath(cx, cy, rOuter, rInner, a0, mid, span / 2)} ${arcPath(cx, cy, rOuter, rInner, mid, a1, span / 2)}`
+    return `${ringArcPath(cx, cy, rOuter, rInner, a0, mid)} ${ringArcPath(cx, cy, rOuter, rInner, mid, a1)}`
   }
-  return arcPath(cx, cy, rOuter, rInner, a0, a1, span)
+  const f = (v: number) => String(Math.round(v * 100) / 100)
+  const large = span > Math.PI ? 1 : 0
+  const p = (r: number, a: number) => `${f(cx + r * Math.cos(a))} ${f(cy + r * Math.sin(a))}`
+  if (!(rInner > 0)) return `M ${f(cx)} ${f(cy)} L ${p(rOuter, a0)} A ${f(rOuter)} ${f(rOuter)} 0 ${large} 1 ${p(rOuter, a1)} Z`
+  return `M ${p(rOuter, a0)} A ${f(rOuter)} ${f(rOuter)} 0 ${large} 1 ${p(rOuter, a1)} L ${p(rInner, a1)} A ${f(rInner)} ${f(rInner)} 0 ${large} 0 ${p(rInner, a0)} Z`
 }

@@ -630,6 +630,966 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_13",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_13_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 metrics",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_13_progress",
+            "type": "tls.d.progress-bar",
+            "props": {
+              "items": [
+                {
+                  "label": "Onboarding",
+                  "value": 86
+                },
+                {
+                  "label": "Documentation",
+                  "value": 58
+                },
+                {
+                  "label": "Test coverage",
+                  "value": 27
+                },
+                {
+                  "label": "Budget",
+                  "value": 52,
+                  "max": 60
+                }
+              ],
+              "tone": "status"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_13_ring",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 72,
+              "label": "Course completion",
+              "caption": "36 of 50 lessons"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_13_compare",
+            "type": "tls.d.stat-compare",
+            "props": {
+              "left": {
+                "label": "FY2024",
+                "value": 4200
+              },
+              "right": {
+                "label": "FY2025",
+                "value": 5460
+              },
+              "format": "compact",
+              "caption": "Annual recurring revenue"
+            },
+            "motion": {
+              "preset": "count-up",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_13_gauge",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 42,
+              "min": -100,
+              "max": 100,
+              "label": "Net promoter score",
+              "bands": [
+                {
+                  "to": 0,
+                  "tone": "negative"
+                },
+                {
+                  "to": 50,
+                  "tone": "warning"
+                },
+                {
+                  "to": 100,
+                  "tone": "positive"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_13_sparks",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_13_spark_a",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      12,
+                      14,
+                      13,
+                      18,
+                      17,
+                      22,
+                      21,
+                      27,
+                      31,
+                      30,
+                      36
+                    ],
+                    "label": "Weekly signups",
+                    "showLast": "delta"
+                  }
+                },
+                {
+                  "id": "b_13_spark_b",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      30,
+                      28,
+                      26,
+                      27,
+                      22,
+                      19,
+                      20,
+                      14,
+                      12
+                    ],
+                    "label": "Support tickets",
+                    "showLast": "delta",
+                    "fill": false
+                  }
+                },
+                {
+                  "id": "b_13_spark_c",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      5,
+                      5,
+                      6,
+                      5,
+                      7,
+                      6,
+                      8,
+                      9,
+                      9,
+                      12
+                    ],
+                    "label": "Active teams",
+                    "showLast": "value",
+                    "endDot": false
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_13_compare2",
+            "type": "tls.d.stat-compare",
+            "props": {
+              "left": {
+                "label": "Before",
+                "value": 18.4
+              },
+              "right": {
+                "label": "After",
+                "value": 12.1
+              },
+              "format": "plain",
+              "polarity": "downGood",
+              "delta": "absolute",
+              "connector": "vs"
+            },
+            "motion": {
+              "preset": "count-up",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_14",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_14_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 metrics, variants",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_14_ring2",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 24,
+              "label": "Churn target",
+              "tone": "status",
+              "thickness": "lg",
+              "cap": "flat"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_14_ring3",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 138,
+              "max": 100,
+              "label": "Over target",
+              "caption": "Marker shows overflow",
+              "thickness": "sm"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_14_progress2",
+            "type": "tls.d.progress-bar",
+            "props": {
+              "items": [
+                {
+                  "label": "North",
+                  "value": 320,
+                  "max": 400
+                },
+                {
+                  "label": "South",
+                  "value": 180,
+                  "max": 400
+                },
+                {
+                  "label": "East",
+                  "value": 410,
+                  "max": 400
+                }
+              ],
+              "labelPos": "left",
+              "showValue": "value",
+              "thickness": "sm"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_14_gauge2",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 63,
+              "label": "Capacity used",
+              "needle": "marker",
+              "bands": [
+                {
+                  "to": 60,
+                  "tone": "positive"
+                },
+                {
+                  "to": 85,
+                  "tone": "warning"
+                },
+                {
+                  "to": 100,
+                  "tone": "negative"
+                }
+              ],
+              "format": "percent"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_14_sparks2",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_14_spark_a",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      3,
+                      3,
+                      3,
+                      3,
+                      3
+                    ],
+                    "label": "Flat series",
+                    "showLast": "none"
+                  }
+                },
+                {
+                  "id": "b_14_spark_b",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      1,
+                      4,
+                      2,
+                      8,
+                      3,
+                      9,
+                      4,
+                      12,
+                      6,
+                      14,
+                      7,
+                      16
+                    ],
+                    "showLast": "value",
+                    "format": "compact"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_14_gauge3",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 55,
+              "label": "Progress",
+              "showTicks": false
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_15",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_15_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 charts",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_15_line",
+            "type": "tls.d.line",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Revenue",
+                  "values": [
+                    42,
+                    48,
+                    55,
+                    61,
+                    70,
+                    82
+                  ]
+                },
+                {
+                  "name": "Costs",
+                  "values": [
+                    38,
+                    41,
+                    45,
+                    47,
+                    52,
+                    55
+                  ]
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_15_area",
+            "type": "tls.d.area",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Web",
+                  "values": [
+                    30,
+                    34,
+                    41,
+                    45,
+                    52,
+                    60
+                  ]
+                },
+                {
+                  "name": "Mobile",
+                  "values": [
+                    18,
+                    24,
+                    28,
+                    36,
+                    44,
+                    53
+                  ]
+                },
+                {
+                  "name": "Partners",
+                  "values": [
+                    8,
+                    9,
+                    12,
+                    14,
+                    15,
+                    19
+                  ]
+                }
+              ],
+              "mode": "stacked",
+              "curve": "monotone"
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_15_grouped",
+            "type": "tls.d.grouped-bar",
+            "props": {
+              "categories": [
+                "North",
+                "South",
+                "East",
+                "West"
+              ],
+              "series": [
+                {
+                  "name": "2024",
+                  "values": [
+                    42,
+                    38,
+                    55,
+                    31
+                  ]
+                },
+                {
+                  "name": "2025",
+                  "values": [
+                    51,
+                    40,
+                    62,
+                    45
+                  ]
+                }
+              ],
+              "valueLabels": "end"
+            },
+            "motion": {
+              "preset": "grow-bars-y",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_15_stacked",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "series": [
+                {
+                  "name": "Product",
+                  "values": [
+                    30,
+                    34,
+                    38,
+                    45
+                  ]
+                },
+                {
+                  "name": "Services",
+                  "values": [
+                    18,
+                    20,
+                    26,
+                    28
+                  ]
+                },
+                {
+                  "name": "Support",
+                  "values": [
+                    8,
+                    9,
+                    10,
+                    12
+                  ]
+                }
+              ],
+              "totals": true
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_15_pie",
+            "type": "tls.d.pie",
+            "props": {
+              "categories": [
+                "Subscriptions",
+                "Services",
+                "Licences",
+                "Other"
+              ],
+              "values": [
+                48,
+                27,
+                17,
+                8
+              ]
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_15_stacked2",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Mobile",
+                "Desktop",
+                "Tablet"
+              ],
+              "series": [
+                {
+                  "name": "Organic",
+                  "values": [
+                    40,
+                    55,
+                    30
+                  ]
+                },
+                {
+                  "name": "Paid",
+                  "values": [
+                    35,
+                    25,
+                    45
+                  ]
+                },
+                {
+                  "name": "Referral",
+                  "values": [
+                    25,
+                    20,
+                    25
+                  ]
+                }
+              ],
+              "orientation": "horizontal",
+              "normalize": true,
+              "valueLabels": "inside"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_16",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_16_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 charts, more",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_16_waterfall",
+            "type": "tls.d.waterfall",
+            "props": {
+              "steps": [
+                {
+                  "label": "FY24",
+                  "value": 120,
+                  "kind": "total"
+                },
+                {
+                  "label": "New logos",
+                  "value": 35
+                },
+                {
+                  "label": "Expansion",
+                  "value": 18
+                },
+                {
+                  "label": "Churn",
+                  "value": -22
+                },
+                {
+                  "label": "Pricing",
+                  "value": 9
+                },
+                {
+                  "label": "FY25",
+                  "value": 160,
+                  "kind": "total"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_16_funnel",
+            "type": "tls.d.funnel-chart",
+            "props": {
+              "stages": [
+                {
+                  "label": "Visitors",
+                  "value": 12000
+                },
+                {
+                  "label": "Sign-ups",
+                  "value": 4200
+                },
+                {
+                  "label": "Trials",
+                  "value": 1800
+                },
+                {
+                  "label": "Customers",
+                  "value": 540
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_16_scatter",
+            "type": "tls.d.scatter",
+            "props": {
+              "points": [
+                {
+                  "x": 12,
+                  "y": 30,
+                  "label": "Alpha",
+                  "group": "Core"
+                },
+                {
+                  "x": 25,
+                  "y": 44,
+                  "label": "Beta",
+                  "group": "Core"
+                },
+                {
+                  "x": 33,
+                  "y": 41,
+                  "label": "Gamma",
+                  "group": "Core"
+                },
+                {
+                  "x": 48,
+                  "y": 62,
+                  "label": "Delta",
+                  "group": "Growth"
+                },
+                {
+                  "x": 57,
+                  "y": 70,
+                  "label": "Epsilon",
+                  "group": "Growth"
+                },
+                {
+                  "x": 66,
+                  "y": 58,
+                  "label": "Zeta",
+                  "group": "Growth"
+                },
+                {
+                  "x": 78,
+                  "y": 85,
+                  "label": "Eta",
+                  "group": "Growth"
+                }
+              ],
+              "trendline": true,
+              "labelPoints": "all"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_16_radar",
+            "type": "tls.d.radar",
+            "props": {
+              "axes": [
+                "Speed",
+                "Quality",
+                "Cost",
+                "Support",
+                "Security",
+                "Usability"
+              ],
+              "series": [
+                {
+                  "name": "Ours",
+                  "values": [
+                    8,
+                    9,
+                    6,
+                    7,
+                    9,
+                    8
+                  ]
+                },
+                {
+                  "name": "Rival",
+                  "values": [
+                    6,
+                    7,
+                    8,
+                    5,
+                    6,
+                    7
+                  ]
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_16_funnel2",
+            "type": "tls.d.funnel-chart",
+            "props": {
+              "stages": [
+                {
+                  "label": "Applied",
+                  "value": 800
+                },
+                {
+                  "label": "Screened",
+                  "value": 320
+                },
+                {
+                  "label": "Interviewed",
+                  "value": 90
+                },
+                {
+                  "label": "Offered",
+                  "value": 24
+                }
+              ],
+              "shape": "bars",
+              "showDropoff": "none",
+              "format": "plain"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_16_scatter2",
+            "type": "tls.d.scatter",
+            "props": {
+              "points": [
+                {
+                  "x": 1,
+                  "y": 8
+                },
+                {
+                  "x": 2,
+                  "y": 6
+                },
+                {
+                  "x": 3,
+                  "y": 9
+                },
+                {
+                  "x": 4,
+                  "y": 3,
+                  "label": "Outlier"
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": 7,
+                  "y": 7
+                },
+                {
+                  "x": 8,
+                  "y": 1
+                }
+              ],
+              "quadrants": true,
+              "highlightIndex": 3,
+              "labelPoints": "highlighted"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 7
+            }
+          }
+        ]
+      }
     }
   ]
 }

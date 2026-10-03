@@ -113,6 +113,13 @@ describe('tls.d.grouped-bar', () => {
     }
   })
 
+  it('keeps every category label (clipped when too long)', () => {
+    const long = ['Operations', 'Engineering', 'Administration', 'Procurement']
+    const t = lay({ categories: long, series: seriesOf(2, 4) }, { width: 480, height: 360 })
+    for (let i = 0; i < 4; i++) expect(absoluteLeaves(t).some((l) => (l.part ?? '').startsWith(`cat[${i}]`))).toBe(true)
+    assertChartSane(t, { width: 480, height: 360 })
+  })
+
   it('format compact shows K on the axis', () => {
     const t = lay({ categories: cats, series: [{ name: 'a', values: [12000, 8000, 5000] }, { name: 'b', values: [1000, 2000, 3000] }], format: 'compact' })
     expect(textsOf(t).some((s) => /K$/.test(s))).toBe(true)

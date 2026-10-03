@@ -39,7 +39,7 @@ export function layout(props: SparklineProps, ctx: LayoutContext): LayoutNode {
   const delta = last - first
   const lastText = showLast === 'none' ? '' : showLast === 'delta' ? fmtSigned(delta, props.format) : fmtNum(last, props.format)
   const lastW = lastText ? Math.min(W * 0.3, Math.ceil(ctx.measureText(lastText, ts).width * TEXT_SLACK) + 2) : 0
-  const labelW = label ? Math.min(W * 0.32, Math.ceil(ctx.measureText(label, ls).width * TEXT_SLACK) + 2) : 0
+  const labelW = label ? Math.min(W * 0.42, Math.ceil(ctx.measureText(label, ls).width * TEXT_SLACK) + 2) : 0
   const x0 = labelW ? labelW + gap : 0
   const x1 = Math.max(x0 + 8, W - (lastW ? lastW + gap : 0))
 
