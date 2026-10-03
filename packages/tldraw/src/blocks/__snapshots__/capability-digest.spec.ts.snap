@@ -1758,6 +1758,54 @@ Numbered process diagram with animated step reveal. _(family: diagram; keywords:
 }
 \`\`\`
 
+### \`tls.g.timeline\` — Timeline
+
+Dated events along a horizontal or vertical axis, with a card per event and an optional now marker. _(family: diagram; keywords: timeline, history, dates, schedule, milestones, chronology)_
+
+**When:** Dated order: history, project timeline, course schedule.
+**Avoid:** Undated steps (use tls.g.steps). Overlapping periods go in tls.g.roadmap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`events\` | yes | list of object (date, title, text, icon) (3–8 items) | Events in date order, earliest first. |
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`alternate\` | no | boolean | Cards alternate above/below (or left/right) so more events fit. |
+| \`nowIndex\` | no | number (min -1, max 20) | 0-based index of the latest event reached; later events are muted. -1 for none. |
+| \`nodeStyle\` | no | enum: dot \\\\| icon \\\\| number |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_timeline\\",
+  \\"type\\": \\"tls.g.timeline\\",
+  \\"props\\": {
+    \\"events\\": [
+      {
+        \\"date\\": \\"2021\\",
+        \\"title\\": \\"Founded\\",
+        \\"text\\": \\"Two founders and a prototype\\"
+      },
+      {
+        \\"date\\": \\"2022\\",
+        \\"title\\": \\"First customers\\",
+        \\"text\\": \\"Ten pilots go live\\"
+      },
+      {
+        \\"date\\": \\"2023\\",
+        \\"title\\": \\"Series A\\",
+        \\"text\\": \\"Team grows to thirty\\"
+      },
+      {
+        \\"date\\": \\"2024\\",
+        \\"title\\": \\"Global launch\\",
+        \\"text\\": \\"Available in twelve countries\\"
+      }
+    ],
+    \\"nowIndex\\": 2
+  }
+}
+\`\`\`
+
 ### \`tls.l.card\` — Card
 
 Filled container with configurable padding. _(family: layout; keywords: card, container, padding, filled)_
@@ -2892,7 +2940,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 77,
+  "blockCount": 78,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2934,6 +2982,7 @@ Object {
     "tls.g.chevrons",
     "tls.g.cycle",
     "tls.g.steps",
+    "tls.g.timeline",
     "tls.l.card",
     "tls.l.field",
     "tls.l.footer",
