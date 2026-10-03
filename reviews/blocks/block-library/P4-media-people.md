@@ -21,18 +21,18 @@ lint: empty alt → warning).
 
 | # | Block | Category | Priority | Status | Commit | Blocked / notes |
 |---|---|---|---|---|---|---|
-| 1 | `tls.m.image-grid` | media | must | ⬜ | | |
-| 2 | `tls.m.avatar` | people | must | ⬜ | | |
-| 3 | `tls.c.profile-card` | people | must | ⬜ | | composite |
-| 4 | `tls.m.logo` | brand | must | ⬜ | | |
-| 5 | `tls.m.logo-wall` | brand | must | ⬜ | | |
-| 6 | `tls.m.image-compare` | media | should | ⬜ | | |
-| 7 | `tls.m.device-mock` | media | should | ⬜ | | |
-| 8 | `tls.m.avatar-group` | people | should | ⬜ | | |
-| 9 | `tls.m.decoration` | decoration | should | ⬜ | | |
-| 10 | `tls.m.image-collage` | media | could | ⬜ | | |
-| 11 | `tls.m.pattern` | decoration | could | ⬜ | | |
-| — | Demo slides (gallery, people, brand) + screenshots | | | ⬜ | | 3 slides |
+| 1 | `tls.m.image-grid` | media | must | ✅ | `73839a01` | patterns even / feature-left / feature-top / mosaic; parts `img[i]`, `cap[i]`; overlay caption is a floating scrim pill (a square band pokes out of rounded corners); `alt/missing` lint. Also: SVG renderer clips images with a radius (circles were squares in export) |
+| 2 | `tls.m.avatar` | people | must | ✅ | `095d8f04`, `2106b577`, `656cd36b` | initials of the first 2 words (NFC, diacritics kept); unresolvable image id also falls back to initials; extra option `align: center/start`; root height = content height (stacks size it) |
+| 3 | `tls.c.profile-card` | people | must | ✅ | `2106b577`, `656cd36b` | composite + a thin layout wrapper that renames the anonymous `text` parts to name/role/bio/contact (toggles need real parts). **Reduced:** no `tone: outline` (`tls.l.card` has no stroke), tones are `alt`/`surface`; text is start-aligned (`tls.t.title`/`caption` ignore `align`); DOM/SVG parity probe off (layoutChild wrappers sit at x>0, SVG ignores group offsets) |
+| 4 | `tls.m.logo` | brand | must | ✅ | `ac633f13` | `ratio` option (width/height) added so `align`/plate hug the logo; read from `ctx.asset()` when absent (wired in `deck-context.ts` from the asset table `size`); no ratio = full-width contain box, `align` has nothing to move |
+| 5 | `tls.m.logo-wall` | brand | must | ✅ | `0c420dae` | `sizeLogos` = exact equal-area math (A = min over logos of iw²/r, ih²·r); per-logo `ratio`; cells capped at 0.7 of their width; cols auto = at most 5 per row, balanced |
+| 6 | `tls.m.image-compare` | media | should | ✅ | `2ce3a8c4` | `split` verified: `group.clip` clips in BOTH renderers when the clip group sits at the block origin with absolute children (after fills the frame, before sits clipped to the left half; a clip group at x>0 would be offset in the DOM only); DOM verified in the screenshot, SVG by clipPath assertion |
+| 7 | `tls.m.device-mock` | media | should | ✅ | `ee53da81` | 4 devices drawn from rects; screenshot cover + `focal [0.5,0]`; device is fitted and centred in the box (a block cannot carry a per-device `size.aspect`); shadow = faded offset rect, no blur |
+| 8 | `tls.m.avatar-group` | people | should | ✅ | `f5fa0bb2` | `+N` bubble, surface edge on each avatar, size shrinks to fit; caption right of the row or under it |
+| 9 | `tls.m.decoration` | decoration | should | ✅ | `69fb9f7c` | one `path`; deterministic mulberry32(seed); rotation rotates blob and arc, snaps wave/corner to quarter turns, ring/dots ignore it. **Not built:** the contrast lint (a block lint cannot see its siblings) |
+| 10 | `tls.m.image-collage` | media | could | ⏸ blocked |  | Confirmed: `LayoutNode` has no rotation (group: box/name/part/clip/opacity/children; `image` cannot rotate), so rotated prints are impossible; a non-rotated overlap would just be `tls.m.image-grid`. Not built, no `rotate` field added (rule 3). Revisit if rotation is ever agreed (README §Parked) |
+| 11 | `tls.m.pattern` | decoration | could | ✅ | `eaec2825` | dots/grid/lines/diagonal, ONE path node at 1920x1080 scale sm (dots capped at 2,500 marks); no motion preset |
+| — | Demo slides (gallery, people, brand) + screenshots | | | ✅ | `bb9c91ed` | sl_42-sl_46 (+ decoration, pattern); images are generated SVGs in `examples/nextjs-sample/public/demo/` referenced as `/demo/x.svg`; one grid cell uses an unresolvable id to show the placeholder; shots opened (`tools/visual/shots/p4-sl_4*.png`) |
 
 ---
 
@@ -156,7 +156,6 @@ lint: empty alt → warning).
 ---
 
 ## Phase done when
-- [ ] Must blocks ✅; three demo slides (using the existing demo images in the fixtures)
-  screenshotted and opened.
-- [ ] Image placeholders verified in the screenshot for at least one block.
-- [ ] Full suite, tsc 0, README counts and session log updated.
+- [x] Must blocks ✅; demo slides (generated SVG images, the repo has no photos) screenshotted and opened.
+- [x] Image placeholders verified in the screenshot for at least one block (sl_42, image-grid cell "Photo not uploaded yet").
+- [ ] Full suite (not run: 6 GB machine; targeted suites pass), tsc 0 ✔, README counts and session log updated ✔.
