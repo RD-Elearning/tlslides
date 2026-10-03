@@ -2220,6 +2220,39 @@ Org chart or hierarchy: a root box linked to children and grandchildren, top-dow
 }
 \`\`\`
 
+### \`tls.g.venn\` — Venn
+
+Two or three overlapping translucent circles with set labels and a label for what they share. _(family: diagram; keywords: venn, overlap, intersection, shared, circles, ikigai)_
+
+**When:** Overlap: what two or three sets share, such as a skills/market intersection.
+**Avoid:** More than 3 sets (use tls.d.compare-table) or ranked levels (use tls.g.pyramid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`sets\` | yes | list of object (label, text) (2–3 items) | 2 or 3 sets. Short labels. |
+| \`overlap\` | no | text (max 30 chars) | What all sets share. 1-3 words. |
+| \`pairOverlaps\` | no | list of text (max 24 chars) (0–3 items) | 3 sets only: shared by A+B, B+C, A+C, in that order. |
+| \`opacity\` | no | enum: soft \\\\| medium |  |
+| \`labels\` | no | enum: inside \\\\| outside | outside = set names beside the circles. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_venn\\",
+  \\"type\\": \\"tls.g.venn\\",
+  \\"props\\": {
+    \\"sets\\": [
+      {
+        \\"label\\": \\"Skills\\"
+      },
+      {
+        \\"label\\": \\"Passion\\"
+      }
+    ],
+    \\"overlap\\": \\"Sweet spot\\"
+  }
+}
+\`\`\`
+
 ### \`tls.l.card\` — Card
 
 Filled container with configurable padding. _(family: layout; keywords: card, container, padding, filled)_
@@ -3354,7 +3387,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 87,
+  "blockCount": 88,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3406,6 +3439,7 @@ Object {
     "tls.g.swot",
     "tls.g.timeline",
     "tls.g.tree",
+    "tls.g.venn",
     "tls.l.card",
     "tls.l.field",
     "tls.l.footer",

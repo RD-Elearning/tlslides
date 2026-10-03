@@ -17,7 +17,7 @@ export const tlsGMatrix2x2: BlockDefinition = {
   category: 'comparison',
   scope: 'group',
   shortDescription: 'Two-by-two quadrant grid with axis labels and optional plotted items',
-  related: ['tls.d.scatter', 'tls.d.compare-table'],
+  related: ['tls.d.scatter', 'tls.d.compare-table', 'tls.g.venn'],
   describe: {
     when: 'Contrast on two dimensions: effort/impact, urgent/important, BCG.',
     avoid: 'Many numeric points (use tls.d.scatter); SWOT (use tls.g.swot).',

@@ -17,9 +17,10 @@ import { tlsGPyramid } from './tls-g-pyramid'
 import { tlsGMatrix2x2 } from './tls-g-matrix-2x2'
 import { tlsGSwot } from './tls-g-swot'
 import { tlsGProsCons } from './tls-g-pros-cons'
+import { tlsGVenn } from './tls-g-venn'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -34,3 +35,4 @@ export { tlsGPyramid } from './tls-g-pyramid'
 export { tlsGMatrix2x2 } from './tls-g-matrix-2x2'
 export { tlsGSwot } from './tls-g-swot'
 export { tlsGProsCons } from './tls-g-pros-cons'
+export { tlsGVenn } from './tls-g-venn'
