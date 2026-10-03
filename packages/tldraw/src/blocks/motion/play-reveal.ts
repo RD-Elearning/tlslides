@@ -132,6 +132,15 @@ export function partElements(el: HTMLElement, partName: string): { els: HTMLElem
   return { els: all.filter((n) => match(n.getAttribute('data-part') ?? '')), indexed: true }
 }
 
+/** The element whose text a count-up may rewrite: follow single-child chains down to a leaf
+ *  that holds a digit; `undefined` for anything else (no number, or several children). */
+function countTarget(el: HTMLElement): HTMLElement | undefined {
+  let target: Element = el
+  while (target.children.length === 1) target = target.children[0]
+  if (target.children.length > 0) return undefined
+  return /\d/.test(target.textContent ?? '') ? (target as HTMLElement) : undefined
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -205,11 +214,13 @@ export function playBlockReveal(
       // the part's own delay, as before).
       const delay = pm.delayMs + (indexed ? elementIndex * (pm.staggerMs ?? 0) : 0)
       // Count-up: intercept onUpdate to tween textContent.
-      // P7: only text that holds a number counts up (a label such as "Adoption" used to be
-      // rewritten to "Adoption0Adoption"), and the last frame restores the exact original text
-      // ("1,250" would otherwise end as "1250").
-      if (pm.presetId === 'count-up' && /\d/.test(partEl.textContent ?? '')) {
-        const targetText = partEl.textContent ?? '0'
+      // P7: count on the single text leaf inside the part (a one-line text part renders as
+      // part > line div). A label with no digit ("Adoption" used to become "Adoption0Adoption")
+      // and a part with several children (a tile group, a wrapped paragraph) are never rewritten,
+      // and the last frame restores the exact original text ("1,250" would otherwise end "1250").
+      const countEl = countTarget(partEl as HTMLElement)
+      if (pm.presetId === 'count-up' && countEl) {
+        const targetText = countEl.textContent ?? '0'
         const targetValue = parseFloat(targetText.replace(/[^0-9.-]/g, '')) || 0
         const isInteger = Number.isInteger(targetValue)
         const prefix = targetText.match(/^[^0-9.-]*/)?.[0] ?? ''
@@ -222,11 +233,11 @@ export function playBlockReveal(
           fill: 'forwards',
           onUpdate: (progress: number) => {
             if (progress >= 1) {
-              ;(partEl as HTMLElement).textContent = targetText
+              countEl.textContent = targetText
               return
             }
             const current = targetValue * progress
-            ;(partEl as HTMLElement).textContent = prefix + (isInteger ? Math.round(current).toString() : current.toFixed(1)) + suffix
+            countEl.textContent = prefix + (isInteger ? Math.round(current).toString() : current.toFixed(1)) + suffix
           },
         })
       } else {

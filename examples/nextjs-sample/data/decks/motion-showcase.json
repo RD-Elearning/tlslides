@@ -318,7 +318,7 @@
             "id": "b07_t",
             "type": "tls.t.title",
             "props": {
-              "text": "Sáu năng lực sinh viên đạt được — expressive"
+              "text": "Sáu năng lực cốt lõi — expressive"
             }
           }
         ],
@@ -334,7 +334,7 @@
                   "text": "Đặt câu hỏi đúng trước khi tìm câu trả lời."
                 },
                 {
-                  "icon": "users",
+                  "icon": "handshake",
                   "title": "Làm việc nhóm",
                   "text": "Dự án thật với vai trò rõ ràng trong nhóm."
                 },
@@ -366,7 +366,7 @@
     },
     {
       "id": "ms_08",
-      "layout": "kpi-row",
+      "layout": "four-up",
       "motionStyle": "expressive",
       "notes": "Expressive KPI tiles: each tile counts up, chained left to right.",
       "regions": {
@@ -379,7 +379,7 @@
             }
           }
         ],
-        "kpi1": [
+        "q1": [
           {
             "id": "b08_k1",
             "type": "tls.c.kpi-tile",
@@ -392,12 +392,12 @@
             }
           }
         ],
-        "kpi2": [
+        "q2": [
           {
             "id": "b08_k2",
             "type": "tls.c.kpi-tile",
             "props": {
-              "value": 0.94,
+              "value": 94,
               "delta": 3,
               "label": "Tỉ lệ nhập học",
               "polarity": "upGood",
@@ -405,7 +405,7 @@
             }
           }
         ],
-        "kpi3": [
+        "q3": [
           {
             "id": "b08_k3",
             "type": "tls.c.kpi-tile",
@@ -418,12 +418,12 @@
             }
           }
         ],
-        "kpi4": [
+        "q4": [
           {
             "id": "b08_k4",
             "type": "tls.c.kpi-tile",
             "props": {
-              "value": 0.11,
+              "value": 11,
               "delta": -2,
               "label": "Bỏ học năm nhất",
               "polarity": "downGood",
@@ -435,7 +435,7 @@
     },
     {
       "id": "ms_09",
-      "layout": "kpi-row",
+      "layout": "four-up",
       "motionStyle": "subtle",
       "notes": "Same tiles, subtle: a quick fade, numbers already final.",
       "regions": {
@@ -448,7 +448,7 @@
             }
           }
         ],
-        "kpi1": [
+        "q1": [
           {
             "id": "b09_k1",
             "type": "tls.c.kpi-tile",
@@ -461,12 +461,12 @@
             }
           }
         ],
-        "kpi2": [
+        "q2": [
           {
             "id": "b09_k2",
             "type": "tls.c.kpi-tile",
             "props": {
-              "value": 0.94,
+              "value": 94,
               "delta": 3,
               "label": "Tỉ lệ nhập học",
               "polarity": "upGood",
@@ -474,7 +474,7 @@
             }
           }
         ],
-        "kpi3": [
+        "q3": [
           {
             "id": "b09_k3",
             "type": "tls.c.kpi-tile",
@@ -487,12 +487,12 @@
             }
           }
         ],
-        "kpi4": [
+        "q4": [
           {
             "id": "b09_k4",
             "type": "tls.c.kpi-tile",
             "props": {
-              "value": 0.11,
+              "value": 11,
               "delta": -2,
               "label": "Bỏ học năm nhất",
               "polarity": "downGood",

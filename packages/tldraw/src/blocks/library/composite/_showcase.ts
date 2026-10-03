@@ -73,7 +73,8 @@ export function playSteps(rt: BlockMotionRuntime, steps: MotionStepList, done: (
     return () => undefined
   }
   const handles: MotionHandle[] = steps.map(([el, kf, opts]) =>
-    rt.driver.play(el, kf, { fill: 'forwards', ...opts, delay: (opts.delay ?? 0) + rt.timing.delayMs })
+    // `both`: an element waiting out its delay already shows its first keyframe (hidden), not its final state.
+    rt.driver.play(el, kf, { fill: 'both', ...opts, delay: (opts.delay ?? 0) + rt.timing.delayMs })
   )
   Promise.all(handles.map((h) => h.finished)).then(done, done)
   return () => handles.forEach((h) => h.cancel())

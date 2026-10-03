@@ -42,9 +42,9 @@ function pathOf(root: HTMLElement): { el: Element; length: number } | undefined 
 
 function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: BlockMotionRuntime): () => void {
   const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
-  tl.set(all(root, '[data-part]'), { opacity: 1 }, 0)
+  // Every part owns its opacity in its own fromTo (no blanket set: it would undo the from-states).
   const path = pathOf(root)
-  if (path) tl.fromTo(path.el, { strokeDashoffset: path.length }, { strokeDashoffset: 0, duration: DRAW_S, ease: 'none' }, 0)
+  if (path) tl.fromTo(path.el, { strokeDashoffset: path.length, opacity: 1 }, { strokeDashoffset: 0, opacity: 1, duration: DRAW_S, ease: 'none' }, 0)
   for (const s of stops(root)) {
     const t = s.at * DRAW_S
     tl.fromTo(s.node, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: 'back.out(3)' }, Math.max(0, t - 0.08))

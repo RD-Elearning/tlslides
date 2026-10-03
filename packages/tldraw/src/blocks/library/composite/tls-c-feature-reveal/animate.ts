@@ -17,7 +17,7 @@ function family(root: HTMLElement, name: string): HTMLElement[] {
 
 function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: BlockMotionRuntime): () => void {
   const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
-  tl.set(all(root, '[data-part]'), { opacity: 1 }, 0)
+  // Every part owns its opacity in its own fromTo (no blanket set: it would undo the from-states).
   const cards = family(root, 'card')
   cards.forEach((card, i) => {
     tl.fromTo(
@@ -28,7 +28,7 @@ function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: B
     )
   })
   family(root, 'icon').forEach((icon, i) => {
-    tl.fromTo(icon, { scale: 0, rotation: -40 }, { scale: 1, rotation: 0, duration: 0.9, ease: 'elastic.out(1, 0.45)' }, 0.35 + i * 0.14)
+    tl.fromTo(icon, { scale: 0, rotation: -40, opacity: 1 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.9, ease: 'elastic.out(1, 0.45)' }, 0.35 + i * 0.14)
   })
   const texts = [...family(root, 'title'), ...family(root, 'text')]
   texts.forEach((el) => {

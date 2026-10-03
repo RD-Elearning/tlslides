@@ -21,7 +21,9 @@ function isCentered(root: HTMLElement): boolean {
 
 function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: BlockMotionRuntime): () => void {
   const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
-  tl.set(all(root, '[data-part]'), { opacity: 1 }, 0)
+  // Only the containers whose children carry the motion are shown up front; every other part
+  // owns its opacity in its own fromTo (a blanket set at 0 would undo their hidden from-state).
+  tl.set(all(root, '[data-part="decor"], [data-part="title"]'), { opacity: 1 }, 0)
 
   all(root, '[data-orb]').forEach((orb, i) => {
     const [x, y] = ORB_FROM[i] ?? [0, 60]
@@ -47,8 +49,8 @@ function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: B
   if (rule) {
     tl.fromTo(
       rule,
-      { scaleX: 0, transformOrigin: isCentered(root) ? '50% 50%' : '0% 50%' },
-      { scaleX: 1, duration: 0.8, ease: 'power3.inOut' },
+      { scaleX: 0, opacity: 1, transformOrigin: isCentered(root) ? '50% 50%' : '0% 50%' },
+      { scaleX: 1, opacity: 1, duration: 0.8, ease: 'power3.inOut' },
       0.35 + words.length * 0.1 + 0.4
     )
   }

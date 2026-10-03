@@ -379,4 +379,28 @@ describe('P7 expressive recipes and count-up guard', () => {
     expect(el.children[0].textContent).toBe('Adoption')
     expect(el.children[1].textContent).toBe('1,250')
   })
+
+  it('count-up writes into a one-line text part\'s line, and never flattens a group part', () => {
+    const el = document.createElement('div')
+    el.innerHTML =
+      '<div data-part="value"><div class="line">42%</div></div>' +
+      '<div data-part="tile"><div>Label</div><div>17</div></div>'
+    const seen: string[] = []
+    const driver: MotionDriver = {
+      play(_t, _k, opts) {
+        opts.onUpdate?.(0.5)
+        seen.push(el.innerHTML)
+        opts.onUpdate?.(1)
+        return { cancel() {}, finished: Promise.resolve() }
+      },
+      set() {},
+      timeline() {
+        return { cancel() {}, finished: Promise.resolve() }
+      },
+      cancelAll() {},
+    }
+    playBlockReveal(el, { id: 'k', type: 'x', props: {}, motion: { preset: 'count-up' } }, { motion: { parts: ['value', 'tile'] } } as any, { driver, reducedMotion: false })
+    expect(seen.some((h) => h.includes('<div class="line">21%</div>'))).toBe(true)
+    expect(el.innerHTML).toBe('<div data-part="value" style=""><div class="line">42%</div></div><div data-part="tile" style=""><div>Label</div><div>17</div></div>'.replace(/ style=""/g, ''))
+  })
 })

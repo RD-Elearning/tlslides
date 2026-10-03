@@ -42,7 +42,7 @@ export const schema: BlockSchema = {
 export const defaults: FeatureRevealProps = {
   items: [
     { icon: 'brain', title: 'Tư duy phản biện', text: 'Đặt câu hỏi đúng trước khi tìm câu trả lời.' },
-    { icon: 'users', title: 'Làm việc nhóm', text: 'Dự án thật với vai trò rõ ràng trong nhóm.' },
+    { icon: 'handshake', title: 'Làm việc nhóm', text: 'Dự án thật với vai trò rõ ràng trong nhóm.' },
     { icon: 'code', title: 'Kỹ năng số', text: 'Lập trình, dữ liệu và công cụ cộng tác.' },
     { icon: 'lightbulb', title: 'Sáng tạo', text: 'Biến ý tưởng thành nguyên mẫu trong một tuần.' },
     { icon: 'message', title: 'Giao tiếp', text: 'Trình bày rõ ràng trước lớp và doanh nghiệp.' },

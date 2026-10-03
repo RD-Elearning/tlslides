@@ -184,6 +184,12 @@ export function showcaseSuite(def: BlockDefinition, opts: ShowcaseOpts): void {
       expect(plays).toHaveLength(0)
       expect(fake.tweens.length).toBeGreaterThan(2)
       expect(fake.tweens.some((t) => t.target === root)).toBe(false)
+      // A set() to opacity 1 at the start must not hit an element whose own fromTo hides it
+      // first: the set would win at time 0 and show it early (seen in the browser).
+      const els = (t: unknown): unknown[] => (Array.isArray(t) ? t : [t])
+      const shown = fake.tweens.filter((t) => t.op === 'set' && (t.vars[0] as any)?.opacity === 1).flatMap((t) => els(t.target))
+      const hidden = fake.tweens.filter((t) => t.op === 'fromTo' && (t.vars[0] as any)?.opacity === 0).flatMap((t) => els(t.target))
+      expect(shown.filter((e) => hidden.includes(e))).toEqual([])
       expect(done).not.toHaveBeenCalled()
       fake.fire()
       fake.fire()
