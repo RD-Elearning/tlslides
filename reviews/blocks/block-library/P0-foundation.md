@@ -9,11 +9,11 @@ phases that list them as dependencies, so they can run in parallel with early P1
 | P0.2 | Conformance gates for the new metadata | must | S | ✅ | d508b7bb | Warning rule id is `block/scope-nested` (repo uses slash-style rule ids). Gates are red at this commit until P0.3 backfills. |
 | P0.3 | Backfill the 41 existing blocks | must | M | ✅ | 7f5a3dfe | Fixture sl_11 nested slide-scope big-stat in a card; swapped for kpi-tile (both fixture copies). Digest budgets bumped, replaced in P0.4. |
 | P0.4 | Two-tier AI digest (index + detail) and category gallery | must | M | ✅ | 72e2a610 | Index is ~5.5k chars for 41 blocks. Range comes from the first required content list/series slot (min<=1 dropped). Filtered detail is block-only with compact examples. Icon list is the existing 10 until P0.5. Scenario: tools/visual/scenarios/block-gallery.js. |
-| P0.5 | Icon set 10 → ~80 | must | M | ⬜ | | |
-| P0.6 | Chart engine v2 (multi-series, legend, arcs, paths, formatting) | must | M | ⬜ | | |
-| P0.7 | Table engine (column solver + cell measurement) | must | M | ⬜ | | |
-| P0.8 | Diagram helpers (connectors, radial placement, layered DAG) | must | M | ⬜ | | |
-| P0.9 | `tls.d.bar` gets `orientation` + correct summary | should | S | ⬜ | | |
+| P0.5 | Icon set 10 → ~80 | must | M | ✅ | 1f8dc1b4 | 87 icons (77 Lucide + original 10), `ICON_GROUPS`, rule id `icon/unknown`. Lucide uses round caps, the renderers draw butt caps, so dots are tiny circles; stroke is 1.5 not Lucide's 2. The original 10 (Material/Tabler fills) look odd when stroked; pre-existing, not touched. Scenario: tools/visual/scenarios/icon-sheet.js. |
+| P0.6 | Chart engine v2 (multi-series, legend, arcs, paths, formatting) | must | M | ✅ | c0e30cf7 | `directLabel` takes `{labelHeight, gap}` opts and returns y values. `arcPath` has an optional `span` arg so the donut stays byte-identical (see spec). `formatValue` moved out of kpi-tile. Convention documented in guides/blocks-authoring.md §2.9. |
+| P0.7 | Table engine (column solver + cell measurement) | must | M | ✅ | d239df03 | `blocks/layout/table.ts`. `capacityForTable` takes row heights (from `measureTable`), not rows. Extra cell kind `node` for injected children. Text alignment is done by moving the text node box (TextLine has no align). |
+| P0.8 | Diagram helpers (connectors, radial placement, layered DAG) | must | M | ✅ | 5f039d79 | `blocks/layout/diagram/`. Tree cap = 4 levels including the root. DAG edges that skip layers can pass behind an intermediate node (documented); nodes never overlap. |
+| P0.9 | `tls.d.bar` gets `orientation` + correct summary | should | S | ✅ | 795f0ae6 | Horizontal category labels use unique parts `label/<i>` (the parity harness matches by part; vertical keeps `label`). Old summary claimed value labels the chart never drew; fixed. Scenario: tools/visual/scenarios/bar-horizontal.js. |
 
 ---
 
@@ -140,8 +140,8 @@ Done when:
   suggestion (`nearest-name.ts` exists).
 
 Done when:
-- [ ] ≥ 75 icons, all render in DOM and SVG (parity probe extended with an all-icons sheet).
-- [ ] Screenshot of the icon sheet opened and checked.
+- [ ] ≥ 75 icons (87, spec-enforced), all render in DOM and SVG. DOM verified in the browser; the SVG renderer path has no all-icons parity probe yet (open).
+- [x] Screenshot of the icon sheet opened and checked (3 slides, all 87 rendered; the original 10 look odd when stroked, pre-existing).
 
 ## P0.6 · Chart engine v2
 
@@ -170,8 +170,8 @@ is one series; at most one recessive gridline set; categorical hues ≤ 6; zero 
 no 3D, no dual axis.
 
 Done when:
-- [ ] Each helper has a unit spec (golden numbers, not snapshots).
-- [ ] `tls.d.donut` refactored onto `arcPath` with byte-identical layout output (existing spec
+- [x] Each helper has a unit spec (golden numbers, not snapshots).
+- [x] `tls.d.donut` refactored onto `arcPath` with byte-identical layout output (existing spec
   passes unchanged).
 
 ## P0.7 · Table engine
@@ -191,7 +191,7 @@ d.scorecard, d.ranking, d.pricing, t.kv-list.
 - `capacityForTable(rows, box)` → `{ fits, maxRows }`, shared by all table blocks.
 
 Done when:
-- [ ] Spec covers wrap, overflow-shrink, alignments, and each cell kind.
+- [x] Spec covers wrap, overflow-shrink, alignments, and each cell kind.
 
 ## P0.8 · Diagram helpers
 
@@ -209,7 +209,7 @@ Done when:
   chevrons, funnel and pyramid.
 
 Done when:
-- [ ] Specs for each helper, incl. "connector never crosses its endpoint boxes" and "dag output
+- [x] Specs for each helper, incl. "connector never crosses its endpoint boxes" and "dag output
   has no overlapping node boxes" (reuse `collision.spec.ts` style).
 
 ## P0.9 · `tls.d.bar` orientation
@@ -220,4 +220,4 @@ long labels wrapped to 2 lines. Rewrite the `summary`/`shortDescription` per 01-
 horizontal example to the spec, not to `describe.example` (keep that stable).
 
 Done when:
-- [ ] Existing bar spec unchanged and green. New horizontal tests pass. Parity probe for horizontal.
+- [x] Existing bar spec unchanged and green. New horizontal tests pass. Parity probe for horizontal.

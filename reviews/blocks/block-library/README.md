@@ -74,7 +74,7 @@ node_modules/.bin/tsc --noEmit --emitDeclarationOnly false | grep -v '\.spec\.' 
 
 | Phase | Scope | New blocks | Depends on | Status |
 |---|---|---|---|---|
-| **P0** | Foundation: metadata fields, conformance gates, backfill 41 blocks, two-tier digest, category gallery, icon set ×8, shared engines | 0 (+1 option on `tls.d.bar`) | — | 🔶 P0.1–P0.4 done |
+| **P0** | Foundation: metadata fields, conformance gates, backfill 41 blocks, two-tier digest, category gallery, icon set ×8, shared engines | 0 (+1 option on `tls.d.bar`) | — | ✅ P0.1–P0.9 done (one P0.5 box open) |
 | **P1** | Text, lists, emphasis | 11 | P0.1–P0.3 | ⬜ |
 | **P2** | Metrics, charts, tables | 24 | P0.1–P0.3, P0.6 (chart), P0.7 (table) | ⬜ |
 | **P3** | Diagrams | 21 | P0.1–P0.3, P0.8 (connector/radial) | ⬜ |
@@ -99,7 +99,7 @@ Update these counts when you tick a block. The detailed status lives in the phas
 
 | Phase | must | should | could | Done | Last commit | Last update |
 |---|---|---|---|---|---|---|
-| P0 | 8 tasks | 1 task | — | 4 / 9 tasks | 72e2a610 | 2026-10-03 |
+| P0 | 8 tasks | 1 task | — | 9 / 9 tasks | 795f0ae6 | 2026-10-03 |
 | P1 | 7 | 3 | 1 | 0 / 11 | — | — |
 | P2 | 12 | 8 | 4 | 0 / 24 | — | — |
 | P3 | 10 | 7 | 4 | 0 / 21 | — | — |
@@ -117,6 +117,7 @@ Append one line per working session (date, who, what moved, anything the next se
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-03 | L0 agent | P0.1–P0.4 shipped (`2ef8837b`, `d508b7bb`, `7f5a3dfe`, 72e2a610) | Next: P0.5 icons (then update the index's icon list automatically, it reads `ICONS`), P0.6–P0.9. Index for 41 blocks is ~5.5k chars. Budgets now: index <= 20k, detail <= 12k per 8 types. Gallery: tools/visual/scenarios/block-gallery.js (needs a rebuilt `packages/tldraw/dist`, the sample reads dist). |
+| 2026-10-03 | L0 agent | P0.5–P0.9 shipped (`1f8dc1b4`, `c0e30cf7`, `d239df03`, `5f039d79`, `795f0ae6`) | P0 is done: P1–P6 can start. Open: P0.5 all-icons SVG parity probe (DOM verified by screenshot only). Icons: 87, `ICON_GROUPS`, warning `icon/unknown`; Lucide path data has round caps in the original, renderers draw butt caps, so keep icons stroke 1.5 and dots as tiny circles. Engines: chart `library/data/_engine/` (+ guides/blocks-authoring.md §2.9), table `blocks/layout/table.ts`, diagrams `blocks/layout/diagram/` (tree cap = 4 levels incl. root). `.husky/pre-commit` is not executable here, so commits do not run the full suite. Parity specs time out (5 s) when many run in parallel: use `--runInBand --forceExit` and pipe jest to a file, not to `grep`/`head` (a piped jest hung on open browser handles). |
 | 2026-10-03 | plan | Plan written | Start at P0.1. The digest budget test (`capability-digest.spec.ts`) is already at its 60k ceiling, so P0.4 must land before any phase adds blocks, or every new block fails that test. |
 
 ---
