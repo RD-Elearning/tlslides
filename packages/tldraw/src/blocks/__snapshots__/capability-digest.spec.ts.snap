@@ -2101,7 +2101,7 @@ SWOT grid: strengths, weaknesses, opportunities and threats as four bullet lists
 | \`opportunities\` | yes | list of text (max 80 chars) (1–5 items) | External positives. |
 | \`threats\` | yes | list of text (max 80 chars) (1–5 items) | External negatives. |
 | \`style\` | no | enum: tinted \\\\| outline | tinted = coloured cards, outline = neutral cards. |
-| \`letters\` | no | boolean | A large S, W, O or T above each heading. |
+| \`letters\` | no | boolean | A large S, W, O or T above each heading. Needs tall quadrants: full-width slide, 3 items or fewer. |
 
 \`\`\`json
 {

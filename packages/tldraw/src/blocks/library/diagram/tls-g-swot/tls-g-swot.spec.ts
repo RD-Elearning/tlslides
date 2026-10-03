@@ -42,11 +42,18 @@ describe('tls.g.swot', () => {
 
   it('colours each quadrant by a role (S positive, W negative, O accent, T warning), never a hex', () => {
     const spec = buildSwot(defaults)
-    const cards = ((spec.props as any).children as BlockSpec[]).map((c) => c.style?.surface)
+    const cards = ((spec.props as any).children as BlockSpec[]).map((c) => ((c.props as any).$block?.style as any)?.surface)
     expect(cards).toEqual(['positive', 'negative', 'accent', 'warning'])
     expect(JSON.stringify(spec)).not.toMatch(/#[0-9a-fA-F]{3,8}/)
     const outline = buildSwot({ ...defaults, style: 'outline' })
-    expect(((outline.props as any).children as BlockSpec[]).every((c) => c.style?.surface === undefined)).toBe(true)
+    expect(((outline.props as any).children as BlockSpec[]).every((c) => (c.props as any).$block === undefined)).toBe(true)
+  })
+
+  it('headings use the quadrant role in outline style and the text role on a coloured card', () => {
+    const accents = (style: 'tinted' | 'outline') =>
+      walk(buildSwot({ ...defaults, style })).filter((b) => b.type === 'tls.t.kicker').map((b) => (b.props as any).$block.style.accent)
+    expect(accents('outline')).toEqual(['positive', 'negative', 'accent', 'warning'])
+    expect(accents('tinted')).toEqual(['text', 'text', 'text', 'text'])
   })
 
   it('letters adds one big letter per quadrant, off by default', () => {

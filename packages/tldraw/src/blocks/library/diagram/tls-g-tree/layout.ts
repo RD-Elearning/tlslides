@@ -14,7 +14,7 @@ import { tidyTree, MAX_TREE_LEVELS } from '../../../layout/diagram'
 import type { TreeNode } from '../../../layout/diagram'
 import type { TreeProps } from './schema'
 import { TREE_MAX_CHILDREN, TREE_MAX_NODES } from './schema'
-import { capacityOf, chartColors, clamp, emptyState, enumOf, lineH, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
+import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, lineH, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
 
 interface TNode {
   id: string
@@ -98,7 +98,7 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   const pitch = crossExtent / Math.max(1, leaves)
   // Dense left-to-right trees drop to the smaller label size so one line always fits a slot.
   const bigS = style(ctx, 'caption', c.text)
-  const labelS = horizontal && pitch < lineH(bigS) + 10 ? style(ctx, 'footnote', c.text) : bigS
+  const labelS = (horizontal && pitch < lineH(bigS) + 10) || (!horizontal && pitch < 150) ? style(ctx, 'footnote', c.text) : bigS
   const lhL = lineH(labelS)
   const gapCross = clamp(pitch * 0.14, 2, 26)
   const hasSub = !compact && [...byId.values()].some((n) => n.sub)
@@ -112,13 +112,29 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     nodeMain = Math.max(nodeMain, Math.min(lhL + 6, mainExtent / levels))
   } else {
     nodeMain = Math.min(compact ? 190 : 270, mainExtent / (levels + 0.7 * (levels - 1)))
-    nodeCross = Math.min(pitch - gapCross, wantH)
+    const needTwo = [...byId.values()].some((n) => ctx.measureText(n.label, labelS).width * TEXT_SLACK > nodeMain - 24)
+    const wantLR = (compact ? 8 : 22) + lhL * (compact || !needTwo ? 1 : 2) + (hasSub ? lhS + 2 : 0)
+    nodeCross = Math.min(pitch - gapCross, wantLR)
   }
   nodeCross = Math.max(1, nodeCross)
   nodeMain = Math.max(1, nodeMain)
   const size = horizontal ? { width: nodeMain, height: nodeCross } : { width: nodeCross, height: nodeMain }
   const layoutRes = tidyTree(tt, horizontal ? 'LR' : 'TB', { x: 0, y: 0, width: W, height: H }, { nodeSize: size, minGap: 0 })
   const boxes = layoutRes.boxes
+  if (!horizontal) {
+    // A parent may be as wide as the leaf slots below it (never wider), so long labels keep their text.
+    const leafBoxes = (n: TNode): Array<{ x: number; width: number }> => (n.kids.length === 0 ? [boxes[n.id]] : n.kids.flatMap(leafBoxes))
+    for (const n of byId.values()) {
+      if (n.kids.length === 0) continue
+      const b = boxes[n.id]
+      const ls = leafBoxes(n)
+      const left = Math.min(...ls.map((l) => l.x))
+      const right = Math.max(...ls.map((l) => l.x + l.width))
+      const centre = b.x + b.width / 2
+      const w = Math.min(compact ? 220 : 300, 2 * Math.min(centre - left, right - centre))
+      if (w > b.width) boxes[n.id] = { ...b, x: centre - w / 2, width: w }
+    }
+  }
 
   const nodes: LayoutNode[] = []
   const linkColor = c.line
@@ -201,7 +217,7 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
       w -= d + 8
     }
     w = Math.max(4, w)
-    const wantSub = !compact && n.sub && b.height - 2 * pad >= lhL + lhS - 1
+    const wantSub = !compact && n.sub && b.height >= lhL + lhS + 10
     const subLines = wantSub ? 1 : 0
     const labelLines = clamp(Math.floor((b.height - 2 * Math.min(pad, 4) - subLines * lhS) / lhL + 1e-6), 1, 2)
     const lh = linesHeight(ctx, n.label, labelS, w, labelLines)

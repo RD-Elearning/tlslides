@@ -31,7 +31,7 @@ export const schema: BlockSchema = {
   opportunities: listSlot('Opportunities', 'External positives.'),
   threats: listSlot('Threats', 'External negatives.'),
   style: enumSlot(['tinted', 'outline'], 'Style', 'tinted = coloured cards, outline = neutral cards.'),
-  letters: { type: { kind: 'boolean' }, role: 'option', label: 'Big letters', help: 'A large S, W, O or T above each heading.' },
+  letters: { type: { kind: 'boolean' }, role: 'option', label: 'Big letters', help: 'A large S, W, O or T above each heading. Needs tall quadrants: full-width slide, 3 items or fewer.' },
 }
 
 export interface SwotProps extends Record<string, unknown> {
@@ -66,17 +66,23 @@ const textsOf = (v: unknown): string[] =>
 export function buildSwot(props: SwotProps): BlockSpec {
   const tinted = props.style !== 'outline'
   const children: BlockSpec[] = QUADS.map((q) => {
+    // On a role-coloured card the heading must not use that same role, so it falls back to the text role.
+    const mark = tinted ? 'text' : q.role
     const stack: BlockSpec[] = []
     if (props.letters === true) {
-      stack.push({ id: `${q.key}-letter`, type: 'tls.t.hero-number', props: { value: q.letter, format: 'plain', emphasis: 'accent' }, style: { accent: q.role } })
+      stack.push({ id: `${q.key}-letter`, type: 'tls.t.hero-number', props: { value: q.letter, format: 'plain', emphasis: 'accent', $block: { style: { accent: mark } } } })
     }
-    stack.push({ id: `${q.key}-title`, type: 'tls.t.kicker', props: { text: q.title, marker: true }, style: { accent: q.role } })
+    stack.push({ id: `${q.key}-title`, type: 'tls.t.kicker', props: { text: q.title, marker: true, $block: { style: { accent: mark } } } })
     stack.push({ id: `${q.key}-items`, type: 'tls.t.bullets', props: { items: textsOf(props[q.key]).map((text) => ({ text })), marker: 'dot', spacing: 'sm' } })
     return {
       id: q.key,
       type: 'tls.l.card',
-      props: { padding: 'md', children: [{ id: `${q.key}-stack`, type: 'tls.l.stack', props: { gap: 'sm', sizing: 'content', children: stack } }] },
-      ...(tinted ? { style: { surface: q.role } } : {}),
+      props: {
+        padding: 'md',
+        children: [{ id: `${q.key}-stack`, type: 'tls.l.stack', props: { gap: 'sm', sizing: 'content', children: stack } }],
+        // Child styles travel in `props.$block.style` (what `ctx.layoutChild` reads), not `BlockSpec.style`.
+        ...(tinted ? { $block: { style: { surface: q.role } } } : {}),
+      },
     }
   })
   return { id: 'swot', type: 'tls.l.grid', props: { columns: 2, rows: 2, gap: 'md', sizing: 'equal', children } }
@@ -128,6 +134,8 @@ const MIN_BOX = { width: 120, height: 80 }
 
 export const tlsGSwot: BlockDefinition = {
   ...swotDef,
+  // Fill the region instead of reporting the card stack's content height (which overran the slide).
+  intrinsicSize: undefined,
   layout: ((props: SwotProps, ctx: LayoutContext): LayoutNode => {
     const { width, height } = ctx.box
     if (!(width >= MIN_BOX.width && height >= MIN_BOX.height)) {
