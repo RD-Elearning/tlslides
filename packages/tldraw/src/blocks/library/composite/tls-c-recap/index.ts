@@ -11,7 +11,7 @@ import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutCon
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
-import { onSurface, composeFlat, measureHeights, pick, strings, type Piece } from '../_kit'
+import { onSurface, composeFlat, measureHeights, pick, strings, toMeasurable, type Piece } from '../_kit'
 
 export const RECAP_MIN = 2
 export const RECAP_MAX = 5
@@ -72,10 +72,9 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
     const pad = n >= 4 ? ctx.tokens.space.md : ctx.tokens.space.lg
     const pw = Math.max(1, (W - g * (n - 1)) / n)
     const inner = Math.max(1, pw - 2 * pad)
-    const numSize = ctx.tokens.type.display
-    const numH = Math.ceil(numSize.size * numSize.lineHeight)
+    const numH = measureHeights(ctx, [{ id: 'n', type: 'tls.t.title', props: { text: '8', size: 'title' } }], inner)[0]
     const textType = n >= 4 ? 'tls.t.caption' : 'tls.t.body'
-    const textHs = measureHeights(ctx, pts.map((t, i) => ({ id: `p${i}`, type: textType, props: { text: t } })), inner)
+    const textHs = measureHeights(ctx, pts.map((t, i) => ({ id: `p${i}`, type: textType, props: { text: toMeasurable(t) } })), inner)
     bodyH = 2 * pad + numH + ctx.tokens.space.sm + Math.max(0, ...textHs)
     const fill = ctx.resolveColor('surfaceAlt').color
     const on = onSurface({ type: 'solid', color: fill })
@@ -86,8 +85,8 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
         raw: [{ k: 'rect', box: { x, y: 0, width: pw, height: bodyH }, fill: { type: 'solid', color: fill }, radius: ctx.tokens.radius.lg } as LayoutNode],
         box: { x, y: 0, width: pw, height: bodyH },
       })
-      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'display', color: 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
-      content.push({ id: `point[${i}]`, spec: { id: `p${i}`, type: textType, props: { text: t, ...on } }, box: { x: x + pad, y: pad + numH + ctx.tokens.space.sm, width: inner, height: textHs[i] } })
+      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'title', color: 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
+      content.push({ id: `point[${i}]`, spec: { id: `p${i}`, type: textType, props: { text: toMeasurable(t), ...on } }, box: { x: x + pad, y: pad + numH + ctx.tokens.space.sm, width: inner, height: textHs[i] } })
     })
   }
   const tw = style === 'numbered' ? cw : W
@@ -95,7 +94,14 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
   const needed = bodyH + (take ? gap * 1.5 + takeH : 0)
   const total = Math.max(H, Math.ceil(needed))
   const top = (total - needed) / 2
-  for (const p of content) pieces.push({ ...p, box: { ...p.box, y: p.box.y + top } })
+  // Raw leaves carry their own absolute boxes, so the vertical centring shifts them as well as the piece box.
+  for (const p of content) {
+    pieces.push({
+      ...p,
+      ...(p.raw ? { raw: p.raw.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + top } }) as LayoutNode) } : {}),
+      box: { ...p.box, y: p.box.y + top },
+    })
+  }
   if (take) pieces.push({ id: 'takeaway', spec: take, box: { x: 0, y: top + bodyH + gap * 1.5, width: tw, height: takeH } })
   return composeFlat(ctx, pieces, total)
 }

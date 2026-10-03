@@ -130,20 +130,20 @@ export function layoutQuoteImage(props: QuoteImageProps, ctx: LayoutContext): La
   const align = centered ? 'center' : 'start'
   const fg = onColor(ctx, '#000000')
   const on = onSurface(SCRIM_SURFACE)
-  const sizes: Array<'display' | 'title' | 'heading'> = ['title', 'heading']
-  const maxLines = 5
+  const sizes: Array<'heading' | 'subheading'> = ['heading', 'subheading']
+  const maxLines = 4
 
-  const mark = { id: 'mark', type: 'tls.t.title', props: { text: '“', size: 'display', color: fg, ...on } } as BlockSpec
+  const mark = { id: 'mark', type: 'tls.t.title', props: { text: '“', size: 'heading', color: fg, ...on } } as BlockSpec
   const markH = measureHeights(ctx, [mark], tw)[0]
-  let qSize = pickToken(ctx, props.quote, tw, sizes, maxLines) as 'title' | 'heading'
-  let quote: BlockSpec = { id: 'quote', type: 'tls.t.title', props: { text: toMeasurable(props.quote), size: qSize, color: fg, ...on } }
-  let qH = measureHeights(ctx, [quote], tw)[0]
+  const qSize = pickToken(ctx, props.quote, tw, sizes, maxLines) as 'heading' | 'subheading'
+  const quote: BlockSpec = { id: 'quote', type: 'tls.t.title', props: { text: toMeasurable(props.quote), size: qSize, color: fg, ...on } }
+  const qH = measureHeights(ctx, [quote], tw)[0]
   const name = nameSpec(props, on, fg)
   const role = roleSpec(props, on, fg)
   const nameH = name ? measureHeights(ctx, [name], tw)[0] : 0
   const roleH = role ? measureHeights(ctx, [role], tw)[0] : 0
   const attrH = nameH + roleH
-  const overlap = Math.round(markH * 0.45) // the glyph carries a lot of internal leading
+  const overlap = Math.round(markH * 0.3) // the glyph carries a lot of internal leading
   const stackH = Math.max(0, markH - overlap) + qH + (attrH ? gap * 1.5 + attrH : 0)
   const needed = stackH + 2 * inset
   const total = Math.max(H, Math.ceil(needed))
@@ -167,8 +167,6 @@ export function layoutQuoteImage(props: QuoteImageProps, ctx: LayoutContext): La
     y += nameH
   }
   if (role) pieces.push({ id: 'role', spec: role, box: { x: tx, y, width: tw, height: roleH }, align })
-  void qSize
-  void quote
   return composeFlat(ctx, pieces, total)
 }
 

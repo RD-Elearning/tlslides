@@ -5,7 +5,7 @@
  * `layout()` places the same content by hand and flattens it (see `../_kit.ts`): `columns` = three
  * rounded panels side by side, `rows` = three full-width bands with the label on the left. With
  * `emphasis: result` the result panel is accent-filled and carries the metric. Slide scope: the
- * block is vertically centred in its region and never taller than needed (capped at 640 for panels).
+ * block is vertically centred in its region and never taller than needed (capped at 480 for panels).
  */
 
 import type { BlockDefinition, BlockSchema, BlockSpec, LayoutContext, LayoutNode } from '../../../types'
@@ -89,7 +89,7 @@ export function buildCaseStudy(props: CaseStudyProps): BlockSpec {
   return { id: 'case', type: 'tls.l.row', props: { gap: 'md', sizing: 'equal', children: cols } }
 }
 
-const TOKENS = ['display', 'title', 'heading'] as const
+const TOKENS = ['title', 'heading'] as const
 
 export function layoutCaseStudy(props: CaseStudyProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
@@ -117,7 +117,11 @@ export function layoutCaseStudy(props: CaseStudyProps, ctx: LayoutContext): Layo
   const cw = rows ? W : Math.max(1, (W - 2 * g) / 3)
   const tw = (i: number) => (rows ? Math.max(1, W - 2 * pad - labelW - g - (i === 2 && metricW ? metricW + g : 0)) : Math.max(1, cw - 2 * pad))
 
-  const label = (i: number, on: Record<string, unknown>, fg?: string): BlockSpec => ({ id: `label-${i}`, type: 'tls.t.kicker', props: { text: LABELS[i], marker: false, ...(fg ? { color: fg } : {}), ...on } })
+  // The kicker block is always accent-coloured, which vanishes on the accent-filled panel: an emphasised label is a caption in the on-accent colour.
+  const label = (i: number, on: Record<string, unknown>, fg?: string): BlockSpec =>
+    fg
+      ? { id: `label-${i}`, type: 'tls.t.caption', props: { text: LABELS[i].toUpperCase(), color: fg, ...on } }
+      : { id: `label-${i}`, type: 'tls.t.kicker', props: { text: LABELS[i], marker: false, ...on } }
   const body = (i: number, on: Record<string, unknown>, fg?: string): BlockSpec => ({ id: `text-${i}`, type: 'tls.t.body', props: { text: s(props[KEYS[i]]), ...(fg ? { color: fg } : {}), ...on } })
 
   const emph = (i: number) => emphasis === 'result' && i === 2
@@ -149,7 +153,7 @@ export function layoutCaseStudy(props: CaseStudyProps, ctx: LayoutContext): Layo
   const colH = Math.max(...cellH)
   const bodyBlockH = rows ? cellH.reduce((a, b) => a + b, 0) + g * 2 : colH
   const avail = Math.max(0, H - headH)
-  const panelsH = rows ? bodyBlockH : Math.max(colH, Math.min(avail, 640))
+  const panelsH = rows ? bodyBlockH : Math.max(colH, Math.min(avail, 480))
   const rowScale = rows && avail > bodyBlockH ? Math.min(1.25, avail / bodyBlockH) : 1
   const needed = headH + panelsH * (rows ? rowScale : 1)
   const total = Math.max(H, Math.ceil(needed))

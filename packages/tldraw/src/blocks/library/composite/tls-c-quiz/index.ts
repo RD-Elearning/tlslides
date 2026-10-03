@@ -22,7 +22,7 @@ import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
-import { composeFlat, measureHeights, pick, pickToken, strings, toMeasurable, type Piece } from '../_kit'
+import { composeFlat, measureHeights, pick, strings, toMeasurable, type Piece } from '../_kit'
 
 export const QUIZ_MIN = 2
 export const QUIZ_MAX = 5
@@ -93,12 +93,12 @@ export function buildQuiz(props: QuizProps): BlockSpec {
     type: 'tls.l.card',
     props: { padding: 'md', children: [{ id: `text-${i}`, type: 'tls.t.body', props: { text: `${LETTERS[i]}  ${t}` } }] },
   }))
-  const kids = [{ id: 'question', type: 'tls.t.title', props: { text: toMeasurable(props.question), size: 'heading' } }, ...opts, explanationSpec(props)].filter(Boolean) as BlockSpec[]
+  const kids = [{ id: 'question', type: 'tls.t.title', props: { text: toMeasurable(props.question), size: 'subheading' } }, ...opts, explanationSpec(props)].filter(Boolean) as BlockSpec[]
   return { id: 'quiz', type: 'tls.l.stack', props: { gap: 'md', sizing: 'content', children: kids } }
 }
 
 interface Plan {
-  qSize: 'heading' | 'subheading'
+  qSize: 'subheading'
   qH: number
   opts: string[]
   cols: number
@@ -127,7 +127,7 @@ function plan(props: QuizProps, ctx: LayoutContext): Plan {
   const badge = 52
   const markW = revealed ? 40 + gap : 0
   const textW = Math.max(1, optW - 2 * padX - badge - gap - markW)
-  const qSize = pickToken(ctx, props.question, W, ['heading', 'subheading'], 3) as 'heading' | 'subheading'
+  const qSize = 'subheading' as const
   const qH = measureHeights(ctx, [{ id: 'q', type: 'tls.t.title', props: { text: toMeasurable(props.question), size: qSize } }], W)[0]
   const textH = measureHeights(ctx, opts.map((t, i) => ({ id: `o${i}`, type: 'tls.t.body', props: { text: t } })), textW)
   const rowH: number[] = opts.map((_, i) => Math.max(badge + 2 * padY, textH[i] + 2 * padY + 4))

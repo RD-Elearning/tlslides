@@ -41,6 +41,14 @@ describe('tls.c.recap', () => {
     expect(new Set(cards.map((c) => Math.round(c.height))).size).toBe(1)
     expect(textOf(t, 'number')).toBe('1|2|3')
     expect(leavesOf(t, 'point')).toHaveLength(3)
+    // number and point sit inside their panel (the panel is shifted with the centred content)
+    cards.forEach((c, i) => {
+      for (const part of ['number', 'point']) {
+        const l = leavesOf(t, part)[i]
+        expect(l.y).toBeGreaterThanOrEqual(c.y)
+        expect(l.y + l.height).toBeLessThanOrEqual(c.y + c.height + 1)
+      }
+    })
     assertContained(t, { width: 1500, height: 800 })
     assertNoTextOverlap(t)
   })

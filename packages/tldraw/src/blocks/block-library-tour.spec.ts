@@ -25,9 +25,13 @@ describe('block-library-tour deck', () => {
     expect(fs.readFileSync(SAMPLE, 'utf-8')).toBe(fs.readFileSync(FIXTURE, 'utf-8'))
   })
 
-  it('uses every shipped P5 part A composite at least once', () => {
+  it('uses every shipped P5 composite at least once (quiz in both reveal modes)', () => {
     const used = new Set<string>()
     for (const s of deck.slides) for (const list of Object.values<any[]>(s.regions)) for (const b of list) used.add(b.type)
     for (const t of ['cover', 'divider', 'closing', 'cards', 'chart-insight', 'dashboard', 'team', 'objectives']) expect(used.has(`tls.c.${t}`)).toBe(true)
+    for (const t of ['quiz', 'recap', 'case-study', 'problem-solution', 'contact', 'quote-image']) expect(used.has(`tls.c.${t}`)).toBe(true)
+    const reveals = new Set<string>()
+    for (const s of deck.slides) for (const list of Object.values<any[]>(s.regions)) for (const b of list) if (b.type === 'tls.c.quiz') reveals.add(b.props.reveal)
+    expect([...reveals].sort()).toEqual(['none', 'shown'])
   })
 })

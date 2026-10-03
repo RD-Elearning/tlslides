@@ -4,7 +4,7 @@
  * `defineCompositeBlock` supplies metadata and `build()` (a row of two callouts); `layout()` places the
  * content by hand and flattens it (see `../_kit.ts`). `panels` = two tinted panels (negative / positive
  * tint) with an optional icon, title and text; `callouts` = two `tls.t.callout` blocks (danger and
- * success). The arrow is a filled circle with an `arrow-right` icon in the gutter. Group scope: the
+ * success). The arrow is a filled circle with a polygon arrow in the gutter. Group scope: the
  * block is content-height and sits in any region.
  */
 
@@ -144,7 +144,7 @@ export function layoutProblemSolution(props: ProblemSolutionProps, ctx: LayoutCo
     })
     let y = pad
     if (icons) {
-      pieces.push({ id: `icon[${i}]`, raw: [iconLeaf(i === 0 ? 'alert-triangle' : 'check-circle', { x, y, width: 56, height: 56 }, ink)], box: { x: x + pad, y, width: 56, height: 56 } })
+      pieces.push({ id: `icon[${i}]`, raw: [iconLeaf(i === 0 ? 'alert-triangle' : 'check-circle', { x: x + pad, y, width: 56, height: 56 }, ink)], box: { x: x + pad, y, width: 56, height: 56 } })
       y += 56 + sm
     }
     if (s.title) {
@@ -164,7 +164,14 @@ export function layoutProblemSolution(props: ProblemSolutionProps, ctx: LayoutCo
     raw: [{ k: 'rect', box: { x: ax, y: ay, width: ARROW, height: ARROW }, fill: { type: 'solid', color: accent }, radius: ARROW / 2 } as LayoutNode],
     box: { x: ax, y: ay, width: ARROW, height: ARROW },
   })
-  pieces.push({ id: 'arrow', raw: [iconLeaf('arrow-right', { x: ax + 16, y: ay + 16, width: ARROW - 32, height: ARROW - 32 }, onColor(ctx, accent))], box: { x: ax, y: ay, width: ARROW, height: ARROW } })
+  // `arrow-right` in the icon set is a chevron, so the arrow is a filled polygon (shaft + head), absolute in block space.
+  const cy = ay + ARROW / 2
+  const x0 = ax + 18
+  const x1 = ax + ARROW - 30
+  const x2 = ax + ARROW - 16
+  const arrowD = `M ${x0} ${cy - 7} L ${x1} ${cy - 7} L ${x1} ${cy - 18} L ${x2} ${cy} L ${x1} ${cy + 18} L ${x1} ${cy + 7} L ${x0} ${cy + 7} Z`
+  const fullBox = { x: 0, y: 0, width: Math.max(0, ctx.box.width) || 0, height: total }
+  pieces.push({ id: 'arrow', raw: [{ k: 'path', box: fullBox, d: arrowD, fill: { type: 'solid', color: onColor(ctx, accent) } } as LayoutNode], box: fullBox })
 
   const root = composeFlat(ctx, pieces, total)
   if (style === 'callouts' && root.k === 'group') {

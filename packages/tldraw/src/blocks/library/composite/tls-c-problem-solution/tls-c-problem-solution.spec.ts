@@ -30,13 +30,19 @@ describe('tls.c.problem-solution', () => {
   it('problem sits left of the arrow, solution right; the arrow is between them', () => {
     for (const style of ['panels', 'callouts']) {
       const t = layoutAt(tlsCProblemSolution, { ...EX, style }, 1500, 400)
-      const a = leavesOf(t, 'arrow')[0]
-      const p = leavesOf(t, 'problem').concat(leavesOf(t, 'panel')[0] ? [leavesOf(t, 'panel')[0]] : [])
-      const maxP = Math.max(...leavesOf(t, style === 'panels' ? 'text' : 'problem').filter((l, i) => (style === 'panels' ? i === 0 : true)).map((l) => l.x + l.width))
-      expect(maxP).toBeLessThanOrEqual(a.x + 1)
-      const sol = leavesOf(t, style === 'panels' ? 'text' : 'solution').filter((l, i) => (style === 'panels' ? i === 1 : true))
-      for (const l of sol) expect(l.x).toBeGreaterThanOrEqual(a.x + a.width - 1)
-      expect(p.length).toBeGreaterThan(0)
+      const bg = leavesOf(t, 'arrowbg')[0]
+      expect(hasPart(t, 'arrow')).toBe(true)
+      // the arrow polygon's x range lies inside its circle
+      const nums = ((leavesOf(t, 'arrow')[0].node as any).d as string).match(/-?\d+(\.\d+)?/g)!.map(Number)
+      const xs = nums.filter((_, i) => i % 2 === 0)
+      expect(Math.min(...xs)).toBeGreaterThanOrEqual(bg.x)
+      expect(Math.max(...xs)).toBeLessThanOrEqual(bg.x + bg.width)
+      const left = leavesOf(t, style === 'panels' ? 'text' : 'problem').filter((l, i) => style !== 'panels' || i === 0)
+      const right = leavesOf(t, style === 'panels' ? 'text' : 'solution').filter((l, i) => style !== 'panels' || i === 1)
+      expect(left.length).toBeGreaterThan(0)
+      expect(right.length).toBeGreaterThan(0)
+      for (const l of left) expect(l.x + l.width).toBeLessThanOrEqual(bg.x + 1)
+      for (const l of right) expect(l.x).toBeGreaterThanOrEqual(bg.x + bg.width - 1)
     }
   })
 

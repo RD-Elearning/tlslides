@@ -1516,6 +1516,377 @@
       }
     },
     {
+      "id": "tl_18",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_18_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: a quiz with the answer shown",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_18",
+            "type": "tls.c.quiz",
+            "props": {
+              "question": "Which measure is least affected by one extreme value?",
+              "options": [
+                "The mean",
+                "The median",
+                "The range",
+                "The variance"
+              ],
+              "answer": 1,
+              "explanation": "The median depends on the middle of the ordered data, so one outlier barely moves it.",
+              "layout": "list",
+              "reveal": "shown"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_19",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_19_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: a quiz, two columns, answer hidden",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_19",
+            "type": "tls.c.quiz",
+            "props": {
+              "question": "Which measure is least affected by one extreme value?",
+              "options": [
+                "The mean",
+                "The median",
+                "The range",
+                "The variance"
+              ],
+              "answer": 1,
+              "explanation": "The median depends on the middle of the ordered data, so one outlier barely moves it.",
+              "layout": "grid",
+              "reveal": "none"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_20",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_20",
+            "type": "tls.c.recap",
+            "props": {
+              "points": [
+                "A sample describes the data with a **centre** and a **spread**",
+                "A chart must answer **one** question",
+                "A confidence interval is about the **method**, not one result",
+                "A test only compares what you measured"
+              ],
+              "takeaway": "Plot first, calculate second.",
+              "style": "numbered"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_21",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_21",
+            "type": "tls.c.recap",
+            "props": {
+              "points": [
+                "Centre and **spread**",
+                "One chart, **one** question",
+                "Intervals describe the **method**"
+              ],
+              "takeaway": "Plot first, calculate second.",
+              "style": "cards"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_22",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_22",
+            "type": "tls.c.case-study",
+            "props": {
+              "client": "Vinh University Library",
+              "challenge": "Students queued for 20 minutes at peak hours to borrow and return books.",
+              "solution": "Self-service kiosks with a mobile app for renewals, rolled out in two weeks.",
+              "result": "Queues disappeared at peak hours and staff moved to study support.",
+              "metric": {
+                "value": "-80%",
+                "label": "waiting time at peak"
+              },
+              "layout": "columns",
+              "emphasis": "result"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_23",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_23",
+            "type": "tls.c.case-study",
+            "props": {
+              "client": "Vinh University Library",
+              "challenge": "Students queued for 20 minutes at peak hours to borrow and return books.",
+              "solution": "Self-service kiosks with a mobile app for renewals, rolled out in two weeks.",
+              "result": "Queues disappeared at peak hours and staff moved to study support.",
+              "metric": {
+                "value": "-80%",
+                "label": "waiting time at peak"
+              },
+              "layout": "rows",
+              "emphasis": "result"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_24",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_24_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: problem and solution panels",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_24",
+            "type": "tls.c.problem-solution",
+            "props": {
+              "problem": {
+                "title": "The problem",
+                "text": "Students wait **20 minutes** in a queue to borrow a book at peak hours."
+              },
+              "solution": {
+                "title": "The solution",
+                "text": "Self-service kiosks and a renewal app cut the wait to **under 4 minutes**."
+              },
+              "showIcons": true,
+              "style": "panels"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_25",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_25_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: problem and solution callouts",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_25",
+            "type": "tls.c.problem-solution",
+            "props": {
+              "problem": {
+                "title": "The problem",
+                "text": "Students wait **20 minutes** in a queue to borrow a book at peak hours."
+              },
+              "solution": {
+                "title": "The solution",
+                "text": "Self-service kiosks and a renewal app cut the wait to **under 4 minutes**."
+              },
+              "showIcons": true,
+              "style": "callouts"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_26",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_26_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: contact details",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_tl_26",
+            "type": "tls.c.contact",
+            "props": {
+              "person": {
+                "image": "/demo/portrait-1.svg",
+                "name": "Dr. Tran Thi Lan",
+                "role": "Head of Data Science"
+              },
+              "items": [
+                {
+                  "kind": "email",
+                  "value": "lan.tran@example.edu"
+                },
+                {
+                  "kind": "phone",
+                  "value": "+84 238 123 4567"
+                },
+                {
+                  "kind": "web",
+                  "value": "stats.example.edu"
+                },
+                {
+                  "kind": "address",
+                  "value": "182 Le Duan, Vinh City"
+                },
+                {
+                  "kind": "social",
+                  "value": "@lan.tran"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_27",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_27",
+            "type": "tls.c.quote-image",
+            "props": {
+              "image": "/demo/photo-2.svg",
+              "alt": "Abstract landscape",
+              "quote": "Statistics is the grammar of science: it lets data speak in sentences.",
+              "name": "Dr. Tran Thi Lan",
+              "role": "Head of Data Science",
+              "anchor": "bottom-left",
+              "scrim": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "tl_17",
       "layout": "blank",
       "role": "closing",
