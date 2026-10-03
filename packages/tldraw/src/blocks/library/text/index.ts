@@ -15,6 +15,7 @@ import { tlsTHeroNumber } from './tls-t-hero-number'
 import { tlsTQuote } from './tls-t-quote'
 import { tlsTTakeaway } from './tls-t-takeaway'
 import { tlsTNumbered } from './tls-t-numbered'
+import { tlsTChecklist } from './tls-t-checklist'
 
 /** All built-in text block definitions. */
 export const textBlocks: BlockDefinition[] = [
@@ -28,6 +29,7 @@ export const textBlocks: BlockDefinition[] = [
   tlsTQuote,
   tlsTTakeaway,
   tlsTNumbered,
+  tlsTChecklist,
 ]
 
 export { tlsTTitle } from './tls-t-title'
@@ -40,3 +42,4 @@ export { tlsTHeroNumber } from './tls-t-hero-number'
 export { tlsTQuote } from './tls-t-quote'
 export { tlsTTakeaway } from './tls-t-takeaway'
 export { tlsTNumbered } from './tls-t-numbered'
+export { tlsTChecklist } from './tls-t-checklist'

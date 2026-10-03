@@ -1159,6 +1159,44 @@ Small caption text for images, charts, and media. _(family: text; keywords: capt
 }
 \`\`\`
 
+### \`tls.t.checklist\` — Checklist
+
+Checklist with a done, open or blocked state per item. _(family: text; keywords: checklist, todo, requirements, status, objectives)_
+
+**When:** Requirements, prerequisites, launch checklists, learning objectives with a done state.
+**Avoid:** Plain points without a state (use tls.t.bullets); support across options (use tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (text, state) (2–10 items) | Short imperative or noun phrases. Set state on each; open is the default. |
+| \`doneStyle\` | no | enum: check \\\\| strike \\\\| dim | strike crosses out done items, dim greys them. |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`columns\` | no | enum: 1 \\\\| 2 |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_checklist\\",
+  \\"type\\": \\"tls.t.checklist\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"text\\": \\"Draft the outline\\",
+        \\"state\\": \\"done\\"
+      },
+      {
+        \\"text\\": \\"Review with the team\\",
+        \\"state\\": \\"open\\"
+      },
+      {
+        \\"text\\": \\"Legal approval\\",
+        \\"state\\": \\"blocked\\"
+      }
+    ],
+    \\"doneStyle\\": \\"strike\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.hero-number\` — Hero Number
 
 Large KPI number with optional unit and caption. _(family: text; keywords: kpi, number, stat, metric, hero, display, count)_
@@ -1479,7 +1517,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 42,
+  "blockCount": 43,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1515,6 +1553,7 @@ Object {
     "tls.t.body",
     "tls.t.bullets",
     "tls.t.caption",
+    "tls.t.checklist",
     "tls.t.hero-number",
     "tls.t.kicker",
     "tls.t.numbered",

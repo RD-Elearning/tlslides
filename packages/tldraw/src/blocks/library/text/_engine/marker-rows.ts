@@ -6,7 +6,7 @@
  * Pure and DOM-free.
  */
 
-import type { LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../../../types'
+import type { CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../../../types'
 
 export interface MarkerRowItem {
   text: string | RichText
@@ -99,4 +99,36 @@ export function layoutMarkerRows(input: MarkerRowsInput): MarkerRowsResult {
   }
 
   return { nodes, height: Math.max(0, ...columnHeights), lineCount, columnHeights }
+}
+
+/**
+ * `capacity()` report for a marker list: fits when the laid-out height is within the box and the
+ * item count is within the schema max. Remedies, in order: reflow to two columns (only when still
+ * single-column and the box is at least 900 wide), then truncate the `items` slot.
+ */
+export function markerCapacity(args: {
+  rows: MarkerRowsResult
+  itemCount: number
+  maxItems: number
+  columns: 1 | 2
+  box: { width: number; height: number }
+  gap: number
+  lineHeight: number
+}): CapacityReport {
+  const { rows, itemCount, maxItems, columns, box, gap, lineHeight } = args
+  const fits = rows.height <= box.height + 0.5 && itemCount <= maxItems
+  const perColumn = Math.max(1, Math.floor((box.height + gap) / (lineHeight + gap)))
+  const remedy: CapacityReport['remedy'] = []
+  if (!fits) {
+    if (columns === 1 && box.width >= 900) remedy.push({ kind: 'reflow', to: "columns: '2'" })
+    remedy.push({ kind: 'truncate', slot: 'items' })
+  }
+  return {
+    fits,
+    budget: {
+      items: { max: maxItems, used: itemCount, unit: 'items' },
+      lines: { max: perColumn * columns, used: rows.lineCount, unit: 'lines' },
+    },
+    remedy,
+  }
 }

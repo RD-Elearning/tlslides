@@ -11,7 +11,7 @@
 import type { CapacityReport, ColorRole, LayoutContext, LayoutNode, ResolvedTextStyle, Size } from '../../../types'
 import type { NumberedProps } from './schema'
 import { NUMBERED_MAX_ITEMS } from './schema'
-import { layoutMarkerRows } from '../_engine/marker-rows'
+import { layoutMarkerRows, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, toAlpha, toMeasurable, toRoman } from '../_engine/rich'
 import { onColor } from '../_engine/color'
 
@@ -110,21 +110,13 @@ export function layout(props: NumberedProps, ctx: LayoutContext): LayoutNode {
 
 export function capacity(props: NumberedProps, box: Size, ctx: LayoutContext): CapacityReport {
   const { rows, items, columns, textStyle } = compute(props, ctx, box.width)
-  const gap = spacingGap(ctx, props.spacing)
-  const lineH = textStyle.size * textStyle.lineHeight
-  const perColumn = Math.max(1, Math.floor((box.height + gap) / (lineH + gap)))
-  const fits = rows.height <= box.height + 0.5 && items.length <= NUMBERED_MAX_ITEMS
-  const remedy: CapacityReport['remedy'] = []
-  if (!fits) {
-    if (columns === 1 && box.width >= 900) remedy.push({ kind: 'reflow', to: "columns: '2'" })
-    remedy.push({ kind: 'truncate', slot: 'items' })
-  }
-  return {
-    fits,
-    budget: {
-      items: { max: NUMBERED_MAX_ITEMS, used: items.length, unit: 'items' },
-      lines: { max: perColumn * columns, used: rows.lineCount, unit: 'lines' },
-    },
-    remedy,
-  }
+  return markerCapacity({
+    rows,
+    itemCount: items.length,
+    maxItems: NUMBERED_MAX_ITEMS,
+    columns,
+    box,
+    gap: spacingGap(ctx, props.spacing),
+    lineHeight: textStyle.size * textStyle.lineHeight,
+  })
 }

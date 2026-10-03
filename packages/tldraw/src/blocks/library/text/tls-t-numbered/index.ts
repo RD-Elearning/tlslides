@@ -17,7 +17,7 @@ export const tlsTNumbered: BlockDefinition = {
   category: 'list',
   scope: 'element',
   shortDescription: 'Numbered points with decimal, padded, roman, letter or badge markers',
-  related: ['tls.t.bullets', 'tls.g.steps'],
+  related: ['tls.t.bullets', 'tls.t.checklist', 'tls.g.steps'],
   describe: {
     when: 'Ordered points where the order or the count matters: "3 reasons", "5 rules".',
     avoid: 'Unordered points (use tls.t.bullets); process steps (use tls.g.steps).',
