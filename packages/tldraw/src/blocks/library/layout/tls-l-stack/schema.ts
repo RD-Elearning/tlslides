@@ -12,7 +12,7 @@ export const schema: BlockSchema = {
     help: 'Spacing between stacked children.',
   },
   children: {
-    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'] },
     role: 'content',
     label: 'Children',
     help: 'Child blocks stacked vertically.',

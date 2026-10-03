@@ -2015,7 +2015,7 @@ Filled container with configurable padding. _(family: layout; keywords: card, co
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Inner padding of the card. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks laid out inside the card. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the card. |
 
 \`\`\`json
 {
@@ -2056,7 +2056,7 @@ Content + footer layout with configurable footer height. _(family: layout; keywo
 |---|---|---|---|
 | \`footerHeight\` | no | number (min 40, max 400) | Height of the footer area in slide units. |
 | \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between main content and footer. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) (0–2 blocks) | First child is main content, second is the footer. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | First child is main content, second is the footer. |
 
 \`\`\`json
 {
@@ -2082,7 +2082,7 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 | \`columns\` | no | number (min 1, max 12) | Number of grid columns. |
 | \`rows\` | no | number (min 1, max 12) | Number of grid rows. |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between grid cells. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks arranged in grid cells (row-major order). |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged in grid cells (row-major order). |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among cells: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -2128,7 +2128,7 @@ Layered children z-stacked in the same box. _(family: layout; keywords: overlay,
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks layered z-stack style (last child on top). |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks layered z-stack style (last child on top). |
 
 \`\`\`json
 {
@@ -2151,7 +2151,7 @@ Repeats a template child for each item in a given direction. _(family: layout; k
 | \`count\` | no | number (min 1, max 20) | Number of repetitions. |
 | \`direction\` | no | enum: x \\\\| y | Lay out repetitions horizontally (x) or vertically (y). |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between repeated items. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) (0–1 blocks) | Template child to repeat. First child only — it is rendered count times. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–1 blocks) | Template child to repeat. First child only — it is rendered count times. |
 
 \`\`\`json
 {
@@ -2176,7 +2176,7 @@ Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between row children. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks arranged horizontally. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged horizontally. |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -2200,7 +2200,7 @@ Content safe-area inset guide with a configurable margin. Editor-only: invisible
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`inset\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Safe-area inset on all sides. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks laid out inside the safe area. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the safe area. |
 
 \`\`\`json
 {
@@ -2226,7 +2226,7 @@ Titled section with divider and content area. _(family: layout; keywords: sectio
 | \`showTitle\` | no | boolean | Toggle the section title on/off. |
 | \`showDivider\` | no | boolean | Toggle the divider line below the title on/off. |
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between title and children. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks laid out below the title. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out below the title. |
 
 \`\`\`json
 {
@@ -2252,7 +2252,7 @@ Sidebar + main content layout with configurable width and side. _(family: layout
 | \`sidebarWidth\` | no | number (min 100, max 800) | Width of the sidebar panel in slide units. |
 | \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between sidebar and main content. |
 | \`sidebarSide\` | no | enum: start \\\\| end | Place the sidebar on the start (left) or end (right) side. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) (0–2 blocks) | First child is sidebar, second is main content. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | First child is sidebar, second is main content. |
 
 \`\`\`json
 {
@@ -2296,7 +2296,7 @@ Two-panel split with configurable ratio and gutter. _(family: layout; keywords: 
 | \`ratio\` | no | number (min 0.1, max 0.9) | Fraction of space given to the first panel (0.1–0.9). |
 | \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between panels. |
 | \`axis\` | no | enum: x \\\\| y | Split direction: x (left/right) or y (top/bottom). |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) (0–2 blocks) | Two child blocks, one per panel. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | Two child blocks, one per panel. |
 
 \`\`\`json
 {
@@ -2321,7 +2321,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between stacked children. |
-| \`children\` | no | blocks (allow: layout, text, data, composite, media) | Child blocks stacked vertically. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks stacked vertically. |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json

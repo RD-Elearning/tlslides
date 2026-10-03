@@ -24,7 +24,7 @@ export const schema: BlockSchema = {
     help: 'Spacing between repeated items.',
   },
   children: {
-    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 1 },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'], max: 1 },
     role: 'content',
     label: 'Children',
     help: 'Template child to repeat. First child only — it is rendered count times.',

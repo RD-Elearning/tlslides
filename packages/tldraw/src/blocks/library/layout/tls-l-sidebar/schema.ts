@@ -24,7 +24,7 @@ export const schema: BlockSchema = {
     help: 'Place the sidebar on the start (left) or end (right) side.',
   },
   children: {
-    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 2 },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'], max: 2 },
     role: 'content',
     label: 'Children',
     help: 'First child is sidebar, second is main content.',

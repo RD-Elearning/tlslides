@@ -658,3 +658,30 @@ describe('validateDeckSpec — icon/unknown warning (P0.5)', () => {
     expect(hits[0].path).toBe('slides[0].regions.left[0].props.cells[1].icon')
   })
 })
+
+describe('validateDeckSpec: diagram blocks nested in containers', () => {
+  it('a tls.g.timeline inside a tls.l.card validates clean (no errors, no warnings)', () => {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = [
+      {
+        id: 'card1',
+        type: 'tls.l.card',
+        props: {},
+        children: [
+          {
+            id: 'tl1',
+            type: 'tls.g.timeline',
+            props: {
+              events: [
+                { date: '2021', title: 'Founded' },
+                { date: '2023', title: 'Launch' },
+                { date: '2025', title: 'Scale' },
+              ],
+            },
+          },
+        ],
+      } as BlockSpec,
+    ]
+    expect(findingsOf(deck).filter((f) => f.level === 'error' || f.level === 'warning')).toEqual([])
+  })
+})

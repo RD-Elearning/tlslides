@@ -18,7 +18,7 @@ export const schema: BlockSchema = {
     help: 'Spacing between main content and footer.',
   },
   children: {
-    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'], max: 2 },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'], max: 2 },
     role: 'content',
     label: 'Children',
     help: 'First child is main content, second is the footer.',

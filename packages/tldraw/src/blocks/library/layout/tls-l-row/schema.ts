@@ -15,7 +15,7 @@ export const schema: BlockSchema = {
     help: 'Spacing between row children.',
   },
   children: {
-    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'composite', 'media'] },
+    type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'] },
     role: 'content',
     label: 'Children',
     help: 'Child blocks arranged horizontally.',
