@@ -1549,6 +1549,39 @@ Secondary heading below the title with RichText support. _(family: text; keyword
 }
 \`\`\`
 
+### \`tls.t.tags\` — Tags
+
+Wrapping row of pill-shaped tags in soft, outline or solid tone. _(family: text; keywords: tags, chips, pills, skills, keywords, labels)_
+
+**When:** Skills, technologies, keywords, categories, labels on a profile.
+**Avoid:** Sentences (use tls.t.bullets); a single eyebrow label (use tls.t.kicker).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 30 chars) (1–12 items) | Single words or short noun phrases, 1–3 words each. |
+| \`tone\` | no | enum: soft \\\\| outline \\\\| solid |  |
+| \`shape\` | no | enum: pill \\\\| rect |  |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`colorBy\` | no | enum: single \\\\| cycle | cycle walks the series colours. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_tags\\",
+  \\"type\\": \\"tls.t.tags\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Python\\",
+      \\"SQL\\",
+      \\"Statistics\\",
+      \\"Dashboards\\"
+    ],
+    \\"tone\\": \\"soft\\",
+    \\"colorBy\\": \\"cycle\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.takeaway\` — Takeaway
 
 Highlighted insight text with accent bar and optional label. _(family: text; keywords: takeaway, insight, callout, highlight, key-point)_
@@ -1719,7 +1752,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 49,
+  "blockCount": 50,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1767,6 +1800,7 @@ Object {
     "tls.t.quote",
     "tls.t.statement",
     "tls.t.subtitle",
+    "tls.t.tags",
     "tls.t.takeaway",
     "tls.t.title",
     "tls.x.page-number",

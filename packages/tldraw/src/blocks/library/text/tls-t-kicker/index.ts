@@ -20,7 +20,7 @@ export const tlsTKicker: BlockDefinition = {
   category: 'heading',
   scope: 'element',
   shortDescription: 'Small uppercase eyebrow label above a title',
-  related: ['tls.t.title'],
+  related: ['tls.t.title', 'tls.t.tags'],
   describe: {
     when: 'Use as a small category or section label above the title.',
     avoid: 'Do not use for the slide title itself (use tls.t.title) or for a sentence of explanation (use tls.t.subtitle).',
