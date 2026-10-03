@@ -17,7 +17,7 @@ export const tlsGBreakdown: BlockDefinition = {
   category: 'hierarchy',
   scope: 'group',
   shortDescription: 'One whole split into parts with values, shown as a bracketed breakdown',
-  related: ['tls.g.tree', 'tls.d.pie'],
+  related: ['tls.g.tree', 'tls.d.pie', 'tls.g.bracket'],
   describe: {
     when: 'Parent/child, one level: a cost breakdown or the components of one metric.',
     avoid: 'Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie).',

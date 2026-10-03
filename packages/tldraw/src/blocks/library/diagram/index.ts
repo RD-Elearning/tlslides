@@ -22,9 +22,10 @@ import { tlsGHubSpoke } from './tls-g-hub-spoke'
 import { tlsGLayers } from './tls-g-layers'
 import { tlsGBeforeAfter } from './tls-g-before-after'
 import { tlsGBreakdown } from './tls-g-breakdown'
+import { tlsGBracket } from './tls-g-bracket'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -44,3 +45,4 @@ export { tlsGHubSpoke } from './tls-g-hub-spoke'
 export { tlsGLayers } from './tls-g-layers'
 export { tlsGBeforeAfter } from './tls-g-before-after'
 export { tlsGBreakdown } from './tls-g-breakdown'
+export { tlsGBracket } from './tls-g-bracket'
