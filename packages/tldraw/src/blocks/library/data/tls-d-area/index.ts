@@ -17,7 +17,7 @@ export const tlsDArea: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Filled areas under lines over time, overlapping or stacked',
-  related: ['tls.d.line'],
+  related: ['tls.d.line', 'tls.d.stacked-bar'],
   describe: {
     when: 'Volume over time, composition over time (stacked).',
     avoid: 'Precise comparison of series (use tls.d.line).',

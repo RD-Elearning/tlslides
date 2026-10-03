@@ -11,9 +11,11 @@ import { tlsDProgressRing } from './tls-d-progress-ring'
 import { tlsDStatCompare } from './tls-d-stat-compare'
 import { tlsDLine } from './tls-d-line'
 import { tlsDArea } from './tls-d-area'
+import { tlsDGroupedBar } from './tls-d-grouped-bar'
+import { tlsDStackedBar } from './tls-d-stacked-bar'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -22,3 +24,5 @@ export { tlsDProgressRing } from './tls-d-progress-ring'
 export { tlsDStatCompare } from './tls-d-stat-compare'
 export { tlsDLine } from './tls-d-line'
 export { tlsDArea } from './tls-d-area'
+export { tlsDGroupedBar } from './tls-d-grouped-bar'
+export { tlsDStackedBar } from './tls-d-stacked-bar'

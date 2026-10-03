@@ -661,6 +661,57 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
 }
 \`\`\`
 
+### \`tls.d.grouped-bar\` — Grouped Bar Chart
+
+Side-by-side columns or bars per category, one colour per series, zero baseline. _(family: data; keywords: grouped, clustered, bar, column, compare, series, chart)_
+
+**When:** Comparing 2-4 series across categories (region by year).
+**Avoid:** One series (use tls.d.bar); parts of a total (use tls.d.stacked-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
+| \`series\` | yes | list of object (name, values) (2–4 items) | One entry per series; values match categories. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal | horizontal suits long labels. |
+| \`groupGap\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`valueLabels\` | no | enum: none \\\\| end \\\\| inside |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Category to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_grouped\\",
+  \\"type\\": \\"tls.d.grouped-bar\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"EMEA\\",
+      \\"APAC\\",
+      \\"AMER\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"2024\\",
+        \\"values\\": [
+          42,
+          38,
+          55
+        ]
+      },
+      {
+        \\"name\\": \\"2025\\",
+        \\"values\\": [
+          51,
+          47,
+          62
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.line\` — Line Chart
 
 Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
@@ -772,6 +823,56 @@ Ring filled to value / max with the figure in the centre, plus label and caption
     \\"label\\": \\"Course completion\\",
     \\"caption\\": \\"34 of 50 lessons\\",
     \\"tone\\": \\"status\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.stacked-bar\` — Stacked Bar Chart
+
+Stacked columns or bars; optional 100% scaling, totals and segment labels. _(family: data; keywords: stacked, composition, total, share, bar, column, chart)_
+
+**When:** Composition of a total across categories; with normalize, compare the mix.
+**Avoid:** Comparing individual series values (use tls.d.grouped-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
+| \`series\` | yes | list of object (name, values) (2–6 items) | One segment per series. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
+| \`normalize\` | no | boolean | Scale each bar to 100%. |
+| \`totals\` | no | boolean |  |
+| \`valueLabels\` | no | enum: none \\\\| inside |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Category to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stacked\\",
+  \\"type\\": \\"tls.d.stacked-bar\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"2024\\",
+      \\"2025\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Product\\",
+        \\"values\\": [
+          30,
+          38
+        ]
+      },
+      {
+        \\"name\\": \\"Services\\",
+        \\"values\\": [
+          18,
+          26
+        ]
+      }
+    ],
+    \\"totals\\": true
   }
 }
 \`\`\`
@@ -1989,7 +2090,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 56,
+  "blockCount": 58,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2005,9 +2106,11 @@ Object {
     "tls.d.area",
     "tls.d.bar",
     "tls.d.donut",
+    "tls.d.grouped-bar",
     "tls.d.line",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
+    "tls.d.stacked-bar",
     "tls.d.stat-compare",
     "tls.g.steps",
     "tls.l.card",
