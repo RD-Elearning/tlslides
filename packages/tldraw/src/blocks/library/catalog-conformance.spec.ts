@@ -33,7 +33,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
   return types
 }
 
-const EXPECTED_BLOCK_COUNT = 47
+const EXPECTED_BLOCK_COUNT = 48
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()

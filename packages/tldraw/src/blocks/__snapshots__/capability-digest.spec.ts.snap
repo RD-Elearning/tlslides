@@ -1269,6 +1269,40 @@ Checklist with a done, open or blocked state per item. _(family: text; keywords:
 }
 \`\`\`
 
+### \`tls.t.definition\` — Definition
+
+A term with its definition, optional pronunciation, part of speech and example. _(family: text; keywords: definition, term, glossary, vocabulary, concept)_
+
+**When:** Introducing a concept, glossary terms, vocabulary (lectures).
+**Avoid:** Several term and value pairs (use tls.t.kv-list).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`term\` | yes | text (max 40 chars) | The word or phrase being defined, 1–3 words. |
+| \`pronunciation\` | no | text (max 40 chars) | Optional, e.g. \\"/hyoo-RIS-tik/\\". |
+| \`partOfSpeech\` | no | text (max 20 chars) | Optional, e.g. \\"noun\\". |
+| \`definition\` | yes | richText (max 260 chars) | One or two sentences. **Bold** works. |
+| \`example\` | no | text (max 160 chars) | Optional usage example. |
+| \`layout\` | no | enum: stacked \\\\| inline | inline puts the term beside the definition. |
+| \`termTone\` | no | enum: accent \\\\| text |  |
+| \`showPronunciation\` | no | boolean |  |
+| \`showExample\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_definition\\",
+  \\"type\\": \\"tls.t.definition\\",
+  \\"props\\": {
+    \\"term\\": \\"Latency\\",
+    \\"pronunciation\\": \\"/LAY-ten-see/\\",
+    \\"partOfSpeech\\": \\"noun\\",
+    \\"definition\\": \\"The **delay** between a request and the first byte of its response.\\",
+    \\"example\\": \\"A 40 ms round trip feels instant.\\",
+    \\"layout\\": \\"stacked\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.footnote\` — Footnote
 
 Small-print source or footnote lines with an optional marker. _(family: text; keywords: footnote, source, reference, citation, small print)_
@@ -1646,7 +1680,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 47,
+  "blockCount": 48,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1685,6 +1719,7 @@ Object {
     "tls.t.callout",
     "tls.t.caption",
     "tls.t.checklist",
+    "tls.t.definition",
     "tls.t.footnote",
     "tls.t.hero-number",
     "tls.t.kicker",

@@ -20,7 +20,7 @@ export const tlsTBody: BlockDefinition = {
   category: 'text',
   scope: 'element',
   shortDescription: 'Paragraph text, auto-fitted, optionally in columns',
-  related: ['tls.t.bullets'],
+  related: ['tls.t.bullets', 'tls.t.definition'],
   describe: {
     when: 'Use for 1–3 sentences of body copy, descriptions, or prose.',
     avoid: 'Do not use for bullet lists (use tls.t.bullets) or for small source lines under a chart (use tls.t.caption).',
