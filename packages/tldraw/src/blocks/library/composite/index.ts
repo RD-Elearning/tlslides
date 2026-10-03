@@ -20,6 +20,7 @@ import { tlsCCover } from './tls-c-cover'
 import { tlsCDivider } from './tls-c-divider'
 import { tlsCClosing } from './tls-c-closing'
 import { tlsCCards } from './tls-c-cards'
+import { tlsCChartInsight } from './tls-c-chart-insight'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -39,6 +40,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCDivider,
   tlsCClosing,
   tlsCCards,
+  tlsCChartInsight,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -57,3 +59,4 @@ export { tlsCCover } from './tls-c-cover'
 export { tlsCDivider } from './tls-c-divider'
 export { tlsCClosing } from './tls-c-closing'
 export { tlsCCards } from './tls-c-cards'
+export { tlsCChartInsight } from './tls-c-chart-insight'

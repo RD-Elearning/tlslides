@@ -213,6 +213,52 @@ Row of 2-4 equal cards, each led by an icon, number or image, then title and tex
 }
 \`\`\`
 
+### \`tls.c.chart-insight\` — Chart with Insight
+
+Chart with its key message in a takeaway panel and a source line. _(family: composite; keywords: chart, insight, takeaway, explained chart, so what, annotated chart, source)_
+
+**When:** A chart whose message must be stated explicitly (\\"Revenue doubled after launch\\").
+**Avoid:** Several KPIs: tls.c.dashboard. A bare chart: tls.d.line or tls.d.bar.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`chart\` | yes | object (kind, categories, series) | Fields: kind, categories, series[{name, values}]. bar/pie/donut use series[0] only. |
+| \`insight\` | yes | richText (max 200 chars) | The message of the chart in 1-2 sentences. |
+| \`insightTitle\` | no | text (max 40 chars) | \\"Key insight\\". |
+| \`source\` | no | text (max 120 chars) |  |
+| \`side\` | no | enum: right \\\\| left \\\\| below |  |
+| \`ratio\` | no | enum: 2:1 \\\\| 3:2 \\\\| 1:1 | Chart width : insight width. |
+| \`showSource\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_chart_insight\\",
+  \\"type\\": \\"tls.c.chart-insight\\",
+  \\"props\\": {
+    \\"chart\\": {
+      \\"kind\\": \\"line\\",
+      \\"categories\\": [
+        \\"Q1\\",
+        \\"Q2\\",
+        \\"Q3\\"
+      ],
+      \\"series\\": [
+        {
+          \\"name\\": \\"Users\\",
+          \\"values\\": [
+            12,
+            18,
+            27
+          ]
+        }
+      ]
+    },
+    \\"insight\\": \\"Users **doubled** in two quarters.\\",
+    \\"source\\": \\"Source: product analytics\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.closing\` — Closing
 
 Closing slide: thank-you title, call to action, contacts and a presenter. _(family: composite; keywords: closing, thank you, questions, end slide, contact, call to action, next step)_
@@ -4149,11 +4195,12 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 110,
+  "blockCount": 111,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
     "tls.c.cards",
+    "tls.c.chart-insight",
     "tls.c.closing",
     "tls.c.comparison",
     "tls.c.cover",
