@@ -2923,6 +2923,47 @@ Portrait in a circle, rounded or square frame with name and role; initials when 
 }
 \`\`\`
 
+### \`tls.m.avatar-group\` — Avatar Group
+
+Overlapping row of small portraits (initials when no photo) with a +N overflow bubble. _(family: media; keywords: avatars, people, team, contributors, attendees, faces, stack)_
+
+**When:** Who is involved at a glance: contributors, attendees, a project team.
+**Avoid:** Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`people\` | yes | list of object (image, name) (2–20 items) | 2-20 items {image?, name}. No image shows initials of the name. |
+| \`max\` | no | number (min 1, max 12) | Avatars shown before the +N bubble (default 5). |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`overlap\` | no | enum: md \\\\| none \\\\| lg |  |
+| \`caption\` | no | text (max 60 chars) | e.g. \\"12 contributors\\". |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_avatar_group\\",
+  \\"type\\": \\"tls.m.avatar-group\\",
+  \\"props\\": {
+    \\"people\\": [
+      {
+        \\"image\\": \\"asset-p1\\",
+        \\"name\\": \\"Linh Tran\\"
+      },
+      {
+        \\"name\\": \\"Minh Anh\\"
+      },
+      {
+        \\"name\\": \\"Bao Chau\\"
+      },
+      {
+        \\"name\\": \\"Ngoc Han\\"
+      }
+    ],
+    \\"max\\": 3,
+    \\"caption\\": \\"4 contributors\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.device-mock\` — Device Mock
 
 Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from rects. _(family: media; keywords: device, mockup, screenshot, browser, phone, laptop, tablet, app)_
@@ -3906,7 +3947,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 103,
+  "blockCount": 104,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3983,6 +4024,7 @@ Object {
     "tls.l.split",
     "tls.l.stack",
     "tls.m.avatar",
+    "tls.m.avatar-group",
     "tls.m.device-mock",
     "tls.m.icon",
     "tls.m.icon-label",

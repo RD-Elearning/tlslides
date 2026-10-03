@@ -108,7 +108,7 @@ export function avatarLeaves(ctx: LayoutContext, o: AvatarOpts): LayoutNode[] {
       fill: { type: 'solid', color: o.edge },
       radius: avatarRadius(ctx, o.shape, size),
     })
-    const e = Math.max(2, Math.round(size * 0.05))
+    const e = Math.min(Math.max(2, Math.round(size * 0.05)), Math.floor(size / 4))
     inner = { x: o.x + e, y: o.y + e, size: Math.max(1, size - 2 * e) }
   }
   if (o.ring) {

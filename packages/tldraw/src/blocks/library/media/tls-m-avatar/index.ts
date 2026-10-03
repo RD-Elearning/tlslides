@@ -17,7 +17,7 @@ export const tlsMAvatar: BlockDefinition = {
   category: 'people',
   scope: 'element',
   shortDescription: 'Round portrait with name and role beside or beneath it',
-  related: ['tls.m.image', 'tls.t.quote'],
+  related: ['tls.m.avatar-group', 'tls.m.image', 'tls.t.quote'],
   describe: {
     when: 'Naming one speaker, author or contact person with a portrait.',
     avoid: 'Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image).',
