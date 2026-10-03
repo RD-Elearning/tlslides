@@ -24,7 +24,10 @@ Phase plans: 11–17 in **[reviews/roadmap-slides.md](reviews/roadmap-slides.md)
 slice (Q0–Q20, `BACKLOG-demo.md`) shipped 2026-09-17; `BACKLOG-enhance.md` (R0–R16) shipped
 R0–R13 and parked R14–R16.
 
-**Next work list: [reviews/blocks/block-authoring/README.md](reviews/blocks/block-authoring/README.md)**
+**Next work list: [reviews/blocks/block-library/README.md](reviews/blocks/block-library/README.md)**
+(2026-10-03): grow the catalog 41 → 129 blocks with a semantic `category`, `shortDescription` and
+`scope` per block for AI selection, a two-tier digest, and phases P0–P6 with a progress ledger.
+Resume from its §Progress. The previous list, [block-authoring/README.md](reviews/blocks/block-authoring/README.md)
 (B1–B7 — nested HTML blocks, container children, padding/align, element toggles,
 `defineCompositeBlock`, inspector, block gallery); one detail file per task.
 
