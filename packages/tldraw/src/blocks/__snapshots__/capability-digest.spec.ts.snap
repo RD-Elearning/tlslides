@@ -592,6 +592,42 @@ Grid of feature cells, each with an icon, title, and description. 2–6 cells ar
 }
 \`\`\`
 
+### \`tls.c.feature-reveal\` — Feature reveal [html]
+
+Grid of 3-6 icon cards (title + one line) that flip in one after another. _(family: composite; keywords: features, cards, benefits, skills, grid, icons, animated)_
+
+**When:** Key benefits, skills or pillars (3-6) on a showcase slide with motionStyle expressive.
+**Avoid:** Dense or printed slides (use tls.c.feature-grid); steps in order (use tls.g.chevrons).
+
+**Parts:** \`card[*]\`, \`icon[*]\`, \`title[*]\`, \`text[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (icon, title, text) (3–6 items) | 3-6 cards, each { icon, title, text? }: a 1-4 word title and one sentence. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_reveal\\",
+  \\"type\\": \\"tls.c.feature-reveal\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"icon\\": \\"rocket\\",
+        \\"title\\": \\"Nhanh\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"An toàn\\"
+      },
+      {
+        \\"icon\\": \\"heart\\",
+        \\"title\\": \\"Thân thiện\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.hero\` — Hero [html]
 
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
@@ -673,6 +709,73 @@ Image beside or above a text cluster (kicker + title + body). Configurable place
     \\"kicker\\": \\"OVERVIEW\\",
     \\"title\\": \\"Our design process\\",
     \\"body\\": \\"We start with research, prototype rapidly, and validate with users before shipping.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.journey\` — Journey [html]
+
+Milestones on a curved path; the path draws and each node pops as the line reaches it. _(family: composite; keywords: journey, path, milestones, roadmap, stages, timeline, story)_
+
+**When:** A story of 3-6 stages or dates (a programme, a project, a career) told as one path.
+**Avoid:** Precise dated schedules (use tls.g.timeline); more than 6 stages (use tls.g.roadmap).
+
+**Parts:** \`path\`, \`node[*]\`, \`label[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`milestones\` | yes | list of object (when, title, text) (3–6 items) | 3-6 items in order, each { when, title, text? }: a date or stage, 2-5 words, one short line. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_journey\\",
+  \\"type\\": \\"tls.c.journey\\",
+  \\"props\\": {
+    \\"milestones\\": [
+      {
+        \\"when\\": \\"2024\\",
+        \\"title\\": \\"Ý tưởng\\"
+      },
+      {
+        \\"when\\": \\"2025\\",
+        \\"title\\": \\"Thử nghiệm\\"
+      },
+      {
+        \\"when\\": \\"2026\\",
+        \\"title\\": \\"Triển khai\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.kinetic-title\` — Kinetic title [html]
+
+Big animated title: words rise in one by one, accent rule draws, subtitle last. _(family: composite; keywords: title, cover, opener, section, animated, kinetic)_
+
+**When:** Deck cover or section opener that should feel energetic; pair with motionStyle expressive.
+**Avoid:** Content slides (use tls.t.title); a cover with photo or logo (use tls.c.cover).
+
+**Parts:** \`decor\`, \`kicker\`, \`title\`, \`rule\`, \`subtitle\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) | Small label above the title: course, event or section, e.g. \\"BÀI GIẢNG 1\\". |
+| \`title\` | yes | text (max 80 chars) | The talk or section title, 2-8 words, no full stop. |
+| \`highlight\` | no | text (max 40 chars) | Words of the title to colour with the accent; must appear in the title. |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`decoration\` | no | enum: orbs \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kinetic\\",
+  \\"type\\": \\"tls.c.kinetic-title\\",
+  \\"props\\": {
+    \\"kicker\\": \\"TUẦN 1\\",
+    \\"title\\": \\"Dữ liệu kể chuyện\\",
+    \\"highlight\\": \\"kể chuyện\\",
+    \\"subtitle\\": \\"Nhập môn khoa học dữ liệu\\"
   }
 }
 \`\`\`
@@ -981,6 +1084,41 @@ KPI on a card: icon, headline value, unit and caption. _(family: composite; keyw
     \\"format\\": \\"plain\\",
     \\"emphasis\\": \\"accent\\",
     \\"padding\\": \\"md\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.stat-spotlight\` — Stat spotlight [html]
+
+One key number in a progress ring that counts up, label beside it, up to 3 support stats. _(family: composite; keywords: stat, number, kpi, ring, percent, count-up, headline)_
+
+**When:** One number is the point of the slide (a result, a rate, a total); expressive slides.
+**Avoid:** Two to five equal metrics (use tls.c.kpi-row); a trend over time (use tls.d.line).
+
+**Parts:** \`ring\`, \`value\`, \`label\`, \`context\`, \`stat[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | text (max 12 chars) | The number as it reads, unit included: \\"92%\\", \\"1.250\\", \\"4,6/5\\". |
+| \`label\` | yes | text (max 40 chars) |  |
+| \`context\` | no | text (max 100 chars) |  |
+| \`progress\` | no | number (min 0, max 100) | How much of the ring fills, 0-100; for a percentage use the same number. Default 100. |
+| \`stats\` | no | list of object (value, label) (0–3 items) | 0-3 smaller numbers, each { value, label }. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spot\\",
+  \\"type\\": \\"tls.c.stat-spotlight\\",
+  \\"props\\": {
+    \\"value\\": \\"87%\\",
+    \\"progress\\": 87,
+    \\"label\\": \\"Tỉ lệ hoàn thành\\",
+    \\"stats\\": [
+      {
+        \\"value\\": \\"312\\",
+        \\"label\\": \\"Sinh viên\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -4661,7 +4799,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 125,
+  "blockCount": 129,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4675,8 +4813,11 @@ Object {
     "tls.c.dashboard",
     "tls.c.divider",
     "tls.c.feature-grid",
+    "tls.c.feature-reveal",
     "tls.c.hero",
     "tls.c.image-text",
+    "tls.c.journey",
+    "tls.c.kinetic-title",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
     "tls.c.objectives",
@@ -4686,6 +4827,7 @@ Object {
     "tls.c.quote-image",
     "tls.c.recap",
     "tls.c.stat-card",
+    "tls.c.stat-spotlight",
     "tls.c.steps",
     "tls.c.team",
     "tls.c.testimonial",

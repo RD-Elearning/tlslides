@@ -30,6 +30,10 @@ import { tlsCCaseStudy } from './tls-c-case-study'
 import { tlsCProblemSolution } from './tls-c-problem-solution'
 import { tlsCContact } from './tls-c-contact'
 import { tlsCQuoteImage } from './tls-c-quote-image'
+import { tlsCKineticTitle } from './tls-c-kinetic-title'
+import { tlsCStatSpotlight } from './tls-c-stat-spotlight'
+import { tlsCJourney } from './tls-c-journey'
+import { tlsCFeatureReveal } from './tls-c-feature-reveal'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -59,6 +63,10 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCProblemSolution,
   tlsCContact,
   tlsCQuoteImage,
+  tlsCKineticTitle,
+  tlsCStatSpotlight,
+  tlsCJourney,
+  tlsCFeatureReveal,
 ]
 
 export { tlsCHero } from './tls-c-hero'
