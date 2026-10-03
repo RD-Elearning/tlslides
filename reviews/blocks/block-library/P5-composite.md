@@ -29,21 +29,21 @@ layout region without collisions (collision helper).
 
 | # | Block | Category | Scope | Priority | Composes | Status | Commit | Notes |
 |---|---|---|---|---|---|---|---|---|
-| 1 | `tls.c.cover` | cover | slide | must | t.kicker, t.title, t.subtitle, m.image, m.logo, m.decoration | ⬜ | | |
-| 2 | `tls.c.divider` | divider | slide | must | t.kicker, t.title, t.subtitle, m.decoration | ⬜ | | |
-| 3 | `tls.c.closing` | closing | slide | must | t.title, t.body, t.tags, m.avatar | ⬜ | | |
-| 4 | `tls.c.dashboard` | metric | slide | must | c.kpi-row, d.* chart, t.takeaway | ⬜ | | |
-| 5 | `tls.c.chart-insight` | chart | group | must | d.* chart, t.takeaway, t.footnote | ⬜ | | |
-| 6 | `tls.c.team` | people | group | must | c.profile-card | ⬜ | | |
-| 7 | `tls.c.objectives` | agenda | slide | must | t.checklist / t.numbered, m.icon | ⬜ | | |
-| 8 | `tls.c.cards` | list | group | must | l.card, m.icon, t.title, t.body, t.hero-number | ⬜ | | |
+| 1 | `tls.c.cover` | cover | slide | must | t.kicker, t.title, t.subtitle, m.image, m.logo, m.decoration | ✅ | aad0b682 | `defineCompositeBlock` metadata + `build()`, but `layout()` is hand-placed with `ctx.layoutChild` and flattened (`composite/_kit.ts`, see Notes below). Logo is a fixed 240x96 box (top start). No kicker marker (it detaches from centred text). `bleed` without a photo falls back to an accent field. Decoration only on centered and photo-less split. |
+| 2 | `tls.c.divider` | divider | slide | must | t.kicker, t.title, t.subtitle, m.decoration | ✅ | 62b0d21b | Number slot is 8 chars (plan said 4, but its own example is "Part 2"). Number is drawn with `tls.t.title` display size; no kicker or decoration (not needed by the three variants). |
+| 3 | `tls.c.closing` | closing | slide | must | t.title, t.body, t.tags, m.avatar | ✅ | c81e43a9 | Contacts are `tls.t.caption` lines, not `t.tags`. Button = pill rect + `tls.t.subtitle` label (no pill block exists). `avoid` points at `tls.t.numbered`: `tls.c.recap` is part B. Has `capacity()` (contacts <= 4). |
+| 4 | `tls.c.dashboard` | metric | slide | must | c.kpi-row, d.* chart, t.takeaway | ✅ | 05c772e6 | Chart kinds bar, line, area, donut, stacked-bar, grouped-bar, pie all lay out (depth + DOM/SVG parity per kind). `kpis-left` uses `tls.c.kpi-tile` stacked, not kpi-row. `chartRatio` splits chart vs insight width (insight hidden: chart takes it all). Bar kind draws the pre-P2 `tls.d.bar` (gridlines and labels do not line up): prefer line/area/grouped-bar. |
+| 5 | `tls.c.chart-insight` | chart | group | must | d.* chart, t.takeaway, t.footnote | ✅ | a17f6cfb | Same chart slot as dashboard (all 7 kinds, parity per kind). `intrinsicSize` = content height. `avoid` names `tls.c.dashboard`. |
+| 6 | `tls.c.team` | people | group | must | c.profile-card | ✅ | 1dd5da6a | Not a grid of `tls.c.profile-card`: that is exactly 4 deep and cannot sit in a container. Cells are laid out by hand (avatar + bio, panel rect), 1 level deep, works nested (tested). Centred cells; `cols auto` = 2/3/4/3/3/4/4 for 2..8. `showBio` is a toggle (`bio`). No contact line. |
+| 7 | `tls.c.objectives` | agenda | slide | must | t.checklist / t.numbered, m.icon | ✅ | 2eb5dc87 | `icon` marker uses `tls.m.icon-list` with one icon for all items, always one column. Items render at body size (28): the list blocks have no size option. |
+| 8 | `tls.c.cards` | list | group | must | l.card, m.icon, t.title, t.body, t.hero-number | ✅ | 6b80c1b4 | Rounded panels are raw rects (the card block has no radius or stroke), so `outline` and `surface` tones are possible. Cards are content-height (min 460, region permitting), not region-filling. `feature-grid` avoid/related now point at cards. |
 | 9 | `tls.c.quiz` | learning | group | should | t.title, l.grid, l.card | ⬜ | | layout, not composite |
 | 10 | `tls.c.recap` | closing | slide | should | t.numbered, t.takeaway | ⬜ | | |
 | 11 | `tls.c.case-study` | comparison | slide | should | l.row, l.card, t.kicker, t.body, t.hero-number | ⬜ | | |
 | 12 | `tls.c.problem-solution` | comparison | group | should | g.before-after or l.split, t.callout | ⬜ | | |
 | 13 | `tls.c.contact` | closing | group | could | m.avatar, t.kv-list, m.icon-list | ⬜ | | |
 | 14 | `tls.c.quote-image` | emphasis | slide | could | l.overlay, m.image, t.quote | ⬜ | | |
-| — | Demo deck "block-library-tour" (one slide per must composite) + screenshots | | | | | ⬜ | | |
+| — | Demo deck "block-library-tour" (one slide per must composite) + screenshots | | | | | 🔶 | aaf9ca00 | 17 slides: P1-P4 representatives (reused sl_12/15/19/23/32/42/43), 8 part A composites. Every slide shot at 1920x1080 and opened. Part B composites still to be added. |
 
 ---
 
@@ -183,11 +183,40 @@ layout region without collisions (collision helper).
 
 ---
 
+## Notes from part A (cover, divider, closing, cards, chart-insight, dashboard, team, objectives)
+
+- **Build pattern.** `defineCompositeBlock` gives the metadata and a reference `build()` tree (used for
+  depth and measure checks), but its generated `layout()` is replaced. Reasons, all measured: (1) the
+  text blocks ignore `align`, so centring needs per-line placement; (2) a `content` stack scales its
+  children to fill a tall region; (3) `ctx.layoutChild` wrappers sit at non-zero offsets, which the SVG
+  renderer ignores, so every nested composite failed DOM/SVG parity. `library/composite/_kit.ts`
+  (`composeFlat`, `placePiece`, `flattenNode`, `translatePath`) lays out each piece with `ctx.layoutChild`,
+  flattens to absolute leaves under one root group at (0,0) (path `d` and `line` endpoints are translated
+  and re-boxed to the full block), and names parts (`kicker`, `logo[0]`...). Parity now passes for all eight,
+  including every chart kind.
+- **The parity probe was comparing empty trees for composites.** `assertParity` built its layout context
+  without a registry, so `ctx.layoutChild` returned empty groups and every composite "passed" (profile-card
+  and stat-card included). `assertParity(..., { registry })` and `standardBlockSuite(def, { withRegistry: true })`
+  are new and opt-in; the other families are unchanged. Existing composites (swot, profile-card, kpi-row...)
+  were NOT re-probed with a registry: they probably fail for the nesting reason above.
+- **Centring.** `estimateMetrics` runs 10-25% wide on large Inter text (a centred 96px title sat 38px
+  off, a 44px subtitle 92px off). Centred lines use `tableMetrics` (per-glyph advances, ~3% error) via
+  `_kit.lineWidth`. Left anchoring is still exact.
+- **Digest.** Top-8 detail is 11,985/12,000 (`tls.c.feature-grid` grew 19 chars from its new avoid line; the
+  eight new blocks are 976-1,365 chars, cover the largest). Index 14,104/20k.
+- **Depth.** Layouts are 1 level deep (children are leaves), so all eight work at any nesting level except
+  the reference `build()` trees, which are asserted <= 4.
+- **Browser.** Next dev serves a stale `packages/tldraw/dist` after a rebuild unless the server (and `.next`) is
+  restarted: a changed text-box width did not show until then.
+
 ## Phase done when
-- [ ] Must composites ✅, each with a depth ≤ 4 assertion.
-- [ ] New demo deck fixture `block-library-tour.json` (one slide per must composite plus one per
+- [x] Must composites ✅, each with a depth ≤ 4 assertion. (8 of 8 must composites; `depthOk` per block.)
+- [x] New demo deck fixture `block-library-tour.json` (one slide per must composite plus one per
   phase P1–P4), validated by `validateDeckSpec` with 0 errors, screenshotted per slide, and
   **every PNG opened**. Copy it to `examples/nextjs-sample/data/decks/` byte-identical and
-  register it in `demo-deck-contract.spec.ts` if that spec enumerates fixtures.
+  register it in `demo-deck-contract.spec.ts` if that spec enumerates fixtures. (Part A slides done;
+  the contract/roundtrip specs only read `demo-deck.json`, so the tour is registered in
+  `catalog-conformance` (slide-scope nesting), picked up by `collision.spec` automatically, and has its own
+  `block-library-tour.spec.ts` (0 errors, byte-identical copy). Part B composites still to be added.)
 - [ ] `capabilityIndex()` for the full catalog pasted into the session log note, with its char count.
 - [ ] Full suite, tsc 0, README counts and session log updated.
