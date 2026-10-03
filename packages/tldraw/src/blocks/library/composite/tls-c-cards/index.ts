@@ -203,7 +203,7 @@ const composite = defineCompositeBlock<CardsProps>({
   category: 'list',
   scope: 'group',
   shortDescription: 'Row of equal cards, each led by an icon, number or image, then title and text',
-  related: ['tls.c.feature-grid', 'tls.t.bullets'],
+  related: ['tls.c.feature-grid', 'tls.t.bullets', 'tls.c.case-study'],
   schema,
   defaults,
   size: { preferred: [1500, 520], min: [560, 260] },

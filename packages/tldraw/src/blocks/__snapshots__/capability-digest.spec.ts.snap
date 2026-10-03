@@ -213,6 +213,43 @@ Row of 2-4 equal cards, each led by an icon, number or image, then title and tex
 }
 \`\`\`
 
+### \`tls.c.case-study\` — Case study
+
+Success story: challenge, solution and result, with one headline result number. _(family: composite; keywords: case study, success story, reference, project showcase, before after result, customer story)_
+
+**When:** Success stories, project showcases and references.
+**Avoid:** A generic 3-point list: tls.c.cards.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`client\` | no | text (max 40 chars) | Name of the client or project. |
+| \`challenge\` | yes | text (max 220 chars) | 1-2 sentences: the problem. |
+| \`solution\` | yes | text (max 220 chars) | 1-2 sentences: what was done. |
+| \`result\` | yes | text (max 220 chars) | 1-2 sentences: the outcome. |
+| \`metric\` | no | object (value, label) | Fields: value, label. |
+| \`layout\` | no | enum: columns \\\\| rows | rows = full-width bands. |
+| \`emphasis\` | no | enum: result \\\\| none | result = accent-filled result. |
+| \`showMetric\` | no | boolean |  |
+| \`showClient\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_case\\",
+  \\"type\\": \\"tls.c.case-study\\",
+  \\"props\\": {
+    \\"client\\": \\"Vinh University Library\\",
+    \\"challenge\\": \\"Long queues at peak hours.\\",
+    \\"solution\\": \\"Self-service kiosks and a renewal app.\\",
+    \\"result\\": \\"Queues gone, staff moved to study support.\\",
+    \\"metric\\": {
+      \\"value\\": \\"-80%\\",
+      \\"label\\": \\"waiting time\\"
+    },
+    \\"layout\\": \\"columns\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.chart-insight\` — Chart with Insight
 
 Chart with its key message in a takeaway panel and a source line. _(family: composite; keywords: chart, insight, takeaway, explained chart, so what, annotated chart, source)_
@@ -4384,11 +4421,12 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 116,
+  "blockCount": 117,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
     "tls.c.cards",
+    "tls.c.case-study",
     "tls.c.chart-insight",
     "tls.c.closing",
     "tls.c.comparison",
