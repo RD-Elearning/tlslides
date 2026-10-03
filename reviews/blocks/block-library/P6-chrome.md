@@ -1,5 +1,7 @@
 # P6 · Chrome — 7 blocks (+ one prerequisite)
 
+**Status (2026-10-03):** 5 of 7 built (1, 2, 5, 6, 7). P6.0, `tls.x.progress` and `tls.x.section-tabs` are parked: P6.0 adds `LayoutContext.deck` and has not been approved by the user.
+
 **Depends on:** P0.1–P0.3, and P6.0 for the position-aware blocks.
 **Folder:** `library/chrome/` (prefix `x`). **Reference:** `tls-x-page-number/`.
 
@@ -16,14 +18,14 @@ them motion preset `none` by default.
 
 | # | Block | Category | Priority | Status | Commit | Blocked / notes |
 |---|---|---|---|---|---|---|
-| P6.0 | Deck position for chrome (prerequisite) | — | must | ⬜ | | additive; see below |
-| 1 | `tls.x.footer-text` | chrome | must | ⬜ | | |
-| 2 | `tls.x.logo-mark` | chrome | must | ⬜ | | |
-| 3 | `tls.x.progress` | chrome | must | ⬜ | | needs P6.0 |
-| 4 | `tls.x.section-tabs` | chrome | should | ⬜ | | needs P6.0 |
-| 5 | `tls.x.header` | chrome | should | ⬜ | | |
-| 6 | `tls.x.rule` | decoration | should | ⬜ | | |
-| 7 | `tls.x.watermark` | chrome | could | ⬜ | | |
+| P6.0 | Deck position for chrome (prerequisite) | — | must | ⏸ awaiting user decision on P6.0 (adds LayoutContext.deck) | | additive; not approved, so not built |
+| 1 | `tls.x.footer-text` | chrome | must | ✅ | 197d1649 | Reduced: no `capacity` unit for width (budget is items only, `fits` also checks the line width); `showRule` (not `rule`) because toggle slots must be named `showX`; items beyond 3 are dropped; an item wider than its share is ellipsised. `spread` omits separators. |
+| 2 | `tls.x.logo-mark` | chrome | must | ✅ | face8fb5 | Adds an optional `ratio` (same convention as `tls.m.logo`); without a ratio or asset size the logo takes the full width and `contain` centres it, so `corner` has no horizontal effect. Top corners hug the logo height, bottom corners keep the box height. sm 36 / md 56 px. |
+| 3 | `tls.x.progress` | chrome | must | ⏸ awaiting user decision on P6.0 (adds LayoutContext.deck) | | needs P6.0; moved to Parked |
+| 4 | `tls.x.section-tabs` | chrome | should | ⏸ awaiting user decision on P6.0 (adds LayoutContext.deck) | | needs P6.0; moved to Parked |
+| 5 | `tls.x.header` | chrome | should | ✅ | cf52c10d | `showRule` (toggle naming rule). `tone: accent` colours the label only. Uses the `caption` token; the longer text is ellipsised when both do not fit. |
+| 6 | `tls.x.rule` | decoration | should | ✅ | a1709ebb | A thin `rect` (not `line`); gradient is a `linearGradient` accent to accent2 (DOM/SVG parity probed, horizontal and vertical). Recipe motion is `wipe-x` for both axes (a recipe is static): a vertical rule needs `motion.preset: 'wipe-y'` on the instance. |
+| 7 | `tls.x.watermark` | chrome | could | ✅ (`none` angle only) | 47205426 | **Diagonal blocked**: `LayoutNode` has no rotation (same gap as `tls.m.image-collage`), so there is no `angle` option at all. Faint/soft are 6% / 11% `rgba` text alpha. Layered with `tls.l.overlay` (the overlay draws its own surface fill). |
 
 ---
 
@@ -43,7 +45,7 @@ info comes from slides that contain a `tls.c.divider` (its `title`), counted in 
   compatibility; the demo uses `auto`), plus `format: enum[n, n-of-total]`.
 - Tests: compile a 5-slide deck and assert the page number is 1…5 and the progress fill is 20 %…100 %.
 
-If the field is not approved, P6 ships blocks 1, 2, 5, 6 and 7 only, and 3 and 4 move to Parked.
+If the field is not approved, P6 ships blocks 1, 2, 5, 6 and 7 only, and 3 and 4 move to Parked. **Not approved at the time of P6: that path was taken.** `tls.x.page-number` is unchanged (static `number`).
 
 ### 1. `tls.x.footer-text` · chrome · element · layout · must
 - **short:** `Footer line with deck title, author or date, separated by dots`
@@ -104,6 +106,6 @@ If the field is not approved, P6 ships blocks 1, 2, 5, 6 and 7 only, and 3 and 4
 ---
 
 ## Phase done when
-- [ ] Must blocks ✅ (or P6.0 explicitly declined, with 3 and 4 moved to Parked).
-- [ ] One demo slide with footer-text, logo-mark, progress and page-number, screenshotted and opened.
-- [ ] Full suite, tsc 0, README counts and session log updated.
+- [x] Must blocks ✅ (P6.0 not approved, so 3 and 4 are parked; the two must blocks that need no position, footer-text and logo-mark, are built).
+- [x] One demo slide with footer-text, logo-mark and page-number (progress is parked), plus header and rule: tour slide `tl_28`, and a watermark/rules slide `tl_29`; both screenshotted and opened (`tools/visual/shots/tour-tl_28.png`, `tour-tl_29.png`).
+- [ ] Full suite (not run: 6 GB machine; targeted specs only, see README session log), tsc 0 (verified), README counts and session log updated (done).
