@@ -661,6 +661,43 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
 }
 \`\`\`
 
+### \`tls.d.funnel-chart\` — Funnel Chart
+
+Funnel or bar stages sized by value, with the percentage lost between stages. _(family: data; keywords: funnel, conversion, pipeline, stages, drop-off, sales)_
+
+**When:** Conversion pipelines with real numbers.
+**Avoid:** A qualitative funnel without values (use tls.g.funnel).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stages\` | yes | list of object (label, value) (3–7 items) | Ordered from widest to narrowest, real counts. |
+| \`shape\` | no | enum: funnel \\\\| bars | bars = left-aligned bars. |
+| \`showDropoff\` | no | enum: percent \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_funnel\\",
+  \\"type\\": \\"tls.d.funnel-chart\\",
+  \\"props\\": {
+    \\"stages\\": [
+      {
+        \\"label\\": \\"Visits\\",
+        \\"value\\": 5000
+      },
+      {
+        \\"label\\": \\"Leads\\",
+        \\"value\\": 900
+      },
+      {
+        \\"label\\": \\"Deals\\",
+        \\"value\\": 120
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.gauge\` — Gauge
 
 Half-circle dial: threshold bands, a needle or marker at the value, tick labels. _(family: data; keywords: gauge, dial, score, nps, threshold, health, risk)_
@@ -2251,7 +2288,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 62,
+  "blockCount": 63,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2267,6 +2304,7 @@ Object {
     "tls.d.area",
     "tls.d.bar",
     "tls.d.donut",
+    "tls.d.funnel-chart",
     "tls.d.gauge",
     "tls.d.grouped-bar",
     "tls.d.line",

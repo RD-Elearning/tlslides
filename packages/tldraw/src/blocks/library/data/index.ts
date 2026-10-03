@@ -17,9 +17,10 @@ import { tlsDPie } from './tls-d-pie'
 import { tlsDGauge } from './tls-d-gauge'
 import { tlsDSparkline } from './tls-d-sparkline'
 import { tlsDWaterfall } from './tls-d-waterfall'
+import { tlsDFunnelChart } from './tls-d-funnel-chart'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -34,3 +35,4 @@ export { tlsDPie } from './tls-d-pie'
 export { tlsDGauge } from './tls-d-gauge'
 export { tlsDSparkline } from './tls-d-sparkline'
 export { tlsDWaterfall } from './tls-d-waterfall'
+export { tlsDFunnelChart } from './tls-d-funnel-chart'
