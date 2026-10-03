@@ -6,7 +6,8 @@
  *    registry.list().length, not a literal).
  * 2. Search filters cards by name/summary/keywords.
  * 3. Clicking a card calls the insert handler with the block's type.
- * 4. Family tabs filter by family.
+ * 4. Category tabs (with counts, empty ones hidden) filter by category; a family filter
+ *    stays in the search row; cards show shortDescription and a scope badge.
  */
 import * as React from 'react'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
@@ -15,6 +16,7 @@ import '@testing-library/jest-dom'
 import { BlockInserter } from './BlockInserter'
 import { BlockRegistryContext } from '~hooks'
 import { BlockRegistry } from '~blocks/registry'
+import { CATEGORY_INFO } from '~blocks/types'
 import { registerBuiltInBlocks } from '~blocks/library'
 
 const registry = new BlockRegistry()
@@ -72,7 +74,7 @@ describe('BlockInserter gallery', () => {
       const query = 'title'
       const matches =
         def!.name.toLowerCase().includes(query) ||
-        def!.summary?.toLowerCase().includes(query) ||
+        def!.shortDescription?.toLowerCase().includes(query) ||
         def!.keywords?.some((k) => k.toLowerCase().includes(query))
       expect(matches).toBe(true)
     }
@@ -98,27 +100,69 @@ describe('BlockInserter gallery', () => {
     expect(onInsert).toHaveBeenCalledWith(blockType)
   })
 
-  it('renders family tabs with counts', () => {
-    render(
-      <BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />,
-      {
-        wrapper: ({ children }) => (
-          <BlockRegistryContext.Provider value={registry}>{children}</BlockRegistryContext.Provider>
-        ),
-      },
-    )
+  const wrapper = ({ children }: { children: React.ReactNode }) => (
+    <BlockRegistryContext.Provider value={registry}>{children}</BlockRegistryContext.Provider>
+  )
 
-    // Should have an "All" tab
+  it('renders category tabs with counts and hides empty categories', () => {
+    render(<BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />, { wrapper })
+
     expect(screen.getByText('All')).toBeInTheDocument()
 
-    // Should have tabs for families that have blocks
-    // Family tabs show "icon DisplayName (count)" — verify each family's display name appears
-    const expectedFamilyDisplays = ['Layout', 'Text', 'Data', 'Diagram', 'Media', 'Composite', 'Chrome']
-    const allTabText = screen.getAllByRole('button').map((btn) => btn.textContent || '')
-    for (const display of expectedFamilyDisplays) {
-      const found = allTabText.some((text) => text.includes(display))
-      expect(found).toBe(true)
+    const grouped = registry.listByCategory()
+    const tabText = screen.getAllByRole('button').map((btn) => btn.textContent || '')
+    for (const [category, defs] of grouped) {
+      expect(tabText).toContain(`${CATEGORY_INFO[category].label} (${defs.length})`)
     }
+    // A category with no blocks has no tab (no timeline blocks exist yet).
+    expect(grouped.has('timeline')).toBe(false)
+    expect(tabText.some((t) => t.startsWith('Timeline'))).toBe(false)
+    // The old family tabs are gone.
+    expect(tabText.some((t) => /^\S?\s?Composite \(/.test(t))).toBe(false)
+  })
+
+  it('a category tab shows only that category', () => {
+    render(<BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />, { wrapper })
+    const metrics = registry.listByCategory().get('metric')!
+    fireEvent.click(screen.getByText(`Metrics (${metrics.length})`))
+
+    const types = screen.getAllByTestId('block-card').map((c) => c.getAttribute('data-block-type'))
+    expect(types.sort()).toEqual(metrics.map((d) => d.type).sort())
+
+    fireEvent.click(screen.getByText('All'))
+    expect(screen.getAllByTestId('block-card')).toHaveLength(allBlockCount)
+  })
+
+  it('the family filter narrows the list and combines with a category tab', () => {
+    render(<BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />, { wrapper })
+    fireEvent.change(screen.getByLabelText('Filter by family'), { target: { value: 'text' } })
+
+    const expected = registry.list().filter((d) => d.family === 'text')
+    expect(screen.getAllByTestId('block-card')).toHaveLength(expected.length)
+
+    const textMetrics = expected.filter((d) => d.category === 'metric')
+    fireEvent.click(screen.getByText(/^Metrics \(/))
+    expect(screen.getAllByTestId('block-card')).toHaveLength(textMetrics.length)
+  })
+
+  it('search matches shortDescription', () => {
+    render(<BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />, { wrapper })
+    fireEvent.change(screen.getByPlaceholderText('Search blocks...'), { target: { value: 'eyebrow' } })
+    const types = screen.getAllByTestId('block-card').map((c) => c.getAttribute('data-block-type'))
+    expect(types).toContain('tls.t.kicker')
+  })
+
+  it('cards show shortDescription as subtitle and a scope badge for slide and group blocks only', () => {
+    render(<BlockInserter onInsert={jest.fn()} onClose={jest.fn()} visible={true} />, { wrapper })
+    const hero = screen.getAllByTestId('block-card').find((c) => c.getAttribute('data-block-type') === 'tls.c.hero')!
+    expect(hero).toHaveTextContent(registry.get('tls.c.hero')!.shortDescription!)
+    expect(hero.querySelector('[data-testid="scope-badge"]')).toHaveTextContent('Slide')
+
+    const kpiRow = screen.getAllByTestId('block-card').find((c) => c.getAttribute('data-block-type') === 'tls.c.kpi-row')!
+    expect(kpiRow.querySelector('[data-testid="scope-badge"]')).toHaveTextContent('Group')
+
+    const title = screen.getAllByTestId('block-card').find((c) => c.getAttribute('data-block-type') === 'tls.t.title')!
+    expect(title.querySelector('[data-testid="scope-badge"]')).toBeNull()
   })
 
   it('shows no results message when search returns nothing', () => {

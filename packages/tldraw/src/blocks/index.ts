@@ -161,12 +161,15 @@ export type {
 // hand-written prompt fragment would.
 export { validateDeckSpec, defaultBlockRegistry } from './validate-deck-spec'
 export type { DeckFinding } from './validate-deck-spec'
-export { capabilityDigest, capabilityDigestData } from './capability-digest'
+export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
 export type {
   CapabilityDigest,
   CapabilityBlockDigest,
   CapabilityLayoutDigest,
   CapabilitySlotDigest,
+  CapabilityIndexEntry,
+  CapabilityIndexOptions,
+  CapabilityDetailOptions,
 } from './capability-digest'
 
 // Shared nearest-name suggestion, used by both `compileSlide`'s region findings and

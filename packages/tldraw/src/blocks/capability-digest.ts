@@ -17,7 +17,9 @@ import type { BlockRegistry } from './registry'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { resolveTokens } from './tokens'
 import { defaultBlockRegistry } from './validate-deck-spec'
-import type { ColorRole, ResolvedTokens, SlotSpec, SlotType } from './types'
+import type { BlockCategory, BlockDefinition, BlockScope, ColorRole, ResolvedTokens, SlotSpec, SlotType } from './types'
+import { BLOCK_CATEGORIES, CATEGORY_INFO } from './types'
+import { ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
 
@@ -52,6 +54,28 @@ export interface CapabilityBlockDigest {
   avoid?: string
   /** R7: a filled example BlockSpec. */
   example?: unknown
+}
+
+/** One entry of the compact catalog index (tier 1 of the two-tier digest). */
+export interface CapabilityIndexEntry {
+  type: string
+  category: BlockCategory
+  scope: BlockScope
+  /** Item range from the first content `list`/`series` slot, e.g. '3–8 items' or '≤6 items'. Absent when none. */
+  range?: string
+  shortDescription: string
+  related?: string[]
+}
+
+export interface CapabilityIndexOptions {
+  categories?: BlockCategory[]
+  scopes?: BlockScope[]
+}
+
+export interface CapabilityDetailOptions {
+  /** Only these block types. When any option is given, the markdown contains the block detail only. */
+  types?: string[]
+  categories?: BlockCategory[]
 }
 
 export interface CapabilityLayoutDigest {
@@ -181,7 +205,7 @@ const LAYOUT_USE_WHEN: Record<string, string> = {
  * Structured capability data, derived from `registry` (default: `BUILT_IN_BLOCKS`) and from
  * `SLIDE_LAYOUTS`. Never hand-written — see this module's header comment.
  */
-export function capabilityDigestData(registry?: BlockRegistry): CapabilityDigest {
+export function capabilityDigestData(registry?: BlockRegistry, opts?: CapabilityDetailOptions): CapabilityDigest {
   const reg = registry ?? defaultBlockRegistry()
 
   // Only the *shape* of the resolved tokens matters here (which region keys a layout
@@ -194,8 +218,7 @@ export function capabilityDigestData(registry?: BlockRegistry): CapabilityDigest
     tokens = undefined
   }
 
-  const blocks: CapabilityBlockDigest[] = reg
-    .list()
+  const blocks: CapabilityBlockDigest[] = filterDefinitions(reg.list(), opts)
     .slice()
     .sort((a, b) => a.type.localeCompare(b.type))
     .map((def) => ({
@@ -267,69 +290,85 @@ export function capabilityDigestData(registry?: BlockRegistry): CapabilityDigest
  * region name table, color roles, style vocabulary, motion presets, and a worked example
  * of a valid slide.
  */
-export function capabilityDigest(registry?: BlockRegistry): string {
-  const data = capabilityDigestData(registry)
+export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDetailOptions): string {
+  const data = capabilityDigestData(registry, opts)
+  // Filtered calls (tier 2 of the two-tier digest) return the block detail for the shortlist only:
+  // the shared vocabulary (roles, style, motion, layouts) is the unfiltered digest's job.
+  const filtered = !!opts && (opts.types !== undefined || opts.categories !== undefined)
   const lines: string[] = []
 
-  lines.push('# Slide block capabilities')
-  lines.push('')
-  lines.push(
-    'Generated from the live block library and slide layouts — do not hand-author a copy of ' +
-      'this document, it will drift. Every block below is a closed vocabulary entry: pick a ' +
-      '`type`, fill its declared slots, and never invent a region name, a slot, or a coordinate.'
-  )
-  lines.push('')
-
-  // ── Color roles ──
-  lines.push('## Color roles')
-  lines.push('')
-  lines.push('Use role names (e.g. `accent`, `text`) in slot values — never bare hex.')
-  lines.push('')
-  for (const cr of data.colorRoles) {
-    lines.push(`- **${cr.id}**: ${cr.description}`)
-  }
-  lines.push('')
-
-  // ── Style ──
-  lines.push('## Style')
-  lines.push('')
-  lines.push('BlockStyleSpec fields (all optional; absent = theme default):')
-  lines.push('')
-  for (const f of data.style.fields) {
-    lines.push(`- \`${f}\``)
-  }
-  lines.push('')
-  lines.push(`Gradient shape: \`${data.style.gradient}\``)
-  lines.push('')
-
-  // ── Motion ──
-  lines.push('## Motion')
-  lines.push('')
-  lines.push('Set `motion.preset` on any block. Every preset below plays (no-op excluded).')
-  lines.push('')
-  for (const mp of data.motion) {
-    const chainNote = mp.isChained ? ` (chains: ${mp.chain?.join(' → ')})` : ''
-    const ambientNote = mp.isAmbient ? ' (loops)' : ''
-    const staggerNote = mp.staggerMs ? `, stagger ${mp.staggerMs}ms` : ''
+  if (filtered) {
+    lines.push('# Block detail')
+    lines.push('')
     lines.push(
-      `- **${mp.id}** _${mp.family}_ — ${mp.defaultDurationMs}ms, triggers: ${mp.triggers.join(', ')}${staggerNote}${chainNote}${ambientNote}`
+      'Full slot tables for the shortlisted blocks. Pick a `type`, fill its declared slots, and ' +
+        'never invent a region name, a slot, or a coordinate.'
     )
+    lines.push('')
+  } else {
+    lines.push('# Slide block capabilities')
+    lines.push('')
+    lines.push(
+      'Generated from the live block library and slide layouts — do not hand-author a copy of ' +
+        'this document, it will drift. Every block below is a closed vocabulary entry: pick a ' +
+        '`type`, fill its declared slots, and never invent a region name, a slot, or a coordinate.'
+    )
+    lines.push('')
   }
-  lines.push('')
 
-  // ── Layouts ──
-  lines.push('## Layouts')
-  lines.push('')
-  lines.push('Region names belong to the layout — pick a `layout`, then only use the regions it lists.')
-  lines.push('')
-  lines.push('| Layout | Regions | Use when |')
-  lines.push('|---|---|---|')
-  for (const l of data.layouts) {
-    const regionList = l.regions.length ? l.regions.map((r) => `\`${r}\``).join(', ') : '_(none)_'
-    const useWhen = LAYOUT_USE_WHEN[l.id] ?? ''
-    lines.push(`| \`${l.id}\` (${l.name}) | ${regionList} | ${useWhen} |`)
+  if (!filtered) {
+    // ── Color roles ──
+    lines.push('## Color roles')
+    lines.push('')
+    lines.push('Use role names (e.g. `accent`, `text`) in slot values — never bare hex.')
+    lines.push('')
+    for (const cr of data.colorRoles) {
+      lines.push(`- **${cr.id}**: ${cr.description}`)
+    }
+    lines.push('')
+
+    // ── Style ──
+    lines.push('## Style')
+    lines.push('')
+    lines.push('BlockStyleSpec fields (all optional; absent = theme default):')
+    lines.push('')
+    for (const f of data.style.fields) {
+      lines.push(`- \`${f}\``)
+    }
+    lines.push('')
+    lines.push(`Gradient shape: \`${data.style.gradient}\``)
+    lines.push('')
+
+    // ── Motion ──
+    lines.push('## Motion')
+    lines.push('')
+    lines.push('Set `motion.preset` on any block. Every preset below plays (no-op excluded).')
+    lines.push('')
+    for (const mp of data.motion) {
+      const chainNote = mp.isChained ? ` (chains: ${mp.chain?.join(' → ')})` : ''
+      const ambientNote = mp.isAmbient ? ' (loops)' : ''
+      const staggerNote = mp.staggerMs ? `, stagger ${mp.staggerMs}ms` : ''
+      lines.push(
+        `- **${mp.id}** _${mp.family}_ — ${mp.defaultDurationMs}ms, triggers: ${mp.triggers.join(', ')}${staggerNote}${chainNote}${ambientNote}`
+      )
+    }
+    lines.push('')
+
+    // ── Layouts ──
+    lines.push('## Layouts')
+    lines.push('')
+    lines.push('Region names belong to the layout — pick a `layout`, then only use the regions it lists.')
+    lines.push('')
+    lines.push('| Layout | Regions | Use when |')
+    lines.push('|---|---|---|')
+    for (const l of data.layouts) {
+      const regionList = l.regions.length ? l.regions.map((r) => `\`${r}\``).join(', ') : '_(none)_'
+      const useWhen = LAYOUT_USE_WHEN[l.id] ?? ''
+      lines.push(`| \`${l.id}\` (${l.name}) | ${regionList} | ${useWhen} |`)
+    }
+    lines.push('')
+
   }
-  lines.push('')
 
   // ── Blocks ──
   lines.push('## Blocks')
@@ -338,7 +377,7 @@ export function capabilityDigest(registry?: BlockRegistry): string {
     const kindTag = b.kind ? ` [${b.kind}]` : ''
     lines.push(`### \`${b.type}\` — ${b.name}${kindTag}`)
     lines.push('')
-    lines.push(`${b.summary} _(family: ${b.family}; keywords: ${b.keywords.join(', ') || '—'})_`)
+    lines.push(filtered ? b.summary : `${b.summary} _(family: ${b.family}; keywords: ${b.keywords.join(', ') || '—'})_`)
     lines.push('')
     if (b.when) lines.push(`**When:** ${b.when}`)
     if (b.avoid) lines.push(`**Avoid:** ${b.avoid}`)
@@ -360,24 +399,135 @@ export function capabilityDigest(registry?: BlockRegistry): string {
     if (b.example) {
       lines.push('')
       lines.push('```json')
-      lines.push(JSON.stringify(b.example, null, 2))
+      // Filtered (tier-2) detail prints the example compactly: it is read by a model, not a person.
+      lines.push(filtered ? JSON.stringify(b.example) : JSON.stringify(b.example, null, 2))
       lines.push('```')
     }
     lines.push('')
   }
 
-  lines.push('## Worked example — a valid slide')
+  if (!filtered) {
+    lines.push('## Worked example — a valid slide')
+    lines.push('')
+    lines.push(
+      'Zero coordinates, zero colour values, zero font sizes. Region names come from the layout ' +
+        '(`two-column` → `title`, `left`, `right`); block types and slots come from the tables above.'
+    )
+    lines.push('')
+    lines.push('```json')
+    lines.push(JSON.stringify(data.example, null, 2))
+    lines.push('```')
+    lines.push('')
+
+  }
+
+  return lines.join('\n')
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Tier 1 — the compact catalog index                                              */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+function filterDefinitions(defs: BlockDefinition[], opts?: CapabilityDetailOptions): BlockDefinition[] {
+  if (!opts) return defs
+  return defs.filter((d) => {
+    if (opts.types && !opts.types.includes(d.type)) return false
+    if (opts.categories && !opts.categories.includes(d.category ?? 'structure')) return false
+    return true
+  })
+}
+
+/**
+ * Item range from the first *required* content slot that is a `list` or `series`: '3–8 items',
+ * '≤6 items', '≥2 items'. Optional slots (a sparkline, say) would mislead, so they are skipped.
+ * A minimum of 0 or 1 is dropped: it is implied by "at least one".
+ */
+function primaryRange(def: BlockDefinition): string | undefined {
+  for (const slot of Object.values(def.schema ?? {})) {
+    if (slot.role !== 'content' || !slot.required) continue
+    const t = slot.type
+    let min: number | undefined
+    let max: number | undefined
+    if (t.kind === 'list') {
+      min = t.min
+      max = t.max
+    } else if (t.kind === 'series') {
+      max = t.max
+    } else {
+      continue
+    }
+    if (min !== undefined && min <= 1) min = undefined
+    if (min !== undefined && max !== undefined) return `${min}–${max} items`
+    if (max !== undefined) return `≤${max} items`
+    if (min !== undefined) return `≥${min} items`
+    return undefined
+  }
+  return undefined
+}
+
+/**
+ * Structured form of the catalog index: one compact entry per block, sorted by category order
+ * then type. Blocks without a category are listed under 'structure', without a scope as 'element'.
+ */
+export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityIndexOptions): CapabilityIndexEntry[] {
+  const reg = registry ?? defaultBlockRegistry()
+  const rank = (c: BlockCategory) => BLOCK_CATEGORIES.indexOf(c)
+  return reg
+    .list()
+    .map((def) => ({ def, category: def.category ?? ('structure' as BlockCategory), scope: def.scope ?? ('element' as BlockScope) }))
+    .filter(({ category, scope }) => (!opts?.categories || opts.categories.includes(category)) && (!opts?.scopes || opts.scopes.includes(scope)))
+    .sort((a, b) => rank(a.category) - rank(b.category) || a.def.type.localeCompare(b.def.type))
+    .map(({ def, category, scope }) => {
+      const range = primaryRange(def)
+      return {
+        type: def.type,
+        category,
+        scope,
+        ...(range ? { range } : {}),
+        shortDescription: def.shortDescription ?? def.summary,
+        ...(def.related && def.related.length ? { related: [...def.related] } : {}),
+      }
+    })
+}
+
+/**
+ * Markdown catalog index, meant to be the planner's first look at the library: the picking rule,
+ * the scope rules, then one section per category and one line per block
+ * (`type · category · scope · range — shortDescription`). Full slot tables come from
+ * `capabilityDigest(registry, { types })` for the shortlist only.
+ */
+export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndexOptions): string {
+  const entries = capabilityIndexData(registry, opts)
+  const lines: string[] = []
+  lines.push('# Slide block index')
   lines.push('')
   lines.push(
-    'Zero coordinates, zero colour values, zero font sizes. Region names come from the layout ' +
-      '(`two-column` → `title`, `left`, `right`); block types and slots come from the tables above.'
+    'Choose the category from the relationship in the content, then the block. Dated → `timeline`; ' +
+      'ordered but undated → `process`; options against each other → `comparison`; numbers that need ' +
+      'axes → `chart`; one to four headline numbers → `metric`.'
   )
   lines.push('')
-  lines.push('```json')
-  lines.push(JSON.stringify(data.example, null, 2))
-  lines.push('```')
+  lines.push('Scope rules:')
+  lines.push('- `element`: one atom. Combine several on a slide or inside a container.')
+  lines.push('- `group`: a self-contained unit. One per region; may sit inside `tls.l.card` or `tls.l.section`.')
+  lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
   lines.push('')
-
+  lines.push('Line format: `type · category · scope · item range — what the viewer sees`. Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('')
+  for (const cat of BLOCK_CATEGORIES) {
+    const inCat = entries.filter((e) => e.category === cat)
+    if (!inCat.length) continue
+    lines.push(`## ${CATEGORY_INFO[cat].label} — ${CATEGORY_INFO[cat].description}`)
+    lines.push('')
+    for (const e of inCat) {
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''} — ${e.shortDescription}`)
+    }
+    lines.push('')
+  }
+  lines.push('## Icons')
+  lines.push('')
+  lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+  lines.push('')
   return lines.join('\n')
 }
 

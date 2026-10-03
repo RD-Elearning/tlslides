@@ -2,8 +2,9 @@
  * Block Inserter gallery component.
  *
  * B7 implementation — a docked-left panel (~400px) showing every registered block
- * as a card with a live preview thumbnail, name, and summary. Blocks are grouped
- * by family with tab navigation, and a search bar filters across all families.
+ * as a card with a live preview thumbnail, name, and shortDescription. Tabs are semantic
+ * categories (what a block is for), the family stays available as a filter in the search row,
+ * and a search bar filters across everything by name, shortDescription and keywords.
  *
  * Inserting happens via:
  *  - **Click** on a card → `onInsert(type)` (inset at viewport centre)
@@ -18,7 +19,8 @@ import * as React from 'react'
 import { styled } from '../../styles'
 import { useBlockRegistry } from '../../hooks'
 import { BlockPreview } from './BlockPreview'
-import type { BlockDefinition, BlockFamily } from '../../blocks/types'
+import { BLOCK_CATEGORIES, CATEGORY_INFO } from '../../blocks/types'
+import type { BlockCategory, BlockDefinition, BlockFamily } from '../../blocks/types'
 
 export interface BlockInserterProps {
   /** Called when a block is selected for insertion. */
@@ -41,6 +43,12 @@ const FAMILY_INFO: Record<BlockFamily, { name: string; icon: string }> = {
   live: { name: 'Live', icon: '⚡' },
 }
 
+const SCOPE_TITLE = {
+  element: 'One atom',
+  group: 'A self-contained unit that fills one region',
+  slide: 'Fills the whole content area; use it alone on a slide',
+}
+
 /** Width of each gallery card in CSS px. */
 const CARD_WIDTH = 160
 /** Height of each preview thumbnail in CSS px. */
@@ -55,54 +63,51 @@ const CARD_PADDING = 8
 export const BlockInserter: React.FC<BlockInserterProps> = ({ onInsert, onClose }) => {
   const blockRegistry = useBlockRegistry()
   const [searchQuery, setSearchQuery] = React.useState('')
-  const [activeFamily, setActiveFamily] = React.useState<BlockFamily | 'all'>('all')
+  const [activeCategory, setActiveCategory] = React.useState<BlockCategory | 'all'>('all')
+  const [familyFilter, setFamilyFilter] = React.useState<BlockFamily | 'all'>('all')
 
-  // Groups: family → def[]
-  const blocksByFamily = React.useMemo(() => {
-    if (!blockRegistry) return new Map<BlockFamily, BlockDefinition[]>()
-
-    const groups = new Map<BlockFamily, BlockDefinition[]>()
-    for (const def of blockRegistry.list()) {
-      const arr = groups.get(def.family) ?? []
-      arr.push(def)
-      groups.set(def.family, arr)
-    }
-    return groups
-  }, [blockRegistry])
-
-  // Families that have at least one block (for tab rendering).
-  // Drop 'live' from chips if it has 0 blocks (B7 plan).
-  const availableFamilies = Array.from(blocksByFamily.keys()).filter(
-    (f) => f !== 'live' || (blocksByFamily.get(f)?.length ?? 0) > 0,
+  // Groups: category → def[] (BLOCK_CATEGORIES order; uncategorised host blocks land in 'structure').
+  const blocksByCategory = React.useMemo(
+    () => blockRegistry?.listByCategory() ?? new Map<BlockCategory, BlockDefinition[]>(),
+    [blockRegistry],
   )
 
-  // Filtered blocks based on search + active family.
+  // Categories with at least one block, in canonical order. Empty categories are hidden.
+  const availableCategories = BLOCK_CATEGORIES.filter((c) => (blocksByCategory.get(c)?.length ?? 0) > 0)
+
+  // Families that have at least one block, for the developer filter.
+  const availableFamilies = React.useMemo(() => {
+    const set = new Set<BlockFamily>()
+    for (const def of blockRegistry?.list() ?? []) set.add(def.family)
+    return Array.from(set)
+  }, [blockRegistry])
+
+  // Filtered blocks based on search + active category + family filter.
   const filteredBlocks = React.useMemo(() => {
     if (!blockRegistry) return []
 
-    let all = blockRegistry.list()
+    let all =
+      activeCategory === 'all'
+        ? availableCategories.flatMap((c) => blocksByCategory.get(c) ?? [])
+        : blocksByCategory.get(activeCategory) ?? []
 
-    // Family filter
-    if (activeFamily !== 'all') {
-      all = all.filter((def) => def.family === activeFamily)
-    } else {
-      // Exclude 'live' family when showing 'all' if it's empty (per B7 plan).
-      all = all.filter((def) => def.family !== 'live' || (blocksByFamily.get('live')?.length ?? 0) > 0)
+    if (familyFilter !== 'all') {
+      all = all.filter((def) => def.family === familyFilter)
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       all = all.filter((def) => {
         if (def.name.toLowerCase().includes(query)) return true
-        if (def.summary?.toLowerCase().includes(query)) return true
+        if ((def.shortDescription ?? def.summary)?.toLowerCase().includes(query)) return true
         if (def.keywords?.some((k) => k.toLowerCase().includes(query))) return true
         return false
       })
     }
 
     return all
-  }, [blockRegistry, searchQuery, activeFamily, blocksByFamily])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blockRegistry, searchQuery, activeCategory, familyFilter, blocksByCategory])
 
   // Click-outside to close
   React.useEffect(() => {
@@ -140,30 +145,43 @@ export const BlockInserter: React.FC<BlockInserterProps> = ({ onInsert, onClose 
         className="tls-block-inserter"
         onClick={(e) => e.stopPropagation()}
       >
-        <InserterSearch
-          ref={searchRef}
-          placeholder="Search blocks..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+        <SearchRow>
+          <InserterSearch
+            ref={searchRef}
+            placeholder="Search blocks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <FamilySelect
+            aria-label="Filter by family"
+            title="Filter by family (developer)"
+            value={familyFilter}
+            onChange={(e) => setFamilyFilter(e.target.value as BlockFamily | 'all')}
+          >
+            <option value="all">All families</option>
+            {availableFamilies.map((family) => (
+              <option key={family} value={family}>
+                {FAMILY_INFO[family].name}
+              </option>
+            ))}
+          </FamilySelect>
+        </SearchRow>
 
         <FamilyTabs>
-          <FamilyTab
-            active={activeFamily === 'all'}
-            onClick={() => setActiveFamily('all')}
-          >
+          <FamilyTab active={activeCategory === 'all'} onClick={() => setActiveCategory('all')}>
             All
           </FamilyTab>
-          {availableFamilies.map((family) => {
-            const info = FAMILY_INFO[family]
-            const count = blocksByFamily.get(family)?.length ?? 0
+          {availableCategories.map((category) => {
+            const info = CATEGORY_INFO[category]
+            const count = blocksByCategory.get(category)?.length ?? 0
             return (
               <FamilyTab
-                key={family}
-                active={activeFamily === family}
-                onClick={() => setActiveFamily(family)}
+                key={category}
+                active={activeCategory === category}
+                title={info.description}
+                onClick={() => setActiveCategory(category)}
               >
-                {info.icon} {info.name} ({count})
+                {info.label} ({count})
               </FamilyTab>
             )
           })}
@@ -174,7 +192,7 @@ export const BlockInserter: React.FC<BlockInserterProps> = ({ onInsert, onClose 
             <NoResults>
               {searchQuery
                 ? `No blocks match "${searchQuery}"`
-                : 'No blocks in this family'}
+                : 'No blocks in this category'}
             </NoResults>
           ) : (
             <BlockGrid>
@@ -237,8 +255,17 @@ const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
         </PreviewPlaceholder>
       )}
       <CardText>
-        <CardName title={def.name}>{def.name}</CardName>
-        {def.summary && <CardSummary>{def.summary}</CardSummary>}
+        <CardNameRow>
+          <CardName title={def.name}>{def.name}</CardName>
+          {def.scope && def.scope !== 'element' && (
+            <ScopeBadge data-testid="scope-badge" title={SCOPE_TITLE[def.scope]}>
+              {def.scope === 'slide' ? 'Slide' : 'Group'}
+            </ScopeBadge>
+          )}
+        </CardNameRow>
+        {(def.shortDescription ?? def.summary) && (
+          <CardSummary title={def.shortDescription ?? def.summary}>{def.shortDescription ?? def.summary}</CardSummary>
+        )}
       </CardText>
     </Card>
   )
@@ -287,10 +314,10 @@ const InserterContainer = styled('div', {
 })
 
 const InserterSearch = styled('input', {
-  width: '100%',
+  flex: 1,
+  minWidth: 0,
   padding: '12px 16px',
   border: 'none',
-  borderBottom: '1px solid $border',
   fontSize: '14px',
   outline: 'none',
   backgroundColor: '$bg',
@@ -298,17 +325,38 @@ const InserterSearch = styled('input', {
   boxSizing: 'border-box',
 })
 
+const SearchRow = styled('div', {
+  display: 'flex',
+  alignItems: 'center',
+  borderBottom: '1px solid $border',
+  flexShrink: 0,
+})
+
+const FamilySelect = styled('select', {
+  margin: '0 12px 0 0',
+  padding: '4px 6px',
+  fontSize: '11px',
+  color: '$textMuted',
+  backgroundColor: '$bg',
+  border: '1px solid $border',
+  borderRadius: '4px',
+  flexShrink: 0,
+  maxWidth: '110px',
+})
+
 const FamilyTabs = styled('div', {
   display: 'flex',
+  flexWrap: 'wrap',
   gap: '4px',
   padding: '8px 12px',
   borderBottom: '1px solid $border',
-  overflowX: 'auto',
+  maxHeight: '104px',
+  overflowY: 'auto',
   flexShrink: 0,
 })
 
 const FamilyTab = styled('button', {
-  padding: '6px 12px',
+  padding: '4px 8px',
   borderRadius: '4px',
   border: '1px solid transparent',
   background: 'transparent',
@@ -342,7 +390,7 @@ const InserterContent = styled('div', {
 
 const BlockGrid = styled('div', {
   display: 'grid',
-  gridTemplateColumns: 'repeat(2, 1fr)',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: '8px',
   padding: '12px',
 })
@@ -355,6 +403,7 @@ const Card = styled('div', {
   border: '1px solid transparent',
   transition: 'border-color 0.15s, background 0.15s',
   boxSizing: 'border-box',
+  minWidth: 0,
 
   '&:hover': {
     borderColor: '$border',
@@ -394,23 +443,45 @@ const CardText = styled('div', {
   boxSizing: 'border-box',
 })
 
+const CardNameRow = styled('div', {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  marginBottom: '2px',
+  minWidth: 0,
+})
+
+const ScopeBadge = styled('span', {
+  flexShrink: 0,
+  padding: '0 5px',
+  borderRadius: '8px',
+  border: '1px solid $border',
+  fontSize: '9px',
+  lineHeight: '14px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.04em',
+  color: '$textMuted',
+})
+
 const CardName = styled('div', {
   fontWeight: 500,
   fontSize: '14px',
   color: '$text',
-  marginBottom: '2px',
+  minWidth: 0,
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
 })
 
+// Two lines, then an ellipsis: a shortDescription is a sentence fragment, too long for one line.
 const CardSummary = styled('div', {
   fontSize: '11px',
   color: '$textMuted',
   lineHeight: 1.3,
-  whiteSpace: 'nowrap',
   overflow: 'hidden',
-  textOverflow: 'ellipsis',
+  display: '-webkit-box',
+  '-webkit-line-clamp': 2,
+  '-webkit-box-orient': 'vertical',
 })
 
 const NoResults = styled('div', {

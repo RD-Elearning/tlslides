@@ -10,12 +10,13 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { capabilityDigest, capabilityDigestData } from './capability-digest'
+import { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
 import { deckSpecJsonSchema } from './deck-spec-json-schema'
 import { validateDeckSpec } from './validate-deck-spec'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks, BUILT_IN_BLOCKS } from './library'
 import { SLIDE_LAYOUTS } from './slide-layouts'
+import { BLOCK_CATEGORIES } from './types'
 import type { DeckSpec, BlockSpec } from './types'
 
 function freshBuiltInRegistry(): BlockRegistry {
@@ -439,41 +440,90 @@ describe('R7 — capability digest v2', () => {
     })
   })
 
-  describe('digest character budget', () => {
-    it('markdown digest is under 8000 tokens (approx 40k characters)', () => {
-      const markdown = capabilityDigest()
-      // R9/R10 grew the catalog from 25 to 35 blocks; measured 43,987 chars.
-      // Held to 52k for the same reason recorded on the structured-data test
-      // below. R7's remedy ("split per family") is the named follow-up.
-      // B4 + B5 (toggles + stat-card) grew the markdown to ~52.7k.
-      // P0.3: sharper describe.avoid text grew it to ~54.3k; P0.4 replaces both budgets with index/detail budgets.
-      const charBudget = 55000
-      expect(markdown.length).toBeLessThanOrEqual(charBudget)
+  // P0.4: the old full-digest budgets (54k markdown / 60k JSON) are gone. The unfiltered digest
+  // stays available and snapshot-tested, but no test caps its size any more: planners read the
+  // compact index (below) and fetch detail only for a shortlist. The budgets that matter now are
+  // `capabilityIndex` <= 20k chars (sized for 129 blocks) and detail <= 12k chars for 8 types.
+  describe('two-tier digest (P0.4)', () => {
+    const reg = freshBuiltInRegistry()
+
+    it('capabilityIndex lists every block exactly once and stays under 20k chars', () => {
+      const md = capabilityIndex(reg)
+      expect(md.length).toBeLessThanOrEqual(20000)
+      for (const def of BUILT_IN_BLOCKS) {
+        const lines = md.split('\n').filter((l) => l.startsWith(`${def.type} · `))
+        expect(lines).toHaveLength(1)
+        expect(lines[0]).toContain(`— ${def.shortDescription}`)
+      }
     })
 
-    it('structured data is under 8000 tokens (approx 32k characters as JSON)', () => {
-      const data = capabilityDigestData()
-      const json = JSON.stringify(data)
-      // 8k tokens × ~5 chars/token average = 40k chars.
-      // R9 raised this ceiling from 40k to 48k and R10 raised it to 52k: the
-      // catalog now stands at 35 blocks, each carrying a full slot table plus
-      // `describe.example` (which R7 requires in the structured data); the
-      // measured JSON is 48,522 chars. Every raise is recorded here on purpose —
-      // G2 added 8 blocks (donut, steps, page-number, icon-label + existing): digest grew from ~49k to ~54.5k.
-      // R7's stated remedy for further growth ("split per family") is the named
-      // follow-up and is better done once the catalog stops moving (R11–R16 add
-      // no blocks).
-      // B2 added `children` slot declarations to 8 layout containers (card, section,
-      // split, overlay, safe-area, sidebar, footer, repeater): digest grew from
-      // ~54.5k to ~56.1k.
-      // B4 added `toggles` slots (showTitle/showDivider on section, showKicker/showTitle/
-      // showSubtitle/showCta on hero, showLabel/showContext on big-stat,
-      // showKicker/showTitle/showBody on image-text, showDelta/showLabel/showSparkline
-      // on kpi-tile): digest grew to ~57.9k.
-      // B5 added tls.c.stat-card (composite with defineCompositeBlock): digest grew to ~59.9k.
-      // P0.3: sharper describe.avoid text grew it to ~61.5k; P0.4 replaces this budget.
-      const charBudget = 62500
-      expect(json.length).toBeLessThanOrEqual(charBudget)
+    it('index lines follow `type · category · scope[ · range] — shortDescription`', () => {
+      const md = capabilityIndex(reg)
+      expect(md).toContain('tls.c.feature-grid · list · group · 2–6 items — ')
+      expect(md).toContain('tls.t.title · heading · element — ')
+      expect(md).toContain('## Icons')
+      expect(md).toContain('Dated → `timeline`')
+    })
+
+    it('capabilityIndexData is structured and ordered by category', () => {
+      const data = capabilityIndexData(reg)
+      expect(data).toHaveLength(BUILT_IN_BLOCKS.length)
+      const first = data.find((e) => e.type === 'tls.c.kpi-row')!
+      expect(first).toEqual({
+        type: 'tls.c.kpi-row',
+        category: 'metric',
+        scope: 'group',
+        range: '2–5 items',
+        shortDescription: 'Equal-width row of KPI tiles',
+        related: ['tls.c.kpi-tile'],
+      })
+      const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))
+      expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
+    })
+
+    it('index filters by category and scope', () => {
+      expect(capabilityIndexData(reg, { categories: ['metric'] }).every((e) => e.category === 'metric')).toBe(true)
+      const slideOnly = capabilityIndexData(reg, { scopes: ['slide'] })
+      expect(slideOnly.length).toBeGreaterThan(0)
+      expect(slideOnly.every((e) => e.scope === 'slide')).toBe(true)
+      expect(capabilityIndex(reg, { categories: ['metric'] })).not.toContain('tls.t.title ·')
+    })
+
+    it('index is derived from the registry (a fake block shows up)', () => {
+      const r = freshBuiltInRegistry()
+      r.register({
+        type: 'zzz.fake.index', name: 'Fake', family: 'layout', tier: 'A', summary: 's', keywords: [],
+        category: 'timeline', scope: 'group', shortDescription: 'Fake dated events on an axis',
+        schema: {}, defaults: {}, size: { preferred: [100, 100], min: [10, 10] },
+        layout: () => ({ k: 'group', box: { x: 0, y: 0, width: 1, height: 1 }, children: [] }),
+        motion: { parts: [] },
+      } as any)
+      expect(capabilityIndex(r)).toContain('zzz.fake.index · timeline · group — Fake dated events on an axis')
+      expect(capabilityIndex(reg)).not.toContain('zzz.fake.index')
+    })
+
+    it('capabilityDigest(types) returns detail for only those types and stays under 12k for the 8 largest', () => {
+      const one = capabilityDigest(reg, { types: ['tls.t.title'] })
+      expect(one).toContain('### `tls.t.title`')
+      expect(one).not.toContain('### `tls.t.body`')
+      expect(one).not.toContain('## Color roles')
+      expect(capabilityDigestData(reg, { types: ['tls.t.title'] }).blocks).toHaveLength(1)
+
+      const sizes = BUILT_IN_BLOCKS.map((d) => ({ type: d.type, n: capabilityDigest(reg, { types: [d.type] }).length }))
+      const eight = sizes.sort((a, b) => b.n - a.n).slice(0, 8).map((x) => x.type)
+      expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12000)
+    })
+
+    it('capabilityDigest(categories) filters by category', () => {
+      const md = capabilityDigest(reg, { categories: ['chart'] })
+      expect(md).toContain('### `tls.d.bar`')
+      expect(md).not.toContain('### `tls.t.title`')
+    })
+
+    it('no-argument calls keep the full vocabulary sections', () => {
+      const md = capabilityDigest(reg)
+      expect(md).toContain('## Color roles')
+      expect(md).toContain('## Worked example')
     })
   })
 })

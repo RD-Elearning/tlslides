@@ -174,18 +174,43 @@ keyMessage, evidenceNeeded[], notesHint }] }] }`.
 - **The UI stops here by default.** Reordering, merging and rewording outline items is a text
   edit; regenerating from an edited outline costs one plan + one fill.
 
-### S2 · Plan — pick layouts and blocks per slide
+### S2 · Plan — pick layouts and blocks per slide (two-tier digest)
 
 **Output**: `DeckPlan = { theme, slides[{ key, layout, regions: Record<string, { type, why }[]>,
 motion: { profile, order[] } }] }` — types and reasons, **no props yet**.
 
-- Input is the outline slide, the filtered digest, the profile, and the plan of the previous two
-  slides (for rhythm). The model returns block *types* per region with a one-line `why`.
+The block catalog is too large to show in full on every call (about 129 blocks at the end of the
+block-library plan, far past a sensible prompt budget), so S2 runs in two sub-steps over a
+two-tier digest. Both tiers are generated from the live registry
+(`packages/tldraw/src/blocks/capability-digest.ts`), never hand-written.
+
+- **S2a · Pick.** Input is the outline slide, the profile, the plan of the previous two slides
+  (for rhythm) and the **catalog index** (`capabilityIndex()` as markdown or
+  `capabilityIndexData()` as JSON). The index is small (about 100 chars per block, at most 20k
+  chars for the whole catalog, enforced by `capability-digest.spec.ts`): the picking rule, the
+  scope rules, then one line per block grouped by category,
+  `type · category · scope · item range — shortDescription`. The model first names the
+  **relationship in the content** (dated, ordered, options against each other, numbers with axes,
+  headline numbers), which selects a category, then picks block types from that category. It
+  returns block *types* per region with a one-line `why`, plus a shortlist of any other types it
+  wants detail for. Callers may narrow the index up front by profile
+  (`capabilityIndex(reg, { categories, scopes })`), e.g. a lecture profile hides `brand`.
+- **S2b · Detail for the shortlist.** For the types named in S2a, the planner (or the fill stage
+  directly) loads `capabilityDigest(reg, { types })`: full slot tables, `when`/`avoid` and a
+  compact example for those blocks only (at most 12k chars for any 8 types). Layout region
+  tables, colour roles, style and motion vocabulary stay in the unfiltered
+  `capabilityDigest(reg)`, which is still available but is no longer size-capped by a test.
+  If the detail shows that a pick does not fit (the item count is outside the range, or `avoid`
+  names a better sibling listed in `related`), the model may swap the type once before fill.
+- **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
+
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix
   here; the fill stage can then run per slide in parallel with a small prompt; and the `why`
   is what a user sees when they ask "why a chart here?".
 - Deterministic post-checks: every `type` exists in the registry, every region name exists in the
-  layout, `maxConsecutiveSame` holds, density budget is plausible from the block mix. Failures go
+  layout, `maxConsecutiveSame` holds, density budget is plausible from the block mix, and no
+  `slide`-scope block shares a region with other content (the validator also warns with
+  `block/scope-nested` when a slide-scope block is nested inside another block). Failures go
   back as findings in the same call chain (one repair round, then fall back to the profile's
   `preferred` layout).
 
