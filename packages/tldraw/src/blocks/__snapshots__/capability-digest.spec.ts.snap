@@ -387,6 +387,63 @@ Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(fa
 }
 \`\`\`
 
+### \`tls.c.dashboard\` — Dashboard
+
+KPI tiles, one chart and an insight note on one slide. _(family: composite; keywords: dashboard, kpi, overview, monthly review, status, results, metrics)_
+
+**When:** Performance overview: monthly review, project status, business results.
+**Avoid:** One number: tls.c.big-stat. One chart with an explanation: tls.c.chart-insight.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kpis\` | yes | list of object (label, value, delta, sparkline, polarity, format) (2–4 items) | Each: label!, value!, delta, sparkline[], polarity, format. |
+| \`chart\` | yes | object (kind, categories, series) | Fields: kind, categories, series[{name, values}]. bar/pie/donut use series[0] only. |
+| \`insight\` | no | text (max 160 chars) | One takeaway sentence. |
+| \`layout\` | no | enum: kpis-top \\\\| kpis-left |  |
+| \`chartRatio\` | no | enum: 2:1 \\\\| 1:1 | Chart width vs insight width. |
+| \`showInsight\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_dashboard\\",
+  \\"type\\": \\"tls.c.dashboard\\",
+  \\"props\\": {
+    \\"kpis\\": [
+      {
+        \\"label\\": \\"Revenue\\",
+        \\"value\\": 4200000,
+        \\"delta\\": 12.5,
+        \\"format\\": \\"compact\\"
+      },
+      {
+        \\"label\\": \\"NPS\\",
+        \\"value\\": 62,
+        \\"delta\\": 4
+      }
+    ],
+    \\"chart\\": {
+      \\"kind\\": \\"line\\",
+      \\"categories\\": [
+        \\"Jan\\",
+        \\"Feb\\",
+        \\"Mar\\"
+      ],
+      \\"series\\": [
+        {
+          \\"name\\": \\"Revenue\\",
+          \\"values\\": [
+            3.1,
+            3.6,
+            4.2
+          ]
+        }
+      ]
+    },
+    \\"insight\\": \\"Revenue grew every month.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.divider\` — Section Divider
 
 Section break: big section number, title and one-line intro. _(family: composite; keywords: divider, section, chapter, part, break, agenda item, transition slide)_
@@ -4195,7 +4252,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 111,
+  "blockCount": 112,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4204,6 +4261,7 @@ Object {
     "tls.c.closing",
     "tls.c.comparison",
     "tls.c.cover",
+    "tls.c.dashboard",
     "tls.c.divider",
     "tls.c.feature-grid",
     "tls.c.hero",

@@ -9,7 +9,7 @@ import { CHART_KINDS } from '../_chart'
 import { depthOk, layoutAt, hasPart, registry, compileInRegion } from '../composite-test'
 import { lintParts, specNodes } from '../_kit'
 
-standardBlockSuite(tlsCChartInsight, { noCapacity: true })
+standardBlockSuite(tlsCChartInsight, { withRegistry: true, noCapacity: true })
 
 const EX = tlsCChartInsight.describe!.example.props as Record<string, any>
 const chartOf = (kind: string) => ({
@@ -46,7 +46,7 @@ describe('tls.c.chart-insight', () => {
 
   it.each(CHART_KINDS.map((k) => [k]))('DOM and SVG agree for a %s chart', async (kind) => {
     const { assertParity } = await import('../../../parity-harness')
-    await assertParity(tlsCChartInsight, { ...(tlsCChartInsight.defaults as any), chart: chartOf(kind) }, { width: 960, height: 540 })
+    await assertParity(tlsCChartInsight, { ...(tlsCChartInsight.defaults as any), chart: chartOf(kind) }, { width: 960, height: 540 }, undefined, { registry: registry() })
   }, 60000)
 
   it('the source toggle removes exactly the source line', () => {

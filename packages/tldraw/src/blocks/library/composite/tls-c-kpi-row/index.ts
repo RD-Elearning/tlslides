@@ -61,7 +61,7 @@ export const tlsCKpiRow: BlockDefinition = {
   category: 'metric',
   scope: 'group',
   shortDescription: 'Equal-width row of KPI tiles',
-  related: ['tls.c.kpi-tile'],
+  related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
   describe: {
     when: 'Use to display 2–5 KPI metrics side-by-side in a row. Good for dashboards and summary slides.',
     avoid: 'Do not use for a single KPI (use tls.c.kpi-tile) or for more than 5 KPIs (split across slides).',

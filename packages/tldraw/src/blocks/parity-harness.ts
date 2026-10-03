@@ -41,6 +41,7 @@ import { renderNodeToSvg } from './render-svg'
 import { createLayoutContext } from './layout'
 import { layoutBlock } from './layout/layout-child'
 import { resolveTokens } from './tokens'
+import type { BlockRegistry } from './registry'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default test fixtures                                                           */
@@ -390,13 +391,16 @@ export async function assertParity(
   props: Record<string, unknown>,
   box: { width: number; height: number },
   _pageOrWorker?: unknown,
-  options?: { svgOverride?: string },
+  options?: { svgOverride?: string; registry?: BlockRegistry },
 ): Promise<void> {
-  // 1. Create layout context and call layout
+  // 1. Create layout context and call layout. A composite lays its children out through
+  //    `ctx.layoutChild`, which is an empty placeholder without a registry: pass `options.registry`
+  //    for those blocks, or the probe compares two empty trees.
   const ctx = createLayoutContext({
     box,
     tokens: TEST_TOKENS,
     surface: TEST_SURFACE,
+    ...(options?.registry ? { registry: options.registry } : {}),
   })
   const node = layoutBlock(definition, props, ctx)
 

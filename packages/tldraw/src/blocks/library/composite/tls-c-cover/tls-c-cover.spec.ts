@@ -7,7 +7,7 @@ import { standardBlockSuite, absoluteLeaves, leavesOf, assertContained } from '.
 import { collectParts } from '../../layout/test-helpers'
 import { depthOk, layoutAt, hasPart, slideScopeCompiles } from '../composite-test'
 
-standardBlockSuite(tlsCCover, { noCapacity: true })
+standardBlockSuite(tlsCCover, { withRegistry: true, noCapacity: true })
 
 const EX = tlsCCover.describe!.example.props as Record<string, unknown>
 const textOf = (tree: any, part: string) =>

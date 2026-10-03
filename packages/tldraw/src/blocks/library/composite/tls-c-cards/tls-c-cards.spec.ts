@@ -14,7 +14,7 @@ const FOUR = [
   { icon: 'users', number: '04', image: '/demo/photo-4.svg', title: 'Fourth', text: 'And one more.' },
 ]
 
-standardBlockSuite(tlsCCards, { overflowProps: { cards: [...FOUR, ...FOUR] } })
+standardBlockSuite(tlsCCards, { withRegistry: true, overflowProps: { cards: [...FOUR, ...FOUR] } })
 
 const EX = tlsCCards.describe!.example.props as Record<string, unknown>
 const bgs = (t: any) => leavesOf(t, 'card').filter((l) => l.k === 'rect')

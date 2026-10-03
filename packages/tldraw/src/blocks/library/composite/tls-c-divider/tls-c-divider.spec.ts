@@ -9,7 +9,7 @@ import { contrastRatio } from '../../../color-math'
 import { lumOf } from '../../text/_engine/color'
 import { depthOk, layoutAt, hasPart, slideScopeCompiles } from '../composite-test'
 
-standardBlockSuite(tlsCDivider, { noCapacity: true })
+standardBlockSuite(tlsCDivider, { withRegistry: true, noCapacity: true })
 
 const EX = tlsCDivider.describe!.example.props as Record<string, unknown>
 

@@ -141,7 +141,7 @@ const composite = defineCompositeBlock<ChartInsightProps>({
   category: 'chart',
   scope: 'group',
   shortDescription: 'Chart with a highlighted takeaway beside it and a source line',
-  related: ['tls.t.takeaway', 'tls.d.line'],
+  related: ['tls.c.dashboard', 'tls.t.takeaway'],
   schema,
   defaults,
   size: { preferred: [1500, 560], min: [640, 360] },

@@ -8,7 +8,7 @@ import { collectParts } from '../../layout/test-helpers'
 import { makeCtx } from '../../layout/test-helpers'
 import { depthOk, layoutAt, hasPart, registry, slideScopeCompiles } from '../composite-test'
 
-standardBlockSuite(tlsCClosing, { overflowProps: { contacts: ['a', 'b', 'c', 'd', 'e', 'f'] } })
+standardBlockSuite(tlsCClosing, { withRegistry: true, overflowProps: { contacts: ['a', 'b', 'c', 'd', 'e', 'f'] } })
 
 const EX = tlsCClosing.describe!.example.props as Record<string, unknown>
 const textOf = (tree: any, part: string) =>

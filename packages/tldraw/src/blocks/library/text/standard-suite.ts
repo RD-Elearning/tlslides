@@ -117,6 +117,8 @@ export interface SuiteOpts {
   noCapacity?: boolean
   /** Skip the browser parity probe. */
   noParity?: boolean
+  /** Give the parity probe a registry (needed by composites that use `ctx.layoutChild`). */
+  withRegistry?: boolean
   /** Props merged over defaults for the containment check (defaults to none). */
   containProps?: Record<string, unknown>
 }
@@ -231,8 +233,9 @@ export function standardBlockSuite(def: BlockDefinition, opts: SuiteOpts = {}): 
     if (!opts.noParity) {
       it('DOM and SVG agree at medium size (parity probe)', async () => {
         const { assertParity } = await import('../../parity-harness')
-        await assertParity(def, def.defaults as any, { width: 960, height: 540 })
-        await assertParity(def, def.describe!.example.props as any, { width: 960, height: 540 })
+        // `withRegistry`: composites lay children out through `ctx.layoutChild`, empty without a registry.
+        await assertParity(def, def.defaults as any, { width: 960, height: 540 }, undefined, opts.withRegistry ? { registry: reg } : undefined)
+        await assertParity(def, def.describe!.example.props as any, { width: 960, height: 540 }, undefined, opts.withRegistry ? { registry: reg } : undefined)
       }, 60000)
     }
   })
