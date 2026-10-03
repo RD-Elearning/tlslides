@@ -3141,6 +3141,1019 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_29",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_29_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: tree and pyramid",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_29_tree",
+            "type": "tls.g.tree",
+            "props": {
+              "root": {
+                "label": "CEO",
+                "sub": "Strategy",
+                "children": [
+                  {
+                    "label": "Product",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Design"
+                      },
+                      {
+                        "label": "Research"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Engineering",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Platform"
+                      },
+                      {
+                        "label": "Apps"
+                      },
+                      {
+                        "label": "Data"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Growth",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Marketing"
+                      },
+                      {
+                        "label": "Sales"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "direction": "TB",
+              "nodeStyle": "card"
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_29_pyr",
+            "type": "tls.g.pyramid",
+            "props": {
+              "levels": [
+                {
+                  "label": "Self-actualisation",
+                  "text": "Realise your potential"
+                },
+                {
+                  "label": "Esteem",
+                  "text": "Respect and recognition"
+                },
+                {
+                  "label": "Belonging",
+                  "text": "Friends, family, community"
+                },
+                {
+                  "label": "Safety",
+                  "text": "Security and stability"
+                },
+                {
+                  "label": "Physiological",
+                  "text": "Food, water, sleep"
+                }
+              ],
+              "notes": "side"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_30",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_30_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: org chart, left to right",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_30_tree",
+            "type": "tls.g.tree",
+            "props": {
+              "root": {
+                "label": "Company",
+                "sub": "Holding",
+                "children": [
+                  {
+                    "label": "Europe",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "Germany"
+                      },
+                      {
+                        "label": "France"
+                      },
+                      {
+                        "label": "Italy"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Americas",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "USA"
+                      },
+                      {
+                        "label": "Brazil"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Asia",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "Japan"
+                      },
+                      {
+                        "label": "India"
+                      },
+                      {
+                        "label": "Vietnam"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "direction": "LR",
+              "nodeStyle": "pill"
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_31",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_31_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: effort and impact",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_31_matrix",
+            "type": "tls.g.matrix-2x2",
+            "props": {
+              "xAxis": {
+                "low": "Low effort",
+                "high": "High effort",
+                "title": "Effort"
+              },
+              "yAxis": {
+                "low": "Low impact",
+                "high": "High impact",
+                "title": "Impact"
+              },
+              "quadrants": [
+                {
+                  "label": "Quick wins",
+                  "text": "Do these first"
+                },
+                {
+                  "label": "Big bets",
+                  "text": "Plan and fund"
+                },
+                {
+                  "label": "Fill-ins",
+                  "text": "Only if time allows"
+                },
+                {
+                  "label": "Money pits",
+                  "text": "Avoid"
+                }
+              ],
+              "items": [
+                {
+                  "label": "Onboarding",
+                  "x": 0.2,
+                  "y": 0.8
+                },
+                {
+                  "label": "New pricing",
+                  "x": 0.7,
+                  "y": 0.78
+                },
+                {
+                  "label": "Dark mode",
+                  "x": 0.3,
+                  "y": 0.3
+                },
+                {
+                  "label": "Rewrite",
+                  "x": 0.85,
+                  "y": 0.2
+                }
+              ],
+              "highlight": "TL"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_32",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_32_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: SWOT",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_32_swot",
+            "type": "tls.g.swot",
+            "props": {
+              "strengths": [
+                "Strong brand",
+                "Loyal customers",
+                "Lean team"
+              ],
+              "weaknesses": [
+                "Small budget",
+                "One key supplier"
+              ],
+              "opportunities": [
+                "New markets",
+                "Partner channels",
+                "AI tooling"
+              ],
+              "threats": [
+                "New entrants",
+                "Price pressure"
+              ],
+              "style": "tinted"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_33",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_33_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: pros and cons, venn",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_33_pc",
+            "type": "tls.g.pros-cons",
+            "props": {
+              "pros": [
+                "Faster to launch",
+                "Lower running cost",
+                "Scales with demand"
+              ],
+              "cons": [
+                "Less control",
+                "Vendor lock-in"
+              ],
+              "verdict": "Worth it if speed matters more than control.",
+              "style": "cards"
+            },
+            "motion": {
+              "preset": "split-in",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_33_venn",
+            "type": "tls.g.venn",
+            "props": {
+              "sets": [
+                {
+                  "label": "Skills",
+                  "text": "What we are good at"
+                },
+                {
+                  "label": "Passion",
+                  "text": "What we love"
+                },
+                {
+                  "label": "Market",
+                  "text": "What people pay for"
+                }
+              ],
+              "overlap": "Sweet spot",
+              "pairOverlaps": [
+                "Craft",
+                "Demand",
+                "Career"
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_34",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_34_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: diagrams nested in cards",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_34_cardl",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_34_tl",
+                  "type": "tls.g.timeline",
+                  "props": {
+                    "events": [
+                      {
+                        "date": "2022",
+                        "title": "Founded"
+                      },
+                      {
+                        "date": "2023",
+                        "title": "Launch"
+                      },
+                      {
+                        "date": "2025",
+                        "title": "Scale"
+                      }
+                    ],
+                    "axis": "horizontal"
+                  },
+                  "motion": {
+                    "preset": "draw-axis-then-nodes",
+                    "order": 2
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_34_cardr",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_34_fn",
+                  "type": "tls.g.funnel",
+                  "props": {
+                    "stages": [
+                      {
+                        "label": "Aware"
+                      },
+                      {
+                        "label": "Interested"
+                      },
+                      {
+                        "label": "Customer"
+                      }
+                    ],
+                    "notes": "inside"
+                  },
+                  "motion": {
+                    "preset": "stagger-children",
+                    "order": 2
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_35",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_35_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: SWOT with big letters",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_35_swot",
+            "type": "tls.g.swot",
+            "props": {
+              "strengths": [
+                "Strong brand",
+                "Loyal customers"
+              ],
+              "weaknesses": [
+                "Small budget",
+                "One supplier"
+              ],
+              "opportunities": [
+                "New markets",
+                "Partners"
+              ],
+              "threats": [
+                "New entrants",
+                "Price pressure"
+              ],
+              "style": "outline",
+              "letters": true
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_36",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_36_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 relationship: hub and spoke",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_36_hub",
+            "type": "tls.g.hub-spoke",
+            "props": {
+              "hub": {
+                "label": "Platform",
+                "icon": "layers"
+              },
+              "spokes": [
+                {
+                  "label": "Web app",
+                  "text": "Customer front door",
+                  "icon": "globe"
+                },
+                {
+                  "label": "Mobile",
+                  "text": "iOS and Android",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Payments",
+                  "text": "Cards and invoices",
+                  "icon": "credit-card"
+                },
+                {
+                  "label": "Analytics",
+                  "text": "Dashboards",
+                  "icon": "chart-bar"
+                },
+                {
+                  "label": "Support",
+                  "text": "Help desk",
+                  "icon": "message"
+                },
+                {
+                  "label": "Partners",
+                  "text": "Public API",
+                  "icon": "handshake"
+                }
+              ],
+              "layout": "circle",
+              "connector": "arrow-out"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_36_hub2",
+            "type": "tls.g.hub-spoke",
+            "props": {
+              "hub": {
+                "label": "Core"
+              },
+              "spokes": [
+                {
+                  "label": "Web app",
+                  "text": "Customer front door",
+                  "icon": "globe"
+                },
+                {
+                  "label": "Mobile",
+                  "text": "iOS and Android",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Payments",
+                  "text": "Cards and invoices",
+                  "icon": "credit-card"
+                },
+                {
+                  "label": "Analytics",
+                  "text": "Dashboards",
+                  "icon": "chart-bar"
+                },
+                {
+                  "label": "Support",
+                  "text": "Help desk",
+                  "icon": "message"
+                }
+              ],
+              "layout": "half",
+              "connector": "line"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_37",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_37_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: layers and breakdown",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_37_layers",
+            "type": "tls.g.layers",
+            "props": {
+              "layers": [
+                {
+                  "label": "Application",
+                  "text": "What users touch",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Services",
+                  "text": "Business logic and APIs",
+                  "icon": "server"
+                },
+                {
+                  "label": "Data",
+                  "text": "Storage and pipelines",
+                  "icon": "database"
+                },
+                {
+                  "label": "Infrastructure",
+                  "text": "Compute, network, security",
+                  "icon": "cloud"
+                }
+              ],
+              "style": "perspective",
+              "notes": "side"
+            },
+            "motion": {
+              "preset": "reveal-down",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_37_bd",
+            "type": "tls.g.breakdown",
+            "props": {
+              "whole": {
+                "label": "Total cost",
+                "value": "$120k"
+              },
+              "parts": [
+                {
+                  "label": "People",
+                  "value": "$70k",
+                  "note": "Four engineers"
+                },
+                {
+                  "label": "Cloud",
+                  "value": "$30k",
+                  "note": "Hosting and data"
+                },
+                {
+                  "label": "Tools",
+                  "value": "$20k"
+                }
+              ],
+              "direction": "LR",
+              "showShare": true
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_38",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_38_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 comparison: before and after",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_38_ba",
+            "type": "tls.g.before-after",
+            "props": {
+              "before": {
+                "label": "Before",
+                "title": "Manual reports",
+                "text": "Copy and paste data every Monday. Three hours a week, and the numbers are stale by Tuesday."
+              },
+              "after": {
+                "label": "After",
+                "title": "Live dashboard",
+                "text": "Always up to date and shared with one link. Nobody builds a report by hand any more."
+              },
+              "arrow": "arrow",
+              "emphasis": "after"
+            },
+            "motion": {
+              "preset": "split-in",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_39",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_39_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: mind map",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_39_mm",
+            "type": "tls.g.mindmap",
+            "props": {
+              "center": "Launch plan",
+              "branches": [
+                {
+                  "label": "Product",
+                  "children": [
+                    "Scope",
+                    "Quality",
+                    "Roadmap"
+                  ]
+                },
+                {
+                  "label": "Marketing",
+                  "children": [
+                    "Channels",
+                    "Message"
+                  ]
+                },
+                {
+                  "label": "Sales",
+                  "children": [
+                    "Pricing",
+                    "Pipeline",
+                    "Partners"
+                  ]
+                },
+                {
+                  "label": "Support",
+                  "children": [
+                    "Docs",
+                    "Training"
+                  ]
+                },
+                {
+                  "label": "People",
+                  "children": [
+                    "Hiring",
+                    "Onboarding"
+                  ]
+                }
+              ],
+              "balance": "both",
+              "curve": true
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_40",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_40_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 relationship: bracket and iceberg",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_40_br",
+            "type": "tls.g.bracket",
+            "props": {
+              "label": "Core team",
+              "items": [
+                "Product lead",
+                "Tech lead",
+                "Design lead",
+                "Data lead"
+              ],
+              "side": "right",
+              "style": "brace"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_40_ice",
+            "type": "tls.g.iceberg",
+            "props": {
+              "above": {
+                "label": "What we see",
+                "items": [
+                  "Late deliveries",
+                  "Rising churn"
+                ]
+              },
+              "below": {
+                "label": "What causes it",
+                "items": [
+                  "Unclear ownership",
+                  "Manual handoffs",
+                  "Old tooling",
+                  "No shared metrics"
+                ]
+              },
+              "waterline": "third"
+            },
+            "motion": {
+              "preset": "reveal-down",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_41",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_41_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 decoration: arrows",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_41_a1",
+            "type": "tls.g.arrow",
+            "props": {
+              "label": "Then",
+              "kind": "curved",
+              "direction": "right",
+              "heads": "end",
+              "weight": "md",
+              "tone": "accent"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_41_a2",
+            "type": "tls.g.arrow",
+            "props": {
+              "label": "Feedback",
+              "kind": "elbow",
+              "direction": "right",
+              "heads": "both",
+              "weight": "lg",
+              "tone": "text"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 3
+            }
+          }
+        ]
+      }
     }
   ]
 }

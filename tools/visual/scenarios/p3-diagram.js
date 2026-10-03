@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 /**
- * L3 — the P3 demo slides (process, cycle, funnel, flow, timeline, roadmap, milestones) of colorful-blocks-demo. Steps to each
+ * L3 — the P3 demo slides (process, timeline, hierarchy, strategy) of colorful-blocks-demo. Steps to each
  * slide id listed in SLIDES with reduced motion, shoots it at 1x, and a cropped 2x of the same
  * slide so labels can be inspected.
  *
@@ -13,7 +13,7 @@ const DECK = require(
   path.join(__dirname, '..', '..', '..', 'examples', 'nextjs-sample', 'data', 'decks', 'colorful-blocks-demo.json')
 )
 const SHOTS = path.join(__dirname, '..', 'shots')
-const WANT = (process.env.P3_SLIDES || 'sl_22,sl_23,sl_24,sl_25,sl_26,sl_27,sl_28').split(',')
+const WANT = (process.env.P3_SLIDES || 'sl_22,sl_23,sl_24,sl_25,sl_26,sl_27,sl_28,sl_29,sl_30,sl_31,sl_32,sl_33,sl_34,sl_35,sl_36,sl_37,sl_38,sl_39,sl_40,sl_41').split(',')
 
 module.exports = {
   base: 'http://localhost:5433',
