@@ -1,6 +1,6 @@
 # tlslides
 
-A fork of tldraw (1.9.x snapshot) with a "Deck"/slide-navigation layer added on top. Yarn Classic
+A fork of tldraw (1.9.x snapshot) with a "Deck"/slide-navigation layer added on top. pnpm
 workspaces + Turborepo monorepo. Full onboarding docs:
 - **[guides/architecture.md](guides/architecture.md)** — what this repo is, monorepo layout, key
   gotchas about the built package output.

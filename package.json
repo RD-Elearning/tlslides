@@ -25,12 +25,12 @@
     "start": "turbo run start --log-order=stream --parallel",
     "start:all": "turbo run start:all --log-order=stream --parallel",
     "start:core": "turbo run start:core --log-order=stream --parallel",
-    "start:www": "turbo run start --parallel & cd apps/www && yarn dev",
+    "start:www": "turbo run start --parallel & cd apps/www && pnpm dev",
     "start:electron": "turbo run start:electron --log-order=stream --parallel",
     "start:vscode": "code apps/vscode/extension & turbo run start:vscode --parallel; ",
-    "version": "yarn changeset version",
+    "version": "pnpm changeset version",
     "changeset": "changeset",
-    "fix:style": "yarn run prettier ./packages/core/src --write && yarn run prettier ./packages/tldraw/src --write",
+    "fix:style": "pnpm run prettier ./packages/core/src --write && pnpm run prettier ./packages/tldraw/src --write",
     "turbo": "turbo",
     "test": "turbo run test --log-order=stream",
     "test:ci": "turbo run test:ci --log-order=stream",
@@ -78,7 +78,7 @@
       "pre-push": "fix:style && eslint && test"
     }
   },
-  "packageManager": "yarn@1.22.17",
+  "packageManager": "pnpm@12.8.1",
   "dependencies": {
     "@changesets/cli": "^2.20.0"
   }

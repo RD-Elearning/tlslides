@@ -1,6 +1,6 @@
 # tlslides
 
-A fork of tldraw (1.9.x snapshot) with a "Deck"/slide-navigation layer added on top. Yarn Classic
+A fork of tldraw (1.9.x snapshot) with a "Deck"/slide-navigation layer added on top. pnpm
 workspaces + Turborepo monorepo. Full onboarding docs:
 - **[guides/architecture.md](guides/architecture.md)** — what this repo is, monorepo layout, key
   gotchas about the built package output.
@@ -55,8 +55,10 @@ them.
 Key things not to relearn the hard way:
 - `@tlslides/tldraw` / `@tlslides/core` are **not published to npm** — only usable by building
   this repo from source.
-- The repo is pinned to `yarn@1.22.17` via `packageManager` in `package.json`; using pnpm instead
-  requires the workarounds in `guides/development.md`.
+- The repo is pinned to `pnpm@12.8.1` via `packageManager` in `package.json` (user bachx's own pnpm + uv, no
+  root-owned installs). Run `COREPACK_ENABLE_STRICT=0 pnpm install`; jest/tsc binaries are hoisted to the root
+  `node_modules/.bin`. Parity specs need `node node_modules/playwright/cli.js install chromium-headless-shell`.
+  Python (`ppt-master/`) uses `uv venv .venv && uv pip install -r requirements.txt`.
 - `packages/tldraw/dist` ships **transpiled** JS as of Phase 9 (`React.createElement`, no JSX), so
   a consumer no longer needs `transpilePackages` / `next-transpile-modules` — `examples/nextjs-
   sample` deliberately has no such config, which is what proves it. Before Phase 9 it shipped raw

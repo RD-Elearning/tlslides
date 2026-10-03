@@ -16,14 +16,20 @@ jobs:
           restore-keys: |
             turbo-${{ github.job }}-${{ github.ref_name }}-
 
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
       # install modules
       - name: Install modules
-        run: yarn
+        run: pnpm install --frozen-lockfile
 
       # build
       - name: Build Packages
-        run: yarn build:packages --cache-dir=".turbo"
+        run: pnpm build:packages --cache-dir=".turbo"
 
       # run unit tests
       - name: Jest Annotations & Coverage
-        run: yarn test:ci
+        run: pnpm test:ci

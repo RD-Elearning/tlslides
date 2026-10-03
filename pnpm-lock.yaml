@@ -436,6 +436,9 @@ importers:
       '@tlslides/tldraw':
         specifier: workspace:*
         version: link:../../packages/tldraw
+      gsap:
+        specifier: ^3.12.0
+        version: 3.15.0
       next:
         specifier: ^15.0.0
         version: 15.5.24(@babel/core@7.29.7(supports-color@9.4.0))(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -4877,6 +4880,9 @@ packages:
   growl@1.10.5:
     resolution: {integrity: sha512-qBr4OuELkhPenW6goKVXiv47US3clb3/IbuWF9KNKEijAy9oeHxU9IgzjvJhHkUzhaj7rOUD7+YGWqUjLp5oSA==}
     engines: {node: '>=4.x'}
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   hard-rejection@2.1.0:
     resolution: {integrity: sha512-VIZB+ibDhx7ObhAe7OVtoEbuP4h/MuOTHJ+J8h/eBXotJYl0fBgR72xDFCKgIh22OJZIOVNxBMWuhAr10r8HdA==}
@@ -13450,6 +13456,8 @@ snapshots:
   graphemer@1.4.0: {}
 
   growl@1.10.5: {}
+
+  gsap@3.15.0: {}
 
   hard-rejection@2.1.0: {}
 
