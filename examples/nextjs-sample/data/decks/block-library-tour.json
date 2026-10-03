@@ -1,0 +1,1551 @@
+{
+  "version": 1,
+  "id": "block-library-tour",
+  "title": "Block Library Tour",
+  "theme": "coral-pop",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "tl_01",
+      "layout": "blank",
+      "role": "cover",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_01",
+            "type": "tls.c.cover",
+            "props": {
+              "kicker": "Lecture 1",
+              "title": "Introduction to Applied Statistics",
+              "subtitle": "From data to decisions in six weeks",
+              "meta": "Dr. Tran Thi Lan · September 2026",
+              "image": "/demo/photo-1.svg",
+              "alt": "Orange hills at sunrise",
+              "logo": "/demo/logo-1.svg",
+              "variant": "split"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_02",
+      "layout": "blank",
+      "role": "cover",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_02",
+            "type": "tls.c.cover",
+            "props": {
+              "kicker": "Workshop",
+              "title": "Reading charts without being fooled",
+              "subtitle": "Four checks before you trust a graph",
+              "meta": "Statistics Society · Hanoi",
+              "image": "/demo/photo-3.svg",
+              "alt": "Violet mountain range",
+              "variant": "bleed"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_03",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_03",
+            "type": "tls.c.objectives",
+            "props": {
+              "intro": "By the end of this session you will be able to:",
+              "items": [
+                "Describe a sample with its centre and spread",
+                "Choose a chart that fits the question",
+                "Explain what a confidence interval does not say",
+                "Run a two-sample test on real data"
+              ],
+              "marker": "numbered"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_04",
+      "layout": "blank",
+      "role": "section",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_04",
+            "type": "tls.c.divider",
+            "props": {
+              "number": "01",
+              "title": "Text, lists and emphasis",
+              "subtitle": "Blocks that carry the words of a slide",
+              "variant": "numeral"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_05",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_12_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P1 lists",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_12_numbered",
+            "type": "tls.t.numbered",
+            "props": {
+              "items": [
+                "Define the audience",
+                "State the **one** message",
+                "Prove it with data"
+              ],
+              "markerStyle": "badge",
+              "markerTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_12_checklist",
+            "type": "tls.t.checklist",
+            "props": {
+              "items": [
+                {
+                  "text": "Outline drafted",
+                  "state": "done"
+                },
+                {
+                  "text": "Charts reviewed",
+                  "state": "done"
+                },
+                {
+                  "text": "Demo rehearsed",
+                  "state": "open"
+                },
+                {
+                  "text": "Legal sign-off",
+                  "state": "blocked"
+                }
+              ],
+              "doneStyle": "strike"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_12_iconlist",
+            "type": "tls.m.icon-list",
+            "props": {
+              "items": [
+                {
+                  "icon": "rocket",
+                  "title": "Launch faster",
+                  "text": "Weeks, not quarters."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Stay secure",
+                  "text": "Audit trails built in."
+                },
+                {
+                  "icon": "chart-line",
+                  "title": "See impact",
+                  "text": "Live dashboards."
+                }
+              ],
+              "iconStyle": "circle",
+              "iconTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_12_statement",
+            "type": "tls.t.statement",
+            "props": {
+              "text": "Make the **simplest** option the **default**.",
+              "attribution": "Design principle",
+              "size": "lg",
+              "emphasis": "accent"
+            },
+            "motion": {
+              "preset": "words-in",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_12_definition",
+            "type": "tls.t.definition",
+            "props": {
+              "term": "Heuristic",
+              "pronunciation": "/hyoo-RIS-tik/",
+              "partOfSpeech": "noun",
+              "definition": "A **rule of thumb** that finds a good-enough answer fast.",
+              "example": "Pick the shortest line.",
+              "layout": "stacked"
+            },
+            "motion": {
+              "preset": "title-then-body",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_12_callout",
+            "type": "tls.t.callout",
+            "props": {
+              "title": "Heads up",
+              "text": "Figures are **preliminary** until the audit closes.",
+              "variant": "warning",
+              "fill": "tint"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 7
+            }
+          },
+          {
+            "id": "b_12_footnote",
+            "type": "tls.t.footnote",
+            "props": {
+              "items": [
+                "Company filings, FY2025"
+              ],
+              "marker": "source"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_06",
+      "layout": "blank",
+      "role": "section",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_06",
+            "type": "tls.c.divider",
+            "props": {
+              "number": "02",
+              "title": "Data and diagrams",
+              "subtitle": "Metrics, charts, tables and structure",
+              "variant": "field",
+              "align": "center"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_07",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_15_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 charts",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_15_line",
+            "type": "tls.d.line",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Revenue",
+                  "values": [
+                    42,
+                    48,
+                    55,
+                    61,
+                    70,
+                    82
+                  ]
+                },
+                {
+                  "name": "Costs",
+                  "values": [
+                    38,
+                    41,
+                    45,
+                    47,
+                    52,
+                    55
+                  ]
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_15_area",
+            "type": "tls.d.area",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Web",
+                  "values": [
+                    30,
+                    34,
+                    41,
+                    45,
+                    52,
+                    60
+                  ]
+                },
+                {
+                  "name": "Mobile",
+                  "values": [
+                    18,
+                    24,
+                    28,
+                    36,
+                    44,
+                    53
+                  ]
+                },
+                {
+                  "name": "Partners",
+                  "values": [
+                    8,
+                    9,
+                    12,
+                    14,
+                    15,
+                    19
+                  ]
+                }
+              ],
+              "mode": "stacked",
+              "curve": "monotone"
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_15_grouped",
+            "type": "tls.d.grouped-bar",
+            "props": {
+              "categories": [
+                "North",
+                "South",
+                "East",
+                "West"
+              ],
+              "series": [
+                {
+                  "name": "2024",
+                  "values": [
+                    42,
+                    38,
+                    55,
+                    31
+                  ]
+                },
+                {
+                  "name": "2025",
+                  "values": [
+                    51,
+                    40,
+                    62,
+                    45
+                  ]
+                }
+              ],
+              "valueLabels": "end"
+            },
+            "motion": {
+              "preset": "grow-bars-y",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_15_stacked",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "series": [
+                {
+                  "name": "Product",
+                  "values": [
+                    30,
+                    34,
+                    38,
+                    45
+                  ]
+                },
+                {
+                  "name": "Services",
+                  "values": [
+                    18,
+                    20,
+                    26,
+                    28
+                  ]
+                },
+                {
+                  "name": "Support",
+                  "values": [
+                    8,
+                    9,
+                    10,
+                    12
+                  ]
+                }
+              ],
+              "totals": true
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_15_pie",
+            "type": "tls.d.pie",
+            "props": {
+              "categories": [
+                "Subscriptions",
+                "Services",
+                "Licences",
+                "Other"
+              ],
+              "values": [
+                48,
+                27,
+                17,
+                8
+              ]
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_15_stacked2",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Mobile",
+                "Desktop",
+                "Tablet"
+              ],
+              "series": [
+                {
+                  "name": "Organic",
+                  "values": [
+                    40,
+                    55,
+                    30
+                  ]
+                },
+                {
+                  "name": "Paid",
+                  "values": [
+                    35,
+                    25,
+                    45
+                  ]
+                },
+                {
+                  "name": "Referral",
+                  "values": [
+                    25,
+                    20,
+                    25
+                  ]
+                }
+              ],
+              "orientation": "horizontal",
+              "normalize": true,
+              "valueLabels": "inside"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_08",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_19_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 tables, more",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_19_score_pill",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Revenue",
+                  "value": "$4.2M",
+                  "target": "$4.0M",
+                  "status": "good"
+                },
+                {
+                  "label": "Churn",
+                  "value": "3.1%",
+                  "target": "2.5%",
+                  "status": "watch"
+                },
+                {
+                  "label": "NPS",
+                  "value": "41",
+                  "target": "50",
+                  "status": "bad"
+                },
+                {
+                  "label": "Uptime",
+                  "value": "99.97%",
+                  "target": "99.9%",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "pill",
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_19_ranking",
+            "type": "tls.d.ranking",
+            "props": {
+              "items": [
+                {
+                  "label": "Aurora Pro",
+                  "value": 4820,
+                  "note": "Enterprise"
+                },
+                {
+                  "label": "Beacon",
+                  "value": 3910
+                },
+                {
+                  "label": "Cobalt Lite",
+                  "value": 2740
+                },
+                {
+                  "label": "Drift",
+                  "value": 1980
+                },
+                {
+                  "label": "Ember",
+                  "value": 1210
+                }
+              ],
+              "format": "compact"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_19_heatmap",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Mon",
+                "Tue",
+                "Wed",
+                "Thu",
+                "Fri"
+              ],
+              "cols": [
+                "9am",
+                "11am",
+                "1pm",
+                "3pm",
+                "5pm"
+              ],
+              "values": [
+                [
+                  12,
+                  30,
+                  22,
+                  18,
+                  6
+                ],
+                [
+                  15,
+                  42,
+                  35,
+                  24,
+                  9
+                ],
+                [
+                  18,
+                  55,
+                  48,
+                  31,
+                  12
+                ],
+                [
+                  14,
+                  38,
+                  41,
+                  27,
+                  10
+                ],
+                [
+                  9,
+                  21,
+                  19,
+                  12,
+                  4
+                ]
+              ]
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_19_table_ck",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Plan"
+                },
+                {
+                  "label": "SSO",
+                  "kind": "check"
+                },
+                {
+                  "label": "Support",
+                  "kind": "rating"
+                },
+                {
+                  "label": "Seats",
+                  "kind": "number"
+                }
+              ],
+              "rows": [
+                [
+                  "Starter",
+                  "no",
+                  "2",
+                  "5"
+                ],
+                [
+                  "Team",
+                  "partial",
+                  "3",
+                  "25"
+                ],
+                [
+                  "Business",
+                  "yes",
+                  "4",
+                  "100"
+                ],
+                [
+                  "Enterprise",
+                  "yes",
+                  "5",
+                  "1000"
+                ]
+              ],
+              "density": "compact",
+              "header": "bold",
+              "rules": "horizontal"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_19_score_bar",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Onboarding time",
+                  "value": "4 days",
+                  "target": "5 days",
+                  "status": "good",
+                  "note": "Down from 9"
+                },
+                {
+                  "label": "Ticket backlog",
+                  "value": "212",
+                  "target": "150",
+                  "status": "bad",
+                  "note": "Hiring in progress"
+                },
+                {
+                  "label": "Release cadence",
+                  "value": "2 / wk",
+                  "target": "2 / wk",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "bar",
+              "showTarget": false,
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_19_heat_div",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Alpha",
+                "Beta",
+                "Gamma",
+                "Delta"
+              ],
+              "cols": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "values": [
+                [
+                  8,
+                  3,
+                  -2,
+                  -6
+                ],
+                [
+                  5,
+                  -1,
+                  4,
+                  9
+                ],
+                [
+                  -7,
+                  -4,
+                  0,
+                  2
+                ],
+                [
+                  1,
+                  6,
+                  -3,
+                  5
+                ]
+              ],
+              "ramp": "diverging"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_09",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_23_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process: cycle and funnel",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_23_cycle",
+            "type": "tls.g.cycle",
+            "props": {
+              "steps": [
+                {
+                  "label": "Plan",
+                  "text": "Set the goal",
+                  "icon": "target"
+                },
+                {
+                  "label": "Do",
+                  "text": "Try the change",
+                  "icon": "rocket"
+                },
+                {
+                  "label": "Check",
+                  "text": "Measure it",
+                  "icon": "search"
+                },
+                {
+                  "label": "Act",
+                  "text": "Keep what works",
+                  "icon": "check"
+                }
+              ],
+              "center": "Improve"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_23_funnel",
+            "type": "tls.g.funnel",
+            "props": {
+              "stages": [
+                {
+                  "label": "Aware",
+                  "text": "People who hear about us"
+                },
+                {
+                  "label": "Interested",
+                  "text": "Visit the site and read"
+                },
+                {
+                  "label": "Trial",
+                  "text": "Try the product for free"
+                },
+                {
+                  "label": "Customer",
+                  "text": "Pay and stay"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_10",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_32_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: SWOT",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_32_swot",
+            "type": "tls.g.swot",
+            "props": {
+              "strengths": [
+                "Strong brand",
+                "Loyal customers",
+                "Lean team"
+              ],
+              "weaknesses": [
+                "Small budget",
+                "One key supplier"
+              ],
+              "opportunities": [
+                "New markets",
+                "Partner channels",
+                "AI tooling"
+              ],
+              "threats": [
+                "New entrants",
+                "Price pressure"
+              ],
+              "style": "tinted"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_11",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_42_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 gallery: image grid and compare",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_42_grid",
+            "type": "tls.m.image-grid",
+            "props": {
+              "images": [
+                {
+                  "image": "/demo/photo-1.svg",
+                  "alt": "Sunrise over orange hills",
+                  "caption": "Sunrise"
+                },
+                {
+                  "image": "/demo/photo-2.svg",
+                  "alt": "Blue hills at dusk",
+                  "caption": "Dusk"
+                },
+                {
+                  "image": "/demo/photo-3.svg",
+                  "alt": "Violet mountain range",
+                  "caption": "Peaks"
+                },
+                {
+                  "image": "/demo/photo-4.svg",
+                  "alt": "Green valley in the morning",
+                  "caption": "Valley"
+                },
+                {
+                  "image": "asset-not-uploaded-yet",
+                  "alt": "Photo not uploaded yet",
+                  "caption": "Missing"
+                }
+              ],
+              "pattern": "feature-left",
+              "captions": "overlay",
+              "gap": "md",
+              "radius": "md"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_42_cmp",
+            "type": "tls.m.image-compare",
+            "props": {
+              "before": {
+                "image": "/demo/before.svg",
+                "alt": "Dim room with grey sofa",
+                "label": "Before"
+              },
+              "after": {
+                "image": "/demo/after.svg",
+                "alt": "Bright room with coral sofa and plant",
+                "label": "After"
+              },
+              "mode": "split",
+              "divider": true
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_12",
+      "layout": "three-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_43_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 people: profile card, avatars, group",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "a": [
+          {
+            "id": "b_43_card",
+            "type": "tls.c.profile-card",
+            "props": {
+              "image": "/demo/portrait-1.svg",
+              "name": "Dr. Tran Thi Lan",
+              "role": "Head of Data Science",
+              "bio": "Leads the applied analytics group and teaches statistics for engineers.",
+              "contact": "lan.tran@example.edu",
+              "layout": "stacked",
+              "tone": "alt"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "b": [
+          {
+            "id": "b_43_stack1",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_av1",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-2.svg",
+                    "name": "Nguyen Van An",
+                    "role": "Senior lecturer",
+                    "layout": "inline",
+                    "size": "lg",
+                    "ring": true
+                  }
+                },
+                {
+                  "id": "b_43_av2",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "name": "Đặng Ánh Tuyết",
+                    "role": "Student representative",
+                    "layout": "inline",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "id": "b_43_av3",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-3.svg",
+                    "name": "Linh",
+                    "role": "Teaching assistant",
+                    "layout": "inline",
+                    "size": "lg",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "c": [
+          {
+            "id": "b_43_stack2",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_grp",
+                  "type": "tls.m.avatar-group",
+                  "props": {
+                    "people": [
+                      {
+                        "image": "/demo/portrait-1.svg",
+                        "name": "Lan Tran"
+                      },
+                      {
+                        "image": "/demo/portrait-2.svg",
+                        "name": "An Nguyen"
+                      },
+                      {
+                        "image": "/demo/portrait-3.svg",
+                        "name": "Linh Pham"
+                      },
+                      {
+                        "name": "Bao Chau"
+                      },
+                      {
+                        "image": "/demo/portrait-4.svg",
+                        "name": "Minh Anh"
+                      },
+                      {
+                        "name": "Quang Huy"
+                      },
+                      {
+                        "image": "/demo/portrait-5.svg",
+                        "name": "Thu Ha"
+                      },
+                      {
+                        "name": "Ngoc Han"
+                      }
+                    ],
+                    "max": 5,
+                    "size": "lg",
+                    "caption": "8 contributors"
+                  }
+                },
+                {
+                  "id": "b_43_av4",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-6.svg",
+                    "name": "Hoang Minh",
+                    "role": "Project owner",
+                    "size": "xl",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_13",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_13_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: three pillars as cards",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_13",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "target",
+                  "title": "Clear goals",
+                  "text": "Every session starts from one question the data can answer."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Hands-on data",
+                  "text": "Real datasets, small enough to explore in class."
+                },
+                {
+                  "icon": "check",
+                  "title": "Honest results",
+                  "text": "Learn what a result does and does not show."
+                }
+              ],
+              "lead": "icon",
+              "tone": "alt"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_14",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_14_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: a chart with its insight",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_14",
+            "type": "tls.c.chart-insight",
+            "props": {
+              "chart": {
+                "kind": "line",
+                "categories": [
+                  "Q1",
+                  "Q2",
+                  "Q3",
+                  "Q4"
+                ],
+                "series": [
+                  {
+                    "name": "Users",
+                    "values": [
+                      12,
+                      18,
+                      27,
+                      40
+                    ]
+                  }
+                ]
+              },
+              "insight": "Users **more than tripled** after the Q2 launch.",
+              "insightTitle": "Key insight",
+              "source": "Source: product analytics, 2025",
+              "side": "right",
+              "ratio": "2:1"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_15",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_15",
+            "type": "tls.c.dashboard",
+            "props": {
+              "kpis": [
+                {
+                  "label": "Revenue",
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "format": "compact",
+                  "polarity": "upGood",
+                  "sparkline": [
+                    3,
+                    4,
+                    3.6,
+                    5,
+                    5.4,
+                    6
+                  ]
+                },
+                {
+                  "label": "Churn",
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "format": "percent",
+                  "polarity": "downGood"
+                },
+                {
+                  "label": "NPS",
+                  "value": 62,
+                  "delta": 4,
+                  "format": "plain",
+                  "polarity": "upGood"
+                }
+              ],
+              "chart": {
+                "kind": "grouped-bar",
+                "categories": [
+                  "Jan",
+                  "Feb",
+                  "Mar",
+                  "Apr"
+                ],
+                "series": [
+                  {
+                    "name": "Revenue",
+                    "values": [
+                      3.1,
+                      3.6,
+                      3.9,
+                      4.2
+                    ]
+                  },
+                  {
+                    "name": "Costs",
+                    "values": [
+                      2.4,
+                      2.6,
+                      2.9,
+                      3
+                    ]
+                  }
+                ]
+              },
+              "insight": "Revenue grew **four months in a row** while churn fell."
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_16",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_tl_16_t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Composites: the teaching team",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_tl_16",
+            "type": "tls.c.team",
+            "props": {
+              "people": [
+                {
+                  "image": "/demo/portrait-1.svg",
+                  "name": "Dr. Tran Thi Lan",
+                  "role": "Head of Data Science",
+                  "bio": "Leads the applied analytics group."
+                },
+                {
+                  "image": "/demo/portrait-2.svg",
+                  "name": "Nguyen Van An",
+                  "role": "Senior lecturer",
+                  "bio": "Teaches probability and inference."
+                },
+                {
+                  "name": "Dang Anh Tuyet",
+                  "role": "Student representative",
+                  "bio": "Collects feedback every week."
+                },
+                {
+                  "image": "/demo/portrait-4.svg",
+                  "name": "Pham Thu Ha",
+                  "role": "Teaching assistant",
+                  "bio": "Runs the weekly lab sessions."
+                }
+              ],
+              "card": "card"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tl_17",
+      "layout": "blank",
+      "role": "closing",
+      "regions": {
+        "content": [
+          {
+            "id": "b_tl_17",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Thank you",
+              "text": "Questions and discussion are welcome.",
+              "cta": "Book office hours",
+              "contacts": [
+                "lan.tran@example.edu",
+                "stats.example.edu"
+              ],
+              "person": {
+                "image": "/demo/portrait-1.svg",
+                "name": "Dr. Tran Thi Lan",
+                "role": "Head of Data Science"
+              },
+              "variant": "split"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

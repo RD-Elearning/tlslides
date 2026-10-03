@@ -11,7 +11,8 @@
  * Pure: no document/window/Date.now/Math.random.
  */
 
-import type { BlockSpec, LayoutContext, LayoutNode, Box } from '../../types'
+import type { BlockSpec, LayoutContext, LayoutNode, Box, ResolvedTextStyle } from '../../types'
+import { tableMetrics } from '../../layout/measure'
 
 /* ── path translation ─────────────────────────────────────────────────────────────────── */
 
@@ -82,6 +83,21 @@ export function namePiece(nodes: LayoutNode[], id: string): LayoutNode[] {
   return nodes.map((n) => ({ ...n, part: id }) as LayoutNode)
 }
 
+const TABLE = tableMetrics()
+
+/**
+ * Rendered width of one line. `estimateMetrics` uses one average glyph width and runs 10-25% wide for
+ * large Inter text, which shows as a visibly off-centre title; the per-glyph advance table is within
+ * ~3% (measured in the browser on the tour deck), so centring uses it.
+ */
+export function lineWidth(text: string, style: ResolvedTextStyle): number {
+  try {
+    return TABLE(text, style).lines[0]?.width ?? 0
+  } catch {
+    return 0
+  }
+}
+
 /** Split text nodes into one node per line, shifted so each line is centred (or end-aligned) in the node's box. */
 export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'): LayoutNode[] {
   if (align === 'start') return nodes
@@ -94,7 +110,7 @@ export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'
     const lh = n.style.size * (n.style.scale ?? 1) * n.style.lineHeight
     n.lines.forEach((line, i) => {
       const top = line.top ?? i * lh
-      const lw = Math.min(n.box.width, line.width)
+      const lw = Math.min(n.box.width, lineWidth(line.text, n.style) || line.width)
       const x = align === 'center' ? n.box.x + (n.box.width - lw) / 2 : n.box.x + n.box.width - lw
       out.push({
         ...n,

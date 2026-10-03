@@ -129,7 +129,7 @@ describe('block catalog conformance', () => {
     })
 
     it('no slide-scope block is nested inside another block in any fixture deck', () => {
-      const fixtures = ['demo-deck.json', 'colorful-blocks-demo.json'].map((f) =>
+      const fixtures = ['demo-deck.json', 'colorful-blocks-demo.json', 'block-library-tour.json'].map((f) =>
         JSON.parse(fs.readFileSync(path.resolve(__dirname, '../__fixtures__', f), 'utf-8'))
       )
       for (const deck of fixtures) {

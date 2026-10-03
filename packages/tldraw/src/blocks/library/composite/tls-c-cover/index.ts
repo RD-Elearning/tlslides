@@ -84,7 +84,7 @@ function specsOf(props: CoverProps, centered: boolean, size: 'display' | 'title'
   const s: Specs = {
     title: { id: 'title', type: 'tls.t.title', props: { text: toMeasurable(props.title), size, ...col, ...dark } },
   }
-  if (isShown(props, 'showKicker') && props.kicker) s.kicker = { id: 'kicker', type: 'tls.t.kicker', props: { text: props.kicker, marker: !centered, ...dark } }
+  if (isShown(props, 'showKicker') && props.kicker) s.kicker = { id: 'kicker', type: 'tls.t.kicker', props: { text: props.kicker, marker: false, ...dark } }
   if (isShown(props, 'showSubtitle') && props.subtitle) s.subtitle = { id: 'subtitle', type: 'tls.t.subtitle', props: { text: props.subtitle, ...col, ...dark } }
   if (isShown(props, 'showMeta') && props.meta) s.meta = { id: 'meta', type: 'tls.t.caption', props: { text: props.meta, color: fg ?? 'textMuted', ...dark } }
   if (isShown(props, 'showLogo') && props.logo) {

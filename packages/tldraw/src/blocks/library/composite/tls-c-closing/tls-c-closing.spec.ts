@@ -54,7 +54,12 @@ describe('tls.c.closing', () => {
     const pill = leavesOf(b, 'cta').find((l) => l.k === 'rect')!
     const label = leavesOf(b, 'cta').find((l) => l.k === 'text')!
     expect(label.x).toBeGreaterThanOrEqual(pill.x)
-    expect(label.x + label.width).toBeLessThanOrEqual(pill.x + pill.width + 1)
+    expect(label.x).toBeLessThan(pill.x + pill.width / 2)
+    expect(label.y).toBeGreaterThanOrEqual(pill.y)
+    expect(label.y + label.height).toBeLessThanOrEqual(pill.y + pill.height + 1)
+    // the rendered text (glyph table width) fits the pill
+    const { lineWidth } = require('../_kit')
+    expect(label.x - pill.x + lineWidth('Book office hours', (label.node as any).style)).toBeLessThanOrEqual(pill.width)
     const l = layoutAt(tlsCClosing, { ...EX, ctaStyle: 'link' }, 1600, 800)
     expect(leavesOf(l, 'cta').some((x) => x.k === 'rect')).toBe(false)
     expect(textOf(l, 'cta')).toContain('→')

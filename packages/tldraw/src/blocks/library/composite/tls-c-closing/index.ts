@@ -12,7 +12,7 @@ import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { onColor } from '../../text/_engine/color'
-import { composeFlat, measureHeights, pick, pickToken, strings, toMeasurable, type Piece } from '../_kit'
+import { composeFlat, lineWidth, measureHeights, pick, pickToken, strings, toMeasurable, type Piece } from '../_kit'
 import { capacityOf } from '../../diagram/_kit'
 
 export const CLOSING_MAX_CONTACTS = 4
@@ -118,9 +118,9 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
   const align = centered ? 'center' : 'start'
 
   const accent = ctx.resolveColor('accent').color
-  const ctaStyle = ctx.resolveText('lead')
+  const ctaStyle = ctx.resolveText('subheading') // what `tls.t.subtitle` draws
   const ctaText = wantCta ? String(props.cta) + (link ? ' →' : '') : ''
-  const ctaW = wantCta ? Math.min(lw, Math.ceil(ctx.measureText(ctaText, ctaStyle, 4000).lines[0]?.width ?? 0)) : 0
+  const ctaW = wantCta ? Math.min(lw, Math.ceil(lineWidth(ctaText, ctaStyle) * 1.05)) : 0
   const btnPadX = ctx.tokens.space.lg
   const btnH = Math.round(ctaStyle.size * ctaStyle.lineHeight + ctx.tokens.space.md * 2)
   const ctaBlockH = wantCta ? (link ? Math.round(ctaStyle.size * ctaStyle.lineHeight) : btnH) : 0
@@ -159,7 +159,7 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
     if (wantCta) {
       y += gap / 2
       const label = { id: 'cta-label', type: 'tls.t.subtitle', props: { text: ctaText, color: link ? 'accent' : onColor(ctx, accent) } } as BlockSpec
-      const boxW = link ? ctaW : Math.min(w, Math.ceil(ctaW * 1.12) + 2 * btnPadX)
+      const boxW = link ? ctaW : Math.min(w, ctaW + 2 * btnPadX)
       const bx = align === 'center' ? x + (w - boxW) / 2 : x
       if (!link) {
         pieces.push({
@@ -168,8 +168,10 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
           box: { x: bx, y, width: boxW, height: btnH },
         })
       }
+      // The label block wraps with `estimateMetrics`, which runs wider than the pill (table widths): give it room so it never wraps.
+      const labelW = Math.max(boxW, Math.ceil(ctx.measureText(ctaText, ctaStyle, 4000).lines[0]?.width ?? 0) + 8)
       const ly = link ? y : y + (btnH - ctaStyle.size * ctaStyle.lineHeight) / 2
-      pieces.push({ id: 'cta', spec: label, box: { x: link ? bx : bx + btnPadX, y: ly, width: link ? boxW + 24 : boxW - btnPadX, height: Math.ceil(ctaStyle.size * ctaStyle.lineHeight) } })
+      pieces.push({ id: 'cta', spec: label, box: { x: link ? bx : bx + btnPadX, y: ly, width: labelW, height: Math.ceil(ctaStyle.size * ctaStyle.lineHeight) } })
     }
   }
 
