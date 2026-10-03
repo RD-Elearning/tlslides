@@ -17,7 +17,7 @@ export const tlsGBeforeAfter: BlockDefinition = {
   category: 'comparison',
   scope: 'group',
   shortDescription: 'Before and after panels joined by an arrow, text or image in each',
-  related: ['tls.g.pros-cons', 'tls.c.comparison'],
+  related: ['tls.g.pros-cons', 'tls.c.comparison', 'tls.m.image-compare'],
   describe: {
     when: 'Contrast over time: a transformation, redesign or problem turned into a solution.',
     avoid: 'Numeric before/after values (use tls.d.stat-compare).',

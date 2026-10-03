@@ -3042,6 +3042,40 @@ Image with cover/contain fit, focal point, and optional caption. _(family: media
 }
 \`\`\`
 
+### \`tls.m.image-compare\` — Image Compare
+
+Before and after images side by side or split down the middle, each labelled. _(family: media; keywords: before, after, compare, renovation, redesign, results, split)_
+
+**When:** A visual change: renovation, redesign, treatment or model results.
+**Avoid:** Text-only before/after (use tls.g.before-after); unrelated photos (use tls.m.image-grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`before\` | yes | object (image, alt, label) | {image, alt, label? (default Before/After, <= 24 chars)}. |
+| \`after\` | yes | object (image, alt, label) | {image, alt, label? (default Before/After, <= 24 chars)}. |
+| \`mode\` | no | enum: side \\\\| split | side = two frames; split = one frame, left half before, right half after. |
+| \`divider\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_compare\\",
+  \\"type\\": \\"tls.m.image-compare\\",
+  \\"props\\": {
+    \\"before\\": {
+      \\"image\\": \\"asset-old\\",
+      \\"alt\\": \\"Old dashboard\\",
+      \\"label\\": \\"Before\\"
+    },
+    \\"after\\": {
+      \\"image\\": \\"asset-new\\",
+      \\"alt\\": \\"New dashboard\\",
+      \\"label\\": \\"After\\"
+    },
+    \\"mode\\": \\"split\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.image-grid\` — Image Grid
 
 Images in even cells, a feature layout or a mosaic, with captions. _(family: media; keywords: gallery, photos, grid, portfolio, images, mosaic)_
@@ -3843,7 +3877,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 101,
+  "blockCount": 102,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3924,6 +3958,7 @@ Object {
     "tls.m.icon-label",
     "tls.m.icon-list",
     "tls.m.image",
+    "tls.m.image-compare",
     "tls.m.image-grid",
     "tls.m.logo",
     "tls.m.logo-wall",
