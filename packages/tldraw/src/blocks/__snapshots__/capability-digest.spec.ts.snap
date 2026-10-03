@@ -1176,6 +1176,36 @@ Bullet list with dot/dash/chevron/number markers and indent levels. _(family: te
 }
 \`\`\`
 
+### \`tls.t.callout\` — Callout
+
+Boxed note in one of five variants, with icon and optional title. _(family: text; keywords: callout, note, warning, tip, alert, caveat)_
+
+**When:** Warnings, tips, notes and caveats beside the main content.
+**Avoid:** The slide main conclusion (use tls.t.takeaway or tls.t.statement).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 50 chars) | 1–4 words, e.g. \\"Heads up\\". |
+| \`text\` | yes | richText (max 240 chars) | One or two sentences. **Bold** works. |
+| \`variant\` | no | enum: info \\\\| tip \\\\| warning \\\\| danger \\\\| success | Sets the colour role and default icon. |
+| \`fill\` | no | enum: tint \\\\| outline \\\\| solid |  |
+| \`icon\` | no | icon | Overrides the variant icon. |
+| \`showIcon\` | no | boolean |  |
+| \`showTitle\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_callout\\",
+  \\"type\\": \\"tls.t.callout\\",
+  \\"props\\": {
+    \\"title\\": \\"Tip\\",
+    \\"text\\": \\"Run the demo on **battery** first, then plug in.\\",
+    \\"variant\\": \\"tip\\",
+    \\"fill\\": \\"tint\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.caption\` — Caption
 
 Small caption text for images, charts, and media. _(family: text; keywords: caption, subtitle, description, label, small-text, source)_
@@ -1589,7 +1619,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 45,
+  "blockCount": 46,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1625,6 +1655,7 @@ Object {
     "tls.m.image",
     "tls.t.body",
     "tls.t.bullets",
+    "tls.t.callout",
     "tls.t.caption",
     "tls.t.checklist",
     "tls.t.hero-number",
