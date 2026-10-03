@@ -1853,6 +1853,43 @@ Key checkpoints as diamonds on a line, filled when done, each with a date and sh
 }
 \`\`\`
 
+### \`tls.g.pyramid\` — Pyramid
+
+Stacked pyramid levels from tip to base, each with a label and a note; can be inverted. _(family: diagram; keywords: pyramid, levels, tiers, maslow, hierarchy of needs, foundation)_
+
+**When:** Level: ranked tiers that build on each other, such as Maslow, priority tiers or foundation-to-goal stacks.
+**Avoid:** Equal-weight layers (use tls.g.layers) or a narrowing process (use tls.g.funnel).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`levels\` | yes | list of object (label, text) (3–6 items) | Top (tip) first, base last. Keep the tip label short. |
+| \`direction\` | no | enum: up \\\\| down | down = inverted pyramid, widest level first. |
+| \`notes\` | no | enum: side \\\\| inside \\\\| none | side = notes beside the pyramid with leaders. |
+| \`fill\` | no | enum: gradient \\\\| series \\\\| single |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pyramid\\",
+  \\"type\\": \\"tls.g.pyramid\\",
+  \\"props\\": {
+    \\"levels\\": [
+      {
+        \\"label\\": \\"Purpose\\",
+        \\"text\\": \\"Why we exist\\"
+      },
+      {
+        \\"label\\": \\"Strategy\\",
+        \\"text\\": \\"Where we play\\"
+      },
+      {
+        \\"label\\": \\"Operations\\",
+        \\"text\\": \\"How we deliver every day\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.roadmap\` — Roadmap
 
 Lanes of bars across periods, coloured by status, with a today line. _(family: diagram; keywords: roadmap, gantt, plan, schedule, lanes, quarters)_
@@ -3186,7 +3223,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 83,
+  "blockCount": 84,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3230,6 +3267,7 @@ Object {
     "tls.g.flow",
     "tls.g.funnel",
     "tls.g.milestones",
+    "tls.g.pyramid",
     "tls.g.roadmap",
     "tls.g.steps",
     "tls.g.timeline",

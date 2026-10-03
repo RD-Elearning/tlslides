@@ -17,7 +17,7 @@ export const tlsGFunnel: BlockDefinition = {
   category: 'process',
   scope: 'group',
   shortDescription: 'Narrowing stages from broad to focused, with a note per stage',
-  related: ['tls.d.funnel-chart', 'tls.g.chevrons'],
+  related: ['tls.d.funnel-chart', 'tls.g.chevrons', 'tls.g.pyramid'],
   describe: {
     when: 'Order with narrowing: marketing funnel, selection process (no numbers).',
     avoid: 'Funnels with real values (use tls.d.funnel-chart).',
