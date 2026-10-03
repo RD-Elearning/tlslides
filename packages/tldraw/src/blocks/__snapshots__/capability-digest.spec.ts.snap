@@ -1355,6 +1355,36 @@ Pull quote with decorative quotation glyph, attribution, and role. _(family: tex
 }
 \`\`\`
 
+### \`tls.t.statement\` — Statement
+
+One large claim that fills the slide, key words emphasised. _(family: text; keywords: statement, claim, conclusion, message, big text)_
+
+**When:** A single claim or conclusion that should fill the slide's attention.
+**Avoid:** A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText (max 140 chars) | One claim, a single sentence. Wrap the 1–3 key words in **double asterisks**. |
+| \`attribution\` | no | text (max 60 chars) | Optional source line, e.g. \\"Q3 board review\\". |
+| \`size\` | no | enum: xl \\\\| lg \\\\| md | Shrinks to fit, never below md. |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`emphasis\` | no | enum: accent \\\\| underline \\\\| highlight | How the **bold** words render: accent colour, accent underline, or accent highlight. |
+| \`showAttribution\` | no | boolean |  |
+| \`showMark\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_statement\\",
+  \\"type\\": \\"tls.t.statement\\",
+  \\"props\\": {
+    \\"text\\": \\"Retention, not acquisition, is our **growth engine**.\\",
+    \\"attribution\\": \\"FY26 strategy\\",
+    \\"size\\": \\"lg\\",
+    \\"emphasis\\": \\"highlight\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.subtitle\` — Subtitle
 
 Secondary heading below the title with RichText support. _(family: text; keywords: subtitle, subheading, secondary)_
@@ -1559,7 +1589,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 44,
+  "blockCount": 45,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -1601,6 +1631,7 @@ Object {
     "tls.t.kicker",
     "tls.t.numbered",
     "tls.t.quote",
+    "tls.t.statement",
     "tls.t.subtitle",
     "tls.t.takeaway",
     "tls.t.title",

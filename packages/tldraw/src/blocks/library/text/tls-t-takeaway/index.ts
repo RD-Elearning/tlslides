@@ -17,7 +17,7 @@ export const tlsTTakeaway: BlockDefinition = {
   category: 'emphasis',
   scope: 'element',
   shortDescription: 'Highlighted insight with accent bar and label',
-  related: ['tls.t.quote'],
+  related: ['tls.t.quote', 'tls.t.statement'],
   describe: {
     when: 'Use to call out a key insight, conclusion, or "so what" from data.',
     avoid: 'Do not use for quotes from named people (use tls.t.quote) or for ordinary body text (use tls.t.body).',

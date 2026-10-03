@@ -16,6 +16,7 @@ import { tlsTQuote } from './tls-t-quote'
 import { tlsTTakeaway } from './tls-t-takeaway'
 import { tlsTNumbered } from './tls-t-numbered'
 import { tlsTChecklist } from './tls-t-checklist'
+import { tlsTStatement } from './tls-t-statement'
 
 /** All built-in text block definitions. */
 export const textBlocks: BlockDefinition[] = [
@@ -30,6 +31,7 @@ export const textBlocks: BlockDefinition[] = [
   tlsTTakeaway,
   tlsTNumbered,
   tlsTChecklist,
+  tlsTStatement,
 ]
 
 export { tlsTTitle } from './tls-t-title'
@@ -43,3 +45,4 @@ export { tlsTQuote } from './tls-t-quote'
 export { tlsTTakeaway } from './tls-t-takeaway'
 export { tlsTNumbered } from './tls-t-numbered'
 export { tlsTChecklist } from './tls-t-checklist'
+export { tlsTStatement } from './tls-t-statement'
