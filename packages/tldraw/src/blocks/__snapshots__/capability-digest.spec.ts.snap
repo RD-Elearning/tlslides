@@ -1154,6 +1154,34 @@ Two labelled numbers with a connector and a coloured change pill (percent or abs
 }
 \`\`\`
 
+### \`tls.d.trend-badge\` — Trend Badge
+
+Pill with a triangle arrow and a signed change, coloured by direction and polarity. _(family: data; keywords: trend, badge, delta, change, arrow, up, down)_
+
+**When:** Annotating a number elsewhere on the slide with its trend.
+**Avoid:** A standalone metric (use tls.c.kpi-tile).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`delta\` | yes | number | Signed change; the sign sets the arrow. |
+| \`label\` | no | text (max 30 chars) | Short context after the value. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`polarity\` | no | enum: upGood \\\\| downGood \\\\| neutral | Which direction is good. |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_trend\\",
+  \\"type\\": \\"tls.d.trend-badge\\",
+  \\"props\\": {
+    \\"delta\\": -3.2,
+    \\"format\\": \\"percent\\",
+    \\"polarity\\": \\"downGood\\",
+    \\"label\\": \\"churn\\"
+  }
+}
+\`\`\`
+
 ### \`tls.d.waterfall\` — Waterfall Chart
 
 Bridge chart: floating bars for changes, full bars for totals, optional connectors. _(family: data; keywords: waterfall, bridge, variance, walk, revenue, budget)_
@@ -2376,7 +2404,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 65,
+  "blockCount": 66,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2404,6 +2432,7 @@ Object {
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
+    "tls.d.trend-badge",
     "tls.d.waterfall",
     "tls.g.steps",
     "tls.l.card",

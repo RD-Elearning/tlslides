@@ -440,19 +440,20 @@ export function categoryLabels(
  * `text` limited to two lines of `maxW`: wraps at spaces, and cuts any single word (or a third
  * line) that still does not fit, ending it with an ellipsis.
  */
-export function clipToWidth(ctx: LayoutContext, text: string, s: ResolvedTextStyle, maxW: number): string {
-  const cut = (word: string): string => {
-    if (ctx.measureText(word, s).width <= maxW) return word
-    let lo = 1
-    let hi = word.length
-    while (lo < hi) {
-      const mid = Math.ceil((lo + hi) / 2)
-      if (ctx.measureText(`${word.slice(0, mid)}…`, s).width <= maxW) lo = mid
-      else hi = mid - 1
-    }
-    return `${word.slice(0, lo)}…`
+export function ellipsize(ctx: LayoutContext, word: string, s: ResolvedTextStyle, maxW: number): string {
+  if (ctx.measureText(word, s).width <= maxW) return word
+  let lo = 1
+  let hi = word.length
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2)
+    if (ctx.measureText(`${word.slice(0, mid)}…`, s).width <= maxW) lo = mid
+    else hi = mid - 1
   }
-  const words = text.split(/\s+/).filter(Boolean).map(cut)
+  return `${word.slice(0, lo)}…`
+}
+
+export function clipToWidth(ctx: LayoutContext, text: string, s: ResolvedTextStyle, maxW: number): string {
+  const words = text.split(/\s+/).filter(Boolean).map((w) => ellipsize(ctx, w, s, maxW))
   const m = ctx.measureText(words.join(' '), s, maxW)
   if (m.lines.length <= 2) return words.join(' ')
   return clipLines(m.lines, 2).map((l) => l.text).join(' ')

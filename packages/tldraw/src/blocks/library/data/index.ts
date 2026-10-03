@@ -20,9 +20,10 @@ import { tlsDWaterfall } from './tls-d-waterfall'
 import { tlsDFunnelChart } from './tls-d-funnel-chart'
 import { tlsDScatter } from './tls-d-scatter'
 import { tlsDRadar } from './tls-d-radar'
+import { tlsDTrendBadge } from './tls-d-trend-badge'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -40,3 +41,4 @@ export { tlsDWaterfall } from './tls-d-waterfall'
 export { tlsDFunnelChart } from './tls-d-funnel-chart'
 export { tlsDScatter } from './tls-d-scatter'
 export { tlsDRadar } from './tls-d-radar'
+export { tlsDTrendBadge } from './tls-d-trend-badge'
