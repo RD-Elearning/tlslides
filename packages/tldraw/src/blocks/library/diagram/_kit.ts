@@ -11,7 +11,7 @@
  */
 
 import type { Box, LayoutContext, LayoutNode, ResolvedTextStyle } from '../../types'
-import { mixHex } from '../../color-math'
+import { mixHex, rgbToHsl, tryHexToRgb } from '../../color-math'
 import { clipLines, ellipsize, fullBox, lineH, pathNode, solidRect } from '../data/_chart/kit'
 
 export { TEXT_SLACK, asArr, clamp, enumOf, numOrNull, root, str, style, mutedStyle, lineH, chartColors, tintOf, onColor, readableOn, solidRect, pathNode, emptyState, capacityOf, dot } from '../data/_chart/kit'
@@ -121,7 +121,16 @@ export function rampColor(ctx: LayoutContext, mode: 'gradient' | 'single' | 'ser
   if (mode === 'single') return a
   if (mode === 'series') return ctx.tokens.categorical[i % Math.max(1, ctx.tokens.categorical.length)] ?? a
   const b = ctx.resolveColor('accent2').color
-  return mixHex(a, b, n <= 1 ? 0 : i / (n - 1))
+  const t = n <= 1 ? 0 : i / (n - 1)
+  // Complementary pairs (coral/teal) mix to a muddy grey in the middle. When the hues are far
+  // apart, ramp from the accent to a light tint of it instead.
+  const ra = tryHexToRgb(a)
+  const rb = tryHexToRgb(b)
+  if (ra && rb) {
+    const dh = Math.abs(rgbToHsl(ra).h - rgbToHsl(rb).h) // hue is 0..1
+    if (Math.min(dh, 1 - dh) > 0.25) return mixHex(a, mixHex(a, ctx.resolveColor('surface').color, 0.62), t)
+  }
+  return mixHex(a, b, t)
 }
 
 export { fullBox }

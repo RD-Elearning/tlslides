@@ -53,7 +53,8 @@ describe('tls.g.chevrons', () => {
     const hi = lay({ steps: steps(4), currentIndex: 2 })
     const out = lay({ steps: steps(4), currentIndex: 9 })
     expect(fillOf(out, 'chevron[1]')).toBe(fillOf(none, 'chevron[1]'))
-    expect(fillOf(hi, 'chevron[2]')).toBe(fillOf(none, 'chevron[2]'))
+    // the current phase is the accent itself, never a mid-ramp blend
+    expect(fillOf(hi, 'chevron[2]')).toBe(chartCtx(SZ).resolveColor('accent').color)
     expect(fillOf(hi, 'chevron[1]')).not.toBe(fillOf(none, 'chevron[1]'))
   })
 

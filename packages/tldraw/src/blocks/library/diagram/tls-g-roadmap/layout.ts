@@ -179,7 +179,7 @@ export function layout(props: RoadmapProps, ctx: LayoutContext): LayoutNode {
   // Legend.
   if (legendH > 0) {
     let lx = gx0
-    const ly = H - legendH + 6
+    const ly = bodyBottom + 12
     const names: Record<Status, string> = { done: 'Done', active: 'In progress', planned: 'Planned', risk: 'At risk' }
     pl.used.forEach((st, k) => {
       const fill = statusFill(st, 0)

@@ -2567,6 +2567,580 @@
           }
         ]
       }
+    },
+    {
+      "id": "sl_22",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_22_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_22_chev1",
+            "type": "tls.g.chevrons",
+            "props": {
+              "steps": [
+                {
+                  "label": "Discover",
+                  "text": "Research the need"
+                },
+                {
+                  "label": "Define",
+                  "text": "Frame the problem"
+                },
+                {
+                  "label": "Design",
+                  "text": "Shape the concept"
+                },
+                {
+                  "label": "Build",
+                  "text": "Make it real"
+                },
+                {
+                  "label": "Launch",
+                  "text": "Release and learn"
+                }
+              ],
+              "currentIndex": 2
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_22_chev2",
+            "type": "tls.g.chevrons",
+            "props": {
+              "steps": [
+                {
+                  "label": "Plan",
+                  "text": "Scope and budget agreed with the whole team"
+                },
+                {
+                  "label": "Do",
+                  "text": "Weekly sprints with a demo each Friday"
+                },
+                {
+                  "label": "Check",
+                  "text": "Measure against the goals we set"
+                }
+              ],
+              "fill": "series",
+              "textPlacement": "below"
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_23",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_23_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process: cycle and funnel",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_23_cycle",
+            "type": "tls.g.cycle",
+            "props": {
+              "steps": [
+                {
+                  "label": "Plan",
+                  "text": "Set the goal",
+                  "icon": "target"
+                },
+                {
+                  "label": "Do",
+                  "text": "Try the change",
+                  "icon": "rocket"
+                },
+                {
+                  "label": "Check",
+                  "text": "Measure it",
+                  "icon": "search"
+                },
+                {
+                  "label": "Act",
+                  "text": "Keep what works",
+                  "icon": "check"
+                }
+              ],
+              "center": "Improve"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_23_funnel",
+            "type": "tls.g.funnel",
+            "props": {
+              "stages": [
+                {
+                  "label": "Aware",
+                  "text": "People who hear about us"
+                },
+                {
+                  "label": "Interested",
+                  "text": "Visit the site and read"
+                },
+                {
+                  "label": "Trial",
+                  "text": "Try the product for free"
+                },
+                {
+                  "label": "Customer",
+                  "text": "Pay and stay"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_24",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_24_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process: flowchart",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_24_flow",
+            "type": "tls.g.flow",
+            "props": {
+              "nodes": [
+                {
+                  "id": "start",
+                  "label": "New request",
+                  "kind": "start"
+                },
+                {
+                  "id": "valid",
+                  "label": "Valid?",
+                  "kind": "decision"
+                },
+                {
+                  "id": "review",
+                  "label": "Manager review"
+                },
+                {
+                  "id": "fix",
+                  "label": "Ask to fix"
+                },
+                {
+                  "id": "ok",
+                  "label": "Approved?",
+                  "kind": "decision"
+                },
+                {
+                  "id": "done",
+                  "label": "Order placed",
+                  "kind": "end"
+                },
+                {
+                  "id": "no",
+                  "label": "Rejected",
+                  "kind": "end"
+                }
+              ],
+              "edges": [
+                {
+                  "from": "start",
+                  "to": "valid"
+                },
+                {
+                  "from": "valid",
+                  "to": "review",
+                  "label": "Yes"
+                },
+                {
+                  "from": "valid",
+                  "to": "fix",
+                  "label": "No"
+                },
+                {
+                  "from": "fix",
+                  "to": "start"
+                },
+                {
+                  "from": "review",
+                  "to": "ok"
+                },
+                {
+                  "from": "ok",
+                  "to": "done",
+                  "label": "Yes"
+                },
+                {
+                  "from": "ok",
+                  "to": "no",
+                  "label": "No"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_25",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_25_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 timeline",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_25_timeline",
+            "type": "tls.g.timeline",
+            "props": {
+              "events": [
+                {
+                  "date": "2019",
+                  "title": "Founded",
+                  "text": "Two founders and a prototype"
+                },
+                {
+                  "date": "2020",
+                  "title": "First customers",
+                  "text": "Ten pilots go live"
+                },
+                {
+                  "date": "2021",
+                  "title": "Series A",
+                  "text": "Team grows to thirty"
+                },
+                {
+                  "date": "2022",
+                  "title": "Platform 2.0",
+                  "text": "A rebuilt core and open API"
+                },
+                {
+                  "date": "2023",
+                  "title": "Global launch",
+                  "text": "Available in twelve countries"
+                },
+                {
+                  "date": "2024",
+                  "title": "Profitable",
+                  "text": "First full year in the black"
+                }
+              ],
+              "alternate": true,
+              "nowIndex": 3,
+              "nodeStyle": "number"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_26",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_26_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 timeline: vertical and milestones",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_26_tl_v",
+            "type": "tls.g.timeline",
+            "props": {
+              "events": [
+                {
+                  "date": "Mon",
+                  "title": "Kick-off",
+                  "text": "Goals and roles"
+                },
+                {
+                  "date": "Tue",
+                  "title": "Workshop",
+                  "text": "Map the journey"
+                },
+                {
+                  "date": "Wed",
+                  "title": "Prototype",
+                  "text": "Clickable draft"
+                },
+                {
+                  "date": "Thu",
+                  "title": "Test",
+                  "text": "Five user sessions"
+                }
+              ],
+              "axis": "vertical",
+              "alternate": false,
+              "nodeStyle": "dot"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_26_ms_v",
+            "type": "tls.g.milestones",
+            "props": {
+              "items": [
+                {
+                  "date": "Jan",
+                  "label": "Kick-off",
+                  "done": true
+                },
+                {
+                  "date": "Mar",
+                  "label": "Prototype",
+                  "done": true
+                },
+                {
+                  "date": "Jun",
+                  "label": "Beta release"
+                },
+                {
+                  "date": "Sep",
+                  "label": "Launch"
+                }
+              ],
+              "axis": "vertical",
+              "labels": "below"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_27",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_27_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 roadmap",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_27_roadmap",
+            "type": "tls.g.roadmap",
+            "props": {
+              "periods": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "lanes": [
+                {
+                  "name": "Product",
+                  "items": [
+                    {
+                      "label": "Redesign",
+                      "start": 0,
+                      "end": 1,
+                      "status": "done"
+                    },
+                    {
+                      "label": "Mobile app",
+                      "start": 1.5,
+                      "end": 3,
+                      "status": "active"
+                    }
+                  ]
+                },
+                {
+                  "name": "Platform",
+                  "items": [
+                    {
+                      "label": "Migration",
+                      "start": 0.5,
+                      "end": 2,
+                      "status": "active"
+                    },
+                    {
+                      "label": "Scale-out",
+                      "start": 3,
+                      "end": 3,
+                      "status": "planned"
+                    },
+                    {
+                      "label": "Audit",
+                      "start": 1,
+                      "end": 2,
+                      "status": "risk"
+                    }
+                  ]
+                },
+                {
+                  "name": "Growth",
+                  "items": [
+                    {
+                      "label": "Launch",
+                      "start": 2,
+                      "end": 2.5,
+                      "status": "planned"
+                    }
+                  ]
+                }
+              ],
+              "todayAt": 1.5
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_28",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_28_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 milestones",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_28_ms",
+            "type": "tls.g.milestones",
+            "props": {
+              "items": [
+                {
+                  "date": "Jan",
+                  "label": "Kick-off",
+                  "done": true
+                },
+                {
+                  "date": "Mar",
+                  "label": "Prototype",
+                  "done": true
+                },
+                {
+                  "date": "Jun",
+                  "label": "Beta release"
+                },
+                {
+                  "date": "Sep",
+                  "label": "Launch"
+                },
+                {
+                  "date": "Dec",
+                  "label": "Review"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
     }
   ]
 }

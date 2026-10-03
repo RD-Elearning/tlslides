@@ -78,7 +78,8 @@ export function layout(props: ChevronsProps, ctx: LayoutContext): LayoutNode {
     const box = { x, y: g.chevY, width: g.cw, height: g.chevH }
     const ramp = rampColor(ctx, mode, i, N)
     const active = cur < 0 || i === cur
-    const fill = active ? ramp : tintOf(c.surface, ramp, 0.22)
+    // The current phase is the brand accent (or its series colour), never a mid-ramp blend.
+    const fill = i === cur ? (mode === 'series' ? ramp : c.accent) : active ? ramp : tintOf(c.surface, ramp, 0.22)
     const ink = active ? onColor(ctx, fill) : c.text
     nodes.push(pathNode(ctx, chevronPath(box, g.notch, i === 0, false), `chevron[${i}]`, { fill }))
 
