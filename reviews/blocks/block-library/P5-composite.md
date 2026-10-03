@@ -37,13 +37,13 @@ layout region without collisions (collision helper).
 | 6 | `tls.c.team` | people | group | must | c.profile-card | ✅ | 1dd5da6a | Not a grid of `tls.c.profile-card`: that is exactly 4 deep and cannot sit in a container. Cells are laid out by hand (avatar + bio, panel rect), 1 level deep, works nested (tested). Centred cells; `cols auto` = 2/3/4/3/3/4/4 for 2..8. `showBio` is a toggle (`bio`). No contact line. |
 | 7 | `tls.c.objectives` | agenda | slide | must | t.checklist / t.numbered, m.icon | ✅ | 2eb5dc87 | `icon` marker uses `tls.m.icon-list` with one icon for all items, always one column. Items render at body size (28): the list blocks have no size option. |
 | 8 | `tls.c.cards` | list | group | must | l.card, m.icon, t.title, t.body, t.hero-number | ✅ | 6b80c1b4 | Rounded panels are raw rects (the card block has no radius or stroke), so `outline` and `surface` tones are possible. Cards are content-height (min 460, region permitting), not region-filling. `feature-grid` avoid/related now point at cards. |
-| 9 | `tls.c.quiz` | learning | group | should | t.title, l.grid, l.card | ⬜ | | layout, not composite |
-| 10 | `tls.c.recap` | closing | slide | should | t.numbered, t.takeaway | ⬜ | | |
-| 11 | `tls.c.case-study` | comparison | slide | should | l.row, l.card, t.kicker, t.body, t.hero-number | ⬜ | | |
-| 12 | `tls.c.problem-solution` | comparison | group | should | g.before-after or l.split, t.callout | ⬜ | | |
-| 13 | `tls.c.contact` | closing | group | could | m.avatar, t.kv-list, m.icon-list | ⬜ | | |
-| 14 | `tls.c.quote-image` | emphasis | slide | could | l.overlay, m.image, t.quote | ⬜ | | |
-| — | Demo deck "block-library-tour" (one slide per must composite) + screenshots | | | | | 🔶 | aaf9ca00 | 17 slides: P1-P4 representatives (reused sl_12/15/19/23/32/42/43), 8 part A composites. Every slide shot at 1920x1080 and opened. Part B composites still to be added. |
+| 9 | `tls.c.quiz` | learning | group | should | t.title, l.grid, l.card | ✅ | 0cba9771 | Hand-written layout (flat leaves). **`reveal: shown \| none` only**: `on-click` and per-answer build steps are not possible (`PartMotionSpec` has no per-part trigger, same gap as `tls.t.qa`). Correct option = `positive` fill, stroke, badge and a check mark under part `answer`; `none` hides the answer AND the explanation. Option parts `optionbg[i]`, `badge[i]`, `letter[i]`, `option[i]`. Validation: `answer` slot bounds 0..4 (`budget/overflow` error from `validateDeckSpec`) plus block `lint()` rule `quiz/answer-out-of-range` (error, message names the valid range); **no production code calls a block's `lint()`**, so the relative check is only reachable by calling it directly. Layout ignores a bad index (no highlight). Question is always `subheading` size. |
+| 10 | `tls.c.recap` | closing | slide | should | t.numbered, t.takeaway | ✅ | 88052648 | `numbered` = `tls.t.numbered` badge list; `cards` = one panel per point with a big number (`title` size). Takeaway = `tls.t.takeaway` labelled "Remember". Content vertically centred. Closing `avoid` now points at recap. Raw leaves carry absolute boxes: shift them with the content (browser pass caught the cards starting at y=0). |
+| 11 | `tls.c.case-study` | comparison | slide | should | l.row, l.card, t.kicker, t.body, t.hero-number | ✅ | 84f5c502 | `columns` (3 panels, capped 480 tall) and `rows` (bands, label left, metric in the result band). The metric is `tls.t.title` (not hero-number) at `title`/`heading` size. `tls.t.kicker` is always accent coloured, so the label on the accent-filled result panel is an uppercase `tls.t.caption` in the on-accent colour. No `capacity()` (fixed three texts). |
+| 12 | `tls.c.problem-solution` | comparison | group | should | g.before-after or l.split, t.callout | ✅ | 4334a395 | `panels` (negative / positive tint, icon, title, text) or `callouts` (`tls.t.callout` danger and success, icons renamed to part `icon[i]` after flattening). The plan's `icons` boolean is **`showIcons`** (toggle convention gate). Arrow = circle + filled polygon: the icon set's `arrow-right` is a Material chevron. Callouts keep their own heights (not equalised). |
+| 13 | `tls.c.contact` | closing | group | could | m.avatar, t.kv-list, m.icon-list | ✅ | f76a6c3c | Avatar (inline, `lg`) + `tls.m.icon-list` (circle icons, `showText` off); kind -> icon mail / phone / globe / map-pin / share, unknown kind -> globe. 1-6 lines (icon-list's own min of 2 is not enforced through `layoutChild`). `showPerson` toggle. |
+| 14 | `tls.c.quote-image` | emphasis | slide | could | l.overlay, m.image, t.quote | ✅ | 1ed00d3f | Photo + one `rgba` scrim rect + quotation mark + `tls.t.title` quote (`heading`/`subheading`) + name + role. **Contrast by construction and lint**: the theme scrim (`rgba(0,0,0,0.6)`) is raised to alpha >= 0.55 (`medium`) or >= 0.75 (`strong`), which keeps white text >= 4.5:1 even over a pure white photo; `lint()` runs the same worst-case maths (`quote-image/scrim-contrast`, warning) plus `alt/missing`. Not `tls.t.quote` (it has no align and its own mark). Lint is not called by production code (see quiz). |
+| — | Demo deck "block-library-tour" (one slide per must composite) + screenshots | | | | | ✅ | aaf9ca00, 71323154 | 27 slides: P1-P4 representatives, 8 part A composites, and part B tl_18-tl_27 (quiz shown, quiz grid + none, recap numbered + cards, case-study columns + rows, problem-solution panels + callouts, contact, quote-image). Every new slide shot at 1920x1080 and opened; slides re-shot and re-opened after the fixes. |
 
 ---
 
@@ -209,6 +209,38 @@ layout region without collisions (collision helper).
 - **Browser.** Next dev serves a stale `packages/tldraw/dist` after a rebuild unless the server (and `.next`) is
   restarted: a changed text-box width did not show until then.
 
+## Notes from part B (quiz, recap, case-study, problem-solution, contact, quote-image)
+
+- **All six use `composeFlat`** like part A (flat absolute leaves, one root group, parts named per piece), with registry-backed
+  parity: `standardBlockSuite(def, { withRegistry: true })` for each. Depth: layouts are 1 level deep, the reference `build()`
+  trees are asserted <= 4 at max content.
+- **Raw leaves are absolute.** A `Piece` with `raw` keeps its own node boxes (`placePiece` ignores the piece box for them), so any
+  vertical shift (centring in a tall region) must move the raw nodes too. Found in the browser (recap cards), not by a unit test; a
+  containment/within-panel assertion now covers it.
+- **Block `lint()` is never called outside tests.** `validateDeckSpec` has no hook for it. The quiz answer range and the quote-image
+  contrast rules therefore exist, are unit-tested, and are not yet surfaced to the AI repair loop; a follow-up could call
+  `def.lint` from `validateDeckSpec` (it needs a `LintContext`: box, tokens, surface).
+- **Icon set quirk:** `arrow-right` is a Material chevron, not an arrow. Use a polygon path (problem-solution) or `chevron-right`.
+- **`tls.t.kicker` ignores `color`** (always accent), so it vanishes on an accent fill: use a caption.
+- **Digest.** Block details 931-1,346 chars (case-study the largest); top-8 stays 11,985 / 12,000; index 14,785 / 20,000
+  (snapshot in [INDEX-snapshot.md](INDEX-snapshot.md)). The full catalog is 120 blocks.
+- **Not built / reduced:** quiz click reveal and per-answer steps (no per-part triggers); quiz question size fixed; case-study has
+  no `capacity()`; problem-solution callouts are not equal height; quote-image has no gradient (directional) scrim; contact has no
+  side-by-side person layout.
+
+### Older composites re-probed with a registry (2026-10-03)
+
+| Block | Result with `{ registry }` | Action |
+|---|---|---|
+| `tls.c.stat-card`, `tls.c.kpi-tile`, `tls.c.agenda`, `tls.c.image-text` | pass (defaults and example) | stricter probe kept (their parity tests now pass a registry; stat-card got one) |
+| `tls.c.profile-card` | failed (32 px): nested `layoutChild` groups | fixed: `layout()` flattens to absolute leaves; spec switched from `noParity` to `withRegistry`; tour slide tl_12 re-shot, unchanged |
+| `tls.g.swot` | FAIL (24 px) | **known issue**: nested group offsets plus leaves sharing part names; `it.skip` test with the registry added |
+| `tls.c.kpi-row`, `tls.c.comparison`, `tls.c.steps` | FAIL (text of the "first" part differs between DOM and SVG: shared `text` part names, nested offsets) | **known issues**: `it.skip` tests added; fix = `composeFlat` plus per-piece parts (not small) |
+| `tls.c.hero`, `tls.c.feature-grid`, `tls.c.testimonial`, `tls.c.big-stat` | hero passes; feature-grid / testimonial / big-stat fail (2 px / 2 px / 17 px) **with or without** a registry | **pre-existing Tier B html parity gaps**, not caused by the registry, not touched, no spec covers them |
+
+The four failing blocks pass their existing probe only because it compared empty trees. Real consequence: their SVG export is
+likely mispositioned for nested children (the DOM is right).
+
 ## Phase done when
 - [x] Must composites ✅, each with a depth ≤ 4 assertion. (8 of 8 must composites; `depthOk` per block.)
 - [x] New demo deck fixture `block-library-tour.json` (one slide per must composite plus one per
@@ -217,6 +249,6 @@ layout region without collisions (collision helper).
   register it in `demo-deck-contract.spec.ts` if that spec enumerates fixtures. (Part A slides done;
   the contract/roundtrip specs only read `demo-deck.json`, so the tour is registered in
   `catalog-conformance` (slide-scope nesting), picked up by `collision.spec` automatically, and has its own
-  `block-library-tour.spec.ts` (0 errors, byte-identical copy). Part B composites still to be added.)
-- [ ] `capabilityIndex()` for the full catalog pasted into the session log note, with its char count.
-- [ ] Full suite, tsc 0, README counts and session log updated.
+  `block-library-tour.spec.ts` (0 errors, byte-identical copy, every part B composite used, quiz in both reveal modes). Part B slides tl_18-tl_27 added and opened.)
+- [x] `capabilityIndex()` for the full catalog, with its char count: 14,785 chars, kept in [INDEX-snapshot.md](INDEX-snapshot.md) (too long for the session log).
+- [ ] Full suite (not run: 6 GB machine; targeted specs only), tsc 0 (verified after every block, 0), README counts and session log updated (done).
