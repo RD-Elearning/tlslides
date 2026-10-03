@@ -1627,6 +1627,33 @@ Bridge chart: floating bars for changes, full bars for totals, optional connecto
 }
 \`\`\`
 
+### \`tls.g.arrow\` — Arrow
+
+A single straight, curved or elbow arrow in four directions with one or two heads and an optional label. _(family: diagram; keywords: arrow, pointer, connector, curved arrow, elbow, flow direction)_
+
+**When:** Pointing from one block to another on a free layout, with a word on the arrow.
+**Avoid:** Connecting steps in a process (use tls.g.flow, which draws its own connectors).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | no | text (max 30 chars) | Optional, 1-4 words, e.g. \\"then\\" or \\"+12%\\". |
+| \`kind\` | no | enum: straight \\\\| curved \\\\| elbow |  |
+| \`direction\` | no | enum: right \\\\| left \\\\| up \\\\| down |  |
+| \`heads\` | no | enum: end \\\\| both \\\\| none |  |
+| \`weight\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`tone\` | no | enum: accent \\\\| text \\\\| muted |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_arrow\\",
+  \\"type\\": \\"tls.g.arrow\\",
+  \\"props\\": {
+    \\"label\\": \\"Then\\",
+    \\"kind\\": \\"curved\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.before-after\` — Before and After
 
 Before and after panels joined by an arrow, each with a tag, title, text and optional image. _(family: diagram; keywords: before, after, transformation, redesign, problem, solution, change)_
@@ -3561,7 +3588,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 93,
+  "blockCount": 94,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3600,6 +3627,7 @@ Object {
     "tls.d.table",
     "tls.d.trend-badge",
     "tls.d.waterfall",
+    "tls.g.arrow",
     "tls.g.before-after",
     "tls.g.bracket",
     "tls.g.breakdown",
