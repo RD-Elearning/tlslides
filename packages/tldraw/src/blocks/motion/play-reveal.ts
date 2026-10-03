@@ -205,7 +205,10 @@ export function playBlockReveal(
       // the part's own delay, as before).
       const delay = pm.delayMs + (indexed ? elementIndex * (pm.staggerMs ?? 0) : 0)
       // Count-up: intercept onUpdate to tween textContent.
-      if (pm.presetId === 'count-up') {
+      // P7: only text that holds a number counts up (a label such as "Adoption" used to be
+      // rewritten to "Adoption0Adoption"), and the last frame restores the exact original text
+      // ("1,250" would otherwise end as "1250").
+      if (pm.presetId === 'count-up' && /\d/.test(partEl.textContent ?? '')) {
         const targetText = partEl.textContent ?? '0'
         const targetValue = parseFloat(targetText.replace(/[^0-9.-]/g, '')) || 0
         const isInteger = Number.isInteger(targetValue)
@@ -218,6 +221,10 @@ export function playBlockReveal(
           easing: pm.easing,
           fill: 'forwards',
           onUpdate: (progress: number) => {
+            if (progress >= 1) {
+              ;(partEl as HTMLElement).textContent = targetText
+              return
+            }
             const current = targetValue * progress
             ;(partEl as HTMLElement).textContent = prefix + (isInteger ? Math.round(current).toString() : current.toFixed(1)) + suffix
           },

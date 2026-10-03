@@ -344,3 +344,39 @@ describe('playBlockReveal — indexed part matching', () => {
     expect(partPlays.map((p) => p.opts.delay)).toEqual([0, 40, 80])
   })
 })
+
+describe('P7 expressive recipes and count-up guard', () => {
+  const reg = registry()
+
+  it('existing blocks declare showy expressive presets that exist', () => {
+    expect(reg.get('tls.t.title')!.motion.expressive).toBe('words-in')
+    expect(reg.get('tls.c.kpi-tile')!.motion.expressive).toBe('count-up')
+    const { shapes } = compileSlide(slide({ motionStyle: 'expressive' }), FRAME, TOKENS, reg)
+    expect((byBlockId(shapes).title.props as any).$block.styleMotion.preset).toBe('words-in')
+  })
+
+  it('count-up never rewrites text without a number and ends on the exact original text', () => {
+    const el = document.createElement('div')
+    for (const [part, text] of [['label', 'Adoption'], ['value', '1,250']]) {
+      const c = document.createElement('div')
+      c.setAttribute('data-part', part)
+      c.textContent = text
+      el.appendChild(c)
+    }
+    const driver: MotionDriver = {
+      play(_t, _k, opts) {
+        opts.onUpdate?.(0.5)
+        opts.onUpdate?.(1)
+        return { cancel() {}, finished: Promise.resolve() }
+      },
+      set() {},
+      timeline() {
+        return { cancel() {}, finished: Promise.resolve() }
+      },
+      cancelAll() {},
+    }
+    playBlockReveal(el, { id: 'k', type: 'x', props: {}, motion: { preset: 'count-up' } }, { motion: { parts: ['label', 'value'] } } as any, { driver, reducedMotion: false })
+    expect(el.children[0].textContent).toBe('Adoption')
+    expect(el.children[1].textContent).toBe('1,250')
+  })
+})

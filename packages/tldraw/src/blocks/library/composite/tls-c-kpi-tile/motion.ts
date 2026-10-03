@@ -12,4 +12,6 @@ import type { MotionRecipe } from '../../../types'
 export const motion: MotionRecipe = {
   parts: ['label', 'value', 'delta'],
   preset: 'fade-up',
+  /** P7: under `motionStyle: expressive` the value counts up. */
+  expressive: 'count-up',
 }
