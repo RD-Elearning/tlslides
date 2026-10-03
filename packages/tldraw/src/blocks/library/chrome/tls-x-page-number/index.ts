@@ -20,6 +20,7 @@ export const tlsXPageNumber: BlockDefinition = {
   category: 'chrome',
   scope: 'element',
   shortDescription: 'Slide number, alone or as "3 / 24"',
+  related: ['tls.x.footer-text'],
   describe: {
     when: 'Use to indicate the current page position in a multi-slide document.',
     avoid: 'Do not use as a content block: it is slide furniture only.',

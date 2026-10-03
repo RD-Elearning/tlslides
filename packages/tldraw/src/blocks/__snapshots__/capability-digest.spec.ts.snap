@@ -4417,6 +4417,36 @@ Slide title with inline styling, autofit, and truncation. _(family: text; keywor
 }
 \`\`\`
 
+### \`tls.x.footer-text\` — Footer Text
+
+One muted footer line of up to three short items with separators and an optional hairline. _(family: chrome; keywords: footer, deck title, confidential, date, running footer, chrome)_
+
+**When:** Repeating a deck title, event name, date or confidentiality note at the bottom of slides.
+**Avoid:** Sources and notes about the content (use tls.t.footnote).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 40 chars) (1–3 items) | Deck title, event or author, date or confidentiality note: short phrases, one line in total. |
+| \`align\` | no | enum: start \\\\| center \\\\| end \\\\| spread | spread puts the first item at the left edge and the last at the right. |
+| \`separator\` | no | enum: dot \\\\| bar \\\\| none |  |
+| \`showRule\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_footer_text\\",
+  \\"type\\": \\"tls.x.footer-text\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Annual review 2026\\",
+      \\"Confidential\\"
+    ],
+    \\"align\\": \\"start\\",
+    \\"separator\\": \\"dot\\",
+    \\"showRule\\": true
+  }
+}
+\`\`\`
+
 ### \`tls.x.page-number\` — Page Number
 
 Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
@@ -4523,7 +4553,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 120,
+  "blockCount": 121,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4644,6 +4674,7 @@ Object {
     "tls.t.tags",
     "tls.t.takeaway",
     "tls.t.title",
+    "tls.x.footer-text",
     "tls.x.page-number",
   ],
   "colorRoleCount": 12,

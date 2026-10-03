@@ -20,6 +20,7 @@ export const tlsLFooter: BlockDefinition = {
   category: 'structure',
   scope: 'element',
   shortDescription: 'Main content area above a fixed-height footer strip',
+  related: ['tls.x.footer-text'],
   describe: {
     when: 'Use to add a persistent footer strip below the main content area.',
     avoid: 'Do not use for an inline caption under one chart or image (use tls.t.caption).',

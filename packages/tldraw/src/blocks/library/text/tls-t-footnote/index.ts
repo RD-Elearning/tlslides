@@ -17,7 +17,7 @@ export const tlsTFootnote: BlockDefinition = {
   category: 'text',
   scope: 'element',
   shortDescription: 'Small-print source, reference or footnote line with optional marker',
-  related: ['tls.t.caption'],
+  related: ['tls.t.caption', 'tls.x.footer-text'],
   describe: {
     when: 'Citing data sources under a chart or table, and footnotes.',
     avoid: 'A caption that describes an image (use tls.t.caption).',
