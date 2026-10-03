@@ -1811,6 +1811,64 @@ Narrowing stages from broad to focused, with a note per stage and no numbers. _(
 }
 \`\`\`
 
+### \`tls.g.matrix-2x2\` — 2x2 Matrix
+
+Two-by-two quadrant grid with labelled axes and optional plotted points. _(family: diagram; keywords: matrix, 2x2, quadrant, prioritisation)_
+
+**When:** Contrast on two dimensions: effort/impact, urgent/important, BCG.
+**Avoid:** Many numeric points (use tls.d.scatter); SWOT (use tls.g.swot).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`xAxis\` | yes | object (low, high, title) | {low, high, title?} of the horizontal dimension. |
+| \`yAxis\` | yes | object (low, high, title) | {low, high, title?}; high is at the top. |
+| \`quadrants\` | yes | list of object (label, text) (4–4 items) | Exactly 4 {label, text?}: TL, TR, BL, BR. |
+| \`items\` | no | list of object (label, x, y) (0–12 items) | Points {label, x, y}, x and y in 0..1. |
+| \`highlight\` | no | enum: none \\\\| TL \\\\| TR \\\\| BL \\\\| BR |  |
+| \`style\` | no | enum: tinted \\\\| lines |  |
+| \`showItems\` | no | boolean |  |
+| \`showAxisTitles\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_matrix\\",
+  \\"type\\": \\"tls.g.matrix-2x2\\",
+  \\"props\\": {
+    \\"xAxis\\": {
+      \\"low\\": \\"Low\\",
+      \\"high\\": \\"High\\",
+      \\"title\\": \\"Effort\\"
+    },
+    \\"yAxis\\": {
+      \\"low\\": \\"Low\\",
+      \\"high\\": \\"High\\",
+      \\"title\\": \\"Impact\\"
+    },
+    \\"quadrants\\": [
+      {
+        \\"label\\": \\"Quick wins\\"
+      },
+      {
+        \\"label\\": \\"Big bets\\"
+      },
+      {
+        \\"label\\": \\"Fill-ins\\"
+      },
+      {
+        \\"label\\": \\"Avoid\\"
+      }
+    ],
+    \\"items\\": [
+      {
+        \\"label\\": \\"Onboarding\\",
+        \\"x\\": 0.2,
+        \\"y\\": 0.8
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.milestones\` — Milestones
 
 Key checkpoints as diamonds on a line, filled when done, each with a date and short label. _(family: diagram; keywords: milestones, checkpoints, dates, progress, deadlines)_
@@ -3223,7 +3281,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 84,
+  "blockCount": 85,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3266,6 +3324,7 @@ Object {
     "tls.g.cycle",
     "tls.g.flow",
     "tls.g.funnel",
+    "tls.g.matrix-2x2",
     "tls.g.milestones",
     "tls.g.pyramid",
     "tls.g.roadmap",

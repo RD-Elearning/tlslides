@@ -14,9 +14,10 @@ import { tlsGMilestones } from './tls-g-milestones'
 import { tlsGFlow } from './tls-g-flow'
 import { tlsGTree } from './tls-g-tree'
 import { tlsGPyramid } from './tls-g-pyramid'
+import { tlsGMatrix2x2 } from './tls-g-matrix-2x2'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -28,3 +29,4 @@ export { tlsGMilestones } from './tls-g-milestones'
 export { tlsGFlow } from './tls-g-flow'
 export { tlsGTree } from './tls-g-tree'
 export { tlsGPyramid } from './tls-g-pyramid'
+export { tlsGMatrix2x2 } from './tls-g-matrix-2x2'
