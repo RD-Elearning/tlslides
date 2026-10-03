@@ -31,7 +31,21 @@ export function layout(props: BeforeAfterProps, ctx: LayoutContext): LayoutNode 
 
   const gap = arrow === 'none' ? 32 : clamp(W * 0.1, 64, 130)
   const pw = Math.max(20, (W - gap) / 2)
-  const panelBox = (i: 0 | 1): Box => ({ x: i * (pw + gap), y: 0, width: pw, height: H })
+  const pad0 = clamp(Math.min(pw, H) * 0.06, 12, PAD)
+  /** Height a panel needs for its content (images take 42% of the block). */
+  const need = (p: Record<string, unknown> | undefined): number => {
+    const iw = Math.max(10, pw - 2 * pad0)
+    let h = 2 * pad0
+    if (str(p?.image)) h += clamp(H * 0.42, 40, 340) + 12
+    if (str(p?.label).trim()) h += lineH(tagS) + 6
+    if (str(p?.title)) h += linesHeight(ctx, str(p?.title), titleS, iw, 2) + 8
+    if (str(p?.text)) h += linesHeight(ctx, str(p?.text), textS, iw, 12)
+    return h
+  }
+  // Panels hug their content (never shorter than 38% of the block) and are centred vertically.
+  const panelH = clamp(Math.max(need(b), need(a)) + pad0, Math.min(H, H * 0.38), H)
+  const panelY = (H - panelH) / 2
+  const panelBox = (i: 0 | 1): Box => ({ x: i * (pw + gap), y: panelY, width: pw, height: panelH })
 
   const nodes: LayoutNode[] = []
   const group = (part: string, children: LayoutNode[]): LayoutNode => ({ k: 'group', part, box: { x: 0, y: 0, width: W, height: H }, children })
@@ -48,10 +62,10 @@ export function layout(props: BeforeAfterProps, ctx: LayoutContext): LayoutNode 
       stroke: { color: accent ? c.accent : c.line, width: accent ? 3 : 2 },
       radius: 18,
     })
-    const pad = clamp(Math.min(pw, H) * 0.06, 12, PAD)
+    const pad = pad0
     const iw = Math.max(10, pw - 2 * pad)
     let y = box.y + pad
-    const bottom = box.y + H - pad
+    const bottom = box.y + box.height - pad
     const src = str(p?.image)
     if (src) {
       const ih = clamp(H * 0.42, 40, 340)
