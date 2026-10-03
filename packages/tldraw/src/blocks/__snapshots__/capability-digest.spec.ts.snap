@@ -1029,6 +1029,51 @@ Two labelled numbers with a connector and a coloured change pill (percent or abs
 }
 \`\`\`
 
+### \`tls.d.waterfall\` — Waterfall Chart
+
+Bridge chart: floating bars for changes, full bars for totals, optional connectors. _(family: data; keywords: waterfall, bridge, variance, walk, revenue, budget)_
+
+**When:** Bridge from one figure to another (revenue bridge, budget variance).
+**Avoid:** Independent values (use tls.d.bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, value, kind) (3–12 items) | Start total, signed changes, end total. |
+| \`connectors\` | no | boolean |  |
+| \`colorBy\` | no | enum: sign \\\\| single | sign = positive / negative roles. |
+| \`valueLabels\` | no | enum: end \\\\| none |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_waterfall\\",
+  \\"type\\": \\"tls.d.waterfall\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Start\\",
+        \\"value\\": 100,
+        \\"kind\\": \\"total\\"
+      },
+      {
+        \\"label\\": \\"Growth\\",
+        \\"value\\": 30
+      },
+      {
+        \\"label\\": \\"Churn\\",
+        \\"value\\": -15
+      },
+      {
+        \\"label\\": \\"End\\",
+        \\"value\\": 115,
+        \\"kind\\": \\"total\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -2206,7 +2251,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 61,
+  "blockCount": 62,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2231,6 +2276,7 @@ Object {
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
+    "tls.d.waterfall",
     "tls.g.steps",
     "tls.l.card",
     "tls.l.field",
