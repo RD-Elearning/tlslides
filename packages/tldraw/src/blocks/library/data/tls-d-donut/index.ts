@@ -19,7 +19,7 @@ export const tlsDDonut: BlockDefinition = {
   category: 'chart',
   scope: 'group',
   shortDescription: 'Ring of slices showing shares of a whole, with centre label',
-  related: ['tls.d.bar', 'tls.d.progress-ring'],
+  related: ['tls.d.bar', 'tls.d.progress-ring', 'tls.d.pie'],
   describe: {
     when: 'Use to display proportional data in a donut chart format.',
     avoid: 'Do not use for detailed values or many categories (use tls.d.bar), or for a table of exact figures.',

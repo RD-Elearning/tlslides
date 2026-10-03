@@ -758,6 +758,42 @@ Line chart with one line per series, labelled at the line ends. _(family: data; 
 }
 \`\`\`
 
+### \`tls.d.pie\` — Pie Chart
+
+Pie of up to six slices with outside, inside or legend labels and percentages. _(family: data; keywords: pie, share, proportion, whole, percent, chart)_
+
+**When:** Share of a whole with up to 6 parts.
+**Avoid:** Similar-sized shares (use tls.d.bar); a ring with a centre number (use tls.d.donut).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–6 items) | One name per slice. |
+| \`values\` | yes | list of number (2–6 items) | One non-negative number per category. |
+| \`labels\` | no | enum: outside \\\\| inside \\\\| legend |  |
+| \`showPercent\` | no | boolean |  |
+| \`sort\` | no | enum: desc \\\\| none | desc = largest slice first. |
+| \`highlightIndex\` | no | number (min -1) | Slice to emphasise; others dim. -1 = none. |
+| \`startAngle\` | no | number | Degrees clockwise from 12 o'clock. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pie\\",
+  \\"type\\": \\"tls.d.pie\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"Direct\\",
+      \\"Partners\\",
+      \\"Online\\"
+    ],
+    \\"values\\": [
+      50,
+      30,
+      20
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.progress-bar\` — Progress Bars
 
 Labelled bars filled to value / target, with percent or value text. _(family: data; keywords: progress, completion, target, goal, bar, percent)_
@@ -2090,7 +2126,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 58,
+  "blockCount": 59,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2108,6 +2144,7 @@ Object {
     "tls.d.donut",
     "tls.d.grouped-bar",
     "tls.d.line",
+    "tls.d.pie",
     "tls.d.progress-bar",
     "tls.d.progress-ring",
     "tls.d.stacked-bar",
