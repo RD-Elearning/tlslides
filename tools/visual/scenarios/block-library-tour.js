@@ -33,7 +33,7 @@ module.exports = {
         await page.waitForTimeout(120)
         at++
       }
-      await page.waitForTimeout(3500)
+      await page.waitForTimeout(+(process.env.TOUR_WAIT||3500))
       const file = path.join(SHOTS, `tour-${id}.png`)
       await page.screenshot({ path: file })
       out[id] = file
