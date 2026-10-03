@@ -74,7 +74,7 @@ node_modules/.bin/tsc --noEmit --emitDeclarationOnly false | grep -v '\.spec\.' 
 
 | Phase | Scope | New blocks | Depends on | Status |
 |---|---|---|---|---|
-| **P0** | Foundation: metadata fields, conformance gates, backfill 41 blocks, two-tier digest, category gallery, icon set ×8, shared engines | 0 (+1 option on `tls.d.bar`) | — | ⬜ |
+| **P0** | Foundation: metadata fields, conformance gates, backfill 41 blocks, two-tier digest, category gallery, icon set ×8, shared engines | 0 (+1 option on `tls.d.bar`) | — | 🔶 P0.1–P0.4 done |
 | **P1** | Text, lists, emphasis | 11 | P0.1–P0.3 | ⬜ |
 | **P2** | Metrics, charts, tables | 24 | P0.1–P0.3, P0.6 (chart), P0.7 (table) | ⬜ |
 | **P3** | Diagrams | 21 | P0.1–P0.3, P0.8 (connector/radial) | ⬜ |
@@ -99,7 +99,7 @@ Update these counts when you tick a block. The detailed status lives in the phas
 
 | Phase | must | should | could | Done | Last commit | Last update |
 |---|---|---|---|---|---|---|
-| P0 | 8 tasks | 1 task | — | 0 / 9 tasks | — | — |
+| P0 | 8 tasks | 1 task | — | 4 / 9 tasks | 72e2a610 | 2026-10-03 |
 | P1 | 7 | 3 | 1 | 0 / 11 | — | — |
 | P2 | 12 | 8 | 4 | 0 / 24 | — | — |
 | P3 | 10 | 7 | 4 | 0 / 21 | — | — |
@@ -116,6 +116,7 @@ Append one line per working session (date, who, what moved, anything the next se
 
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
+| 2026-10-03 | L0 agent | P0.1–P0.4 shipped (`2ef8837b`, `d508b7bb`, `7f5a3dfe`, 72e2a610) | Next: P0.5 icons (then update the index's icon list automatically, it reads `ICONS`), P0.6–P0.9. Index for 41 blocks is ~5.5k chars. Budgets now: index <= 20k, detail <= 12k per 8 types. Gallery: tools/visual/scenarios/block-gallery.js (needs a rebuilt `packages/tldraw/dist`, the sample reads dist). |
 | 2026-10-03 | plan | Plan written | Start at P0.1. The digest budget test (`capability-digest.spec.ts`) is already at its 60k ceiling, so P0.4 must land before any phase adds blocks, or every new block fails that test. |
 
 ---

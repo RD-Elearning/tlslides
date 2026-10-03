@@ -5,10 +5,10 @@ phases that list them as dependencies, so they can run in parallel with early P1
 
 | # | Task | Priority | Size | Status | Commit | Notes |
 |---|---|---|---|---|---|---|
-| P0.1 | `category` / `shortDescription` / `scope` / `related` on `BlockDefinition` + housekeeping | must | S | ⬜ | | |
-| P0.2 | Conformance gates for the new metadata | must | S | ⬜ | | |
-| P0.3 | Backfill the 41 existing blocks | must | M | ⬜ | | |
-| P0.4 | Two-tier AI digest (index + detail) and category gallery | must | M | ⬜ | | |
+| P0.1 | `category` / `shortDescription` / `scope` / `related` on `BlockDefinition` + housekeeping | must | S | ✅ | 2ef8837b | Stray brace-expansion dir was already absent; empty channel/ml/visual dirs removed. |
+| P0.2 | Conformance gates for the new metadata | must | S | ✅ | d508b7bb | Warning rule id is `block/scope-nested` (repo uses slash-style rule ids). Gates are red at this commit until P0.3 backfills. |
+| P0.3 | Backfill the 41 existing blocks | must | M | ✅ | 7f5a3dfe | Fixture sl_11 nested slide-scope big-stat in a card; swapped for kpi-tile (both fixture copies). Digest budgets bumped, replaced in P0.4. |
+| P0.4 | Two-tier AI digest (index + detail) and category gallery | must | M | ✅ | 72e2a610 | Index is ~5.5k chars for 41 blocks. Range comes from the first required content list/series slot (min<=1 dropped). Filtered detail is block-only with compact examples. Icon list is the existing 10 until P0.5. Scenario: tools/visual/scenarios/block-gallery.js. |
 | P0.5 | Icon set 10 → ~80 | must | M | ⬜ | | |
 | P0.6 | Chart engine v2 (multi-series, legend, arcs, paths, formatting) | must | M | ⬜ | | |
 | P0.7 | Table engine (column solver + cell measurement) | must | M | ⬜ | | |
