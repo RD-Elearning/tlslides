@@ -75,7 +75,7 @@ node_modules/.bin/tsc --noEmit --emitDeclarationOnly false | grep -v '\.spec\.' 
 | Phase | Scope | New blocks | Depends on | Status |
 |---|---|---|---|---|
 | **P0** | Foundation: metadata fields, conformance gates, backfill 41 blocks, two-tier digest, category gallery, icon set ×8, shared engines | 0 (+1 option on `tls.d.bar`) | — | ✅ P0.1–P0.9 done (one P0.5 box open) |
-| **P1** | Text, lists, emphasis | 11 | P0.1–P0.3 | ⬜ |
+| **P1** | Text, lists, emphasis | 11 (10 shipped, `code` ⏸) | P0.1–P0.3 | ✅ 10 / 11 |
 | **P2** | Metrics, charts, tables | 24 | P0.1–P0.3, P0.6 (chart), P0.7 (table) | ⬜ |
 | **P3** | Diagrams | 21 | P0.1–P0.3, P0.8 (connector/radial) | ⬜ |
 | **P4** | Media, brand, people, decoration | 11 | P0.1–P0.3, P0.5 (icons) | ⬜ |
@@ -100,15 +100,15 @@ Update these counts when you tick a block. The detailed status lives in the phas
 | Phase | must | should | could | Done | Last commit | Last update |
 |---|---|---|---|---|---|---|
 | P0 | 8 tasks | 1 task | — | 9 / 9 tasks | 795f0ae6 | 2026-10-03 |
-| P1 | 7 | 3 | 1 | 0 / 11 | — | — |
+| P1 | 7 | 3 | 1 | 10 / 11 (`tls.t.code` ⏸ blocked) | 2900b5b5 | 2026-10-03 |
 | P2 | 12 | 8 | 4 | 0 / 24 | — | — |
 | P3 | 10 | 7 | 4 | 0 / 21 | — | — |
 | P4 | 5 | 4 | 2 | 0 / 11 | — | — |
 | P5 | 8 | 4 | 2 | 0 / 14 | — | — |
 | P6 | 3 | 3 | 1 | 0 / 7 | — | — |
-| **Total new blocks** | **45** | **29** | **14** | **0 / 88** | | |
+| **Total new blocks** | **45** | **29** | **14** | **10 / 88** | | |
 
-Catalog size: **41** today → **86** after all must-level blocks → **129** when complete.
+Catalog size: **51** today (41 + 10 from P1) → **86** after all must-level blocks → **129** when complete.
 
 ### Session log
 
@@ -118,6 +118,7 @@ Append one line per working session (date, who, what moved, anything the next se
 |---|---|---|---|
 | 2026-10-03 | L0 agent | P0.1–P0.4 shipped (`2ef8837b`, `d508b7bb`, `7f5a3dfe`, 72e2a610) | Next: P0.5 icons (then update the index's icon list automatically, it reads `ICONS`), P0.6–P0.9. Index for 41 blocks is ~5.5k chars. Budgets now: index <= 20k, detail <= 12k per 8 types. Gallery: tools/visual/scenarios/block-gallery.js (needs a rebuilt `packages/tldraw/dist`, the sample reads dist). |
 | 2026-10-03 | L0 agent | P0.5–P0.9 shipped (`1f8dc1b4`, `c0e30cf7`, `d239df03`, `5f039d79`, `795f0ae6`) | P0 is done: P1–P6 can start. Open: P0.5 all-icons SVG parity probe (DOM verified by screenshot only). Icons: 87, `ICON_GROUPS`, warning `icon/unknown`; Lucide path data has round caps in the original, renderers draw butt caps, so keep icons stroke 1.5 and dots as tiny circles. Engines: chart `library/data/_engine/` (+ guides/blocks-authoring.md §2.9), table `blocks/layout/table.ts`, diagrams `blocks/layout/diagram/` (tree cap = 4 levels incl. root). `.husky/pre-commit` is not executable here, so commits do not run the full suite. Parity specs time out (5 s) when many run in parallel: use `--runInBand --forceExit` and pipe jest to a file, not to `grep`/`head` (a piped jest hung on open browser handles). |
+| 2026-10-03 | L1 agent | P1 shipped: numbered `6f07165d`, checklist `2698ee15`, icon-list `772e1857`, statement `0a900470`, callout `526f536a`, footnote `0952608c`, definition `4c6676b3`, kv-list `14bed0d6`, tags `67d662c0`, qa `31a6faee`, demo slide + scenarios `2900b5b5` | `tls.t.code` blocked (no mono typography token). Catalog is 51. Reusable: `library/text/_engine` (marker rows, placeText with start/center/end, strong-run parsing, colour helpers, iconLeaf), `library/text/standard-suite.ts` (`standardBlockSuite(def, {overflowProps})` runs the whole standard test list incl. parity: use it for every block), `icons/scale-path.ts`. Hard-won facts: (1) icon nodes draw unscaled in a viewBox equal to their box: scale the path; (2) `line` nodes are unreliable in the DOM renderer (use thin rects); (3) nested groups are offset in the DOM but not in SVG: keep one root group at 0,0 and flat children; (4) two nodes with the same part name break parity (it measures the first): give rect and text distinct parts; (5) `estimateMetrics` is a per-length heuristic and can be off by -20% to +35% against the real font: anything that depends on a text width (centred/end alignment, strike, underline, highlight, pills) drifts, give shapes slack and prefer left anchoring; (6) `PartMotionSpec` has no `trigger`, so per-part click reveals are impossible; (7) capability-digest: the 8 largest per-type details must stay <= 12k chars together, so keep each new block's detail under ~1300 chars (short helps, summary, keywords); the digest snapshot is regenerated with `jest src/blocks/capability-digest -u` per block; (8) parity harness fix: nested bold tspans counted as extra lines (`parity-worker.ts` now uses `:scope > tspan`); (9) full suite was not run (6 GB machine); jest `--runInBand` and `--maxWorkers` cannot be combined. |
 | 2026-10-03 | plan | Plan written | Start at P0.1. The digest budget test (`capability-digest.spec.ts`) is already at its 60k ceiling, so P0.4 must land before any phase adds blocks, or every new block fails that test. |
 
 ---

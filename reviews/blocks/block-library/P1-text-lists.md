@@ -34,18 +34,18 @@ box at preferred size (collision helper); DOM↔SVG parity at medium size; liste
 
 | # | Block | Priority | Status | Commit | Blocked / notes |
 |---|---|---|---|---|---|
-| 1 | `tls.t.numbered` | must | ⬜ | | |
-| 2 | `tls.t.checklist` | must | ⬜ | | |
-| 3 | `tls.m.icon-list` | must | ⬜ | | needs P0.5 |
-| 4 | `tls.t.statement` | must | ⬜ | | |
-| 5 | `tls.t.callout` | must | ⬜ | | needs P0.5 |
-| 6 | `tls.t.footnote` | must | ⬜ | | |
-| 7 | `tls.t.definition` | must | ⬜ | | |
-| 8 | `tls.t.kv-list` | should | ⬜ | | needs P0.7 |
-| 9 | `tls.t.tags` | should | ⬜ | | |
-| 10 | `tls.t.qa` | should | ⬜ | | |
-| 11 | `tls.t.code` | could | ⬜ | | |
-| — | Phase demo slide + screenshot | — | ⬜ | | `colorful-blocks-demo.json` slide "P1 lists", copied byte-identical |
+| 1 | `tls.t.numbered` | must | ✅ | 6f07165d | Parts are `item[i].marker`/`item[i].text` (+ `item[i].badge`), not `marker-<i>`, to match bullets/agenda. Shared engine `library/text/_engine`. |
+| 2 | `tls.t.checklist` | must | ✅ | 2698ee15 | Strike-through is a thin rect per text line, not a `line` node: `line` nodes are fragile in the DOM renderer (zero-height svg box, absolute from/to). |
+| 3 | `tls.m.icon-list` | must | ✅ | 772e1857 | needs P0.5. Icons drawn via `iconLeaf` + new `icons/scale-path.ts`: the `icon` node draws in a viewBox equal to its box, so non-24 sizes need a scaled path. Parts `iconbg[i]`/`icon[i]`/`title[i]`/`text[i]`. |
+| 4 | `tls.t.statement` | must | ✅ | 0a900470 | Underline/highlight are rects computed from estimateMetrics run widths: they drift from the real glyphs (up to ~20-30%). `accent` emphasis is exact; demo uses it. |
+| 5 | `tls.t.callout` | must | ✅ | 526f536a | needs P0.5. No list slot, so no capacity(). Contrast solved against the actual fill, tested 5 variants x 3 fills on light and dark. |
+| 6 | `tls.t.footnote` | must | ✅ | 0952608c | "Low default duration" not expressible: `MotionRecipe` has only parts/preset. |
+| 7 | `tls.t.definition` | must | ✅ | 4c6676b3 | Part `pronunciation` separate from `meta` (part of speech) so the toggle works; example bar part `example.bar`. No list slot, so no capacity(). |
+| 8 | `tls.t.kv-list` | should | ✅ | 14bed0d6 | needs P0.7. Dots leader = middle-dot glyphs set as text (no dashed Stroke needed, nothing blocked); `rule` = hairline rect. Uses `solveColumns`. |
+| 9 | `tls.t.tags` | should | ✅ | 67d662c0 | Pill gets 12% width slack and a left-anchored label: estimateMetrics under-measured "Gamma" by a third. |
+| 10 | `tls.t.qa` | should | ✅ | 31a6faee | Ships `together` only: `PartMotionSpec` has no per-part `trigger`, so answers-on-click is unsupported (gap recorded, no `reveal` option). |
+| 11 | `tls.t.code` | could | ⏸ | | Blocked: no monospace face is exposed to blocks. `ResolvedTokens` has one `fontFamily`; there is no mono typography token and the plan forbids hard-coding a font name. Needs a mono token (P0-style vocabulary change) first. |
+| — | Phase demo slide + screenshot | — | ✅ | 2900b5b5 | `colorful-blocks-demo.json` slide sl_12 "P1 lists", copied byte-identical. Scenarios p1-lists, p1-extra (callout 5x3, kv-list, tags, qa, centred statement), p1-gallery; every PNG opened. |
 
 ---
 
@@ -199,7 +199,7 @@ box at preferred size (collision helper); DOM↔SVG parity at medium size; liste
 ---
 
 ## Phase done when
-- [ ] All must blocks ✅ (should/could may roll into a later session; mark them ⏸ with a reason).
-- [ ] Demo slide added to `colorful-blocks-demo.json` (and copied byte-identical to
+- [x] All must blocks ✅ (all 7 must + kv-list, tags, qa shipped; `tls.t.code` ⏸ blocked on a mono typography token).
+- [x] Demo slide added to `colorful-blocks-demo.json` (and copied byte-identical to
   `examples/nextjs-sample/data/decks/`), screenshot taken and **opened**.
-- [ ] Full suite once; tsc 0; README progress counts updated; session log line added.
+- [ ] Full suite once (NOT run: the machine has ~6 GB RAM and the full suite OOMs; only targeted specs ran: new folders + catalog-conformance + capability-digest + validate-deck-spec + demo-deck + collision, all green); tsc 0 (verified after every block); README progress counts updated; session log line added.
