@@ -1811,6 +1811,43 @@ Narrowing stages from broad to focused, with a note per stage and no numbers. _(
 }
 \`\`\`
 
+### \`tls.g.hub-spoke\` — Hub and Spoke
+
+A central hub with 3-8 satellite cards on connecting lines, full circle or fanned over a half circle. _(family: diagram; keywords: hub, spoke, ecosystem, satellites, core, modules, stakeholders)_
+
+**When:** Centre/satellite: an ecosystem, stakeholders around a product, a core with modules.
+**Avoid:** Ordered loops (use tls.g.cycle) or parent/child levels (use tls.g.tree).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`hub\` | yes | object (label, icon) | The centre: {label, icon?}. |
+| \`spokes\` | yes | list of object (label, text, icon) (3–8 items) | Satellites {label, text?, icon?}, clockwise from the top. |
+| \`layout\` | no | enum: circle \\\\| half | half = spokes fan over the top half, hub at the bottom. |
+| \`connector\` | no | enum: line \\\\| arrow-out \\\\| arrow-in \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_hub\\",
+  \\"type\\": \\"tls.g.hub-spoke\\",
+  \\"props\\": {
+    \\"hub\\": {
+      \\"label\\": \\"Platform\\"
+    },
+    \\"spokes\\": [
+      {
+        \\"label\\": \\"Web\\"
+      },
+      {
+        \\"label\\": \\"Mobile\\"
+      },
+      {
+        \\"label\\": \\"API\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.matrix-2x2\` — 2x2 Matrix
 
 Two-by-two quadrant grid with labelled axes and optional plotted points. _(family: diagram; keywords: matrix, 2x2, quadrant, prioritisation)_
@@ -3387,7 +3424,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 88,
+  "blockCount": 89,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3430,6 +3467,7 @@ Object {
     "tls.g.cycle",
     "tls.g.flow",
     "tls.g.funnel",
+    "tls.g.hub-spoke",
     "tls.g.matrix-2x2",
     "tls.g.milestones",
     "tls.g.pros-cons",

@@ -17,7 +17,7 @@ export const tlsGCycle: BlockDefinition = {
   category: 'process',
   scope: 'group',
   shortDescription: 'Steps arranged on a circle with arrows looping back to the start',
-  related: ['tls.g.chevrons', 'tls.g.steps'],
+  related: ['tls.g.chevrons', 'tls.g.steps', 'tls.g.hub-spoke'],
   describe: {
     when: 'Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.',
     avoid: 'A process with a clear end (use tls.g.chevrons or tls.g.steps).',
