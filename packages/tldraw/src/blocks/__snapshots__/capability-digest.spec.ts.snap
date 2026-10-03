@@ -2923,6 +2923,35 @@ Portrait in a circle, rounded or square frame with name and role; initials when 
 }
 \`\`\`
 
+### \`tls.m.device-mock\` — Device Mock
+
+Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from rects. _(family: media; keywords: device, mockup, screenshot, browser, phone, laptop, tablet, app)_
+
+**When:** Showing an app, website or product UI.
+**Avoid:** Photos (use tls.m.image); a screenshot plus text (use tls.c.image-text).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 120 chars) | What the screen shows. |
+| \`url\` | no | text (max 60 chars) | Address bar text (browser device only). |
+| \`device\` | no | enum: browser \\\\| laptop \\\\| phone \\\\| tablet |  |
+| \`tone\` | no | enum: light \\\\| dark |  |
+| \`shadow\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_device_mock\\",
+  \\"type\\": \\"tls.m.device-mock\\",
+  \\"props\\": {
+    \\"image\\": \\"asset-dashboard\\",
+    \\"alt\\": \\"Analytics dashboard\\",
+    \\"url\\": \\"app.example.com\\",
+    \\"device\\": \\"browser\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.icon\` — Icon
 
 SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
@@ -3877,7 +3906,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 102,
+  "blockCount": 103,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3954,6 +3983,7 @@ Object {
     "tls.l.split",
     "tls.l.stack",
     "tls.m.avatar",
+    "tls.m.device-mock",
     "tls.m.icon",
     "tls.m.icon-label",
     "tls.m.icon-list",
