@@ -177,6 +177,46 @@ Big number slide. One enormous headline metric with a short label and optional c
 }
 \`\`\`
 
+### \`tls.c.closing\` — Closing
+
+Closing slide: thank-you title, call to action, contacts and a presenter. _(family: composite; keywords: closing, thank you, questions, end slide, contact, call to action, next step)_
+
+**When:** Last slide: thanks, Q&A, next step, how to reach us.
+**Avoid:** A summary of key points: use tls.t.numbered.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | yes | text (max 50 chars) | \\"Thank you\\", \\"Questions?\\". |
+| \`text\` | no | text (max 160 chars) |  |
+| \`cta\` | no | text (max 40 chars) | Next step, 2-5 words. |
+| \`contacts\` | no | list of text (max 60 chars) (0–4 items) | Email, site, handle. |
+| \`person\` | no | object (image, name, role) | Fields: image, name, role. |
+| \`variant\` | no | enum: centered \\\\| split | split = panel with person and contacts. |
+| \`ctaStyle\` | no | enum: button \\\\| link |  |
+| \`showCta\` | no | boolean |  |
+| \`showContacts\` | no | boolean |  |
+| \`showPerson\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_closing\\",
+  \\"type\\": \\"tls.c.closing\\",
+  \\"props\\": {
+    \\"title\\": \\"Thank you\\",
+    \\"text\\": \\"Questions are welcome.\\",
+    \\"cta\\": \\"Book office hours\\",
+    \\"contacts\\": [
+      \\"lan.tran@example.edu\\"
+    ],
+    \\"person\\": {
+      \\"name\\": \\"Dr. Tran Thi Lan\\",
+      \\"role\\": \\"Head of Data Science\\"
+    },
+    \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.comparison\` — Comparison
 
 Side-by-side columns, each with a title and a list of items, to contrast options, plans or viewpoints. One column can be highlighted as the recommended one. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
@@ -4073,10 +4113,11 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 108,
+  "blockCount": 109,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
+    "tls.c.closing",
     "tls.c.comparison",
     "tls.c.cover",
     "tls.c.divider",

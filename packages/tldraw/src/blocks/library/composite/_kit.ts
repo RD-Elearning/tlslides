@@ -77,10 +77,9 @@ export function flattenNode(node: LayoutNode, dx: number, dy: number, full: Box)
 
 /* ── part naming ──────────────────────────────────────────────────────────────────────── */
 
-/** Give every node of one piece its part: one node -> `id`, several -> `id[0]`, `id[1]`... */
+/** Tag every node of one piece with its group name (final `group` / `group[i]` names are set by `composeFlat`). */
 export function namePiece(nodes: LayoutNode[], id: string): LayoutNode[] {
-  const out = nodes.map((n, i) => ({ ...n, part: nodes.length === 1 ? id : `${id}[${i}]` }) as LayoutNode)
-  return out
+  return nodes.map((n) => ({ ...n, part: id }) as LayoutNode)
 }
 
 /** Split text nodes into one node per line, shifted so each line is centred (or end-aligned) in the node's box. */
@@ -99,7 +98,6 @@ export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'
       const x = align === 'center' ? n.box.x + (n.box.width - lw) / 2 : n.box.x + n.box.width - lw
       out.push({
         ...n,
-        part: `${n.part ?? 'text'}[${i}]`,
         box: { x, y: n.box.y + top, width: Math.max(1, lw + 1), height: lh },
         lines: [{ ...line, top: 0, baseline: line.baseline - top }],
       } as LayoutNode)
@@ -111,16 +109,22 @@ export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'
 /** A piece to place: a spec, the box it gets, its part name and optional text alignment. */
 export interface Piece {
   id: string
-  spec: BlockSpec
+  /** Part group: pieces sharing a group are named `group[0]`, `group[1]`... (default: `id`). */
+  group?: string
+  spec?: BlockSpec
+  /** Pre-built absolute leaves instead of a spec (shapes the child blocks cannot draw, e.g. a pill). */
+  raw?: LayoutNode[]
   box: Box
   align?: 'start' | 'center' | 'end'
 }
 
 /** Lay out one piece with `ctx.layoutChild`, flatten it to absolute leaves and name its parts. */
 export function placePiece(ctx: LayoutContext, p: Piece, full: Box): LayoutNode[] {
-  const wrapper = ctx.layoutChild(p.spec, p.box)
-  const flat = flattenNode(wrapper, 0, 0, full)
-  return alignText(namePiece(flat, p.id), p.align ?? 'start')
+  const box = { ...p.box, width: Math.max(0, p.box.width || 0), height: Math.max(0, p.box.height || 0) }
+  const flat = p.raw
+    ? p.raw.map((n) => ({ ...n, box: { ...n.box, width: Math.max(0, n.box.width), height: Math.max(0, n.box.height) } }) as LayoutNode)
+    : flattenNode(ctx.layoutChild(p.spec as BlockSpec, box), 0, 0, full)
+  return alignText(namePiece(flat, p.group ?? p.id), p.align ?? 'start')
 }
 
 /** Compose pieces (in paint order) into one root group at (0,0) holding absolute leaves. */
@@ -128,7 +132,18 @@ export function composeFlat(ctx: LayoutContext, pieces: Piece[], height?: number
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, height ?? ctx.box.height) || 0
   const full: Box = { x: 0, y: 0, width: W, height: H }
-  return { k: 'group', part: 'root', box: full, children: pieces.flatMap((p) => placePiece(ctx, p, full)) }
+  const nodes = pieces.flatMap((p) => placePiece(ctx, p, full))
+  const count = new Map<string, number>()
+  for (const n of nodes) if (n.part) count.set(n.part, (count.get(n.part) ?? 0) + 1)
+  const seen = new Map<string, number>()
+  const named = nodes.map((n) => {
+    const g = n.part
+    if (!g || (count.get(g) ?? 0) < 2) return n
+    const i = seen.get(g) ?? 0
+    seen.set(g, i + 1)
+    return { ...n, part: `${g}[${i}]` } as LayoutNode
+  })
+  return { k: 'group', part: 'root', box: full, children: named }
 }
 
 /** Natural heights of `specs` measured at `width` (each at least `floor`). */
