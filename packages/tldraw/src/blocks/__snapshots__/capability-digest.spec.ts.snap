@@ -4553,6 +4553,29 @@ A thin divider line, horizontal or vertical, plain or accent gradient, or a shor
 }
 \`\`\`
 
+### \`tls.x.watermark\` — Watermark
+
+Large faint horizontal text such as DRAFT or CONFIDENTIAL, centred and sized to the box. _(family: chrome; keywords: watermark, draft, confidential, stamp, chrome)_
+
+**When:** Draft, internal or confidential decks that need a status stamp behind the content.
+**Avoid:** Decorative or emphasised text (use tls.t.statement).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 20 chars) | One short word or phrase, usually upper case: DRAFT, CONFIDENTIAL. |
+| \`opacity\` | no | enum: faint \\\\| soft | faint is a barely visible 7% tint, soft 14%. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_watermark\\",
+  \\"type\\": \\"tls.x.watermark\\",
+  \\"props\\": {
+    \\"text\\": \\"DRAFT\\",
+    \\"opacity\\": \\"faint\\"
+  }
+}
+\`\`\`
+
 ## Worked example — a valid slide
 
 Zero coordinates, zero colour values, zero font sizes. Region names come from the layout (\`two-column\` → \`title\`, \`left\`, \`right\`); block types and slots come from the tables above.
@@ -4636,7 +4659,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 124,
+  "blockCount": 125,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4762,6 +4785,7 @@ Object {
     "tls.x.logo-mark",
     "tls.x.page-number",
     "tls.x.rule",
+    "tls.x.watermark",
   ],
   "colorRoleCount": 12,
   "colorRoleIds": Array [

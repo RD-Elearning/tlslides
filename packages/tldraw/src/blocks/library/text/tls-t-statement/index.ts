@@ -17,7 +17,7 @@ export const tlsTStatement: BlockDefinition = {
   category: 'emphasis',
   scope: 'element',
   shortDescription: "One large sentence stated as the slide's message, key words in accent",
-  related: ['tls.t.quote', 'tls.t.takeaway', 'tls.t.hero-number'],
+  related: ['tls.t.quote', 'tls.t.takeaway', 'tls.t.hero-number', 'tls.x.watermark'],
   describe: {
     when: "A single claim or conclusion that should fill the slide's attention.",
     avoid: 'A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway).',
