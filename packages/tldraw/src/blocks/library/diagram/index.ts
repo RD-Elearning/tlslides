@@ -25,9 +25,10 @@ import { tlsGBreakdown } from './tls-g-breakdown'
 import { tlsGBracket } from './tls-g-bracket'
 import { tlsGArrow } from './tls-g-arrow'
 import { tlsGIceberg } from './tls-g-iceberg'
+import { tlsGMindmap } from './tls-g-mindmap'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg, tlsGMindmap]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -50,3 +51,4 @@ export { tlsGBreakdown } from './tls-g-breakdown'
 export { tlsGBracket } from './tls-g-bracket'
 export { tlsGArrow } from './tls-g-arrow'
 export { tlsGIceberg } from './tls-g-iceberg'
+export { tlsGMindmap } from './tls-g-mindmap'

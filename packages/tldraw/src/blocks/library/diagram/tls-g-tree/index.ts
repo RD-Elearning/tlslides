@@ -17,10 +17,10 @@ export const tlsGTree: BlockDefinition = {
   category: 'hierarchy',
   scope: 'group',
   shortDescription: 'Org chart or hierarchy of boxes linked from one root, top-down or left-right',
-  related: ['tls.g.flow', 'tls.g.hub-spoke', 'tls.g.breakdown', 'tls.g.layers'],
+  related: ['tls.g.flow', 'tls.g.hub-spoke', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.mindmap'],
   describe: {
     when: 'Parent/child: org charts, taxonomies, the decomposition of a goal into parts.',
-    avoid: 'Ordered steps or decisions with branches (use tls.g.flow).',
+    avoid: 'Ordered steps or decisions (use tls.g.flow) or free brainstorming (use tls.g.mindmap).',
     example: {
       id: 'b_tree',
       type: 'tls.g.tree',

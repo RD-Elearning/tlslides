@@ -2147,6 +2147,44 @@ Key checkpoints as diamonds on a line, filled when done, each with a date and sh
 }
 \`\`\`
 
+### \`tls.g.mindmap\` — Mind Map
+
+A central idea with 2-6 curved branches to topics, each with up to four subtopics. _(family: diagram; keywords: mind map, mindmap, brainstorm, topics, overview, branches)_
+
+**When:** Parent/child brainstorm: a topic overview or course map around one idea.
+**Avoid:** Formal reporting lines or strict hierarchies (use tls.g.tree).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`center\` | yes | text (max 30 chars) | 1-4 words. |
+| \`branches\` | yes | list of object (label, children) (2–6 items) | {label, children?: [text, up to 4]} per topic. |
+| \`balance\` | no | enum: both \\\\| right | both = branches on both sides, right = all to the right. |
+| \`curve\` | no | boolean | Default on; off draws straight links. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_mindmap\\",
+  \\"type\\": \\"tls.g.mindmap\\",
+  \\"props\\": {
+    \\"center\\": \\"Launch plan\\",
+    \\"branches\\": [
+      {
+        \\"label\\": \\"Product\\",
+        \\"children\\": [
+          \\"Scope\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Marketing\\",
+        \\"children\\": [
+          \\"Channels\\"
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.pros-cons\` — Pros and Cons
 
 Two columns of advantages and disadvantages with check and cross marks and an optional verdict. _(family: diagram; keywords: pros, cons, advantages, disadvantages, trade-offs, verdict)_
@@ -2414,7 +2452,7 @@ Dated events along a horizontal or vertical axis, with a card per event and an o
 Org chart or hierarchy: a root box linked to children and grandchildren, top-down or left to right. _(family: diagram; keywords: tree, org chart, hierarchy, taxonomy, breakdown, structure)_
 
 **When:** Parent/child: org charts, taxonomies, the decomposition of a goal into parts.
-**Avoid:** Ordered steps or decisions with branches (use tls.g.flow).
+**Avoid:** Ordered steps or decisions (use tls.g.flow) or free brainstorming (use tls.g.mindmap).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -3623,7 +3661,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 95,
+  "blockCount": 96,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3675,6 +3713,7 @@ Object {
     "tls.g.layers",
     "tls.g.matrix-2x2",
     "tls.g.milestones",
+    "tls.g.mindmap",
     "tls.g.pros-cons",
     "tls.g.pyramid",
     "tls.g.roadmap",
