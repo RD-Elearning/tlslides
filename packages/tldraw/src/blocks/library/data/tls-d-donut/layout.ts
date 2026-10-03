@@ -6,7 +6,7 @@
 
 import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { DonutProps } from './schema'
-import { arcPath } from '../_engine/arc-path'
+import { ringArcPath } from '../_chart/kit'
 
 export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
   const slices = props.slices ?? []
@@ -28,7 +28,8 @@ export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
     const sliceAngle = (slice.value / total) * Math.PI * 2
     const endAngle = currentAngle + sliceAngle
 
-    const d = arcPath(centerX, centerY, radius, innerRadius, currentAngle, endAngle, sliceAngle)
+    // One simple outline per slice (not `_engine/arcPath`, whose second wedge bows the hole the wrong way).
+    const d = ringArcPath(centerX, centerY, radius, innerRadius, currentAngle, endAngle)
 
     const fillPaint: Paint = { type: 'solid', color: ctx.resolveColor(slice.color ?? 'accent').color }
 

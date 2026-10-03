@@ -8,6 +8,7 @@ import { formatValue } from './format-value'
 import { multiSeriesDomain, bandScale } from './multi-series'
 import { layoutLegend } from './legend'
 import { directLabel } from './direct-label'
+import { ringArcPath } from '../_chart/kit'
 import { layout as donutLayout } from '../tls-d-donut/layout'
 import { makeCtx } from '../../layout/test-helpers'
 
@@ -34,40 +35,19 @@ describe('arcPath / wedgePath', () => {
     expect(arcPath(0, 0, 10, 0, Math.PI / 2, Math.PI * 1.5 + 1e-15, Math.PI)).toContain('A 10 10 0 0 1')
   })
 
-  it('donut layout output is byte-identical to the pre-refactor implementation', () => {
-    // The original inline code, copied verbatim from tls-d-donut/layout.ts before P0.6.
-    function legacyPaths(values: number[], total: number, W: number, H: number): string[] {
-      const radius = Math.min(W, H) / 2 - 10
-      const centerX = W / 2
-      const centerY = H / 2
-      const innerRadius = radius * 0.4
-      const out: string[] = []
-      let currentAngle = 0
-      for (const v of values) {
-        const sliceAngle = (v / total) * Math.PI * 2
-        const endAngle = currentAngle + sliceAngle
-        const x1 = centerX + radius * Math.cos(currentAngle)
-        const y1 = centerY + radius * Math.sin(currentAngle)
-        const x2 = centerX + radius * Math.cos(endAngle)
-        const y2 = centerY + radius * Math.sin(endAngle)
-        const largeArc = sliceAngle > Math.PI ? 1 : 0
-        const cosEnd = Math.cos(endAngle)
-        const sinEnd = Math.sin(endAngle)
-        const cosCurrent = Math.cos(currentAngle)
-        const sinCurrent = Math.sin(currentAngle)
-        const outerPath = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`
-        const innerPath = `M ${centerX} ${centerY} L ${centerX + innerRadius * cosCurrent} ${centerY + innerRadius * sinCurrent} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${centerX + innerRadius * cosEnd} ${centerY + innerRadius * sinEnd} Z`
-        out.push(`${outerPath} ${innerPath}`)
-        currentAngle = endAngle
-      }
-      return out
-    }
+  it('donut layout draws each slice as ONE ringArcPath outline', () => {
+    // History: this test used to pin the donut to the pre-refactor `arcPath` output (an outer wedge
+    // plus a second, opposite-sweep wedge for the hole). That geometry was WRONG: SVG resolves the
+    // inner wedge's reversed sweep on the mirror circle, so the hole bowed the wrong way and a
+    // large or full slice rendered as a blob. The donut now uses `ringArcPath` (a single outline),
+    // so the golden numbers below are the corrected geometry, not the legacy ones.
     const cases: Array<{ values: number[]; total: number; W: number; H: number }> = [
       { values: [25, 50, 25], total: 100, W: 400, H: 300 }, // exactly-half slice at a non-zero start
       { values: [10, 20, 30, 15, 25], total: 100, W: 480, H: 270 },
       { values: [33.3, 33.3, 33.4], total: 100, W: 321, H: 777 },
       { values: [70, 20], total: 100, W: 1000, H: 1000 },
       { values: [1, 2, 3, 4], total: 7, W: 250, H: 250 },
+      { values: [100], total: 100, W: 300, H: 300 }, // a closed ring
     ]
     for (const c of cases) {
       const ctx = makeCtx({ width: c.W, height: c.H })
@@ -76,9 +56,23 @@ describe('arcPath / wedgePath', () => {
         ctx
       )
       if (node.k !== 'group') throw new Error('expected group')
+      const radius = Math.min(c.W, c.H) / 2 - 10
+      let a = 0
+      const want = c.values.map((v) => {
+        const span = (v / c.total) * Math.PI * 2
+        const d = ringArcPath(c.W / 2, c.H / 2, radius, radius * 0.4, a, a + span)
+        a += span
+        return d
+      })
       const got = node.children.map((ch) => (ch.k === 'path' ? ch.d : ''))
-      expect(got).toEqual(legacyPaths(c.values, c.total, c.W, c.H))
+      expect(got).toEqual(want)
+      // Single outline: no second wedge from the centre (no "M cx cy" move).
+      for (const d of got) expect(d).not.toContain(`M ${c.W / 2} ${c.H / 2}`)
     }
+    // The half slice keeps the small-arc flag on both arcs (large = 0), inner arc reversed.
+    const half = donutLayout({ slices: [{ value: 50 }, { value: 50 }], total: 100 } as any, makeCtx({ width: 200, height: 200 }))
+    if (half.k !== 'group' || half.children[0].k !== 'path') throw new Error('expected path')
+    expect(half.children[0].d).toMatch(/A 90 90 0 0 1 .* A 36 36 0 0 0 /)
   })
 })
 
