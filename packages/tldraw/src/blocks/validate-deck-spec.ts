@@ -20,6 +20,7 @@ import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } f
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
 import { levenshtein, nearestName } from './nearest-name'
+import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -603,6 +604,7 @@ function validateProps(
     }
     if (value !== undefined && value !== null) {
       checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings)
+      checkIcons(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
       // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
@@ -885,6 +887,41 @@ function checkBudget(
     }
     default:
       break
+  }
+}
+
+/**
+ * `icon/unknown` (warning): an `icon`-kind slot, at any depth inside list/object slots, names an
+ * icon that is not in the icon set. Empty strings mean "no icon" and are fine. The message
+ * carries the nearest valid name so the AI repair loop can fix it in one step.
+ */
+function checkIcons(
+  value: unknown,
+  type: SlotSpec['type'],
+  path: string,
+  blockType: string,
+  findings: DeckFinding[]
+): void {
+  if (type.kind === 'icon') {
+    if (typeof value === 'string' && value.trim() !== '' && !Object.prototype.hasOwnProperty.call(ICONS, value)) {
+      const suggestion = nearestName(value, Object.keys(ICONS))
+      findings.push({
+        level: 'warning',
+        rule: 'icon/unknown',
+        path,
+        message:
+          `Block "${blockType}" uses icon "${value}", which is not in the icon set. ` +
+          (suggestion ? `Did you mean "${suggestion}"? ` : '') +
+          `An unknown icon renders as a placeholder.`,
+        suggestion,
+      })
+    }
+  } else if (type.kind === 'list' && Array.isArray(value)) {
+    value.forEach((item, i) => checkIcons(item, type.of, `${path}[${i}]`, blockType, findings))
+  } else if (type.kind === 'object' && isRecord(value)) {
+    for (const [k, spec] of Object.entries(type.fields)) {
+      if (value[k] !== undefined) checkIcons(value[k], spec.type, `${path}.${k}`, blockType, findings)
+    }
   }
 }
 

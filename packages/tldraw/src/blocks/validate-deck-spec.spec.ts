@@ -619,3 +619,42 @@ describe('validateDeckSpec — block/scope-nested warning (P0.2)', () => {
     expect(byRule(findingsOf(deck, registryWithSlideBlock()), 'block/scope-nested')).toHaveLength(1)
   })
 })
+
+describe('validateDeckSpec — icon/unknown warning (P0.5)', () => {
+  function deckWith(blocks: unknown[]): DeckSpec {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = blocks as BlockSpec[]
+    return deck
+  }
+
+  it('warns with a nearest-name suggestion for an unknown icon on tls.m.icon', () => {
+    const hits = byRule(
+      findingsOf(deckWith([{ id: 'i1', type: 'tls.m.icon', props: { icon: 'rockett' } }])),
+      'icon/unknown'
+    )
+    expect(hits).toHaveLength(1)
+    expect(hits[0].level).toBe('warning')
+    expect(hits[0].suggestion).toBe('rocket')
+    expect(hits[0].path).toBe('slides[0].regions.left[0].props.icon')
+  })
+
+  it('does not warn for a known icon', () => {
+    const f = findingsOf(deckWith([{ id: 'i1', type: 'tls.m.icon', props: { icon: 'rocket' } }]))
+    expect(byRule(f, 'icon/unknown')).toHaveLength(0)
+  })
+
+  it('reaches icons nested inside list-of-object slots', () => {
+    const f = findingsOf(
+      deckWith([
+        {
+          id: 'fg',
+          type: 'tls.c.feature-grid',
+          props: { cells: [{ icon: 'zap', title: 'A', desc: 'x' }, { icon: 'nope-nope-nope', title: 'B', desc: 'y' }] },
+        },
+      ])
+    )
+    const hits = byRule(f, 'icon/unknown')
+    expect(hits).toHaveLength(1)
+    expect(hits[0].path).toBe('slides[0].regions.left[0].props.cells[1].icon')
+  })
+})

@@ -15,7 +15,7 @@ export const schema: BlockSchema = {
     label: 'Icon',
     help: 'Name of the icon to display (zap, shield, globe, check, etc.).',
     required: true,
-    guidance: 'Choose from available icons: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert.',
+    guidance: 'Choose a name from the icon list in the capability index. Unknown names render a placeholder.',
   },
   color: {
     type: { kind: 'color' },

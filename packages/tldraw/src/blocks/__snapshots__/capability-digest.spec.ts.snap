@@ -988,7 +988,7 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`icon\` | yes | icon | Choose from available icons: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert. |
+| \`icon\` | yes | icon | Choose a name from the icon list in the capability index. Unknown names render a placeholder. |
 | \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
 
 \`\`\`json
