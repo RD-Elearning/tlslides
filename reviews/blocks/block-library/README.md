@@ -21,6 +21,7 @@ first phase in §Phases that is not ✅, and in that phase file take the first b
 | [P4-media-people.md](P4-media-people.md) | Images, brand, people and decoration (11) |
 | [P5-composite.md](P5-composite.md) | Slide-scope and group composites: cover, divider, closing, dashboard, team, quiz… (14) |
 | [P6-chrome.md](P6-chrome.md) | Slide furniture: header, footer text, logo mark, progress, section tabs, rule… (7; 5 built, 2 parked) |
+| [P7-motion-styles.md](P7-motion-styles.md) | Deck/slide `motionStyle` (static, subtle, expressive), 4 showcase html blocks, motion demo deck |
 
 ---
 
@@ -81,6 +82,7 @@ node_modules/.bin/tsc --noEmit --emitDeclarationOnly false | grep -v '\.spec\.' 
 | **P4** | Media, brand, people, decoration | 11 | P0.1–P0.3, P0.5 (icons) | ✅ 10 / 11 (`tls.m.image-collage` ⏸ blocked: no rotation); full suite not run |
 | **P5** | Composites (slide/group scope) | 14 | P1–P4 blocks they compose | ✅ 14 / 14 (part A: 8 must; part B: quiz, recap, case-study, problem-solution, contact, quote-image); full suite not run |
 | **P6** | Chrome (+ P6.0 deck-position prerequisite) | 7 | P0.1–P0.3 | ✅ 5 / 7 (footer-text, logo-mark, header, rule, watermark; `progress` + `section-tabs` ⏸ awaiting a decision on P6.0); full suite not run |
+| **P7** | Motion styles: deck/slide `motionStyle` + showcase blocks + motion demo deck | 4 | P5 (html composites) | ⬜ in progress |
 | — | Parked (needs new vocabulary or a dependency) | 13 | see §Parked | — |
 
 **Parallelism:** after P0, phases P1, P2, P3, P4 and P6 touch disjoint folders and can run in
@@ -106,6 +108,7 @@ Update these counts when you tick a block. The detailed status lives in the phas
 | P4 | 5 | 4 | 2 | 10 / 11 (5 must, 4 should, 1 could; `tls.m.image-collage` ⏸ blocked) | bb9c91ed | 2026-10-03 |
 | P5 | 8 | 4 | 2 | 14 / 14 (part A: 8 must; part B: 4 should, 2 could) | 2a54d3ad | 2026-10-03 |
 | P6 | 3 | 3 | 1 | 5 / 7 (2 must: footer-text, logo-mark; 2 should: header, rule; 1 could: watermark `none` angle only; `progress` must + `section-tabs` should ⏸ parked) | accba9c6 | 2026-10-03 |
+| P7 | 3 | 1 | — | 0 / 4 blocks, motionStyle ⬜ | | 2026-10-03 |
 | **Total new blocks** | **45** | **29** | **14** | **84 / 88** | | |
 
 Catalog size: **125** today (41 + 10 from P1 + 24 from P2 + 21 from P3 + 10 from P4 + 14 from P5 + 5 from P6). It reaches **127** only if the user approves P6.0 and `tls.x.progress` / `tls.x.section-tabs` get built (P1's code and P4's collage are blocked, so 129 is out of reach).
