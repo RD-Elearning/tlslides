@@ -1911,6 +1911,41 @@ Key checkpoints as diamonds on a line, filled when done, each with a date and sh
 }
 \`\`\`
 
+### \`tls.g.pros-cons\` — Pros and Cons
+
+Two columns of advantages and disadvantages with check and cross marks and an optional verdict. _(family: diagram; keywords: pros, cons, advantages, disadvantages, trade-offs, verdict)_
+
+**When:** Contrast of one option upsides and downsides, with an optional conclusion.
+**Avoid:** Comparing several options (use tls.c.comparison or tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prosTitle\` | no | text (max 24 chars) | Defaults to \\"Pros\\". |
+| \`consTitle\` | no | text (max 24 chars) | Defaults to \\"Cons\\". |
+| \`pros\` | yes | list of text (max 90 chars) (1–6 items) | Advantages, short phrases. |
+| \`cons\` | yes | list of text (max 90 chars) (1–6 items) | Disadvantages, short phrases. |
+| \`verdict\` | no | text (max 120 chars) | One-sentence conclusion. |
+| \`style\` | no | enum: columns \\\\| cards |  |
+| \`balance\` | no | enum: equal \\\\| auto | auto = the longer column gets more width. |
+| \`showVerdict\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pros_cons\\",
+  \\"type\\": \\"tls.g.pros-cons\\",
+  \\"props\\": {
+    \\"pros\\": [
+      \\"Faster launch\\",
+      \\"Lower cost\\"
+    ],
+    \\"cons\\": [
+      \\"Less control\\"
+    ],
+    \\"verdict\\": \\"Worth it if speed matters most.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.pyramid\` — Pyramid
 
 Stacked pyramid levels from tip to base, each with a label and a note; can be inverted. _(family: diagram; keywords: pyramid, levels, tiers, maslow, hierarchy of needs, foundation)_
@@ -3319,7 +3354,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 86,
+  "blockCount": 87,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3364,6 +3399,7 @@ Object {
     "tls.g.funnel",
     "tls.g.matrix-2x2",
     "tls.g.milestones",
+    "tls.g.pros-cons",
     "tls.g.pyramid",
     "tls.g.roadmap",
     "tls.g.steps",
