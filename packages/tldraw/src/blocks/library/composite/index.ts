@@ -16,6 +16,7 @@ import { tlsCTestimonial } from './tls-c-testimonial'
 import { tlsCBigStat } from './tls-c-big-stat'
 import { tlsCStatCard } from './tls-c-stat-card'
 import { tlsCProfileCard } from './tls-c-profile-card'
+import { tlsCCover } from './tls-c-cover'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -31,6 +32,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCBigStat,
   tlsCStatCard,
   tlsCProfileCard,
+  tlsCCover,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -45,3 +47,4 @@ export { tlsCTestimonial } from './tls-c-testimonial'
 export { tlsCBigStat } from './tls-c-big-stat'
 export { tlsCStatCard } from './tls-c-stat-card'
 export { tlsCProfileCard } from './tls-c-profile-card'
+export { tlsCCover } from './tls-c-cover'

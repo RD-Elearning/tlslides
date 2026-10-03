@@ -225,6 +225,46 @@ Side-by-side columns, each with a title and a list of items, to contrast options
 }
 \`\`\`
 
+### \`tls.c.cover\` — Cover
+
+Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(family: composite; keywords: cover, title slide, opening, first slide, intro, lecture title, photo)_
+
+**When:** First slide of a deck or talk.
+**Avoid:** A text-only opener with a button: use tls.c.hero.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`title\` | yes | richText (max 80 chars) | Up to 10 words. |
+| \`subtitle\` | no | text (max 140 chars) |  |
+| \`meta\` | no | text (max 80 chars) | Presenter, date. |
+| \`image\` | no | image |  |
+| \`alt\` | no | text (max 160 chars) |  |
+| \`logo\` | no | image |  |
+| \`variant\` | no | enum: centered \\\\| split \\\\| bleed | split = photo right; bleed = photo behind. |
+| \`decoration\` | no | enum: none \\\\| blob \\\\| arc \\\\| dots |  |
+| \`showKicker\` | no | boolean |  |
+| \`showSubtitle\` | no | boolean |  |
+| \`showMeta\` | no | boolean |  |
+| \`showLogo\` | no | boolean |  |
+| \`showImage\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cover\\",
+  \\"type\\": \\"tls.c.cover\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Lecture 1\\",
+    \\"title\\": \\"Introduction to Applied Statistics\\",
+    \\"subtitle\\": \\"From data to decisions\\",
+    \\"meta\\": \\"Dr. Tran Thi Lan · 2026\\",
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"logo\\": \\"/demo/logo-1.svg\\",
+    \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.feature-grid\` — Feature Grid [html]
 
 Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
@@ -273,7 +313,7 @@ Grid of feature cells, each with an icon, title, and description. 2–6 cells ar
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
 
 **When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle. Pick variant \\"classic\\" for a standard hero, \\"split\\" when you want the title to reveal from two halves sliding in from opposite sides, or \\"gradient-sweep\\" for a decorative background gradient that sweeps in behind the title on reveal.
-**Avoid:** Do not use for content slides with data or body text (use tls.t.title) or nested inside another block: it fills the whole slide.
+**Avoid:** Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.
 
 **Parts:** \`kicker\`, \`title\`, \`subtitle\`, \`cta\`
 
@@ -4003,11 +4043,12 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 106,
+  "blockCount": 107,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
     "tls.c.comparison",
+    "tls.c.cover",
     "tls.c.feature-grid",
     "tls.c.hero",
     "tls.c.image-text",

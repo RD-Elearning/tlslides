@@ -275,14 +275,14 @@ export const tlsCHero: BlockDefinition = {
   category: 'cover',
   scope: 'slide',
   shortDescription: 'Opening title with kicker, subtitle and optional call to action',
-  related: ['tls.t.title'],
+  related: ['tls.t.title', 'tls.c.cover'],
   describe: {
     when:
       'Use as a title/cover slide — one idea in the title, date/audience in the subtitle. ' +
       'Pick variant "classic" for a standard hero, "split" when you want the title to ' +
       'reveal from two halves sliding in from opposite sides, or "gradient-sweep" for a ' +
       'decorative background gradient that sweeps in behind the title on reveal.',
-    avoid: 'Do not use for content slides with data or body text (use tls.t.title) or nested inside another block: it fills the whole slide.',
+    avoid: 'Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.',
     example: {
       id: 'b_hero',
       type: 'tls.c.hero',
