@@ -1848,6 +1848,42 @@ A central hub with 3-8 satellite cards on connecting lines, full circle or fanne
 }
 \`\`\`
 
+### \`tls.g.layers\` — Layers
+
+Stacked horizontal layers, each with a label, note and icon, flat or as slanted slabs. _(family: diagram; keywords: layers, stack, architecture, tech stack, osi, tiers)_
+
+**When:** Level: layered architectures and stacks such as app/services/data or the OSI model.
+**Avoid:** Narrowing or ranked levels (use tls.g.pyramid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`layers\` | yes | list of object (label, text, icon) (2–7 items) | Top layer first. {label, text?, icon?}. |
+| \`style\` | no | enum: flat \\\\| perspective | perspective = slanted slabs. |
+| \`notes\` | no | enum: side \\\\| inside | side = notes beside the stack, inside = in the bar. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_layers\\",
+  \\"type\\": \\"tls.g.layers\\",
+  \\"props\\": {
+    \\"layers\\": [
+      {
+        \\"label\\": \\"Application\\",
+        \\"text\\": \\"What users touch\\"
+      },
+      {
+        \\"label\\": \\"Services\\",
+        \\"text\\": \\"Business logic\\"
+      },
+      {
+        \\"label\\": \\"Data\\",
+        \\"text\\": \\"Storage\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.matrix-2x2\` — 2x2 Matrix
 
 Two-by-two quadrant grid with labelled axes and optional plotted points. _(family: diagram; keywords: matrix, 2x2, quadrant, prioritisation)_
@@ -3424,7 +3460,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 89,
+  "blockCount": 90,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3468,6 +3504,7 @@ Object {
     "tls.g.flow",
     "tls.g.funnel",
     "tls.g.hub-spoke",
+    "tls.g.layers",
     "tls.g.matrix-2x2",
     "tls.g.milestones",
     "tls.g.pros-cons",

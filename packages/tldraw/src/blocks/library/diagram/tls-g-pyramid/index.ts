@@ -17,7 +17,7 @@ export const tlsGPyramid: BlockDefinition = {
   category: 'hierarchy',
   scope: 'group',
   shortDescription: 'Stacked pyramid levels from base to tip, each with label and note',
-  related: ['tls.g.funnel', 'tls.g.chevrons'],
+  related: ['tls.g.funnel', 'tls.g.chevrons', 'tls.g.layers'],
   describe: {
     when: 'Level: ranked tiers that build on each other, such as Maslow, priority tiers or foundation-to-goal stacks.',
     avoid: 'Equal-weight layers (use tls.g.layers) or a narrowing process (use tls.g.funnel).',
