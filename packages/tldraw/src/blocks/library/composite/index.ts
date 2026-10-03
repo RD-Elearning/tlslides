@@ -22,6 +22,7 @@ import { tlsCClosing } from './tls-c-closing'
 import { tlsCCards } from './tls-c-cards'
 import { tlsCChartInsight } from './tls-c-chart-insight'
 import { tlsCDashboard } from './tls-c-dashboard'
+import { tlsCTeam } from './tls-c-team'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -43,6 +44,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCCards,
   tlsCChartInsight,
   tlsCDashboard,
+  tlsCTeam,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -63,3 +65,4 @@ export { tlsCClosing } from './tls-c-closing'
 export { tlsCCards } from './tls-c-cards'
 export { tlsCChartInsight } from './tls-c-chart-insight'
 export { tlsCDashboard } from './tls-c-dashboard'
+export { tlsCTeam } from './tls-c-team'

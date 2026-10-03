@@ -783,6 +783,41 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
 }
 \`\`\`
 
+### \`tls.c.team\` — Team
+
+Grid of team members with photo, name, role and optional bio. _(family: composite; keywords: team, people, speakers, committee, staff, lecturers, research group, who we are)_
+
+**When:** Team, speakers, committee, research group.
+**Avoid:** One person: tls.c.profile-card. Faces only: tls.m.avatar-group.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`people\` | yes | list of object (image, name, role, bio) (2–8 items) | Each: name!, role, bio, image (initials when empty). |
+| \`cols\` | no | enum: auto \\\\| 2 \\\\| 3 \\\\| 4 | auto picks from the count. |
+| \`card\` | no | enum: plain \\\\| card | card = filled panel per person. |
+| \`showBio\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_team\\",
+  \\"type\\": \\"tls.c.team\\",
+  \\"props\\": {
+    \\"people\\": [
+      {
+        \\"name\\": \\"Dr. Tran Thi Lan\\",
+        \\"role\\": \\"Head of Data Science\\",
+        \\"bio\\": \\"Leads the analytics group.\\"
+      },
+      {
+        \\"name\\": \\"Nguyen Van An\\",
+        \\"role\\": \\"Senior lecturer\\",
+        \\"bio\\": \\"Teaches inference.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.testimonial\` — Testimonial [html]
 
 Pull-quote testimonial with attribution. Quote text with speaker name, role, and optional avatar. Use for social proof, customer quotes, or endorsements. _(family: composite; keywords: testimonial, quote, pull-quote, endorsement, social-proof, attribution)_
@@ -4252,7 +4287,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 112,
+  "blockCount": 113,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4271,6 +4306,7 @@ Object {
     "tls.c.profile-card",
     "tls.c.stat-card",
     "tls.c.steps",
+    "tls.c.team",
     "tls.c.testimonial",
     "tls.d.area",
     "tls.d.bar",

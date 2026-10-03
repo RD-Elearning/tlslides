@@ -93,7 +93,7 @@ const composite = defineCompositeBlock({
   category: 'people',
   scope: 'element',
   shortDescription: 'Card with portrait, name, role, short bio and contact line',
-  related: ['tls.m.avatar', 'tls.c.testimonial'],
+  related: ['tls.m.avatar', 'tls.c.testimonial', 'tls.c.team'],
   schema,
   defaults,
   size: { preferred: [520, 700], min: [260, 300] },
