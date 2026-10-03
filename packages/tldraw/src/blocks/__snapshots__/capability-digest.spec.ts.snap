@@ -264,7 +264,7 @@ Chart with its key message in a takeaway panel and a source line. _(family: comp
 Closing slide: thank-you title, call to action, contacts and a presenter. _(family: composite; keywords: closing, thank you, questions, end slide, contact, call to action, next step)_
 
 **When:** Last slide: thanks, Q&A, next step, how to reach us.
-**Avoid:** A summary of key points: use tls.t.numbered.
+**Avoid:** A summary of key points: use tls.c.recap.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -777,6 +777,35 @@ Multiple-choice question with lettered options; the correct answer is highlighte
     \\"explanation\\": \\"The median ignores how far the extremes are.\\",
     \\"layout\\": \\"list\\",
     \\"reveal\\": \\"shown\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.recap\` — Recap
+
+Numbered key points to remember, closed by one takeaway line. _(family: composite; keywords: recap, summary, key points, what we learned, takeaways, review, wrap up)_
+
+**When:** End of a section or lecture: what we learned.
+**Avoid:** The final thank-you slide: tls.c.closing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of richText (max 140 chars) (2–5 items) | One sentence each; **bold** the key term. |
+| \`takeaway\` | no | text (max 140 chars) | The one thing to remember. |
+| \`style\` | no | enum: numbered \\\\| cards | cards = one panel per point. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_recap\\",
+  \\"type\\": \\"tls.c.recap\\",
+  \\"props\\": {
+    \\"points\\": [
+      \\"Describe data with centre and **spread**\\",
+      \\"Pick a chart for **one** question\\",
+      \\"Intervals describe the **method**\\"
+    ],
+    \\"takeaway\\": \\"Plot first, calculate second.\\",
+    \\"style\\": \\"numbered\\"
   }
 }
 \`\`\`
@@ -4355,7 +4384,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 115,
+  "blockCount": 116,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4374,6 +4403,7 @@ Object {
     "tls.c.objectives",
     "tls.c.profile-card",
     "tls.c.quiz",
+    "tls.c.recap",
     "tls.c.stat-card",
     "tls.c.steps",
     "tls.c.team",

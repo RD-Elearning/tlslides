@@ -215,7 +215,7 @@ const composite = defineCompositeBlock<QuizProps>({
   category: 'learning',
   scope: 'group',
   shortDescription: 'Multiple-choice question with lettered options and the correct answer marked',
-  related: ['tls.t.qa'],
+  related: ['tls.t.qa', 'tls.c.recap'],
   schema,
   defaults,
   size: { preferred: [1500, 780], min: [560, 360] },
