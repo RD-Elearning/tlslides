@@ -2052,6 +2052,44 @@ Numbered process diagram with animated step reveal. _(family: diagram; keywords:
 }
 \`\`\`
 
+### \`tls.g.swot\` — SWOT
+
+SWOT grid: strengths, weaknesses, opportunities and threats as four bullet lists. _(family: diagram; keywords: swot, strengths, weaknesses, opportunities, threats, assessment)_
+
+**When:** Contrast: a strategic assessment of an organisation, product or idea (internal vs external, good vs bad).
+**Avoid:** Any other two-axis grid (use tls.g.matrix-2x2) or a plain pro/con list (use tls.g.pros-cons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`strengths\` | yes | list of text (max 80 chars) (1–5 items) | Internal positives, 3-5 short phrases. |
+| \`weaknesses\` | yes | list of text (max 80 chars) (1–5 items) | Internal negatives. |
+| \`opportunities\` | yes | list of text (max 80 chars) (1–5 items) | External positives. |
+| \`threats\` | yes | list of text (max 80 chars) (1–5 items) | External negatives. |
+| \`style\` | no | enum: tinted \\\\| outline | tinted = coloured cards, outline = neutral cards. |
+| \`letters\` | no | boolean | A large S, W, O or T above each heading. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_swot\\",
+  \\"type\\": \\"tls.g.swot\\",
+  \\"props\\": {
+    \\"strengths\\": [
+      \\"Strong brand\\",
+      \\"Loyal users\\"
+    ],
+    \\"weaknesses\\": [
+      \\"Small budget\\"
+    ],
+    \\"opportunities\\": [
+      \\"New markets\\"
+    ],
+    \\"threats\\": [
+      \\"New entrants\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.timeline\` — Timeline
 
 Dated events along a horizontal or vertical axis, with a card per event and an optional now marker. _(family: diagram; keywords: timeline, history, dates, schedule, milestones, chronology)_
@@ -3281,7 +3319,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 85,
+  "blockCount": 86,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3329,6 +3367,7 @@ Object {
     "tls.g.pyramid",
     "tls.g.roadmap",
     "tls.g.steps",
+    "tls.g.swot",
     "tls.g.timeline",
     "tls.g.tree",
     "tls.l.card",
