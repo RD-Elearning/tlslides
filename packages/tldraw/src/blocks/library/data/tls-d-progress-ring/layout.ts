@@ -11,11 +11,10 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { ProgressRingProps } from './schema'
-import { arcPath } from '../_engine/arc-path'
-import { chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, root, str, style, textAligned, TEXT_SLACK } from '../_chart/kit'
+import { chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, str, style, textAligned, TEXT_SLACK } from '../_chart/kit'
 
 const THICK = { sm: 0.1, md: 0.16, lg: 0.24 } as const
-const FULL = Math.PI * 2 - 1e-4
+const FULL = Math.PI * 2
 const TOP = -Math.PI / 2
 
 export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode {
@@ -59,23 +58,23 @@ export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode
     props.tone === 'status' ? ctx.resolveColor(frac < 1 / 3 ? 'negative' : frac < 2 / 3 ? 'warning' : 'positive').color : c.accent
 
   const nodes: LayoutNode[] = []
-  nodes.push(pathNode(ctx, arcPath(cx, cy, R, Ri, TOP, TOP + FULL, FULL), 'track', { fill: c.track }))
+  nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, Ri, TOP, TOP + FULL), 'track', { fill: c.track }))
   const round = props.cap !== 'flat'
   if (frac > 0) {
     if (frac >= 1) {
-      nodes.push(pathNode(ctx, arcPath(cx, cy, R, Ri, TOP, TOP + FULL, FULL), 'arc', { fill: color }))
+      nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, Ri, TOP, TOP + FULL), 'arc', { fill: color }))
     } else {
       const span = frac * Math.PI * 2
       const capA = round ? t / 2 / Math.max(1, rm) : 0
       if (round && span > 2 * capA + 0.02) {
-        nodes.push(pathNode(ctx, arcPath(cx, cy, R, Ri, TOP + capA, TOP + span - capA, span - 2 * capA), 'arc', { fill: color }))
+        nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, Ri, TOP + capA, TOP + span - capA), 'arc', { fill: color }))
         nodes.push(dot(cx + rm * Math.cos(TOP + capA), cy + rm * Math.sin(TOP + capA), t / 2, color, 'arc.start'))
         nodes.push(dot(cx + rm * Math.cos(TOP + span - capA), cy + rm * Math.sin(TOP + span - capA), t / 2, color, 'arc.end'))
       } else if (round) {
         // Too short for an arc plus two dots: a single dot at the start.
         nodes.push(dot(cx + rm * Math.cos(TOP + t / 2 / rm), cy + rm * Math.sin(TOP + t / 2 / rm), t / 2, color, 'arc'))
       } else {
-        nodes.push(pathNode(ctx, arcPath(cx, cy, R, Ri, TOP, TOP + span, span), 'arc', { fill: color }))
+        nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, Ri, TOP, TOP + span), 'arc', { fill: color }))
       }
     }
   }

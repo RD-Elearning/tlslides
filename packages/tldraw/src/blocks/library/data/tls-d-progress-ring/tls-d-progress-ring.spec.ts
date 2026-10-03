@@ -56,6 +56,13 @@ describe('tls.d.progress-ring', () => {
     expect(parts(tree)).toContain('arc')
   })
 
+  it('a full ring is drawn as two half arcs (a single near-360 arc renders as a blob)', () => {
+    const d = (leavesOf(lay({ value: 100, cap: 'flat' }), 'arc')[0].node as any).d as string
+    expect(d.match(/M /g)!.length).toBeGreaterThanOrEqual(2)
+    const t = (leavesOf(lay({ value: 100 }), 'track')[0].node as any).d as string
+    expect(t.match(/M /g)!.length).toBeGreaterThanOrEqual(2)
+  })
+
   it('max rescales: 30 of 60 reads 50%', () => {
     expect(text(lay({ value: 30, max: 60 }), 'value')).toBe('50%')
   })

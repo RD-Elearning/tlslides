@@ -18,6 +18,7 @@ import type { Box, CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle,
 import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import { formatValue } from '../_engine/format-value'
+import { arcPath } from '../_engine/arc-path'
 import { MAX_HUES } from '../_engine/series-color'
 
 export { onColor, readableOn, tintOf }
@@ -440,3 +441,17 @@ export function sizeOf(ctx: LayoutContext): Size {
 }
 
 export { onColor as inkOn }
+
+/**
+ * `arcPath`, safe for (nearly) full circles. An arc whose end point almost coincides with its start
+ * is ill-conditioned: the renderer may pick the mirror-image centre and draw a blob. Anything over
+ * 1.98 pi is therefore drawn as two halves.
+ */
+export function ringArcPath(cx: number, cy: number, rOuter: number, rInner: number, a0: number, a1: number): string {
+  const span = a1 - a0
+  if (span > Math.PI * 1.98) {
+    const mid = a0 + span / 2
+    return `${arcPath(cx, cy, rOuter, rInner, a0, mid, span / 2)} ${arcPath(cx, cy, rOuter, rInner, mid, a1, span / 2)}`
+  }
+  return arcPath(cx, cy, rOuter, rInner, a0, a1, span)
+}

@@ -12,12 +12,11 @@
 import type { CapacityReport, LayoutContext, LayoutNode, LintFinding, Size } from '../../../types'
 import type { PieProps } from './schema'
 import { PIE_MAX_SLICES } from './schema'
-import { arcPath } from '../_engine/arc-path'
 import { directLabel } from '../_engine/direct-label'
 import { highlightColor } from '../_engine/series-color'
 import { layoutLegend } from '../_engine/legend'
 import {
-  asArr, capacityOf, chartColors, clipLines, emptyState, enumOf, isNum, lineH, numOrNull, onColor, pathNode, readCategories, root, seriesColors, style,
+  asArr, capacityOf, chartColors, clipLines, emptyState, enumOf, isNum, lineH, numOrNull, onColor, pathNode, readCategories, ringArcPath, root, seriesColors, style,
   textAligned, TEXT_SLACK,
 } from '../_chart/kit'
 
@@ -28,7 +27,7 @@ interface Slice {
   idx: number
 }
 
-const FULL = Math.PI * 2 - 1e-4
+const FULL = Math.PI * 2
 
 function readSlices(props: PieProps): Slice[] {
   const cats = readCategories(props.categories)
@@ -121,7 +120,7 @@ export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
   slices.forEach((s, i) => {
     const a = arcs[i]
     nodes.push({
-      ...pathNode(ctx, arcPath(cx, cy, R, 0, a.a0, a.a1, a.span), `slice[${i}]`, { fill: colorOf(s, i), ...(slices.length > 1 ? { stroke: c.surface, strokeWidth: 3 } : {}) }),
+      ...pathNode(ctx, ringArcPath(cx, cy, R, 0, a.a0, a.a1), `slice[${i}]`, { fill: colorOf(s, i), ...(slices.length > 1 ? { stroke: c.surface, strokeWidth: 3 } : {}) }),
     })
   })
 
