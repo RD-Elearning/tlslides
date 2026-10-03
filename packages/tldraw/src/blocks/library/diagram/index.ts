@@ -8,11 +8,13 @@ import { tlsGSteps } from './tls-g-steps'
 import { tlsGChevrons } from './tls-g-chevrons'
 import { tlsGCycle } from './tls-g-cycle'
 import { tlsGTimeline } from './tls-g-timeline'
+import { tlsGRoadmap } from './tls-g-roadmap'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
 export { tlsGCycle } from './tls-g-cycle'
 export { tlsGTimeline } from './tls-g-timeline'
+export { tlsGRoadmap } from './tls-g-roadmap'

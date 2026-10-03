@@ -1715,6 +1715,67 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
 }
 \`\`\`
 
+### \`tls.g.roadmap\` — Roadmap
+
+Lanes of bars across periods, coloured by status, with a today line. _(family: diagram; keywords: roadmap, gantt, plan, schedule, lanes, quarters)_
+
+**When:** Dated order with overlap: product roadmap, project plan, semester plan.
+**Avoid:** Single-point events (use tls.g.timeline or tls.g.milestones).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`periods\` | yes | list of text (max 12 chars) (2–12 items) | Column headers in time order: Q1..Q4, months. |
+| \`lanes\` | yes | list of object (name, items) (1–6 items) | Per lane: name, items[{label,start,end,status done\\\\|active\\\\|planned\\\\|risk}]; start/end = 0-based period index, end inclusive. |
+| \`todayAt\` | no | number (min -1, max 12) | Period index, fractions ok (1.5 = mid second period); -1 none. |
+| \`statusColors\` | no | boolean | Off = one colour per lane. |
+| \`laneLabels\` | no | enum: left \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_roadmap\\",
+  \\"type\\": \\"tls.g.roadmap\\",
+  \\"props\\": {
+    \\"periods\\": [
+      \\"Q1\\",
+      \\"Q2\\",
+      \\"Q3\\",
+      \\"Q4\\"
+    ],
+    \\"lanes\\": [
+      {
+        \\"name\\": \\"Product\\",
+        \\"items\\": [
+          {
+            \\"label\\": \\"Redesign\\",
+            \\"start\\": 0,
+            \\"end\\": 1,
+            \\"status\\": \\"done\\"
+          },
+          {
+            \\"label\\": \\"Mobile app\\",
+            \\"start\\": 1.5,
+            \\"end\\": 3,
+            \\"status\\": \\"active\\"
+          }
+        ]
+      },
+      {
+        \\"name\\": \\"Platform\\",
+        \\"items\\": [
+          {
+            \\"label\\": \\"Migration\\",
+            \\"start\\": 0.5,
+            \\"end\\": 2,
+            \\"status\\": \\"active\\"
+          }
+        ]
+      }
+    ],
+    \\"todayAt\\": 1.5
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -2940,7 +3001,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 78,
+  "blockCount": 79,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2981,6 +3042,7 @@ Object {
     "tls.d.waterfall",
     "tls.g.chevrons",
     "tls.g.cycle",
+    "tls.g.roadmap",
     "tls.g.steps",
     "tls.g.timeline",
     "tls.l.card",
