@@ -661,6 +661,51 @@ Donut chart with colored slices. _(family: data; keywords: chart, donut, pie, da
 }
 \`\`\`
 
+### \`tls.d.gauge\` — Gauge
+
+Half-circle dial: threshold bands, a needle or marker at the value, tick labels. _(family: data; keywords: gauge, dial, score, nps, threshold, health, risk)_
+
+**When:** A score against thresholds (NPS, health, risk level).
+**Avoid:** Plain completion with no thresholds (use tls.d.progress-ring).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number |  |
+| \`min\` | no | number | Scale start. Default 0. |
+| \`max\` | no | number | Scale end. Default 100. |
+| \`label\` | no | text (max 40 chars) | What is measured. |
+| \`bands\` | no | list of object (to, tone) (0–5 items) | Ascending thresholds, each with a tone. |
+| \`needle\` | no | enum: needle \\\\| marker |  |
+| \`showTicks\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_gauge\\",
+  \\"type\\": \\"tls.d.gauge\\",
+  \\"props\\": {
+    \\"value\\": 42,
+    \\"min\\": -100,
+    \\"max\\": 100,
+    \\"label\\": \\"NPS\\",
+    \\"bands\\": [
+      {
+        \\"to\\": 0,
+        \\"tone\\": \\"negative\\"
+      },
+      {
+        \\"to\\": 50,
+        \\"tone\\": \\"warning\\"
+      },
+      {
+        \\"to\\": 100,
+        \\"tone\\": \\"positive\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.grouped-bar\` — Grouped Bar Chart
 
 Side-by-side columns or bars per category, one colour per series, zero baseline. _(family: data; keywords: grouped, clustered, bar, column, compare, series, chart)_
@@ -2126,7 +2171,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 59,
+  "blockCount": 60,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -2142,6 +2187,7 @@ Object {
     "tls.d.area",
     "tls.d.bar",
     "tls.d.donut",
+    "tls.d.gauge",
     "tls.d.grouped-bar",
     "tls.d.line",
     "tls.d.pie",

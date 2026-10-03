@@ -14,9 +14,10 @@ import { tlsDArea } from './tls-d-area'
 import { tlsDGroupedBar } from './tls-d-grouped-bar'
 import { tlsDStackedBar } from './tls-d-stacked-bar'
 import { tlsDPie } from './tls-d-pie'
+import { tlsDGauge } from './tls-d-gauge'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -28,3 +29,4 @@ export { tlsDArea } from './tls-d-area'
 export { tlsDGroupedBar } from './tls-d-grouped-bar'
 export { tlsDStackedBar } from './tls-d-stacked-bar'
 export { tlsDPie } from './tls-d-pie'
+export { tlsDGauge } from './tls-d-gauge'

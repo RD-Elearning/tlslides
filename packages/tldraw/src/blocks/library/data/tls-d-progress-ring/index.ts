@@ -17,7 +17,7 @@ export const tlsDProgressRing: BlockDefinition = {
   category: 'metric',
   scope: 'element',
   shortDescription: 'Ring filled to a percentage with the number in the centre',
-  related: ['tls.d.donut', 'tls.d.progress-bar'],
+  related: ['tls.d.donut', 'tls.d.progress-bar', 'tls.d.gauge'],
   describe: {
     when: 'One completion rate or score shown as a dial.',
     avoid: 'Shares of several parts (use tls.d.donut); several bars (use tls.d.progress-bar).',
