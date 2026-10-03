@@ -6,6 +6,7 @@
 
 import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { DonutProps } from './schema'
+import { arcPath } from '../_engine/arc-path'
 
 export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
   const slices = props.slices ?? []
@@ -27,20 +28,7 @@ export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
     const sliceAngle = (slice.value / total) * Math.PI * 2
     const endAngle = currentAngle + sliceAngle
 
-    // Calculate arc path
-    const x1 = centerX + radius * Math.cos(currentAngle)
-    const y1 = centerY + radius * Math.sin(currentAngle)
-    const x2 = centerX + radius * Math.cos(endAngle)
-    const y2 = centerY + radius * Math.sin(endAngle)
-
-    const largeArc = sliceAngle > Math.PI ? 1 : 0
-    const cosEnd = Math.cos(endAngle)
-    const sinEnd = Math.sin(endAngle)
-    const cosCurrent = Math.cos(currentAngle)
-    const sinCurrent = Math.sin(currentAngle)
-
-    const outerPath = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`
-    const innerPath = `M ${centerX} ${centerY} L ${centerX + innerRadius * cosCurrent} ${centerY + innerRadius * sinCurrent} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${centerX + innerRadius * cosEnd} ${centerY + innerRadius * sinEnd} Z`
+    const d = arcPath(centerX, centerY, radius, innerRadius, currentAngle, endAngle, sliceAngle)
 
     const fillPaint: Paint = { type: 'solid', color: ctx.resolveColor(slice.color ?? 'accent').color }
 
@@ -48,7 +36,7 @@ export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
       k: 'path',
       box: { x: 0, y: 0, width: W, height: H },
       part: `slice[${i}]`,
-      d: `${outerPath} ${innerPath}`,
+      d,
       fill: fillPaint,
     }
     

@@ -24,3 +24,15 @@ export {
   highlightColor,
   MAX_HUES,
 } from './series-color'
+
+export { arcPath, wedgePath } from './arc-path'
+export { linePath, areaPath } from './line-path'
+export type { Point, CurveKind } from './line-path'
+export { formatValue } from './format-value'
+export type { ValueFormat, FormatOptions } from './format-value'
+export { multiSeriesDomain, bandScale } from './multi-series'
+export type { StackMode, SeriesLike, BandScale } from './multi-series'
+export { layoutLegend, LEGEND_SWATCH } from './legend'
+export type { LegendPlacement, LegendItem } from './legend'
+export { directLabel } from './direct-label'
+export type { LabelAnchor } from './direct-label'

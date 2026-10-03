@@ -20,26 +20,7 @@ import type { LayoutContext, LayoutNode, Stroke } from '../../../types'
 import type { KpiTileProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 import { isShown } from '../../../schema-helpers'
-
-/**
- * Format a number for display based on the format hint.
- */
-function formatValue(value: number, format?: string): string {
-  switch (format) {
-    case 'compact': {
-      if (Math.abs(value) >= 1e9) return `${(value / 1e9).toFixed(1)}B`
-      if (Math.abs(value) >= 1e6) return `${(value / 1e6).toFixed(1)}M`
-      if (Math.abs(value) >= 1e3) return `${(value / 1e3).toFixed(1)}K`
-      return value.toFixed(1)
-    }
-    case 'percent':
-      return `${value.toFixed(1)}%`
-    case 'currency':
-      return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-    default:
-      return String(value)
-  }
-}
+import { formatValue } from '../../data/_engine/format-value'
 
 /**
  * Build an SVG path `d` string for a sparkline from an array of numbers.

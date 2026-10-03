@@ -337,6 +337,22 @@ full rationale):
 
 ---
 
+### 2.9 Chart engine and the multi-series convention
+
+Chart blocks share `library/data/_engine/` (pure functions, golden-number specs in
+`engine-v2.spec.ts`): `linearScale`/`niceTicks`, `multiSeriesDomain` (grouped | stacked | percent),
+`bandScale`, `layoutLegend` (returns the legend nodes and the remaining plot box), `arcPath` /
+`wedgePath` (slices, rings, gauges), `linePath` / `areaPath` (linear | monotone), `formatValue`
+(also used by `tls.c.kpi-tile`) and `directLabel` (end-of-line labels, collision-nudged).
+
+**Multi-series slot shape (no new `SlotType`):** `categories: list<text>` plus
+`series: list<object{ name: text, values: list<number> }>`, at most 6 series (`MAX_HUES`). Every
+multi-series chart uses exactly this shape so the AI learns it once. Shared option keys mean the
+same thing everywhere: `legend` (top/bottom/right/none), `valueLabels` (none/end/inside),
+`gridlines` (none/major), `format`, `highlightIndex`, `sort`, `axisTitleX`, `axisTitleY`.
+Design rules live in the engine: one series gets direct labels, not a legend; bars have a zero
+baseline; at most one recessive gridline set; no 3D, no dual axis.
+
 ## 3. FastAPI + LLM integration — how a model picks blocks
 
 The frontend never talks to the LLM. It talks to FastAPI in `DeckSpec` JSON; FastAPI owns the
