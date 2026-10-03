@@ -207,7 +207,7 @@ const composite = defineCompositeBlock<ClosingProps>({
   category: 'closing',
   scope: 'slide',
   shortDescription: 'Closing slide with thank-you title, call to action and contact details',
-  related: ['tls.c.cover', 'tls.t.numbered', 'tls.c.recap'],
+  related: ['tls.c.cover', 'tls.t.numbered', 'tls.c.recap', 'tls.c.contact'],
   schema,
   defaults,
   size: { preferred: [1600, 800], min: [640, 360] },

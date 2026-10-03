@@ -28,6 +28,7 @@ import { tlsCQuiz } from './tls-c-quiz'
 import { tlsCRecap } from './tls-c-recap'
 import { tlsCCaseStudy } from './tls-c-case-study'
 import { tlsCProblemSolution } from './tls-c-problem-solution'
+import { tlsCContact } from './tls-c-contact'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -55,6 +56,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCRecap,
   tlsCCaseStudy,
   tlsCProblemSolution,
+  tlsCContact,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -81,3 +83,4 @@ export { tlsCQuiz } from './tls-c-quiz'
 export { tlsCRecap } from './tls-c-recap'
 export { tlsCCaseStudy } from './tls-c-case-study'
 export { tlsCProblemSolution } from './tls-c-problem-solution'
+export { tlsCContact } from './tls-c-contact'

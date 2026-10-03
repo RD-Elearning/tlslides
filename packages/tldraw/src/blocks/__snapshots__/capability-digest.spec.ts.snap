@@ -384,6 +384,42 @@ Side-by-side columns, each with a title and a list of items, to contrast options
 }
 \`\`\`
 
+### \`tls.c.contact\` — Contact
+
+Contact block: an optional person and email, phone, website, address or social lines, each with its icon. _(family: composite; keywords: contact, email, phone, website, address, social, reach us, get in touch)_
+
+**When:** Where to reach the presenter or the organisation.
+**Avoid:** A full closing slide: tls.c.closing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`person\` | no | object (image, name, role) | Fields: image, name, role. |
+| \`items\` | yes | list of object (kind, value) (1–6 items) | Each: kind (email, phone, web, address, social), value. The icon follows the kind. |
+| \`showPerson\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_contact\\",
+  \\"type\\": \\"tls.c.contact\\",
+  \\"props\\": {
+    \\"person\\": {
+      \\"name\\": \\"Dr. Tran Thi Lan\\",
+      \\"role\\": \\"Head of Data Science\\"
+    },
+    \\"items\\": [
+      {
+        \\"kind\\": \\"email\\",
+        \\"value\\": \\"lan.tran@example.edu\\"
+      },
+      {
+        \\"kind\\": \\"web\\",
+        \\"value\\": \\"stats.example.edu\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.cover\` — Cover
 
 Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(family: composite; keywords: cover, title slide, opening, first slide, intro, lecture title, photo)_
@@ -4454,7 +4490,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 118,
+  "blockCount": 119,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -4463,6 +4499,7 @@ Object {
     "tls.c.chart-insight",
     "tls.c.closing",
     "tls.c.comparison",
+    "tls.c.contact",
     "tls.c.cover",
     "tls.c.dashboard",
     "tls.c.divider",
