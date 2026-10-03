@@ -17,7 +17,7 @@ export const tlsGProsCons: BlockDefinition = {
   category: 'comparison',
   scope: 'group',
   shortDescription: 'Two columns of advantages and disadvantages with check and cross icons',
-  related: ['tls.c.comparison', 'tls.g.matrix-2x2'],
+  related: ['tls.c.comparison', 'tls.g.matrix-2x2', 'tls.g.before-after'],
   describe: {
     when: 'Contrast of one option upsides and downsides, with an optional conclusion.',
     avoid: 'Comparing several options (use tls.c.comparison or tls.d.compare-table).',

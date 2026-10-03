@@ -1627,6 +1627,37 @@ Bridge chart: floating bars for changes, full bars for totals, optional connecto
 }
 \`\`\`
 
+### \`tls.g.before-after\` — Before and After
+
+Before and after panels joined by an arrow, each with a tag, title, text and optional image. _(family: diagram; keywords: before, after, transformation, redesign, problem, solution, change)_
+
+**When:** Contrast over time: a transformation, redesign or problem turned into a solution.
+**Avoid:** Numeric before/after values (use tls.d.stat-compare).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`before\` | yes | object (label, title, text, image) | {label?, title, text?, image?} for the starting state. |
+| \`after\` | yes | object (label, title, text, image) | {label?, title, text?, image?} for the result. |
+| \`arrow\` | no | enum: arrow \\\\| chevron \\\\| none |  |
+| \`emphasis\` | no | enum: after \\\\| none | after = the After panel gets the accent. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_before_after\\",
+  \\"type\\": \\"tls.g.before-after\\",
+  \\"props\\": {
+    \\"before\\": {
+      \\"label\\": \\"Before\\",
+      \\"title\\": \\"Manual reports\\"
+    },
+    \\"after\\": {
+      \\"label\\": \\"After\\",
+      \\"title\\": \\"Live dashboard\\"
+    }
+  }
+}
+\`\`\`
+
 ### \`tls.g.chevrons\` — Chevron Process
 
 Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(family: diagram; keywords: chevrons, phases, process, arrows, stages, method)_
@@ -3460,7 +3491,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 90,
+  "blockCount": 91,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.big-stat",
@@ -3499,6 +3530,7 @@ Object {
     "tls.d.table",
     "tls.d.trend-badge",
     "tls.d.waterfall",
+    "tls.g.before-after",
     "tls.g.chevrons",
     "tls.g.cycle",
     "tls.g.flow",

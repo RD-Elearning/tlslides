@@ -20,9 +20,10 @@ import { tlsGProsCons } from './tls-g-pros-cons'
 import { tlsGVenn } from './tls-g-venn'
 import { tlsGHubSpoke } from './tls-g-hub-spoke'
 import { tlsGLayers } from './tls-g-layers'
+import { tlsGBeforeAfter } from './tls-g-before-after'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -40,3 +41,4 @@ export { tlsGProsCons } from './tls-g-pros-cons'
 export { tlsGVenn } from './tls-g-venn'
 export { tlsGHubSpoke } from './tls-g-hub-spoke'
 export { tlsGLayers } from './tls-g-layers'
+export { tlsGBeforeAfter } from './tls-g-before-after'
