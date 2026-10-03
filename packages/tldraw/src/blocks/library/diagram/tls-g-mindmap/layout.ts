@@ -85,13 +85,13 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
       const by = b.kids.length ? (kidYs[0] + kidYs[rows - 1]) / 2 : kidYs[0]
       const bh = Math.min(rowH * Math.max(1, Math.min(2, rows)) - 6, 64)
       const bx = dirSign === 1 ? cBox.x + cBox.width + g : cBox.x - g - bw
-      const bBox = nodeBox(bx, by, bw, Math.max(Math.min(bh, rowH - 2), 14))
+      const bBox = nodeBox(bx, by, bw, Math.max(1, Math.min(bh, rowH - 2)))
       nodes.push({ k: 'rect', part: `branch[${i}]`, box: bBox, fill: { type: 'solid', color }, radius: Math.min(16, bBox.height / 2) })
       textIn(bBox, b.label, branchS, onColor(ctx, color), `branch[${i}].label`)
       link(`link[${i}]`, { x: dirSign === 1 ? cBox.x + cBox.width : cBox.x, y: cBox.y + cBox.height / 2 }, { x: dirSign === 1 ? bBox.x : bBox.x + bBox.width, y: by }, color)
       b.kids.forEach((k, j) => {
         const kx = dirSign === 1 ? bBox.x + bBox.width + g : bBox.x - g - kw
-        const kBox = nodeBox(kx, kidYs[j], kw, Math.max(rowH - 2, 14))
+        const kBox = nodeBox(kx, kidYs[j], kw, Math.min(56, Math.max(1, rowH - (rowH >= 40 ? 8 : 2))))
         nodes.push({ k: 'rect', part: `child[${i}-${j}]`, box: kBox, fill: { type: 'solid', color: tintOf(c.surface, color, 0.16) }, stroke: { color, width: 2 }, radius: Math.min(10, kBox.height / 2) })
         textIn(kBox, k, kidS, c.text, `child[${i}-${j}].label`)
         link(`link[${i}-${j}]`, { x: dirSign === 1 ? bBox.x + bBox.width : bBox.x, y: by }, { x: dirSign === 1 ? kBox.x : kBox.x + kBox.width, y: kidYs[j] }, color)

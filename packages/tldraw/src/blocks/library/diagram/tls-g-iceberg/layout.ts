@@ -57,12 +57,12 @@ export function layout(props: IcebergProps, ctx: LayoutContext): LayoutNode {
   const below: LayoutNode[] = [pathNode(ctx, belowShape, 'below[shape]', { fill: tintOf(c.surface, c.accent, 0.26), stroke: c.accent, strokeWidth: 2 })]
   const cols = bItems.length > 3 ? 2 : 1
   const rows = Math.max(1, Math.ceil(bItems.length / cols))
-  const textW = Math.max(20, bw * 0.5 * (cols === 2 ? 0.98 : 0.6))
+  const textW = Math.max(20, bw * (cols === 2 ? 0.62 : 0.42))
   const colW = textW / cols
   const rowH = lineH(itemS) + 6
   const headH = str(b.label) ? lineH(headS) + 6 : 0
   const blockH = headH + rows * rowH
-  const top = wl + Math.max(10, Math.min((h - blockH) * 0.35, h * 0.18))
+  const top = wl + Math.max(10, (h - blockH) * 0.4)
   const left = cx - textW / 2
   if (str(b.label)) below.push(...placeLines(ctx, str(b.label), headS, { x: left, y: top, width: textW }, 'center', 1, 'below[label]').nodes)
   bItems.forEach((t, i) => {
