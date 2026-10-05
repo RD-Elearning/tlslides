@@ -97,4 +97,48 @@ describe('tls.c.quote-image', () => {
     slideScopeCompiles(tlsCQuoteImage, 'title', 'title')
     slideScopeCompiles(tlsCQuoteImage, 'blank', 'content')
   })
+
+  describe('RV02 — big opening mark and an honest min (review G02)', () => {
+    /** Ink bounds of the mark path, in block coordinates (its node box is the full block). */
+    const ink = (t: any) => {
+      const n = leavesOf(t, 'mark')[0].node as any
+      const v = (n.d.match(/-?\d+(\.\d+)?/g) as string[]).map(Number)
+      const xs = v.filter((_, i) => i % 2 === 0)
+      const ys = v.filter((_, i) => i % 2 === 1)
+      return { k: n.k, box: n.box, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }
+    }
+    const quoteSize = (t: any) => (leavesOf(t, 'quote').find((l) => l.k === 'text')!.node as any).style.size
+
+    it('the opening mark is a curly-quote path, clearly taller than a quote cap, above the quote', () => {
+      const t = layoutAt(tlsCQuoteImage, EX, 1600, 800)
+      const m = ink(t)
+      expect(m.k).toBe('path')
+      expect(m.y1 - m.y0).toBeGreaterThan(quoteSize(t) * 1.2)
+      expect(m.y1).toBeLessThan(leavesOf(t, 'quote')[0].y)
+      // both renderers agree on a path whose box is the block's own box at the origin
+      expect(m.box).toEqual({ x: 0, y: 0, width: 1600, height: 800 })
+    })
+
+    it('a short photo shrinks the mark instead of growing past its box', () => {
+      const [w, h] = tlsCQuoteImage.size.min
+      const t = layoutAt(tlsCQuoteImage, EX, w, h)
+      expect(t.box.height).toBeLessThanOrEqual(h)
+      const big = ink(layoutAt(tlsCQuoteImage, EX, 1600, 800))
+      const small = ink(t)
+      expect(small.y1 - small.y0).toBeLessThan(big.y1 - big.y0)
+    })
+
+    it('the example fits size.min with nothing escaping it; a centred mark is centred', () => {
+      const [w, h] = tlsCQuoteImage.size.min
+      const t = layoutAt(tlsCQuoteImage, EX, w, h)
+      assertContained(t, { width: w, height: h })
+      assertNoTextOverlap(t)
+      const m = ink(t)
+      expect(m.x0).toBeGreaterThanOrEqual(0)
+      expect(m.y1).toBeLessThanOrEqual(h)
+      const c = ink(layoutAt(tlsCQuoteImage, { ...EX, anchor: 'center' }, 1600, 800))
+      // the master glyph's ink spans x 0..92 of 100, so its visual centre is at 46% of the mark width
+      expect(Math.abs((c.x0 + c.x1) / 2 - 800)).toBeLessThan(10)
+    })
+  })
 })

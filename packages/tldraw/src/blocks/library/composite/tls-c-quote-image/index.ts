@@ -18,6 +18,7 @@ import { contrastRatio, relativeLuminance, tryHexToRgb } from '../../../color-ma
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { onColor } from '../../text/_engine/color'
+import { scaledGlyphPath } from '../../text/tls-t-quote/layout'
 import { altFindings, str } from '../../media/_kit'
 import { composeFlat, measureHeights, onSurface, pick, pickToken, plainOf, toMeasurable, SCRIM_SURFACE, type Piece } from '../_kit'
 
@@ -133,8 +134,6 @@ export function layoutQuoteImage(props: QuoteImageProps, ctx: LayoutContext): La
   const sizes: Array<'heading' | 'subheading'> = ['heading', 'subheading']
   const maxLines = 4
 
-  const mark = { id: 'mark', type: 'tls.t.title', props: { text: '“', size: 'heading', color: fg, ...on } } as BlockSpec
-  const markH = measureHeights(ctx, [mark], tw)[0]
   const qSize = pickToken(ctx, props.quote, tw, sizes, maxLines) as 'heading' | 'subheading'
   const quote: BlockSpec = { id: 'quote', type: 'tls.t.title', props: { text: toMeasurable(props.quote), size: qSize, color: fg, ...on } }
   const qH = measureHeights(ctx, [quote], tw)[0]
@@ -143,8 +142,15 @@ export function layoutQuoteImage(props: QuoteImageProps, ctx: LayoutContext): La
   const nameH = name ? measureHeights(ctx, [name], tw)[0] : 0
   const roleH = role ? measureHeights(ctx, [role], tw)[0] : 0
   const attrH = nameH + roleH
-  const overlap = Math.round(markH * 0.3) // the glyph carries a lot of internal leading
-  const stackH = Math.max(0, markH - overlap) + qH + (attrH ? gap * 1.5 + attrH : 0)
+  // The opening mark is the same curly-quote path as tls.t.quote, drawn large (a `“` text glyph at
+  // the quote's size read as a stray '"'). It shrinks to the quote's cap size only when the photo
+  // is too short to hold it.
+  const tail = qH + (attrH ? gap * 1.5 + attrH : 0)
+  const big = 120
+  const small = Math.round(ctx.resolveText(qSize).size * 0.9)
+  const markW = big * 0.8 + gap + tail + 2 * inset <= H ? big : small
+  const markH = markW * 0.8
+  const stackH = markH + gap + tail
   const needed = stackH + 2 * inset
   const total = Math.max(H, Math.ceil(needed))
 
@@ -157,9 +163,16 @@ export function layoutQuoteImage(props: QuoteImageProps, ctx: LayoutContext): La
     raw: [{ k: 'rect', box: full, fill: { type: 'solid', color: scrimColor(ctx.resolveColor('scrim').color, level) } } as LayoutNode],
     box: full,
   })
-  let y = top - overlap
-  pieces.push({ id: 'mark', spec: mark, box: { x: tx, y, width: tw, height: markH }, align })
-  y += markH
+  let y = top
+  const markX = centered ? tx + (tw - markW) / 2 : tx
+  // Path convention shared by both renderers (as in the chart kit): the node box is the block's
+  // full box at the origin and `d` is in block coordinates. (render-svg draws `d` untranslated.)
+  pieces.push({
+    id: 'mark',
+    raw: [{ k: 'path', part: 'mark', box: { x: 0, y: 0, width: W, height: Math.max(H, Math.ceil(needed)) }, d: scaledGlyphPath(markW / 100, markX, y), fill: { type: 'solid', color: fg } } as LayoutNode],
+    box: { x: markX, y, width: markW, height: markH },
+  })
+  y += markH + gap
   pieces.push({ id: 'quote', spec: quote, box: { x: tx, y, width: tw, height: qH }, align })
   y += qH + gap * 1.5
   if (name) {
@@ -183,7 +196,7 @@ const composite = defineCompositeBlock<QuoteImageProps>({
   related: ['tls.c.testimonial', 'tls.t.quote', 'tls.m.image'],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 360] },
+  size: { preferred: [1600, 800], min: [960, 480] },
   describe: {
     when: 'An emotional or inspirational quote as a full slide.',
     avoid: 'A customer testimonial with a face: tls.c.testimonial.',
