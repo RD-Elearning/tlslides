@@ -68,8 +68,9 @@ All the repo rules still hold: [../block-library/README.md](../block-library/REA
    (`packages/tldraw/src/blocks/library/<family>/<tls-x-name>/`) and family helpers that only your
    group's blocks use. Anything else (`blocks/*.ts` root files, `render-dom.tsx`, `render-svg.ts`,
    `motion/`, `components/`, `state/`, a `_engine`/`_kit` shared with another group, the review
-   scenario) is **not yours**: write it up in §5 Shared issues with block, symptom and shot file,
-   and move on.
+   scenario) is **not yours**: write it up in your group file's **Shared issues raised** section
+   (block, symptom, shot file, suspected file) and in your final report, and move on. Only the
+   controller edits this README; it copies those entries into §5.
 2. **Never invent vocabulary** (ColorRole, LayoutNode kinds, SlotType kinds, motion preset ids,
    BlockFamily, BlockCategory, BlockScope). **Additive schema only**: never rename or remove a
    shipped block, slot or option value. A block that needs either is ⏸ with the reason.

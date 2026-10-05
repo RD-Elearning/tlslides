@@ -31,7 +31,13 @@ Columns are the §2 checks. Cell values: ⬜ not checked · ✅ pass (as-is) · 
 
 ## Findings
 
-One entry per problem: block, check id, what was wrong (with the shot file name), what was done, and the test that now covers it. Problems outside this group's files go to README §5 Shared issues instead.
+One entry per problem: block, check id, what was wrong (with the shot file name), what was done, and the test that now covers it. Problems outside this group's files go to **Shared issues raised** below instead.
+
+_None yet._
+
+## Shared issues raised
+
+Problems whose fix lies outside this group's files (README §3 rule 1). The controller copies them into README §5.
 
 _None yet._
 
