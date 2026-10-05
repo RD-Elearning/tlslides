@@ -36,7 +36,7 @@ export const tlsTTitle: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 120], min: [200, 40] },
+  size: { preferred: [1200, 120], min: [640, 100] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

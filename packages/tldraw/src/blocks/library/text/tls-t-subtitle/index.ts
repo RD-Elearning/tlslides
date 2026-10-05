@@ -35,7 +35,7 @@ export const tlsTSubtitle: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 80], min: [200, 30] },
+  size: { preferred: [960, 110], min: [560, 108] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

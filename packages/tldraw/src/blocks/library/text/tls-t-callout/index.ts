@@ -34,7 +34,7 @@ export const tlsTCallout: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 200], min: [240, 90] },
+  size: { preferred: [800, 200], min: [480, 180] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

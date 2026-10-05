@@ -3,6 +3,7 @@
  */
 
 import { tlsTCallout } from './index'
+import { makeCtx as rv02Ctx } from '../test-helpers'
 import { VARIANTS, variantOf } from './layout'
 import { makeCtx, makeRegistry } from '../test-helpers'
 import { standardBlockSuite, leavesOf } from '../standard-suite'
@@ -99,6 +100,29 @@ describe('tls.t.callout', () => {
     for (const l of leavesOf(tree, 'text').concat(leavesOf(tree, 'title'), leavesOf(tree, 'icon'))) {
       expect(l.x).toBeGreaterThan(box.x)
       expect(l.y + l.height).toBeLessThan(box.y + box.height)
+    }
+  })
+})
+
+describe('RV02 — honest size (review G02)', () => {
+  const DEF = tlsTCallout
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('the example fits size.%s with nothing escaping it', (_label, [w, h]) => {
+    const node = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
     }
   })
 })

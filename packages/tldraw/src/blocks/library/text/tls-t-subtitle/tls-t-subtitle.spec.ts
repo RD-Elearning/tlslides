@@ -3,6 +3,7 @@
  */
 
 import { tlsTSubtitle } from './index'
+import { makeCtx as rv02Ctx } from '../test-helpers'
 import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../test-helpers'
 
 describe('tls.t.subtitle', () => {
@@ -86,5 +87,34 @@ describe('tls.t.subtitle', () => {
       const node = tlsTSubtitle.layout({ text: longWord } as any, ctx)
       assertValidNode(node)
     })
+  })
+})
+
+describe('RV02 — honest size (review G02)', () => {
+  const DEF = tlsTSubtitle
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('the example fits size.%s with nothing escaping it', (_label, [w, h]) => {
+    const node = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('the example stays on one line at the preferred width (it wrapped and clipped at 800 wide)', () => {
+    const [w, h] = DEF.size.preferred
+    const node: any = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.children[0].lines).toHaveLength(1)
   })
 })
