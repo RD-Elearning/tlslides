@@ -3,6 +3,7 @@
  */
 
 import { tlsTFootnote } from './index'
+import { makeCtx as rv02Ctx } from '../test-helpers'
 import { withMarker } from './layout'
 import { makeCtx, makeRegistry } from '../test-helpers'
 import { standardBlockSuite, leavesOf, absoluteLeaves } from '../standard-suite'
@@ -64,5 +65,32 @@ describe('tls.t.footnote', () => {
       expect(r.budget.lines.used).toBeGreaterThan(4)
       expect(r.remedy).toEqual([{ kind: 'truncate', slot: 'items' }])
     })
+  })
+})
+
+describe('RV02 — honest size (review G02)', () => {
+  const DEF = tlsTFootnote
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('the example fits size.%s with nothing escaping it', (_label, [w, h]) => {
+    const node = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('the example exercises more than one line (one source line was a speck on the card)', () => {
+    expect(((DEF.describe!.example.props as any).items as string[]).length).toBeGreaterThanOrEqual(2)
   })
 })

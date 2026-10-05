@@ -20,7 +20,7 @@ export const tlsTTakeaway: BlockDefinition = {
   related: ['tls.t.quote', 'tls.t.statement', 'tls.t.callout'],
   describe: {
     when: 'Use to call out a key insight, conclusion, or "so what" from data.',
-    avoid: 'Do not use for quotes from named people (use tls.t.quote) or for ordinary body text (use tls.t.body).',
+    avoid: 'Do not use for quotes from named people (use tls.t.quote), for a tip, warning or caveat (use tls.t.callout) or for ordinary body text (use tls.t.body).',
     example: {
       id: 'b_take',
       type: 'tls.t.takeaway',
@@ -33,7 +33,7 @@ export const tlsTTakeaway: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 200], min: [300, 100] },
+  size: { preferred: [800, 200], min: [480, 170] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

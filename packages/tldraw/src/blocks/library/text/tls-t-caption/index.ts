@@ -23,17 +23,17 @@ export const tlsTCaption: BlockDefinition = {
   shortDescription: 'Small explanatory line for an image or chart',
   related: ['tls.t.body', 'tls.t.footnote'],
   describe: {
-    when: 'Use to label a chart, image, or data source — 5–15 words maximum.',
-    avoid: 'Do not use for body text (use tls.t.body) or as a title (use tls.t.title or tls.t.subtitle).',
+    when: 'Use to describe or label one image or chart in a single line, placed right under it — 5–15 words.',
+    avoid: 'Do not use for body text (use tls.t.body), as a title (use tls.t.title or tls.t.subtitle) or for a data source citation or footnote (use tls.t.footnote).',
     example: {
       id: 'b_cap',
       type: 'tls.t.caption',
-      props: { text: 'Source: internal Q3 financials', align: 'start' },
+      props: { text: 'Figure 2 — Store traffic peaks on Saturday afternoons', align: 'start' },
     },
   },
   schema,
   defaults,
-  size: { preferred: [400, 40], min: [100, 20] },
+  size: { preferred: [640, 64], min: [400, 64] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

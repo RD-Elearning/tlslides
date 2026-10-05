@@ -3983,7 +3983,7 @@ Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as o
 Paragraph body text with RichText, autofit, and multi-column. _(family: text; keywords: body, paragraph, text, prose, copy, description)_
 
 **When:** Use for 1–3 sentences of body copy, descriptions, or prose.
-**Avoid:** Do not use for bullet lists (use tls.t.bullets) or for small source lines under a chart (use tls.t.caption).
+**Avoid:** Do not use for bullet lists (use tls.t.bullets), for a one-line label under an image or chart (use tls.t.caption) or for a data source citation (use tls.t.footnote).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -4008,7 +4008,7 @@ Paragraph body text with RichText, autofit, and multi-column. _(family: text; ke
           \\"bold\\": true
         },
         {
-          \\"text\\": \\" is made once.\\"
+          \\"text\\": \\" is made once and reused everywhere. Teams ship faster and the product stays consistent.\\"
         }
       ]
     },
@@ -4089,8 +4089,8 @@ Boxed note in one of five variants, with icon and optional title. _(family: text
 
 Small caption text for images, charts, and media. _(family: text; keywords: caption, subtitle, description, label, small-text, source)_
 
-**When:** Use to label a chart, image, or data source — 5–15 words maximum.
-**Avoid:** Do not use for body text (use tls.t.body) or as a title (use tls.t.title or tls.t.subtitle).
+**When:** Use to describe or label one image or chart in a single line, placed right under it — 5–15 words.
+**Avoid:** Do not use for body text (use tls.t.body), as a title (use tls.t.title or tls.t.subtitle) or for a data source citation or footnote (use tls.t.footnote).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -4104,7 +4104,7 @@ Small caption text for images, charts, and media. _(family: text; keywords: capt
   \\"id\\": \\"b_cap\\",
   \\"type\\": \\"tls.t.caption\\",
   \\"props\\": {
-    \\"text\\": \\"Source: internal Q3 financials\\",
+    \\"text\\": \\"Figure 2 — Store traffic peaks on Saturday afternoons\\",
     \\"align\\": \\"start\\"
   }
 }
@@ -4201,7 +4201,8 @@ Small-print source or footnote lines with an optional marker. _(family: text; ke
   \\"type\\": \\"tls.t.footnote\\",
   \\"props\\": {
     \\"items\\": [
-      \\"Eurostat, 2025\\"
+      \\"Eurostat, household energy survey 2025\\",
+      \\"Prices in constant 2020 euros\\"
     ],
     \\"marker\\": \\"source\\",
     \\"align\\": \\"start\\"
@@ -4498,7 +4499,7 @@ Wrapping row of pill-shaped tags in soft, outline or solid tone. _(family: text;
 Highlighted insight text with accent bar and optional label. _(family: text; keywords: takeaway, insight, callout, highlight, key-point)_
 
 **When:** Use to call out a key insight, conclusion, or \\"so what\\" from data.
-**Avoid:** Do not use for quotes from named people (use tls.t.quote) or for ordinary body text (use tls.t.body).
+**Avoid:** Do not use for quotes from named people (use tls.t.quote), for a tip, warning or caveat (use tls.t.callout) or for ordinary body text (use tls.t.body).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|

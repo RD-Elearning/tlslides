@@ -23,12 +23,18 @@ export const tlsTBody: BlockDefinition = {
   related: ['tls.t.bullets', 'tls.t.definition'],
   describe: {
     when: 'Use for 1–3 sentences of body copy, descriptions, or prose.',
-    avoid: 'Do not use for bullet lists (use tls.t.bullets) or for small source lines under a chart (use tls.t.caption).',
+    avoid: 'Do not use for bullet lists (use tls.t.bullets), for a one-line label under an image or chart (use tls.t.caption) or for a data source citation (use tls.t.footnote).',
     example: {
       id: 'b_body',
       type: 'tls.t.body',
       props: {
-        text: { runs: [{ text: 'Design systems scale because every ' }, { text: 'decision', bold: true }, { text: ' is made once.' }] },
+        text: {
+          runs: [
+            { text: 'Design systems scale because every ' },
+            { text: 'decision', bold: true },
+            { text: ' is made once and reused everywhere. Teams ship faster and the product stays consistent.' },
+          ],
+        },
         columns: 1,
         align: 'start',
       },
@@ -36,7 +42,7 @@ export const tlsTBody: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 200], min: [200, 40] },
+  size: { preferred: [800, 200], min: [560, 170] },
   layout: layout as BlockDefinition['layout'],
   intrinsicSize: intrinsicSize as BlockDefinition['intrinsicSize'],
   motion,

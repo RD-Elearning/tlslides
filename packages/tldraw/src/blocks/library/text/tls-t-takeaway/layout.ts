@@ -91,8 +91,10 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
   y += textHeight
 
   // ── Accent bar (full height of content) ──────────────────────────────
-  const totalContentHeight = Math.max(y - pad, ctx.box.height * 0.4)
-  const barHeight = totalContentHeight + pad
+  // Exactly the content's height, inset by `pad` top and bottom like the text. (It used to be
+  // max(content, 40% of the box) + pad: flush with the surface's bottom edge, and in a tall box
+  // it ran far below the tinted surface.)
+  const barHeight = Math.max(0, y - pad)
 
   children.unshift({
     k: 'rect',

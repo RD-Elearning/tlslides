@@ -3,6 +3,7 @@
  */
 
 import { tlsTTakeaway } from './index'
+import { makeCtx as rv02Ctx } from '../test-helpers'
 import { makeCtx, makeRegistry, SIZES, assertValidNode, collectParts } from '../test-helpers'
 
 describe('tls.t.takeaway', () => {
@@ -122,5 +123,44 @@ describe('tls.t.takeaway', () => {
       expect(parts).toContain('accent-bar')
       expect(parts).toContain('text')
     })
+  })
+})
+
+describe('RV02 — honest size (review G02)', () => {
+  const DEF = tlsTTakeaway
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('the example fits size.%s with nothing escaping it', (_label, [w, h]) => {
+    const node = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('the accent bar spans the content with equal insets and never leaves the surface', () => {
+    for (const [w, h] of [[800, 200], [1760, 600], [400, 210]]) {
+      const node: any = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+      const surface = node.children.find((c: any) => c.part === 'surface')
+      const bar = node.children.find((c: any) => c.part === 'accent-bar')
+      const top = bar.box.y - surface.box.y
+      const bottom = surface.box.y + surface.box.height - (bar.box.y + bar.box.height)
+      expect(top).toBeGreaterThan(0)
+      expect(Math.abs(top - bottom)).toBeLessThan(1)
+    }
+  })
+
+  it('avoid steers tips and warnings to tls.t.callout', () => {
+    expect(DEF.describe!.avoid).toContain('tls.t.callout')
   })
 })
