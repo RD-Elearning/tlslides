@@ -7,7 +7,7 @@
 
 import * as React from 'react'
 import { styled } from '../../../styles'
-import type { SlotSpec, ColorRole } from '~blocks/types'
+import type { SlotSpec, SlotType, ColorRole } from '~blocks/types'
 import { ThemeColorPicker } from './ThemeColorPicker'
 import { ICONS } from '~blocks/icons'
 
@@ -296,12 +296,14 @@ export const ListField: React.FC<FieldProps & { name: string; path: string }> = 
   onChange,
   path,
 }) => {
-  const typeSpec = spec.type as unknown as { kind: 'list'; of: SlotSpec; min?: number; max?: number }
+  const typeSpec = spec.type as Extract<SlotType, { kind: 'list' }>
+  // `of` is a bare SlotType; the item editor and the default helper take a SlotSpec.
+  const itemSpec: SlotSpec = { type: typeSpec.of, role: spec.role, label: '' }
   const items = (value as unknown[]) ?? []
   const maxItems = typeSpec.max
 
   const addItem = () => {
-    const newItem = getDefaultForSlotType(typeSpec.of)
+    const newItem = getDefaultForSlotType(itemSpec)
     onChange([...items, newItem])
   }
 
@@ -358,7 +360,7 @@ export const ListField: React.FC<FieldProps & { name: string; path: string }> = 
             </ListControls>
             <ListItemContent>
               <RecursiveField
-                spec={typeSpec.of}
+                spec={itemSpec}
                 value={item}
                 path={`${path}.${i}`}
                 name={`${path}.${i}`}

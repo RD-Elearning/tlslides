@@ -3,6 +3,8 @@
  * B6 implementation (R12).
  */
 
+import * as React from 'react'
+import { render } from '@testing-library/react'
 import { renderFieldForSpec } from './fields/FieldControls'
 import { COLOR_ROLES } from './fields/ThemeColorPicker'
 import { parsePropPath, setAtPath, getAtPath } from '../../blocks/prop-path'
@@ -178,5 +180,25 @@ describe('renderFieldForSpec', () => {
     }
     const result = renderFieldForSpec(spec, undefined, 'unknown', () => {})
     expect(result).toBeNull()
+  })
+})
+
+describe('ListField', () => {
+  // `list.of` is a bare SlotType, not a SlotSpec: rendering the items used to read
+  // `of.type.kind` and crash the whole editor as soon as a dropped block was selected.
+  it('mounts a list of scalars and a list of objects', () => {
+    const texts: SlotSpec = { type: { kind: 'list', of: { kind: 'text' } }, role: 'content', label: 'Items' }
+    const objects: SlotSpec = {
+      type: {
+        kind: 'list',
+        of: { kind: 'object', fields: { label: { type: { kind: 'text' }, role: 'content', label: 'Label' } } },
+      },
+      role: 'content',
+      label: 'Steps',
+    }
+    const a = render(<>{renderFieldForSpec(texts, ['one', 'two'], 'items', () => {})}</>)
+    expect(a.container.querySelectorAll('input, textarea').length).toBeGreaterThanOrEqual(2)
+    const b = render(<>{renderFieldForSpec(objects, [{ label: 'x' }], 'steps', () => {})}</>)
+    expect(b.container.textContent).toContain('Label')
   })
 })

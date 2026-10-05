@@ -31,6 +31,8 @@ export interface BlockPreviewProps {
   /** Width of the preview thumbnail (CSS px). Height is derived from the block's
    * preferred size ratio. */
   width: number
+  /** Optional height cap (CSS px): the block is scaled to fit inside width x maxHeight. */
+  maxHeight?: number
   /** Optional theme id for memo key (forces re-render on theme switch). */
   themeId?: string
 }
@@ -46,7 +48,7 @@ function makeBox(def: BlockDefinition) {
  * LayoutNode tree as DOM. Wrapped in HostLayoutContext so any host children
  * (nested html-kind blocks) get the right CSS vars.
  */
-function BlockPreviewInner({ def, width }: { def: BlockDefinition; width: number }) {
+function BlockPreviewInner({ def, width, maxHeight }: { def: BlockDefinition; width: number; maxHeight?: number }) {
   const box = React.useMemo(() => makeBox(def), [def])
 
   // H1: one useBlockLayoutContext per card — fine for ~40 cards.
@@ -69,32 +71,38 @@ function BlockPreviewInner({ def, width }: { def: BlockDefinition; width: number
   }, [def, ctx, box])
 
   const [origW, origH] = def.size.preferred
-  const scale = width / origW
+  const scale = Math.min(width / origW, maxHeight ? maxHeight / origH : Infinity)
 
+  // The block is laid out at its preferred size and scaled down as a whole. The scaled
+  // element must keep the block's own width/height: sizing it to the thumbnail and then
+  // scaling clipped the preview to a thumbnail-sized corner of the block.
   return (
-    <PreviewWrapper
-      style={{
-        width: `${width}px`,
-        height: `${origH * scale}px`,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
-        overflow: 'hidden',
-        pointerEvents: 'none',
-      }}
-    >
-      <HostLayoutContext.Provider
-        value={{
-          tokens: ctx.tokens,
-          surface: ctx.surface,
-          // Pass the block's own props for HostLayoutContext — host nodes read this.
-          // For non-host layouts it's unused but harmless.
-          props: (node as { props?: Record<string, unknown> }).props ?? (def.describe?.example?.props ?? def.defaults) as Record<string, unknown>,
-          headless: false,
+    <div style={{ position: 'relative', width: `${origW * scale}px`, height: `${origH * scale}px`, overflow: 'hidden', pointerEvents: 'none' }}>
+      <PreviewWrapper
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: `${origW}px`,
+          height: `${origH}px`,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
         }}
       >
-        <PreviewInnerDiv>{renderNodeToDom(node)}</PreviewInnerDiv>
-      </HostLayoutContext.Provider>
-    </PreviewWrapper>
+        <HostLayoutContext.Provider
+          value={{
+            tokens: ctx.tokens,
+            surface: ctx.surface,
+            // Pass the block's own props for HostLayoutContext — host nodes read this.
+            // For non-host layouts it's unused but harmless.
+            props: (node as { props?: Record<string, unknown> }).props ?? (def.describe?.example?.props ?? def.defaults) as Record<string, unknown>,
+            headless: false,
+          }}
+        >
+          <PreviewInnerDiv>{renderNodeToDom(node)}</PreviewInnerDiv>
+        </HostLayoutContext.Provider>
+      </PreviewWrapper>
+    </div>
   )
 }
 
@@ -110,6 +118,7 @@ function fallbackRectNode(box: { width: number; height: number }) {
 export const BlockPreview: React.FC<BlockPreviewProps> = React.memo(function BlockPreview({
   def,
   width,
+  maxHeight,
   themeId,
 }) {
   // H4: IntersectionObserver for lazy rendering — only render previews when
@@ -145,7 +154,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = React.memo(function Blo
     <PreviewOuter ref={ref} data-block-type={def.type} data-theme={themeId ?? undefined}>
       {visible && (
         <BlockErrorBoundary componentId={def.type}>
-          <BlockPreviewInner def={def} width={width} />
+          <BlockPreviewInner def={def} width={width} maxHeight={maxHeight} />
         </BlockErrorBoundary>
       )}
     </PreviewOuter>

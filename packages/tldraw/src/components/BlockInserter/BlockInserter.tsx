@@ -247,7 +247,7 @@ const BlockCard: React.FC<BlockCardProps> = ({ def, width, onClick }) => {
     >
       {def.size.preferred ? (
         <PreviewContainer>
-          <BlockPreview def={def} width={width} />
+          <BlockPreview def={def} width={width} maxHeight={PREVIEW_HEIGHT - 8} />
         </PreviewContainer>
       ) : (
         <PreviewPlaceholder>
@@ -350,8 +350,8 @@ const FamilyTabs = styled('div', {
   gap: '4px',
   padding: '8px 12px',
   borderBottom: '1px solid $border',
-  maxHeight: '104px',
-  overflowY: 'auto',
+  // No height cap: with 23 categories a capped bar scrolled without any visible cue and hid
+  // the last six rows of tabs (Media … Decoration).
   flexShrink: 0,
 })
 
