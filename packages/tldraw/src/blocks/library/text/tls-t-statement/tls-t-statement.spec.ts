@@ -3,6 +3,8 @@
  */
 
 import { tlsTStatement } from './index'
+import { makeCtx as rv02Ctx } from '../test-helpers'
+import { runWidth } from './layout'
 import { makeCtx, makeRegistry } from '../test-helpers'
 import { standardBlockSuite, leavesOf, absoluteLeaves } from '../standard-suite'
 
@@ -66,9 +68,11 @@ describe('tls.t.statement', () => {
       const li = lines.indexOf(line)
       const ri = line.runs.findIndex((r: any) => r.bold)
       const before = line.runs.slice(0, ri).map((r: any) => r.text).join('')
-      const startX = text.x + c.measureText(before, style).width
+      // RV02: run offsets use the glyph-advance table (what the browser draws), not the estimate.
+      const startX = text.x + line.runs.slice(0, ri).reduce((x: number, r: any) => x + runWidth(r.text, style, !!r.bold), 0)
+      expect(before.length).toBeGreaterThan(0)
       const rect = leavesOf(tree, `emphasis[${li}.${ri}]`)[0]
-      const runW = c.measureText(line.runs[ri].text.replace(/\s+$/, ''), style).width
+      const runW = runWidth(line.runs[ri].text.replace(/\s+$/, ''), style, true)
       if (emphasis === 'underline') {
         expect(rect.x).toBeCloseTo(startX, 0)
         expect(rect.width).toBeCloseTo(runW, 0)
@@ -133,5 +137,47 @@ describe('tls.t.statement', () => {
       expect(bad.remedy).toEqual([{ kind: 'truncate', slot: 'text' }])
       expect(bad.budget.text.max).toBeLessThanOrEqual(100)
     })
+  })
+
+  describe('RV02 — highlight sits on its run (review G02)', () => {
+    it('places the example highlight where the browser draws "growth engine", not where the estimate does', () => {
+      const ex = tlsTStatement.describe!.example.props as any
+      const c = ctx(1760, 600)
+      const tree = tlsTStatement.layout(ex, c)
+      const text = leavesOf(tree, 'text')[0]
+      const style = (text.node as any).style
+      const rect = leavesOf(tree, 'emphasis')[0]
+      // Browser-measured on coral-pop (Inter 64px): the prefix is ~918 units, "growth engine" ~428.
+      const prefix = runWidth('Retention, not acquisition, is our ', style)
+      expect(Math.abs(prefix - 918)).toBeLessThan(918 * 0.04)
+      expect(Math.abs(runWidth('growth engine', style, true) - 428)).toBeLessThan(428 * 0.05)
+      const pad = Math.round(style.size * 0.08)
+      expect(rect.x + pad).toBeCloseTo(text.x + prefix, 0)
+      // The estimate would have put it >200 units further right.
+      expect(c.measureText('Retention, not acquisition, is our ', style).width - prefix).toBeGreaterThan(200)
+    })
+  })
+})
+
+describe('RV02 — honest size (review G02)', () => {
+  const DEF = tlsTStatement
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('the example fits size.%s with nothing escaping it', (_label, [w, h]) => {
+    const node = DEF.layout(DEF.describe!.example.props as any, rv02Ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
   })
 })

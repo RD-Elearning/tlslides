@@ -15,6 +15,28 @@ import { placeText, alignedX, type HAlign, type PlacedText } from '../_engine/te
 import { hasStrong, str, toMeasurable } from '../_engine/rich'
 import { tintOf } from '../_engine/color'
 import { isShown } from '../../../schema-helpers'
+import { tableMetrics } from '../../../layout/measure'
+
+/**
+ * Run offsets for the underline / highlight rects come from the per-glyph advance table, not
+ * `ctx.measureText`: the estimate charges every glyph the same and runs 15-30% wide on large Inter
+ * text, so a highlight measured with it lands several words to the right of its run (review G02,
+ * `t-statement.wide.png`). The table is within ~3% of the browser; bold Inter is ~8% wider than
+ * the regular face the table describes.
+ */
+const TABLE = tableMetrics()
+export const BOLD_WIDTH_FACTOR = 1.08
+
+/** Rendered width of a single-line run at `style`. */
+export function runWidth(text: string, style: ResolvedTextStyle, bold = false): number {
+  if (!text) return 0
+  try {
+    const w = TABLE(text, style).lines[0]?.width ?? 0
+    return bold ? w * BOLD_WIDTH_FACTOR : w
+  } catch {
+    return 0
+  }
+}
 
 export const LADDER: Array<{ id: 'xl' | 'lg' | 'md'; token: TypeToken }> = [
   { id: 'xl', token: 'title' },
@@ -120,9 +142,9 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
       runs.forEach((run, ri) => {
         const isLast = ri === runs.length - 1
         const shown = isLast ? run.text.replace(/\s+$/, '') : run.text
-        const w = ctx.measureText(run.text, f.style).width
+        const w = runWidth(run.text, f.style, !!run.bold)
         if (run.bold && shown.trim().length > 0) {
-          const sw = Math.min(ctx.measureText(shown, f.style).width, Math.max(0, width - (cursor - 0)))
+          const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
           if (emphasis === 'highlight') {
             const padX = Math.round(size * 0.08)
             children.push({

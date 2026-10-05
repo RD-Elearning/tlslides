@@ -34,7 +34,7 @@ export const tlsTStatement: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 420], min: [320, 140] },
+  size: { preferred: [1200, 420], min: [400, 310] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],
