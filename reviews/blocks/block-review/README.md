@@ -136,6 +136,15 @@ the Next.js "1 Issue" badge it causes. Known pre-existing failure, not yours:
 | S2 | controller | `BlockInserter/BlockPreview.tsx` | Every gallery card showed a thumbnail-sized corner of the block (empty card or a coloured speck); tall blocks cropped | 🔧 `74c0cf13` |
 | S3 | controller | `BlockInserter/BlockInserter.tsx` | Category tab bar capped at 104 px hid Media … Decoration behind an invisible scroll | 🔧 `74c0cf13` |
 | S4 | controller | `BlockInserter.spec.tsx` | `renders category tabs with counts…` fails with `app.useStore is not a function` (pre-existing) | ⬜ |
+| S5 | G02 (X1) | `next dev` on :5433 | Stopped recompiling `packages/tldraw/dist` after 16:35:51 UTC (stale chunks through two rebuilds + touch). Restart it before any re-shoot | ⬜ |
+| S6 | G02 (X2) | `blocks/parity-harness.ts`, `parity-worker.ts` | DOM/SVG parity probe hangs >150 s even on untouched blocks; killing jest orphans parity-worker + Chrome. Workaround: `-t '^(?!.*parity).*$'` | ⬜ |
+| S7 | G02 (X3) | `blocks/render-svg.ts` | `path` node drawn without its box offset (render-dom applies it): tls.t.quote mark lands top-left in SVG export | ⬜ |
+| S8 | G02 (X4) | `motion/` or DeckViewer build steps | Second block on an expressive slide shows final for ~400 ms, vanishes, then enters (`custom/t-title.wide.mid-120.png` vs `mid-600`) | ⬜ |
+| S9 | G02 (X5) | `BlockInserter/BlockPreview.tsx` | Wide, small-text blocks scale to specks in gallery cards (`text/t-footnote.card.png`, `heading/t-subtitle.card.png`); needs a content-aware crop or min scale | ⬜ |
+| S10 | G02 (X6) | `layout/measure.ts`, `library/text/_engine/text-place.ts` | Default text-width estimate 15–30 % too wide: early wraps in the editor, off-centre placement (engine shared with G03) | ⬜ |
+| S11 | G02 (X7) | `tools/visual/scenarios/block-review.js` | Present pass leaves every block after the first in edit mode (`emphasis/t-callout.present.png`) | ⬜ |
+| S12 | G02 (X8) | `block-review.js` defaults | Default mid frames 350/900 ms miss subtle entrances (done < 350 ms); use `REVIEW_MID=40,120,220` | ⬜ |
+| S13 | G02 (X9) | `slide-layouts.ts` / tls.c.quote-image | Claims full-bleed photo but the `blank` layout gives it margins (`emphasis/c-quote-image.wide.png`) | ⬜ |
 
 ## 6. Progress
 
@@ -144,7 +153,7 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | Group | Blocks | Done | Fixed (🔧) | Blocked (⏸) / open (❌) | Shared issues raised | Last commit | Status |
 |---|---|---|---|---|---|---|---|
 | G01 structure | 13 | 0 | 0 | 0 | — | — | ⬜ |
-| G02 heading, text, emphasis | 12 | 0 | 0 | 0 | — | — | ⬜ |
+| G02 heading, text, emphasis | 12 | 12 | 12 | 0 | S5–S13 | `04d99f1a` | ✅ (re-shoot quote-image + subtitle after S5) |
 | G03 list | 9 | 0 | 0 | 0 | — | — | ⬜ |
 | G04 metric | 13 | 0 | 0 | 0 | — | — | ⬜ |
 | G05 chart | 16 | 0 | 0 | 0 | — | — | ⬜ |
@@ -154,7 +163,7 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | G09 media, people, brand | 14 | 0 | 0 | 0 | — | — | ⬜ |
 | G10 slide composites | 11 | 0 | 0 | 0 | — | — | ⬜ |
 | G11 chrome, decoration | 10 | 0 | 0 | 0 | — | — | ⬜ |
-| **Total** | **129** | **0** | **0** | **0** | | | |
+| **Total** | **129** | **12** | **12** | **0** | | | |
 
 ## 7. Harness
 
@@ -169,3 +178,4 @@ an example fixes the card, the drop and the viewer at once.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-05 | controller | Harness + plan; S1–S3 fixed (`74c0cf13`) | Started G02, G04, G05 in parallel; on the user's request G04/G05 were stopped before any edit. **One agent at a time; after G02 each agent takes a batch of related groups** (shared engines, better cache reuse): B1 = G04 + G05 + G06 (data) → B2 = G07 + G08 (diagram) → B3 = G01 + G03 + G11 (layout, list, chrome) → B4 = G09 + G10 (media, composites) |
+| 2026-10-05 | G02 agent | 12/12 fixed: quote `b4481fa0`, quote-image `e9a6b498`, statement `29de0427`, kicker `7805d506`, body/caption/footnote/takeaway `5c4f6837`, title/subtitle/definition/callout `2a5fa613`, group file `04d99f1a` | Every G02 spec now asserts the example fits preferred and min size. Next session: restart `next dev` (S5), re-shoot `REVIEW_BLOCKS=tls.c.quote-image,tls.t.subtitle`, then start batch B1 (G04 + G05 + G06). Fix S11/S12 in the harness first so B1's present/mid shots are trustworthy |
