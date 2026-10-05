@@ -121,4 +121,27 @@ describe('tls.t.kicker', () => {
       assertValidNode(node)
     })
   })
+
+  describe('RV02 — marker and box (review G02)', () => {
+    it('the marker dot ends before the text starts (no overlap)', () => {
+      const ctx = makeCtx({ width: 400, height: 34 }, registry)
+      const node: any = tlsTKicker.layout({ text: 'Overview', marker: true } as any, ctx)
+      const dot = node.children.find((c: any) => c.part === 'marker') as any
+      const text = node.children.find((c: any) => c.part === 'text') as any
+      expect(dot.box.x + dot.box.width).toBeLessThan(text.box.x)
+      // and it is centred on the first line, not on a wrapped block
+      const tall: any = tlsTKicker.layout({ text: 'A much longer eyebrow label that wraps', marker: true } as any, makeCtx({ width: 160, height: 200 }, registry))
+      const d2 = tall.children.find((c: any) => c.part === 'marker') as any
+      expect(d2.box.y + d2.box.height).toBeLessThan(22 * 1.4)
+    })
+
+    it('the example fits size.preferred and size.min', () => {
+      for (const [w, h] of [tlsTKicker.size.preferred, tlsTKicker.size.min]) {
+        const node: any = tlsTKicker.layout(tlsTKicker.describe!.example.props as any, makeCtx({ width: w, height: h }, registry))
+        expect(node.box.height).toBeLessThanOrEqual(h)
+        const text = node.children.find((c: any) => c.part === 'text') as any
+        expect(text.lines).toHaveLength(1)
+      }
+    })
+  })
 })

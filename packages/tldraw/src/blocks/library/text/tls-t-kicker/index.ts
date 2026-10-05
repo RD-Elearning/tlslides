@@ -32,7 +32,7 @@ export const tlsTKicker: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [400, 30], min: [100, 16] },
+  size: { preferred: [400, 34], min: [160, 34] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

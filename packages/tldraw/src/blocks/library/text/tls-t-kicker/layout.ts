@@ -51,7 +51,10 @@ export function layout(props: KickerProps, ctx: LayoutContext): LayoutNode {
     color: ctx.resolveColor('accent').color,
   }
 
-  const markerWidth = showMarker ? ctx.tokens.space.xs : 0
+  // The marker dot is 0.6 em; the text starts one `xs` gap after it (the old code reserved only
+  // the gap, so the dot sat on the first letter).
+  const dotSize = resolvedStyle.size * 0.6
+  const markerWidth = showMarker ? dotSize + ctx.tokens.space.xs : 0
   const innerWidth = Math.max(0, ctx.box.width - markerWidth)
   const inner = { x: markerWidth, y: 0, width: innerWidth, height: ctx.box.height }
 
@@ -59,15 +62,15 @@ export function layout(props: KickerProps, ctx: LayoutContext): LayoutNode {
 
   const children: LayoutNode[] = []
 
-  // Optional leading marker dot
+  // Optional leading marker dot, vertically centred on the first line
   if (showMarker) {
-    const dotSize = resolvedStyle.size * 0.6
+    const firstLine = Math.min(m.height, resolvedStyle.size * resolvedStyle.lineHeight)
     children.push({
       k: 'rect',
       part: 'marker',
       box: {
         x: 0,
-        y: (m.height - dotSize) / 2,
+        y: (firstLine - dotSize) / 2,
         width: dotSize,
         height: dotSize,
       },
