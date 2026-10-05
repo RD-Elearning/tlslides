@@ -36,7 +36,7 @@ export const tlsTQuote: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 400], min: [300, 200] },
+  size: { preferred: [960, 400], min: [480, 380] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }
