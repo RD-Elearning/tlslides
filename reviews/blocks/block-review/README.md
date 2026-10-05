@@ -168,4 +168,4 @@ an example fixes the card, the drop and the viewer at once.
 
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
-| 2026-10-05 | controller | Harness + plan; S1–S3 fixed (`74c0cf13`) | Started G02, G04, G05 in parallel; on the user's request G04/G05 were stopped before any edit. **Groups now run one at a time**: G02 → G04 → G05 → G01 → G03 → G06 → G07 → G08 → G09 → G10 → G11 |
+| 2026-10-05 | controller | Harness + plan; S1–S3 fixed (`74c0cf13`) | Started G02, G04, G05 in parallel; on the user's request G04/G05 were stopped before any edit. **One agent at a time; after G02 each agent takes a batch of related groups** (shared engines, better cache reuse): B1 = G04 + G05 + G06 (data) → B2 = G07 + G08 (diagram) → B3 = G01 + G03 + G11 (layout, list, chrome) → B4 = G09 + G10 (media, composites) |
