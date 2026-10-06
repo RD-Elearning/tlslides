@@ -4,7 +4,7 @@ Part of the block UI review: read [README.md](README.md) (checklist §2, rules �
 
 Run: `REVIEW_CATEGORY=<category> node tools/visual/shoot.js block-review --width=1600 --height=900` for each of: `list`. Shots land in `tools/visual/shots/review/<category>/`.
 
-**Status:** ⬜ not started · **Agent:** — · **Last commit:** —
+**Status:** ✅ done (9/9 reviewed, 9 🔧) · **Agent:** B3 · **Last commit:** `086e60eb`
 
 ## Blocks
 
@@ -12,29 +12,38 @@ Columns are the §2 checks. Cell values: ⬜ not checked · ✅ pass (as-is) · 
 
 | Block | Category | Scope | Kind | C1 card | C2 drop+inspector | C3 wide | C4 narrow | C5 motion | C6 AI metadata | Status | Commit | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| tls.t.bullets | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.t.numbered | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.t.checklist | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.t.kv-list | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.t.tags | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.c.feature-grid | list | group | html | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.c.cards | list | group | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.c.feature-reveal | list | group | html | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
-| tls.m.icon-list | list | element | layout | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | | |
+| tls.t.bullets | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | preferred 700x400 held 160 px of content → 700x300 (defaults 300); min 200x80 needed 201 → 520x170 |
+| tls.t.numbered | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | preferred 800x480 → 800x240; min 240x120 → 440x230; no early wrap (real widths) |
+| tls.t.checklist | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | strike-through ran 25% past the text (estimate width) → real widths; 800x230 / 420x170 |
+| tls.t.kv-list | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | aligned value box overshot the right edge by 1 px (placeText) → clamped; real widths; 800x290 / 420x160 |
+| tls.t.tags | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | pills 15-30% wider than their label (x1.12 slack on an over-wide estimate) → real widths; 900x140 / 460x140 |
+| tls.c.feature-grid | list | group | html | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | title+desc never appeared (animate released only icons: stuck 0.00 in report); 1920-wide drop; no reflow in half region → all parts animate, columns drop under 200 px cells, 1200x242 / min 1120x242 |
+| tls.c.cards | list | group | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | cards stretched to 460 px for 2 short lines; example 2 cards → 3 with real copy; pad shrinks with card width; 1500x400 / min 1320x400 |
+| tls.c.feature-reveal | list | group | html | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | example had no text (cards = title only, 700 px tall in a wide region); cards now stop growing (260-340) and centre; 1200x340 / min 640x300; defaults 6 → 3 items |
+| tls.m.icon-list | list | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `086e60eb` | preferred 760x480 held 272 px → 760x370 (defaults 368); min 280x140 → 420x290 |
 
 ## Findings
 
 One entry per problem: block, check id, what was wrong (with the shot file name), what was done, and the test that now covers it. Problems outside this group's files go to **Shared issues raised** below instead.
 
-_None yet._
+1. **Dishonest `size` (C6/C4), all 9.** Preferred boxes were 2-4x the content (bullets 400 tall for 161 of text, icon-list 480 for 272) so the drop and gallery showed a list in a void; mins were far below what the example needs. New preferred = the taller of the example and the defaults; mins are the smallest box where the example fits. Spec `library/list-sizes.spec.ts` (6 element blocks: fits preferred and min, hugs content >= 60 %, 8 items stay inside the width, `assertMotionTargetsExist`); feature-grid/cards/reveal have their own RV03 blocks.
+2. **Estimated glyph widths (C3), tags / checklist / kv-list / numbered.** Pills 15-30 % wider than their label, strike-through longer than the text, values short of the right edge. `layoutMarkerRows` (numbered, checklist), tags and kv-list now measure through `withRealWidths` (`data/_chart/kit`); `placeText` clamps an aligned line's box to the column (was +1 px over). Shared engine: all 11 G02 text specs + diagram specs unaffected (green).
+3. **tls.c.feature-grid — C5/C3/C2** (`list/c-feature-grid.wide.png`: icons only; report `stuck: cell[*].title/desc 0.00`). `animate()` animated the icon's parent and the icon, but the runtime hides every `data-part`: titles and descriptions stayed at opacity 0 forever. Now every icon/title/desc is released (icon pops, text rises, staggered per cell). The grid also never reflowed (3 columns in a half region) and dropped at 1920 wide: CSS grid with `effectiveColumns()` shared by template and poster (min cell 200), preferred 1200x242. Tests: `RV03 — fits its box, reflows, releases every part`.
+4. **tls.c.feature-reveal — C1/C3** (`list/c-feature-reveal.wide.png`). The example had titles only (schema says title + one line) and the cards stretched to the region height (700 px for one word). Example with text; card height capped (`max(260, 400 - 0.25 w)`) and the grid centred; defaults cut from 6 to 3 so preferred can hug.
+5. **tls.c.cards — C3/C1.** `total = max(needed, min(H, 460))` made 2 short lines sit in 460 px cards; now `min(H, 1.3 x needed)`. Example 3 cards with real copy; padding shrinks with the card width.
+6. **Digest snapshot** regenerated: example props / `when` of cards and feature-reveal changed (intended).
+
+Checked and passing as-is: drag-drop adds one shape at the drop point for all 9 (inspectors open); chains complete (2/2 wide, 1/1 narrow); no overflow reports; list motion parts all exist and are covered (`stagger-lines`, `stagger-children` animate).
 
 ## Shared issues raised
 
 Problems whose fix lies outside this group's files (README §3 rule 1). The controller copies them into README §5.
 
-_None yet._
+- **S9/S21 (again)**: wide small-text list cards are small in the 182x100 gallery card (`list/t-bullets.card.png`, `t-kv-list.card.png`); legible only because the content hugs the box now.
+- **S10**: the default estimate is still wide for blocks outside this batch (text/_engine `placeText` consumers other than kv-list); G03 switched to `withRealWidths` per block.
 
 ## Session log
 
 | Date | Agent | Moved | Notes for next session |
 |---|---|---|---|
+| 2026-10-06 | B3 agent | 9/9 reviewed, 9 🔧 — commit `086e60eb` | Next: G01 structure |
