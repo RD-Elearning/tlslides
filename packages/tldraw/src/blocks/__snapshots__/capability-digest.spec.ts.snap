@@ -3317,7 +3317,7 @@ Filled container with configurable padding. _(family: layout; keywords: card, co
 
 Full-bleed background fill. _(family: layout; keywords: field, background, fill, full-bleed)_
 
-**When:** Use as a solid-color background layer behind other content in an overlay.
+**When:** A full-bleed colour or gradient layer (set through the block style.surface) painted first, behind other blocks; put it first inside a tls.l.overlay.
 **Avoid:** Do not use for visible content (it only paints a fill), or for a framed panel around content (use tls.l.card).
 
 _No slots._
@@ -4210,7 +4210,7 @@ Even grid of logos at equal height or equal area, with an optional heading, plat
 
 Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as one path. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background)_
 
-**When:** Texture behind a cover, divider or quote. Put it in its own region.
+**When:** Texture behind a cover, divider or quote (put it in its own region, content on top). Tone accent shows clearly; line is very faint.
 **Avoid:** Content slides with dense text; one accent shape (use tls.m.decoration).
 
 | Slot | Required | Type | Guidance |
@@ -4227,7 +4227,7 @@ Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as o
   \\"props\\": {
     \\"pattern\\": \\"dots\\",
     \\"scale\\": \\"md\\",
-    \\"tone\\": \\"line\\",
+    \\"tone\\": \\"accent\\",
     \\"opacity\\": \\"soft\\"
   }
 }
@@ -4903,12 +4903,13 @@ A small logo pinned to one corner of its box, fitted and never cropped. _(family
 
 Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
 
-**When:** Use to indicate the current page position in a multi-slide document.
+**When:** The slide number (optionally \\"3 / 24\\") in a footer corner of content slides; position it with align start, center or end.
 **Avoid:** Do not use as a content block: it is slide furniture only.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`number\` | yes | number (min 1) | Typically 1-2 digits. |
+| \`total\` | no | number (min 1) | Optional. Leave out for a bare number. |
 | \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
 
 \`\`\`json
@@ -4916,8 +4917,9 @@ Page number chrome element for slide footers. _(family: chrome; keywords: page, 
   \\"id\\": \\"b_page_1\\",
   \\"type\\": \\"tls.x.page-number\\",
   \\"props\\": {
-    \\"number\\": 1,
-    \\"align\\": \\"center\\"
+    \\"number\\": 3,
+    \\"total\\": 24,
+    \\"align\\": \\"end\\"
   }
 }
 \`\`\`

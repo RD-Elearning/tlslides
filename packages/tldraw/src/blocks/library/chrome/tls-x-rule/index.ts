@@ -29,7 +29,7 @@ export const tlsXRule: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 8], min: [16, 2] },
+  size: { preferred: [240, 8], min: [16, 2] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

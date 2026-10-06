@@ -21,7 +21,7 @@ export const tlsLField: BlockDefinition = {
   scope: 'element',
   shortDescription: 'Full-bleed background colour or gradient behind other blocks',
   describe: {
-    when: 'Use as a solid-color background layer behind other content in an overlay.',
+    when: 'A full-bleed colour or gradient layer (set through the block style.surface) painted first, behind other blocks; put it first inside a tls.l.overlay.',
     avoid: 'Do not use for visible content (it only paints a fill), or for a framed panel around content (use tls.l.card).',
     example: {
       id: 'b_field',

@@ -29,7 +29,7 @@ export const tlsXHeader: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1600, 48], min: [200, 30] },
+  size: { preferred: [1600, 48], min: [400, 46] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

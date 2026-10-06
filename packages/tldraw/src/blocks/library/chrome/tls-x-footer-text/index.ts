@@ -29,7 +29,7 @@ export const tlsXFooterText: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 40], min: [200, 26] },
+  size: { preferred: [1200, 40], min: [380, 40] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

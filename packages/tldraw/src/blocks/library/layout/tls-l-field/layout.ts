@@ -4,13 +4,18 @@
  * Renders a full-size filled rect with the surface colour. No children.
  */
 
-import type { LayoutContext, LayoutNode } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { FieldProps } from './schema'
 
 export function layout(_props: FieldProps, ctx: LayoutContext): LayoutNode {
   const W = ctx.box.width
   const H = ctx.box.height
-  const surfaceColor = ctx.resolveColor('surface').color
+  // The instance's Paint (a gradient) when set, else the resolved surface role: the card and overlay
+  // blocks do the same, and the description promises "colour or gradient" (RV11).
+  const fill: Paint =
+    ctx.style?.surface && typeof ctx.style.surface !== 'string'
+      ? ctx.style.surface
+      : { type: 'solid', color: ctx.resolveColor('surface').color }
 
   return {
     k: 'group',
@@ -21,7 +26,7 @@ export function layout(_props: FieldProps, ctx: LayoutContext): LayoutNode {
         k: 'rect',
         box: { x: 0, y: 0, width: W, height: H },
         part: 'field',
-        fill: { type: 'solid', color: surfaceColor },
+        fill,
       },
     ],
   }

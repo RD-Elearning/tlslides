@@ -13,6 +13,13 @@ export const schema: BlockSchema = {
     required: true,
     guidance: 'Typically 1-2 digits.',
   },
+  total: {
+    type: { kind: 'number', min: 1 },
+    role: 'option',
+    label: 'Total pages',
+    help: 'When set, shows "number / total" (e.g. 3 / 24).',
+    guidance: 'Optional. Leave out for a bare number.',
+  },
   align: {
     type: { kind: 'enum', values: ['start', 'center', 'end'] },
     role: 'option',
@@ -23,6 +30,7 @@ export const schema: BlockSchema = {
 
 export interface PageNumberProps extends Record<string, unknown> {
   number: number
+  total?: number
   align?: string
 }
 

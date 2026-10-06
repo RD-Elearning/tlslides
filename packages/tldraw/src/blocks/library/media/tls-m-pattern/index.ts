@@ -19,9 +19,9 @@ export const tlsMPattern: BlockDefinition = {
   shortDescription: 'Repeating dots, lines, grid or diagonal stripes as a subtle backdrop',
   related: ['tls.m.decoration'],
   describe: {
-    when: 'Texture behind a cover, divider or quote. Put it in its own region.',
+    when: 'Texture behind a cover, divider or quote (put it in its own region, content on top). Tone accent shows clearly; line is very faint.',
     avoid: 'Content slides with dense text; one accent shape (use tls.m.decoration).',
-    example: { id: 'b_pattern', type: 'tls.m.pattern', props: { pattern: 'dots', scale: 'md', tone: 'line', opacity: 'soft' } },
+    example: { id: 'b_pattern', type: 'tls.m.pattern', props: { pattern: 'dots', scale: 'md', tone: 'accent', opacity: 'soft' } },
   },
   schema,
   defaults,

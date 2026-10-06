@@ -22,17 +22,17 @@ export const tlsXPageNumber: BlockDefinition = {
   shortDescription: 'Slide number, alone or as "3 / 24"',
   related: ['tls.x.footer-text'],
   describe: {
-    when: 'Use to indicate the current page position in a multi-slide document.',
+    when: 'The slide number (optionally "3 / 24") in a footer corner of content slides; position it with align start, center or end.',
     avoid: 'Do not use as a content block: it is slide furniture only.',
     example: {
       id: 'b_page_1',
       type: 'tls.x.page-number',
-      props: { number: 1, align: 'center' },
+      props: { number: 3, total: 24, align: 'end' },
     },
   },
   schema,
   defaults,
-  size: { preferred: [60, 20], min: [20, 16] },
+  size: { preferred: [120, 36], min: [72, 36] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }
