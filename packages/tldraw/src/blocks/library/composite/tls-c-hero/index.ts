@@ -28,6 +28,7 @@ import { createLayoutContext } from '../../../layout/layout-child'
 import { resolveTokens } from '../../../tokens'
 import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
 import { htmlHostNode } from '../../../html-block'
+import { runShowcase } from '../_showcase'
 
 /** Summary for the AI: what this block is and when to use it. */
 const HERO_SUMMARY =
@@ -247,6 +248,11 @@ function heroAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => v
     return
   }
 
+  // subtle: one calm fade of every part (the showcase contract), whatever the variant
+  if (rt.style === 'subtle') {
+    return runShowcase(root, rt, { gsap: () => () => undefined, driver: () => [] })
+  }
+
   // Read variant from the root element's data attribute (set by the template)
   const variant: HeroVariant = (root.dataset.variant as HeroVariant) ?? 'classic'
 
@@ -275,7 +281,7 @@ export const tlsCHero: BlockDefinition = {
   category: 'cover',
   scope: 'slide',
   shortDescription: 'Opening title with kicker, subtitle and optional call to action',
-  related: ['tls.t.title', 'tls.c.cover'],
+  related: ['tls.t.title', 'tls.c.cover', 'tls.c.kinetic-title'],
   describe: {
     when:
       'Use as a title/cover slide — one idea in the title, date/audience in the subtitle. ' +
@@ -296,7 +302,7 @@ export const tlsCHero: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [400, 200] },
+  size: { preferred: derivePreferredSize(), min: [1280, 472] },
   layout: heroLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: heroAnimate },

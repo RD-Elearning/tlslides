@@ -950,12 +950,31 @@ function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[]
   const result: Array<{ part?: string; lines: any[] }> = []
   function walk(n: LayoutNode) {
     if (n.k === 'text') {
-      result.push({ part: n.part, lines: n.lines })
-    }
-    if (n.k === 'group' && 'children' in n) {
-      for (const c of n.children) walk(c)
-    }
-  }
-  walk(node)
-  return result
-}
+      result.push({ part: n.part, lines: n.lines 
+  describe('animate() — subtle motion style (RV10)', () => {
+    it('plays one opacity-only fade per part and completes once, never the expressive timeline', async () => {
+      const root = document.createElement('div')
+      for (const partName of ['kicker', 'title', 'subtitle', 'cta']) {
+        const el = document.createElement('div')
+        el.setAttribute('data-part', partName)
+        root.appendChild(el)
+      }
+      const plays: Array<{ keyframes: Record<string, unknown> }> = []
+      const timeline = jest.fn()
+      const onComplete = jest.fn()
+      tlsCHero.html!.animate!(root, {
+        driver: { play: (_t: unknown, keyframes: Record<string, unknown>) => (plays.push({ keyframes }), { cancel() {}, finished: Promise.resolve() }), set: jest.fn(), cancelAll: jest.fn() } as any,
+        gsap: { timeline },
+        style: 'subtle',
+        timing: { delayMs: 0, durationMs: 400, staggerMs: 40, ease: 'power3.out' },
+        reducedMotion: false,
+        onComplete,
+      } as any)
+      expect(timeline).not.toHaveBeenCalled()
+      expect(plays).toHaveLength(4)
+      for (const p of plays) expect(Object.keys(p.keyframes)).toEqual(['opacity'])
+      await new Promise((r) => setTimeout(r, 0))
+      expect(onComplete).toHaveBeenCalledTimes(1)
+    })
+  })
+})
