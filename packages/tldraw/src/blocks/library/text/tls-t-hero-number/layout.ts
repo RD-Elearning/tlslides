@@ -7,6 +7,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { HeroNumberProps } from './schema'
+import { realWidth } from '../../data/_chart/inter-width'
 
 /**
  * Apply a scale factor to a resolved text style. Mirrors `tls-t-title`'s own helper.
@@ -43,12 +44,12 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   // `tls-t-title`'s own autofit loop; this block never had one, so a value a few characters
   // longer than its siblings (e.g. "$4.2M" next to "61%"/"118"/"2.4×") would wrap to two lines
   // (BACKLOG-visual-fix-2.md — found while reviewing the demo deck for visual quality).
+  // Widths come from the measured Inter table (the flat estimate is 15-30% narrow on figures, so
+  // "$4.2M" used to be judged to fit when the browser drew it past the box; RV04).
   let scale = 1
-  let valueMetrics = ctx.measureText(props.value, baseValueStyle, cw)
-  while (valueMetrics.lines.length > 1 && scale > 0.6) {
-    scale -= 0.04
-    valueMetrics = ctx.measureText(props.value, withScale(baseValueStyle, scale), cw)
-  }
+  while (realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 > cw && scale > 0.4) scale -= 0.04
+  const fitsOneLine = realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 <= cw
+  let valueMetrics = ctx.measureText(props.value, withScale(baseValueStyle, scale), fitsOneLine ? undefined : cw)
   const valueStyle = scale < 1 ? withScale(baseValueStyle, scale) : baseValueStyle
   const valueHeight = valueMetrics.height
 
@@ -98,9 +99,10 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
-  // Return measured content height (y after last content + bottom pad),
-  // not the full available box height.
-  const contentHeight = cy + valueHeight + gapUnit + (props.unit ? ctx.resolveText('subheading').size * 1.2 + gapUnit : 0) + (props.caption ? ctx.resolveText('caption').size * 1.2 : 0) + pad
+  // Content height: the bottom of the last text plus the same padding as the top (the caption used
+  // to sit on the block's bottom edge because the height was a guess of line heights).
+  const last = children[children.length - 1]
+  const contentHeight = last.box.y + last.box.height + pad
 
   return {
     k: 'group',

@@ -21,6 +21,7 @@ import type { KpiTileProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 import { isShown } from '../../../schema-helpers'
 import { formatValue } from '../../data/_engine/format-value'
+import { realWidth } from '../../data/_chart/inter-width'
 
 /**
  * Build an SVG path `d` string for a sparkline from an array of numbers.
@@ -79,8 +80,13 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   }
 
   // --- value (big number) ---
-  const valueStyle = ctx.resolveText('heading')
   const formattedValue = formatValue(props.value, props.format)
+  // One line, shrunk (to 0.5) until the browser-true width fits the tile: a long value ("$1,234,567")
+  // used to wrap or run out of a narrow tile (RV04).
+  let valueStyle = ctx.resolveText('heading')
+  for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
+    valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
+  }
   const valueMetrics = ctx.measureText(formattedValue, valueStyle, inner.width)
   children.push({
     k: 'text',
@@ -170,7 +176,8 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
 
   return {
     k: 'group',
-    box: { x: 0, y: 0, width: W, height: inner.y + contentHeight },
+    // Bottom padding equals the top one: the last line used to sit on the tile's bottom edge.
+    box: { x: 0, y: 0, width: W, height: inner.y + contentHeight + ctx.tokens.space.md },
     part: 'root',
     children,
   }

@@ -155,11 +155,11 @@ export const tlsCStatCard = defineCompositeBlock({
   related: ['tls.c.kpi-tile'],
   schema,
   defaults,
-  size: { preferred: [320, 200], min: [160, 120] },
+  size: { preferred: [520, 420], min: [440, 400] },
   describe: {
     when:
-      'Use when you need a single KPI inside a filled card — icon, headline value, unit, and a caption line. ' +
-      'Built compositionally from tls.l.card, tls.l.stack, tls.m.icon, and tls.t.hero-number.',
+      'One KPI in a filled card: icon, headline value, unit, caption. Best in a column or grid cell ' +
+      '(450-700 wide); in a full-width region the card stretches.',
     avoid: 'Do not use for several metrics side by side (use tls.c.kpi-row) or for a metric with a change arrow or sparkline (use tls.c.kpi-tile).',
     example: {
       id: 'b_stat_card',

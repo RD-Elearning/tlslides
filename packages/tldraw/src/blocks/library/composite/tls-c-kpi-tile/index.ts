@@ -100,7 +100,7 @@ export const tlsCKpiTile: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [400, 220], min: [200, 140] },
+  size: { preferred: [400, 220], min: [200, 210] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity,

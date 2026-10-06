@@ -17,6 +17,7 @@ import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../../layout/test
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
 import { validateDeckSpec } from '../../../validate-deck-spec'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 /** Registry with all built-ins + our two composite blocks. */
 function makeCompositeRegistry(): BlockRegistry {
@@ -301,3 +302,9 @@ function collectKinds(node: any): string[] {
   walk(node)
   return kinds
 }
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCKpiRow)
+  })
+})

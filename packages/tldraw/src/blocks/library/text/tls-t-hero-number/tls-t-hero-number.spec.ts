@@ -4,6 +4,8 @@
 
 import { tlsTHeroNumber } from './index'
 import { makeCtx, makeRegistry, SIZES, assertValidNode, collectParts } from '../test-helpers'
+import { assertExampleFits } from '../../data/_chart/chart-test'
+import { realWidth } from '../../data/_chart/inter-width'
 
 describe('tls.t.hero-number', () => {
   const registry = makeRegistry()
@@ -124,5 +126,23 @@ describe('tls.t.hero-number', () => {
       expect(a).toEqual(b)
       expect(a).not.toBe(b)
     })
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsTHeroNumber)
+  })
+
+  it('the caption does not sit on the block edge and a long value stays on one line', () => {
+    const reg = makeRegistry()
+    const tree = tlsTHeroNumber.layout(tlsTHeroNumber.defaults, makeCtx({ width: 520, height: 300 }, reg))
+    const kids = tree.children as any[]
+    const last = kids[kids.length - 1]
+    expect(tree.box.height - (last.box.y + last.box.height)).toBeGreaterThanOrEqual(20)
+    const long = tlsTHeroNumber.layout({ ...tlsTHeroNumber.defaults, value: '$1,234,567' }, makeCtx({ width: 360, height: 300 }, reg))
+    const v = (long.children as any[]).find((c) => c.part === 'value')
+    expect(v.lines).toHaveLength(1)
+    expect(realWidth(v.lines[0].text, v.style)).toBeLessThanOrEqual(v.box.width * 1.03 + 1)
   })
 })

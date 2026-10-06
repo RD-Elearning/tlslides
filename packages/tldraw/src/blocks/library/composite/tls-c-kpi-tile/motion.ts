@@ -10,7 +10,8 @@
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  parts: ['label', 'value', 'delta'],
+  // `label` is not listed: count-up rewrites digits, so "Top 10 customers" would count up too.
+  parts: ['value', 'delta'],
   preset: 'fade-up',
   /** P7: under `motionStyle: expressive` the value counts up. */
   expressive: 'count-up',

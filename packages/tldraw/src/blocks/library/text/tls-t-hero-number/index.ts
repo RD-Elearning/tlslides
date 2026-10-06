@@ -31,7 +31,7 @@ export const tlsTHeroNumber: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [520, 300], min: [200, 120] },
+  size: { preferred: [520, 330], min: [260, 300] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

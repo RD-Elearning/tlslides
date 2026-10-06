@@ -80,7 +80,7 @@ export const tlsCKpiRow: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 260], min: [400, 180] },
+  size: { preferred: [1200, 260], min: [480, 240] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity,

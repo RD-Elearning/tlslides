@@ -1058,7 +1058,7 @@ Numbered key points to remember, closed by one takeaway line. _(family: composit
 
 KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
 
-**When:** Use when you need a single KPI inside a filled card — icon, headline value, unit, and a caption line. Built compositionally from tls.l.card, tls.l.stack, tls.m.icon, and tls.t.hero-number.
+**When:** One KPI in a filled card: icon, headline value, unit, caption. Best in a column or grid cell (450-700 wide); in a full-width region the card stretches.
 **Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row) or for a metric with a change arrow or sparkline (use tls.c.kpi-tile).
 
 | Slot | Required | Type | Guidance |

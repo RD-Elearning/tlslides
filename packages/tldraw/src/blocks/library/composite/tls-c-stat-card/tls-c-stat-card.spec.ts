@@ -13,6 +13,7 @@ import { makeCtx, collectParts } from '../../layout/test-helpers'
 import { registerBuiltInBlocks, BUILT_IN_BLOCKS } from '../../index'
 import { BlockRegistry } from '../../../registry'
 import type { LayoutNode, BlockDefinition } from '../../../types'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 function asGroup(node: LayoutNode): Extract<LayoutNode, { k: 'group' }> {
   if (node.k !== 'group') throw new Error(`expected group, got ${node.k}`)
@@ -103,4 +104,10 @@ describe('tls.c.stat-card', () => {
     await assertParity(tlsCStatCard as BlockDefinition, tlsCStatCard.defaults as any, { width: 960, height: 540 }, undefined, { registry })
     await assertParity(tlsCStatCard as BlockDefinition, tlsCStatCard.describe!.example.props as any, { width: 960, height: 540 }, undefined, { registry })
   }, 60_000)
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCStatCard)
+  })
 })

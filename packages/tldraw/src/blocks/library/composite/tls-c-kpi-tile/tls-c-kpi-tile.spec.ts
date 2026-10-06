@@ -15,6 +15,8 @@
 import { tlsCKpiTile } from './index'
 import { makeCtx, makeRegistry, SIZES, assertValidNode } from '../../layout/test-helpers'
 import { validateDeckSpec } from '../../../validate-deck-spec'
+import { assertExampleFits } from '../../data/_chart/chart-test'
+import { realWidth } from '../../data/_chart/inter-width'
 
 describe('tls.c.kpi-tile', () => {
   const registry = makeRegistry()
@@ -305,3 +307,21 @@ function findNodesWithStyle(node: any): any[] {
   walk(node)
   return result
 }
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCKpiTile)
+  })
+
+  it('the last line does not sit on the tile edge, and a long value shrinks to its width', () => {
+    const reg = makeRegistry()
+    const props = { ...(tlsCKpiTile.defaults as any), value: 1234567890, format: 'plain', showDelta: true, delta: 4 }
+    const tree = tlsCKpiTile.layout(props, makeCtx({ width: 220, height: 180 }, reg))
+    const leaves = (tree as any).children as any[]
+    const last = leaves[leaves.length - 1]
+    expect(tree.box.height - (last.box.y + last.box.height)).toBeGreaterThanOrEqual(20)
+    const v = leaves.find((l) => l.part === 'value')
+    expect(v.lines).toHaveLength(1)
+    expect(realWidth(v.lines[0].text, v.style)).toBeLessThanOrEqual(v.box.width * 1.03 + 1)
+  })
+})
