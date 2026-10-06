@@ -91,11 +91,18 @@ interface Plan {
 
 const MIN_CHART_H = 300
 
+/** A side panel narrower than this wraps its sentence word by word: put it under the chart instead. */
+const MIN_SIDE_W = 380
+
 function plan(props: ChartInsightProps, ctx: LayoutContext): Plan {
   const W = Math.max(0, ctx.box.width) || 0
-  const side = pick(props.side, SIDES, 'right')
+  const wanted = pick(props.side, SIDES, 'right')
   const ratio = pick(props.ratio, RATIOS, '2:1')
   const gapX = ctx.tokens.space.xl
+  // Reflow (RV05): in a half-width region the beside layout left the takeaway a 220-wide column
+  // ("Users / doubled in / two / quarters."); below the chart it keeps a readable measure.
+  const sideInsW = Math.max(0, W - gapX - Math.max(0, (W - gapX) * SHARE[ratio]))
+  const side = wanted !== 'below' && sideInsW < MIN_SIDE_W ? 'below' : wanted
   const below = side === 'below'
   const chartW = below ? W : Math.max(0, (W - gapX) * SHARE[ratio])
   const insW = below ? W : Math.max(0, W - gapX - chartW)
@@ -144,9 +151,9 @@ const composite = defineCompositeBlock<ChartInsightProps>({
   related: ['tls.c.dashboard', 'tls.t.takeaway'],
   schema,
   defaults,
-  size: { preferred: [1500, 560], min: [640, 360] },
+  size: { preferred: [1500, 560], min: [960, 540] },
   describe: {
-    when: 'A chart whose message must be stated explicitly ("Revenue doubled after launch").',
+    when: 'A chart whose message must be stated explicitly ("Revenue doubled after launch"). The takeaway sits beside the chart, or under it in a narrow region.',
     avoid: 'Several KPIs: tls.c.dashboard. A bare chart: tls.d.line or tls.d.bar.',
     example: {
       id: 'b_chart_insight',

@@ -3,11 +3,12 @@
  */
 
 import { tlsCChartInsight, buildChartInsight } from './index'
-import { standardBlockSuite, leavesOf, assertContained } from '../../text/standard-suite'
+import { standardBlockSuite, leavesOf, assertContained, absoluteLeaves } from '../../text/standard-suite'
 import { makeCtx } from '../../layout/test-helpers'
 import { CHART_KINDS } from '../_chart'
 import { depthOk, layoutAt, hasPart, registry, compileInRegion } from '../composite-test'
 import { lintParts, specNodes } from '../_kit'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 standardBlockSuite(tlsCChartInsight, { withRegistry: true, noCapacity: true })
 
@@ -89,5 +90,27 @@ describe('tls.c.chart-insight', () => {
     const { rects, frame } = compileInRegion(tlsCChartInsight, EX, 'timeline', 'timeline')
     expect(rects).toHaveLength(1)
     expect(rects[0].bottom).toBeLessThanOrEqual(frame.height + 1)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCChartInsight)
+  })
+
+  it('a half-width box puts the takeaway under the chart with a readable measure; a wide box keeps it beside', () => {
+    const reg = registry()
+    const props = { ...(tlsCChartInsight.defaults as any), ...(tlsCChartInsight.describe!.example.props as any) }
+    const narrow = tlsCChartInsight.layout(props, makeCtx({ width: 860, height: 760 }, reg))
+    const sentenceOf = (t: any) =>
+      absoluteLeaves(t).filter((l) => l.k === 'text' && ((l.node as any).lines ?? []).some((x: any) => /doubled/.test(x.text)))[0]
+    const sentence = sentenceOf(narrow)
+    expect(sentence).toBeDefined()
+    const chartBottom = Math.max(...absoluteLeaves(narrow).filter((l) => /^(series|grid|cat|ytick)/.test(l.part ?? '')).map((l) => l.y + l.height))
+    expect(sentence.y).toBeGreaterThanOrEqual(chartBottom - 2)
+    expect(sentence.width).toBeGreaterThan(500)
+    const wide = tlsCChartInsight.layout(props, makeCtx({ width: 1500, height: 560 }, reg))
+    const wideSentence = sentenceOf(wide)
+    expect(wideSentence.x).toBeGreaterThan(900)
   })
 })
