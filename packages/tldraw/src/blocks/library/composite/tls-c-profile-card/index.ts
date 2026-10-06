@@ -21,7 +21,7 @@ export interface ProfileCardProps extends Record<string, unknown> {
   role?: string
   bio?: string
   contact?: string
-  layout?: 'stacked' | 'side'
+  layout?: 'auto' | 'stacked' | 'side'
   tone?: 'alt' | 'surface'
   showBio?: boolean
   showContact?: boolean
@@ -33,7 +33,7 @@ export const schema: BlockSchema = {
   role: { type: { kind: 'text', maxChars: 50 }, role: 'content', label: 'Role', guidance: 'Title and organisation, 1-8 words.' },
   bio: { type: { kind: 'text', maxChars: 200 }, role: 'content', label: 'Bio', guidance: '1-2 sentences.' },
   contact: { type: { kind: 'text', maxChars: 60 }, role: 'content', label: 'Contact', guidance: 'Email, handle or site.' },
-  layout: { type: { kind: 'enum', values: ['stacked', 'side'] }, role: 'option', label: 'Layout', help: 'stacked = portrait above; side = portrait left.' },
+  layout: { type: { kind: 'enum', values: ['auto', 'stacked', 'side'] }, role: 'option', label: 'Layout', help: 'auto = side by side in a landscape box, stacked in a portrait one; stacked = portrait above; side = portrait left.' },
   tone: { type: { kind: 'enum', values: ['alt', 'surface'] }, role: 'option', label: 'Tone', help: 'alt = filled card; surface = open.' },
   showBio: { type: { kind: 'boolean' }, role: 'option', label: 'Show bio', toggles: 'bio' },
   showContact: { type: { kind: 'boolean' }, role: 'option', label: 'Show contact', toggles: 'contact' },
@@ -45,7 +45,7 @@ export const defaults: ProfileCardProps = {
   role: 'Head of Data Science',
   bio: 'Leads the applied analytics group and teaches statistics for engineers.',
   contact: 'lan.tran@example.edu',
-  layout: 'stacked',
+  layout: 'auto',
   tone: 'alt',
 }
 
@@ -97,7 +97,7 @@ const composite = defineCompositeBlock({
   related: ['tls.m.avatar', 'tls.c.testimonial', 'tls.c.team'],
   schema,
   defaults,
-  size: { preferred: [520, 700], min: [260, 300] },
+  size: { preferred: [520, 700], min: [340, 420] },
   describe: {
     when: 'Introducing one person in detail: speaker bio, lecturer, team lead.',
     avoid: 'A row of people (use tls.m.avatar-group or a grid of tls.m.avatar); only a name and role (use tls.m.avatar).',
@@ -105,7 +105,7 @@ const composite = defineCompositeBlock({
       id: 'b_profile_card',
       type: 'tls.c.profile-card',
       props: {
-        image: 'asset-lan',
+        image: '/demo/portrait-1.svg',
         name: 'Dr. Tran Thi Lan',
         role: 'Head of Data Science',
         bio: 'Leads the applied analytics group.',
@@ -143,8 +143,38 @@ function flatRoot(root: LayoutNode): LayoutNode {
   return { k: 'group', part: root.k === 'group' ? (root.part ?? 'root') : 'root', box: full, children: flattenNode(root, 0, 0, full) }
 }
 
+/** Widest the card grows: a person card does not stretch across a full-width region. */
+const MAX_W = { stacked: 640, side: 1080 }
+
+/** `auto` becomes `side` in a landscape box (at least 1.3 wide for 1 tall), `stacked` otherwise. */
+function resolveLayout(props: ProfileCardProps, box: { width: number; height: number }): 'stacked' | 'side' {
+  if (props.layout === 'side' || props.layout === 'stacked') return props.layout
+  return box.width >= box.height * 1.3 ? 'side' : 'stacked'
+}
+
+/**
+ * The props with a concrete layout, and the context narrowed to the card's maximum width and to a
+ * card-like height (the composite fills whatever box it gets, so a card in a tall region would stretch
+ * its text apart): about 1.35 tall per wide when stacked (the 520 x 700 preferred shape), 0.42 when side by side.
+ */
+function resolve(props: ProfileCardProps, ctx: LayoutContext): { props: ProfileCardProps; ctx: LayoutContext } {
+  const layout = resolveLayout(props, ctx.box)
+  const resolved = { ...props, layout }
+  if (!ctx.withBox) return { props: resolved, ctx }
+  const width = Math.min(ctx.box.width, MAX_W[layout])
+  const target = layout === 'side' ? Math.max(360, width * 0.42) : width * (700 / 520)
+  const height = Math.min(ctx.box.height, Math.round(target))
+  return { props: resolved, ctx: width === ctx.box.width && height === ctx.box.height ? ctx : ctx.withBox({ width, height }) }
+}
+
 export const tlsCProfileCard: BlockDefinition = {
   ...composite,
-  layout: ((props: ProfileCardProps, ctx: LayoutContext) =>
-    flatRoot(namePieces(composite.layout(props as never, ctx), shownTexts(props)))) as BlockDefinition['layout'],
+  layout: ((props: ProfileCardProps, ctx: LayoutContext) => {
+    const r = resolve(props, ctx)
+    return flatRoot(namePieces(composite.layout(r.props as never, r.ctx), shownTexts(props)))
+  }) as BlockDefinition['layout'],
+  intrinsicSize: ((props: ProfileCardProps, ctx: LayoutContext) => {
+    const r = resolve(props, ctx)
+    return composite.intrinsicSize!(r.props as never, r.ctx)
+  }) as BlockDefinition['intrinsicSize'],
 }

@@ -2,7 +2,7 @@
  * tls.c.team — grid arithmetic, frame, bio toggle, depth (4 and inside a container), capacity.
  */
 
-import { tlsCTeam, buildTeam, colsFor } from './index'
+import { tlsCTeam, buildTeam, colsFor, MIN_CARD_W } from './index'
 import { standardBlockSuite, leavesOf, assertContained, assertNoTextOverlap } from '../../text/standard-suite'
 import { makeCtx } from '../../layout/test-helpers'
 import { depthOk, layoutAt, hasPart, registry } from '../composite-test'
@@ -87,5 +87,23 @@ describe('tls.c.team', () => {
     const b = tlsCTeam.intrinsicSize!({ people: PEOPLE(8) } as any, ctx)
     expect(b.height).toBeGreaterThan(a.height)
     expect(tlsCTeam.capacity!({ people: PEOPLE(9) } as any, { width: 1500, height: 900 }, ctx).fits).toBe(false)
+  })
+
+  it('drops columns in a narrow region: every card stays at least MIN_CARD_W wide (no truncated names)', () => {
+    expect(colsFor(4, 'auto', 1500, 24)).toBe(4)
+    expect(colsFor(4, 'auto', 700, 24)).toBe(2)
+    expect(colsFor(6, '4', 500, 24)).toBe(1)
+    const t = layoutAt(tlsCTeam, { people: PEOPLE(4) }, 700, 1000)
+    const cards = leavesOf(t, 'card')
+    expect(cards).toHaveLength(4)
+    for (const c of cards) expect(c.width).toBeGreaterThanOrEqual(MIN_CARD_W - 1)
+    assertContained(t, { width: 700, height: 1000 })
+  })
+
+  it('the example in a half-width region (2 columns) shrinks its portraits, then drops the bios, to stay inside a 700 tall box', () => {
+    const ex = tlsCTeam.describe!.example.props as any
+    const t = layoutAt(tlsCTeam, ex, 840, 700)
+    assertContained(t, { width: 840, height: 700 })
+    expect(leavesOf(t, 'card')).toHaveLength(4)
   })
 })

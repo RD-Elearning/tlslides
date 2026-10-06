@@ -109,7 +109,7 @@ export const tlsCImageText: BlockDefinition = {
       id: 'b_image_text',
       type: 'tls.c.image-text',
       props: {
-        image: 'hero-photo',
+        image: '/demo/photo-1.svg',
         alt: 'Team meeting in conference room',
         placement: 'left',
         kicker: 'OVERVIEW',

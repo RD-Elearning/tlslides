@@ -711,7 +711,7 @@ Image beside or above a text cluster (kicker + title + body). Configurable place
   \\"id\\": \\"b_image_text\\",
   \\"type\\": \\"tls.c.image-text\\",
   \\"props\\": {
-    \\"image\\": \\"hero-photo\\",
+    \\"image\\": \\"/demo/photo-1.svg\\",
     \\"alt\\": \\"Team meeting in conference room\\",
     \\"placement\\": \\"left\\",
     \\"kicker\\": \\"OVERVIEW\\",
@@ -945,7 +945,7 @@ Card with a portrait, name, role, short bio and a contact line; portrait above o
 | \`role\` | no | text (max 50 chars) | Title and organisation, 1-8 words. |
 | \`bio\` | no | text (max 200 chars) | 1-2 sentences. |
 | \`contact\` | no | text (max 60 chars) | Email, handle or site. |
-| \`layout\` | no | enum: stacked \\\\| side | stacked = portrait above; side = portrait left. |
+| \`layout\` | no | enum: auto \\\\| stacked \\\\| side | auto = side by side in a landscape box, stacked in a portrait one; stacked = portrait above; side = portrait left. |
 | \`tone\` | no | enum: alt \\\\| surface | alt = filled card; surface = open. |
 | \`showBio\` | no | boolean |  |
 | \`showContact\` | no | boolean |  |
@@ -955,7 +955,7 @@ Card with a portrait, name, role, short bio and a contact line; portrait above o
   \\"id\\": \\"b_profile_card\\",
   \\"type\\": \\"tls.c.profile-card\\",
   \\"props\\": {
-    \\"image\\": \\"asset-lan\\",
+    \\"image\\": \\"/demo/portrait-1.svg\\",
     \\"name\\": \\"Dr. Tran Thi Lan\\",
     \\"role\\": \\"Head of Data Science\\",
     \\"bio\\": \\"Leads the applied analytics group.\\",
@@ -1192,14 +1192,28 @@ Grid of team members with photo, name, role and optional bio. _(family: composit
   \\"props\\": {
     \\"people\\": [
       {
+        \\"image\\": \\"/demo/portrait-1.svg\\",
         \\"name\\": \\"Dr. Tran Thi Lan\\",
         \\"role\\": \\"Head of Data Science\\",
         \\"bio\\": \\"Leads the analytics group.\\"
       },
       {
+        \\"image\\": \\"/demo/portrait-2.svg\\",
         \\"name\\": \\"Nguyen Van An\\",
         \\"role\\": \\"Senior lecturer\\",
         \\"bio\\": \\"Teaches inference.\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-3.svg\\",
+        \\"name\\": \\"Le Minh Chau\\",
+        \\"role\\": \\"Postdoc\\",
+        \\"bio\\": \\"Works on causal models.\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-4.svg\\",
+        \\"name\\": \\"Pham Quoc Bao\\",
+        \\"role\\": \\"PhD student\\",
+        \\"bio\\": \\"Builds forecasting tools.\\"
       }
     ]
   }
@@ -3830,7 +3844,7 @@ Portrait in a circle, rounded or square frame with name and role; initials when 
   \\"id\\": \\"b_avatar\\",
   \\"type\\": \\"tls.m.avatar\\",
   \\"props\\": {
-    \\"image\\": \\"asset-speaker\\",
+    \\"image\\": \\"/demo/portrait-1.svg\\",
     \\"name\\": \\"Dr. Tran Thi Lan\\",
     \\"role\\": \\"Head of Data Science\\",
     \\"size\\": \\"lg\\",
@@ -3861,10 +3875,11 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
   \\"props\\": {
     \\"people\\": [
       {
-        \\"image\\": \\"asset-p1\\",
+        \\"image\\": \\"/demo/portrait-2.svg\\",
         \\"name\\": \\"Linh Tran\\"
       },
       {
+        \\"image\\": \\"/demo/portrait-3.svg\\",
         \\"name\\": \\"Minh Anh\\"
       },
       {
@@ -3929,7 +3944,7 @@ Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from
   \\"id\\": \\"b_device_mock\\",
   \\"type\\": \\"tls.m.device-mock\\",
   \\"props\\": {
-    \\"image\\": \\"asset-dashboard\\",
+    \\"image\\": \\"/demo/photo-4.svg\\",
     \\"alt\\": \\"Analytics dashboard\\",
     \\"url\\": \\"app.example.com\\",
     \\"device\\": \\"browser\\"
@@ -3941,13 +3956,14 @@ Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from
 
 SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
 
-**When:** Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. Ideal for feature grids, labels, and decorative elements.
+**When:** Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. size sm is an inline glyph, lg/xl a standalone mark.
 **Avoid:** Do not use for photographs (use tls.m.image) or for an icon that needs a text label (use tls.m.icon-label).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`icon\` | yes | icon | Choose a name from the icon list in the capability index. Unknown names render a placeholder. |
 | \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
+| \`size\` | no | enum: sm \\\\| md \\\\| lg \\\\| xl | sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone. |
 
 \`\`\`json
 {
@@ -3955,7 +3971,8 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
   \\"type\\": \\"tls.m.icon\\",
   \\"props\\": {
     \\"icon\\": \\"zap\\",
-    \\"color\\": \\"accent\\"
+    \\"color\\": \\"accent\\",
+    \\"size\\": \\"lg\\"
   }
 }
 \`\`\`
@@ -4048,7 +4065,7 @@ Image with cover/contain fit, focal point, and optional caption. _(family: media
   \\"id\\": \\"b_image\\",
   \\"type\\": \\"tls.m.image\\",
   \\"props\\": {
-    \\"src\\": \\"asset-hero-photo\\",
+    \\"src\\": \\"/demo/photo-1.svg\\",
     \\"alt\\": \\"Team meeting in conference room\\",
     \\"fit\\": \\"cover\\",
     \\"caption\\": \\"Team offsite, Q3 2026\\"
@@ -4076,12 +4093,12 @@ Before and after images side by side or split down the middle, each labelled. _(
   \\"type\\": \\"tls.m.image-compare\\",
   \\"props\\": {
     \\"before\\": {
-      \\"image\\": \\"asset-old\\",
+      \\"image\\": \\"/demo/before.svg\\",
       \\"alt\\": \\"Old dashboard\\",
       \\"label\\": \\"Before\\"
     },
     \\"after\\": {
-      \\"image\\": \\"asset-new\\",
+      \\"image\\": \\"/demo/after.svg\\",
       \\"alt\\": \\"New dashboard\\",
       \\"label\\": \\"After\\"
     },
@@ -4113,16 +4130,16 @@ Images in even cells, a feature layout or a mosaic, with captions. _(family: med
   \\"props\\": {
     \\"images\\": [
       {
-        \\"image\\": \\"asset-lab\\",
+        \\"image\\": \\"/demo/photo-1.svg\\",
         \\"alt\\": \\"Students at lab benches\\",
         \\"caption\\": \\"Lab session\\"
       },
       {
-        \\"image\\": \\"asset-field\\",
+        \\"image\\": \\"/demo/photo-2.svg\\",
         \\"alt\\": \\"Field trip group photo\\"
       },
       {
-        \\"image\\": \\"asset-demo\\",
+        \\"image\\": \\"/demo/photo-3.svg\\",
         \\"alt\\": \\"Project demo on stage\\"
       }
     ],
@@ -4152,9 +4169,9 @@ One logo fitted inside a fixed height, never cropped, with an optional plate. _(
   \\"id\\": \\"b_logo\\",
   \\"type\\": \\"tls.m.logo\\",
   \\"props\\": {
-    \\"image\\": \\"asset-acme\\",
+    \\"image\\": \\"/demo/logo-1.svg\\",
     \\"alt\\": \\"Acme Corp\\",
-    \\"ratio\\": 3,
+    \\"ratio\\": 4,
     \\"maxHeight\\": \\"lg\\",
     \\"plate\\": \\"alt\\"
   }
@@ -4186,18 +4203,33 @@ Even grid of logos at equal height or equal area, with an optional heading, plat
     \\"heading\\": \\"Trusted by\\",
     \\"logos\\": [
       {
-        \\"image\\": \\"asset-a\\",
+        \\"image\\": \\"/demo/logo-1.svg\\",
         \\"alt\\": \\"Northwind\\",
         \\"ratio\\": 4
       },
       {
-        \\"image\\": \\"asset-b\\",
+        \\"image\\": \\"/demo/logo-2.svg\\",
         \\"alt\\": \\"Globex\\",
         \\"ratio\\": 1
       },
       {
-        \\"image\\": \\"asset-c\\",
+        \\"image\\": \\"/demo/logo-3.svg\\",
         \\"alt\\": \\"Initech\\",
+        \\"ratio\\": 3
+      },
+      {
+        \\"image\\": \\"/demo/logo-4.svg\\",
+        \\"alt\\": \\"Umbrella\\",
+        \\"ratio\\": 2
+      },
+      {
+        \\"image\\": \\"/demo/logo-5.svg\\",
+        \\"alt\\": \\"Hooli\\",
+        \\"ratio\\": 1.5
+      },
+      {
+        \\"image\\": \\"/demo/logo-6.svg\\",
+        \\"alt\\": \\"Stark\\",
         \\"ratio\\": 3
       }
     ],

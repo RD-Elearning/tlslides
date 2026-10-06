@@ -79,10 +79,18 @@ const membersOf = (props: TeamProps): TeamMember[] =>
     .map((p) => ({ image: str(p.image) || undefined, name: str(p.name), role: str(p.role) || undefined, bio: str(p.bio) || undefined }))
 
 /** Columns for `n` people: as many as fit a calm grid. */
-export function colsFor(n: number, cols: unknown): number {
+/** Narrowest a person's card gets: a full name and a role line still fit without ellipsis. */
+export const MIN_CARD_W = 270
+
+/**
+ * Columns for `n` people. With a known `width` the count drops (down to 1) until every card is at
+ * least `MIN_CARD_W` wide, so a half-width region gets 2 columns instead of 4 truncated cards.
+ */
+export function colsFor(n: number, cols: unknown, width?: number, gap = 0): number {
   const c = pick(cols, COLS, 'auto')
-  if (c !== 'auto') return Math.min(Number(c), Math.max(1, n))
-  return n <= 3 ? Math.max(1, n) : n === 4 ? 4 : n <= 6 ? 3 : 4
+  let k = c !== 'auto' ? Math.min(Number(c), Math.max(1, n)) : n <= 3 ? Math.max(1, n) : n === 4 ? 4 : n <= 6 ? 3 : 4
+  if (typeof width === 'number' && width > 0) while (k > 1 && (width - gap * (k - 1)) / k < MIN_CARD_W) k--
+  return k
 }
 
 const avatarSpec = (m: TeamMember, i: number, size: 'md' | 'lg'): BlockSpec => ({
@@ -117,38 +125,43 @@ interface Plan {
   inner: number
   size: 'md' | 'lg'
   small: boolean
+  showBio: boolean
   avatarH: number[]
   bioH: number[]
   cellH: number
   needed: number
 }
 
-function plan(props: TeamProps, ctx: LayoutContext): Plan {
+function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = false): Plan {
   const people = membersOf(props)
   const n = Math.max(1, people.length)
-  const cols = colsFor(n, props.cols)
-  const rows = Math.max(1, Math.ceil(n / cols))
   const W = Math.max(0, ctx.box.width) || 0
   const gap = ctx.tokens.space.lg
+  const cols = colsFor(n, props.cols, W, gap)
+  const rows = Math.max(1, Math.ceil(n / cols))
   const pad = props.card === 'plain' ? 0 : ctx.tokens.space.lg
   const cw = Math.max(0, (W - gap * (cols - 1)) / cols)
   const inner = Math.max(0, cw - 2 * pad)
-  const size = cols >= 4 ? 'md' : 'lg'
+  const size = compact || cols >= 4 || cw < 380 ? 'md' : 'lg'
   const small = cols >= 3
-  const showBio = isShown(props, 'showBio')
+  const showBio = isShown(props, 'showBio') && !dropBio
   const avatarH = measureHeights(ctx, people.map((m, i) => avatarSpec(m, i, size)), inner)
   const bioH = measureHeights(ctx, people.map((m, i) => bioSpec(m, i, small) ?? { id: `b${i}`, type: 'tls.t.caption', props: { text: ' ' } }), inner)
   const sm = ctx.tokens.space.sm
   const content = Math.max(0, ...people.map((m, i) => avatarH[i] + (showBio && m.bio ? sm + bioH[i] : 0)))
   const cellH = content + 2 * pad
-  return { people, cols, rows, cw, gap, pad, inner, size, small, avatarH, bioH, cellH, needed: rows * cellH + gap * (rows - 1) }
+  return { people, cols, rows, cw, gap, pad, inner, size, small, showBio, avatarH, bioH, cellH, needed: rows * cellH + gap * (rows - 1) }
 }
 
 export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
   const H = Math.max(0, ctx.box.height) || 0
-  const p = plan(props, ctx)
+  // big portraits first; when the grid is taller than the box, smaller ones
+  let p = plan(props, ctx)
+  if (p.size === 'lg' && H > 0 && p.needed > H) p = plan(props, ctx, true)
+  // still too tall (half-width region): the bios are the secondary part, drop them before clipping
+  if (H > 0 && p.needed > H && p.showBio) p = plan(props, ctx, true, true)
   const total = Math.max(p.needed, Math.min(H, 420))
-  const showBio = isShown(props, 'showBio')
+  const showBio = p.showBio
   const frame = pick(props.card, CARDS, 'card') === 'card'
   const sm = ctx.tokens.space.sm
   const pieces: Piece[] = []
@@ -185,7 +198,7 @@ const composite = defineCompositeBlock<TeamProps>({
   related: ['tls.c.profile-card', 'tls.m.avatar-group'],
   schema,
   defaults,
-  size: { preferred: [1500, 560], min: [560, 280] },
+  size: { preferred: [1500, 560], min: [1280, 420] },
   describe: {
     when: 'Team, speakers, committee, research group.',
     avoid: 'One person: tls.c.profile-card. Faces only: tls.m.avatar-group.',
@@ -194,8 +207,10 @@ const composite = defineCompositeBlock<TeamProps>({
       type: 'tls.c.team',
       props: {
         people: [
-          { name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the analytics group.' },
-          { name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches inference.' },
+          { image: '/demo/portrait-1.svg', name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the analytics group.' },
+          { image: '/demo/portrait-2.svg', name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches inference.' },
+          { image: '/demo/portrait-3.svg', name: 'Le Minh Chau', role: 'Postdoc', bio: 'Works on causal models.' },
+          { image: '/demo/portrait-4.svg', name: 'Pham Quoc Bao', role: 'PhD student', bio: 'Builds forecasting tools.' },
         ],
       },
     },
