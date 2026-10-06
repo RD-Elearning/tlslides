@@ -3,9 +3,10 @@
  */
 
 import { tlsGHubSpoke } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite, absoluteLeaves } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1100, height: 600 }
 const MIN = { width: 600, height: 340 }
@@ -97,4 +98,10 @@ describe('tls.g.hub-spoke', () => {
   it('capacity: nine spokes fail with a remedy', () => {
     expect(tlsGHubSpoke.capacity!({ spokes: spokes(9) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.hub-spoke example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGHubSpoke))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGHubSpoke, { optional: /icon|head|text/ }))
 })

@@ -3,9 +3,10 @@
  */
 
 import { tlsGTree } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1200, height: 640 }
 const MIN = { width: 600, height: 360 }
@@ -120,4 +121,10 @@ describe('tls.g.tree', () => {
     expect(cap(deep).fits).toBe(false)
     expect(cap(treeOf(3, 16)).remedy.length).toBeGreaterThan(0)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.tree example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGTree))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTree))
 })

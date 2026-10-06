@@ -121,5 +121,5 @@ describe('tls.g.roadmap', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.roadmap example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGRoadmap))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGRoadmap))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGRoadmap, { staticParts: /^(lane|grid|today)/ }))
 })

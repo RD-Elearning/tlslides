@@ -3,10 +3,11 @@
  */
 
 import { tlsGBreakdown } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { parseAmount, shares } from './layout'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1100, height: 520 }
 const MIN = { width: 560, height: 320 }
@@ -80,4 +81,10 @@ describe('tls.g.breakdown', () => {
   it('capacity: seven parts fail with a remedy', () => {
     expect(tlsGBreakdown.capacity!({ whole, parts: parts(7) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.breakdown example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGBreakdown))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGBreakdown))
 })

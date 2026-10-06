@@ -70,22 +70,38 @@ export const words = (n: number, len = 6) => Array.from({ length: n }, (_, i) =>
  * layout (same matching rule as `partElements` in motion/play-reveal.ts), and the preset really
  * animates under the GSAP driver (opacity / translate only: S14/S16).
  */
-export function assertMotionTargetsExist(def: BlockDefinition): void {
+export function assertMotionTargetsExist(def: BlockDefinition, opts: { staticParts?: RegExp; optional?: RegExp } = {}): void {
   const parts: string[] = []
+  const leafParts: string[] = []
   const tree = layoutOf(def, (def.describe?.example?.props ?? {}) as Record<string, unknown>, { width: def.size.preferred[0], height: def.size.preferred[1] })
-  const walk = (n: LayoutNode) => {
+  const walk = (n: LayoutNode, chain: string[]) => {
     if (n.part) parts.push(n.part)
-    if (n.k === 'group') n.children.forEach(walk)
+    const next = n.part ? [...chain, n.part] : chain
+    if (n.k === 'group') n.children.forEach((c) => walk(c, next))
+    else if (n.part) leafParts.push(...[JSON.stringify(next)])
   }
-  walk(tree)
+  walk(tree, [])
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   for (const p of def.motion.parts ?? []) {
     const match = p.includes('[*]')
       ? (x: string) => new RegExp('^' + p.split('[*]').map(esc).join('\\[\\d+\\]') + '$').test(x)
       : (x: string) => x === p || x.startsWith(p + '/') || (x.startsWith(p) && /^\[\d+\]/.test(x.slice(p.length)))
+    if (opts.optional?.test(p)) continue // only present for some props (icons, notes, arrow heads)
     const hit = parts.filter(match)
     expect([def.type, p, hit.length > 0]).toEqual([def.type, p, true])
   }
+  // Every drawn leaf is animated by some recipe part (an uncovered label is visible before its box).
+  const matchers = (def.motion.parts ?? []).map((p) =>
+    p.includes('[*]')
+      ? (x: string) => new RegExp('^' + p.split('[*]').map(esc).join('\\[\\d+\\]') + '$').test(x)
+      : (x: string) => x === p || x.startsWith(p + '/') || (x.startsWith(p) && /^\[\d+\]/.test(x.slice(p.length)))
+  )
+  // A leaf is animated when it, or a group above it, is a recipe part.
+  const uncovered = leafParts
+    .map((c) => JSON.parse(c) as string[])
+    .filter((chain) => !chain.some((x) => matchers.some((m) => m(x))) && !(opts.staticParts && opts.staticParts.test(chain[chain.length - 1])))
+    .map((chain) => chain[chain.length - 1])
+  expect([def.type, 'uncovered', [...new Set(uncovered.map((x) => x.replace(/\d+/g, 'N')))]]).toEqual([def.type, 'uncovered', []])
   const BROKEN = ['wipe-x', 'wipe-y', 'mask-reveal', 'draw-path', 'sweep', 'grow-bars-x', 'grow-bars-y', 'grow-segments', 'reveal-down', 'section-in', 'draw-axis-then-nodes', 'grow-branches']
   expect([def.type, BROKEN.includes(def.motion.preset ?? '')]).toEqual([def.type, false])
 }

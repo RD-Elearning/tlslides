@@ -27,10 +27,11 @@ export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
   const c = chartColors(ctx)
   const persp = enumOf(props.style, ['flat', 'perspective'] as const, 'flat') === 'perspective'
   const side = enumOf(props.notes, ['side', 'inside'] as const, 'inside') === 'side'
-  const labelS = style(ctx, 'caption', c.text)
-  const noteS = mutedStyle(ctx, 'footnote')
-
   const rowH = Math.min(120, Math.max(1, (H - (N - 1) * GAP) / N))
+  // RV08: tall layers get the next type step up (22/18 units read as specks on a 120-unit bar).
+  const big = rowH >= 72
+  const labelS = style(ctx, big ? 'body' : 'caption', c.text)
+  const noteS = mutedStyle(ctx, big ? 'caption' : 'footnote')
   const total = N * rowH + (N - 1) * GAP
   const y0 = Math.max(0, (H - total) / 2)
   const skew = persp ? Math.min(rowH * 0.9, W * 0.08) : 0

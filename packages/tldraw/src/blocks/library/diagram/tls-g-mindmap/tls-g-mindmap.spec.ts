@@ -3,9 +3,10 @@
  */
 
 import { tlsGMindmap } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1200, height: 620 }
 const MIN = { width: 600, height: 340 }
@@ -22,7 +23,7 @@ describe('tls.g.mindmap', () => {
         if (size === MIN && n * k > 12 && balance === 'right') continue
         const t = lay({ center: 'Central idea', branches: br(n, k, true), balance }, size)
         assertChartSane(t, size)
-        const boxes = rectsOf(t, /^(center|branch\[\d+\]|child\[\d+-\d+\])$/)
+        const boxes = rectsOf(t, /^(center|branch\[\d+\]|child\[\d+\]\[\d+\])$/)
         expect(boxes.length).toBe(1 + n + n * k)
         assertNoOverlap(boxes, 0.5)
         for (const r of rectsOf(t, /\.label$/)) {
@@ -51,7 +52,7 @@ describe('tls.g.mindmap', () => {
     expect(links).toHaveLength(3 + 6)
     for (let i = 0; i < 3; i++) {
       const b = rectsOf(t, new RegExp(`^branch\\[${i}\\]$`))[0]
-      for (const k of rectsOf(t, new RegExp(`^child\\[${i}-\\d\\]$`))) expect(k.x).toBeGreaterThanOrEqual(b.x + b.width)
+      for (const k of rectsOf(t, new RegExp(`^child\\[${i}\\]\\[\\d\\]$`))) expect(k.x).toBeGreaterThanOrEqual(b.x + b.width)
     }
   })
 
@@ -70,4 +71,10 @@ describe('tls.g.mindmap', () => {
   it('capacity: seven branches fail with a remedy', () => {
     expect(tlsGMindmap.capacity!({ center: 'x', branches: br(7, 1) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.mindmap example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGMindmap))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGMindmap))
 })

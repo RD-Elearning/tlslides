@@ -3,9 +3,10 @@
  */
 
 import { tlsGVenn } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { chartCtx, layoutOf, overlap, rectsOf, within } from '../diagram-test'
+import { chartCtx, layoutOf, overlap, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1000, height: 560 }
 const MIN = { width: 560, height: 320 }
@@ -96,4 +97,10 @@ describe('tls.g.venn', () => {
   it('capacity: four sets fail with a remedy', () => {
     expect(tlsGVenn.capacity!({ sets: sets(4) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.venn example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGVenn))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGVenn))
 })

@@ -3,9 +3,10 @@
  */
 
 import { tlsGLayers } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1000, height: 560 }
 const MIN = { width: 560, height: 320 }
@@ -64,4 +65,10 @@ describe('tls.g.layers', () => {
   it('capacity: eight layers fail with a remedy', () => {
     expect(tlsGLayers.capacity!({ layers: layers(8) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.layers example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGLayers))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGLayers, { optional: /icon/ }))
 })

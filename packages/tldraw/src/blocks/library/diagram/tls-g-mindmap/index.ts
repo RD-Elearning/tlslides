@@ -20,15 +20,17 @@ export const tlsGMindmap: BlockDefinition = {
   related: ['tls.g.tree', 'tls.g.hub-spoke'],
   describe: {
     when: 'Parent/child brainstorm: a topic overview or course map around one idea.',
-    avoid: 'Formal reporting lines or strict hierarchies (use tls.g.tree).',
+    avoid: 'Formal reporting lines or strict levels (tls.g.tree); a hub with no sub-topics (tls.g.hub-spoke).',
     example: {
       id: 'b_mindmap',
       type: 'tls.g.mindmap',
       props: {
         center: 'Launch plan',
         branches: [
-          { label: 'Product', children: ['Scope'] },
-          { label: 'Marketing', children: ['Channels'] },
+          { label: 'Product', children: ['Scope', 'Pricing'] },
+          { label: 'Marketing', children: ['Channels', 'Message'] },
+          { label: 'Sales', children: ['Pilot clients', 'Training'] },
+          { label: 'Support', children: ['Help centre', 'On-call'] },
         ],
       },
     },

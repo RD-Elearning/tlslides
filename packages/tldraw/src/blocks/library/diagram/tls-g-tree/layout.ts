@@ -138,6 +138,8 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
 
   const nodes: LayoutNode[] = []
   const linkColor = c.line
+  let edgeNo = 0
+  let itemNo = 0
 
   // Links first (drawn under the boxes).
   for (const e of layoutRes.edges) {
@@ -161,12 +163,14 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
           const ym = (y1 + y2) / 2
           return [{ x: x1, y: y1 }, { x: x1, y: ym }, { x: x2, y: ym }, { x: x2, y: y2 }]
         })()
-    nodes.push(strokePath(ctx, polyline(pts), `link[${e.to}]`, linkColor, 3))
+    // One numbered group per link: the recipe animates `edge[*]`, the leaf keeps its id-path name.
+    nodes.push({ k: 'group', part: `edge[${edgeNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: [strokePath(ctx, polyline(pts), `link[${e.to}]`, linkColor, 3)] })
   }
 
   const accent = c.accent
   for (const [id, b] of Object.entries(boxes)) {
     const n = byId.get(id)!
+    const startLen = nodes.length
     let fill: string
     let edge: string | undefined
     let ink: string
@@ -227,6 +231,9 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     const align = horizontal || nodeStyle === 'avatar' ? 'start' : 'center'
     nodes.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x, y: top, width: w }, align, labelLines, `label[${id}]`).nodes)
     if (sh) nodes.push(...placeLines(ctx, n.sub, { ...subS, color: subInk }, { x, y: top + lh + 2, width: w }, align, 1, `sub[${id}]`).nodes)
+    // Everything of one node is one numbered group (`item[k]`) so the recipe can target it.
+    const mine = nodes.splice(startLen)
+    nodes.push({ k: 'group', part: `item[${itemNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: mine })
   }
   return root(ctx, nodes)
 }

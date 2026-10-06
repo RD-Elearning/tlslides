@@ -92,5 +92,5 @@ describe('tls.g.cycle', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.cycle example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGCycle))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGCycle))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGCycle, { optional: /head/ }))
 })

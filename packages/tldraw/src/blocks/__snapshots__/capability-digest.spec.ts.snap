@@ -2875,7 +2875,7 @@ Key checkpoints as diamonds on a line, filled when done, each with a date and sh
 A central idea with 2-6 curved branches to topics, each with up to four subtopics. _(family: diagram; keywords: mind map, mindmap, brainstorm, topics, overview, branches)_
 
 **When:** Parent/child brainstorm: a topic overview or course map around one idea.
-**Avoid:** Formal reporting lines or strict hierarchies (use tls.g.tree).
+**Avoid:** Formal reporting lines or strict levels (tls.g.tree); a hub with no sub-topics (tls.g.hub-spoke).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2894,13 +2894,29 @@ A central idea with 2-6 curved branches to topics, each with up to four subtopic
       {
         \\"label\\": \\"Product\\",
         \\"children\\": [
-          \\"Scope\\"
+          \\"Scope\\",
+          \\"Pricing\\"
         ]
       },
       {
         \\"label\\": \\"Marketing\\",
         \\"children\\": [
-          \\"Channels\\"
+          \\"Channels\\",
+          \\"Message\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Sales\\",
+        \\"children\\": [
+          \\"Pilot clients\\",
+          \\"Training\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Support\\",
+        \\"children\\": [
+          \\"Help centre\\",
+          \\"On-call\\"
         ]
       }
     ]

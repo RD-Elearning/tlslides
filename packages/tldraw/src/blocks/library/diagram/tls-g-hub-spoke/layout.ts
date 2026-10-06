@@ -121,8 +121,8 @@ export function layout(props: HubSpokeProps, ctx: LayoutContext): LayoutNode {
     const nh = nl > 0 ? linesHeight(ctx, s.text, noteS, w, nl) : 0
     const total = lh + (nh ? 2 + nh : 0)
     const ty = b.y + (b.height - total) / 2
-    nodes.push(...placeLines(ctx, s.label, labelS, { x, y: ty, width: w }, 'start', 1, `label[${i}]`).nodes)
-    if (nh) nodes.push(...placeLines(ctx, s.text, noteS, { x, y: ty + lh + 2, width: w }, 'start', nl, `text[${i}]`).nodes)
+    nodes.push(...placeLines(ctx, s.label, labelS, { x, y: ty, width: w }, isz2 ? 'start' : 'center', 1, `label[${i}]`).nodes)
+    if (nh) nodes.push(...placeLines(ctx, s.text, noteS, { x, y: ty + lh + 2, width: w }, isz2 ? 'start' : 'center', nl, `text[${i}]`).nodes)
   })
   return root(ctx, nodes)
 }

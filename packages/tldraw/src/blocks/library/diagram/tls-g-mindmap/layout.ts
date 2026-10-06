@@ -92,9 +92,9 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
       b.kids.forEach((k, j) => {
         const kx = dirSign === 1 ? bBox.x + bBox.width + g : bBox.x - g - kw
         const kBox = nodeBox(kx, kidYs[j], kw, Math.min(56, Math.max(1, rowH - (rowH >= 40 ? 8 : 2))))
-        nodes.push({ k: 'rect', part: `child[${i}-${j}]`, box: kBox, fill: { type: 'solid', color: tintOf(c.surface, color, 0.16) }, stroke: { color, width: 2 }, radius: Math.min(10, kBox.height / 2) })
-        textIn(kBox, k, kidS, c.text, `child[${i}-${j}].label`)
-        link(`link[${i}-${j}]`, { x: dirSign === 1 ? bBox.x + bBox.width : bBox.x, y: by }, { x: dirSign === 1 ? kBox.x : kBox.x + kBox.width, y: kidYs[j] }, color)
+        nodes.push({ k: 'rect', part: `child[${i}][${j}]`, box: kBox, fill: { type: 'solid', color: tintOf(c.surface, color, 0.16) }, stroke: { color, width: 2 }, radius: Math.min(10, kBox.height / 2) })
+        textIn(kBox, k, kidS, c.text, `child[${i}][${j}].label`)
+        link(`link[${i}][${j}]`, { x: dirSign === 1 ? bBox.x + bBox.width : bBox.x, y: by }, { x: dirSign === 1 ? kBox.x : kBox.x + kBox.width, y: kidYs[j] }, color)
       })
       y += rows * rowH
     }

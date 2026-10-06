@@ -3,9 +3,10 @@
  */
 
 import { tlsGBracket } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 900, height: 460 }
 const MIN = { width: 520, height: 280 }
@@ -65,4 +66,10 @@ describe('tls.g.bracket', () => {
   it('capacity: seven items fail with a remedy', () => {
     expect(tlsGBracket.capacity!({ label: 'x', items: items(7) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.bracket example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGBracket))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGBracket))
 })
