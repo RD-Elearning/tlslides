@@ -119,7 +119,7 @@ const composite = defineCompositeBlock<RecapProps>({
   related: ['tls.c.closing', 'tls.t.numbered', 'tls.t.takeaway'],
   schema,
   defaults,
-  size: { preferred: [1500, 640], min: [560, 320] },
+  size: { preferred: [1500, 640], min: [900, 380] },
   describe: {
     when: 'End of a section or lecture: what we learned.',
     avoid: 'The final thank-you slide: tls.c.closing.',

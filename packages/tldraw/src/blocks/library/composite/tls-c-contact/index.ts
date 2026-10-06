@@ -128,7 +128,7 @@ const composite = defineCompositeBlock<ContactProps>({
   related: ['tls.c.closing', 'tls.m.avatar', 'tls.m.icon-list'],
   schema,
   defaults,
-  size: { preferred: [800, 580], min: [360, 200] },
+  size: { preferred: [800, 580], min: [480, 350] },
   describe: {
     when: 'Where to reach the presenter or the organisation.',
     avoid: 'A full closing slide: tls.c.closing.',

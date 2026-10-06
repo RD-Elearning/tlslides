@@ -35,7 +35,7 @@ export const tlsTQa: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [900, 460], min: [260, 140] },
+  size: { preferred: [900, 460], min: [450, 230] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

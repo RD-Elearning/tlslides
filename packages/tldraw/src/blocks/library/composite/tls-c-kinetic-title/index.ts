@@ -46,7 +46,7 @@ export const tlsCKineticTitle: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1728, 888], min: [480, 270] },
+  size: { preferred: [1728, 888], min: [1040, 530] },
   layout: layout as BlockDefinition['layout'],
   poster,
   html: { template, animate },

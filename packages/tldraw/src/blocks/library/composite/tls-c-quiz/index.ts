@@ -218,7 +218,7 @@ const composite = defineCompositeBlock<QuizProps>({
   related: ['tls.t.qa', 'tls.c.recap'],
   schema,
   defaults,
-  size: { preferred: [1500, 780], min: [560, 360] },
+  size: { preferred: [1500, 780], min: [1050, 550] },
   describe: {
     when: 'Knowledge checks in lectures and training.',
     avoid: 'Open questions with a written answer: tls.t.qa.',

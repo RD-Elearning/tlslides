@@ -205,7 +205,7 @@ const composite = defineCompositeBlock<CoverProps>({
   related: ['tls.c.hero', 'tls.c.divider'],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 360] },
+  size: { preferred: [1600, 800], min: [1200, 600] },
   describe: {
     when: 'First slide of a deck or talk.',
     avoid: 'Text-only opener with a button: tls.c.hero. Mid-deck sections: tls.c.divider.',
