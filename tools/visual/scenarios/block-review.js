@@ -17,6 +17,22 @@
  *                 (`<type>.<variant>.png`). Reports parts stuck below full opacity, elements that
  *                 escape the slide, and text boxes whose content overflows them.
  *   4. present  — the same generated deck in the editor's Present mode (`<type>.present.png`).
+ *   5. motion   — (not in the default passes) frame-by-frame motion probe in /view
+ *                 (reviews/blocks/block-review/MOTION.md §1, J1–J8). A separate deck
+ *                 (`review-motion-<category>`) holds a blank lead slide, then one slide per block
+ *                 per style in REVIEW_MOTION_STYLES (default `expressive`; any of
+ *                 static,subtle,expressive,reduced — `reduced` is expressive with
+ *                 prefers-reduced-motion emulated). Element blocks sit second on the slide, after a
+ *                 title, which is also the S8 case. The probe (motion-probe.js) samples every
+ *                 `[data-part]`, block wrapper and driver-touched element on every animation frame
+ *                 from the ArrowRight that opens the slide until the chain is done + 300 ms, then
+ *                 writes `motion.<style>` verdicts per block into report.json and prints one line
+ *                 per block. REVIEW_MOTION_PNG=1 adds three mid PNGs (150/400/800 ms), which costs
+ *                 frame timing; put `static` first in the styles so J3 compares each block's
+ *                 end frame with its static render (authored opacities), else J3 expects opacity
+ *                 1 / no transform / no clip; REVIEW_MOTION_DUMP=1 writes the raw samples. The motion pass alone keeps the other passes' data in an existing
+ *                 report.json.
+ *                 REVIEW_PASSES=motion REVIEW_CATEGORY=chart node tools/visual/shoot.js block-review
  *
  * Plus the compiler findings for each slide (region/overflow etc.), straight from
  * `deckSpecToDocument` in node.
@@ -42,6 +58,9 @@ const PASSES = (process.env.REVIEW_PASSES || 'gallery,drop,viewer,present').spli
 const THEME = process.env.REVIEW_THEME || 'coral-pop'
 const MID = (process.env.REVIEW_MID || '60,200,500,1000').split(',').map(Number)
 const SETTLE = Number(process.env.REVIEW_SETTLE || 3500)
+const MOTION_STYLES = (process.env.REVIEW_MOTION_STYLES || 'expressive').split(',').filter(Boolean)
+const MOTION_PNG = process.env.REVIEW_MOTION_PNG === '1'
+const probe = require('./motion-probe')
 
 const BLOCKS = ALL.filter((b) => (ONLY ? ONLY.includes(b.type) : b.category === CATEGORY))
 if (!BLOCKS.length) throw new Error(`block-review: no blocks for REVIEW_CATEGORY=${CATEGORY} REVIEW_BLOCKS=${ONLY}`)
@@ -77,6 +96,31 @@ function buildDeck() {
     }
   }
   return { version: 1, id: DECK_ID, title: `Block review — ${TAG}`, theme: THEME, aspect: '16:9', slides }
+}
+
+/** The motion-pass deck: a blank lead slide, then one slide per block per style. */
+function buildMotionDeck() {
+  const slides = [{ id: 'm-lead', layout: 'blank', motionStyle: 'static', regions: { content: [] } }]
+  const plan = []
+  for (const style of MOTION_STYLES) {
+    for (const def of BLOCKS) {
+      const s = slug(def.type)
+      const ms = style === 'reduced' ? 'expressive' : style
+      const id = `m-${s}-${style}`
+      const blockId = `b_${s}_m${style}`
+      const block = { id: blockId, type: def.type, props: sampleProps(def) }
+      if (def.scope === 'slide') {
+        slides.push({ id, layout: 'blank', motionStyle: ms, regions: { content: [block] } })
+      } else {
+        slides.push({
+          id, layout: 'timeline', motionStyle: ms,
+          regions: { title: [{ id: `t_${s}_m${style}`, type: 'tls.t.title', props: { text: `${def.name} — ${style}` } }], timeline: [block] },
+        })
+      }
+      plan.push({ def, style, slideId: id, blockId, index: slides.length - 1 })
+    }
+  }
+  return { deck: { version: 1, id: `${DECK_ID}-motion`, title: `Motion review — ${TAG}`, theme: THEME, aspect: '16:9', slides }, plan }
 }
 
 const BLANK = {
@@ -335,8 +379,88 @@ module.exports = {
       }
     }
 
+    // 5. motion probe
+    if (PASSES.includes('motion')) {
+      const { deck: mdeck, plan } = buildMotionDeck()
+      await put(page, base, mdeck.id, mdeck)
+      const lines = []
+      const staticRef = {}
+      const open = async (reduced) => {
+        await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' })
+        await go(page, `${base}/view/${mdeck.id}`)
+        await page.waitForSelector('[data-testid="deck-viewer"]', { timeout: 20000 })
+        await page.evaluate(probe.installSampler)
+        await page.waitForTimeout(600)
+      }
+      let reducedNow = null
+      let at = 0
+      for (const item of plan) {
+        const reduced = item.style === 'reduced'
+        if (reduced !== reducedNow) {
+          await open(reduced)
+          reducedNow = reduced
+          at = 0
+        }
+        current = item.def.type
+        // walk to the slide before this one, waiting out each chain (ArrowRight on a running auto
+        // chain would skip it)
+        while (at < item.index - 1) {
+          await waitChain(page)
+          await page.keyboard.press('ArrowRight')
+          at++
+        }
+        await waitChain(page)
+        await page.waitForTimeout(300)
+        await page.evaluate((id) => window.__mp.start(id), item.slideId)
+        await page.keyboard.press('ArrowRight')
+        at++
+        const t0 = Date.now()
+        let doneAt = 0
+        const shots = MOTION_PNG ? [150, 400, 800] : []
+        for (;;) {
+          const w = shots.length ? shots[0] - (Date.now() - t0) : 0
+          if (shots.length && w <= 0) {
+            const ms = shots.shift()
+            await page.screenshot({ path: path.join(OUT, `${slug(item.def.type)}.motion-${item.style}.mid-${ms}.png`) })
+            continue
+          }
+          const st = await viewerState(page)
+          const ps = await page.evaluate(() => window.__mp.status())
+          // Done = every build step revealed, then 1.2 s more (a part's tween may run up to
+          // ~900 ms after its step, and a tween GSAP cannot interpolate shows no change until its
+          // last frame), and nothing moved for 300 ms.
+          if (st.slide === item.index && st.step >= st.steps) doneAt = doneAt || Date.now()
+          if (doneAt && Date.now() - doneAt > 1200 && ps.quietMs > 300 && ps.frames > 5) break
+          if (Date.now() - t0 > 12000) break
+          await page.waitForTimeout(Math.min(100, w || 100))
+        }
+        const rec = await page.evaluate(() => window.__mp.stop())
+        if (process.env.REVIEW_MOTION_DUMP === '1') fs.writeFileSync(path.join(OUT, `${slug(item.def.type)}.motion-${item.style}.json`), JSON.stringify(rec))
+        if (item.style === 'static') staticRef[item.def.type] = probe.restFrame(rec, item.blockId)
+        const v = probe.verdicts(rec, { blockId: item.blockId, scope: item.def.scope, style: item.style, ref: staticRef[item.def.type] })
+        const r = R(item.def.type)
+        r.motion = r.motion || {}
+        r.motion[item.style] = v
+        const line = probe.summary(item.def.type, item.style, v)
+        lines.push(line)
+        console.error(line)
+      }
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      report.motionSummary = lines
+    }
+
     current = null
-    fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2))
+    // A partial run (e.g. the motion pass alone) keeps what earlier runs wrote for the other passes.
+    const file = path.join(OUT, 'report.json')
+    if (fs.existsSync(file) && !PASSES.includes('viewer')) {
+      try {
+        const old = JSON.parse(fs.readFileSync(file, 'utf8'))
+        for (const [t, b] of Object.entries(report.blocks)) old.blocks[t] = { ...(old.blocks[t] || {}), ...b }
+        if (report.motionSummary) old.motionSummary = report.motionSummary
+        Object.assign(report, old)
+      } catch (e) { /* unreadable: overwrite */ }
+    }
+    fs.writeFileSync(file, JSON.stringify(report, null, 2))
     return { out: OUT, report: path.join(OUT, 'report.json'), blocks: BLOCKS.length }
   },
 }
