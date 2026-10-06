@@ -79,7 +79,7 @@ export function placeText(
     return {
       k: 'text',
       part: opts.linePart ? opts.linePart(i) : `${opts.part}[${i}]`,
-      box: { x: g.x, y: box.y + top, width: Math.max(1, g.width + 1), height: lineH },
+      box: { x: g.x, y: box.y + top, width: Math.max(1, Math.min(g.width + 1, box.x + width - g.x)), height: lineH },
       lines: [{ ...line, top: 0, baseline: line.baseline - top }],
       style,
       ...(opts.propPath ? { propPath: opts.propPath } : {}),

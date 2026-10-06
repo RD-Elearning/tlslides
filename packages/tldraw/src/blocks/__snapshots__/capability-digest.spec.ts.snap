@@ -183,7 +183,7 @@ Big number slide. One enormous headline metric with a short label and optional c
 
 Row of 2-4 equal cards, each led by an icon, number or image, then title and text. _(family: composite; keywords: cards, pillars, benefits, offerings, three columns, features, icon cards)_
 
-**When:** Three pillars, key benefits or offerings, each with a short paragraph.
+**When:** Two to four framed pillars, benefits or offerings in a row, each with an icon (or number/image), a title and a one-sentence paragraph.
 **Avoid:** More than 4 items or icon-only entries: tls.c.feature-grid. Plain points: tls.t.bullets.
 
 | Slot | Required | Type | Guidance |
@@ -202,12 +202,17 @@ Row of 2-4 equal cards, each led by an icon, number or image, then title and tex
       {
         \\"icon\\": \\"target\\",
         \\"title\\": \\"Clear goals\\",
-        \\"text\\": \\"One question per session.\\"
+        \\"text\\": \\"Every session starts from one question the data can answer.\\"
+      },
+      {
+        \\"icon\\": \\"chart-bar\\",
+        \\"title\\": \\"Hands-on data\\",
+        \\"text\\": \\"Real datasets, small enough to explore in class.\\"
       },
       {
         \\"icon\\": \\"check\\",
         \\"title\\": \\"Honest results\\",
-        \\"text\\": \\"What a result shows.\\"
+        \\"text\\": \\"Learn what a result does and does not show.\\"
       }
     ],
     \\"lead\\": \\"icon\\"
@@ -596,7 +601,7 @@ Grid of feature cells, each with an icon, title, and description. 2–6 cells ar
 
 Grid of 3-6 icon cards (title + one line) that flip in one after another. _(family: composite; keywords: features, cards, benefits, skills, grid, icons, animated)_
 
-**When:** Key benefits, skills or pillars (3-6) on a showcase slide with motionStyle expressive.
+**When:** Key benefits, skills or pillars (3-6) as icon cards with a title and one line each, on a showcase slide with motionStyle expressive. Cards stay compact and centre in a tall region.
 **Avoid:** Dense or printed slides (use tls.c.feature-grid); steps in order (use tls.g.chevrons).
 
 **Parts:** \`card[*]\`, \`icon[*]\`, \`title[*]\`, \`text[*]\`
@@ -613,15 +618,18 @@ Grid of 3-6 icon cards (title + one line) that flip in one after another. _(fami
     \\"items\\": [
       {
         \\"icon\\": \\"rocket\\",
-        \\"title\\": \\"Nhanh\\"
+        \\"title\\": \\"Nhanh\\",
+        \\"text\\": \\"Dựng xong bài trình bày trong vài phút.\\"
       },
       {
         \\"icon\\": \\"shield\\",
-        \\"title\\": \\"An toàn\\"
+        \\"title\\": \\"An toàn\\",
+        \\"text\\": \\"Dữ liệu được mã hóa mặc định.\\"
       },
       {
         \\"icon\\": \\"heart\\",
-        \\"title\\": \\"Thân thiện\\"
+        \\"title\\": \\"Thân thiện\\",
+        \\"text\\": \\"Giao diện dễ dùng cho mọi người.\\"
       }
     ]
   }

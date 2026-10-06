@@ -83,3 +83,13 @@ export const defaults: FeatureGridProps = {
   columns: 3,
   gap: 24,
 }
+
+/** Narrowest a cell may get before the grid drops a column (same rule in the template and the poster). */
+export const MIN_CELL_WIDTH = 200
+
+/** Columns that really fit: the requested count, fewer when the box is too narrow (RV03). */
+export function effectiveColumns(width: number, columns: number | undefined, gap: number, count: number): number {
+  const want = Math.max(1, Math.min(4, Math.round(Number(columns) || 3)))
+  const fit = Math.max(1, Math.floor((width + gap) / (MIN_CELL_WIDTH + gap)))
+  return Math.max(1, Math.min(want, fit, Math.max(1, count)))
+}

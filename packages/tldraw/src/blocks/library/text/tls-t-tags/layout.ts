@@ -13,10 +13,13 @@ import type { TagsProps } from './schema'
 import { TAGS_MAX_ITEMS } from './schema'
 import { asArray, str } from '../_engine/rich'
 import { onColor, readableOn, tintOf } from '../_engine/color'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const SIZE_TOKEN: Record<string, TypeToken> = { sm: 'caption', md: 'body', lg: 'lead' }
 
-function compute(props: TagsProps, ctx: LayoutContext, width: number) {
+function compute(props: TagsProps, ctx0: LayoutContext, width: number) {
+  // Pills are sized from browser-true Inter widths (the flat estimate drew them 15-30% too wide, RV03).
+  const ctx = withRealWidths(ctx0)
   const items = asArray<unknown>(props.items).map(str)
   const size = props.size === 'sm' || props.size === 'lg' ? props.size : 'md'
   const tone = props.tone === 'outline' || props.tone === 'solid' ? props.tone : 'soft'
@@ -50,9 +53,8 @@ function compute(props: TagsProps, ctx: LayoutContext, width: number) {
     }
     const style: ResolvedTextStyle = { ...base, color: ink }
     const m = ctx.measureText(label, style, Math.max(1, w - 2 * padX))
-    // estimateMetrics is an average-glyph-width heuristic (real text can be wider by a third), so
-    // the pill gets 12% slack and the label is anchored at the left padding, never centred.
-    const tw = Math.min(w, Math.ceil(Math.min(m.width * 1.12, w - 2 * padX)) + 2 * padX)
+    // The label is anchored at the left padding, never centred; the width is the real glyph run.
+    const tw = Math.min(w, Math.ceil(Math.min(m.width, w - 2 * padX)) + 2 * padX)
     return { i, w: tw, h: m.height + 2 * padY, lines: m.lines, th: m.height, style, color, fill, stroke }
   })
 

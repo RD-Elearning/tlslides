@@ -9,14 +9,14 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import type { FeatureGridProps } from './schema'
+import { effectiveColumns, type FeatureGridProps } from './schema'
 import { getIcon } from '../../../icons'
 
 export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode {
   const cells = props.cells ?? []
-  const cols = props.columns ?? 3
   const gap = props.gap ?? 24
   const w = ctx.box.width
+  const cols = effectiveColumns(w, props.columns, gap, cells.length)
 
   const cellW = (w - (cols - 1) * gap) / cols
   const rows = Math.ceil(cells.length / cols)

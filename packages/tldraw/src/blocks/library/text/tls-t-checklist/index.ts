@@ -36,7 +36,7 @@ export const tlsTChecklist: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 460], min: [240, 120] },
+  size: { preferred: [800, 230], min: [420, 170] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

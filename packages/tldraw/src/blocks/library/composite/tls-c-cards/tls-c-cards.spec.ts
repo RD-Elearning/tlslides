@@ -112,3 +112,23 @@ describe('tls.c.cards', () => {
     expect(rects[0].bottom).toBeLessThanOrEqual(frame.height)
   })
 })
+
+describe('RV03 — honest size', () => {
+  it.each([
+    ['preferred', tlsCCards.size.preferred],
+    ['min', tlsCCards.size.min],
+    ['half-width', [860, 480]],
+  ])('the example fits size.%s with nothing escaping it', (_l, [w, h]) => {
+    const node = layoutAt(tlsCCards, EX, w, h)
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leavesOf(node as any, '')) {
+      expect(l.box.x + l.box.width).toBeLessThanOrEqual(w + 0.5)
+      expect(l.box.y + l.box.height).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('cards hug their content in a tall region instead of stretching to 460', () => {
+    const tall = layoutAt(tlsCCards, EX, 1500, 900)
+    expect(tall.box.height).toBeLessThan(520)
+  })
+})

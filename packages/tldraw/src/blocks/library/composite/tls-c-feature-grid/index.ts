@@ -14,7 +14,7 @@
  */
 
 import type { BlockDefinition, LayoutContext, LayoutNode, BlockMotionRuntime } from '../../../types'
-import { schema, defaults } from './schema'
+import { schema, defaults, type FeatureGridProps } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { motion } from './motion'
@@ -22,6 +22,17 @@ import { createLayoutContext } from '../../../layout/layout-child'
 import { resolveTokens } from '../../../tokens'
 import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
 import { htmlHostNode } from '../../../html-block'
+
+/** The example the AI is shown; the preferred size is the poster height of exactly this. */
+const EXAMPLE_PROPS = {
+  cells: [
+    { icon: 'zap', title: 'Fast', desc: 'Optimised for speed at every layer.' },
+    { icon: 'shield', title: 'Secure', desc: 'End-to-end encryption by default.' },
+    { icon: 'globe', title: 'Global', desc: 'Deployed across 30+ regions.' },
+  ],
+  columns: 3,
+  gap: 24,
+}
 
 /** Summary for the AI: what this block is and when to use it. */
 const FEATURE_GRID_SUMMARY =
@@ -46,7 +57,7 @@ function featureGridLayout(
  * to get the real intrinsic height.
  */
 function derivePreferredSize(): [number, number] {
-  const REFERENCE_WIDTH = 1920
+  const REFERENCE_WIDTH = 1200
   const REFERENCE_HEIGHT = 1080
   const theme = BUILT_IN_DECK_THEMES[0] // mono-grid (the demo's default)
   const tokens = resolveTokens(theme)
@@ -55,8 +66,9 @@ function derivePreferredSize(): [number, number] {
     tokens,
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
-  const posterNode = poster(defaults, ctx)
-  return [REFERENCE_WIDTH, posterNode.box.height]
+  const posterNode = poster(EXAMPLE_PROPS as FeatureGridProps, ctx)
+  // + one description line: the real theme's body type runs larger than the test measure.
+  return [REFERENCE_WIDTH, Math.ceil(posterNode.box.height + 36)]
 }
 
 /**
@@ -77,70 +89,46 @@ function featureGridAnimate(
     return
   }
 
-  // Collect cell containers: parent of each cell[i].icon element
-  const icons = root.querySelectorAll<HTMLElement>('[data-part$=".icon"]')
-  const cellContainers: HTMLElement[] = []
-  icons.forEach((icon) => {
-    const parent = icon.parentElement
-    if (parent) cellContainers.push(parent)
+  // Every drawn part is hidden until its step plays, so every part must be released here
+  // (icon, title and description; RV03: only the icons and their parents were, text stayed hidden).
+  const cells = new Map<string, HTMLElement[]>()
+  root.querySelectorAll<HTMLElement>('[data-part]').forEach((el) => {
+    const m = /^cell\[(\d+)\]/.exec(el.getAttribute('data-part') ?? '')
+    if (!m) return
+    cells.set(m[1], [...(cells.get(m[1]) ?? []), el])
   })
-
-  if (cellContainers.length === 0) {
+  const order = [...cells.keys()].sort((a, b) => Number(a) - Number(b))
+  if (order.length === 0) {
     rt.onComplete()
     return
   }
+  const step = (part: string): number => (part.endsWith('.icon') ? 0 : part.endsWith('.title') ? 0.35 : 0.6)
 
-  // If the host provided GSAP, use a GSAP timeline for staggered reveal
-  if (rt.gsap && typeof rt.gsap === 'object' && rt.gsap !== null) {
+  if (rt.gsap && typeof rt.gsap === 'object') {
     const gsap = rt.gsap as {
-      fromTo(
-        target: unknown,
-        from: unknown,
-        to: unknown,
-        position?: string,
-      ): { kill(): void; then(cb?: () => void): Promise<void> }
       timeline(): {
-        fromTo(target: unknown, from: unknown, to: unknown, position?: string): unknown
+        fromTo(target: unknown, from: unknown, to: unknown, position?: number): unknown
         then(cb?: () => void): Promise<void>
         kill(): void
       }
     }
-
     const tl = gsap.timeline()
     const staggerSec = rt.timing.staggerMs / 1000
     const durationSec = rt.timing.durationMs / 1000
-
-    // Stagger cell containers from below
-    cellContainers.forEach((cell, i) => {
-      tl.fromTo(
-        cell,
-        { opacity: 0, y: 24 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: durationSec,
-          delay: i * staggerSec,
-          ease: 'power3.out',
-        },
-      )
+    order.forEach((key, n) => {
+      for (const el of cells.get(key) ?? []) {
+        const part = el.getAttribute('data-part') ?? ''
+        const icon = part.endsWith('.icon')
+        tl.fromTo(
+          el,
+          icon ? { opacity: 0, scale: 0.4 } : { opacity: 0, y: 16 },
+          icon
+            ? { opacity: 1, scale: 1, duration: durationSec * 0.6, ease: 'back.out(1.7)' }
+            : { opacity: 1, y: 0, duration: durationSec, ease: 'power3.out' },
+          rt.timing.delayMs / 1000 + n * staggerSec + step(part) * durationSec * 0.5,
+        )
+      }
     })
-
-    // Scale icons in (synchronized with their parent cell's timing)
-    icons.forEach((icon, i) => {
-      tl.fromTo(
-        icon,
-        { scale: 0, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: durationSec * 0.6,
-          delay: i * staggerSec,
-          ease: 'back.out(1.7)',
-        },
-        '<',
-      )
-    })
-
     let resolved = false
     tl.then(() => {
       if (!resolved) {
@@ -148,45 +136,31 @@ function featureGridAnimate(
         rt.onComplete()
       }
     })
-
     return () => {
       tl.kill()
     }
   }
 
-  // Fallback: use the motion driver's play() on each cell
   const handles: Array<{ cancel(): void; finished: Promise<void> }> = []
-  cellContainers.forEach((cell, i) => {
-    const h = rt.driver.play(
-      cell,
-      { opacity: [0, 1], translate: ['0px 24px', '0px 0px'] },
-      {
-        duration: rt.timing.durationMs,
-        delay: rt.timing.delayMs + i * rt.timing.staggerMs,
-        easing: rt.timing.ease,
-        fill: 'forwards',
-      },
-    )
-    handles.push(h)
+  order.forEach((key, n) => {
+    for (const el of cells.get(key) ?? []) {
+      const part = el.getAttribute('data-part') ?? ''
+      const icon = part.endsWith('.icon')
+      handles.push(
+        rt.driver.play(
+          el,
+          icon ? { opacity: [0, 1], scale: [0.4, 1] } : { opacity: [0, 1], translate: ['0px 16px', '0px 0px'] },
+          {
+            duration: icon ? rt.timing.durationMs * 0.6 : rt.timing.durationMs,
+            delay: rt.timing.delayMs + n * rt.timing.staggerMs + step(part) * rt.timing.durationMs * 0.5,
+            easing: rt.timing.ease,
+            fill: 'forwards',
+          },
+        ),
+      )
+    }
   })
-
-  // Also animate icons with scale
-  icons.forEach((icon, i) => {
-    const h = rt.driver.play(
-      icon,
-      { opacity: [0, 1], scale: [0, 1] },
-      {
-        duration: rt.timing.durationMs * 0.6,
-        delay: rt.timing.delayMs + i * rt.timing.staggerMs,
-        easing: rt.timing.ease,
-        fill: 'forwards',
-      },
-    )
-    handles.push(h)
-  })
-
   Promise.all(handles.map((h) => h.finished)).then(() => rt.onComplete())
-
   return () => {
     handles.forEach((h) => h.cancel())
   }
@@ -222,20 +196,12 @@ export const tlsCFeatureGrid: BlockDefinition = {
     example: {
       id: 'b_feature_grid',
       type: 'tls.c.feature-grid',
-      props: {
-        cells: [
-          { icon: 'zap', title: 'Fast', desc: 'Optimised for speed at every layer.' },
-          { icon: 'shield', title: 'Secure', desc: 'End-to-end encryption by default.' },
-          { icon: 'globe', title: 'Global', desc: 'Deployed across 30+ regions.' },
-        ],
-        columns: 3,
-        gap: 24,
-      },
+      props: EXAMPLE_PROPS,
     },
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [400, 200] },
+  size: { preferred: derivePreferredSize(), min: [1120, 242] },
   layout: featureGridLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: featureGridAnimate },

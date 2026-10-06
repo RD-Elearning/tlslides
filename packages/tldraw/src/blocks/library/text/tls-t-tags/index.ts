@@ -29,7 +29,7 @@ export const tlsTTags: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [900, 220], min: [200, 60] },
+  size: { preferred: [900, 140], min: [460, 140] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

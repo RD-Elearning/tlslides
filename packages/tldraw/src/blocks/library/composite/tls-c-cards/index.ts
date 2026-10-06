@@ -114,9 +114,10 @@ function plan(props: CardsProps, ctx: LayoutContext): Plan {
   const n = Math.max(1, items.length)
   const lead = pick(props.lead, LEADS, 'icon')
   const gap = ctx.tokens.space.lg
-  const pad = n >= 4 ? ctx.tokens.space.lg : ctx.tokens.space.xl
   const W = Math.max(0, ctx.box.width) || 0
   const cw = Math.max(0, (W - gap * (n - 1)) / n)
+  // Padding shrinks with the card so a narrow region keeps its text width (RV03).
+  const pad = Math.max(ctx.tokens.space.md, Math.min(n >= 4 ? ctx.tokens.space.lg : ctx.tokens.space.xl, Math.round(cw * 0.09)))
   const inner = Math.max(0, cw - 2 * pad)
   const hasLead = lead !== 'none' && items.some((c) => (lead === 'icon' ? c.icon : lead === 'number' ? c.number : c.image))
   const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight) : Math.min(260, Math.round(inner * 0.6))
@@ -138,7 +139,8 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const p = plan(props, ctx)
   const n = p.items.length
   const sm = ctx.tokens.space.sm
-  const total = Math.max(p.needed, Math.min(H, 460))
+  // Cards hug their content with a little air; a tall region no longer stretches them to 460 (RV03).
+  const total = Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
   const small = n >= 4
@@ -206,17 +208,18 @@ const composite = defineCompositeBlock<CardsProps>({
   related: ['tls.c.feature-grid', 'tls.t.bullets', 'tls.c.case-study'],
   schema,
   defaults,
-  size: { preferred: [1500, 520], min: [560, 260] },
+  size: { preferred: [1500, 400], min: [1320, 400] },
   describe: {
-    when: 'Three pillars, key benefits or offerings, each with a short paragraph.',
+    when: 'Two to four framed pillars, benefits or offerings in a row, each with an icon (or number/image), a title and a one-sentence paragraph.',
     avoid: 'More than 4 items or icon-only entries: tls.c.feature-grid. Plain points: tls.t.bullets.',
     example: {
       id: 'b_cards',
       type: 'tls.c.cards',
       props: {
         cards: [
-          { icon: 'target', title: 'Clear goals', text: 'One question per session.' },
-          { icon: 'check', title: 'Honest results', text: 'What a result shows.' },
+          { icon: 'target', title: 'Clear goals', text: 'Every session starts from one question the data can answer.' },
+          { icon: 'chart-bar', title: 'Hands-on data', text: 'Real datasets, small enough to explore in class.' },
+          { icon: 'check', title: 'Honest results', text: 'Learn what a result does and does not show.' },
         ],
         lead: 'icon',
       },

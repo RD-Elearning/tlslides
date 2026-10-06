@@ -40,17 +40,23 @@ export const tlsCFeatureReveal: BlockDefinition = {
   shortDescription: 'Icon cards in a grid that flip up one after another with a 3D tilt',
   related: ['tls.c.feature-grid', 'tls.c.cards'],
   describe: {
-    when: 'Key benefits, skills or pillars (3-6) on a showcase slide with motionStyle expressive.',
+    when: 'Key benefits, skills or pillars (3-6) as icon cards with a title and one line each, on a showcase slide with motionStyle expressive. Cards stay compact and centre in a tall region.',
     avoid: 'Dense or printed slides (use tls.c.feature-grid); steps in order (use tls.g.chevrons).',
     example: {
       id: 'b_reveal',
       type: 'tls.c.feature-reveal',
-      props: { items: [{ icon: 'rocket', title: 'Nhanh' }, { icon: 'shield', title: 'An toàn' }, { icon: 'heart', title: 'Thân thiện' }] },
+      props: {
+        items: [
+          { icon: 'rocket', title: 'Nhanh', text: 'Dựng xong bài trình bày trong vài phút.' },
+          { icon: 'shield', title: 'An toàn', text: 'Dữ liệu được mã hóa mặc định.' },
+          { icon: 'heart', title: 'Thân thiện', text: 'Giao diện dễ dùng cho mọi người.' },
+        ],
+      },
     },
   },
   schema,
   defaults,
-  size: { preferred: [1728, 752], min: [640, 360] },
+  size: { preferred: [1200, 340], min: [640, 300] },
   layout: layout as BlockDefinition['layout'],
   capacity: capacity as BlockDefinition['capacity'],
   poster,

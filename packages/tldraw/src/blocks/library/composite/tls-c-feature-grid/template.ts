@@ -9,7 +9,7 @@
  */
 
 import type { HtmlTemplateContext } from '../../../types'
-import type { FeatureGridProps } from './schema'
+import { effectiveColumns, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 
 /**
@@ -24,10 +24,8 @@ function getIconPath(iconName: string): string {
 
 export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): string {
   const cells = props.cells ?? []
-  const cols = props.columns ?? 3
   const gap = props.gap ?? 24
-
-  const cellWidth = `calc((100% - ${(cols - 1) * gap}px) / ${cols})`
+  const cols = effectiveColumns(ctx.box.width, props.columns, gap, cells.length)
 
   const cellHtml = cells
     .map((cell, i) => {
@@ -36,9 +34,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
       
       return (
         `<div style="` +
-          `width:${cellWidth};` +
-          `display:inline-block;` +
-          `vertical-align:top;` +
+          `min-width:0;` +
           `box-sizing:border-box;` +
         `">` +
           // Icon - render as inline SVG with the correct path
@@ -74,10 +70,10 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
 
   return (
     `<div style="` +
-      `display:flex;` +
-      `flex-wrap:wrap;` +
+      `display:grid;` +
+      `grid-template-columns:repeat(${cols},minmax(0,1fr));` +
       `gap:${gap}px;` +
-      `align-items:flex-start;` +
+      `align-items:start;` +
     `">${cellHtml}</div>`
   )
 }

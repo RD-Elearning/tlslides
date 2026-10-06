@@ -36,7 +36,7 @@ export const tlsMIconList: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [760, 480], min: [280, 140] },
+  size: { preferred: [760, 370], min: [420, 290] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

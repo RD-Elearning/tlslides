@@ -16,6 +16,7 @@ import { solveColumns } from '../../../layout/table'
 import { placeText } from '../_engine/text-place'
 import { splitCounts, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, str } from '../_engine/rich'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const LEADER_GLYPH = '·'
 
@@ -24,7 +25,9 @@ function pair(item: unknown): { key: string; value: string } {
   return { key: str(o.key), value: str(o.value) }
 }
 
-function compute(props: KvListProps, ctx: LayoutContext, width: number) {
+function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
+  // Right-aligned values and leaders read widths: use the browser-true ones (RV03).
+  const ctx = withRealWidths(ctx0)
   const items = asArray<unknown>(props.items).map(pair)
   const columns: 1 | 2 = String(props.columns) === '2' && items.length > 1 ? 2 : 1
   const leader = props.leader === 'dots' || props.leader === 'rule' ? props.leader : 'none'

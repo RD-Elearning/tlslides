@@ -36,7 +36,7 @@ export const tlsTKvList: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 360], min: [260, 120] },
+  size: { preferred: [800, 290], min: [420, 160] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

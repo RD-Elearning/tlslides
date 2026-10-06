@@ -6,6 +6,7 @@
  * Pure and DOM-free.
  */
 
+import { withRealWidths } from '../../data/_chart/kit'
 import type { CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../../../types'
 
 export interface MarkerRowItem {
@@ -50,7 +51,9 @@ export function splitCounts(n: number, columns: 1 | 2): number[] {
 }
 
 export function layoutMarkerRows(input: MarkerRowsInput): MarkerRowsResult {
-  const { ctx, items, textStyle, gap } = input
+  const { items, textStyle, gap } = input
+  // Browser-true single-line widths: no early wrap, strike-through as long as the text (RV03).
+  const ctx = withRealWidths(input.ctx)
   const columns: 1 | 2 = input.columns === 2 && items.length > 1 ? 2 : 1
   const width = Math.max(1, input.width)
   const colWidth = columns === 2 ? Math.max(1, (width - input.colGap) / 2) : width

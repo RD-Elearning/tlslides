@@ -558,12 +558,13 @@ describe('tls.c.feature-grid', () => {
 
   describe('size derived from defaults', () => {
     it('size.preferred is set from the poster of defaults', () => {
-      const c = ctx({ width: 1920, height: 1080 })
-      const p = poster(tlsCFeatureGrid.defaults as any, c)
+      const c = ctx({ width: 1200, height: 1080 })
+      const p = poster(tlsCFeatureGrid.describe!.example.props as any, c)
       const posterHeight = p.box.height
 
-      expect(tlsCFeatureGrid.size.preferred[0]).toBe(1920)
-      expect(tlsCFeatureGrid.size.preferred[1]).toBe(posterHeight)
+      // RV03: 1200 wide (was 1920: a drop spanned the whole slide), the height of the example
+      expect(tlsCFeatureGrid.size.preferred[0]).toBe(1200)
+      expect(tlsCFeatureGrid.size.preferred[1]).toBe(Math.ceil(posterHeight + 36))
     })
 
     it('changing defaults changes the derived height', () => {
@@ -676,5 +677,59 @@ describe('tls.c.feature-grid', () => {
       )
       expect(blockErrors).toEqual([])
     })
+  })
+})
+
+describe('RV03 — fits its box, reflows, releases every part', () => {
+  const DEF = tlsCFeatureGrid
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+    ['half-width region', [860, 600]],
+  ])('the example fits size.%s with nothing escaping it', (_l, [w, h]) => {
+    const node = poster(DEF.describe!.example.props as any, ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('drops columns when the box is narrow (poster and template agree)', () => {
+    const props = DEF.describe!.example.props as any
+    const wide = poster(props, ctx({ width: 1200, height: 900 }))
+    const narrow = poster(props, ctx({ width: 440, height: 900 }))
+    expect(narrow.box.height).toBeGreaterThan(wide.box.height)
+    const html = template(props, { ...makeTemplateCtx(ctx({ width: 440, height: 900 })), box: { x: 0, y: 0, width: 440, height: 900 } } as any)
+    expect(html).toContain('repeat(2,')
+  })
+
+  it('animate() releases the icon, title and description of every cell', () => {
+    const root = document.createElement('div')
+    const parts = ['cell[0].icon', 'cell[0].title', 'cell[0].desc', 'cell[1].icon', 'cell[1].title', 'cell[1].desc']
+    const wrap = document.createElement('div')
+    for (const p of parts) {
+      const el = document.createElement('div')
+      el.setAttribute('data-part', p)
+      wrap.appendChild(el)
+    }
+    root.appendChild(wrap)
+    const played: string[] = []
+    const rt: any = {
+      driver: { play: (el: HTMLElement) => { played.push(el.getAttribute('data-part') ?? ''); return { cancel() {}, finished: Promise.resolve() } } },
+      timing: { delayMs: 0, durationMs: 400, staggerMs: 40, ease: 'ease' },
+      reducedMotion: false,
+      onComplete: jest.fn(),
+    }
+    DEF.html!.animate!(root, rt)
+    expect(played.sort()).toEqual([...parts].sort())
   })
 })
