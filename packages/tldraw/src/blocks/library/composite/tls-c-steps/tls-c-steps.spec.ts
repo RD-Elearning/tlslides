@@ -15,6 +15,8 @@
 
 import { tlsCSteps } from './index'
 import { makeCtx, SIZES, assertValidNode } from '../../text/test-helpers'
+import { absoluteLeaves, assertContained } from '../../text/standard-suite'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { makeRegistry } from '../../layout/test-helpers'
 import { layout } from './layout'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -573,5 +575,43 @@ describe('tls.c.steps', () => {
     it.skip('horizontal with a registry (known issue)', async () => {
       await assertParity(tlsCSteps, tlsCSteps.defaults as Record<string, unknown>, { width: 960, height: 540 }, undefined, { registry: makeRegistry() })
     }, 30_000)
+  })
+})
+
+describe('tls.c.steps adapts to its region (RV07)', () => {
+  it('the example fits size.preferred and size.min (real glyph widths)', () => {
+    assertExampleFits(tlsCSteps)
+  })
+
+  it('horizontal: content is centred vertically and every step has a badge, number and rail', () => {
+    const c = ctx({ width: 1600, height: 700 })
+    const node = layout({ ...DEFAULT_PROPS, steps: [...DEFAULT_PROPS.steps, { title: 'Learn', desc: 'Review the numbers' }] }, c)
+    const parts = collectParts(node)
+    expect(parts.filter((p) => /^step\[\d\]\.badge$/.test(p))).toHaveLength(4)
+    expect(parts.filter((p) => /^connector\[\d\]$/.test(p))).toHaveLength(3)
+    const ys = absoluteLeaves(node).map((l) => l.y)
+    const top = Math.min(...ys)
+    const bottom = Math.max(...absoluteLeaves(node).map((l) => l.y + l.height))
+    expect(top).toBeGreaterThan(100)
+    expect(700 - bottom).toBeGreaterThan(100)
+  })
+
+  it('a narrow region wraps six steps to two rows instead of squeezing the columns', () => {
+    const steps = Array.from({ length: 6 }, (_, i) => ({ title: `Step ${i + 1}`, desc: 'A short line of description' }))
+    const size = { width: 800, height: 560 }
+    const node = layout({ steps, orientation: 'horizontal' }, ctx(size))
+    const badges = absoluteLeaves(node).filter((l) => /\.badge$/.test(l.part ?? ''))
+    expect(new Set(badges.map((b) => Math.round(b.y))).size).toBe(2)
+    assertContained(node, size)
+  })
+
+  it('vertical: the badge column and the text column never overlap', () => {
+    const size = { width: 900, height: 600 }
+    const node = layout({ ...VERTICAL_PROPS, steps: [...VERTICAL_PROPS.steps, { title: 'Learn', desc: 'Review' }] }, ctx(size))
+    const leaves = absoluteLeaves(node)
+    const badge = leaves.filter((l) => /\.badge$/.test(l.part ?? ''))
+    const title = leaves.filter((l) => /\.title/.test(l.part ?? '') && l.k === 'text')
+    expect(Math.min(...title.map((t) => t.x))).toBeGreaterThanOrEqual(badge[0].x + badge[0].width)
+    assertContained(node, size)
   })
 })

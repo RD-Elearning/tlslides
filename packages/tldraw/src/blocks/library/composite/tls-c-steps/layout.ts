@@ -18,10 +18,11 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode } from '../../../types'
 import type { StepsProps } from './schema'
+import { onColor } from '../../text/_engine/color'
+import { realWidth } from '../../data/_chart/inter-width'
 
 const CONNECTOR_THICKNESS = 2
-const CONNECTOR_GAP = 12
-const MARKER_SIZE = 28
+const MARKER_SIZE = 48
 // G8.4: a step's title is one of N items sharing a compact region, not a full slide title —
 // `'title'` (96 slide units, sized for a 1920×1080 frame) never fit N-per-row/column at any
 // realistic step count once tls.t.title stopped silently clamping its own reported height to
@@ -41,25 +42,26 @@ function formatMarker(index: number): string {
 }
 
 /**
- * Build the marker text node.
+ * Build the marker: a filled accent badge plus the step number centred on it (RV07: the number was
+ * a 14 px text on nothing, centred in the column while the title was left-aligned).
  */
-function buildMarker(
-  index: number,
-  x: number,
-  y: number,
-  w: number,
-  ctx: LayoutContext,
-): LayoutNode {
+function buildMarker(index: number, x: number, y: number, size: number, ctx: LayoutContext): LayoutNode[] {
   const text = formatMarker(index)
-  const style = ctx.resolveText('body', { size: 14 })
-  const m = ctx.measureText(text, style, w)
-  return {
-    k: 'text',
-    part: `step[${index}].marker`,
-    box: { x, y, width: w, height: m.height },
-    lines: m.lines,
-    style,
-  }
+  const accent = ctx.resolveColor('accent').color
+  const style = { ...ctx.resolveText('body', { size: Math.round(size * 0.42) }), color: onColor(ctx, accent) }
+  const w = Math.ceil(realWidth(text, style) * 1.04) + 1
+  const lh = style.size * style.lineHeight
+  const m = ctx.measureText(text, style, w + 8)
+  return [
+    { k: 'rect', part: `step[${index}].badge`, box: { x, y, width: size, height: size }, fill: { type: 'solid', color: accent }, radius: size / 2 },
+    {
+      k: 'text',
+      part: `step[${index}].marker`,
+      box: { x: x + (size - w) / 2, y: y + (size - lh) / 2, width: w, height: lh },
+      lines: m.lines.map((l) => ({ ...l, width: w })),
+      style,
+    },
+  ]
 }
 
 /**
@@ -138,7 +140,7 @@ function buildConnector(
     k: 'rect',
     part: `connector[${index}]`,
     box: { x, y, width: w, height: h },
-    fill: { type: 'solid', color: ctx.resolveColor('line').color },
+    fill: { type: 'solid', color: ctx.resolveColor('textMuted').color },
   }
 }
 
@@ -152,152 +154,100 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   if (n === 0) {
     return { k: 'group', box: { x: 0, y: 0, width: W, height: 0 }, part: 'root', children: [] }
   }
-
-  const connectors = Math.max(0, n - 1)
-
-  if (orientation === 'horizontal') {
-    return layoutHorizontal(steps, n, connectors, W, H, ctx)
-  }
-  return layoutVertical(steps, n, connectors, W, H, ctx)
+  return orientation === 'horizontal' ? layoutHorizontal(steps, n, W, H, ctx) : layoutVertical(steps, n, W, H, ctx)
 }
 
+/** Shift every node of a flat child list down by `dy` (vertical centring of the whole content). */
+function shiftY(nodes: LayoutNode[], dy: number): LayoutNode[] {
+  if (dy <= 0) return nodes
+  return nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode)
+}
+
+const MIN_COL = 130
+const RAIL_PAD = 8
+
 /**
- * Horizontal layout: steps arranged left to right, connectors between them.
- *
- * DOM order per step: marker, title, desc, then connector.
+ * Horizontal: a badge at the left of every column with the title and description under it, a thin
+ * rail from badge to badge. Columns narrower than MIN_COL wrap to a second row; the content block
+ * is centred in the region's height.
  */
-function layoutHorizontal(
-  steps: StepsProps['steps'],
-  n: number,
-  connectors: number,
-  W: number,
-  H: number,
-  ctx: LayoutContext,
-): LayoutNode {
-  const totalConnectorWidth = connectors * (CONNECTOR_GAP + CONNECTOR_THICKNESS + CONNECTOR_GAP)
-  const stepWidth = Math.max(10, (W - totalConnectorWidth) / n)
+function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: number, ctx: LayoutContext): LayoutNode {
+  const GAP = ctx.tokens.space.lg
+  const fit = Math.max(1, Math.floor((W + GAP) / (MIN_COL + GAP)))
+  const rows = Math.ceil(n / Math.min(n, fit))
+  const cols = Math.ceil(n / rows)
+  const stepWidth = Math.max(10, (W - (cols - 1) * GAP) / cols)
+  const markerGap = ctx.tokens.space.sm
+
+  const heights = steps.map((s) => {
+    const t = measureTitleHeight(s.title, stepWidth, ctx)
+    const d = s.desc ? measureDescHeight(s.desc, stepWidth, ctx) : 0
+    return { t, d }
+  })
+  const rowH = (r: number) => {
+    const slice = heights.slice(r * cols, r * cols + cols)
+    return MARKER_SIZE + markerGap + Math.max(...slice.map((h) => h.t + h.d))
+  }
+  const rowGap = ctx.tokens.space.xl
+  const total = Array.from({ length: rows }, (_, r) => rowH(r)).reduce((a, b) => a + b, 0) + (rows - 1) * rowGap
 
   const children: LayoutNode[] = []
-  let x = 0
-
-  for (let i = 0; i < n; i++) {
-    const step = steps[i]
-
-    // Measure intrinsic heights for positioning
-    const titleIntrinsicH = measureTitleHeight(step.title, stepWidth, ctx)
-    const descIntrinsicH = step.desc ? measureDescHeight(step.desc, stepWidth, ctx) : 0
-    const markerGap = ctx.tokens.space.xs
-
-    // Marker centred in the step column
-    const markerY = 0
-    children.push(buildMarker(i, x + (stepWidth - MARKER_SIZE) / 2, markerY, MARKER_SIZE, ctx))
-
-    // Title below marker
-    const titleY = MARKER_SIZE + markerGap
-    children.push(
-      buildTitle(i, step.title, x, titleY, stepWidth, titleIntrinsicH, ctx),
-    )
-
-    // Description below title if present
-    if (step.desc) {
-      const descY = titleY + titleIntrinsicH
-      if (descY < H) {
-        children.push(
-          buildDesc(i, step.desc, x, descY, stepWidth, descIntrinsicH, ctx),
-        )
+  let y0 = 0
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c
+      if (i >= n) break
+      const step = steps[i]
+      const x = c * (stepWidth + GAP)
+      children.push(...buildMarker(i, x, y0, MARKER_SIZE, ctx))
+      const titleY = y0 + MARKER_SIZE + markerGap
+      children.push(buildTitle(i, step.title, x, titleY, stepWidth, heights[i].t, ctx))
+      if (step.desc) children.push(buildDesc(i, step.desc, x, titleY + heights[i].t, stepWidth, heights[i].d, ctx))
+      // Rail to the next badge in the same row.
+      if (c < cols - 1 && i < n - 1) {
+        const from = x + MARKER_SIZE + RAIL_PAD
+        const to = x + stepWidth + GAP - RAIL_PAD
+        children.push(buildConnector(i, from, y0 + (MARKER_SIZE - CONNECTOR_THICKNESS) / 2, Math.max(1, to - from), CONNECTOR_THICKNESS, ctx))
       }
     }
-
-    x += stepWidth
-
-    // Connector (except after last step)
-    if (i < n - 1) {
-      const connX = x
-      const connW = CONNECTOR_GAP + CONNECTOR_THICKNESS + CONNECTOR_GAP
-      const connY = (MARKER_SIZE - CONNECTOR_THICKNESS) / 2
-      children.push(buildConnector(i, connX, connY, connW, CONNECTOR_THICKNESS, ctx))
-      x += connW
-    }
+    y0 += rowH(r) + rowGap
   }
-
-  return {
-    k: 'group',
-    box: { x: 0, y: 0, width: W, height: H },
-    part: 'root',
-    children,
-  }
+  return { k: 'group', box: { x: 0, y: 0, width: W, height: H }, part: 'root', children: shiftY(children, Math.max(0, (H - total) / 2)) }
 }
 
 /**
- * Vertical layout: steps arranged top to bottom, connectors between them.
- *
- * DOM order per step: marker, title, desc, then connector.
+ * Vertical: badge at the left, title and description to its right, a thin rail down between
+ * badges; the rows share the height and the whole block is centred.
  */
-function layoutVertical(
-  steps: StepsProps['steps'],
-  n: number,
-  connectors: number,
-  W: number,
-  H: number,
-  ctx: LayoutContext,
-): LayoutNode {
-  const totalConnectorHeight = connectors * (CONNECTOR_GAP + CONNECTOR_THICKNESS + CONNECTOR_GAP)
-  const stepHeight = Math.max(10, (H - totalConnectorHeight) / n)
-  const markerColW = MARKER_SIZE + ctx.tokens.space.sm
-  const textColW = Math.max(10, W - markerColW)
+function layoutVertical(steps: StepsProps['steps'], n: number, W: number, H: number, ctx: LayoutContext): LayoutNode {
+  const textX = MARKER_SIZE + ctx.tokens.space.md
+  const textColW = Math.max(10, W - textX)
+  const heights = steps.map((s) => {
+    const t = measureTitleHeight(s.title, textColW, ctx)
+    const d = s.desc ? measureDescHeight(s.desc, textColW, ctx) : 0
+    return { t, d, h: Math.max(MARKER_SIZE, t + d) }
+  })
+  const natural = heights.reduce((a, b) => a + b.h, 0)
+  // Share what is left over as the gap between rows (at least the rail padding), never negative.
+  const gap = Math.max(2 * RAIL_PAD + 8, Math.min(ctx.tokens.space.xl * 1.5, (H - natural) / Math.max(1, n - 1)))
+  const total = natural + (n - 1) * gap
 
   const children: LayoutNode[] = []
   let y = 0
-
   for (let i = 0; i < n; i++) {
     const step = steps[i]
-
-    // Measure intrinsic heights for positioning
-    const titleIntrinsicH = measureTitleHeight(step.title, textColW, ctx)
-    const descIntrinsicH = step.desc ? measureDescHeight(step.desc, textColW, ctx) : 0
-
-    // Clamp title and desc to fit within stepHeight so content from one step
-    // never spills into the next step's area.
-    const titleH = Math.min(titleIntrinsicH, stepHeight)
-    const descH = step.desc
-      ? Math.min(descIntrinsicH, Math.max(0, stepHeight - titleH))
-      : 0
-
-    // Marker left column, vertically centred
-    children.push(
-      buildMarker(i, 0, y + (stepHeight - MARKER_SIZE) / 2, MARKER_SIZE, ctx),
-    )
-
-    // Title right of marker — use clamped height so tls.t.title autofits
-    const textX = markerColW
-    children.push(
-      buildTitle(i, step.title, textX, y, textColW, titleH, ctx),
-    )
-
-    // Description below title (only if clamped height > 0)
-    if (step.desc && descH > 0) {
-      const descY = y + titleH
-      children.push(
-        buildDesc(i, step.desc, textX, descY, textColW, descH, ctx),
-      )
-    }
-
-    y += stepHeight
-
-    // Connector (except after last step)
+    const { t, d, h } = heights[i]
+    children.push(...buildMarker(i, 0, y, MARKER_SIZE, ctx))
+    // Text block centred against the badge when it is shorter than it.
+    const ty = y + Math.max(0, (MARKER_SIZE - (t + d)) / 2)
+    children.push(buildTitle(i, step.title, textX, ty, textColW, t, ctx))
+    if (step.desc) children.push(buildDesc(i, step.desc, textX, ty + t, textColW, d, ctx))
     if (i < n - 1) {
-      const connY = y
-      const connH = CONNECTOR_GAP + CONNECTOR_THICKNESS + CONNECTOR_GAP
-      const connX = (MARKER_SIZE - CONNECTOR_THICKNESS) / 2
-      children.push(buildConnector(i, connX, connY, CONNECTOR_THICKNESS, connH, ctx))
-      y += connH
+      const from = y + MARKER_SIZE + RAIL_PAD
+      const to = y + h + gap - RAIL_PAD
+      children.push(buildConnector(i, (MARKER_SIZE - CONNECTOR_THICKNESS) / 2, from, CONNECTOR_THICKNESS, Math.max(1, to - from), ctx))
     }
+    y += h + gap
   }
-
-  return {
-    k: 'group',
-    box: { x: 0, y: 0, width: W, height: H },
-    part: 'root',
-    children,
-  }
+  return { k: 'group', box: { x: 0, y: 0, width: W, height: H }, part: 'root', children: shiftY(children, Math.max(0, (H - total) / 2)) }
 }

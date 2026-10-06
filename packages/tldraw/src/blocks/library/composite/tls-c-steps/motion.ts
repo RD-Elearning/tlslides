@@ -9,6 +9,6 @@
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  parts: ['step[*].marker', 'step[*].title', 'step[*].desc', 'connector[*]'],
+  parts: ['step[*].badge', 'step[*].marker', 'step[*].title', 'step[*].desc', 'connector[*]'],
   preset: 'stagger-lines',
 }

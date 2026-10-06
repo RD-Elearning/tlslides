@@ -64,3 +64,28 @@ export function allText(tree: LayoutNode): string[] {
 }
 
 export const words = (n: number, len = 6) => Array.from({ length: n }, (_, i) => 'w'.repeat(len - 1) + String.fromCharCode(97 + (i % 26))).join(' ')
+
+/**
+ * RV07/08: every part the block's motion recipe names matches at least one part of its own example
+ * layout (same matching rule as `partElements` in motion/play-reveal.ts), and the preset really
+ * animates under the GSAP driver (opacity / translate only: S14/S16).
+ */
+export function assertMotionTargetsExist(def: BlockDefinition): void {
+  const parts: string[] = []
+  const tree = layoutOf(def, (def.describe?.example?.props ?? {}) as Record<string, unknown>, { width: def.size.preferred[0], height: def.size.preferred[1] })
+  const walk = (n: LayoutNode) => {
+    if (n.part) parts.push(n.part)
+    if (n.k === 'group') n.children.forEach(walk)
+  }
+  walk(tree)
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  for (const p of def.motion.parts ?? []) {
+    const match = p.includes('[*]')
+      ? (x: string) => new RegExp('^' + p.split('[*]').map(esc).join('\\[\\d+\\]') + '$').test(x)
+      : (x: string) => x === p || x.startsWith(p + '/') || (x.startsWith(p) && /^\[\d+\]/.test(x.slice(p.length)))
+    const hit = parts.filter(match)
+    expect([def.type, p, hit.length > 0]).toEqual([def.type, p, true])
+  }
+  const BROKEN = ['wipe-x', 'wipe-y', 'mask-reveal', 'draw-path', 'sweep', 'grow-bars-x', 'grow-bars-y', 'grow-segments', 'reveal-down', 'section-in', 'draw-axis-then-nodes', 'grow-branches']
+  expect([def.type, BROKEN.includes(def.motion.preset ?? '')]).toEqual([def.type, false])
+}

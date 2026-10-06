@@ -4,7 +4,7 @@
 
 import { tlsGSteps } from './index'
 import { assertExampleFits, assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, layoutOf, rectsOf } from '../diagram-test'
+import { assertNoOverlap, layoutOf, rectsOf, assertMotionTargetsExist } from '../diagram-test'
 import { makeCtx, assertValidNode } from '../../layout/test-helpers'
 
 describe('tls.g.steps', () => {
@@ -43,6 +43,7 @@ describe('tls.g.steps', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.steps example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGSteps))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGSteps))
 })
 
 describe('tls.g.steps adapts to its box (RV07)', () => {

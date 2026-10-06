@@ -1127,8 +1127,8 @@ One key number in a progress ring that counts up, label beside it, up to 3 suppo
 
 Process or timeline of numbered steps with titles and optional descriptions. Arranges steps horizontally or vertically with thin connectors between them. _(family: composite; keywords: steps, process, timeline, flow, workflow, sequential, phases, roadmap, numbered)_
 
-**When:** Use to show a process, workflow, or timeline with 2–8 numbered steps that the audience reads in sequence.
-**Avoid:** Do not use for a compact strip inside a region (use tls.g.steps), for a plain list (use tls.t.bullets) or for fewer than 2 steps (use tls.t.title).
+**When:** A slide of 2-6 numbered steps read in sequence, each with a title and 1-2 line description.
+**Avoid:** A compact strip in a region (tls.g.steps); phases with a current one (tls.g.chevrons); dated events (tls.g.timeline); a plain list (tls.t.bullets).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1143,15 +1143,19 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
     \\"steps\\": [
       {
         \\"title\\": \\"Plan\\",
-        \\"desc\\": \\"Define scope and requirements\\"
+        \\"desc\\": \\"Scope, owners and a success measure\\"
       },
       {
         \\"title\\": \\"Build\\",
-        \\"desc\\": \\"Implement the solution\\"
+        \\"desc\\": \\"Two-week increments, a demo each\\"
       },
       {
-        \\"title\\": \\"Ship\\",
-        \\"desc\\": \\"Deploy to production\\"
+        \\"title\\": \\"Launch\\",
+        \\"desc\\": \\"Pilot team first, then everyone\\"
+      },
+      {
+        \\"title\\": \\"Learn\\",
+        \\"desc\\": \\"Review the numbers, adjust\\"
       }
     ],
     \\"orientation\\": \\"horizontal\\"

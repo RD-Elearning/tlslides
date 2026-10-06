@@ -3,9 +3,10 @@
  */
 
 import { tlsGCycle } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { allText, assertNoOverlap, layoutOf, overlap, rectsOf, chartCtx } from '../diagram-test'
+import { allText, assertNoOverlap, layoutOf, overlap, rectsOf, chartCtx, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 900, height: 620 }
 const MIN = { width: 640, height: 440 }
@@ -86,4 +87,10 @@ describe('tls.g.cycle', () => {
   it('capacity: seven steps fail', () => {
     expect(tlsGCycle.capacity!({ steps: steps(7) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.cycle example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGCycle))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGCycle))
 })

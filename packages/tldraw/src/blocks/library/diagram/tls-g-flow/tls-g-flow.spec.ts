@@ -3,9 +3,10 @@
  */
 
 import { tlsGFlow } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, overlap, rectsOf, within, type Rect } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, overlap, rectsOf, within, type Rect, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1400, height: 520 }
 const MIN = { width: 640, height: 320 }
@@ -74,7 +75,7 @@ describe('tls.g.flow', () => {
           if (d.includes('C')) return // back edge curve: control points are not on the path
           const pts = polylineOf(d)
           for (const id of [e.from, e.to]) {
-            for (let k = 0; k < pts.length - 1; k++) expect([direction, routing, i, id, crosses(pts[k], pts[k + 1], nr.get(id)!)]).toEqual([direction, routing, i, id, false])
+            for (let k = 0; k < pts.length - 1; k++) expect([direction, routing, i, id, crosses(pts[k], pts[k + 1], nr.get(String(props.nodes.findIndex((n) => n.id === id)))!)]).toEqual([direction, routing, i, id, false])
           }
         })
       }
@@ -138,7 +139,8 @@ describe('tls.g.flow', () => {
 
   it('decisions are diamonds (path), start and end are pills, steps are rounded boxes', () => {
     const t = lay({})
-    const k = (id: string) => absoluteLeaves(t).find((l) => l.part === `node[${id}]`)!
+    const ids = ['start', 'check', 'do', 'fix', 'end'] // defaults order; parts are numeric (RV07: motion matches node[*])
+    const k = (id: string) => absoluteLeaves(t).find((l) => l.part === `node[${ids.indexOf(id)}]`)!
     expect(k('check').k).toBe('path')
     expect(k('start').k).toBe('rect')
     expect((k('start').node as any).radius).toBeCloseTo(k('start').height / 2, 0)
@@ -161,4 +163,10 @@ describe('tls.g.flow', () => {
     expect(JSON.stringify(r.remedy)).toMatch(/TB/)
     expect(tlsGFlow.capacity!({ nodes: nodesN(17).slice(0, 12), edges: Array.from({ length: 17 }, (_, i) => ({ from: 'n0', to: `n${(i % 11) + 1}` })) } as any, SZ, ctx).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.flow example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGFlow))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGFlow))
 })

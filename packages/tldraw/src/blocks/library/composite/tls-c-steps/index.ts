@@ -77,10 +77,10 @@ function capacityFn(
     // N steps + (N-1) connectors fit in box.width
     // N * minStepWidth + (N-1) * connectorSpace <= box.width
     // N * (minStepWidth + connectorSpace) <= box.width + connectorSpace
-    maxSteps = Math.max(
-      1,
-      Math.floor((box.width + connectorSpace) / (minStepWidth + connectorSpace)),
-    )
+    // Columns that fit, times the rows the layout wraps to when the region is tall enough (RV07).
+    maxSteps =
+      Math.max(1, Math.floor((box.width + connectorSpace) / (minStepWidth + connectorSpace))) *
+      (box.height >= 460 ? 2 : 1)
     unit = 'items' as const
   } else {
     // N steps + (N-1) connectors fit in box.height
@@ -126,20 +126,21 @@ export const tlsCSteps: BlockDefinition = {
   ],
   category: 'process',
   scope: 'slide',
-  shortDescription: 'Full process slide: numbered steps with titles and descriptions',
+  shortDescription: 'Full process slide: numbered badges joined by a rail, a title and description per step',
   related: ['tls.g.steps', 'tls.g.chevrons'],
   describe: {
     when:
-      'Use to show a process, workflow, or timeline with 2–8 numbered steps that the audience reads in sequence.',
-    avoid: 'Do not use for a compact strip inside a region (use tls.g.steps), for a plain list (use tls.t.bullets) or for fewer than 2 steps (use tls.t.title).',
+      'A slide of 2-6 numbered steps read in sequence, each with a title and 1-2 line description.',
+    avoid: 'A compact strip in a region (tls.g.steps); phases with a current one (tls.g.chevrons); dated events (tls.g.timeline); a plain list (tls.t.bullets).',
     example: {
       id: 'b_steps',
       type: 'tls.c.steps',
       props: {
         steps: [
-          { title: 'Plan', desc: 'Define scope and requirements' },
-          { title: 'Build', desc: 'Implement the solution' },
-          { title: 'Ship', desc: 'Deploy to production' },
+          { title: 'Plan', desc: 'Scope, owners and a success measure' },
+          { title: 'Build', desc: 'Two-week increments, a demo each' },
+          { title: 'Launch', desc: 'Pilot team first, then everyone' },
+          { title: 'Learn', desc: 'Review the numbers, adjust' },
         ],
         orientation: 'horizontal',
       },
@@ -147,7 +148,7 @@ export const tlsCSteps: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [200, 100] },
+  size: { preferred: derivePreferredSize(), min: [840, 460] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacityFn as BlockDefinition['capacity'],

@@ -3,9 +3,10 @@
  */
 
 import { tlsGChevrons } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { allText, assertNoOverlap, layoutOf, rectsOf, within, chartCtx } from '../diagram-test'
+import { allText, assertNoOverlap, layoutOf, rectsOf, within, chartCtx, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1200, height: 300 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsGChevrons, props, size)
@@ -81,4 +82,10 @@ describe('tls.g.chevrons', () => {
     expect(tlsGChevrons.capacity!({ steps: steps(8) } as any, SZ, ctx).fits).toBe(false)
     expect(tlsGChevrons.capacity!({ steps: steps(7) } as any, { width: 300, height: 160 }, ctx).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.chevrons example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGChevrons))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGChevrons))
 })

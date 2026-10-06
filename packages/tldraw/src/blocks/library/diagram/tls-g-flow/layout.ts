@@ -88,7 +88,7 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
   for (const n of order) {
     const b = dag.boxes[n.id]
     if (!b) continue
-    const part = `node[${n.key}]`
+    const part = `node[${graph.nodes.indexOf(n)}]` // numeric: the motion recipe addresses node[*]
     let fill: string
     let stroke: string | undefined
     let ink = c.text

@@ -3,9 +3,10 @@
  */
 
 import { tlsGFunnel } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1000, height: 520 }
 const MIN = { width: 520, height: 320 }
@@ -60,4 +61,10 @@ describe('tls.g.funnel', () => {
   it('capacity: seven stages fail with a remedy', () => {
     expect(tlsGFunnel.capacity!({ stages: stages(7) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.funnel example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGFunnel))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGFunnel))
 })
