@@ -10,11 +10,13 @@
 
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { TrendBadgeProps } from './schema'
-import { chartColors, enumOf, fmtSigned, lineH, mutedStyle, numOrNull, oneLine, pathNode, readableOn, root, solidRect, str, style, textAligned, tintOf, TEXT_SLACK } from '../_chart/kit'
+import { chartColors, enumOf, fmtSigned, lineH, mutedStyle, numOrNull, oneLine, pathNode, readableOn, root, solidRect, str, style, textAligned, tintOf, withRealWidths } from '../_chart/kit'
 
 const TOKEN: Record<string, TypeToken> = { sm: 'footnote', md: 'caption', lg: 'body' }
 
-export function layout(props: TrendBadgeProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: TrendBadgeProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths size the pill around its text (RV04).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const c = chartColors(ctx)
@@ -30,7 +32,7 @@ export function layout(props: TrendBadgeProps, ctx: LayoutContext): LayoutNode {
   for (let k = 0; k < 8 && lineH(ts) * 1.56 > H; k++) ts = { ...ts, size: ts.size * 0.85 }
   const lh = lineH(ts)
   const txt = fmtSigned(delta, props.format === 'percent' ? undefined : props.format) + (props.format === 'percent' ? '%' : '')
-  const tw = Math.ceil(ctx.measureText(txt, ts).width * 1.12) + 2
+  const tw = Math.ceil(ctx.measureText(txt, ts).width) + 2
   const padX = Math.round(ts.size * 0.6)
   const padY = Math.round(ts.size * 0.28)
   const aw = ts.size * 0.62
@@ -53,7 +55,7 @@ export function layout(props: TrendBadgeProps, ctx: LayoutContext): LayoutNode {
     const ls = mutedStyle(ctx, TOKEN[size])
     const lx = pillW + ctx.tokens.space.xs
     const avail = W - lx
-    if (avail > 20) nodes.push(oneLine(ctx, label, ls, { x: lx, y: y + (pillH - lineH(ls)) / 2, width: Math.min(avail, Math.ceil(ctx.measureText(label, ls).width * TEXT_SLACK)) }, 'badge.label'))
+    if (avail > 20) nodes.push(oneLine(ctx, label, ls, { x: lx, y: y + (pillH - lineH(ls)) / 2, width: Math.min(avail, Math.ceil(ctx.measureText(label, ls).width)) }, 'badge.label'))
   }
   return root(ctx, nodes)
 }

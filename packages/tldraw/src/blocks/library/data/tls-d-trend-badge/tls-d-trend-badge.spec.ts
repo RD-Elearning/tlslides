@@ -6,6 +6,7 @@ import { tlsDTrendBadge } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 320, height: 64 }
 const lay = (props: Record<string, unknown>, size = SZ) => tlsDTrendBadge.layout({ ...(tlsDTrendBadge.defaults as any), ...props } as any, makeCtx(size, makeRegistry()))
@@ -62,5 +63,11 @@ describe('tls.d.trend-badge', () => {
 
   it('NaN and missing deltas read as no change', () => {
     expect(text(lay({ delta: NaN, format: 'plain' }), 'badge.text')).toBe('0')
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDTrendBadge)
   })
 })

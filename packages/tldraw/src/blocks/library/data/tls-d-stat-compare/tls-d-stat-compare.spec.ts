@@ -5,6 +5,8 @@
 import { tlsDStatCompare } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
+import { assertExampleFits } from '../_chart/chart-test'
+import { realWidth } from '../_chart/inter-width'
 
 const ctx = (w = 880, h = 320) => makeCtx({ width: w, height: h }, makeRegistry())
 const lay = (props: Record<string, unknown>, w = 880, h = 320) =>
@@ -81,5 +83,21 @@ describe('tls.d.stat-compare', () => {
     expect(l.x + l.width).toBeLessThanOrEqual(r.x)
     expect(absoluteLeaves(t).length).toBeGreaterThan(5)
     void c
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDStatCompare)
+  })
+
+  it('the delta text sits inside its pill with room on both sides', () => {
+    const tree = lay({ left: { label: 'a', value: 4200 }, right: { label: 'b', value: 5500 } })
+    const pill = leavesOf(tree, 'delta')[0]
+    const t = leavesOf(tree, 'delta.text')[0]
+    const n = t.node as any
+    const w = realWidth(n.lines[0].text, n.style)
+    expect(t.x + w).toBeLessThanOrEqual(pill.x + pill.width - 4)
+    expect(t.x).toBeGreaterThanOrEqual(pill.x + 4)
   })
 })

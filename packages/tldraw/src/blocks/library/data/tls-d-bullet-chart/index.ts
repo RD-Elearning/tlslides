@@ -34,7 +34,7 @@ export const tlsDBulletChart: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [820, 340], min: [260, 100] },
+  size: { preferred: [820, 340], min: [360, 110] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

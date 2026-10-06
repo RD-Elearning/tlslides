@@ -5,6 +5,7 @@
 import { tlsDBulletChart } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 820, height: 340 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDBulletChart, props, size)
@@ -83,5 +84,11 @@ describe('tls.d.bullet-chart', () => {
   it('capacity: more than five KPIs fails', () => {
     const r = tlsDBulletChart.capacity!({ items: Array.from({ length: 6 }, (_, i) => ({ label: `${i}`, value: 1, target: 2 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDBulletChart)
   })
 })

@@ -13,10 +13,12 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import type { BulletChartProps } from './schema'
 import { BULLET_MAX_ITEMS } from './schema'
 import {
-  asArr, capacityOf, chartColors, clamp, clipLines, emptyState, fmtNum, lineH, niceAxis, numOrNull, root, solidRect, str, style, textAligned, tintOf, TEXT_SLACK,
+  asArr, capacityOf, chartColors, clamp, clipLines, emptyState, fmtNum, lineH, niceAxis, numOrNull, root, solidRect, str, style, textAligned, tintOf, withRealWidths,
 } from '../_chart/kit'
 
-export function layout(props: BulletChartProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: BulletChartProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: label and value columns are sized from them (RV04).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const items = asArr<Record<string, unknown>>(props.items)
@@ -33,9 +35,9 @@ export function layout(props: BulletChartProps, ctx: LayoutContext): LayoutNode 
   const sp = ctx.tokens.space
   const nodes: LayoutNode[] = []
 
-  const labelW = Math.min(W * 0.28, Math.ceil(Math.max(...items.map((it) => ctx.measureText(it.label, ls).width)) * TEXT_SLACK) + 2)
+  const labelW = Math.min(W * 0.28, Math.ceil(Math.max(...items.map((it) => ctx.measureText(it.label, ls).width))) + 2)
   const valueTexts = items.map((it) => fmtNum(it.value ?? 0, props.format))
-  const valueW = Math.ceil(Math.max(...valueTexts.map((t) => ctx.measureText(t, vs).width)) * TEXT_SLACK) + 2
+  const valueW = Math.ceil(Math.max(...valueTexts.map((t) => ctx.measureText(t, vs).width))) + 2
   const gap = sp.xs
   const bx = labelW + gap
   const bw = Math.max(1, W - bx - valueW - gap)

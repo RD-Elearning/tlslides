@@ -12,14 +12,16 @@
 
 import type { LayoutContext, LayoutNode, ResolvedTextStyle } from '../../../types'
 import type { StatCompareProps } from './schema'
-import { chartColors, clamp, enumOf, fmtNum, fmtSigned, lineH, numOrNull, pathNode, readableOn, root, solidRect, str, style, textAligned, tintOf, TEXT_SLACK, mutedStyle } from '../_chart/kit'
+import { chartColors, clamp, enumOf, fmtNum, fmtSigned, lineH, numOrNull, pathNode, readableOn, root, solidRect, str, style, textAligned, tintOf, mutedStyle, withRealWidths } from '../_chart/kit'
 
 function side(raw: unknown): { label: string; value: number | null } {
   const o = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
   return { label: str(o.label), value: numOrNull(o.value) }
 }
 
-export function layout(props: StatCompareProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: StatCompareProps, ctx0: LayoutContext): LayoutNode {
+  // Single-line widths are the browser-true Inter widths (centring and pill sizing, RV04).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const c = chartColors(ctx)
@@ -42,7 +44,7 @@ export function layout(props: StatCompareProps, ctx: LayoutContext): LayoutNode 
   let vs: ResolvedTextStyle = style(ctx, 'title', c.text)
   for (let k = 0; k < 14; k++) {
     const widest = Math.max(ctx.measureText(lText, vs).width, ctx.measureText(rText, vs).width)
-    if (widest * TEXT_SLACK <= colW * 0.96) break
+    if (widest <= colW * 0.96) break
     vs = { ...vs, size: vs.size * 0.88 }
   }
   const vh = lineH(vs)
@@ -99,10 +101,10 @@ export function layout(props: StatCompareProps, ctx: LayoutContext): LayoutNode 
     let ds = style(ctx, 'caption')
     const padX = ds.size * 0.6
     for (let k = 0; k < 8; k++) {
-      if (ctx.measureText(txt, ds).width * TEXT_SLACK + 2 * padX <= midW * 0.98) break
+      if (ctx.measureText(txt, ds).width + 2 * padX <= midW * 0.98) break
       ds = { ...ds, size: ds.size * 0.88 }
     }
-    const tw = ctx.measureText(txt, ds).width * 1.12
+    const tw = ctx.measureText(txt, ds).width
     const pw = Math.min(midW * 0.98, tw + 2 * (ds.size * 0.6))
     const ph = lineH(ds) + ds.size * 0.4
     const fill = tintOf(c.surface, base, 0.18)

@@ -34,7 +34,7 @@ export const tlsDStatCompare: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [880, 320], min: [260, 120] },
+  size: { preferred: [880, 320], min: [260, 132] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

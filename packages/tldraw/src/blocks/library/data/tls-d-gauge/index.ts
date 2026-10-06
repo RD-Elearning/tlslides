@@ -39,7 +39,7 @@ export const tlsDGauge: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [560, 380], min: [200, 140] },
+  size: { preferred: [560, 380], min: [220, 160] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

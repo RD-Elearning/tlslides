@@ -29,7 +29,7 @@ export const tlsDTrendBadge: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [320, 64], min: [100, 28] },
+  size: { preferred: [320, 64], min: [180, 36] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

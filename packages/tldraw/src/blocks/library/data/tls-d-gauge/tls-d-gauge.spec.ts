@@ -5,7 +5,7 @@
 import { tlsDGauge } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
-import { assertChartSane } from '../_chart/chart-test'
+import { assertChartSane, assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 560, height: 380 }
 const ctx = () => makeCtx(SZ, makeRegistry())
@@ -98,5 +98,17 @@ describe('tls.d.gauge', () => {
 
   it('small boxes stay inside', () => {
     assertChartSane(lay({}, { width: 240, height: 160 }), { width: 240, height: 160 })
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDGauge)
+  })
+
+  it.each([[560, 380], [1600, 800], [320, 220]])('the value sits below the pointer hub at %ix%i', (w, h) => {
+    const t = lay({}, { width: w, height: h })
+    const hb = exact(t, 'needle.hub')
+    expect(exact(t, 'value').y).toBeGreaterThanOrEqual(hb.y + hb.height - 0.5)
   })
 })

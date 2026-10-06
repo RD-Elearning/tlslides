@@ -14,10 +14,12 @@ import type { GaugeProps } from './schema'
 import { GAUGE_MAX_BANDS, GAUGE_TONES } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, str, style,
-  textAligned, TEXT_SLACK,
+  textAligned, withRealWidths,
 } from '../_chart/kit'
 
-export function layout(props: GaugeProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: GaugeProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: tick labels and the value are anchored by their width (RV04).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const c = chartColors(ctx)
@@ -45,17 +47,25 @@ export function layout(props: GaugeProps, ctx: LayoutContext): LayoutNode {
 
   // Vertical budget: arc, then value, then label.
   let vs = style(ctx, 'heading', c.text)
-  const tickW = showTicks ? Math.ceil(Math.max(ctx.measureText(fmtNum(lo, props.format), tickStyle).width, ctx.measureText(fmtNum(hi, props.format), tickStyle).width) * TEXT_SLACK) + 12 : 0
+  const tickW = showTicks ? Math.ceil(Math.max(ctx.measureText(fmtNum(lo, props.format), tickStyle).width, ctx.measureText(fmtNum(hi, props.format), tickStyle).width)) + 12 : 0
   const gapV = sp['2xs']
   const topMargin = showTicks ? tlh + 6 : 4
+  // The pointer hub (radius 0.072 R) sits on the baseline, so the value starts below it; R is
+  // solved with that allowance instead of a fixed 14 (the hub used to cover the value, RV04).
+  const hubR = (r: number) => Math.max(3, r * 0.045) * 1.6
+  const solveR = (rest: number) => {
+    const byW = W / 2 - tickW
+    const byH = (H - rest - topMargin - 8) / 1.072
+    return Math.min(byW, byH)
+  }
   for (let k = 0; k < 6; k++) {
-    const below = 14 + lineH(vs) + (labelH ? gapV + labelH : 0)
-    const R0 = Math.min(W / 2 - tickW, H - below - topMargin)
-    if (R0 >= 40 || lineH(vs) < 14) break
+    const rest = lineH(vs) + (labelH ? gapV + labelH : 0)
+    if (solveR(rest) >= 40 || lineH(vs) < 14) break
     vs = { ...vs, size: vs.size * 0.85 }
   }
-  const below = 14 + lineH(vs) + (labelH ? gapV + labelH : 0)
-  let R = Math.min(W / 2 - tickW, H - below - topMargin)
+  const rest = lineH(vs) + (labelH ? gapV + labelH : 0)
+  let R = solveR(rest)
+  const below = 8 + hubR(R) + rest
   if (!(R > 8)) R = Math.max(8, Math.min(W / 2, H * 0.5) - 4)
   const t = R * 0.24
   const Ri = R - t
@@ -93,7 +103,7 @@ export function layout(props: GaugeProps, ctx: LayoutContext): LayoutNode {
       const sn = Math.sin(a)
       nodes.push(pathNode(ctx, `M${cx + (R + 3) * cs} ${cy + (R + 3) * sn}L${cx + (R + 12) * cs} ${cy + (R + 12) * sn}`, `tick[${i}]`, { stroke: c.muted, strokeWidth: 2 }))
       const txt = fmtNum(v, props.format)
-      const tw = ctx.measureText(txt, tickStyle).width * 1.12
+      const tw = ctx.measureText(txt, tickStyle).width
       const px = cx + (R + 18) * cs
       const py = cy + (R + 18) * sn
       const align = cs > 0.35 ? 'start' : cs < -0.35 ? 'end' : 'center'
@@ -121,10 +131,10 @@ export function layout(props: GaugeProps, ctx: LayoutContext): LayoutNode {
   // Value and label under the hub.
   const inner = Math.max(1, Ri * 1.7)
   for (let k = 0; k < 6; k++) {
-    if (ctx.measureText(valueText, vs).width * TEXT_SLACK <= inner) break
+    if (ctx.measureText(valueText, vs).width <= inner) break
     vs = { ...vs, size: vs.size * 0.88 }
   }
-  let y = cy + 14
+  let y = cy + hubR(R) + 8
   nodes.push(...textAligned(ctx, valueText, vs, { x: cx - inner / 2, y, width: inner }, 'center', 'value').nodes)
   y += lineH(vs) + gapV
   if (label) {
