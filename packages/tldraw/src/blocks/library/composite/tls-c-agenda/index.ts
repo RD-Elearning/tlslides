@@ -48,7 +48,7 @@ export const tlsCAgenda: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [700, 500], min: [280, 120] },
+  size: { preferred: [1200, 660], min: [620, 440] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity(props: Record<string, unknown>, box: Size, ctx: LayoutContext): CapacityReport {

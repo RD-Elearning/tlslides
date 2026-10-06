@@ -11,7 +11,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size } from '../../../types'
+import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import type { AgendaItem, AgendaProps } from './schema'
 
 /**
@@ -38,7 +38,30 @@ function measureRow(
   }
 }
 
+/**
+ * Type tiers, biggest first. An agenda is a whole slide, so it takes the largest tier whose rows fit
+ * the box (the old fixed `body` tier left a 4-item agenda as a small list in a corner).
+ */
+const TIERS: ReadonlyArray<{ title: TypeToken; note: TypeToken; index: TypeToken; gap: 'sm' | 'md' }> = [
+  { title: 'heading', note: 'body', index: 'body', gap: 'md' },
+  { title: 'subheading', note: 'caption', index: 'caption', gap: 'md' },
+  { title: 'lead', note: 'caption', index: 'caption', gap: 'sm' },
+  { title: 'body', note: 'caption', index: 'caption', gap: 'sm' },
+]
+
 export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
+  let node = place(props, ctx, TIERS[TIERS.length - 1])
+  for (const tier of TIERS) {
+    const candidate = place(props, ctx, tier)
+    if (candidate.box.height <= ctx.box.height + 0.5 || tier === TIERS[TIERS.length - 1]) {
+      node = candidate
+      break
+    }
+  }
+  return node
+}
+
+function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number]): LayoutNode {
   const items = props.items ?? []
   const currentIdx = props.current != null ? props.current : null
 
@@ -51,15 +74,17 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
     }
   }
 
-  const gap = ctx.tokens.space.sm
-  const indexWidth = ctx.tokens.space.xl
+  const gap = ctx.tokens.space[tier.gap]
+  const indexStyle0 = ctx.resolveText(tier.index)
+  // two digits at the index size, never narrower than the old fixed column
+  const indexWidth = Math.max(ctx.tokens.space.xl, Math.ceil(ctx.measureText('88', indexStyle0, 1000).width) + ctx.tokens.space.xs)
 
   const inner: Size = { width: ctx.box.width, height: ctx.box.height }
   const contentWidth = Math.max(0, inner.width - indexWidth - ctx.tokens.space.sm)
 
   // Resolve text styles
-  const baseTitleStyle = ctx.resolveText('body')
-  const noteStyle = ctx.resolveText('caption')
+  const baseTitleStyle = ctx.resolveText(tier.title)
+  const noteStyle = ctx.resolveText(tier.note)
 
   // We'll do two passes: measure all rows first, then place them.
   const rows = items.map((item, i) => {
@@ -101,7 +126,7 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
     // Index number
     const indexText = `${i + 1}`
     const indexStyle: ResolvedTextStyle = {
-      ...ctx.resolveText('caption'),
+      ...indexStyle0,
       color: indexColor,
     }
     const indexM = ctx.measureText(indexText, indexStyle, indexWidth)
