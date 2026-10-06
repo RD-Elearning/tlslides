@@ -169,13 +169,13 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | G03 list | 9 | 0 | 0 | 0 | — | — | ⬜ |
 | G04 metric | 13 | 13 | 12 | 0 | S14, S15, S19 | `932752a3` (+`3cf6d7f8` motion) | ✅ |
 | G05 chart | 16 | 16 | 16 | 0 | S14–S18 | `7ffdac75` | ✅ |
-| G06 table, comparison | 13 | 0 | 0 | 0 | — | — | 🔄 paused: in-flight edits uncommitted/unverified, see the Resume note in `G06-table-comparison.md` |
+| G06 table, comparison | 13 | 13 | 12 | 0 | — | `0ff5ffec` | ✅ |
 | G07 process, timeline | 10 | 0 | 0 | 0 | — | — | ⬜ |
 | G08 hierarchy, relationship | 8 | 0 | 0 | 0 | — | — | ⬜ |
 | G09 media, people, brand | 14 | 0 | 0 | 0 | — | — | ⬜ |
 | G10 slide composites | 11 | 0 | 0 | 0 | — | — | ⬜ |
 | G11 chrome, decoration | 10 | 0 | 0 | 0 | — | — | ⬜ |
-| **Total** | **129** | **41** (G02 12 + G04 13 + G05 16) | **40** | **0** | | | |
+| **Total** | **129** | **54** (G02 12 + G04 13 + G05 16 + G06 13) | **52** | **0** | | | |
 
 ## 7. Harness
 
@@ -192,3 +192,4 @@ an example fixes the card, the drop and the viewer at once.
 | 2026-10-05 | controller | Harness + plan; S1–S3 fixed (`74c0cf13`) | Started G02, G04, G05 in parallel; on the user's request G04/G05 were stopped before any edit. **One agent at a time; after G02 each agent takes a batch of related groups** (shared engines, better cache reuse): B1 = G04 + G05 + G06 (data) → B2 = G07 + G08 (diagram) → B3 = G01 + G03 + G11 (layout, list, chrome) → B4 = G09 + G10 (media, composites) |
 | 2026-10-05 | G02 agent | 12/12 fixed: quote `b4481fa0`, quote-image `e9a6b498`, statement `29de0427`, kicker `7805d506`, body/caption/footnote/takeaway `5c4f6837`, title/subtitle/definition/callout `2a5fa613`, group file `04d99f1a` | Every G02 spec now asserts the example fits preferred and min size. Next session: restart `next dev` (S5), re-shoot `REVIEW_BLOCKS=tls.c.quote-image,tls.t.subtitle`, then start batch B1 (G04 + G05 + G06). Fix S11/S12 in the harness first so B1's present/mid shots are trustworthy |
 | 2026-10-06 | B1 agent (G04 + G05, G06 in progress) | G04 13/13 (12 fixed, stat-spotlight unchanged): `3d183129`, `c81eeb2d`, `883238df`, `932752a3`, motion `3cf6d7f8`, file `560c27f9`. G05 16/16 fixed: `1698ee42`, `0ff35d76`, `032bd592`, `bbe26557`, `7ffdac75`, file `ee53da81`→`ee22a1e8`. Shared issues S14–S19 | **Resume point:** the user asked to stop after B1. If G06 is not ✅ in §6, open `G06-table-comparison.md`, check `git status` for uncommitted edits under `library/data/_table`, `library/diagram/tls-g-{matrix-2x2,swot,pros-cons,before-after,iceberg}`, `library/composite/tls-c-{comparison,case-study,problem-solution}` (the agent's in-flight work: review the diff, run the related specs, commit or revert deliberately) and continue from the first ⬜ row. Then B2 (G07 + G08), B3 (G01 + G03 + G11), B4 (G09 + G10). `packages/tldraw/src/blocks/_scratch/` is an untracked scratch folder from the agent: delete once G06 is committed. Fix S5/S17 before B2 |
+| 2026-10-06 | controller | G06 closed: stopped agent's edits verified and committed (`74846ca3`, `76fff632`, `0ff5ffec`); harness PUT retry `cd6b1578`; scratch folder deleted. B1 complete: G04 + G05 + G06 | **Next: B2 = G07 (process, timeline) + G08 (hierarchy, relationship)**, then B3 (G01 + G03 + G11), B4 (G09 + G10). Fix S17 (Present pass timeout on long categories) first; run categories with `REVIEW_PASSES=gallery,drop,viewer` and Present separately until then |
