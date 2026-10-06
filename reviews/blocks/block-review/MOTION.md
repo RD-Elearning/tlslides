@@ -144,7 +144,7 @@ Use `partMotion` so only the bars/lines grow or draw while labels, axes and lege
 
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
 |---|---|---|---|---|---|---|
-| Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1 | ⬜ |
+| Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1 | ✅ `6c496b90`, `480def10`, `071bc32b` (open: count-up `onUpdate` ignored by the GSAP driver, `sweep` on fills not from 12 o'clock, negative bars → M3) |
 | G01 structure | 13 | | | | M2 | ⬜ |
 | G02 heading, text, emphasis | 12 | | | | M2 | ⬜ |
 | G03 list | 9 | | | | M2 | ⬜ |
@@ -163,3 +163,4 @@ Use `partMotion` so only the bars/lines grow or draw while labels, axes and lege
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-06 | controller | Plan written | Start M0 + M1 (one agent). Resume from the first ⬜ row in §3 |
+| 2026-10-06 | agent A (M0+M1) | Probe `6c496b90`; engine `480def10` (S8 rewind/first-paint flash, S14 baseline grow + real draw-on + `partMotion`, S16 4-term clip pairs, S26 `animate-guard`, J7 reduced = static); notes `071bc32b` | chart/heading probe clean except scatter/bubble `root` 100 ms (J5, M3). Pre-existing spec failures: `timeline.spec`, `motion-style.spec` (assert old G04/G05 recipes, M3 fixes them), `DeckViewer.spec` retreat (user's uncommitted DeckViewer edit). **Next: M2 = G01 + G02 + G03 + G11** |
