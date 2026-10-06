@@ -113,16 +113,23 @@ async function viewerState(page) {
   })
 }
 
-async function waitChain(page, limitMs = 15000) {
+async function waitChain(page, limitMs = 20000) {
   const t0 = Date.now()
+  let lastStep = -1
+  let lastMove = Date.now()
   for (;;) {
     const s = await viewerState(page)
     if (s.step >= s.steps) return { ...s, ms: Date.now() - t0 }
     if (Date.now() - t0 > limitMs) return { ...s, timedOut: true }
-    // Manual (click) steps: advance them, the review wants the fully built slide.
-    await page.waitForTimeout(150)
-    const s2 = await viewerState(page)
-    if (s2.step === s.step && s2.step < s2.steps) await page.keyboard.press('ArrowRight')
+    if (s.step !== lastStep) { lastStep = s.step; lastMove = Date.now() }
+    // A manual (click) step never moves by itself; an auto step does. Pressing ArrowRight on an
+    // auto step makes DeckViewer skip the whole chain and settle it, which would hide exactly
+    // what is reviewed, so only press after a long stall.
+    if (Date.now() - lastMove > 3000) {
+      await page.keyboard.press('ArrowRight')
+      lastMove = Date.now()
+    }
+    await page.waitForTimeout(100)
   }
 }
 

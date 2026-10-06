@@ -123,6 +123,12 @@ flock $L sh -c 'cd packages/tldraw && COREPACK_ENABLE_STRICT=0 pnpm build 2>&1 |
 flock $G git add <paths…> && flock $G git commit -m "RV05: tls.d.bar — …"
 ```
 
+**Is my change live?** After every `pnpm build`, wait ~5 s and re-shoot the block you changed; if the
+PNG shows no change after two tries, the dev server is stale (S5): restart it with
+`pkill -f 'next dev -p 5433'; cd examples/nextjs-sample && COREPACK_ENABLE_STRICT=0 nohup pnpm exec next dev -p 5433 > /tmp/next-5433.log 2>&1 &`
+(the controller started it, so you may), then re-PUT the decks by re-running the harness.
+The harness no longer presses ArrowRight to nudge a chain (DeckViewer turns that into "skip the chain").
+
 Known noise, not a finding: the `Accessing element.ref was removed in React 19` console error and
 the Next.js "1 Issue" badge it causes. Known pre-existing failure, not yours:
 `BlockInserter.spec.tsx › renders category tabs with counts and hides empty categories`
@@ -139,7 +145,7 @@ the Next.js "1 Issue" badge it causes. Known pre-existing failure, not yours:
 | S5 | G02 (X1) | `next dev` on :5433 | Stopped recompiling `packages/tldraw/dist` after 16:35:51 UTC (stale chunks through two rebuilds + touch). Restart it before any re-shoot | 🔧 restarted 2026-10-06 (stale again after any reboot: restart `next dev`, then re-PUT decks by running the harness) |
 | S6 | G02 (X2) | `blocks/parity-harness.ts`, `parity-worker.ts` | DOM/SVG parity probe hangs >150 s even on untouched blocks; killing jest orphans parity-worker + Chrome. Workaround: `-t '^(?!.*parity).*$'` | ⬜ |
 | S7 | G02 (X3) | `blocks/render-svg.ts` | `path` node drawn without its box offset (render-dom applies it): tls.t.quote mark lands top-left in SVG export | ⬜ |
-| S8 | G02 (X4) | `motion/` or DeckViewer build steps | Second block on an expressive slide shows final for ~400 ms, vanishes, then enters (`custom/t-title.wide.mid-120.png` vs `mid-600`) | ⬜ |
+| S8 | G02 (X4) | `motion/` or DeckViewer build steps | Second block on an expressive slide shows final for ~400 ms, vanishes, then enters (`custom/t-title.wide.mid-120.png` vs `mid-600`) | ⬜ confirmed real 2026-10-06 (not a harness artifact; `heading/t-title.wide.mid-120.png` vs `mid-600.png`). Open; do not mark blocks down for it |
 | S9 | G02 (X5) | `BlockInserter/BlockPreview.tsx` | Wide, small-text blocks scale to specks in gallery cards (`text/t-footnote.card.png`, `heading/t-subtitle.card.png`); needs a content-aware crop or min scale | ⬜ |
 | S10 | G02 (X6) | `layout/measure.ts`, `library/text/_engine/text-place.ts` | Default text-width estimate 15–30 % too wide: early wraps in the editor, off-centre placement (engine shared with G03) | ⬜ |
 | S11 | G02 (X7) | `tools/visual/scenarios/block-review.js` | Present pass leaves every block after the first in edit mode (`emphasis/t-callout.present.png`) | 🔧 harness |
@@ -153,7 +159,7 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | Group | Blocks | Done | Fixed (🔧) | Blocked (⏸) / open (❌) | Shared issues raised | Last commit | Status |
 |---|---|---|---|---|---|---|---|
 | G01 structure | 13 | 0 | 0 | 0 | — | — | ⬜ |
-| G02 heading, text, emphasis | 12 | 12 | 12 | 0 | S5–S13 | `04d99f1a` | ✅ (re-shoot quote-image + subtitle after S5) |
+| G02 heading, text, emphasis | 12 | 12 | 12 | 0 | S5–S13 | `04d99f1a` | ✅ (quote-image + subtitle re-shot 2026-10-06, both OK) |
 | G03 list | 9 | 0 | 0 | 0 | — | — | ⬜ |
 | G04 metric | 13 | 0 | 0 | 0 | — | — | ⬜ |
 | G05 chart | 16 | 0 | 0 | 0 | — | — | ⬜ |
