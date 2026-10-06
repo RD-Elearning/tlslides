@@ -85,8 +85,16 @@ const BLANK = {
 }
 
 async function put(page, base, id, spec) {
-  const r = await page.request.put(`${base}/api/decks/${id}`, { data: spec })
-  if (!r.ok()) throw new Error(`PUT ${id} -> ${r.status()}`)
+  // Right after a dev-server restart the first GET can miss the deck that was just PUT (the API
+  // route is compiled lazily), so read it back and retry until it is really there.
+  for (let i = 0; i < 6; i++) {
+    const r = await page.request.put(`${base}/api/decks/${id}`, { data: spec })
+    if (!r.ok()) throw new Error(`PUT ${id} -> ${r.status()}`)
+    const g = await page.request.get(`${base}/api/decks/${id}`)
+    if (g.ok()) return
+    await page.waitForTimeout(1000)
+  }
+  throw new Error(`deck ${id} not readable after PUT`)
 }
 
 async function go(page, url) {
