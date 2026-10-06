@@ -1,7 +1,8 @@
 /**
- * Motion recipe for tls.l.section — no default animation.
+ * Motion recipe for tls.l.section — surface, title and divider, then the child blocks, staggered
+ * in reading order under `motionStyle: expressive` (RVM2; see `../_motion.ts`). No own preset.
  */
 
-import type { MotionRecipe } from '../../../types'
+import { containerMotion } from '../_motion'
 
-export const motion: MotionRecipe = {}
+export const motion = containerMotion(['surface', 'title', 'divider'])

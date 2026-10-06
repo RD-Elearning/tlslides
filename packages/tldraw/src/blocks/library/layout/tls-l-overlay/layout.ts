@@ -6,6 +6,7 @@
 
 import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import type { OverlayProps } from './schema'
+import { tagChildren } from '../_motion'
 
 export function layout(props: OverlayProps, ctx: LayoutContext): LayoutNode {
   const children = props.children ?? []
@@ -36,7 +37,7 @@ export function layout(props: OverlayProps, ctx: LayoutContext): LayoutNode {
         box: fullBox,
         fill: surfacePaint,
       },
-      ...childNodes,
+      ...tagChildren(childNodes), // RVM2: child/<i> motion parts
     ],
   }
 }

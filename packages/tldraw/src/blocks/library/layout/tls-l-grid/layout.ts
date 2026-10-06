@@ -10,6 +10,7 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { GridProps } from './schema'
+import { tagChildren } from '../_motion'
 
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
@@ -122,6 +123,6 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: W, height: H },
     part: 'root',
-    children: childNodes,
+    children: tagChildren(childNodes), // RVM2: child/<i> motion parts
   }
 }

@@ -1,7 +1,11 @@
 /**
- * Motion recipe for tls.l.spacer — no default animation.
+ * Motion recipe for tls.l.spacer — never animated (`preset: 'none'`, RVM2): it draws nothing an
+ * audience should watch arrive, and an empty recipe used to give it a `fade-up` step that held the
+ * `expressive` build chain for ~0.3 s.
  */
 
 import type { MotionRecipe } from '../../../types'
 
-export const motion: MotionRecipe = {}
+export const motion: MotionRecipe = {
+  preset: 'none',
+}

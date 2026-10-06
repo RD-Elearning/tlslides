@@ -9,6 +9,7 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RowProps } from './schema'
+import { tagChildren } from '../_motion'
 import { distributeSpace } from '../../../layout/layout-child'
 
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
@@ -93,6 +94,6 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: W, height: H },
     part: 'root',
-    children: childNodes,
+    children: tagChildren(childNodes), // RVM2: child/<i> motion parts
   }
 }

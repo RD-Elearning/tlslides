@@ -8,6 +8,7 @@
 
 import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { SidebarProps } from './schema'
+import { tagChildren } from '../_motion'
 import { splitBox } from '../../../layout/box-model'
 
 export function layout(props: SidebarProps, ctx: LayoutContext): LayoutNode {
@@ -42,6 +43,6 @@ export function layout(props: SidebarProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: W, height: H },
     part: 'root',
-    children: childNodes,
+    children: tagChildren(childNodes), // RVM2: child/<i> motion parts
   }
 }

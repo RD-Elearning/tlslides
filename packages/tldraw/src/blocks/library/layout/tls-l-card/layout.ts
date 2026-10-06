@@ -8,6 +8,7 @@
 
 import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { CardProps } from './schema'
+import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
@@ -35,7 +36,7 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
     childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
   } else {
-    childNodes = children.map((child) => ctx.layoutChild(child, contentBox))
+    childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox)))
   }
 
   return {
