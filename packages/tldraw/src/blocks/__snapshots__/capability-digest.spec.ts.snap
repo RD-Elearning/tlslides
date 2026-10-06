@@ -3039,16 +3039,16 @@ Lanes of bars across periods, coloured by status, with a today line. _(family: d
 
 ### \`tls.g.steps\` — Steps Diagram
 
-Numbered process diagram with animated step reveal. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
+Numbered step strip: accent badge, title and one-line description per step, joined by thin connectors. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
 
-**When:** Use to illustrate a multi-step process or workflow.
-**Avoid:** Do not use for a full process slide with a description per step (use tls.c.steps), or for a single concept (use tls.m.icon-label).
+**When:** A compact 2-8 step process inside a slide: numbered badge, title, short line per step.
+**Avoid:** A whole process slide (tls.c.steps); a current phase (tls.g.chevrons); a loop (tls.g.cycle); branching (tls.g.flow); dates (tls.g.timeline).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`steps\` | no | text (max 2000 chars) | Array of step objects with title and description. Parsed from JSON array. |
-| \`direction\` | no | enum: horizontal \\\\| vertical | Layout direction for steps. |
-| \`connector\` | no | enum: line \\\\| arrow \\\\| none | Type of connector between steps. |
+| \`steps\` | yes | list of object (title, description) (2–8 items) | Steps in order. Numbered 1..n automatically. |
+| \`direction\` | no | enum: horizontal \\\\| vertical | Row (wraps when narrow) or column. |
+| \`connector\` | no | enum: line \\\\| arrow \\\\| none | Between badges. |
 
 \`\`\`json
 {
@@ -3057,24 +3057,24 @@ Numbered process diagram with animated step reveal. _(family: diagram; keywords:
   \\"props\\": {
     \\"steps\\": [
       {
-        \\"title\\": \\"Setup\\",
-        \\"description\\": \\"Initialize the environment\\"
+        \\"title\\": \\"Brief\\",
+        \\"description\\": \\"Agree the goal and the audience\\"
       },
       {
-        \\"title\\": \\"Configure\\",
-        \\"description\\": \\"Set up your preferences\\"
-      },
-      {
-        \\"title\\": \\"Run\\",
-        \\"description\\": \\"Execute the main process\\"
+        \\"title\\": \\"Draft\\",
+        \\"description\\": \\"Build the first version\\"
       },
       {
         \\"title\\": \\"Review\\",
-        \\"description\\": \\"Verify the results\\"
+        \\"description\\": \\"Collect feedback from the team\\"
+      },
+      {
+        \\"title\\": \\"Publish\\",
+        \\"description\\": \\"Share it and track results\\"
       }
     ],
     \\"direction\\": \\"horizontal\\",
-    \\"connector\\": \\"line\\"
+    \\"connector\\": \\"arrow\\"
   },
   \\"children\\": []
 }

@@ -6,24 +6,38 @@
 
 import type { BlockSchema } from '../../../types'
 
+export const STEPS_MAX = 8
+
 export const schema: BlockSchema = {
   steps: {
-    type: { kind: 'text', maxChars: 2000 },
+    type: {
+      kind: 'list',
+      of: {
+        kind: 'object',
+        fields: {
+          title: { type: { kind: 'text', maxChars: 40 }, required: true, role: 'content', label: 'Title', guidance: '1-3 words naming the step.' },
+          description: { type: { kind: 'text', maxChars: 120 }, role: 'content', label: 'Description', guidance: 'One short line; optional.' },
+        },
+      },
+      min: 2,
+      max: STEPS_MAX,
+    },
     role: 'content',
     label: 'Steps',
-    help: 'Array of step objects with title and description. Parsed from JSON array.',
+    required: true,
+    guidance: 'Steps in order. Numbered 1..n automatically.',
   },
   direction: {
     type: { kind: 'enum', values: ['horizontal', 'vertical'] },
     role: 'option',
     label: 'Direction',
-    help: 'Layout direction for steps.',
+    help: 'Row (wraps when narrow) or column.',
   },
   connector: {
     type: { kind: 'enum', values: ['line', 'arrow', 'none'] },
     role: 'option',
     label: 'Connector',
-    help: 'Type of connector between steps.',
+    help: 'Between badges.',
   },
 }
 
@@ -40,7 +54,11 @@ export interface StepsProps extends Record<string, unknown> {
 }
 
 export const defaults: StepsProps = {
-  steps: [],
+  steps: [
+    { title: 'Brief', description: 'Agree the goal' },
+    { title: 'Draft', description: 'Build the first version' },
+    { title: 'Review', description: 'Collect feedback' },
+  ],
   direction: 'horizontal',
   connector: 'line',
 }

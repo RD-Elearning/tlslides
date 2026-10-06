@@ -12,7 +12,7 @@
 
 import type { Box, LayoutContext, LayoutNode, ResolvedTextStyle } from '../../types'
 import { mixHex, rgbToHsl, tryHexToRgb } from '../../color-math'
-import { clipLines, ellipsize, fullBox, lineH, pathNode, solidRect } from '../data/_chart/kit'
+import { clipLines, ellipsize, fullBox, lineH, pathNode, solidRect, withRealWidths } from '../data/_chart/kit'
 
 export { TEXT_SLACK, asArr, clamp, enumOf, numOrNull, root, str, style, mutedStyle, lineH, chartColors, tintOf, onColor, readableOn, solidRect, pathNode, emptyState, capacityOf, dot } from '../data/_chart/kit'
 
@@ -52,9 +52,22 @@ export function placeLines(
   const w = Math.max(1, box.width)
   const clean = text.replace(/\s+/g, ' ').trim()
   if (!clean || maxLines < 1) return { nodes: [], height: 0, width: 0, lineCount: 0 }
-  const words = clean.split(' ').map((x) => ellipsize(ctx, x, s, w))
-  const m = ctx.measureText(words.join(' '), s, w)
+  // RV07: browser-true Inter widths: a box sized from the flat estimate was a few px narrower than
+  // its glyphs ("Check" 63 in a 60 box), so the DOM wrapped it.
+  const rc = withRealWidths(ctx)
+  const words = clean.split(' ').map((x) => ellipsize(rc, x, s, w))
+  const m = rc.measureText(words.join(' '), s, w)
   const lines = clipLines(m.lines, Math.max(1, Math.floor(maxLines)))
+  // The ellipsis appended to the last kept line can push it past the box: drop words until it fits.
+  if (m.lines.length > lines.length) {
+    const last = lines[lines.length - 1]
+    let t = last.text
+    while (rc.measureText(t, s).width > w && /\s/.test(t.replace(/…$/, '').trim())) {
+      t = `${t.replace(/…$/, '').trim().replace(/\s+\S+$/, '').replace(/[\s.,;:]+$/, '')}…`
+    }
+    if (rc.measureText(t, s).width > w) t = ellipsize(rc, t.replace(/…$/, ''), s, w)
+    lines[lines.length - 1] = { ...last, text: t, width: Math.min(w, rc.measureText(t, s).width) }
+  }
   const lh = lineH(s)
   const height = lines.length * lh
   const width = Math.min(w, Math.max(0, ...lines.map((l) => l.width)))
@@ -85,7 +98,8 @@ export function linesHeight(ctx: LayoutContext, text: string, s: ResolvedTextSty
   const clean = text.replace(/\s+/g, ' ').trim()
   if (!clean || maxLines < 1) return 0
   const w = Math.max(1, width)
-  const m = ctx.measureText(clean.split(' ').map((x) => ellipsize(ctx, x, s, w)).join(' '), s, w)
+  const rc = withRealWidths(ctx)
+  const m = rc.measureText(clean.split(' ').map((x) => ellipsize(rc, x, s, w)).join(' '), s, w)
   return Math.min(m.lines.length, Math.floor(maxLines)) * lineH(s)
 }
 
