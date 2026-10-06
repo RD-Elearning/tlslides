@@ -5,6 +5,8 @@
 import { tlsMPattern } from './index'
 import { standardBlockSuite, absoluteLeaves } from '../../text/standard-suite'
 import { ctxNoAssets } from '../media-test'
+import { styleBlockMotion } from '../../../motion/motion-style'
+import { resolveBlockMotion } from '../../../motion/resolve-motion'
 import { patternMarks, patternPath, PATTERN_GAP, MAX_DOTS } from './layout'
 
 const lay = (props: Record<string, unknown>, w = 960, h = 540) =>
@@ -81,8 +83,12 @@ describe('tls.m.pattern', () => {
     expect((lay({ tone: 'alt', opacity: 'medium' }) as any).opacity).toBeUndefined()
   })
 
-  it('has no motion preset unless set explicitly', () => {
-    expect(tlsMPattern.motion.preset).toBeUndefined()
+  it('has no motion unless set explicitly (RVM2: also not under a slide motionStyle)', () => {
+    // `none` is what keeps a style from animating it; an empty preset got `fade-up` under expressive
+    expect(tlsMPattern.motion.preset).toBe('none')
+    expect(styleBlockMotion('subtle', tlsMPattern.motion, 1)).toBeUndefined()
+    expect(styleBlockMotion('expressive', tlsMPattern.motion, 1)).toBeUndefined()
+    expect(resolveBlockMotion({ preset: 'fade' }, tlsMPattern.motion).effect).not.toBeNull()
   })
 
   it('a tiny or zero box gives a valid tree', () => {
