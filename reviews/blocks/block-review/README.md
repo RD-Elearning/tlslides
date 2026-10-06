@@ -169,7 +169,7 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | G03 list | 9 | 0 | 0 | 0 | — | — | ⬜ |
 | G04 metric | 13 | 13 | 12 | 0 | S14, S15, S19 | `932752a3` (+`3cf6d7f8` motion) | ✅ |
 | G05 chart | 16 | 16 | 16 | 0 | S14–S18 | `7ffdac75` | ✅ |
-| G06 table, comparison | 13 | in progress | | | | uncommitted edits in the tree when B1 was paused | 🔄 B1 agent still running; see `G06-table-comparison.md` rows |
+| G06 table, comparison | 13 | 0 | 0 | 0 | — | — | 🔄 paused: in-flight edits uncommitted/unverified, see the Resume note in `G06-table-comparison.md` |
 | G07 process, timeline | 10 | 0 | 0 | 0 | — | — | ⬜ |
 | G08 hierarchy, relationship | 8 | 0 | 0 | 0 | — | — | ⬜ |
 | G09 media, people, brand | 14 | 0 | 0 | 0 | — | — | ⬜ |

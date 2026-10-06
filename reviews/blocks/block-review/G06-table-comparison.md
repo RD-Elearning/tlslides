@@ -4,7 +4,9 @@ Part of the block UI review: read [README.md](README.md) (checklist §2, rules �
 
 Run: `REVIEW_CATEGORY=<category> node tools/visual/shoot.js block-review --width=1600 --height=900` for each of: `table`, `comparison`. Shots land in `tools/visual/shots/review/<category>/`.
 
-**Status:** ⬜ not started · **Agent:** — · **Last commit:** —
+**Status:** 🔄 paused 2026-10-06 — B1 agent was stopped mid-work; its edits are in the working tree, UNCOMMITTED and UNVERIFIED (no row below is ticked). · **Agent:** B1 (stopped) · **Last commit:** —
+
+**Resume:** `git status` lists the in-flight edits under `library/data/_table/kit.ts`, `library/data/tls-d-{table,scorecard,ranking,compare-table,pricing}`, `library/diagram/tls-g-{matrix-2x2,swot,pros-cons,before-after,iceberg}`, `library/composite/tls-c-{comparison,case-study,problem-solution}` and the capability-digest snapshot. Review the diff, run only the related specs (`-t '^(?!.*parity).*$'`), shoot each block, then commit per block or revert deliberately. `packages/tldraw/src/blocks/_scratch/` (5 `*.spec.ts` probe files) is scratch: delete it, never commit it.
 
 ## Blocks
 
