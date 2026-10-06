@@ -29,7 +29,7 @@ R0–R13 and parked R14–R16.
 `scope` per block for AI selection, a two-tier digest, and phases P0–P6 with a progress ledger.
 Resume from its §Progress. **Block UI review (2026-10-05): [reviews/blocks/block-review/README.md](reviews/blocks/block-review/README.md)**
 — every block checked in the real app (gallery card, drag-drop, inspector, wide/narrow region,
-motion, Present) by one subagent per group G01–G11; resume from its §6 Progress. The previous list, [block-authoring/README.md](reviews/blocks/block-authoring/README.md)
+motion, Present) by one subagent per group G01–G11; resume from its §6 Progress. Follow-up **motion smoothness pass: [block-review/MOTION.md](reviews/blocks/block-review/MOTION.md)** (frame-by-frame probe, M0–M6; resume from its §3). The previous list, [block-authoring/README.md](reviews/blocks/block-authoring/README.md)
 (B1–B7 — nested HTML blocks, container children, padding/align, element toggles,
 `defineCompositeBlock`, inspector, block gallery); one detail file per task.
 
