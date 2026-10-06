@@ -14,9 +14,12 @@ import { FUNNEL_MAX_STAGES } from './schema'
 import {
   asArr, capacityOf, chartColors, emptyState, enumOf, fmtNum, fmtSigned, lineH, mutedStyle, numOrNull, onColor, pathNode, readableOn, root, solidRect, str,
   style, textAligned, tintOf, TEXT_SLACK,
+  withRealWidths,
 } from '../_chart/kit'
 
-export function layout(props: FunnelChartProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: FunnelChartProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const stages = asArr<Record<string, unknown>>(props.stages)

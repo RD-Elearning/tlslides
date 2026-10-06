@@ -5,6 +5,7 @@
 import { tlsDSlope } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 760, height: 460 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDSlope, props, size)
@@ -93,5 +94,11 @@ describe('tls.d.slope', () => {
   it('capacity: more than ten items fails', () => {
     const r = tlsDSlope.capacity!({ items: Array.from({ length: 11 }, (_, i) => ({ name: `${i}`, start: 1, end: 2 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDSlope)
   })
 })

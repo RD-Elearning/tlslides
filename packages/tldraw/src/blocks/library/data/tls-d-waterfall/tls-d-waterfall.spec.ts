@@ -5,6 +5,7 @@
 import { tlsDWaterfall } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 900, height: 480 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDWaterfall, props, size)
@@ -101,5 +102,11 @@ describe('tls.d.waterfall', () => {
   it('capacity: more than 12 steps fails', () => {
     const r = tlsDWaterfall.capacity!({ steps: Array.from({ length: 13 }, (_, i) => ({ label: `${i}`, value: 1 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDWaterfall)
   })
 })

@@ -36,7 +36,7 @@ export const tlsDWaterfall: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [900, 480], min: [260, 180] },
+  size: { preferred: [900, 480], min: [300, 210] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

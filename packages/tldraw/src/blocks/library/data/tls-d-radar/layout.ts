@@ -14,10 +14,13 @@ import { RADAR_MAX_AXES, RADAR_MAX_SERIES } from './schema'
 import { layoutLegend } from '../_engine/legend'
 import {
   asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, faded, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData, numOrNull, oneLine, pathNode,
-  readCategories, readSeries, root, seriesColors, style, TEXT_SLACK,
+  readCategories, readSeries, root, seriesColors, style, realWidth,
+  withRealWidths,
 } from '../_chart/kit'
 
-export function layout(props: RadarProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: RadarProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const axes = readCategories(props.axes).slice(0, RADAR_MAX_AXES)
@@ -43,7 +46,7 @@ export function layout(props: RadarProps, ctx: LayoutContext): LayoutNode {
 
   const ls = style(ctx, 'caption', c.text)
   const lh = lineH(ls)
-  const labelW = Math.min(area.width * 0.24, Math.ceil(Math.max(...axes.map((t) => ctx.measureText(t, ls).width)) * TEXT_SLACK) + 2)
+  const labelW = Math.min(area.width * 0.24, Math.ceil(Math.max(...axes.map((t) => realWidth(t, ls))) * 1.04) + 2)
   const R0 = Math.min((area.width - 2 * (labelW + 14)) / 2, (area.height - 2 * (lh + 10)) / 2)
   const R = R0 > 24 ? R0 : Math.max(12, Math.min(area.width, area.height) / 2 - 8)
   const cx = area.x + area.width / 2
@@ -87,7 +90,7 @@ export function layout(props: RadarProps, ctx: LayoutContext): LayoutNode {
     const p = at(i, R + 12)
     const cs = Math.cos(ang(i))
     const sn = Math.sin(ang(i))
-    const w = Math.min(labelW, ctx.measureText(name, ls).width * 1.12 + 2)
+    const w = Math.min(labelW, Math.ceil(realWidth(name, ls) * 1.04) + 2)
     const x = cs > 0.3 ? p.x : cs < -0.3 ? p.x - w : p.x - w / 2
     const y = p.y - lh / 2 + sn * (lh / 2)
     nodes.push(oneLine(ctx, name, ls, { x: clamp(x, 0, Math.max(0, W - w)), y: clamp(y, 0, Math.max(0, H - lh)), width: w }, `axis[${i}]`))

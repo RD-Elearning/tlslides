@@ -5,6 +5,7 @@
 import { tlsDFunnelChart } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 760, height: 440 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDFunnelChart, props, size)
@@ -88,5 +89,11 @@ describe('tls.d.funnel-chart', () => {
   it('capacity: more than seven stages fails', () => {
     const r = tlsDFunnelChart.capacity!({ stages: Array.from({ length: 8 }, (_, i) => ({ label: `${i}`, value: 1 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDFunnelChart)
   })
 })

@@ -15,10 +15,13 @@ import { SLOPE_MAX_ITEMS } from './schema'
 import { directLabel } from '../_engine/direct-label'
 import {
   asArr, capacityOf, chartColors, clamp, dimmed, dot, ellipsize, emptyState, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, root, solidRect, str, style,
-  textAligned, TEXT_SLACK,
+  textAligned,
+  withRealWidths,
 } from '../_chart/kit'
 
-export function layout(props: SlopeProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: SlopeProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const items = asArr<Record<string, unknown>>(props.items)
@@ -38,7 +41,7 @@ export function layout(props: SlopeProps, ctx: LayoutContext): LayoutNode {
   const leftText = items.map((it) => `${it.name}  ${fmtNum(it.start, fmt)}`)
   const rightText = items.map((it) => `${fmtNum(it.end, fmt)}  ${it.name}`)
   const maxSide = W * 0.36
-  const wOf = (t: string) => ctx.measureText(t, ts).width * TEXT_SLACK
+  const wOf = (t: string) => ctx.measureText(t, ts).width * 1.08
   const leftW = Math.min(maxSide, Math.ceil(Math.max(...leftText.map(wOf))))
   const rightW = Math.min(maxSide, Math.ceil(Math.max(...rightText.map(wOf))))
   const gap = 14
@@ -88,8 +91,8 @@ export function layout(props: SlopeProps, ctx: LayoutContext): LayoutNode {
     // Clip the NAME, never the number: "Product A…  80" reads, "Product A ..." does not.
     const vL = fmtNum(it.start, fmt)
     const vR = fmtNum(it.end, fmt)
-    const nameL = ellipsize(ctx, it.name, ts, Math.max(10, leftW / TEXT_SLACK - ctx.measureText(`  ${vL}`, ts).width))
-    const nameR = ellipsize(ctx, it.name, ts, Math.max(10, rightW / TEXT_SLACK - ctx.measureText(`${vR}  `, ts).width))
+    const nameL = ellipsize(ctx, it.name, ts, Math.max(10, leftW / 1.04 - ctx.measureText(`  ${vL}`, ts).width))
+    const nameR = ellipsize(ctx, it.name, ts, Math.max(10, rightW / 1.04 - ctx.measureText(`${vR}  `, ts).width))
     const lt = `${nameL}  ${vL}`
     const rt = `${vR}  ${nameR}`
     nodes.push(...textAligned(ctx, lt, ink, { x: 0, y: ysL[i], width: leftW }, 'end', `label[${i}].start`).nodes.slice(0, 1))

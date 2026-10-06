@@ -32,7 +32,7 @@ export const tlsDRadar: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [680, 500], min: [260, 200] },
+  size: { preferred: [680, 500], min: [350, 270] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

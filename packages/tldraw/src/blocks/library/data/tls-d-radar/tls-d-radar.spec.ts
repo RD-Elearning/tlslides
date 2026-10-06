@@ -5,6 +5,7 @@
 import { tlsDRadar } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, seriesOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 680, height: 500 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDRadar, props, size)
@@ -92,5 +93,11 @@ describe('tls.d.radar', () => {
   it('capacity: more than 3 series or 8 axes fails', () => {
     const r = tlsDRadar.capacity!({ axes, series: seriesOf(4, 4) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDRadar)
   })
 })

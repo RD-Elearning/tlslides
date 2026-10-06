@@ -14,7 +14,8 @@ import { WATERFALL_MAX_STEPS } from './schema'
 import { bandScale } from '../_engine/multi-series'
 import {
   asArr, capacityOf, categoryLabels, chartColors, emptyState, enumOf, fmtNum, fmtSigned, lineH, mutedStyle, niceAxis, numOrNull, root, solidRect, str,
-  textAligned, TEXT_SLACK, valueAxisLeft,
+  textAligned, realWidth, valueAxisLeft,
+  withRealWidths,
 } from '../_chart/kit'
 
 interface Step {
@@ -45,7 +46,9 @@ function readSteps(props: WaterfallProps): Step[] {
   return out
 }
 
-export function layout(props: WaterfallProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: WaterfallProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const steps = readSteps(props)
@@ -77,7 +80,7 @@ export function layout(props: WaterfallProps, ctx: LayoutContext): LayoutNode {
 
   const colorOf = (s: Step) =>
     colorBy === 'single' || s.kind === 'total' ? c.accent : ctx.resolveColor(s.value >= 0 ? 'positive' : 'negative').color
-  const labelsFit = steps.every((s) => ctx.measureText(s.kind === 'total' ? fmtNum(s.value, props.format) : fmtSigned(s.value, props.format), ls).width * TEXT_SLACK <= bands.bandwidth * 1.1)
+  const labelsFit = steps.every((s) => realWidth(s.kind === 'total' ? fmtNum(s.value, props.format) : fmtSigned(s.value, props.format), ls) * 1.04 <= bands.bandwidth * 1.1)
 
   steps.forEach((s, i) => {
     const yA = ax.y(s.from)
@@ -88,7 +91,7 @@ export function layout(props: WaterfallProps, ctx: LayoutContext): LayoutNode {
     nodes.push(solidRect({ x, y: top, width: bands.bandwidth, height: h }, colorOf(s), `bar[${i}]`, 2))
     if (showValues && labelsFit) {
       const txt = s.kind === 'total' ? fmtNum(s.value, props.format) : fmtSigned(s.value, props.format)
-      const tw = ctx.measureText(txt, ls).width * 1.12
+      const tw = Math.ceil(realWidth(txt, ls) * 1.04) + 2
       nodes.push(...textAligned(ctx, txt, { ...ls, color: c.text }, { x: centers[i] - tw / 2, y: top - lh - 2, width: tw }, 'center', `value[${i}]`).nodes)
     }
     if (props.connectors !== false && i < N - 1) {
