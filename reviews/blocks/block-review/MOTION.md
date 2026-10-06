@@ -37,6 +37,109 @@ at a time, and each takes a batch of related groups.
 Each agent records a row per block in its group file under a new heading `## Motion pass`
 (columns: block, J1–J8, fix commit, notes) and reports back. The controller updates §3 and §4.
 
+## Motion engine (M0–M1)
+
+Agent A, 2026-10-06. Commits: `6c496b90` (RVM0, probe), `480def10` (RVM1, engine).
+
+### Probe (M0)
+
+`tools/visual/scenarios/motion-probe.js`, used by the `motion` pass of `block-review.js` (not in
+the default passes). It builds its own deck (`review-<category>-motion`: a blank lead slide, then one
+slide per block per style; element blocks sit second after a title, which is the S8 case), opens
+each slide with ArrowRight and samples every `[data-part]`, block wrapper and driver-touched element
+on every animation frame until the chain is done + 1.2 s and 300 ms quiet. Per element: effective
+opacity (own × ancestors), translate, scale, visible clip fraction (own × ancestors), dash progress;
+plus the inline-style / attribute / WAAPI property names that change (J4). Verdicts J1/J2/J3/J4/J5/
+J7/J8 with the worst offender go to `report.json` → `blocks[type].motion[style]`, one summary line
+per block goes to stderr and `report.motionSummary`. A motion-only run merges into an existing
+`report.json`.
+
+```bash
+L=/tmp/tlslides-dist.lock
+flock -s $L env REVIEW_PASSES=motion REVIEW_CATEGORY=chart REVIEW_MOTION_STYLES=static,subtle,expressive,reduced \
+  node tools/visual/shoot.js block-review --width=1600 --height=900 2>&1 | grep -E '^tls\.|FAILED'
+#   REVIEW_BLOCKS=tls.d.bar,… REVIEW_CATEGORY=   one list instead of a category
+#   `reduced` = expressive with prefers-reduced-motion emulated
+#   put `static` FIRST: J3 then compares each block's end frame with its static render
+#   (authored opacities such as a radar area at 0.28 are not "stuck"); without it J3 expects 1/identity/no clip
+#   REVIEW_MOTION_PNG=1 three mid PNGs (150/400/800 ms; costs frame timing) · REVIEW_MOTION_DUMP=1 raw samples
+```
+
+Cost: ~2 s per block per style, one headless Chrome, no video. After a dev-server restart the first
+run can fail once (the API store is lost when `/view` compiles; S27): run it again.
+
+**Thresholds as implemented (use these in M2–M5).** J1: per frame, opacity > 0.35, translate > 40 px,
+clip or dash progress > 0.35, scale > 0.35; a change that lasts 1–2 frames is a snap, a longer run
+counts only if it lasts > 100 ms and the frame gap is ≤ 50 ms; a jump hidden on both frames is
+ignored. J2: visible = effective opacity > 0.05, clip > 1 %, scale > 0.02; flagged on visible →
+hidden → visible. J3: end frame equals the static render within 0.01 (else opacity ≥ 0.99, |translate|
+< 0.5 px, scale 1 ± 0.005, no clip). J4: no `width/height/top/left/right/bottom/font-size/margin/
+padding/inset/line-height/letter-spacing` style changes and no SVG geometry attribute changes. J5:
+each moving element 150–900 ms (± one frame), mid-time progress ≥ 0.55 (out ease), same-family
+stagger ≤ 120 ms (+ 20 ms slack), block chain ≤ 2.5 s (slide scope 3.5 s). J7: `static`/`reduced`
+nothing moves; `subtle` no scale/clip/draw and translate ≤ 12 px. J8: frame gaps > 100 ms while
+moving — a finding only when it repeats on a second run.
+
+### Engine faults fixed (M1)
+
+| Fault | Root cause | Fix |
+|---|---|---|
+| S16 clip snap | GSAP tweens a clip-path string by pairing its numbers in order and keeping the end's units: `inset(0 100% 0 0)` → `inset(0)` has one number, and even → `inset(0 0 0 0)` mixes `%` with unitless zeros; the element sat still and snapped at an end (probe: `tls.x.rule` clip 0 → 1 in one frame at ~880 ms) | `motion/clip-path.ts` pairs both insets as four terms of one unit; the GSAP driver applies it to every tween and `set`; presets, block-level wipe states, PresentationRuntime and the hero / kinetic-title literals use four `%` terms; a spec scans every `'inset(…)'` literal in `blocks/` and `components/` |
+| S14 grow / draw | `grow-*` were `scale 0→1` (both axes) about the element centre; `draw-path`/`sweep` tweened `stroke-dashoffset` 100 → 0 on elements with no dash array (nothing drawn) | `grow-bars-y` / `grow-segments` = `scaleY` from `50% 100%`, `grow-bars-x` = `scaleX` from `0% 50%` (new `scaleX`/`scaleY` keyframes under `scale`, `MotionOptions.origin`). `MotionRecipe.partMotion` (optional) gives a part its own preset and origin; it plays only with the recipe's showy preset (`expressive ?? preset`), never under a spec `fade` (subtle). Draw presets measure each stroked path (dash array = length, offset L → 0); a filled or non-SVG part gets an equal-term left-to-right clip wipe instead |
+| S8 flash | `driver.set()` did not stop tweens still running (or delayed) on the target, so hiding a block whose entrance was playing — Home on the first slide (what the old harness did), any build rewind — lost to that entrance: visible ~400–530 ms, then hidden, then re-entered. Separately the build sync was a passive effect, so a freshly mounted first slide painted every block final for one frame | GSAP `set` kills older tweens of the same properties (`killTweensOf`, `overwrite: 'auto'` fallback); WAAPI `set` cancels its own forwards-filled animations on those properties; DeckViewer's build sync is a layout effect (pre-paint). Probe: Home-rewind and first-mount cases J2 clean; 2-block expressive slides clean |
+| S26 hidden container | the viewer hides every `[data-part]` before `animate()`; nothing revealed a part `animate()` did not tween | `motion/animate-guard.ts`: DeckViewer hides through it and, on the block's `onComplete` (or the timeout), fades in (250 ms) any part still at the hidden opacity. `smoothness.spec.ts` runs all 8 html blocks' `animate()` (gsap and driver paths) and asserts each reveals every part by itself — all pass today |
+| J7 reduced motion | under `prefers-reduced-motion` blocks were hidden at slide entry and shown one frame later by the zero-delay chain (probe: every block J1/J7 ✗) | DeckViewer shows a run of auto steps at once (`autoRunEnd`); `subtle` was already calm (opacity only) and part presets from `partMotion` never apply under it |
+
+DeckViewer.tsx: only the M1 hunks were committed; the user's uncommitted edits stay in the tree.
+
+**Probe before → after** (`static,subtle,expressive,reduced`): chart (16 blocks) — before 16 ×
+`reduced` J1/J5/J7 ✗, radar/bubble J3 ✗ (probe artefact, fixed in M0 by the static reference),
+scatter/bubble expressive J5 ✗; after only scatter/bubble expressive J5 (`root` fades 100 ms: the
+block's own timing, M3). heading (3 blocks) — before 3 × `reduced` ✗; after all ✓. `tls.x.rule`
+expressive (wipe-x): before J1 ✗, after ✓. Spot check with explicit presets: `tls.d.bar` +
+`grow-bars-y` grows from the baseline, `tls.d.line` + `draw-path` draws from its start, both J1–J3 ✓.
+
+### For M3: blocks switched away from grow/draw/wipe presets (move back where it now looks right)
+
+| Block | Was | Now | Commit |
+|---|---|---|---|
+| tls.d.progress-bar | grow-bars-x | sweep-nodes | `3cf6d7f8` |
+| tls.d.bullet-chart | grow-bars-x | sweep-nodes | `3cf6d7f8` |
+| tls.d.progress-ring | grow-segments | sweep-nodes | `3cf6d7f8` |
+| tls.d.gauge | draw-path | sweep-nodes | `3cf6d7f8` |
+| tls.d.bar | grow-bars-y | stagger-children | `0ff35d76` |
+| tls.d.grouped-bar | grow-bars-y | stagger-children | `1698ee42` |
+| tls.d.stacked-bar | grow-segments | stagger-children | `1698ee42` |
+| tls.d.pie | grow-segments | sweep-nodes | `0ff35d76` |
+| tls.d.line | draw-path | sweep-nodes | `1698ee42` |
+| tls.d.area | wipe-x | sweep-nodes | `1698ee42` |
+| tls.d.sparkline | draw-path | sweep-nodes | `032bd592` |
+| tls.d.radar | draw-path | sweep-nodes | `bbe26557` |
+| tls.d.slope | draw-path | sweep-nodes | `bbe26557` |
+
+Use `partMotion` so only the bars/lines grow or draw while labels, axes and legends keep a fade
+(a block preset applies to every listed part). For M4: `tls.g.chevrons` left `wipe-x` (RV07), and
+`library/diagram/diagram-test.ts` still lists the grow/draw/wipe presets as `BROKEN`.
+
+### Still open
+
+- **`sweep` on filled arcs** (donut, pie, ring) falls back to a left-to-right wipe, not a sweep from
+  12 o'clock (J6). A radial reveal needs a per-slice approach (stroke-based ring, or `sweep-nodes`
+  in angular order); M3 decides per block.
+- **Negative bars** grow from the bottom edge too (origin is per part, not per value); a waterfall or
+  a bar below zero needs `partMotion` origin `50% 0%` on those parts.
+- **`grow-segments`** is vertical; a horizontal stack should give its segments `grow-bars-x`.
+- **count-up under GSAP**: the GSAP driver ignores `MotionOptions.onUpdate`, so `count-up` never
+  counts in the viewer (only fades/pops). Engine fix needed (map `onUpdate` to the tween's
+  progress) — affects G04/G10 counters.
+- The editor/Present path (`render-dom.tsx` html host) also hides parts before `animate()` but has no
+  untouched-part guard; harmless while all 8 html blocks pass the spec.
+- Failing specs not caused by M1: `timeline.spec` (hero-number recipe) and `motion-style.spec`
+  (bar recipe) assert recipes G04/G05 changed; `DeckViewer.spec › retreating into an auto build
+  step…` fails with the user's uncommitted retreat change (also without M1).
+- `3cf6d7f8` (RV04) deleted `library/data/tls-d-bar/layout-horizontal.ts` (179 lines) in a commit about
+  four other blocks; tsc is clean, but worth a look.
+
 ## 3. Progress
 
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
