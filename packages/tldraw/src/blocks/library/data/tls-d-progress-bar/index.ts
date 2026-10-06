@@ -35,7 +35,7 @@ export const tlsDProgressBar: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [760, 300], min: [240, 90] },
+  size: { preferred: [760, 210], min: [240, 132] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

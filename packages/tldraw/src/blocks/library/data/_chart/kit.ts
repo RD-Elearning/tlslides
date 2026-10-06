@@ -19,6 +19,9 @@ import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import { formatValue } from '../_engine/format-value'
 import { MAX_HUES } from '../_engine/series-color'
+import { realWidth } from './inter-width'
+
+export { realWidth }
 
 export { onColor, readableOn, tintOf }
 
@@ -202,6 +205,25 @@ export function oneLine(
   return { k: 'text', part, box: { x: box.x, y: box.y, width: Math.max(1, box.width), height: lineH(s) }, lines: clipLines(m.lines, 1), style: s }
 }
 
+/**
+ * A context whose `measureText` reports the browser-true width for single-line strings (line
+ * breaking is still the base estimate's). Alignment and "does it fit" decisions read widths.
+ */
+export function withRealWidths(ctx: LayoutContext): LayoutContext {
+  return {
+    ...ctx,
+    measureText: (text, style, maxWidth) => {
+      if (typeof text !== 'string' || text.includes('\n')) return ctx.measureText(text, style, maxWidth)
+      // +2%: the box must never be a hair narrower than the glyphs (the DOM would wrap it).
+      const width = Math.ceil(realWidth(text, style) * 1.02)
+      // A line that fits by the browser-true width never wraps, whatever the flat estimate says.
+      const m = ctx.measureText(text, style, width <= (maxWidth ?? Infinity) ? undefined : maxWidth)
+      if (m.lines.length !== 1) return m
+      return { ...m, width, lines: m.lines.map((l) => ({ ...l, width })) }
+    },
+  }
+}
+
 /** Placed text with start / center / end alignment inside `box`. */
 export function textAligned(
   ctx: LayoutContext,
@@ -211,7 +233,9 @@ export function textAligned(
   align: 'start' | 'center' | 'end',
   part: string
 ): { nodes: LayoutNode[]; height: number; width: number } {
-  const p = placeText(ctx, text, s, box, align, { part, linePart: (i) => (i === 0 ? part : `${part}.${i}`) })
+  // End / centre anchoring depends on the line width: use the browser-true Inter widths so a
+  // right-aligned value ends on the edge instead of overshooting it (RV04).
+  const p = placeText(align === 'start' ? ctx : withRealWidths(ctx), text, s, box, align, { part, linePart: (i) => (i === 0 ? part : `${part}.${i}`) })
   return { nodes: p.nodes, height: p.height, width: Math.max(0, ...p.lines.map((l) => l.width)) }
 }
 

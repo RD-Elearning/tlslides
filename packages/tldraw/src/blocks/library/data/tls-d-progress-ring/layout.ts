@@ -11,7 +11,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { ProgressRingProps } from './schema'
-import { chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, str, style, textAligned, TEXT_SLACK } from '../_chart/kit'
+import { chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, realWidth, str, style, textAligned } from '../_chart/kit'
 
 const THICK = { sm: 0.1, md: 0.16, lg: 0.24 } as const
 const FULL = Math.PI * 2
@@ -86,7 +86,7 @@ export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode
   let vs = style(ctx, 'heading', c.text)
   const inner = Math.max(1, Ri * 2 * 0.82)
   for (let k = 0; k < 8; k++) {
-    if (ctx.measureText(text, vs).width * TEXT_SLACK <= inner && lineH(vs) <= inner * 0.7) break
+    if (realWidth(text, vs) * 1.04 <= inner && lineH(vs) <= inner * 0.7) break
     vs = { ...vs, size: vs.size * 0.85 }
   }
   const v = textAligned(ctx, text, vs, { x: cx - inner / 2, y: cy - lineH(vs) / 2, width: inner }, 'center', 'value')

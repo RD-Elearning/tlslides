@@ -29,7 +29,7 @@ export const tlsDProgressRing: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [360, 420], min: [120, 140] },
+  size: { preferred: [360, 420], min: [200, 240] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

@@ -13,7 +13,7 @@ import type { ProgressBarProps } from './schema'
 import { PROGRESS_MAX_ITEMS } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, clipLines, enumOf, fmtNum, lineH, numOrNull, root, solidRect,
-  str, style, textAligned, TEXT_SLACK,
+  realWidth, str, style, textAligned,
 } from '../_chart/kit'
 
 const THICK = { sm: 10, md: 18, lg: 30 } as const
@@ -46,10 +46,10 @@ function plan(props: ProgressBarProps, ctx: LayoutContext, width: number) {
   const rowGap = ctx.tokens.space.sm
   const showValue = enumOf(props.showValue, ['percent', 'value', 'none'] as const, 'percent')
   const valueText = (r: Row) => (showValue === 'percent' ? `${Math.round(r.pct)}%` : showValue === 'value' ? fmtNum(r.value, props.format) : '')
-  const valueW = showValue === 'none' ? 0 : Math.ceil(Math.max(0, ...rows.map((r) => ctx.measureText(valueText(r), ls).width)) * TEXT_SLACK) + 4
+  const valueW = showValue === 'none' ? 0 : Math.ceil(Math.max(0, ...rows.map((r) => realWidth(valueText(r), ls))) * 1.04) + 4
   const labelW =
     labelPos === 'left'
-      ? Math.min(width * 0.35, Math.ceil(Math.max(0, ...rows.map((r) => ctx.measureText(r.label, ls).width)) * TEXT_SLACK))
+      ? Math.min(width * 0.35, Math.ceil(Math.max(0, ...rows.map((r) => realWidth(r.label, ls))) * 1.04))
       : 0
   const lh = lineH(ls)
   const rowH = labelPos === 'above' ? lh + ctx.tokens.space['2xs'] + thick : Math.max(lh, thick)

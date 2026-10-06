@@ -5,6 +5,7 @@
 import { tlsDProgressBar } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const ctx = (w = 760, h = 300) => makeCtx({ width: w, height: h }, makeRegistry())
 const lay = (props: Record<string, unknown>, w = 760, h = 300) =>
@@ -84,5 +85,20 @@ describe('tls.d.progress-bar', () => {
     expect(r.fits).toBe(false)
     expect(r.remedy[0]).toEqual({ kind: 'reflow', to: "labelPos: 'left'" })
     expect(r.remedy[r.remedy.length - 1]).toEqual({ kind: 'truncate', slot: 'items' })
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, and every label is as wide as its glyphs', () => {
+    assertExampleFits(tlsDProgressBar)
+  })
+
+  it('a right-aligned percentage ends on the track edge, not past it', () => {
+    const tree = lay({ items: [{ label: 'Hiring plan', value: 72 }, { label: 'Budget', value: 100 }] })
+    const track = one(tree, 'row[0].track')
+    for (const i of [0, 1]) {
+      const v = one(tree, `row[${i}].value`)
+      expect(v.x + v.width).toBeLessThanOrEqual(track.x + track.width + 1.5)
+    }
   })
 })

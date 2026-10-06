@@ -5,6 +5,8 @@
 import { tlsDProgressRing } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
+import { assertExampleFits } from '../_chart/chart-test'
+import { realWidth } from '../_chart/inter-width'
 
 const ctx = (w = 360, h = 420) => makeCtx({ width: w, height: h }, makeRegistry())
 const lay = (props: Record<string, unknown>, w = 360, h = 420) =>
@@ -106,5 +108,21 @@ describe('tls.d.progress-ring', () => {
     const hole = (thickness: string) => (leavesOf(lay({ thickness, value: 50 }), 'value')[0].node as any).style.size
     expect(w('sm')).toBe(w('lg'))
     expect(hole('lg')).toBeLessThanOrEqual(hole('sm'))
+  })
+})
+
+describe('RV04 — example fits and is centred (review G04)', () => {
+  it('the example fits size.preferred and size.min with every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDProgressRing)
+  })
+
+  it('the value and the captions are centred on the ring using browser-true widths', () => {
+    const tree = lay({ value: 68, label: 'Course completion', caption: '34 of 50 lessons' })
+    for (const part of ['value', 'label', 'caption']) {
+      const l = leavesOf(tree, part)[0]
+      const n = l.node as any
+      const w = realWidth(n.lines[0].text, n.style)
+      expect(Math.abs(l.x + w / 2 - 180)).toBeLessThanOrEqual(w * 0.03 + 1.5)
+    }
   })
 })
