@@ -12,12 +12,15 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import type { IcebergProps } from './schema'
 import { ABOVE_MAX, BELOW_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, pathNode, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const f = (v: number) => String(Math.round(v * 100) / 100)
 const poly = (pts: Array<[number, number]>) => `M${pts.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`
 const list = (v: unknown, max: number) => asArr(v).map(str).filter((s) => s.trim() !== '').slice(0, max)
 
-export function layout(props: IcebergProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: axis labels and captions are anchored by their width (RV06).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const a = objs([props.above])[0] ?? {}

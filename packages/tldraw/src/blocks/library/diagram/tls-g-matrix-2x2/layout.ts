@@ -14,13 +14,16 @@ import { isShown } from '../../../schema-helpers'
 import type { MatrixProps } from './schema'
 import { MATRIX_MAX_ITEMS } from './schema'
 import { TEXT_SLACK, arrowHead, asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, mutedStyle, numOrNull, objs, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const GAP = 8
 const HL = ['TL', 'TR', 'BL', 'BR'] as const
 
 const hit = (a: Box, b: Box, pad = 2) => a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad
 
-export function layout(props: MatrixProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: MatrixProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: axis labels and captions are anchored by their width (RV06).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const c = chartColors(ctx)

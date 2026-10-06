@@ -18,13 +18,16 @@ import { CROSS_PATH } from '../../text/tls-t-checklist/layout'
 import type { ProsConsProps } from './schema'
 import { PROS_CONS_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, onColor, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const COL_GAP = 40
 const ROW_GAP_MAX = 14
 
 const items = (v: unknown): string[] => asArr(v).map(str).filter((s) => s.trim() !== '').slice(0, PROS_CONS_MAX)
 
-export function layout(props: ProsConsProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: axis labels and captions are anchored by their width (RV06).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const pros = items(props.pros)

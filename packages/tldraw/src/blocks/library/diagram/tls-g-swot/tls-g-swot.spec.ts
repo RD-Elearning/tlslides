@@ -10,6 +10,7 @@ import { makeCtx } from '../../layout/test-helpers'
 import { registerBuiltInBlocks } from '../../index'
 import { BlockRegistry } from '../../../registry'
 import type { BlockSpec } from '../../../types'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 const SZ = { width: 1100, height: 620 }
 const MIN = { width: 640, height: 380 }
@@ -90,4 +91,10 @@ describe('tls.g.swot', () => {
     const { assertParity } = await import('../../../parity-harness')
     await assertParity(tlsGSwot, defaults as any, { width: 960, height: 540 }, undefined, { registry: reg })
   }, 60_000)
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsGSwot)
+  })
 })

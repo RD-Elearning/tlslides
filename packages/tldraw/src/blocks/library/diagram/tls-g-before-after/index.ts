@@ -25,8 +25,8 @@ export const tlsGBeforeAfter: BlockDefinition = {
       id: 'b_before_after',
       type: 'tls.g.before-after',
       props: {
-        before: { label: 'Before', title: 'Manual reports' },
-        after: { label: 'After', title: 'Live dashboard' },
+        before: { label: 'Before', title: 'Manual reports', text: 'Copy and paste, 3 hours a week.' },
+        after: { label: 'After', title: 'Live dashboard', text: 'Always current, shared by link.' },
       },
     },
   },

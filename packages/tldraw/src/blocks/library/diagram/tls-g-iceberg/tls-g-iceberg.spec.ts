@@ -6,6 +6,7 @@ import { tlsGIceberg } from './index'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
 import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 const SZ = { width: 1000, height: 560 }
 const MIN = { width: 560, height: 320 }
@@ -57,5 +58,11 @@ describe('tls.g.iceberg', () => {
     expect(cap(4, 6).fits).toBe(true)
     expect(cap(5, 6).fits).toBe(false)
     expect(cap(4, 7).fits).toBe(false)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsGIceberg)
   })
 })

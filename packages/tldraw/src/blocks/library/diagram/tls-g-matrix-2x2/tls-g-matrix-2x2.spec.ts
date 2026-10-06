@@ -6,6 +6,7 @@ import { tlsGMatrix2x2 } from './index'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
 import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 const SZ = { width: 1100, height: 620 }
 const MIN = { width: 600, height: 380 }
@@ -96,5 +97,11 @@ describe('tls.g.matrix-2x2', () => {
   it('capacity: 13 items fail with a remedy', () => {
     expect(tlsGMatrix2x2.capacity!(base({ items: lattice(13) }) as any, SZ, chartCtx(SZ)).fits).toBe(false)
     expect(tlsGMatrix2x2.capacity!(base({ items: lattice(12) }) as any, SZ, chartCtx(SZ)).fits).toBe(true)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsGMatrix2x2)
   })
 })

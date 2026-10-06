@@ -13,10 +13,13 @@ import type { Box, CapacityReport, LayoutContext, LayoutNode, Size } from '../..
 import { chevronPath } from '../../../layout/diagram'
 import type { BeforeAfterProps } from './schema'
 import { chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, pathNode, placeLines, root, str, style, tintOf } from '../_kit'
+import { withRealWidths } from '../../data/_chart/kit'
 
 const PAD = 24
 
-export function layout(props: BeforeAfterProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: BeforeAfterProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths: axis labels and captions are anchored by their width (RV06).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const b = objs([props.before])[0]

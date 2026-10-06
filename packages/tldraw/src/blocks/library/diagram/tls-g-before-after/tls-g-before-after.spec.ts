@@ -6,6 +6,7 @@ import { tlsGBeforeAfter } from './index'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
 import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 const SZ = { width: 1100, height: 520 }
 const MIN = { width: 560, height: 300 }
@@ -65,5 +66,11 @@ describe('tls.g.before-after', () => {
 
   it('capacity: a 201 character text does not fit', () => {
     expect(tlsGBeforeAfter.capacity!({ before: { title: 'a', text: 'x'.repeat(201) }, after: { title: 'b' } } as any, SZ, chartCtx(SZ)).fits).toBe(false)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsGBeforeAfter)
   })
 })

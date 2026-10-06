@@ -6,6 +6,7 @@ import { tlsGProsCons } from './index'
 import { standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
 import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within } from '../diagram-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 const SZ = { width: 1100, height: 560 }
 const MIN = { width: 560, height: 340 }
@@ -74,5 +75,11 @@ describe('tls.g.pros-cons', () => {
 
   it('capacity: seven points on a side fail with a remedy', () => {
     expect(tlsGProsCons.capacity!({ pros: pts(7), cons: pts(1) } as any, SZ, chartCtx(SZ)).fits).toBe(false)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsGProsCons)
   })
 })
