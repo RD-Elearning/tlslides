@@ -50,7 +50,9 @@ describe('tls.t.statement', () => {
     const rects = leavesOf(tree, 'emphasis')
     expect(rects).toHaveLength(2)
     const order = tree.children.map((n: any) => n.part ?? n.k)
-    expect(order.indexOf('emphasis[0.1]')).toBeLessThan(order.indexOf('text'))
+    // RVM2: the rects sit in one `emphasis` group (a motion part), drawn before (behind) the text
+    expect(order.indexOf('emphasis')).toBeGreaterThanOrEqual(0)
+    expect(order.indexOf('emphasis')).toBeLessThan(order.indexOf('text'))
     // strong runs keep the normal text colour in these modes
     const runs = (leavesOf(tree, 'text')[0].node as any).lines[0].runs
     expect(runs.find((r: any) => r.bold).color).toBeUndefined()

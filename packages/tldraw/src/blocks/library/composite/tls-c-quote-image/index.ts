@@ -214,7 +214,14 @@ const composite = defineCompositeBlock<QuoteImageProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM2: under `expressive` the photo and scrim fade in, then mark, quote, name and role rise in
+  // order (was one `root` part: the full-bleed photo and the text rose 24 px together).
+  motion: {
+    parts: ['image', 'scrim', 'mark', 'quote', 'name', 'role'],
+    preset: 'fade-up',
+    expressive: 'stagger-children',
+    partMotion: { image: { preset: 'fade' }, scrim: { preset: 'fade' } },
+  },
   build: buildQuoteImage,
 })
 

@@ -131,7 +131,10 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
     })
   }
 
-  // Emphasis rects go behind the text, so they are pushed first.
+  // Emphasis rects go behind the text, so they are pushed first. They sit in one `emphasis`
+  // group (RVM2) so the motion recipe can sweep them in: a bare `emphasis[l.r]` leaf matched no
+  // recipe part and showed with the block fade, still, before its words rose in.
+  const marks: LayoutNode[] = []
   if (emphasis !== 'accent' && hasStrong(props.text)) {
     const accent = ctx.resolveColor('accent').color
     const tint = tintOf(ctx.resolveColor('surface').color, accent, 0.28)
@@ -147,7 +150,7 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
           const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
           if (emphasis === 'highlight') {
             const padX = Math.round(size * 0.08)
-            children.push({
+            marks.push({
               k: 'rect',
               part: `emphasis[${li}.${ri}]`,
               box: { x: cursor - padX, y: g.y + size * 0.06, width: sw + padX * 2, height: g.height - size * 0.12 },
@@ -156,7 +159,7 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
             })
           } else {
             const th = Math.max(4, Math.round(size * 0.07))
-            children.push({
+            marks.push({
               k: 'rect',
               part: `emphasis[${li}.${ri}]`,
               box: { x: cursor, y: g.y + g.height - size * 0.12 - th, width: sw, height: th },
@@ -167,6 +170,19 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
         }
         cursor += w
       })
+    })
+  }
+  if (marks.length > 0) {
+    // The group hugs its rects, so a left-to-right wipe sweeps over the marked words only.
+    const x0 = Math.min(...marks.map((m) => m.box.x))
+    const y0 = Math.min(...marks.map((m) => m.box.y))
+    const x1 = Math.max(...marks.map((m) => m.box.x + m.box.width))
+    const y1 = Math.max(...marks.map((m) => m.box.y + m.box.height))
+    children.push({
+      k: 'group',
+      part: 'emphasis',
+      box: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 },
+      children: marks.map((m) => ({ ...m, box: { ...m.box, x: m.box.x - x0, y: m.box.y - y0 } }) as LayoutNode),
     })
   }
 
