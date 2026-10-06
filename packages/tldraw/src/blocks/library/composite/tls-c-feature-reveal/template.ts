@@ -22,13 +22,16 @@ export function template(props: FeatureRevealProps, ctx: HtmlTemplateContext): s
   const cards = items
     .map((m, i) => {
       const b = g.cards[i]
+      // Two decimals (RVM2): the browser re-serialises a long fraction (452.333333px → 452.333px)
+      // the first time the timeline writes this element's inline style.
+      const px = (n: number) => Math.round(n * 100) / 100
       return (
-        `<div data-part="card[${i}]" style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px;` +
-        `box-sizing:border-box;padding:${g.pad}px;border-radius:24px;background:${card};overflow:hidden;` +
+        `<div data-part="card[${i}]" style="position:absolute;left:${px(b.x)}px;top:${px(b.y)}px;width:${px(b.w)}px;height:${px(b.h)}px;` +
+        `box-sizing:border-box;padding:${px(g.pad)}px;border-radius:24px;background:${card};overflow:hidden;` +
         `box-shadow:0 18px 40px -24px rgba(0,0,0,0.35);backface-visibility:hidden;">` +
-        `<div data-part="icon[${i}]" style="width:${g.icon}px;height:${g.icon}px;border-radius:50%;display:flex;align-items:center;justify-content:center;` +
+        `<div data-part="icon[${i}]" style="width:${px(g.icon)}px;height:${px(g.icon)}px;border-radius:50%;display:flex;align-items:center;justify-content:center;` +
         `background:color-mix(in srgb, ${accent} 16%, transparent);">${iconSvg(m.icon ?? '', g.icon * 0.55, accent)}</div>` +
-        `<div data-part="title[${i}]" style="margin-top:${g.pad * 0.6}px;font-size:${titleSize}px;line-height:1.25;font-weight:700;color:${ctx.cssVar('on')};">${ctx.esc(m.title)}</div>` +
+        `<div data-part="title[${i}]" style="margin-top:${px(g.pad * 0.6)}px;font-size:${titleSize}px;line-height:1.25;font-weight:700;color:${ctx.cssVar('on')};">${ctx.esc(m.title)}</div>` +
         (m.text
           ? `<div data-part="text[${i}]" style="margin-top:8px;font-size:${textSize}px;line-height:1.45;color:${ctx.cssVar('text-muted')};">${ctx.esc(m.text)}</div>`
           : '') +

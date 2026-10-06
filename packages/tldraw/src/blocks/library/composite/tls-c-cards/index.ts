@@ -225,7 +225,9 @@ const composite = defineCompositeBlock<CardsProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-grid' },
+  // RVM2: the cards stagger in left to right and each card's lead, title and text follow it (was one
+  // `root` part: the whole row rose as a single unit and `stagger-grid` had nothing to stagger).
+  motion: { parts: ['card[*]', 'lead[*]', 'title[*]', 'text[*]'], preset: 'stagger-grid' },
   build: buildCards,
 })
 

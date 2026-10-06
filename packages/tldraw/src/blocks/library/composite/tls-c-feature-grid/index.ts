@@ -104,6 +104,16 @@ function featureGridAnimate(
   }
   const step = (part: string): number => (part.endsWith('.icon') ? 0 : part.endsWith('.title') ? 0.35 : 0.6)
 
+  // RVM2 (J7): `subtle` is one calm fade of every part, no pop and no rise.
+  if (rt.style === 'subtle') {
+    const all = order.flatMap((key) => cells.get(key) ?? [])
+    const fades = all.map((el) =>
+      rt.driver.play(el, { opacity: [0, 1] }, { duration: rt.timing.durationMs, delay: rt.timing.delayMs, easing: rt.timing.ease, fill: 'forwards' })
+    )
+    Promise.all(fades.map((h) => h.finished)).then(() => rt.onComplete(), () => rt.onComplete())
+    return () => fades.forEach((h) => h.cancel())
+  }
+
   if (rt.gsap && typeof rt.gsap === 'object') {
     const gsap = rt.gsap as {
       timeline(): {
@@ -121,9 +131,11 @@ function featureGridAnimate(
         const icon = part.endsWith('.icon')
         tl.fromTo(
           el,
-          icon ? { opacity: 0, scale: 0.4 } : { opacity: 0, y: 16 },
+          // RVM2: the icon pops from 0.7 over the full step (was 0.4 in 60 % of it: ~0.3 of scale in
+          // the first two frames).
+          icon ? { opacity: 0, scale: 0.7 } : { opacity: 0, y: 16 },
           icon
-            ? { opacity: 1, scale: 1, duration: durationSec * 0.6, ease: 'back.out(1.7)' }
+            ? { opacity: 1, scale: 1, duration: durationSec, ease: 'back.out(1.4)' }
             : { opacity: 1, y: 0, duration: durationSec, ease: 'power3.out' },
           rt.timing.delayMs / 1000 + n * staggerSec + step(part) * durationSec * 0.5,
         )
@@ -149,9 +161,9 @@ function featureGridAnimate(
       handles.push(
         rt.driver.play(
           el,
-          icon ? { opacity: [0, 1], scale: [0.4, 1] } : { opacity: [0, 1], translate: ['0px 16px', '0px 0px'] },
+          icon ? { opacity: [0, 1], scale: [0.7, 1] } : { opacity: [0, 1], translate: ['0px 16px', '0px 0px'] },
           {
-            duration: icon ? rt.timing.durationMs * 0.6 : rt.timing.durationMs,
+            duration: rt.timing.durationMs,
             delay: rt.timing.delayMs + n * rt.timing.staggerMs + step(part) * rt.timing.durationMs * 0.5,
             easing: rt.timing.ease,
             fill: 'forwards',
