@@ -45,6 +45,11 @@ export interface MotionKeyframes {
   opacity?: number[]
   translate?: string[]
   scale?: number[]
+  /** One-axis scale (the CSS `scale` property's x term), e.g. a bar growing from its baseline.
+   *  Allowed under `scale`. */
+  scaleX?: number[]
+  /** One-axis scale (the CSS `scale` property's y term). Allowed under `scale`. */
+  scaleY?: number[]
   clipPath?: string[]
   filter?: string[]
   strokeDashoffset?: string[]
@@ -64,6 +69,9 @@ export interface MotionOptions {
   fill?: FillMode
   /** Delay in ms. */
   delay?: number
+  /** `transform-origin` for a scale keyframe (M1/S14): `'50% 100%'` grows a vertical bar from
+   *  its baseline, `'0% 50%'` a horizontal bar from its start. Not animated; absent = centre. */
+  origin?: string
   /** Optional progress callback, called with a 0→1 value as the animation advances.
    *  Used by count-up textContent tweens — the callback writes the interpolated number
    *  so the tween obeys `cancelAll()` and reduced motion (R5). The driver is not required
@@ -92,6 +100,8 @@ export interface MotionState {
   opacity?: number
   translate?: string
   scale?: number
+  scaleX?: number
+  scaleY?: number
   clipPath?: string
   filter?: string
   strokeDashoffset?: string
@@ -122,7 +132,9 @@ export interface MotionDriver {
   play(target: Element, keyframes: MotionKeyframes, opts: MotionOptions): MotionHandle
 
   /**
-   * Instantly set CSS properties on `target` — no animation.
+   * Instantly set CSS properties on `target` — no animation. A set is final: it stops any
+   * animation this driver is running (or has scheduled) on `target` for the same properties,
+   * so a hide is never undone by an older entrance still in flight (S8).
    */
   set(target: Element, state: MotionState): void
 

@@ -31,6 +31,7 @@
 import type { AnimationEffect } from '~types'
 import type { MotionDriver, MotionKeyframes, MotionState } from './driver'
 import { resolveBlockMotion, resolvePartMotion } from './resolve-motion'
+import type { ResolvedPartMotion } from './resolve-motion'
 import type { BlockSpec, BlockDefinition } from '../types'
 
 // --- Types -------------------------------------------------------------------
@@ -57,6 +58,8 @@ function hiddenStateFromKeyframes(keyframes: MotionKeyframes): MotionState {
   if (keyframes.opacity !== undefined) state.opacity = keyframes.opacity[0]
   if (keyframes.translate !== undefined) state.translate = keyframes.translate[0]
   if (keyframes.scale !== undefined) state.scale = keyframes.scale[0]
+  if (keyframes.scaleX !== undefined) state.scaleX = keyframes.scaleX[0]
+  if (keyframes.scaleY !== undefined) state.scaleY = keyframes.scaleY[0]
   if (keyframes.clipPath !== undefined) state.clipPath = keyframes.clipPath[0]
   if (keyframes.filter !== undefined) state.filter = keyframes.filter[0]
   if (keyframes.strokeDashoffset !== undefined) state.strokeDashoffset = keyframes.strokeDashoffset[0]
@@ -68,7 +71,7 @@ function hiddenStateFromKeyframes(keyframes: MotionKeyframes): MotionState {
  */
 function blockVisibleState(effect?: AnimationEffect): MotionState {
   if (effect === 'wipe' as AnimationEffect) {
-    return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0 0 0 0)' }
+    return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0% 0% 0% 0%)' }
   }
   return { opacity: 1, translate: '0px 0px', scale: 1 }
 }
@@ -85,7 +88,8 @@ function blockHiddenState(effect: AnimationEffect): MotionState {
     case 'zoomIn' as AnimationEffect:
       return { opacity: 0, translate: '0px 0px', scale: 0.7 }
     case 'wipe' as AnimationEffect:
-      return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0 100% 0 0)' }
+      // Four explicit `%` terms on both ends (S16): see `clip-path.ts`.
+      return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0% 100% 0% 0%)' }
     case 'fadeIn' as AnimationEffect:
     default:
       return { opacity: 0, translate: '0px 0px', scale: 1 }
@@ -141,6 +145,72 @@ function countTarget(el: HTMLElement): HTMLElement | undefined {
   return /\d/.test(target.textContent ?? '') ? (target as HTMLElement) : undefined
 }
 
+/** One tween a part element plays: on itself, or (a draw-on) on a stroked path inside it. */
+interface PartPlay {
+  target: Element
+  keyframes: MotionKeyframes
+  origin?: string
+}
+
+/** The left-to-right wipe a filled part gets in place of a draw-on (equal four-term insets). */
+const DRAW_FALLBACK_WIPE = ['inset(0% 100% 0% 0%)', 'inset(0% 0% 0% 0%)']
+
+/**
+ * The stroked geometry a draw-on can trace inside `el` (the element itself or its SVG
+ * descendants), each with its length; `undefined` when there is none, or when any of it is
+ * filled (a stroke draw-on would leave the fill popping in) or already dashed (the draw would
+ * replace its dash pattern).
+ */
+function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undefined {
+  const all = [el, ...Array.from(el.querySelectorAll('path, line, polyline, polygon, circle, ellipse'))]
+  const geom = all.filter(
+    (n) => typeof (n as unknown as { getTotalLength?: unknown }).getTotalLength === 'function'
+  ) as SVGElement[]
+  if (geom.length === 0 || typeof getComputedStyle !== 'function') return undefined
+  const out: { el: SVGElement; len: number }[] = []
+  for (const g of geom) {
+    const cs = getComputedStyle(g)
+    const stroked = !!cs.stroke && cs.stroke !== 'none' && parseFloat(cs.strokeWidth || '1') > 0
+    const filled = !!cs.fill && cs.fill !== 'none' && parseFloat(cs.fillOpacity || '1') > 0
+    if (!stroked || filled) return undefined
+    if (cs.strokeDasharray && cs.strokeDasharray !== 'none') return undefined
+    let len = 0
+    try {
+      len = (g as unknown as { getTotalLength(): number }).getTotalLength()
+    } catch {
+      return undefined
+    }
+    if (!(len > 0)) return undefined
+    out.push({ el: g, len })
+  }
+  return out
+}
+
+/**
+ * What one part element plays (M1/S14).
+ *
+ * - A preset with `strokeDashoffset` (draw-path, sweep, the draw step of the chained presets)
+ *   used to tween `100%` → `0%` on an element with no dash array, which draws nothing. Now a
+ *   stroked part is drawn on for real: each path gets `stroke-dasharray: L L` and its
+ *   `stroke-dashoffset` tweens L → 0 (L = its measured length). A filled or non-SVG part is
+ *   wiped in left to right with an equal-term clip instead.
+ * - Every other preset plays on the element itself, scaling about the part's origin.
+ */
+function partPlays(partEl: HTMLElement, pm: ResolvedPartMotion): PartPlay[] {
+  const kf = pm.keyframes
+  if (!kf.strokeDashoffset) return [{ target: partEl, keyframes: kf, origin: pm.origin }]
+  const rest: MotionKeyframes = { ...kf }
+  delete rest.strokeDashoffset
+  const strokes = strokedGeometry(partEl)
+  if (!strokes) return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin: pm.origin }]
+  const plays: PartPlay[] = strokes.map(({ el, len }) => {
+    el.style.strokeDasharray = `${len} ${len}`
+    return { target: el, keyframes: { strokeDashoffset: [String(len), '0'] } }
+  })
+  if (Object.keys(rest).length > 0) plays.push({ target: partEl, keyframes: rest, origin: pm.origin })
+  return plays
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
@@ -186,9 +256,22 @@ export function playBlockReveal(
 
   // 3. Set hidden state on ALL parts synchronously, before the block becomes visible.
   //    Parts are children of `el`, so they're invisible while the block is at opacity: 0.
-  for (const pm of partMotions) {
-    for (const partEl of partElements(el, pm.partName).els) {
-      driver.set(partEl, hiddenStateFromKeyframes(pm.keyframes))
+  const planned = partMotions.map((pm) => {
+    const { els, indexed } = partElements(el, pm.partName)
+    return {
+      pm,
+      indexed,
+      els: els.map((partEl) => ({
+        partEl,
+        // count-up keeps its own textContent tween on the part element (step 6)
+        plays: pm.presetId === 'count-up' && countTarget(partEl) ? [] : partPlays(partEl, pm),
+      })),
+    }
+  })
+  for (const { pm, els } of planned) {
+    for (const { partEl, plays } of els) {
+      if (plays.length === 0) driver.set(partEl, hiddenStateFromKeyframes(pm.keyframes))
+      for (const p of plays) driver.set(p.target, hiddenStateFromKeyframes(p.keyframes))
     }
   }
 
@@ -207,9 +290,8 @@ export function playBlockReveal(
   })
 
   // 6. Play part-level animations with stagger.
-  for (const pm of partMotions) {
-    const { els: partEls, indexed } = partElements(el, pm.partName)
-    partEls.forEach((partEl, elementIndex) => {
+  for (const { pm, els: planEls, indexed } of planned) {
+    planEls.forEach(({ partEl, plays }, elementIndex) => {
       // P7: indexed elements of one part stagger by the preset's step (exact matches keep
       // the part's own delay, as before).
       const delay = pm.delayMs + (indexed ? elementIndex * (pm.staggerMs ?? 0) : 0)
@@ -241,12 +323,15 @@ export function playBlockReveal(
           },
         })
       } else {
-        driver.play(partEl as HTMLElement, pm.keyframes, {
-          duration: pm.durationMs,
-          delay,
-          easing: pm.easing,
-          fill: 'forwards',
-        })
+        for (const p of plays) {
+          driver.play(p.target, p.keyframes, {
+            duration: pm.durationMs,
+            delay,
+            easing: pm.easing,
+            fill: 'forwards',
+            ...(p.origin ? { origin: p.origin } : {}),
+          })
+        }
       }
     })
   }

@@ -39,7 +39,7 @@ export function hiddenState(effect: AnimationEffect): MotionState {
     case AnimationEffect.ZoomIn:
       return { opacity: 0, translate: '0px 0px', scale: 0.7 }
     case AnimationEffect.Wipe:
-      return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0 100% 0 0)' }
+      return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0% 100% 0% 0%)' }
     case AnimationEffect.FadeIn:
     default:
       return { opacity: 0, translate: '0px 0px', scale: 1 }
@@ -50,7 +50,7 @@ export function hiddenState(effect: AnimationEffect): MotionState {
  *  `clipPath` needs resetting to fully-open (only meaningful after a `Wipe`). */
 export function visibleState(effect?: AnimationEffect): MotionState {
   if (effect === AnimationEffect.Wipe) {
-    return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0 0 0 0)' }
+    return { opacity: 1, translate: '0px 0px', scale: 1, clipPath: 'inset(0% 0% 0% 0%)' }
   }
   return { opacity: 1, translate: '0px 0px', scale: 1 }
 }
@@ -69,4 +69,15 @@ export function entranceKeyframes(effect: AnimationEffect): MotionKeyframes {
     kf.clipPath = [from.clipPath, to.clipPath]
   }
   return kf
+}
+
+/**
+ * The build step a run of auto steps ends at: from `step`, every following step that plays by
+ * itself (`auto`) is included. `step` itself when the next step waits for a click. Used under
+ * `prefers-reduced-motion` to show an auto chain at once, like the `static` style (J7).
+ */
+export function autoRunEnd(steps: readonly { auto?: boolean }[], step: number): number {
+  let end = step
+  while (end < steps.length && steps[end].auto) end++
+  return end
 }

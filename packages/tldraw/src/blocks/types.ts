@@ -366,6 +366,13 @@ export interface MotionRecipe {
    *  timeline). Used as the block's duration under `'expressive'` so the next block in the
    *  chain waits for it. Absent = the preset's duration. */
   expressiveMs?: number
+  /** M1 — per-part choreography when the block plays its showy preset (`expressive`, else
+   *  `preset`): a part's own preset (bars `grow-bars-y` while labels fade) and the
+   *  `transform-origin` it scales about (`'50% 100%'` = from the baseline). Ignored when a style
+   *  or spec substitutes another preset, and always under a spec-supplied `fade` (the `subtle`
+   *  style stays a calm fade). A spec's `motion.parts[name].preset` still wins. Absent = every
+   *  part plays the block preset. */
+  partMotion?: Record<string, { preset?: MotionPresetId; origin?: string }>
 }
 
 /**

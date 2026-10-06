@@ -86,8 +86,9 @@ function driverSteps(root: HTMLElement, rt: BlockMotionRuntime): MotionStepList 
   const tail = 350 + words.length * 100
   const rule = root.querySelector('[data-part="rule"]')
   if (rule) {
-    const from = isCentered(root) ? 'inset(0 50% 0 50%)' : 'inset(0 100% 0 0)'
-    steps.push([rule, { opacity: [1, 1], clipPath: [from, 'inset(0 0% 0 0%)'] }, { duration: 800, delay: tail + 400, easing: 'ease-in-out' }])
+    // Four explicit `%` terms on both ends: GSAP pairs the numbers in order (S16).
+    const from = isCentered(root) ? 'inset(0% 50% 0% 50%)' : 'inset(0% 100% 0% 0%)'
+    steps.push([rule, { opacity: [1, 1], clipPath: [from, 'inset(0% 0% 0% 0%)'] }, { duration: 800, delay: tail + 400, easing: 'ease-in-out' }])
   }
   const subtitle = root.querySelector('[data-part="subtitle"]')
   if (subtitle) {

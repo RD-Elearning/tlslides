@@ -210,8 +210,9 @@ function animateGradientSweepGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMo
   const gradientBg = root.querySelector<HTMLElement>('[data-gradient-bg]')
   if (gradientBg) {
     tl.fromTo(gradientBg,
-      { clipPath: 'inset(0 100% 0 0)' },
-      { clipPath: 'inset(0 0% 0 0)', duration: durationSec * 1.5, ease: 'power2.inOut' }
+      // Four explicit `%` terms on both ends: GSAP pairs the numbers in order (S16).
+      { clipPath: 'inset(0% 100% 0% 0%)' },
+      { clipPath: 'inset(0% 0% 0% 0%)', duration: durationSec * 1.5, ease: 'power2.inOut' }
     )
   }
 

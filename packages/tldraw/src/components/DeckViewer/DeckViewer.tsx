@@ -26,8 +26,9 @@ import { registerBuiltInBlocks } from '~blocks/library'
 import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
-import { entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
+import { autoRunEnd, entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
 import { partElements, playBlockReveal } from '~blocks/motion/play-reveal'
+import { hidePartsForAnimate, revealUntouchedParts } from '~blocks/motion/animate-guard'
 import { resolvePartMotion } from '~blocks/motion/resolve-motion'
 
 /**
@@ -89,6 +90,9 @@ export interface DeckViewerProps {
 
 const sharedRegistry = new BlockRegistry()
 registerBuiltInBlocks(sharedRegistry)
+
+/** A layout effect in the browser (runs before paint), a plain effect during SSR. */
+const useIsoLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Pure helpers                                                                     */
@@ -414,7 +418,10 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     revealed: -1,
   })
 
-  React.useEffect(() => {
+  // A layout effect, not a plain one (M1/S8): the hidden state of every un-revealed block must
+  // be in place before the browser paints a new slide, or the first frame shows each block in
+  // its final state and the next one hides it again (a one-frame flash on every first slide).
+  useIsoLayoutEffect(() => {
     if (!page) return
     const prev = prevBuildRef.current
     const pageChanged = prev.pageId !== page.id
@@ -423,9 +430,12 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       cancelAllAnimate()
     }
     const prevRevealed = pageChanged ? -1 : prev.revealed
+    // J7: under prefers-reduced-motion a run of auto steps is shown at once, like `static`,
+    // instead of hiding each block for a frame until the (zero-delay) chain reaches it.
+    const shownStep = reducedMotion ? autoRunEnd(steps, currentBuildStep) : currentBuildStep
 
     steps.forEach((step, index) => {
-      const isRevealed = index < currentBuildStep
+      const isRevealed = index < shownStep
       // isNewlyRevealed: first time appearing. reducedMotion is handled per-block below,
       // not folded into this flag, so that animate() blocks get their onComplete() call.
       const isNewlyRevealed = !pageChanged && index >= prevRevealed && isRevealed
@@ -478,8 +488,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
           // parts, then make the BLOCK wrapper visible, then let animate() own the
           // reveal. The wrapper was hidden when this step was un-revealed and only
           // this branch clears it — without it the whole block stays invisible.
-          const animateParts = hostRoot.querySelectorAll<HTMLElement>('[data-part]')
-          for (let i = 0; i < animateParts.length; i++) animateParts[i].style.opacity = '0'
+          // S26: what was hidden here is revealed on completion if animate() never touched it.
+          const hiddenParts = hidePartsForAnimate(hostRoot)
           if (animation) motionDriver.set(el, visibleState(animation.effect))
 
           const rt: BlockMotionRuntime = {
@@ -499,6 +509,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               if (resolve) {
                 resolve()
                 animateCompletersRef.current.delete(shapeId)
+                revealUntouchedParts(hiddenParts, motionDriver)
               }
               // Clear only this shape's timeout, not every pending one
               const t = animateTimeoutsRef.current.get(shapeId)
@@ -574,7 +585,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       })
     })
 
-    prevBuildRef.current = { pageId: page.id, revealed: currentBuildStep }
+    prevBuildRef.current = { pageId: page.id, revealed: shownStep }
   }, [page, steps, currentBuildStep, reducedMotion, motionDriver, gsap])
 
   // Cancel every in-flight animation on unmount — an abandoned WAAPI animation holding

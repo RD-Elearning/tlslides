@@ -35,6 +35,9 @@ export interface MotionPreset {
   readonly isChained?: boolean
   /** Ordered list of sub-preset IDs to play in sequence. */
   readonly chain?: readonly string[]
+  /** `transform-origin` the preset scales about (M1/S14): a bar grows from its baseline, not
+   *  from its centre. A block recipe can override it per part (`MotionRecipe.partMotion`). */
+  readonly origin?: string
   /** True for looping ambient presets (e.g. ken-burns). */
   readonly isAmbient?: boolean
   /** When true, this preset is hidden from the digest (R7) and the inserter UI.
@@ -107,7 +110,7 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     id: 'wipe-x',
     properties: ['clip-path'],
     keyframes: {
-      clipPath: ['inset(0 100% 0 0)', 'inset(0)'],
+      clipPath: ['inset(0% 100% 0% 0%)', 'inset(0% 0% 0% 0%)'],
     },
     duration: 'medium',
     easing: 'smoothOut',
@@ -118,7 +121,7 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     id: 'wipe-y',
     properties: ['clip-path'],
     keyframes: {
-      clipPath: ['inset(100% 0 0 0)', 'inset(0)'],
+      clipPath: ['inset(100% 0% 0% 0%)', 'inset(0% 0% 0% 0%)'],
     },
     duration: 'medium',
     easing: 'smoothOut',
@@ -140,7 +143,7 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     id: 'reveal-down',
     properties: ['clip-path', 'translate'],
     keyframes: {
-      clipPath: ['inset(0 0 100% 0)', 'inset(0)'],
+      clipPath: ['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'],
       translate: [`0 -${DISTANCE_TOKENS.base}px`, '0 0'],
     },
     duration: 'slow',
@@ -227,43 +230,51 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     easing: 'smoothOut',
   },
 
-  // §5.3 row 16 — per-bar scaleX 0→1 from baseline edge (card-resize)
+  // §5.3 row 16 — per-bar scaleX 0→1 from baseline edge (card-resize). M1/S14: one axis,
+  // from the start edge (it used to scale both axes about the centre).
   'grow-bars-x': {
     id: 'grow-bars-x',
     properties: ['scale'],
     keyframes: {
-      scale: [0, 1],
+      scaleX: [0, 1],
     },
+    origin: '0% 50%',
     duration: 'slow',
     easing: 'smoothOut',
     staggerMs: DURATION_TOKENS.stagger,
   },
 
-  // §5.3 row 17 — per-bar scaleY 0→1 anchored at zero line (card-resize)
+  // §5.3 row 17 — per-bar scaleY 0→1 anchored at zero line (card-resize). M1/S14: one axis,
+  // from the baseline (bottom edge).
   'grow-bars-y': {
     id: 'grow-bars-y',
     properties: ['scale'],
     keyframes: {
-      scale: [0, 1],
+      scaleY: [0, 1],
     },
+    origin: '50% 100%',
     duration: 'slow',
     easing: 'smoothOut',
     staggerMs: DURATION_TOKENS.stagger,
   },
 
-  // §5.3 row 18 — stacked segments grow in series order (card-resize)
+  // §5.3 row 18 — stacked segments grow in series order (card-resize). M1/S14: vertical stack
+  // from the baseline; a horizontal stack uses `grow-bars-x` per part (`MotionRecipe.partMotion`).
   'grow-segments': {
     id: 'grow-segments',
     properties: ['scale'],
     keyframes: {
-      scale: [0, 1],
+      scaleY: [0, 1],
     },
+    origin: '50% 100%',
     duration: 'slow',
     easing: 'smoothOut',
     staggerMs: DURATION_TOKENS.stagger,
   },
 
-  // §5.3 row 19 — stroke-dashoffset length→0 (success-check)
+  // §5.3 row 19 — stroke-dashoffset length→0 (success-check). The `%` values are a marker:
+  // `playBlockReveal` measures each stroked path and draws it on with its real length, and
+  // wipes a filled part in with an equal-term clip instead (M1/S14).
   'draw-path': {
     id: 'draw-path',
     properties: ['stroke-dashoffset'],

@@ -26,6 +26,9 @@ const KEYFRAME_MAP: Record<string, string> = {
   opacity: 'opacity',
   translate: 'translate',
   scale: 'scale',
+  // One-axis scales are written into the CSS `scale` property ("x y"), see `axisScale`.
+  scaleX: 'scale',
+  scaleY: 'scale',
   clipPath: 'clip-path',
   filter: 'filter',
   strokeDashoffset: 'stroke-dashoffset',
@@ -98,7 +101,23 @@ function toWAAPIKeyframes(keyframes: MotionKeyframes): Keyframe[] {
     }
   }
 
+  // scaleX / scaleY: CSS has one `scale` property, so combine the axes into "x y".
+  if (keyframes.scaleX || keyframes.scaleY) {
+    const end = (v: number[] | undefined, i: 0 | 1) => (v && v.length ? v[i === 0 ? 0 : v.length - 1] : undefined)
+    for (const [i, kf] of [[0, from], [1, to]] as const) {
+      const base = end(keyframes.scale, i) ?? 1
+      kf.scale = `${end(keyframes.scaleX, i) ?? base} ${end(keyframes.scaleY, i) ?? base}`
+    }
+  }
+
   return [from, to]
+}
+
+/** CSS `scale` for a state carrying one-axis scales. */
+function axisScale(state: MotionState): string | undefined {
+  if (state.scaleX === undefined && state.scaleY === undefined) return undefined
+  const base = state.scale ?? 1
+  return `${state.scaleX ?? base} ${state.scaleY ?? base}`
 }
 
 /**
@@ -141,6 +160,7 @@ export function createWAAPI_driver(): MotionDriver {
     assertAllowedKeyframes(keyframes)
 
     const cleanup = applyWillChange(target, keyframes)
+    if (opts.origin) (target as HTMLElement).style.transformOrigin = opts.origin
     const waaKeyframes = toWAAPIKeyframes(keyframes)
     const duration = opts.duration ?? 300
     const animation = target.animate(waaKeyframes, {
@@ -192,8 +212,22 @@ export function createWAAPI_driver(): MotionDriver {
   function set(target: Element, state: MotionState): void {
     assertAllowedState(state)
     const el = target as HTMLElement
+    // A set is final (S8): a forwards-filled animation on the same property would otherwise
+    // keep overriding the inline style written below.
+    const cssProps = new Set(Object.keys(state).map((k) => KEYFRAME_MAP[k]).filter(Boolean))
+    if (typeof el.getAnimations === 'function') {
+      for (const anim of el.getAnimations()) {
+        if (!active.has(anim)) continue
+        const kfs = anim.effect && 'getKeyframes' in anim.effect ? (anim.effect as KeyframeEffect).getKeyframes() : []
+        const touches = kfs.some((k) => Object.keys(k).some((p) => cssProps.has(p.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()))))
+        if (touches) anim.cancel()
+      }
+    }
+    const axis = axisScale(state)
+    if (axis !== undefined) el.style.setProperty('scale', axis)
     for (const [key, value] of Object.entries(state)) {
       if (value === undefined) continue
+      if (axis !== undefined && (key === 'scale' || key === 'scaleX' || key === 'scaleY')) continue
       const cssProp = KEYFRAME_MAP[key]
       if (!cssProp) continue
 

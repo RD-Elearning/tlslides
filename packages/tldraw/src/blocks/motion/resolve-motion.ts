@@ -180,6 +180,9 @@ export interface ResolvedPartMotion {
   /** P7 — the preset's per-item stagger, applied by `playBlockReveal` between the indexed
    *  elements one recipe part matches (`bar` → `bar/0`, `bar/1`…). */
   staggerMs?: number
+  /** M1 — `transform-origin` for the part's scale (recipe `partMotion` origin, else the
+   *  preset's). Absent = the element centre. */
+  origin?: string
 }
 
 /**
@@ -211,12 +214,19 @@ export function resolvePartMotion(
     blockPreset ? EASING_TOKENS[blockPreset.easing] : 'cubic-bezier(0.22, 1, 0.36, 1)'
   )
   const staggerMs = blockPreset?.staggerMs ?? 0
+  // M1: the recipe's per-part presets belong to the recipe's showy preset (`expressive`, else
+  // `preset`), so they play only when the block plays exactly that — never when a style or a
+  // spec swapped it out. A spec-supplied `fade` (the `subtle` style) always stays a calm fade.
+  const playsRecipe =
+    blockPresetId === (definitionMotion.expressive ?? definitionMotion.preset) &&
+    specMotion?.preset !== 'fade'
 
   return parts.map((partName, index) => {
     const partOverride: PartMotionSpec | undefined = specMotion?.parts?.[partName]
+    const recipePart = playsRecipe ? definitionMotion.partMotion?.[partName] : undefined
 
     // Determine the preset for this part.
-    const partPresetId = partOverride?.preset ?? blockPresetId
+    const partPresetId = partOverride?.preset ?? recipePart?.preset ?? blockPresetId
     const partPreset: MotionPreset | undefined = MOTION_PRESETS[partPresetId]
 
     // Keyframes: use the part-specific preset if one was given; otherwise cascade the
@@ -250,6 +260,7 @@ export function resolvePartMotion(
     const delayMs = baseDelay + (index > 0 ? staggerMs * index : 0)
 
     const isAmbient = partPreset?.isAmbient ?? false
+    const origin = recipePart?.origin ?? partPreset?.origin
 
     return {
       partName,
@@ -260,6 +271,7 @@ export function resolvePartMotion(
       isAmbient,
       presetId: partPresetId,
       ...(staggerMs > 0 ? { staggerMs } : {}),
+      ...(origin ? { origin } : {}),
     }
   })
 }

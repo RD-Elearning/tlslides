@@ -320,7 +320,7 @@ function hiddenStyle(el: HTMLElement, effect: AnimationEffect) {
       el.style.opacity = '1'
       el.style.translate = ''
       el.style.scale = ''
-      el.style.clipPath = 'inset(0 100% 0 0)'
+      el.style.clipPath = 'inset(0% 100% 0% 0%)'
       break
     case AnimationEffect.FadeIn:
     default:
@@ -340,7 +340,7 @@ function settleVisible(el: HTMLElement) {
   el.style.opacity = '1'
   el.style.translate = '0 0'
   el.style.scale = '1'
-  el.style.clipPath = 'inset(0 0 0 0)'
+  el.style.clipPath = 'inset(0% 0% 0% 0%)'
 }
 
 function playIn(el: HTMLElement, animation: ShapeAnimation) {
@@ -357,7 +357,7 @@ function playIn(el: HTMLElement, animation: ShapeAnimation) {
   el.style.opacity = '1'
   el.style.translate = '0 0'
   el.style.scale = '1'
-  el.style.clipPath = 'inset(0 0 0 0)'
+  el.style.clipPath = 'inset(0% 0% 0% 0%)'
 }
 
 function clearOverrides(el: HTMLElement) {

@@ -23,6 +23,7 @@ import type {
   MotionStep,
 } from './driver'
 import { ALLOWED_PROPERTIES } from './driver'
+import { normalizeClipPath, pairClipPath } from './clip-path'
 
 // --- Structural GSAP types (no `import gsap` needed) ---------------------------
 
@@ -33,6 +34,9 @@ export interface GsapVars {
   x?: number
   y?: number
   scale?: number
+  scaleX?: number
+  scaleY?: number
+  transformOrigin?: string
   clipPath?: string
   filter?: string
   strokeDashoffset?: number | string
@@ -57,6 +61,8 @@ export interface GsapTimeline {
 export interface GsapInstance {
   fromTo(target: unknown, from: GsapVars, to: GsapVars): { kill(): void; then(cb?: () => void): Promise<void> }
   timeline(): GsapTimeline
+  /** Real GSAP has it; `set()` uses it to stop older tweens of the same properties (S8). */
+  killTweensOf?(target: unknown, props?: string): void
 }
 
 // --- Helpers ------------------------------------------------------------------
@@ -69,6 +75,8 @@ const GSAP_KEYFRAME_MAP: Record<string, string> = {
   opacity: 'opacity',
   translate: '_translate',   // special: split into x/y
   scale: 'scale',
+  scaleX: 'scaleX',
+  scaleY: 'scaleY',
   clipPath: 'clipPath',
   filter: 'filter',
   strokeDashoffset: 'strokeDashoffset',
@@ -82,6 +90,8 @@ const KEYFRAME_TO_CSS: Record<string, string> = {
   opacity: 'opacity',
   translate: 'translate',
   scale: 'scale',
+  scaleX: 'scale',
+  scaleY: 'scale',
   clipPath: 'clip-path',
   filter: 'filter',
   strokeDashoffset: 'stroke-dashoffset',
@@ -148,7 +158,7 @@ function toGsapVars(keyframes: MotionKeyframes, isFrom: boolean): GsapVars {
       const parsed = parseTranslate(String(val))
       vars.x = parsed.x
       vars.y = parsed.y
-    } else if (key === 'opacity' || key === 'scale') {
+    } else if (key === 'opacity' || key === 'scale' || key === 'scaleX' || key === 'scaleY') {
       vars[key] = typeof val === 'number' ? val : parseFloat(String(val))
     } else if (key === 'clipPath' || key === 'filter') {
       vars[key] = String(val)
@@ -157,6 +167,28 @@ function toGsapVars(keyframes: MotionKeyframes, isFrom: boolean): GsapVars {
     }
   }
   return vars
+}
+
+/**
+ * Both ends of a tween. An `inset()` clip pair is rewritten to four terms with matching units
+ * (S16: GSAP pairs numbers in order and keeps the end's units, so `inset(0 100% 0 0)` →
+ * `inset(0)` never moved and snapped at an end). `origin` becomes `transformOrigin` on both
+ * ends so a scale grows from it (S14).
+ */
+function tweenVars(keyframes: MotionKeyframes, origin?: string): { from: GsapVars; to: GsapVars } {
+  const from = toGsapVars(keyframes, true)
+  const to = toGsapVars(keyframes, false)
+  const cp = keyframes.clipPath
+  if (cp && cp.length > 0) {
+    const [a, b] = pairClipPath(String(cp[0]), String(cp[cp.length - 1]))
+    from.clipPath = a
+    to.clipPath = b
+  }
+  if (origin) {
+    from.transformOrigin = origin
+    to.transformOrigin = origin
+  }
+  return { from, to }
 }
 
 // --- Driver implementation ----------------------------------------------------
@@ -196,8 +228,7 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
   ): MotionHandle {
     assertAllowedKeyframes(keyframes)
 
-    const fromVars = toGsapVars(keyframes, true)
-    const toVars = toGsapVars(keyframes, false)
+    const { from: fromVars, to: toVars } = tweenVars(keyframes, opts.origin)
 
     // Add GSAP timing: convert ms → seconds
     toVars.duration = (opts.duration ?? 300) / 1000
@@ -237,16 +268,27 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
         const parsed = parseTranslate(String(value))
         vars.x = parsed.x
         vars.y = parsed.y
-      } else if (key === 'opacity' || key === 'scale') {
+      } else if (key === 'opacity' || key === 'scale' || key === 'scaleX' || key === 'scaleY') {
         vars[key] = typeof value === 'number' ? value : parseFloat(String(value))
-      } else if (key === 'clipPath' || key === 'filter') {
-        vars[key] = String(value)
+      } else if (key === 'clipPath') {
+        vars.clipPath = normalizeClipPath(String(value))
+      } else if (key === 'filter') {
+        vars.filter = String(value)
       } else if (key === 'strokeDashoffset') {
         vars.strokeDashoffset = typeof value === 'number' ? value : parseFloat(String(value))
       }
     }
-    // Set immediately (duration 0)
-    gsap.fromTo(target, {}, { ...vars, duration: 0 })
+    // A set is final (S8): stop every older tween — running or still in its delay — that
+    // animates one of these properties on this target. Without it, hiding a block whose
+    // entrance was still playing (rewinding a build, Home on the first slide) lost to that
+    // entrance: the block stayed visible, then vanished and entered again.
+    const props = Object.keys(vars)
+    if (props.includes('scale')) props.push('scaleX', 'scaleY')
+    if (props.length > 0 && typeof gsap.killTweensOf === 'function') {
+      gsap.killTweensOf(target, props.join(','))
+    }
+    // Set immediately (duration 0); `overwrite: 'auto'` covers a host GSAP without killTweensOf.
+    gsap.fromTo(target, {}, { ...vars, duration: 0, overwrite: 'auto' })
   }
 
   function timeline(steps: MotionStep[]): MotionHandle {
@@ -261,8 +303,7 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
     active.add(tl)
 
     for (const step of steps) {
-      const fromVars = toGsapVars(step.keyframes, true)
-      const toVars = toGsapVars(step.keyframes, false)
+      const { from: fromVars, to: toVars } = tweenVars(step.keyframes, step.options?.origin)
       toVars.duration = (step.options?.duration ?? 300) / 1000
       toVars.delay = (step.options?.delay ?? 0) / 1000
       toVars.ease = cssEaseToGsap(step.options?.easing ?? 'ease-out')

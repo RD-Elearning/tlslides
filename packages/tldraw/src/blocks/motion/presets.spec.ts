@@ -115,7 +115,8 @@ describe('preset properties', () => {
         // MotionKeyframes uses camelCase (clipPath, strokeDashoffset);
         // ALLOWED_PROPERTIES uses kebab-case (clip-path, stroke-dashoffset).
         // Both forms should be accounted for.
-        const kebab = key.replace(/([A-Z])/g, '-$1').toLowerCase()
+        // scaleX / scaleY (M1: one-axis bar grows) are written into the CSS `scale` property.
+        const kebab = /^scale[XY]$/.test(key) ? 'scale' : key.replace(/([A-Z])/g, '-$1').toLowerCase()
         expect(allowed.has(key as any) || allowed.has(kebab as any)).toBe(true)
       }
     }

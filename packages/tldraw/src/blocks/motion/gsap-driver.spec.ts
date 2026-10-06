@@ -120,7 +120,9 @@ describe('createGsapDriver', () => {
     expect(call.to).toMatchObject({ scale: 1 })
   })
 
-  it('play() maps clipPath as a string', () => {
+  it('play() maps clipPath as a string, with both insets written as four terms of one unit', () => {
+    // M1/S16 (intended change): GSAP pairs numbers in order and keeps the end's units, so the
+    // raw pair 'inset(0 100% 0 0)' → 'inset(0 0 0 0)' never interpolated and snapped at the end.
     const target = document.createElement('div')
     driver.play(
       target,
@@ -129,8 +131,8 @@ describe('createGsapDriver', () => {
     )
 
     const call = stub.fromToCalls[0]
-    expect(call.from).toMatchObject({ clipPath: 'inset(0 100% 0 0)' })
-    expect(call.to).toMatchObject({ clipPath: 'inset(0 0 0 0)' })
+    expect(call.from).toMatchObject({ clipPath: 'inset(0% 100% 0% 0%)' })
+    expect(call.to).toMatchObject({ clipPath: 'inset(0% 0% 0% 0%)' })
   })
 
   it('play() rejects forbidden keyframe properties', () => {

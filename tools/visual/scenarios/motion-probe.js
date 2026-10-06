@@ -324,6 +324,9 @@ function verdicts(rec, opts) {
         const a = s[i - 1].v
         const b = s[i].v
         const dt = s[i].t - s[i - 1].t
+        // a jump nobody can see (hidden on both frames, e.g. a from-state set under a
+        // still-transparent wrapper) is not a snap
+        if (!visible(a) && !visible(b)) continue
         const jumps = [
           ['opacity', Math.abs(b[CH.op] - a[CH.op]), 0.35],
           ['translate', Math.hypot(b[CH.tx] - a[CH.tx], b[CH.ty] - a[CH.ty]), 40],
