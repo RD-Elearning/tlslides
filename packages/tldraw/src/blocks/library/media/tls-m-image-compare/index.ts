@@ -25,8 +25,8 @@ export const tlsMImageCompare: BlockDefinition = {
       id: 'b_image_compare',
       type: 'tls.m.image-compare',
       props: {
-        before: { image: 'asset-old', alt: 'Old dashboard', label: 'Before' },
-        after: { image: 'asset-new', alt: 'New dashboard', label: 'After' },
+        before: { image: '/demo/before.svg', alt: 'Old dashboard', label: 'Before' },
+        after: { image: '/demo/after.svg', alt: 'New dashboard', label: 'After' },
         mode: 'split',
       },
     },

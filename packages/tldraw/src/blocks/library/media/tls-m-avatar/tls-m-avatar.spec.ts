@@ -5,7 +5,7 @@
 import { tlsMAvatar } from './index'
 import { standardBlockSuite, absoluteLeaves, leavesOf } from '../../text/standard-suite'
 import { ctxNoAssets, ctxWithAssets } from '../media-test'
-import { initialsOf } from '../_kit'
+import { initialsOf, tintOf } from '../_kit'
 
 const lay = (props: Record<string, unknown>, w = 420, h = 240, assets = false) =>
   tlsMAvatar.layout({ ...(tlsMAvatar.defaults as any), ...props } as any, (assets ? ctxWithAssets : ctxNoAssets)(w, h))
@@ -41,11 +41,13 @@ describe('tls.m.avatar', () => {
     })
   })
 
-  it('no image: a surfaceAlt disc with initials centred in it', () => {
+  it('no image: a disc tinted from surfaceAlt toward the accent (visible on a surfaceAlt card) with initials centred in it', () => {
     const c = ctxNoAssets(420, 240)
     const tree = lay({ name: 'Đặng Ánh', image: '' })
     const disc = leavesOf(tree, 'photo').find((l) => l.k === 'rect')!
-    expect((disc.node as any).fill.color).toBe(c.resolveColor('surfaceAlt').color)
+    // RV09: the disc is surfaceAlt mixed 22 % toward the accent, so it never vanishes on a card that is itself surfaceAlt
+    expect((disc.node as any).fill.color).not.toBe(c.resolveColor('surfaceAlt').color)
+    expect((disc.node as any).fill.color).toBe(tintOf(c.resolveColor('surfaceAlt').color, c.resolveColor('accent').color, 0.22))
     expect((disc.node as any).radius).toBe(disc.width / 2)
     expect(textOf(tree, 'photo.initials')).toBe('ĐÁ')
     const t = leavesOf(tree, 'photo.initials')[0]

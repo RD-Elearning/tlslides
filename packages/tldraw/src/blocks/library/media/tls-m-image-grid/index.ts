@@ -26,9 +26,9 @@ export const tlsMImageGrid: BlockDefinition = {
       type: 'tls.m.image-grid',
       props: {
         images: [
-          { image: 'asset-lab', alt: 'Students at lab benches', caption: 'Lab session' },
-          { image: 'asset-field', alt: 'Field trip group photo' },
-          { image: 'asset-demo', alt: 'Project demo on stage' },
+          { image: '/demo/photo-1.svg', alt: 'Students at lab benches', caption: 'Lab session' },
+          { image: '/demo/photo-2.svg', alt: 'Field trip group photo' },
+          { image: '/demo/photo-3.svg', alt: 'Project demo on stage' },
         ],
         pattern: 'feature-left',
       },

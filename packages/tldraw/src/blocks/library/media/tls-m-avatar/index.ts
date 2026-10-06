@@ -24,12 +24,12 @@ export const tlsMAvatar: BlockDefinition = {
     example: {
       id: 'b_avatar',
       type: 'tls.m.avatar',
-      props: { image: 'asset-speaker', name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', size: 'lg', ring: true },
+      props: { image: '/demo/portrait-1.svg', name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', size: 'lg', ring: true },
     },
   },
   schema,
   defaults,
-  size: { preferred: [420, 240], min: [100, 80] },
+  size: { preferred: [420, 320], min: [240, 200] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

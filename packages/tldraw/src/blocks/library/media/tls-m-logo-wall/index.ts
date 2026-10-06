@@ -27,9 +27,12 @@ export const tlsMLogoWall: BlockDefinition = {
       props: {
         heading: 'Trusted by',
         logos: [
-          { image: 'asset-a', alt: 'Northwind', ratio: 4 },
-          { image: 'asset-b', alt: 'Globex', ratio: 1 },
-          { image: 'asset-c', alt: 'Initech', ratio: 3 },
+          { image: '/demo/logo-1.svg', alt: 'Northwind', ratio: 4 },
+          { image: '/demo/logo-2.svg', alt: 'Globex', ratio: 1 },
+          { image: '/demo/logo-3.svg', alt: 'Initech', ratio: 3 },
+          { image: '/demo/logo-4.svg', alt: 'Umbrella', ratio: 2 },
+          { image: '/demo/logo-5.svg', alt: 'Hooli', ratio: 1.5 },
+          { image: '/demo/logo-6.svg', alt: 'Stark', ratio: 3 },
         ],
         uniform: 'area',
       },

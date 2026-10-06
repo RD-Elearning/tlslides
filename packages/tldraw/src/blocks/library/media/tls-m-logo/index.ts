@@ -24,7 +24,7 @@ export const tlsMLogo: BlockDefinition = {
     example: {
       id: 'b_logo',
       type: 'tls.m.logo',
-      props: { image: 'asset-acme', alt: 'Acme Corp', ratio: 3, maxHeight: 'lg', plate: 'alt' },
+      props: { image: '/demo/logo-1.svg', alt: 'Acme Corp', ratio: 4, maxHeight: 'lg', plate: 'alt' },
     },
   },
   schema,

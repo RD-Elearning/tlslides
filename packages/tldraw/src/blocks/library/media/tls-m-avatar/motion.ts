@@ -5,6 +5,6 @@
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  parts: ['photo', 'name', 'role'],
+  parts: ['photo.ring', 'photo.gap', 'photo', 'photo.initials', 'name', 'role'],
   preset: 'fade-up',
 }

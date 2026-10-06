@@ -29,7 +29,7 @@ export const tlsMImage: BlockDefinition = {
     example: {
       id: 'b_image',
       type: 'tls.m.image',
-      props: { src: 'asset-hero-photo', alt: 'Team meeting in conference room', fit: 'cover', caption: 'Team offsite, Q3 2026' },
+      props: { src: '/demo/photo-1.svg', alt: 'Team meeting in conference room', fit: 'cover', caption: 'Team offsite, Q3 2026' },
     },
   },
   schema,

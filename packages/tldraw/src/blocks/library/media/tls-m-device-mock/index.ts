@@ -24,7 +24,7 @@ export const tlsMDeviceMock: BlockDefinition = {
     example: {
       id: 'b_device_mock',
       type: 'tls.m.device-mock',
-      props: { image: 'asset-dashboard', alt: 'Analytics dashboard', url: 'app.example.com', device: 'browser' },
+      props: { image: '/demo/photo-4.svg', alt: 'Analytics dashboard', url: 'app.example.com', device: 'browser' },
     },
   },
   schema,

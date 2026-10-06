@@ -3,7 +3,7 @@
  *
  * Rules baked in: an image that cannot be resolved is still emitted as an `image` node (without a
  * `url`), so both renderers draw their dashed placeholder with the alt text, never a broken box;
- * avatars degrade to initials on a `surfaceAlt` disc; every colour is a role or a mix of roles.
+ * avatars degrade to initials on a disc tinted from `surfaceAlt` toward the accent; every colour is a role or a mix of roles.
  * The `image` node has no clip path, filter or blend, so shapes are limited to `radius`
  * (a circle is `radius = size / 2`).
  *
@@ -93,7 +93,7 @@ export interface AvatarOpts {
 
 /**
  * One avatar: optional accent ring, then the photo, or (no image, or an image that cannot be
- * resolved) initials centred on a `surfaceAlt` disc.
+ * resolved) initials centred on a tinted disc.
  */
 export function avatarLeaves(ctx: LayoutContext, o: AvatarOpts): LayoutNode[] {
   const size = Math.max(1, side(o.size))
@@ -138,11 +138,15 @@ export function avatarLeaves(ctx: LayoutContext, o: AvatarOpts): LayoutNode[] {
     out.push(imageLeaf(ctx, o.src, o.name, box, { part: o.part, radius }))
     return out
   }
-  out.push({ k: 'rect', part: o.part, box, fill: { type: 'solid', color: surfaceAlt }, radius })
+  // A disc tinted toward the accent: a plain surfaceAlt disc vanishes on a card that is itself surfaceAlt.
+  const accent = ctx.resolveColor('accent').color
+  const disc = tintOf(surfaceAlt, accent, 0.22)
+  out.push({ k: 'rect', part: o.part, box, fill: { type: 'solid', color: disc }, radius })
   const letters = initialsOf(o.name)
   if (letters) {
-    const base = ctx.resolveText('body', { size: Math.max(10, Math.round(inner.size * 0.38)) })
-    const style = { ...base, color: readableOn(ctx.resolveColor('textMuted').color, surfaceAlt) }
+    // overlapped avatars (`edge`) keep their letters clear of the next disc: smaller initials
+    const base = ctx.resolveText('body', { size: Math.max(10, Math.round(inner.size * (o.edge ? 0.3 : 0.38))) })
+    const style = { ...base, color: readableOn(accent, disc) }
     const p = placeText(ctx, letters, style, { x: inner.x, y: inner.y, width: inner.size }, 'center', { part: `${o.part}.initials` })
     const dy = Math.max(0, (inner.size - lineH(style)) / 2)
     out.push(...p.nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode))

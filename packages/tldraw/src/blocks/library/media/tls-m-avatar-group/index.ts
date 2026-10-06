@@ -25,7 +25,7 @@ export const tlsMAvatarGroup: BlockDefinition = {
       id: 'b_avatar_group',
       type: 'tls.m.avatar-group',
       props: {
-        people: [{ image: 'asset-p1', name: 'Linh Tran' }, { name: 'Minh Anh' }, { name: 'Bao Chau' }, { name: 'Ngoc Han' }],
+        people: [{ image: '/demo/portrait-2.svg', name: 'Linh Tran' }, { image: '/demo/portrait-3.svg', name: 'Minh Anh' }, { name: 'Bao Chau' }, { name: 'Ngoc Han' }],
         max: 3,
         caption: '4 contributors',
       },
