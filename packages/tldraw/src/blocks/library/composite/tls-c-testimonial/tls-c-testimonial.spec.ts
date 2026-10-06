@@ -23,7 +23,10 @@ import { motion } from './motion'
 import { validateDeckSpec } from '../../../validate-deck-spec'
 import { BlockRegistry } from '../../../registry'
 import { registerBuiltInBlocks } from '../../../library'
+import { showcaseSuite } from '../showcase-test'
 import type { DeckSpec, LayoutContext, LayoutNode } from '../../../types'
+
+showcaseSuite(tlsCTestimonial, { noCapacity: true, textProp: 'name', escapeProps: (h) => ({ role: h, quote: h }) })
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
 
@@ -407,116 +410,83 @@ describe('tls.c.testimonial', () => {
     })
   })
 
-  describe('animate() — word-by-word GSAP path', () => {
-    it('creates a GSAP timeline targeting word spans and attribution parts', () => {
-      const animate = tlsCTestimonial.html?.animate
-      expect(animate).toBeDefined()
+  /** A DOM tree shaped like the template: a quote of two words, then avatar, name, role. */
+  function animateTree() {
+    const root = document.createElement('div')
+    const quoteDiv = document.createElement('div')
+    quoteDiv.setAttribute('data-part', 'quote')
+    for (const word of ['Hello', 'world']) {
+      const span = document.createElement('span')
+      span.setAttribute('data-word', '')
+      span.textContent = word
+      quoteDiv.appendChild(span)
+    }
+    root.appendChild(quoteDiv)
+    for (const partName of ['avatar', 'name', 'role']) {
+      const el = document.createElement('div')
+      el.setAttribute('data-part', partName)
+      root.appendChild(el)
+    }
+    // the viewer hides every part before animate()
+    root.querySelectorAll<HTMLElement>('[data-part]').forEach((p) => (p.style.opacity = '0'))
+    return { root, quoteDiv }
+  }
 
-      // Build a DOM tree matching the template structure
-      const root = document.createElement('div')
-      const quoteDiv = document.createElement('div')
-      quoteDiv.setAttribute('data-part', 'quote')
-      for (const word of ['Hello', 'world']) {
-        const span = document.createElement('span')
-        span.setAttribute('data-word', word)
-        span.textContent = word
-        quoteDiv.appendChild(span)
-      }
-      root.appendChild(quoteDiv)
-
-      for (const partName of ['avatar', 'name', 'role']) {
-        const el = document.createElement('div')
-        el.setAttribute('data-part', partName)
-        root.appendChild(el)
-      }
-
-      // Stub GSAP
-      const timelineFromToCalls: unknown[] = []
+  describe('animate() — GSAP path', () => {
+    it('shows the quote container, animates its words and the attribution parts, and kills on dispose', () => {
+      const { root, quoteDiv } = animateTree()
+      const calls: Array<{ op: string; target: unknown; vars: unknown[] }> = []
       let killCount = 0
-
-      const stubGsap = {
-        timeline() {
-          const tl = {
-            fromTo(target: unknown, from: unknown, to: unknown) {
-              timelineFromToCalls.push({ target, from, to })
-              return tl
-            },
-            kill() { killCount++ },
-            then: (cb?: () => void) => { cb?.(); return Promise.resolve() },
-          }
-          return tl
-        },
+      let complete: (() => void) | undefined
+      const tl = {
+        set: (target: unknown, ...vars: unknown[]) => (calls.push({ op: 'set', target, vars }), tl),
+        fromTo: (target: unknown, ...vars: unknown[]) => (calls.push({ op: 'fromTo', target, vars }), tl),
+        to: (target: unknown, ...vars: unknown[]) => (calls.push({ op: 'to', target, vars }), tl),
+        kill: () => void killCount++,
       }
-
       const onComplete = jest.fn()
-      const rt = {
+      const disposer = tlsCTestimonial.html!.animate!(root, {
         driver: { play: jest.fn(), set: jest.fn(), cancelAll: jest.fn() },
-        gsap: stubGsap,
+        gsap: { timeline: (v?: Record<string, unknown>) => ((complete = v?.onComplete as () => void), tl) },
         timing: { delayMs: 0, durationMs: 400, staggerMs: 40, ease: 'power3.out' },
         reducedMotion: false,
         onComplete,
-      }
+      } as any) as () => void
 
-      const disposer = animate!(root, rt as any)
-
-      // 2 word spans + 3 attribution parts = 5 fromTo calls
-      expect(timelineFromToCalls).toHaveLength(5)
-      // onComplete called (mocked gsap.then fires synchronously)
+      // the container is shown (it never gets a tween of its own: the viewer left it at opacity 0)
+      const shown = calls.filter((c) => c.op === 'set' && (c.vars[0] as any).opacity === 1).flatMap((c) => c.target as unknown[])
+      expect(shown).toContain(quoteDiv)
+      // 1 tween for both words + avatar, name, role
+      const tweened = calls.filter((c) => c.op === 'fromTo').flatMap((c) => (Array.isArray(c.target) ? c.target : [c.target]))
+      const words = Array.from(quoteDiv.querySelectorAll('[data-word]'))
+      words.forEach((w) => expect(tweened).toContain(w))
+      for (const part of ['avatar', 'name', 'role']) expect(tweened).toContain(root.querySelector(`[data-part="${part}"]`))
+      expect(onComplete).not.toHaveBeenCalled()
+      complete!()
       expect(onComplete).toHaveBeenCalledTimes(1)
-
-      // Disposer kills the timeline
-      if (disposer) disposer()
+      disposer()
       expect(killCount).toBe(1)
     })
   })
 
   describe('animate() — driver fallback path', () => {
-    it('uses driver.play for word spans and attribution parts', async () => {
-      const animate = tlsCTestimonial.html?.animate
-      expect(animate).toBeDefined()
-
-      const root = document.createElement('div')
-      const quoteDiv = document.createElement('div')
-      quoteDiv.setAttribute('data-part', 'quote')
-      for (const word of ['Hello', 'world']) {
-        const span = document.createElement('span')
-        span.setAttribute('data-word', word)
-        span.textContent = word
-        quoteDiv.appendChild(span)
-      }
-      root.appendChild(quoteDiv)
-
-      for (const partName of ['avatar', 'name', 'role']) {
-        const el = document.createElement('div')
-        el.setAttribute('data-part', partName)
-        root.appendChild(el)
-      }
-
-      const driverPlay = jest.fn(() => ({
-        cancel: jest.fn(),
-        finished: Promise.resolve(),
-      }))
-
+    it('shows the quote container and plays every word and attribution part', async () => {
+      const { root, quoteDiv } = animateTree()
+      const driverPlay = jest.fn(() => ({ cancel: jest.fn(), finished: Promise.resolve() }))
+      const driverSet = jest.fn()
       const onComplete = jest.fn()
-      const rt = {
-        driver: { play: driverPlay, set: jest.fn(), cancelAll: jest.fn() },
-        // No gsap
+      const disposer = tlsCTestimonial.html!.animate!(root, {
+        driver: { play: driverPlay, set: driverSet, cancelAll: jest.fn() },
         timing: { delayMs: 100, durationMs: 400, staggerMs: 40, ease: 'power3.out' },
         reducedMotion: false,
         onComplete,
-      }
-
-      const disposer = animate!(root, rt as any)
-
-      // 2 word spans + 3 attribution parts = 5 driver.play calls
+      } as any)
+      expect(driverSet).toHaveBeenCalledWith(quoteDiv, { opacity: 1 })
+      // 2 words + 3 attribution parts
       expect(driverPlay).toHaveBeenCalledTimes(5)
-
-      // Flush microtask queue for Promise.all to resolve
       await new Promise((r) => setTimeout(r, 10))
-      expect(onComplete).toHaveBeenCalled()
-
-      // Disposer cancels all handles
-      if (disposer) disposer()
+      expect(onComplete).toHaveBeenCalledTimes(1)
+      if (typeof disposer === 'function') disposer()
     })
   })
 

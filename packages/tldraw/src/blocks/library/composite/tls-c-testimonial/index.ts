@@ -11,11 +11,12 @@
  * The host renderer is derived from the `html` object.
  */
 
-import type { BlockDefinition, LayoutContext, LayoutNode, BlockMotionRuntime } from '../../../types'
+import type { BlockDefinition, LayoutContext, LayoutNode } from '../../../types'
 import { schema, defaults } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { motion } from './motion'
+import { animate } from './animate'
 import { createLayoutContext } from '../../../layout/layout-child'
 import { resolveTokens } from '../../../tokens'
 import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
@@ -55,113 +56,6 @@ function derivePreferredSize(): [number, number] {
   return [REFERENCE_WIDTH, posterNode.box.height]
 }
 
-/**
- * Testimonial animation: word-by-word fade-in of the quote, then staggered
- * appearance of avatar, name, role.
- *
- * With GSAP: builds a timeline that fades each word span in, followed by
- * the attribution parts.
- * Without GSAP: uses the motion driver to animate each word and part.
- * When reducedMotion is true: skips animation and calls onComplete immediately.
- */
-function testimonialAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void) {
-  // Reduced motion: skip animation, show everything immediately
-  if (rt.reducedMotion) {
-    rt.onComplete()
-    return
-  }
-
-  const quoteEl = root.querySelector<HTMLElement>('[data-part="quote"]')
-  const wordSpans = quoteEl
-    ? Array.from(quoteEl.querySelectorAll<HTMLElement>('[data-word]'))
-    : []
-  const attributionParts = root.querySelectorAll<HTMLElement>(
-    '[data-part="avatar"], [data-part="name"], [data-part="role"]'
-  )
-
-  const totalParts = wordSpans.length + attributionParts.length
-  if (totalParts === 0) {
-    rt.onComplete()
-    return
-  }
-
-  let resolved = false
-  const onCompleteOnce = () => {
-    if (!resolved) {
-      resolved = true
-      rt.onComplete()
-    }
-  }
-
-  // If the host provided GSAP, use a GSAP timeline
-  if (rt.gsap && typeof rt.gsap === 'object' && rt.gsap !== null) {
-    const gsap = rt.gsap as {
-      timeline(): {
-        fromTo(target: unknown, from: unknown, to: unknown): unknown
-        then(cb?: () => void): Promise<void>
-        kill(): void
-      }
-    }
-
-    const tl = gsap.timeline()
-    const durationSec = rt.timing.durationMs / 1000
-    const wordStaggerSec = rt.timing.staggerMs / 1000
-
-    // Animate each word span
-    wordSpans.forEach((span, i) => {
-      tl.fromTo(span,
-        { opacity: 0 },
-        { opacity: 1, duration: durationSec, delay: i * wordStaggerSec, ease: 'power2.out' }
-      )
-    })
-
-    // Animate attribution parts after words
-    attributionParts.forEach((part, i) => {
-      tl.fromTo(part,
-        { opacity: 0, y: 12 },
-        { opacity: 1, y: 0, duration: durationSec, delay: i * wordStaggerSec, ease: 'power3.out' }
-      )
-    })
-
-    tl.then(() => onCompleteOnce())
-
-    return () => { tl.kill() }
-  }
-
-  // Fallback: use the motion driver
-  const handles: Array<{ cancel(): void; finished: Promise<void> }> = []
-
-  wordSpans.forEach((span, i) => {
-    const h = rt.driver.play(span,
-      { opacity: [0, 1] },
-      {
-        duration: rt.timing.durationMs,
-        delay: rt.timing.delayMs + i * rt.timing.staggerMs,
-        easing: rt.timing.ease,
-        fill: 'forwards',
-      }
-    )
-    handles.push(h)
-  })
-
-  attributionParts.forEach((part, i) => {
-    const h = rt.driver.play(part,
-      { opacity: [0, 1], translate: ['0px 12px', '0px 0px'] },
-      {
-        duration: rt.timing.durationMs,
-        delay: rt.timing.delayMs + (wordSpans.length + i) * rt.timing.staggerMs,
-        easing: rt.timing.ease,
-        fill: 'forwards',
-      }
-    )
-    handles.push(h)
-  })
-
-  Promise.all(handles.map((h) => h.finished)).then(() => onCompleteOnce())
-
-  return () => { handles.forEach((h) => h.cancel()) }
-}
-
 export const tlsCTestimonial: BlockDefinition = {
   type: 'tls.c.testimonial',
   name: 'Testimonial',
@@ -193,6 +87,6 @@ export const tlsCTestimonial: BlockDefinition = {
   size: { preferred: derivePreferredSize(), min: [400, 300] },
   layout: testimonialLayout as BlockDefinition['layout'],
   poster,
-  html: { template, animate: testimonialAnimate },
+  html: { template, animate },
   motion,
 }
