@@ -14,13 +14,13 @@ Columns are the §2 checks. Cell values: ⬜ not checked · ✅ pass (as-is) · 
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | tls.g.steps | process | group | layout | 🔧 | 🔧 | 🔧 | 🔧 | 🔧 | 🔧 | 🔧 | `6678fa80` | rebuilt: 12 px badge number in a 12 px box, whole-strip fade-up, steps slot was a JSON text; now real-width text, rows by box, desc dropped before overflow, stagger; min 480x150 |
 | tls.g.chevrons | process | group | layout | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `eceb981b` | `wipe-x` snapped (S16) -> sweep-nodes; "Launch" clip fixed by the real-width `placeLines` |
-| tls.g.cycle | process | group | layout | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | `eceb981b` | passes visually; "Check" box 3 px narrower than the glyphs (fixed in `_kit`); specs added |
-| tls.g.funnel | process | group | layout | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | `eceb981b` | label box widths (`_kit`); specs added |
+| tls.g.cycle | process | group | layout | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `eceb981b`+`d176893e` | passes visually; "Check" box 3 px narrower than the glyphs (fixed in `_kit`); specs added |
+| tls.g.funnel | process | group | layout | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `eceb981b`+`d176893e` | label box widths (`_kit`); specs added |
 | tls.g.flow | process | group | layout | ✅ | ❌ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `eceb981b` | node parts `node[id]` never matched `node[*]` (no part motion): numeric now. C2 open: drop shows an unconnected column (S20, `clone-spec.ts` regenerates node ids) |
 | tls.c.steps | process | slide | layout | 🔧 | 🔧 | 🔧 | 🔧 | ✅ | 🔧 | 🔧 | `eceb981b` | 14 px numbers on nothing, top-aligned in a tall region, min 200x100: badges, rail, centred, wraps, min 840x460 |
 | tls.g.timeline | timeline | group | layout | 🔧 | 🔧 | 🔧 | ✅ | 🔧 | ✅ | 🔧 | `66946fdf` | notes vanished at preferred size (card slack 2 px); `draw-axis-then-nodes` -> sweep-nodes |
 | tls.g.roadmap | timeline | group | layout | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `66946fdf` | motion part `bar[*]` matched nothing + `grow-bars-x` (S14) -> `bar[*][*]` stagger-children; bars scale to 1.8x |
-| tls.g.milestones | timeline | group | layout | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `66946fdf` | unchanged; example-fits + motion-target specs |
+| tls.g.milestones | timeline | group | layout | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | 🔧 | `66946fdf`+`d176893e` | dates/labels/progress line were not motion parts; example-fits + motion-target specs |
 | tls.c.journey | timeline | slide | html | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `66946fdf` | unchanged (own GSAP timeline draws the path; mid frames deliberate); min-size geometry spec |
 
 ## Findings
@@ -34,7 +34,8 @@ One entry per problem: block, check id, what was wrong (with the shot file name)
 5. **tls.g.roadmap / tls.g.flow motion parts matched nothing**: roadmap named `bar[*]` while the layout emits `bar[lane][item]`; flow nodes were `node[<id>]` (letters), and the part matcher needs digits. Now `bar[*][*]` and numeric `node[i]`. New helper `assertMotionTargetsExist` (diagram-test.ts) is in every diagram spec; it also rejects the presets known not to animate.
 6. **tls.g.timeline** notes disappeared at 1400x520 (`timeline.wide.png`): drawCard received `cardsH - 2` and `floor(room / lineH)` lost the only note line once widths were exact. Fixed; the pinned "toggle showText removes part text" spec caught it.
 7. **tls.g.roadmap**: bars up to 1.8x (was 1.4x) so lanes fill a tall region.
-8. **Passed unchanged**: tls.g.cycle, tls.g.funnel (only the shared text fix), tls.g.milestones, tls.c.journey (html block, its own timeline; geometry at `size.min` now pinned).
+8. **Motion coverage (`d176893e`, see G08 finding 1)**: cycle, funnel and milestones recipes now include their labels, numbers, leaders and arrow heads.
+9. **Passed unchanged**: tls.c.journey (html block, its own timeline; geometry at `size.min` now pinned).
 
 ## Shared issues raised
 
