@@ -5,6 +5,7 @@
 import { tlsDPie } from './index'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, coloursOf, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 760, height: 460 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDPie, props, size)
@@ -130,5 +131,11 @@ describe('tls.d.pie', () => {
   it('capacity: more than six slices fails', () => {
     const r = tlsDPie.capacity!({ categories: [...names, 'G'], values: [1, 2, 3, 4, 5, 6, 7] } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDPie)
   })
 })

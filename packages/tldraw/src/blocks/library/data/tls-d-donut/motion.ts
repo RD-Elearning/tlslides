@@ -1,12 +1,13 @@
 /**
- * Motion for tls.d.donut — donut chart with slice animation.
+ * Motion recipe for tls.d.donut — the slices appear one after another around the ring.
  *
- * Phase 6.1: Simple staggered fade-in for slices.
+ * `sweep-nodes` is an opacity reveal in order; the `grow-*` presets scale a full-block path about
+ * the block centre, which inflated the whole ring instead of building it (shared issue Y1).
  */
 
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  preset: 'stagger-lines',
-  parts: ['slice[0]', 'slice[1]', 'slice[2]', 'slice[3]', 'slice[4]'],
+  parts: ['slice[*]', 'centre', 'centre.label', 'label[*]', 'legend/*'],
+  preset: 'sweep-nodes',
 }

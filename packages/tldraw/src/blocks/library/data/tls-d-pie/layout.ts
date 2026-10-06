@@ -17,7 +17,8 @@ import { highlightColor } from '../_engine/series-color'
 import { layoutLegend } from '../_engine/legend'
 import {
   asArr, capacityOf, chartColors, clipLines, emptyState, enumOf, isNum, lineH, numOrNull, onColor, pathNode, readCategories, ringArcPath, root, seriesColors, style,
-  textAligned, TEXT_SLACK,
+  textAligned, realWidth, TEXT_SLACK,
+  withRealWidths,
 } from '../_chart/kit'
 
 interface Slice {
@@ -46,12 +47,29 @@ function readSlices(props: PieProps): Slice[] {
   return out
 }
 
-export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
+/**
+ * What `tls.d.donut` adds to the pie engine: a hole (fraction of the outer radius), explicit slice
+ * colours by author index, a `total` larger than the sum (the rest of the ring stays a quiet
+ * track) and a centre value with an optional caption.
+ */
+export interface PieExtra {
+  hole?: number
+  colors?: Array<string | undefined>
+  total?: number
+  centre?: { value: string; label?: string }
+}
+
+export function layout(props: PieProps, ctx0: LayoutContext, extra?: PieExtra): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const slices = readSlices(props)
-  const total = slices.reduce((t, s) => t + s.value, 0)
-  if (slices.length === 0 || !(total > 0)) return emptyState(ctx)
+  const sum = slices.reduce((t, s) => t + s.value, 0)
+  if (slices.length === 0 || !(sum > 0)) return emptyState(ctx)
+  // A donut `total` above the sum leaves the rest of the ring as an empty track.
+  const total = extra?.total !== undefined && isNum(extra.total) && extra.total > sum ? extra.total : sum
+  const hole = extra?.hole && extra.hole > 0 && extra.hole < 0.95 ? extra.hole : 0
 
   const c = chartColors(ctx)
   const labelsMode = enumOf(props.labels, ['outside', 'inside', 'legend'] as const, 'outside')
@@ -59,7 +77,7 @@ export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
   const hl = isNum(props.highlightIndex) && props.highlightIndex >= 0 ? props.highlightIndex : -1
   const base = seriesColors(ctx, slices.length)
   const colorOf = (s: Slice, i: number) => {
-    const col = s.idx === -1 ? ctx.resolveColor('neutral').color : base[i]
+    const col = s.idx === -1 ? ctx.resolveColor('neutral').color : extra?.colors?.[s.idx] ?? base[i]
     return hl >= 0 ? highlightColor(s.idx, hl, col, ctx.tokens) : col
   }
   const pctOf = (s: Slice) => `${Math.round((s.value / total) * 100)}%`
@@ -75,7 +93,7 @@ export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
   const arcs = slices.map((s) => {
     const a0 = start + (cum / total) * Math.PI * 2
     cum += s.value
-    const span = slices.length === 1 ? FULL : (s.value / total) * Math.PI * 2
+    const span = slices.length === 1 && total === sum ? FULL : (s.value / total) * Math.PI * 2
     return { a0, a1: a0 + span, span, mid: a0 + span / 2 }
   })
 
@@ -88,7 +106,7 @@ export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
     const rawR = Math.min((W - 2 * (lw + 26)) / 2, (H - 2.2 * lh) / 2)
     const right = arcs.filter((x) => Math.cos(x.mid) >= 0).length
     const stack = Math.max(right, arcs.length - right) * (lh * (showPct ? 2 : 1) + 4)
-    if (rawR < Math.max(36, Math.min(W, H) * 0.16) || (mode === 'outside' && stack > H)) mode = 'legend'
+    if (rawR < Math.max(36, Math.min(W, H) * 0.16) || (mode === 'outside' && stack > H - lh)) mode = 'legend'
   }
 
   let area = { x: 0, y: 0, width: W, height: H }
@@ -116,20 +134,42 @@ export function layout(props: PieProps, ctx: LayoutContext): LayoutNode {
   const cx = area.x + area.width / 2
   const cy = area.y + area.height / 2
 
+  // The part of the ring a donut `total` leaves open.
+  if (total > sum) {
+    const end = arcs[arcs.length - 1].a1
+    const rest = start + FULL - end
+    if (rest > 0.01) nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, R * hole, end, end + rest), 'track', { fill: c.track }))
+  }
+
   // Slices.
   slices.forEach((s, i) => {
     const a = arcs[i]
     nodes.push({
-      ...pathNode(ctx, ringArcPath(cx, cy, R, 0, a.a0, a.a1), `slice[${i}]`, { fill: colorOf(s, i), ...(slices.length > 1 ? { stroke: c.surface, strokeWidth: 3 } : {}) }),
+      ...pathNode(ctx, ringArcPath(cx, cy, R, R * hole, a.a0, a.a1), `slice[${i}]`, { fill: colorOf(s, i), ...(slices.length > 1 || total > sum ? { stroke: c.surface, strokeWidth: 3 } : {}) }),
     })
   })
+
+  // Donut centre: one value (and a caption) inside the hole, shrunk to fit it.
+  if (hole > 0 && extra?.centre?.value) {
+    const inner = R * hole * 2 * 0.78
+    const base = style(ctx, 'heading', c.text)
+    const k = Math.min(1, Math.max(0.45, inner / Math.max(1, realWidth(extra.centre.value, base) * 1.04)))
+    const vs = k < 1 ? { ...base, size: base.size * k } : base
+    const cap = extra.centre.label ? style(ctx, 'caption', c.muted) : undefined
+    const capK = cap ? Math.min(1, Math.max(0.55, inner / Math.max(1, realWidth(extra.centre.label as string, cap) * 1.04))) : 1
+    const cs = cap && capK < 1 ? { ...cap, size: cap.size * capK } : cap
+    const total2 = lineH(vs) + (cs ? lineH(cs) : 0)
+    const y0 = cy - total2 / 2
+    nodes.push(...textAligned(ctx, extra.centre.value, vs, { x: cx - inner / 2, y: y0, width: inner }, 'center', 'centre').nodes.slice(0, 1))
+    if (cs && extra.centre.label) nodes.push(...textAligned(ctx, extra.centre.label, cs, { x: cx - inner / 2, y: y0 + lineH(vs), width: inner }, 'center', 'centre.label').nodes.slice(0, 1))
+  }
 
   // Labels.
   const outside: number[] = []
   slices.forEach((s, i) => {
     if (mode === 'legend') return
     if (wantsInside) {
-      const rm = R * 0.64
+      const rm = hole > 0 ? (R + R * hole) / 2 : R * 0.64
       const chord = 2 * rm * Math.sin(Math.min(arcs[i].span, Math.PI) / 2)
       const nameM = ctx.measureText(s.name, nameStyle).width * TEXT_SLACK
       const need = Math.max(nameM, pctW)

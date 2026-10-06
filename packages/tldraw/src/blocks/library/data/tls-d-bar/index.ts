@@ -25,17 +25,17 @@ export const tlsDBar: BlockDefinition = {
   shortDescription: 'Column or horizontal bar chart of one series',
   related: ['tls.d.donut', 'tls.d.line', 'tls.d.grouped-bar', 'tls.d.ranking'],
   describe: {
-    when: 'Use to compare values across categories — 1–20 bars, single series. Set orientation to horizontal when category labels are long.',
-    avoid: 'Do not use for parts of a whole (use tls.d.donut), for several series, or for a single headline number (use tls.t.hero-number).',
+    when: 'Compare one measure across 2-12 categories. Horizontal orientation suits long labels; highlightIndex marks one bar.',
+    avoid: 'Parts of a whole (use tls.d.pie); several series (use tls.d.grouped-bar); a trend over time (use tls.d.line); one number (use tls.t.hero-number).',
     example: {
       id: 'b_bar',
       type: 'tls.d.bar',
-      props: { categories: ['Q1', 'Q2', 'Q3'], series: [64, 64, 61], highlightIndex: 2, title: 'Revenue by Quarter' },
+      props: { categories: ['Q1', 'Q2', 'Q3', 'Q4'], series: [42, 58, 71, 89], highlightIndex: 3, title: 'Revenue by quarter ($M)' },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 500], min: [200, 150] },
+  size: { preferred: [800, 500], min: [320, 240] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

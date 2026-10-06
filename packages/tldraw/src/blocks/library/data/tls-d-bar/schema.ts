@@ -6,6 +6,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { enumSlot } from '../_chart/schema-kit'
 
 export const schema: BlockSchema = {
   categories: {
@@ -32,7 +33,7 @@ export const schema: BlockSchema = {
     type: { kind: 'enum', values: ['vertical', 'horizontal'] },
     role: 'option',
     label: 'Orientation',
-    help: 'vertical = columns (default); horizontal = bars with category labels on the left, best for long labels.',
+    help: 'vertical (default) = columns; horizontal = bars, for long labels.',
   },
   title: {
     type: { kind: 'text', maxChars: 120 },
@@ -40,6 +41,7 @@ export const schema: BlockSchema = {
     label: 'Title',
     help: 'Chart title, shown above the chart area.',
   },
+  valueLabels: enumSlot(['end', 'none'], 'Value labels', 'end (default) prints each value above its bar.'),
 }
 
 /**
@@ -56,6 +58,8 @@ export interface BarChartProps extends Record<string, unknown> {
   orientation?: 'vertical' | 'horizontal'
   /** Optional chart title. */
   title?: string
+  /** `end` (default) prints each value above its bar when they all fit; `none` leaves the axis only. */
+  valueLabels?: 'end' | 'none'
 }
 
 /**

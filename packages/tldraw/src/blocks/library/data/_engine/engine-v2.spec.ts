@@ -8,7 +8,6 @@ import { formatValue } from './format-value'
 import { multiSeriesDomain, bandScale } from './multi-series'
 import { layoutLegend } from './legend'
 import { directLabel } from './direct-label'
-import { ringArcPath } from '../_chart/kit'
 import { layout as donutLayout } from '../tls-d-donut/layout'
 import { makeCtx } from '../../layout/test-helpers'
 
@@ -39,10 +38,12 @@ describe('arcPath / wedgePath', () => {
     // History: this test used to pin the donut to the pre-refactor `arcPath` output (an outer wedge
     // plus a second, opposite-sweep wedge for the hole). That geometry was WRONG: SVG resolves the
     // inner wedge's reversed sweep on the mirror circle, so the hole bowed the wrong way and a
-    // large or full slice rendered as a blob. The donut now uses `ringArcPath` (a single outline),
-    // so the golden numbers below are the corrected geometry, not the legacy ones.
+    // large or full slice rendered as a blob. The donut draws one outline per slice.
+    // RV05: the donut now shares the pie engine (radius from the label layout, hole 0.6, slices from
+    // 12 o'clock), so the golden numbers of the old fixed geometry are gone; what stays pinned is
+    // the single-outline structure: outer arc clockwise, radial edge, inner arc counter-clockwise.
     const cases: Array<{ values: number[]; total: number; W: number; H: number }> = [
-      { values: [25, 50, 25], total: 100, W: 400, H: 300 }, // exactly-half slice at a non-zero start
+      { values: [25, 50, 25], total: 100, W: 400, H: 300 },
       { values: [10, 20, 30, 15, 25], total: 100, W: 480, H: 270 },
       { values: [33.3, 33.3, 33.4], total: 100, W: 321, H: 777 },
       { values: [70, 20], total: 100, W: 1000, H: 1000 },
@@ -56,23 +57,23 @@ describe('arcPath / wedgePath', () => {
         ctx
       )
       if (node.k !== 'group') throw new Error('expected group')
-      const radius = Math.min(c.W, c.H) / 2 - 10
-      let a = 0
-      const want = c.values.map((v) => {
-        const span = (v / c.total) * Math.PI * 2
-        const d = ringArcPath(c.W / 2, c.H / 2, radius, radius * 0.4, a, a + span)
-        a += span
-        return d
-      })
-      const got = node.children.map((ch) => (ch.k === 'path' ? ch.d : ''))
-      expect(got).toEqual(want)
-      // Single outline: no second wedge from the centre (no "M cx cy" move).
-      for (const d of got) expect(d).not.toContain(`M ${c.W / 2} ${c.H / 2}`)
+      const slices = node.children.filter((ch) => ch.k === 'path' && /^slice\[\d+\]$/.test(ch.part ?? ''))
+      expect(slices).toHaveLength(c.values.length)
+      for (const ch of slices) {
+        const d = ch.k === 'path' ? ch.d : ''
+        expect(d).not.toMatch(/NaN|Infinity/)
+        // outer arc clockwise (sweep 1), inner arc counter-clockwise (sweep 0), both on one outline
+        expect(d).toMatch(/^M [-\d.]+ [-\d.]+ A ([\d.]+) \1 0 [01] 1 [-\d.]+ [-\d.]+ L [-\d.]+ [-\d.]+ A ([\d.]+) \2 0 [01] 0 [-\d.]+ [-\d.]+ Z/)
+        const radii = Array.from(d.matchAll(/A ([\d.]+) /g)).map((m) => Number(m[1]))
+        expect(radii[1]).toBeCloseTo(radii[0] * 0.6, 1)
+      }
     }
     // The half slice keeps the small-arc flag on both arcs (large = 0), inner arc reversed.
-    const half = donutLayout({ slices: [{ value: 50 }, { value: 50 }], total: 100 } as any, makeCtx({ width: 200, height: 200 }))
-    if (half.k !== 'group' || half.children[0].k !== 'path') throw new Error('expected path')
-    expect(half.children[0].d).toMatch(/A 90 90 0 0 1 .* A 36 36 0 0 0 /)
+    const half = donutLayout({ slices: [{ label: 'a', value: 50 }, { label: 'b', value: 50 }], total: 100 } as any, makeCtx({ width: 600, height: 400 }))
+    if (half.k !== 'group') throw new Error('expected group')
+    const first = half.children.find((ch) => ch.k === 'path' && ch.part === 'slice[0]')
+    if (!first || first.k !== 'path') throw new Error('expected path')
+    expect(first.d).toMatch(/A [\d.]+ [\d.]+ 0 0 1 .* A [\d.]+ [\d.]+ 0 0 0 /)
   })
 })
 

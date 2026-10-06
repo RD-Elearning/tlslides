@@ -1,54 +1,42 @@
 /**
- * Layout for tls.d.donut — donut chart with slice visualization.
+ * Layout for tls.d.donut — the pie engine with a hole.
  *
- * Phase 6.1: Simple donut chart rendering with color roles.
+ * Shares `tls.d.pie`'s layout (labels outside with leaders, or a legend that takes over when the
+ * box is too small; slices from 12 o'clock; more than six fold into "Other"), draws the ring with
+ * `ringArcPath`, leaves the rest of the ring empty when `total` exceeds the slices, and prints
+ * `centerValue` / `centerLabel` inside the hole, shrunk to fit it.
+ *
+ * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode, Paint } from '../../../types'
+import type { LayoutContext, LayoutNode } from '../../../types'
 import type { DonutProps } from './schema'
-import { ringArcPath } from '../_chart/kit'
+import { DONUT_COLORS } from './schema'
+import { layout as pieLayout } from '../tls-d-pie/layout'
+import type { PieProps } from '../tls-d-pie/schema'
+import { asArr, enumOf, numOrNull, str } from '../_chart/kit'
+
+const HOLE = 0.6
 
 export function layout(props: DonutProps, ctx: LayoutContext): LayoutNode {
-  const slices = props.slices ?? []
-  const total = props.total ?? 100
-  const W = ctx.box.width
-  const H = ctx.box.height
-
-  const radius = Math.min(W, H) / 2 - 10
-  const centerX = W / 2
-  const centerY = H / 2
-  const innerRadius = radius * 0.4
-
-  const sliceNodes: LayoutNode[] = []
-
-  let currentAngle = 0
-
-  for (let i = 0; i < slices.length; i++) {
-    const slice = slices[i]
-    const sliceAngle = (slice.value / total) * Math.PI * 2
-    const endAngle = currentAngle + sliceAngle
-
-    // One simple outline per slice (not `_engine/arcPath`, whose second wedge bows the hole the wrong way).
-    const d = ringArcPath(centerX, centerY, radius, innerRadius, currentAngle, endAngle)
-
-    const fillPaint: Paint = { type: 'solid', color: ctx.resolveColor(slice.color ?? 'accent').color }
-
-    const pathNode: LayoutNode = {
-      k: 'path',
-      box: { x: 0, y: 0, width: W, height: H },
-      part: `slice[${i}]`,
-      d,
-      fill: fillPaint,
-    }
-    
-    sliceNodes.push(pathNode)
-
-    currentAngle = endAngle
+  const rows = asArr<Record<string, unknown>>(props.slices).filter((s) => s && typeof s === 'object')
+  const pie: PieProps = {
+    categories: rows.map((s, i) => str(s.label) || `Slice ${i + 1}`),
+    values: rows.map((s) => numOrNull(s.value) ?? 0),
+    labels: enumOf(props.labels, ['legend', 'outside'] as const, 'legend'),
+    showPercent: props.showPercent !== false,
+    sort: 'none',
   }
-
-  return {
-    k: 'group',
-    box: { x: 0, y: 0, width: W, height: H },
-    children: sliceNodes,
-  }
+  const colors = rows.map((s) => {
+    const role = enumOf(s.color, DONUT_COLORS, 'accent')
+    return typeof s.color === 'string' && (DONUT_COLORS as readonly string[]).includes(s.color) ? ctx.resolveColor(role).color : undefined
+  })
+  const value = str(props.centerValue).trim()
+  const label = str(props.centerLabel).trim()
+  return pieLayout(pie, ctx, {
+    hole: HOLE,
+    colors,
+    total: numOrNull(props.total) ?? undefined,
+    centre: value ? { value, ...(label ? { label } : {}) } : undefined,
+  })
 }
