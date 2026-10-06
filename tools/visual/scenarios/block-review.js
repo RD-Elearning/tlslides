@@ -26,6 +26,7 @@
  *   REVIEW_BLOCKS=tls.g.cycle,tls.g.flow node tools/visual/shoot.js block-review ...
  *   REVIEW_PASSES=gallery,drop  (default: gallery,drop,viewer,present)
  *   REVIEW_THEME=midnight       (default: coral-pop)
+ * Mid-animation frames default to 60,200,500,1000 ms (subtle entrances are over by ~350 ms).
  * A machine-readable report lands next to the PNGs as report.json.
  */
 const fs = require('fs')
@@ -39,7 +40,7 @@ const CATEGORY = process.env.REVIEW_CATEGORY || ''
 const ONLY = process.env.REVIEW_BLOCKS ? process.env.REVIEW_BLOCKS.split(',') : null
 const PASSES = (process.env.REVIEW_PASSES || 'gallery,drop,viewer,present').split(',')
 const THEME = process.env.REVIEW_THEME || 'coral-pop'
-const MID = (process.env.REVIEW_MID || '350,900').split(',').map(Number)
+const MID = (process.env.REVIEW_MID || '60,200,500,1000').split(',').map(Number)
 const SETTLE = Number(process.env.REVIEW_SETTLE || 3500)
 
 const BLOCKS = ALL.filter((b) => (ONLY ? ONLY.includes(b.type) : b.category === CATEGORY))
@@ -283,15 +284,19 @@ module.exports = {
       for (let i = 0; i < BLOCKS.length; i++) {
         const def = BLOCKS[i]
         current = def.type
+        // Leaving and entering Present are asynchronous: wait for each to settle, or the next
+        // block's "enter" is skipped (state still true) and the pending "leave" then wins.
+        await page.evaluate(() => window.tlapp.settings.isPresentationMode && window.tlapp.togglePresentationMode())
+        await page.waitForFunction(() => !window.tlapp.settings.isPresentationMode)
         await page.evaluate((id) => {
           const app = window.tlapp
-          const page = Object.values(app.document.pages).find((p) => p.id === id || p.name === id || (p.id || '').includes(id))
-          if (page) app.changePage(page.id)
-          if (!app.settings.isPresentationMode) app.togglePresentationMode()
+          const pg = Object.values(app.document.pages).find((p) => p.id === id)
+          if (pg) app.changePage(pg.id)
+          app.togglePresentationMode()
         }, `${slug(def.type)}-wide`)
+        await page.waitForFunction(() => window.tlapp.settings.isPresentationMode)
         await page.waitForTimeout(SETTLE)
         await page.screenshot({ path: path.join(OUT, `${slug(def.type)}.present.png`) })
-        await page.evaluate(() => window.tlapp.settings.isPresentationMode && window.tlapp.togglePresentationMode())
       }
     }
 

@@ -107,7 +107,7 @@ L=/tmp/tlslides-dist.lock; G=/tmp/tlslides-git.lock
 # review one category (all passes) or some blocks (shared lock: many shoots at once is fine)
 flock -s $L env REVIEW_CATEGORY=chart node tools/visual/shoot.js block-review --width=1600 --height=900
 flock -s $L env REVIEW_BLOCKS=tls.d.bar,tls.d.line REVIEW_CATEGORY= node tools/visual/shoot.js block-review --width=1600 --height=900
-#   REVIEW_PASSES=gallery,drop,viewer,present (any subset) · REVIEW_THEME=midnight · REVIEW_MID=300,800
+#   REVIEW_PASSES=gallery,drop,viewer,present (any subset) · REVIEW_THEME=midnight · REVIEW_MID=60,200,500,1000
 #   output: tools/visual/shots/review/<category or "custom">/ + report.json
 
 # from packages/tldraw: tsc gate (must print 0; check the binary exists first)
@@ -136,14 +136,14 @@ the Next.js "1 Issue" badge it causes. Known pre-existing failure, not yours:
 | S2 | controller | `BlockInserter/BlockPreview.tsx` | Every gallery card showed a thumbnail-sized corner of the block (empty card or a coloured speck); tall blocks cropped | 🔧 `74c0cf13` |
 | S3 | controller | `BlockInserter/BlockInserter.tsx` | Category tab bar capped at 104 px hid Media … Decoration behind an invisible scroll | 🔧 `74c0cf13` |
 | S4 | controller | `BlockInserter.spec.tsx` | `renders category tabs with counts…` fails with `app.useStore is not a function` (pre-existing) | ⬜ |
-| S5 | G02 (X1) | `next dev` on :5433 | Stopped recompiling `packages/tldraw/dist` after 16:35:51 UTC (stale chunks through two rebuilds + touch). Restart it before any re-shoot | ⬜ |
+| S5 | G02 (X1) | `next dev` on :5433 | Stopped recompiling `packages/tldraw/dist` after 16:35:51 UTC (stale chunks through two rebuilds + touch). Restart it before any re-shoot | 🔧 restarted 2026-10-06 (stale again after any reboot: restart `next dev`, then re-PUT decks by running the harness) |
 | S6 | G02 (X2) | `blocks/parity-harness.ts`, `parity-worker.ts` | DOM/SVG parity probe hangs >150 s even on untouched blocks; killing jest orphans parity-worker + Chrome. Workaround: `-t '^(?!.*parity).*$'` | ⬜ |
 | S7 | G02 (X3) | `blocks/render-svg.ts` | `path` node drawn without its box offset (render-dom applies it): tls.t.quote mark lands top-left in SVG export | ⬜ |
 | S8 | G02 (X4) | `motion/` or DeckViewer build steps | Second block on an expressive slide shows final for ~400 ms, vanishes, then enters (`custom/t-title.wide.mid-120.png` vs `mid-600`) | ⬜ |
 | S9 | G02 (X5) | `BlockInserter/BlockPreview.tsx` | Wide, small-text blocks scale to specks in gallery cards (`text/t-footnote.card.png`, `heading/t-subtitle.card.png`); needs a content-aware crop or min scale | ⬜ |
 | S10 | G02 (X6) | `layout/measure.ts`, `library/text/_engine/text-place.ts` | Default text-width estimate 15–30 % too wide: early wraps in the editor, off-centre placement (engine shared with G03) | ⬜ |
-| S11 | G02 (X7) | `tools/visual/scenarios/block-review.js` | Present pass leaves every block after the first in edit mode (`emphasis/t-callout.present.png`) | ⬜ |
-| S12 | G02 (X8) | `block-review.js` defaults | Default mid frames 350/900 ms miss subtle entrances (done < 350 ms); use `REVIEW_MID=40,120,220` | ⬜ |
+| S11 | G02 (X7) | `tools/visual/scenarios/block-review.js` | Present pass leaves every block after the first in edit mode (`emphasis/t-callout.present.png`) | 🔧 harness |
+| S12 | G02 (X8) | `block-review.js` defaults | Default mid frames 350/900 ms miss subtle entrances (done < 350 ms); use `REVIEW_MID=40,120,220` | 🔧 default is now 60,200,500,1000 |
 | S13 | G02 (X9) | `slide-layouts.ts` / tls.c.quote-image | Claims full-bleed photo but the `blank` layout gives it margins (`emphasis/c-quote-image.wide.png`) | ⬜ |
 
 ## 6. Progress
