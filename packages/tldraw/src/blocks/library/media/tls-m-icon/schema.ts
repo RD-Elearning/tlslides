@@ -23,6 +23,12 @@ export const schema: BlockSchema = {
     label: 'Color',
     help: 'Color role for the icon. Default uses accent color.',
   },
+  size: {
+    type: { kind: 'enum', values: ['sm', 'md', 'lg', 'xl'] },
+    role: 'option',
+    label: 'Size',
+    help: 'sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone.',
+  },
 }
 
 export interface IconProps extends Record<string, unknown> {
@@ -30,6 +36,8 @@ export interface IconProps extends Record<string, unknown> {
   icon: string
   /** Optional color role override. Default: 'accent'. */
   color?: 'accent' | 'surface' | 'onSurface' | 'onAccent'
+  /** Icon side: sm 24 (default), md 48, lg 80, xl 128. */
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }
 
 export const defaults: IconProps = {

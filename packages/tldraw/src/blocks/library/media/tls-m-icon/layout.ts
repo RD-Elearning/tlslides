@@ -6,49 +6,34 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import { getIcon } from '../../../icons'
+import { iconLeaf } from '../../text/_engine/icon'
 import type { IconProps } from './schema'
 
-/** Standard icon size in slide units (24×24 viewBox). */
+/** Default icon size in slide units (24×24 viewBox): an inline glyph. */
 const ICON_SIZE = 24
+/** `props.size` steps, for an icon that stands alone on a slide. */
+export const ICON_PX = { sm: ICON_SIZE, md: 48, lg: 80, xl: 128 } as const
+
+/** Side of the icon: the `size` step, never larger than the box it was given (when the box is known). */
+export function iconSide(props: IconProps, box: { width: number; height: number }): number {
+  const step = ICON_PX[props.size as keyof typeof ICON_PX] ?? ICON_SIZE
+  const room = Math.min(box.width > 0 ? box.width : Infinity, box.height > 0 ? box.height : Infinity)
+  return Math.max(1, Math.min(step, room))
+}
 
 export function layout(props: IconProps, ctx: LayoutContext): LayoutNode {
-  const iconName = props.icon
-  const colorRole = props.color ?? 'accent'
-  
-  // Resolve color from role
-  const color = ctx.resolveColor(colorRole)
-  
-  // Get the icon definition
-  const iconDef = getIcon(iconName)
-  
-  if (!iconDef) {
-    // Fallback to warning icon for unknown names (lint should catch this at build time)
-    // The TypeScript type system ensures this path is unreachable from library blocks
-    return {
-      k: 'icon',
-      box: { x: 0, y: 0, width: ICON_SIZE, height: ICON_SIZE },
-      part: 'icon',
-      icon: 'M10.29 3.87L5.62 18a2 2 0 001.71 3h13.16a2 2 0 001.71-3L13.71 3.87a2 2 0 00-3.42 0zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3.29l-3.3 3.3a1 1 0 101.42 1.42L11 9.41V7a1 1 0 00-1-1z',
-      fill: color.color,
-      strokeWidth: 1.5,
-    }
-  }
-  
-  return {
-    k: 'icon',
-    box: { x: 0, y: 0, width: ICON_SIZE, height: ICON_SIZE },
-    part: 'icon',
-    icon: iconDef.path,
-    fill: color.color,
-    strokeWidth: 1.5,
-  }
+  const side = iconSide(props, ctx.box)
+  const color = ctx.resolveColor(props.color ?? 'accent')
+  // Unknown names degrade to the warning icon (lint reports them); the path is scaled to the box,
+  // because the renderers draw the `icon` node's path in a viewBox equal to its own box.
+  return iconLeaf(props.icon, { x: 0, y: 0, width: side, height: side }, color.color, 'icon')
 }
 
 /**
  * Intrinsic size of an icon is always 24×24 viewBox.
  * Containers can use this for proper distribution.
  */
-export function intrinsicSize(_props: IconProps, _ctx: LayoutContext) {
-  return { width: ICON_SIZE, height: ICON_SIZE }
+export function intrinsicSize(props: IconProps, _ctx: LayoutContext) {
+  const s = iconSide(props, { width: 0, height: 0 })
+  return { width: s, height: s }
 }

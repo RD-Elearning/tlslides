@@ -6,6 +6,37 @@
 
 import { validateIconName } from './schema'
 import { getIcon, hasIcon, ICONS } from '../../../icons'
+import { tlsMIcon } from './index'
+import { standardBlockSuite, leavesOf } from '../../text/standard-suite'
+import { ctxNoAssets } from '../media-test'
+
+standardBlockSuite(tlsMIcon, { noCapacity: true })
+
+const lay = (props: Record<string, unknown>, w: number, h: number) => tlsMIcon.layout({ ...(tlsMIcon.defaults as any), ...props } as any, ctxNoAssets(w, h))
+const iconNode = (tree: any) => leavesOf(tree, 'icon')[0]
+
+describe('tls.m.icon — size', () => {
+  it('draws the size step, never larger than its box, and the example fits preferred and min', () => {
+    expect(iconNode(lay({}, 400, 300)).width).toBe(24)
+    expect(iconNode(lay({ size: 'md' }, 400, 300)).width).toBe(48)
+    expect(iconNode(lay({ size: 'xl' }, 400, 300)).width).toBe(128)
+    expect(iconNode(lay({ size: 'xl' }, 60, 300)).width).toBe(60)
+    const [pw, ph] = tlsMIcon.size.preferred
+    const [mw, mh] = tlsMIcon.size.min
+    const ex = tlsMIcon.describe!.example.props
+    expect(iconNode(lay(ex, pw, ph)).width).toBeLessThanOrEqual(Math.min(pw, ph))
+    expect(iconNode(lay(ex, mw, mh)).width).toBeLessThanOrEqual(Math.min(mw, mh))
+  })
+
+  it('scales the path with the box (the renderers draw it in a viewBox equal to the box)', () => {
+    expect(iconNode(lay({ size: 'lg' }, 400, 300)).node).toHaveProperty('icon', expect.not.stringMatching(new RegExp(`^${getIcon('zap')!.path.slice(0, 20)}`)))
+  })
+
+  it('intrinsic size follows the size step', () => {
+    expect(tlsMIcon.intrinsicSize!({ icon: 'zap' } as any, ctxNoAssets(10, 10))).toEqual({ width: 24, height: 24 })
+    expect(tlsMIcon.intrinsicSize!({ icon: 'zap', size: 'lg' } as any, ctxNoAssets(10, 10))).toEqual({ width: 80, height: 80 })
+  })
+})
 
 describe('tls.m.icon', () => {
   describe('schema validation', () => {

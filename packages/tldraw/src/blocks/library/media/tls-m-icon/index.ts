@@ -22,7 +22,7 @@ export const tlsMIcon: BlockDefinition = {
   shortDescription: 'Single icon from the icon set in a theme colour',
   related: ['tls.m.icon-label'],
   describe: {
-    when: 'Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. Ideal for feature grids, labels, and decorative elements.',
+    when: 'Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. size sm is an inline glyph, lg/xl a standalone mark.',
     avoid: 'Do not use for photographs (use tls.m.image) or for an icon that needs a text label (use tls.m.icon-label).',
     example: {
       id: 'b_icon_1',
@@ -30,12 +30,13 @@ export const tlsMIcon: BlockDefinition = {
       props: {
         icon: 'zap',
         color: 'accent',
+        size: 'lg',
       },
     },
   },
   schema,
   defaults,
-  size: { preferred: [24, 24], min: [12, 12] },
+  size: { preferred: [80, 80], min: [12, 12] },
   layout: layout as BlockDefinition['layout'],
   motion,
   intrinsicSize,

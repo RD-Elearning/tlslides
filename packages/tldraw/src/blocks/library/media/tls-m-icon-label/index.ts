@@ -32,7 +32,7 @@ export const tlsMIconLabel: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [80, 60], min: [40, 40] },
+  size: { preferred: [160, 100], min: [96, 76] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }
