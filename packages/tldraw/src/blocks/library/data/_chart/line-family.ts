@@ -18,7 +18,7 @@ import type { LegendPlacement } from '../_engine/legend'
 import {
   categoryLabels, chartColors, clipLines, dimmed, dot, emptyState, enumOf, faded, fmtNum, isNum, lineH, mutedStyle,
   niceAxis, noData, pathNode, readCategories, readSeries, readableOn, root, seriesColors, TEXT_SLACK, valueAxisLeft,
-} from './kit'
+withRealWidths, } from './kit'
 import type { Series } from './kit'
 
 export type LineKind = 'line' | 'area'
@@ -46,7 +46,9 @@ export const LINE_MAX_SERIES = 6
 const LINE_W = 5
 const DOT_R = 7
 
-export function lineFamilyLayout(kind: LineKind, props: LineFamilyProps, ctx: LayoutContext): LayoutNode {
+export function lineFamilyLayout(kind: LineKind, props: LineFamilyProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const cats = readCategories(props.categories).slice(0, LINE_MAX_CATEGORIES)

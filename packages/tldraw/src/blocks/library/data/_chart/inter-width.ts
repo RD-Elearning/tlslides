@@ -41,3 +41,25 @@ export function realWidth(text: string, style: Pick<ResolvedTextStyle, 'size' | 
   }
   return (em + (style.letterSpacing || 0) * n) * style.size
 }
+
+/**
+ * Greedy word wrap with browser-true widths. Returns the lines, or `null` when a single word is
+ * wider than `maxW` (the caller decides: ellipsise, thin out, or let the estimator break it).
+ */
+export function wrapReal(text: string, style: Pick<ResolvedTextStyle, 'size' | 'letterSpacing'>, maxW: number): string[] | null {
+  const words = text.split(/\s+/).filter(Boolean)
+  if (words.length === 0) return ['']
+  const lines: string[] = []
+  let cur = ''
+  for (const w of words) {
+    if (realWidth(w, style) > maxW) return null
+    const next = cur ? `${cur} ${w}` : w
+    if (!cur || realWidth(next, style) <= maxW) cur = next
+    else {
+      lines.push(cur)
+      cur = w
+    }
+  }
+  lines.push(cur)
+  return lines
+}

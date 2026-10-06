@@ -19,9 +19,9 @@ import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import { formatValue } from '../_engine/format-value'
 import { MAX_HUES } from '../_engine/series-color'
-import { realWidth } from './inter-width'
+import { realWidth, wrapReal } from './inter-width'
 
-export { realWidth }
+export { realWidth, wrapReal }
 
 export { onColor, readableOn, tintOf }
 
@@ -217,9 +217,17 @@ export function withRealWidths(ctx: LayoutContext): LayoutContext {
       // +2%: the box must never be a hair narrower than the glyphs (the DOM would wrap it).
       const width = Math.ceil(realWidth(text, style) * 1.02)
       // A line that fits by the browser-true width never wraps, whatever the flat estimate says.
-      const m = ctx.measureText(text, style, width <= (maxWidth ?? Infinity) ? undefined : maxWidth)
-      if (m.lines.length !== 1) return m
-      return { ...m, width, lines: m.lines.map((l) => ({ ...l, width })) }
+      if (width <= (maxWidth ?? Infinity)) {
+        const m = ctx.measureText(text, style)
+        if (m.lines.length !== 1) return m
+        return { ...m, width, lines: m.lines.map((l) => ({ ...l, width })) }
+      }
+      // Wider than the box: wrap at spaces with real widths (the estimator breaks at other places).
+      const real = wrapReal(text, style, maxWidth as number)
+      if (!real || real.length < 2) return ctx.measureText(text, style, maxWidth)
+      const lh = style.size * style.lineHeight
+      const lines = real.map((t, i) => ({ text: t, top: Math.round(i * lh), baseline: Math.round(i * lh + lh * 0.8), width: Math.ceil(realWidth(t, style) * 1.02) }))
+      return { width: Math.max(1, ...lines.map((l) => l.width)), height: Math.round(lines.length * lh) + 2, lines }
     },
   }
 }
@@ -423,13 +431,21 @@ export function categoryLabels(
   const s = opts.color ? style(ctx, 'footnote', opts.color) : mutedStyle(ctx, 'footnote')
   const n = cats.length
   if (n === 0 || !(step > 0)) return { nodes: [], height: 0, stride: 1 }
-  const words = cats.map((c) => longestWord(ctx, c, s))
+  // Dry run with browser-true widths (RV05): every shown label wraps to at most two lines inside its
+  // band, and after the edge labels are slid back into the block no two neighbours touch. The old
+  // check compared only the longest *word* with the flat estimate, so a one-line label wider than its
+  // stride was accepted and the clamped edge label ended up on top of its neighbour.
+  const maxX0 = Math.max(0, ctx.box.width)
   const fits = (stride: number): boolean => {
     const w = step * stride
+    let prevRight = -Infinity
     for (let i = 0; i < n; i += stride) {
-      if (words[i] * TEXT_SLACK > w * 0.96) return false
-      const m = ctx.measureText(cats[i], s, Math.max(1, (w * 0.96) / TEXT_SLACK))
-      if (m.lines.length > 2) return false
+      const lines = wrapReal(cats[i], s, w * 0.96)
+      if (!lines || lines.length > 2) return false
+      const lw = Math.max(...lines.map((l) => realWidth(l, s))) * 1.02
+      const left = clamp(centers[i] - lw / 2, 0, Math.max(0, maxX0 - lw))
+      if (left < prevRight + 2) return false
+      prevRight = left + lw
     }
     return true
   }
@@ -438,7 +454,7 @@ export function categoryLabels(
   let stride = 1
   if (opts.thin !== 'clip') while (stride < n && !fits(stride)) stride++
   const w = step * stride
-  const maxW = Math.max(1, (w * 0.96) / TEXT_SLACK)
+  const maxW = Math.max(1, w * 0.96)
   const nodes: LayoutNode[] = []
   let height = 0
   for (let i = 0; i < n; i += stride) {

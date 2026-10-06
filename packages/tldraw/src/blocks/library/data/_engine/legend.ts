@@ -8,6 +8,7 @@
  */
 
 import type { Box, LayoutContext, LayoutNode } from '../../../types'
+import { realWidth } from '../_chart/inter-width'
 
 export type LegendPlacement = 'top' | 'bottom' | 'right' | 'none'
 
@@ -40,8 +41,12 @@ export function layoutLegend(
   const rowH = Math.max(LEGEND_SWATCH, Math.ceil(style.size * style.lineHeight))
   const maxLabelW = placement === 'right' ? Math.max(0, box.width * MAX_RIGHT_FRACTION - LEGEND_SWATCH - SWATCH_GAP) : box.width
   const measured = items.map((it) => {
-    const m = ctx.measureText(it.label, style, maxLabelW)
-    return { it, m, w: Math.min(m.width, maxLabelW) }
+    // Browser-true width (RV05): the flat estimate is 25% narrow on figures, so "2024" and "Web"
+    // got boxes narrower than their glyphs. A label that fits by that width never wraps.
+    const real = Math.ceil(realWidth(it.label, style) * 1.02)
+    const m = ctx.measureText(it.label, style, real <= maxLabelW ? undefined : maxLabelW)
+    const w = m.lines.length === 1 ? Math.min(real, maxLabelW) : Math.min(m.width, maxLabelW)
+    return { it, m, w }
   })
 
   type Placed = { i: number; x: number; y: number; w: number }

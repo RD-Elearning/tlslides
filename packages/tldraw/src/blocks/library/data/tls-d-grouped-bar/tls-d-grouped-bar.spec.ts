@@ -5,6 +5,7 @@
 import { tlsDGroupedBar } from './index'
 import { absoluteLeaves, leavesOf, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, coloursOf, isNoData, layoutOf, seriesOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 900, height: 520 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDGroupedBar, props, size)
@@ -129,5 +130,11 @@ describe('tls.d.grouped-bar', () => {
     const r = tlsDGroupedBar.capacity!({ categories: cats, series: seriesOf(5, 3) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
     expect(r.remedy).toEqual([{ kind: 'truncate', slot: 'series' }])
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDGroupedBar)
   })
 })

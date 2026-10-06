@@ -19,7 +19,7 @@ import type { LegendPlacement } from '../_engine/legend'
 import {
   AXIS_W, GRID_W, categoryLabels, chartColors, clamp, clipLines, dimmed, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData,
   onColor, readCategories, readSeries, root, seriesColors, solidRect, textAligned, TEXT_SLACK, valueAxisLeft,
-} from './kit'
+withRealWidths, } from './kit'
 import type { Series } from './kit'
 
 export type BarKind = 'grouped' | 'stacked'
@@ -52,7 +52,9 @@ interface Seg {
   shown: number
 }
 
-export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx: LayoutContext): LayoutNode {
+export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const cats = readCategories(props.categories).slice(0, BAR_MAX_CATEGORIES)
