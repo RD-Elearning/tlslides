@@ -8,6 +8,9 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { GridGuideProps } from './schema'
 
+/** Thick enough to read in the gallery card and at slide scale (0.5 was invisible, RV01). */
+const GUIDE_WIDTH = 2
+
 export function layout(props: GridGuideProps, ctx: LayoutContext): LayoutNode {
   const W = ctx.box.width
   const H = ctx.box.height
@@ -31,11 +34,11 @@ export function layout(props: GridGuideProps, ctx: LayoutContext): LayoutNode {
     const x = (W * i) / divisions
     lines.push({
       k: 'line',
-      box: { x: 0, y: 0, width: 0, height: H },
+      box: { x: 0, y: 0, width: W, height: H },
       part: `vguide-${i}`,
       from: { x, y: 0 },
       to: { x, y: H },
-      stroke: { color: lineColor, width: 0.5 },
+      stroke: { color: lineColor, width: GUIDE_WIDTH },
     })
   }
 
@@ -44,11 +47,11 @@ export function layout(props: GridGuideProps, ctx: LayoutContext): LayoutNode {
     const y = (H * i) / divisions
     lines.push({
       k: 'line',
-      box: { x: 0, y: 0, width: W, height: 0 },
+      box: { x: 0, y: 0, width: W, height: H },
       part: `hguide-${i}`,
       from: { x: 0, y },
       to: { x: W, y },
-      stroke: { color: lineColor, width: 0.5 },
+      stroke: { color: lineColor, width: GUIDE_WIDTH },
     })
   }
 

@@ -9,31 +9,32 @@ import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { tile } from '../_example'
 
 export const tlsLSafeArea: BlockDefinition = {
   type: 'tls.l.safe-area',
   name: 'Safe Area',
   family: 'layout',
   tier: 'A',
-  summary: 'Content safe-area inset guide with a configurable margin. Editor-only: invisible in exported output.',
+  summary: 'Insets its child blocks by a configurable margin so content stays off the slide edge.',
   keywords: ['safe-area', 'margin', 'inset', 'editor'],
   category: 'structure',
   scope: 'element',
-  shortDescription: 'Content margin guide, visible in the editor only',
+  shortDescription: 'Insets its child blocks by a margin token so content stays off the edge',
   related: ['tls.l.grid-guide'],
   describe: {
-    when: 'Use in the editor to visually define a content margin zone.',
-    avoid: 'Do not use to space content in the final deck: it is invisible in output (use tls.l.stack gap or tls.l.card padding).',
+    when:
+      'Container: insets its child blocks (props.children) by a margin token and Use to keep content off the slide edge.',
+    avoid: 'Do not use for spacing between blocks (use tls.l.stack gap) or for padding inside a panel (use tls.l.card). It draws nothing itself.',
     example: {
       id: 'b_safe',
       type: 'tls.l.safe-area',
-      props: { inset: 'md' },
-      children: [],
+      props: { inset: 'md', children: [tile('b_safe_1', 'Content inside the margin')] },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [100, 100] },
+  size: { preferred: [800, 420], min: [400, 200] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

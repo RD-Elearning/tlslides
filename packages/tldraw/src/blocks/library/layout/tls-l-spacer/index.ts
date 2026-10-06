@@ -20,7 +20,8 @@ export const tlsLSpacer: BlockDefinition = {
   scope: 'element',
   shortDescription: 'Empty gap between neighbouring blocks',
   describe: {
-    when: 'Use to push other blocks apart with intentional empty space.',
+    when:
+      'Invisible structural gap (no children, draws nothing): reserve empty space of a chosen size between neighbouring blocks. It looks empty in the gallery by design.',
     avoid: 'Do not use when the gap of a stack or row already provides the spacing.',
     example: {
       id: 'b_spacer',

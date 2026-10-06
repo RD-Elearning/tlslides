@@ -9,6 +9,7 @@ import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { tile } from '../_example'
 
 export const tlsLSidebar: BlockDefinition = {
   type: 'tls.l.sidebar',
@@ -22,18 +23,18 @@ export const tlsLSidebar: BlockDefinition = {
   shortDescription: 'Narrow side column next to a main content area',
   related: ['tls.l.split'],
   describe: {
-    when: 'Use to reserve a fixed-width panel on one side for navigation or meta content.',
+    when:
+      'Container: children [side, main]: a fixed-width column (sidebarWidth) beside the main area.',
     avoid: 'Do not use for equal-width columns (use tls.l.split or tls.l.grid).',
     example: {
       id: 'b_sidebar',
       type: 'tls.l.sidebar',
-      props: { sidebarWidth: 320, gutter: 'md', sidebarSide: 'start' },
-      children: [],
+      props: { sidebarWidth: 320, gutter: 'md', sidebarSide: 'start', children: [tile('c1', 'Sidebar'), tile('c2', 'Main content')] },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [200, 200] },
+  size: { preferred: [800, 360], min: [480, 200] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

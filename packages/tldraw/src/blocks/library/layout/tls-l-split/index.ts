@@ -9,6 +9,7 @@ import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { tile } from '../_example'
 
 export const tlsLSplit: BlockDefinition = {
   type: 'tls.l.split',
@@ -22,18 +23,18 @@ export const tlsLSplit: BlockDefinition = {
   shortDescription: 'Two panes side by side or stacked, with an adjustable ratio',
   related: ['tls.l.sidebar'],
   describe: {
-    when: 'Use to divide a region into two panels (left/right or top/bottom).',
+    when:
+      "Container: two child blocks (props.children, exactly two) side by side (axis 'x') or stacked (axis 'y'), divided by ratio (0.5 = halves) with a gutter.",
     avoid: 'Do not use for three or more panels (use tls.l.grid) or for a narrow fixed-width side column (use tls.l.sidebar).',
     example: {
       id: 'b_split',
       type: 'tls.l.split',
-      props: { ratio: 0.5, gutter: 'md', axis: 'x' },
-      children: [],
+      props: { ratio: 0.5, gutter: 'md', axis: 'x', children: [tile('b_split_1', 'Question'), tile('b_split_2', 'Answer')] },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [100, 100] },
+  size: { preferred: [800, 360], min: [400, 200] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

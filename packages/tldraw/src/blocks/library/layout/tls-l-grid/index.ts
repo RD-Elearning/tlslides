@@ -8,6 +8,7 @@ import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { tile } from '../_example'
 
 export const tlsLGrid: BlockDefinition = {
   type: 'tls.l.grid',
@@ -21,18 +22,18 @@ export const tlsLGrid: BlockDefinition = {
   shortDescription: 'Grid of child blocks in fixed columns and rows',
   related: ['tls.l.row', 'tls.l.repeater'],
   describe: {
-    when: 'Use to arrange child blocks in a rows × columns grid.',
-    avoid: 'Do not use for a simple two-column layout (use tls.l.split) or for one line of items (use tls.l.row).',
+    when:
+      'Container: child blocks (props.children) in a columns x rows grid of equal cells. For 4-9 cells.',
+    avoid: 'Two columns: tls.l.split. One line: tls.l.row.',
     example: {
       id: 'b_grid',
       type: 'tls.l.grid',
-      props: { columns: 2, rows: 2, gap: 'md' },
-      children: [],
+      props: { columns: 2, rows: 2, gap: 'md', children: [tile('c1', 'Reach'), tile('c2', 'Revenue'), tile('c3', 'Cost'), tile('c4', 'Risk')] },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [100, 100] },
+  size: { preferred: [800, 480], min: [400, 260] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

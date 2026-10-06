@@ -15,15 +15,16 @@ export const tlsLGridGuide: BlockDefinition = {
   name: 'Grid Guide',
   family: 'layout',
   tier: 'A',
-  summary: 'Alignment grid guide with configurable divisions. Editor-only: invisible in exported output.',
+  summary: 'Alignment grid guide with configurable divisions. Light guide lines; omitted from PNG/PDF export.',
   keywords: ['grid', 'guide', 'alignment', 'editor'],
   category: 'structure',
   scope: 'element',
-  shortDescription: 'Column alignment guide, visible in the editor only',
+  shortDescription: 'Light alignment lines at equal divisions (editing aid)',
   related: ['tls.l.safe-area'],
   describe: {
-    when: 'Use in the editor to show alignment guides for precise positioning.',
-    avoid: 'Do not use to lay out content: it only draws guides in the editor (use tls.l.grid for real columns).',
+    when:
+      'Alignment aid, no children: draws light guide lines at equal divisions over its box while editing. Never part of the story; remove before presenting.',
+    avoid: 'Do not use to lay out content (use tls.l.grid) and never leave it on a slide that will be presented: the lines are drawn in the viewer too.',
     example: {
       id: 'b_gguide',
       type: 'tls.l.grid-guide',
@@ -32,7 +33,7 @@ export const tlsLGridGuide: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [100, 100] },
+  size: { preferred: [800, 450], min: [100, 100] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

@@ -10,6 +10,7 @@ import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
 import { layout } from './layout'
 import { motion } from './motion'
+import { tile } from '../_example'
 
 export const tlsLRepeater: BlockDefinition = {
   type: 'tls.l.repeater',
@@ -23,18 +24,18 @@ export const tlsLRepeater: BlockDefinition = {
   shortDescription: 'Repeats one template child once per data item',
   related: ['tls.l.grid'],
   describe: {
-    when: 'Use to lay out the same template block N times in a row or column.',
+    when:
+      "Container: repeat ONE template child (props.children[0]) count times in a column (direction 'y') or row ('x'). Use for N identical tiles; without a template it draws placeholder panels.",
     avoid: 'Do not use when the children differ from each other (use tls.l.stack or tls.l.grid).',
     example: {
       id: 'b_rep',
       type: 'tls.l.repeater',
-      props: { count: 3, direction: 'y', gap: 'sm' },
-      children: [],
+      props: { count: 3, direction: 'y', gap: 'sm', children: [tile('b_rep_1', 'Repeated item')] },
     },
   },
   schema,
   defaults,
-  size: { preferred: [800, 600], min: [100, 100] },
+  size: { preferred: [800, 420], min: [360, 310] },
   layout: layout as BlockDefinition['layout'],
   motion,
 }

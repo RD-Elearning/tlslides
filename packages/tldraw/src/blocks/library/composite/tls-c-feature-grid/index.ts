@@ -188,10 +188,7 @@ export const tlsCFeatureGrid: BlockDefinition = {
   shortDescription: 'Grid of icon + title + description cells',
   related: ['tls.m.icon-label', 'tls.m.icon-list', 'tls.c.cards'],
   describe: {
-    when:
-      'Use to show 2–6 feature highlights in a grid layout — each cell has ' +
-      'an icon, title, and short description. Good for capability overviews, ' +
-      'service lists, or product feature showcases.',
+    when: 'Use for 2-6 feature highlights in a grid, each with an icon, a title and a short description (capabilities, services, product pillars).',
     avoid: 'Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for 2-4 framed cards with a paragraph each (use tls.c.cards).',
     example: {
       id: 'b_feature_grid',
