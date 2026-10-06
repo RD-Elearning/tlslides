@@ -223,7 +223,7 @@ const composite = defineCompositeBlock<CaseStudyProps>({
   related: ['tls.c.cards', 'tls.c.testimonial', 'tls.g.before-after'],
   schema,
   defaults,
-  size: { preferred: [1500, 640], min: [560, 360] },
+  size: { preferred: [1500, 640], min: [820, 520] },
   describe: {
     when: 'Success stories, project showcases and references.',
     avoid: 'A generic 3-point list: tls.c.cards.',

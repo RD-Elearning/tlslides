@@ -6,6 +6,7 @@ import { tlsCProblemSolution, buildProblemSolution } from './index'
 import { standardBlockSuite, leavesOf, assertContained, assertNoTextOverlap } from '../../text/standard-suite'
 import { makeCtx } from '../../layout/test-helpers'
 import { depthOk, layoutAt, hasPart, registry } from '../composite-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 standardBlockSuite(tlsCProblemSolution, { withRegistry: true, noCapacity: true })
 
@@ -81,5 +82,11 @@ describe('tls.c.problem-solution', () => {
     const short = tlsCProblemSolution.intrinsicSize!(EX as any, ctx).height
     const long = tlsCProblemSolution.intrinsicSize!({ ...EX, problem: { title: 'P', text: 'long words here '.repeat(12) } } as any, ctx).height
     expect(long).toBeGreaterThan(short)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCProblemSolution)
   })
 })

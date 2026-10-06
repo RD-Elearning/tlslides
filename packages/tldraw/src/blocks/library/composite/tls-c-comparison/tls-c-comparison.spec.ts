@@ -23,6 +23,7 @@ import { validateDeckSpec } from '../../../validate-deck-spec'
 import { assertParity } from '../../../parity-harness'
 import type { DeckSpec, LayoutContext, LayoutNode } from '../../../types'
 import type { ComparisonProps } from './schema'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 /* ── helpers ───────────────────────────────────────────────────────────────── */
 
@@ -567,5 +568,11 @@ describe('tls.c.comparison', () => {
       expect(tlsCComparison.motion.parts!.length).toBe(2)
       expect(tlsCComparison.motion.preset).toBe('stagger-lines')
     })
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCComparison)
   })
 })

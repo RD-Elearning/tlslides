@@ -7,6 +7,7 @@ import { standardBlockSuite, leavesOf, assertContained, assertNoTextOverlap } fr
 import { contrastRatio } from '../../../color-math'
 import { lumOf } from '../../text/_engine/color'
 import { depthOk, layoutAt, hasPart, slideScopeCompiles } from '../composite-test'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 standardBlockSuite(tlsCCaseStudy, { withRegistry: true, noCapacity: true })
 
@@ -99,5 +100,11 @@ describe('tls.c.case-study', () => {
   it('the example compiles in a title and a blank region, inside the frame', () => {
     slideScopeCompiles(tlsCCaseStudy, 'title', 'title')
     slideScopeCompiles(tlsCCaseStudy, 'blank', 'content')
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCCaseStudy)
   })
 })

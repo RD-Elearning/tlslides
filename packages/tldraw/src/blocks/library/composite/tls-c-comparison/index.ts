@@ -81,7 +81,7 @@ export const tlsCComparison: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [960, 540], min: [280, 120] },
+  size: { preferred: [1200, 460], min: [900, 440] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity(

@@ -195,7 +195,7 @@ const composite = defineCompositeBlock<ProblemSolutionProps>({
   related: ['tls.g.before-after', 'tls.t.callout', 'tls.c.case-study'],
   schema,
   defaults,
-  size: { preferred: [1500, 360], min: [560, 200] },
+  size: { preferred: [1500, 360], min: [900, 320] },
   describe: {
     when: 'Pitch and proposal slides framing a pain point and the answer to it.',
     avoid: 'A visual before and after: tls.g.before-after or tls.m.image-compare.',
