@@ -145,10 +145,10 @@ Use `partMotion` so only the bars/lines grow or draw while labels, axes and lege
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
 |---|---|---|---|---|---|---|
 | Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1 | ✅ `6c496b90`, `480def10`, `071bc32b` (open: count-up `onUpdate` ignored by the GSAP driver, `sweep` on fills not from 12 o'clock, negative bars → M3) |
-| G01 structure | 13 | | | | M2 | ⬜ |
-| G02 heading, text, emphasis | 12 | | | | M2 | ⬜ |
-| G03 list | 9 | | | | M2 | ⬜ |
-| G11 chrome, decoration | 10 | | | | M2 | ⬜ |
+| G01 structure | 13 | 13 | 13 | 0 | M2 | ✅ `55d29ae8` |
+| G02 heading, text, emphasis | 12 | 12 | 7 | 0 | M2 | ✅ `985f844b` |
+| G03 list | 9 | 9 | 3 | 0 | M2 | ✅ `2c5ea313` |
+| G11 chrome, decoration | 10 | 10 | 8 | 0 (vertical rule reads as an appear: E7) | M2 | ✅ `b9d32ae4` |
 | G04 metric | 13 | | | | M3 | ⬜ |
 | G05 chart | 16 | | | | M3 | ⬜ |
 | G06 table, comparison | 13 | | | | M3 | ⬜ |
@@ -164,3 +164,4 @@ Use `partMotion` so only the bars/lines grow or draw while labels, axes and lege
 |---|---|---|---|
 | 2026-10-06 | controller | Plan written | Start M0 + M1 (one agent). Resume from the first ⬜ row in §3 |
 | 2026-10-06 | agent A (M0+M1) | Probe `6c496b90`; engine `480def10` (S8 rewind/first-paint flash, S14 baseline grow + real draw-on + `partMotion`, S16 4-term clip pairs, S26 `animate-guard`, J7 reduced = static); notes `071bc32b` | chart/heading probe clean except scatter/bubble `root` 100 ms (J5, M3). Pre-existing spec failures: `timeline.spec`, `motion-style.spec` (assert old G04/G05 recipes, M3 fixes them), `DeckViewer.spec` retreat (user's uncommitted DeckViewer edit). **Next: M2 = G01 + G02 + G03 + G11** |
+| 2026-10-06 | agent B (M2) + controller | G01/G02/G03/G11: 44/44 clean (31 fixed, 13 unchanged): `b9d32ae4`, `985f844b`, `2c5ea313`, `55d29ae8` (+ `library/motion-m2.spec.ts`), rows `e67eb580` (its message says 15/29; the right count is 13 unchanged / 31 fixed). Controller repaired `tls-c-hero.spec.ts` (RV10 `9a29421e` had spliced the subtle-style test into a helper: TS1005, suite could not run; 52/52 pass now) | Engine/probe issues E1–E7 (detail in `G11-chrome-decoration.md`): **E1** chained presets (`quote-in`, `title-then-body`, `radiate`, `draw-axis-then-nodes`) never chain, `resolve-motion.ts`; **E2** `resolvePartMotion` drops a part preset's own easing; **E3** probe flags the html wrapper 0→1 while parts are hidden; **E4** probe J4 counts pixel-fraction reformatting; **E5** motion PNGs at fixed 150/400/800 ms miss element blocks that start ~520 ms; **E7** no clip top-down preset for vertical rules. Plus M1 opens: count-up `onUpdate`, sweep from 12 o'clock, negative bars. **Next: engine fix (E1–E5, E7 + M1 opens) before M3**, then re-probe M2 categories in M6 |

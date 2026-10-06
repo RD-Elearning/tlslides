@@ -930,27 +930,7 @@ describe('tls.c.hero', () => {
       }
     })
   })
-})
 
-/* ── tree walk helpers ─────────────────────────────────────────────────────── */
-
-function collectParts(node: LayoutNode): string[] {
-  const result: string[] = []
-  function walk(n: LayoutNode) {
-    if (n.part) result.push(n.part)
-    if (n.k === 'group' && 'children' in n) {
-      for (const c of n.children) walk(c)
-    }
-  }
-  walk(node)
-  return result
-}
-
-function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[] }> {
-  const result: Array<{ part?: string; lines: any[] }> = []
-  function walk(n: LayoutNode) {
-    if (n.k === 'text') {
-      result.push({ part: n.part, lines: n.lines 
   describe('animate() — subtle motion style (RV10)', () => {
     it('plays one opacity-only fade per part and completes once, never the expressive timeline', async () => {
       const root = document.createElement('div')
@@ -978,3 +958,31 @@ function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[]
     })
   })
 })
+
+/* ── tree walk helpers ─────────────────────────────────────────────────────── */
+
+function collectParts(node: LayoutNode): string[] {
+  const result: string[] = []
+  function walk(n: LayoutNode) {
+    if (n.part) result.push(n.part)
+    if (n.k === 'group' && 'children' in n) {
+      for (const c of n.children) walk(c)
+    }
+  }
+  walk(node)
+  return result
+}
+
+function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[] }> {
+  const result: Array<{ part?: string; lines: any[] }> = []
+  function walk(n: LayoutNode) {
+    if (n.k === 'text') {
+      result.push({ part: n.part, lines: n.lines })
+    }
+    if (n.k === 'group' && 'children' in n) {
+      for (const c of n.children) walk(c)
+    }
+  }
+  walk(node)
+  return result
+}
