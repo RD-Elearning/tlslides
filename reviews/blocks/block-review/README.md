@@ -159,6 +159,9 @@ the Next.js "1 Issue" badge it causes. Known pre-existing failure, not yours:
 | S19 | G04 Y3 | `block-review.js` | With S8 present, mid frames at 120/500 ms show the second block already final; count-up/draw frames need `REVIEW_MID=450,600,750,900,1100` | ⬜ |
 | S20 | G07 | `blocks/clone-spec.ts` (`clonePropsWithFreshIds`) | Dropping a card from the gallery regenerates every `id` inside props, so `tls.g.flow` edges point at ids that no longer exist and the dropped flowchart is an unconnected column (`process/g-flow.drop-canvas.png`). Viewer is fine; tree/mindmap unaffected (they nest). Blocks flow C2 | ⬜ |
 | S21 | G07 | `BlockInserter/BlockPreview.tsx` | Wide group blocks scale to specks in 182×100 gallery cards (`process/g-steps.card.png`, `g-chevrons.card.png`); same cause as S9 | ⬜ |
+| S22 | G01 | `render-dom.tsx` / DeckViewer, or the block | `editorOnly` is not implemented anywhere: `tls.l.grid-guide` lines are drawn in viewer and Present (`structure/l-grid-guide.wide.png`). Needs a flag honoured by the renderer, or the block should leave the AI catalog | ⬜ |
+| S23 | G01 | `library/text` `tls.t.callout` | Callout tiles hug their content, so container cards show strips instead of filled slots; a fill-the-slot option would show slot extents | ⬜ |
+| S24 | G11 | slide-layouts / harness / planner docs | Nothing tells the planner where chrome blocks go (corner, edge, bottom strip) and the harness only places them in a normal region, so collisions with the `timeline` layout were not tested. Needs a placement hint or a furniture region type | ⬜ |
 
 ## 6. Progress
 
@@ -166,9 +169,9 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 
 | Group | Blocks | Done | Fixed (🔧) | Blocked (⏸) / open (❌) | Shared issues raised | Last commit | Status |
 |---|---|---|---|---|---|---|---|
-| G01 structure | 13 | 0 | 0 | 0 | — | — | ⬜ |
+| G01 structure | 13 | 13 | 12 | 0 | S22, S23 | `d034d863` | ✅ |
 | G02 heading, text, emphasis | 12 | 12 | 12 | 0 | S5–S13 | `04d99f1a` | ✅ (quote-image + subtitle re-shot 2026-10-06, both OK) |
-| G03 list | 9 | 0 | 0 | 0 | — | — | ⬜ |
+| G03 list | 9 | 9 | 9 | 0 | — | `086e60eb` | ✅ |
 | G04 metric | 13 | 13 | 12 | 0 | S14, S15, S19 | `932752a3` (+`3cf6d7f8` motion) | ✅ |
 | G05 chart | 16 | 16 | 16 | 0 | S14–S18 | `7ffdac75` | ✅ |
 | G06 table, comparison | 13 | 13 | 12 | 0 | — | `0ff5ffec` | ✅ |
@@ -176,8 +179,8 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | G08 hierarchy, relationship | 8 | 8 | 6 | 0 | — | `d176893e` | ✅ |
 | G09 media, people, brand | 14 | 0 | 0 | 0 | — | — | ⬜ |
 | G10 slide composites | 11 | 0 | 0 | 0 | — | — | ⬜ |
-| G11 chrome, decoration | 10 | 0 | 0 | 0 | — | — | ⬜ |
-| **Total** | **129** | **72** (G02 12, G04 13, G05 16, G06 13, G07 10, G08 8) | **68** | **1** | | | |
+| G11 chrome, decoration | 10 | 10 | 6 | 0 | S24 | `a27ba24b` | ✅ |
+| **Total** | **129** | **104** (G01 13, G02 12, G03 9, G04 13, G05 16, G06 13, G07 10, G08 8, G11 10) | **98** | **1** | | | |
 
 ## 7. Harness
 
@@ -196,3 +199,4 @@ an example fixes the card, the drop and the viewer at once.
 | 2026-10-06 | B1 agent (G04 + G05, G06 in progress) | G04 13/13 (12 fixed, stat-spotlight unchanged): `3d183129`, `c81eeb2d`, `883238df`, `932752a3`, motion `3cf6d7f8`, file `560c27f9`. G05 16/16 fixed: `1698ee42`, `0ff35d76`, `032bd592`, `bbe26557`, `7ffdac75`, file `ee53da81`→`ee22a1e8`. Shared issues S14–S19 | **Resume point:** the user asked to stop after B1. If G06 is not ✅ in §6, open `G06-table-comparison.md`, check `git status` for uncommitted edits under `library/data/_table`, `library/diagram/tls-g-{matrix-2x2,swot,pros-cons,before-after,iceberg}`, `library/composite/tls-c-{comparison,case-study,problem-solution}` (the agent's in-flight work: review the diff, run the related specs, commit or revert deliberately) and continue from the first ⬜ row. Then B2 (G07 + G08), B3 (G01 + G03 + G11), B4 (G09 + G10). `packages/tldraw/src/blocks/_scratch/` is an untracked scratch folder from the agent: delete once G06 is committed. Fix S5/S17 before B2 |
 | 2026-10-06 | controller | G06 closed: stopped agent's edits verified and committed (`74846ca3`, `76fff632`, `0ff5ffec`); harness PUT retry `cd6b1578`; scratch folder deleted. B1 complete: G04 + G05 + G06 | **Next: B2 = G07 (process, timeline) + G08 (hierarchy, relationship)**, then B3 (G01 + G03 + G11), B4 (G09 + G10). S17 is fixed: a full run with all passes is safe again |
 | 2026-10-06 | B2 agent + controller | G07 10/10 (`6678fa80`, `eceb981b`, `66946fdf`, file `ccc10e36`), G08 8/8 (`d176893e`, file `80d0447f`); controller re-shot timeline/hierarchy/relationship on the final build: no probe findings, breakdown/venn/milestones looked at | Diagram `_kit.ts` `placeLines`/`linesHeight` now use browser-true widths (also affects matrix-2x2, swot, pros-cons, before-after, iceberg, arrow; their specs pass). Helper `assertMotionTargetsExist` in `diagram-test.ts` checks every motion part exists and every drawn leaf is animated: port it to the other families (labels/leaders visible before their box was the common fault). **Next: B3 = G01 (structure) + G03 (list) + G11 (chrome, decoration)**, then B4 = G09 + G10 |
+| 2026-10-06 | B3 agent + controller | G03 9/9 (`086e60eb`, file `cc9a893b`), G01 13/13 (`d034d863`, file `5cfc131b`), G11 10/10 (`a27ba24b`, file `70c01295`); controller re-ran gallery/drop/viewer on the final build for list, structure, chrome, decoration: 30/32 probe-clean, the other two (decoration, pattern) flag their designed tint (`root:0.20`/`0.35`), not a fault | feature-grid titles/descriptions never appeared (animate only released icons) - fixed; containers had empty children (empty gallery cards) - examples now carry child tiles via `library/layout/_example.ts`; `tls.x.page-number` got an additive `total` slot. **Digest budget:** the top-8-largest-blocks digest test is near its 12 000-char limit; B4 examples that grow will trip it (keep `describe.when` short). Container examples: children go in `props.children`. Slot-size rule: `size.min <= size.preferred` in both dimensions. **Next: B4 = G09 (media, people, brand) + G10 (slide composites)** - the last batch |
