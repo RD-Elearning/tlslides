@@ -30,7 +30,7 @@ import {
   type TableSpec,
 } from '../../../layout/table'
 import { iconLeaf } from '../../text/_engine/icon'
-import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK } from '../_chart/kit'
+import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK, withRealWidths } from '../_chart/kit'
 
 export type ColKind = 'text' | 'number' | 'status' | 'rating' | 'check' | 'checkOrRating' | 'ratingOrCheck'
 /** The kinds an author may name (the two `...Or...` kinds are internal: compare-table cells). */
@@ -160,7 +160,6 @@ export function alignOf(v: unknown, kind: ColKind): CellAlign {
 /* ───────────────────────────── number metrics ───────────────────────────── */
 
 const EM: Record<string, number> = { '1': 0.42, '.': 0.28, ',': 0.28, ':': 0.28, ' ': 0.28, '-': 0.36, '/': 0.38, '%': 0.88, '+': 0.58, x: 0.54, '×': 0.58, K: 0.64, M: 0.88, B: 0.66, k: 0.54, m: 0.88, b: 0.58 }
-const NUMERIC = /^[+\-$€£]?\d[\d.,]*\s?(%|[KMBkmb]|x|×)?$/
 
 /**
  * Width of a numeric string in em, from sans-serif figure widths (digits ~0.58em, separators
@@ -173,19 +172,14 @@ export function numberWidthEm(text: string): number {
   return w
 }
 
-/** A context whose `measureText` knows figure widths, so numbers right-align on a common edge. */
+/**
+ * A context whose `measureText` knows the real glyph widths (RV06), so numbers right-align on a common
+ * edge AND text cells are as wide as their glyphs ("Team" had a 60-wide box for 71 units of text).
+ * It used a figure model for numbers only; `withRealWidths` uses the measured Inter table for every
+ * single-line string and wraps long text at spaces with the same widths.
+ */
 export function withNumberMetrics(ctx: LayoutContext): LayoutContext {
-  return {
-    ...ctx,
-    measureText: (text, style, maxWidth) => {
-      if (typeof text !== 'string' || !NUMERIC.test(text.trim())) return ctx.measureText(text, style, maxWidth)
-      const width = Math.round(numberWidthEm(text.trim()) * style.size * 10) / 10
-      // Numbers never wrap while they fit by the figure model (the flat estimate may disagree).
-      const m = ctx.measureText(text, style, width <= (maxWidth ?? Infinity) ? undefined : maxWidth)
-      if (m.lines.length !== 1) return m
-      return { ...m, width, lines: m.lines.map((l) => ({ ...l, width })) }
-    },
-  }
+  return withRealWidths(ctx)
 }
 
 /* ───────────────────────────── density ───────────────────────────── */

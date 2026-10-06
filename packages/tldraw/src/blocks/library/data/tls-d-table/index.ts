@@ -37,7 +37,7 @@ export const tlsDTable: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 520], min: [320, 160] },
+  size: { preferred: [1200, 520], min: [480, 240] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

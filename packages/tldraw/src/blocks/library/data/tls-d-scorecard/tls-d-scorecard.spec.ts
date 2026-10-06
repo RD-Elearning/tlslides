@@ -5,6 +5,7 @@
 import { tlsDScorecard } from './index'
 import { absoluteLeaves, allNodes, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 1200, height: 440 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDScorecard, props, size)
@@ -91,5 +92,11 @@ describe('tls.d.scorecard', () => {
     const short = tlsDScorecard.capacity!({ items: mk(8) } as any, { width: 1200, height: 300 }, ctx)
     expect(short.fits).toBe(false)
     expect(short.remedy.map((r) => r.kind)).toContain('paginate')
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDScorecard)
   })
 })

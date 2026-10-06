@@ -7,6 +7,7 @@ import { tlsDTable } from './index'
 import { numberWidthEm } from '../_table/kit'
 import { absoluteLeaves, allNodes, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 1200, height: 520 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDTable, props, size)
@@ -174,5 +175,11 @@ describe('tls.d.table', () => {
     const t = lay({ columns: cols, rows: [['a', '$4,820'], ['b', '12%'], ['c', '1.2M']], footer: undefined, showFooter: false })
     const edges = [0, 1, 2].map((r) => exact(t, `row[${r}].c1`)).map((l) => l.x + l.width)
     expect(Math.max(...edges) - Math.min(...edges)).toBeLessThan(0.5)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDTable)
   })
 })

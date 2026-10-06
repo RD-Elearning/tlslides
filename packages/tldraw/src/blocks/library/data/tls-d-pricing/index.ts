@@ -34,7 +34,7 @@ export const tlsDPricing: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1280, 700], min: [420, 300] },
+  size: { preferred: [1280, 700], min: [720, 520] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

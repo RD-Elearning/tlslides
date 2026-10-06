@@ -5,6 +5,7 @@
 import { tlsDRanking } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 900, height: 420 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDRanking, props, size)
@@ -90,5 +91,11 @@ describe('tls.d.ranking', () => {
     const ctx = chartCtx(SZ)
     expect(tlsDRanking.capacity!({ items: Array.from({ length: 8 }, (_, i) => ({ label: `${i}`, value: i })) } as any, SZ, ctx).fits).toBe(false)
     expect(tlsDRanking.capacity!({ items: Array.from({ length: 8 }, (_, i) => ({ label: `${i}`, value: i })) } as any, { width: 900, height: 640 }, ctx).fits).toBe(true)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDRanking)
   })
 })

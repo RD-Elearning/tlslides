@@ -5,6 +5,7 @@
 import { tlsDCompareTable } from './index'
 import { absoluteLeaves, allNodes, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 1100, height: 520 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDCompareTable, props, size)
@@ -96,5 +97,11 @@ describe('tls.d.compare-table', () => {
     expect(b.fits).toBe(true)
     const opts = tlsDCompareTable.capacity!({ ...(tlsDCompareTable.defaults as any), options: ['1', '2', '3', '4', '5', '6'] } as any, { width: 1100, height: 900 }, ctx)
     expect(opts.fits).toBe(false)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDCompareTable)
   })
 })

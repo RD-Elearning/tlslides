@@ -35,7 +35,7 @@ export const tlsDRanking: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [900, 420], min: [320, 180] },
+  size: { preferred: [900, 420], min: [350, 200] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

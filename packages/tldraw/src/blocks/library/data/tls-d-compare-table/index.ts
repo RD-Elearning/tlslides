@@ -34,7 +34,7 @@ export const tlsDCompareTable: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1100, 520], min: [320, 160] },
+  size: { preferred: [1100, 520], min: [350, 180] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

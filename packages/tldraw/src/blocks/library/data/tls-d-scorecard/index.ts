@@ -34,7 +34,7 @@ export const tlsDScorecard: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 440], min: [360, 160] },
+  size: { preferred: [1200, 440], min: [500, 240] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

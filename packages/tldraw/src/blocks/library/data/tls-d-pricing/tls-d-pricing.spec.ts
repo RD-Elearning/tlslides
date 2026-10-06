@@ -8,6 +8,7 @@ import { registerBuiltInBlocks } from '../../index'
 import { makeCtx } from '../../layout/test-helpers'
 import { absoluteLeaves, allNodes, assertContained, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, isNoData, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 1280, height: 700 }
 const reg = new BlockRegistry()
@@ -125,5 +126,11 @@ describe('tls.d.pricing', () => {
     expect(cap({ plans: [1, 2, 3, 4, 5].map((n) => plan(n)) }).fits).toBe(false)
     expect(cap({ plans: [plan(1), plan(2, false, Array.from({ length: 9 }, (_, i) => `f${i}`))] }).fits).toBe(false)
     expect(cap({}, { width: 1280, height: 300 }).fits).toBe(false)
+  })
+})
+
+describe('RV06 — example fits its box (review G06)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDPricing)
   })
 })
