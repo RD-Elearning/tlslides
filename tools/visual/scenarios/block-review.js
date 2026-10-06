@@ -292,26 +292,46 @@ module.exports = {
 
     // 4. editor present mode on the generated deck (wide slides only)
     if (PASSES.includes('present')) {
-      current = null
-      await go(page, `${base}/edit/${DECK_ID}`)
-      await page.waitForSelector('#canvas', { timeout: 20000 })
-      await page.waitForTimeout(1000)
-      for (let i = 0; i < BLOCKS.length; i++) {
-        const def = BLOCKS[i]
-        current = def.type
+      // Written first: a failure in this pass must not lose the viewer results.
+      fs.writeFileSync(path.join(OUT, 'report.json'), JSON.stringify(report, null, 2))
+      const openEditor = async () => {
+        await go(page, `${base}/edit/${DECK_ID}`)
+        await page.waitForSelector('#canvas', { timeout: 20000 })
+        await page.waitForTimeout(1000)
+      }
+      const present = async (pageId) => {
         // Leaving and entering Present are asynchronous: wait for each to settle, or the next
         // block's "enter" is skipped (state still true) and the pending "leave" then wins.
         await page.evaluate(() => window.tlapp.settings.isPresentationMode && window.tlapp.togglePresentationMode())
-        await page.waitForFunction(() => !window.tlapp.settings.isPresentationMode)
+        await page.waitForFunction(() => !window.tlapp.settings.isPresentationMode, null, { timeout: 6000 })
         await page.evaluate((id) => {
           const app = window.tlapp
           const pg = Object.values(app.document.pages).find((p) => p.id === id)
           if (pg) app.changePage(pg.id)
           app.togglePresentationMode()
-        }, `${slug(def.type)}-wide`)
-        await page.waitForFunction(() => window.tlapp.settings.isPresentationMode)
-        await page.waitForTimeout(SETTLE)
-        await page.screenshot({ path: path.join(OUT, `${slug(def.type)}.present.png`) })
+        }, pageId)
+        await page.waitForFunction(() => window.tlapp.settings.isPresentationMode, null, { timeout: 6000 })
+        // The flag can be on while the editor chrome is still showing: wait for the Present bar.
+        await page.waitForFunction(() => /Build \d+ \/ \d+/.test(document.body.innerText), null, { timeout: 6000 })
+      }
+      await openEditor()
+      for (const def of BLOCKS) {
+        current = def.type
+        const id = `${slug(def.type)}-wide`
+        try {
+          try {
+            await present(id)
+          } catch (e) {
+            // After many page changes the editor can stop toggling: start from a fresh page once.
+            await openEditor()
+            await present(id)
+          }
+          await page.waitForTimeout(SETTLE)
+          await page.screenshot({ path: path.join(OUT, `${slug(def.type)}.present.png`) })
+        } catch (e) {
+          R(def.type).presentError = String(e.message).split('\n')[0].slice(0, 160)
+          await openEditor().catch(() => {})
+        }
       }
     }
 
