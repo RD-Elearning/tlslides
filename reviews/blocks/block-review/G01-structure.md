@@ -37,12 +37,35 @@ One entry per problem: block, check id, what was wrong (with the shot file name)
 5. **Dishonest `size.min` (C6/C4), all.** 100x100 for every container; with the new examples the smallest box that keeps every label inside is 360x320 (stack) ... 480x140 (row). Preferred shrunk from 800x600 to the content scale (row 800x300). Spec `layout/structure-examples.spec.ts` (11 containers: carries children, children drawn, fits preferred / min / half-width, labels inside the box).
 6. **Checked, no change needed:** gap/padding/sizing, reflow in the half-width region (tiles re-wrap, nothing escapes), chains `2/2` and `1/1`, drop adds one shape of the preferred size. S20: no example references ids between children, so the id regeneration drops them intact.
 
+## Motion pass (M2)
+
+Agent B, 2026-10-06. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` on the final build, plus `REVIEW_MOTION_DUMP=1` timings and viewer mid frames (`REVIEW_MID=600,680,780,950`, block second after a title) for the changed blocks. Spec: `library/motion-m2.spec.ts` (all 44 M2 blocks: recipe parts exist, every drawn leaf covered, expressive 150–900 ms / out ease / stagger ≤ 120 ms / ≤ 2.5 s, subtle opacity only, furniture static). Narrow region: the harness plays it `subtle` (one opacity fade), so wrapping lines change no motion target; containers keep reading order when they reflow (row-major tags).
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a (no such motion: J6 applies to grows, draws and sweeps only).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.l.stack | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) |
+| tls.l.row | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) |
+| tls.l.grid | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) (row-major) |
+| tls.l.split | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) |
+| tls.l.overlay | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) over a fading background |
+| tls.l.card | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) after the panel |
+| tls.l.section | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) after surface, title, divider |
+| tls.l.repeater | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) (one per stamped item) |
+| tls.l.spacer | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 draws nothing but held ~0.3 s of the expressive chain → `preset: none` |
+| tls.l.safe-area | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) |
+| tls.l.grid-guide | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 guide lines faded/rose in → `preset: none` (static; S22 still open) |
+| tls.l.sidebar | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) (left column first) |
+| tls.l.footer | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `55d29ae8` | 🔧 was one unit rising as a whole; children now tagged `child/<i>` and stagger in reading order (40 ms) (main, then footer) |
+
 ## Shared issues raised
 
 Problems whose fix lies outside this group's files (README §3 rule 1). The controller copies them into README §5.
 
 - **S22 (grid-guide, safe-area: "editorOnly" does not exist)**: the docs of both blocks say "editor-only, invisible in output", but no code hides them: `headless: false` in the viewer, Present and the gallery, so `tls.l.grid-guide` lines are drawn on a presented slide (`structure/l-grid-guide.wide.png`). Needs a per-block `editorOnly` flag honoured by `render-dom.tsx` / `DeckViewer` (out of lane), or the blocks should be dropped from the AI catalog. Spacer and the two guides are inherently empty gallery cards (S9-like C1 note).
 - **S23 (layout containers, gallery card)**: callout tiles hug their content, so the card shows strips at the top of each slot rather than filled slots; a `fill`-the-slot option on `tls.t.callout` (text family, G02) would show the slot extents.
+
+- **M2 motion pass**: engine/probe issues E1–E7 are listed in [G11-chrome-decoration.md](G11-chrome-decoration.md) § Shared issues raised.
 
 ## Session log
 

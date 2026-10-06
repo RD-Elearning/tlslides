@@ -93,6 +93,26 @@ quote-image's photo/alt/quote/name/role); no report escapes/overflow/stuck parts
 completes (`2/2` wide, `1/1` narrow); quote's `quote-in` chain shows mark → text → attribution in
 the mid frames (`custom/t-quote.wide.mid-500.png`).
 
+## Motion pass (M2)
+
+Agent B, 2026-10-06. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` on the final build, plus `REVIEW_MOTION_DUMP=1` timings and viewer mid frames (`REVIEW_MID=600,680,780,950`, block second after a title) for the changed blocks. Spec: `library/motion-m2.spec.ts` (all 44 M2 blocks: recipe parts exist, every drawn leaf covered, expressive 150–900 ms / out ease / stagger ≤ 120 ms / ≤ 2.5 s, subtle opacity only, furniture static). Narrow region: the harness plays it `subtle` (one opacity fade), so wrapping lines change no motion target; containers keep reading order when they reflow (row-major tags).
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a (no such motion: J6 applies to grows, draws and sweeps only).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.t.title | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ words-in on text + rule; no change |
+| tls.t.subtitle | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ fade-up |
+| tls.t.kicker | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ fade |
+| tls.t.body | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ fade / expressive fade-up |
+| tls.t.caption | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ fade |
+| tls.t.footnote | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `985f844b` | 🔧 notes rose together → stagger under expressive |
+| tls.t.definition | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `985f844b` | 🔧 `title-then-body` is chained and the engine plays no chain: all 6 parts rose at once → stagger in reading order |
+| tls.t.quote | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `985f844b` | 🔧 `quote-in` (chained) rose all parts at once → glyph pop, quote stagger-lines, attribution fade, staggered |
+| tls.t.takeaway | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | ✅ | `985f844b` | 🔧 expressive `pop` scaled the whole 1440-wide card from 0.7 in ~85 ms (J5 ✗) → surface fades, accent bar grows down from its top (`50% 0%`), label/text rise after it |
+| tls.t.statement | ✅ | 🔧 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `985f844b` | 🔧 highlight/underline rects were no motion part: shown still with the block fade before their words rose → `emphasis` group hugging the rects, wipes left→right with the words |
+| tls.t.callout | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `985f844b` | 🔧 box/icon/title/text rose together → stagger under expressive |
+| tls.c.quote-image | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `985f844b` | 🔧 one `root` part moved the full-bleed photo and the text up 24 px together → photo + scrim fade, then mark, quote, name, role rise in order (done in ~0.5 s) |
+
 ## Shared issues raised
 
 Problems whose fix lies outside this group's files (README §3 rule 1). The controller copies them into README §5.
@@ -108,6 +128,8 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 | X7 | `tools/visual/scenarios/block-review.js` (present pass) | For every block after the first in a category, `<slug>.present.png` shows the normal editor (toolbar, no "Build n/n" bar): presentation mode is toggled off/on out of step with `changePage`. | `emphasis/t-callout.present.png`, `text/t-definition.present.png` |
 | X8 | `tools/visual/scenarios/block-review.js` (`REVIEW_MID` default) | Subtle entrances finish before 350 ms, so every `narrow.mid-350/900` frame equals the settled frame and shows nothing about motion. `REVIEW_MID=40,120,220` catches them. | `*/*.narrow.mid-350.png` (pixel-identical to `*.narrow.png`) |
 | X9 | slide layouts / harness (`blank` layout for slide-scope blocks) | tls.c.quote-image describes itself as a *full-bleed* photo, but in the `blank` layout it gets the content margins (80 px all round), so it is never full bleed. Either the harness/planner should use a bleed region for slide-scope photo blocks, or the description should drop "full-bleed". Not changed: the fix belongs to whoever owns slide layouts. | `emphasis/c-quote-image.wide.png` |
+
+- **M2 motion pass**: engine/probe issues E1–E7 are listed in [G11-chrome-decoration.md](G11-chrome-decoration.md) § Shared issues raised.
 
 ## Session log
 

@@ -35,12 +35,31 @@ One entry per problem: block, check id, what was wrong (with the shot file name)
 
 Checked and passing as-is: drag-drop adds one shape at the drop point for all 9 (inspectors open); chains complete (2/2 wide, 1/1 narrow); no overflow reports; list motion parts all exist and are covered (`stagger-lines`, `stagger-children` animate).
 
+## Motion pass (M2)
+
+Agent B, 2026-10-06. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` on the final build, plus `REVIEW_MOTION_DUMP=1` timings and viewer mid frames (`REVIEW_MID=600,680,780,950`, block second after a title) for the changed blocks. Spec: `library/motion-m2.spec.ts` (all 44 M2 blocks: recipe parts exist, every drawn leaf covered, expressive 150–900 ms / out ease / stagger ≤ 120 ms / ≤ 2.5 s, subtle opacity only, furniture static). Narrow region: the harness plays it `subtle` (one opacity fade), so wrapping lines change no motion target; containers keep reading order when they reflow (row-major tags).
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a (no such motion: J6 applies to grows, draws and sweeps only).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.t.bullets | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ stagger-lines, marker then text per row, rows 33 ms apart |
+| tls.t.numbered | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ badge → marker → text per row |
+| tls.t.checklist | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ box, tick, text, strike in order |
+| tls.t.kv-list | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ key → value → rule per row |
+| tls.t.tags | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ pill then label, left to right |
+| tls.c.feature-grid | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | 🔧 | ✅ | `2c5ea313` | 🔧 animate() ignored `rt.style`: subtle popped the icons (J7) → subtle = one fade; icon pop 0.4→0.7 start over the full step. Probe J1/J5 on `(block)` is the html wrapper going 0→1 in one frame while every part is hidden (dump: only paint-less wrapper/root visible) — probe artefact, reported |
+| tls.c.cards | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `2c5ea313` | 🔧 recipe named only `root`: the row rose as one unit → cards cascade left→right, lead/title/text after their card |
+| tls.c.feature-reveal | ✅ | ✅ | ✅ | 🔧 | 🔧 | n/a | ✅ | ✅ | `2c5ea313` | 🔧 cards 1000 ms / 90 px, icons 900 ms (J5) → 800 ms / 48 px; chain waited 2400 ms for a ~1.9 s timeline → 2000; J4 width/top/left were the browser re-serialising long fractions → template px rounded. Same html-wrapper J1/J5 probe artefact as feature-grid |
+| tls.m.icon-list | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |  | ✅ iconbg → icon → title → text per row |
+
 ## Shared issues raised
 
 Problems whose fix lies outside this group's files (README §3 rule 1). The controller copies them into README §5.
 
 - **S9/S21 (again)**: wide small-text list cards are small in the 182x100 gallery card (`list/t-bullets.card.png`, `t-kv-list.card.png`); legible only because the content hugs the box now.
 - **S10**: the default estimate is still wide for blocks outside this batch (text/_engine `placeText` consumers other than kv-list); G03 switched to `withRealWidths` per block.
+
+- **M2 motion pass**: engine/probe issues E1–E7 are listed in [G11-chrome-decoration.md](G11-chrome-decoration.md) § Shared issues raised.
 
 ## Session log
 
