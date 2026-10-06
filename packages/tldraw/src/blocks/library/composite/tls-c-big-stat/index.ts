@@ -93,6 +93,16 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     return
   }
 
+  // P7 `subtle`: one calm fade of every part, the number already final (no count-up, no slide).
+  // The viewer hides each part inline (opacity 0); without this branch the count-up below ran
+  // in the subtle slides too.
+  if (rt.style === 'subtle') {
+    const fades = [valueEl, labelEl, contextEl].filter((e): e is HTMLElement => !!e)
+    const hs = fades.map((el) => rt.driver.play(el, { opacity: [0, 1] }, { duration: Math.min(rt.timing.durationMs, 400), delay: rt.timing.delayMs, easing: 'ease-out', fill: 'forwards' }))
+    Promise.all(hs.map((h) => h.finished)).then(() => rt.onComplete())
+    return () => { hs.forEach((h) => h.cancel()) }
+  }
+
   // Read the final formatted text from the already-rendered DOM element.
   // The template/poster already wrote the correct formatted value; we just
   // need to animate from 0 to it.
@@ -139,6 +149,11 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
       }
     )
 
+    // The value part is hidden inline by the host until animate() reveals it. The count-up only
+    // writes its text, so without this tween the number stayed at opacity 0 for ever on the GSAP
+    // path (the label and context have their own tweens): the slide showed a label and no number.
+    tl.fromTo(valueEl, { opacity: 0 }, { opacity: 1, duration: durationSec * 0.25, ease: 'power2.out' }, 0)
+
     // Label slides in from below with opacity
     if (labelEl) {
       tl.fromTo(labelEl,
@@ -159,6 +174,8 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
 
     let resolved = false
     tl.then(() => {
+      // The count-up rounds ("4.25M" -> "4.3M"): finish on the exact formatted text.
+      valueEl.textContent = targetText
       if (!resolved) { resolved = true; rt.onComplete() }
     })
 
@@ -214,7 +231,10 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     handles.push(ctxHandle)
   }
 
-  Promise.all(handles.map((h) => h.finished)).then(() => rt.onComplete())
+  Promise.all(handles.map((h) => h.finished)).then(() => {
+    valueEl.textContent = targetText
+    rt.onComplete()
+  })
 
   return () => { handles.forEach((h) => h.cancel()) }
 }
@@ -248,7 +268,7 @@ export const tlsCBigStat: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [300, 200] },
+  size: { preferred: derivePreferredSize(), min: [520, 265] },
   layout: bigStatLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: bigStatAnimate },

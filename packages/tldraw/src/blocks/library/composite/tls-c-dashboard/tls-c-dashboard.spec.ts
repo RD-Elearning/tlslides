@@ -7,6 +7,7 @@ import { standardBlockSuite, leavesOf, assertContained } from '../../text/standa
 import { CHART_KINDS } from '../_chart'
 import { depthOk, layoutAt, hasPart, registry, slideScopeCompiles } from '../composite-test'
 import { lintParts, specDepth } from '../_kit'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 
 standardBlockSuite(tlsCDashboard, { withRegistry: true, noCapacity: true })
 
@@ -86,5 +87,11 @@ describe('tls.c.dashboard', () => {
   it('the example compiles in a blank content region and a title region, inside the frame', () => {
     slideScopeCompiles(tlsCDashboard, 'blank', 'content')
     slideScopeCompiles(tlsCDashboard, 'title', 'title')
+  })
+})
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsCDashboard)
   })
 })

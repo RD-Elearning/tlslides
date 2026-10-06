@@ -165,7 +165,7 @@ const composite = defineCompositeBlock<DashboardProps>({
   related: ['tls.c.chart-insight', 'tls.c.kpi-row'],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [800, 520] },
+  size: { preferred: [1600, 800], min: [800, 600] },
   describe: {
     when: 'Performance overview: monthly review, project status, business results.',
     avoid: 'One number: tls.c.big-stat. One chart with an explanation: tls.c.chart-insight.',

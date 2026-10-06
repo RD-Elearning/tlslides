@@ -51,3 +51,19 @@ describe('tls.c.stat-spotlight — specifics', () => {
     expect(root.querySelector('[data-stat-value]')!.textContent).toBe('1.250')
   })
 })
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the poster of the example lies inside size.preferred and size.min', () => {
+    const { makeCtx } = require('../../text/test-helpers')
+    const { absoluteLeaves } = require('../../text/standard-suite')
+    const props = { ...(tlsCStatSpotlight.defaults as any), ...(tlsCStatSpotlight.describe!.example.props as any) }
+    for (const [w, h] of [tlsCStatSpotlight.size.preferred, tlsCStatSpotlight.size.min]) {
+      const tree = tlsCStatSpotlight.poster!(props, makeCtx({ width: w, height: h }))
+      expect([w, h, tree.box.height <= h + 0.5]).toEqual([w, h, true])
+      for (const l of absoluteLeaves(tree)) {
+        const where = `${l.part ?? l.k} @${Math.round(l.x)},${Math.round(l.y)} ${Math.round(l.width)}x${Math.round(l.height)} in ${w}x${h}`
+        expect([where, l.x + l.width <= w + 1 && l.y + l.height <= h + 1]).toEqual([where, true])
+      }
+    }
+  })
+})

@@ -519,3 +519,44 @@ describe('tls.c.big-stat', () => {
     })
   })
 })
+
+describe('RV04 — example fits its box (review G04)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    // Tier B: the DOM template is CSS, the poster is the geometry the compiler and SVG use.
+    for (const [w, h] of [tlsCBigStat.size.preferred, tlsCBigStat.size.min]) {
+      const tree = tlsCBigStat.poster!({ ...(tlsCBigStat.defaults as any), ...(tlsCBigStat.describe!.example.props as any) }, makeCtx({ width: w, height: h }))
+      expect([w, h, tree.box.height <= h + 0.5]).toEqual([w, h, true])
+    }
+  })
+
+  const mount = () => {
+    const root = document.createElement('div')
+    for (const part of ['value', 'label', 'context']) {
+      const el = document.createElement('div')
+      el.setAttribute('data-part', part)
+      el.textContent = part === 'value' ? '$4.2M' : part
+      el.style.opacity = '0' // what the host does before animate()
+      root.appendChild(el)
+    }
+    return root
+  }
+  const timing = { delayMs: 0, durationMs: 800, staggerMs: 0, ease: 'ease-out' }
+
+  it('the GSAP path fades the value in (it used to stay at opacity 0: a label and no number)', () => {
+    const root = mount()
+    const tweened: Element[] = []
+    const tl: any = { fromTo: (t: any, _f: any, to: any) => { if ('opacity' in to) tweened.push(t); return tl }, then: () => undefined, kill: () => undefined }
+    tlsCBigStat.html!.animate!(root, { driver: {} as any, gsap: { timeline: () => tl }, timing, reducedMotion: false, onComplete: () => undefined })
+    expect(tweened).toContain(root.querySelector('[data-part=value]'))
+  })
+
+  it('subtle: every part gets one fade and the number is not counted up', () => {
+    const root = mount()
+    const played: Element[] = []
+    const driver = { play: (t: Element) => { played.push(t); return { cancel: () => undefined, finished: Promise.resolve() } }, set: () => undefined, cancelAll: () => undefined }
+    const done = jest.fn()
+    tlsCBigStat.html!.animate!(root, { driver: driver as any, gsap: { timeline: () => { throw new Error('no timeline in subtle') } }, timing, reducedMotion: false, style: 'subtle', onComplete: done })
+    expect(played).toHaveLength(3)
+    expect(root.querySelector('[data-part=value]')!.textContent).toBe('$4.2M')
+  })
+})
