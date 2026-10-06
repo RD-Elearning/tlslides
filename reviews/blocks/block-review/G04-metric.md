@@ -13,12 +13,12 @@ Columns are the §2 checks. Cell values: ⬜ not checked · ✅ pass (as-is) · 
 | Block | Category | Scope | Kind | C1 card | C2 drop+inspector | C3 wide | C4 narrow | C5 motion | C6 AI metadata | Status | Commit | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | tls.t.hero-number | metric | element | layout | ✅ | ✅ | 🔧 | ✅ | 🔧 | 🔧 | 🔧 | `883238df` | caption sat on the bottom edge; count-up counted the caption; size 520x330 / min 260x300 |
-| tls.d.progress-bar | metric | element | layout | 🔧 | 🔧 | 🔧 | ✅ | ✅ | 🔧 | 🔧 | `3d183129` | value overshot the track (digit widths); size 760x210 / min 240x132. Grows from centre: Y1 |
-| tls.d.progress-ring | metric | element | layout | ✅ | ✅ | 🔧 | ✅ | ✅ | 🔧 | 🔧 | `3d183129` | centre value off-centre; min 200x240. Arc "draws" by scaling from centre: Y1 |
+| tls.d.progress-bar | metric | element | layout | 🔧 | 🔧 | 🔧 | ✅ | ✅ | 🔧 | 🔧 | `3d183129` | value overshot the track (digit widths); size 760x210 / min 240x132. Motion: sweep-nodes `3cf6d7f8` (grow-bars scaled from the centre, Y1) |
+| tls.d.progress-ring | metric | element | layout | ✅ | ✅ | 🔧 | ✅ | ✅ | 🔧 | 🔧 | `3d183129` | centre value off-centre; min 200x240. Motion: sweep-nodes `3cf6d7f8` (the arc scaled from the block centre, Y1) |
 | tls.d.stat-compare | metric | group | layout | ✅ | ✅ | 🔧 | ✅ | 🔧 | 🔧 | 🔧 | `c81eeb2d` | +30% pill cramped; count-up on numeric parts only; min 260x132 |
-| tls.d.gauge | metric | element | layout | ✅ | 🔧 | 🔧 | 🔧 | ✅ | 🔧 | 🔧 | `c81eeb2d` | hub covered the value; min 220x160. Bands fade (draw-path has no effect on fills): Y1 |
+| tls.d.gauge | metric | element | layout | ✅ | 🔧 | 🔧 | 🔧 | ✅ | 🔧 | 🔧 | `c81eeb2d` | hub covered the value; min 220x160. Motion: bands sweep in order `3cf6d7f8` (draw-path did nothing on fills, Y1) |
 | tls.d.trend-badge | metric | element | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `c81eeb2d` | min 180x36 (label was ellipsised) |
-| tls.d.bullet-chart | metric | group | layout | ✅ | 🔧 | ✅ | ✅ | ✅ | 🔧 | 🔧 | `c81eeb2d` | value at the box edge, label clipped at min; min 360x110. Bars grow from centre: Y1 |
+| tls.d.bullet-chart | metric | group | layout | ✅ | 🔧 | ✅ | ✅ | ✅ | 🔧 | 🔧 | `c81eeb2d` | value at the box edge, label clipped at min; min 360x110. Motion: sweep-nodes `3cf6d7f8` (Y1) |
 | tls.c.kpi-tile | metric | element | layout | ✅ | ✅ | 🔧 | ✅ | 🔧 | 🔧 | 🔧 | `883238df` | bottom padding, long value autofit, min 200x210; label out of count-up |
 | tls.c.kpi-row | metric | group | layout | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | `883238df` | min 480x240 (tiles are 210 tall) |
 | tls.c.big-stat | metric | slide | html | ✅ | ✅ | 🔧 | 🔧 | 🔧 | 🔧 | 🔧 | `932752a3` | number never visible (opacity stuck 0 on the GSAP path); subtle = one fade; min 520x265 |
@@ -100,7 +100,7 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 
 | # | Area (suspected file) | Symptom | Shot / evidence |
 |---|---|---|---|
-| Y1 | `motion/presets.ts`, `waapi-driver.ts` (`grow-bars-x`, `grow-bars-y`, `grow-segments`, `draw-path`) | The grow presets are a plain `scale 0 -> 1` about the element's centre (no `transform-origin`), so progress-bar and bullet-chart fills inflate from the middle of the bar instead of growing from the left edge, and the progress-ring arc (a full-block path) scales from the block centre. `draw-path` (`stroke-dashoffset`) does nothing on filled paths, so the gauge bands fade as one block. The recipes are right in intent; the driver needs an origin per part (left for `-x`, bottom for `-y`) and a sweep for arcs. | `metric/d-progress-bar.wide.mid-600.png` (fills spanning 245-950 of a 80-1520 track), `custom/d-progress-ring.wide.mid-750.png`, `metric/d-gauge.wide.mid-600.png` |
+| Y1 | `motion/presets.ts`, `gsap-driver.ts` | `grow-bars-*` / `grow-segments` scale about the element centre and `draw-path` does nothing on fills: bars inflated from the middle, ring arcs from the block centre. Metric blocks were switched to `sweep-nodes` (`3cf6d7f8`); a real grow-from-baseline / sweep needs an origin per part (see G05 Y1, Y4: wipe presets also snap under GSAP). | `metric/d-progress-bar.wide.mid-600.png` (before) |
 | Y2 | `layout/measure.ts` (`tableMetrics` Inter table, `estimateMetrics`) | Same as S10 but specific: the "inter" table has digits 0.52 em (real 0.62) and `%` 0.64 (real 0.98), `+` 0.52 (0.66). Any block outside the data family that centres or right-aligns a number with `ctx.measureText` drifts. The measured table is now in `library/data/_chart/inter-width.ts` (`realWidth`) and could replace the generated one. | `d-progress-bar.wide.png` before the fix |
 | Y3 | `tools/visual/scenarios/block-review.js` | The wide mid frames at 120/500 ms show the second block of an expressive slide at its final state (S8) so count-up/draw frames need `REVIEW_MID=450,600,750,900,1100`. With those the in-progress states are visible (hero-number 600-900, ring 600-900). | `custom/t-hero-number.wide.mid-450.png` equals the settled frame |
 
