@@ -5,6 +5,8 @@
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  parts: ['axis', 'node[*]', 'date[*]', 'title[*]', 'text[*]'],
-  preset: 'draw-axis-then-nodes',
+  // RV07: `draw-axis-then-nodes` chains `draw-path` (a no-op on the axis rect, S14) and a rise; `sweep-nodes`
+  // fades the axis in, then nodes, stems and cards left to right.
+  parts: ['axis', 'axis.progress', 'node[*]', 'stem[*]', 'date[*]', 'title[*]', 'text[*]'],
+  preset: 'sweep-nodes',
 }

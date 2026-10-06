@@ -3,9 +3,10 @@
  */
 
 import { tlsGRoadmap } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, type Rect } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, within, type Rect, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1400, height: 520 }
 const MIN = { width: 700, height: 300 }
@@ -115,4 +116,10 @@ describe('tls.g.roadmap', () => {
     const stacked = Array.from({ length: 6 }, () => ({ name: 'L', items: Array.from({ length: 5 }, () => ({ label: 'a', start: 0, end: 3 })) }))
     expect(tlsGRoadmap.capacity!({ ...base, lanes: stacked }, SZ, ctx).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.roadmap example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGRoadmap))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGRoadmap))
 })

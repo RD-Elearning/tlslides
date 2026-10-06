@@ -3,9 +3,10 @@
  */
 
 import { tlsGMilestones } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1200, height: 320 }
 const MIN = { width: 600, height: 220 }
@@ -66,4 +67,10 @@ describe('tls.g.milestones', () => {
     expect(r.fits).toBe(false)
     expect(JSON.stringify(r.remedy)).toMatch(/vertical/)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.milestones example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGMilestones))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGMilestones))
 })

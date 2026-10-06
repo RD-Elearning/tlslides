@@ -91,7 +91,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     const titleLines = Math.max(1, Math.min(2, Math.floor((maxH - (dh ? dh + 2 : 0)) / lineH(tS))))
     const th = linesHeight(ctx, e.title, tS, w, titleLines)
     const room = maxH - dh - (dh ? 2 : 0) - th - 4
-    const nl = showText && e.text ? Math.max(0, Math.min(5, Math.floor(room / lineH(textS)))) : 0
+    const nl = showText && e.text ? Math.max(0, Math.min(5, Math.floor((room + 1) / lineH(textS)))) : 0
     const xh = nl > 0 ? linesHeight(ctx, e.text, textS, w, nl) : 0
     const total = dh + (dh ? 2 : 0) + th + (xh ? 4 + xh : 0)
     let y = anchor === 'top' ? box.y : box.y - total
@@ -138,7 +138,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
         drawCard(i, { x: left, y: axisY - D / 2 - STEM - 2, width: cardW }, 'center', cardsH, 'bottom', true)
       } else {
         nodes.push(solidRect({ x: nx - 1, y: axisY + D / 2, width: 2, height: STEM }, stemColor(i), `stem[${i}]`))
-        drawCard(i, { x: left, y: axisY + D / 2 + STEM + 2, width: cardW }, 'center', Math.max(0, cardsH - 2), 'top', true)
+        drawCard(i, { x: left, y: axisY + D / 2 + STEM + 2, width: cardW }, 'center', Math.max(0, cardsH), 'top', true)
       }
       drawNode(i, nx, axisY)
     }

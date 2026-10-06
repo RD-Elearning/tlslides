@@ -3,9 +3,10 @@
  */
 
 import { tlsGTimeline } from './index'
+import { assertExampleFits } from '../../data/_chart/chart-test'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane } from '../../data/_chart/chart-test'
-import { assertNoOverlap, chartCtx, layoutOf, rectsOf, type Rect } from '../diagram-test'
+import { assertNoOverlap, chartCtx, layoutOf, rectsOf, type Rect, assertMotionTargetsExist } from '../diagram-test'
 
 const SZ = { width: 1400, height: 520 }
 const MIN = { width: 640, height: 360 }
@@ -101,4 +102,10 @@ describe('tls.g.timeline', () => {
     expect(tlsGTimeline.capacity!({ ...six, alternate: true }, SZ, ctx).fits).toBe(true)
     expect(tlsGTimeline.capacity!({ ...six, alternate: true, events: events(9) }, SZ, ctx).fits).toBe(false)
   })
+})
+
+// RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
+describe('tls.g.timeline example', () => {
+  it('fits size.preferred and size.min', () => assertExampleFits(tlsGTimeline))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTimeline))
 })

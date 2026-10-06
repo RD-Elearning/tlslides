@@ -30,4 +30,16 @@ describe('tls.c.journey — specifics', () => {
     expect(html.match(/data-part="label\[/g)).toHaveLength(5)
     expect(html).toContain('data-part="path"')
   })
+
+  it('RV07: at size.min the example nodes (and their halo) stay inside the box and in order', () => {
+    const [w, h] = tlsCJourney.size.min
+    const n = (tlsCJourney.describe!.example.props as any).milestones.length
+    const g = geometry(w, h, n)
+    for (const p of g.nodes) {
+      expect(p.x - g.r).toBeGreaterThanOrEqual(0)
+      expect(p.x + g.r).toBeLessThanOrEqual(w)
+      expect(p.y - g.r).toBeGreaterThan(0)
+      expect(p.y + g.r).toBeLessThan(h)
+    }
+  })
 })

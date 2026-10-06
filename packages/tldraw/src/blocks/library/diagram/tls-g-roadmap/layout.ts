@@ -111,7 +111,7 @@ export function layout(props: RoadmapProps, ctx: LayoutContext): LayoutNode {
   const legendH = colored && pl.used.length > 0 ? lineH(labelS) + 12 : 0
   const avail = Math.max(1, H - headerH - legendH)
   const sum0 = pl.lanes.reduce((a, l) => a + laneHeight(l.rows, BAR_H, SUB_GAP, LANE_PAD), 0)
-  const f = sum0 > 0 ? clamp(avail / sum0, 0.5, 1.4) : 1
+  const f = sum0 > 0 ? clamp(avail / sum0, 0.5, 1.8) : 1
   const minBar = Math.ceil(lineH(labelS))
   const barH = Math.max(minBar, BAR_H * f)
   const gap = SUB_GAP * Math.min(1, f)
