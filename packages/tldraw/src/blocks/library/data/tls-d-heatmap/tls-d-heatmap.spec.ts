@@ -6,6 +6,7 @@ import { tlsDHeatmap } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
 import { relativeLuminance, tryHexToRgb } from '../../../color-math'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 900, height: 420 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDHeatmap, props, size)
@@ -96,5 +97,11 @@ describe('tls.d.heatmap', () => {
     const ctx = chartCtx(SZ)
     expect(tlsDHeatmap.capacity!({ rows: Array.from({ length: 13 }, () => 'r'), cols: ['a', 'b'] } as any, SZ, ctx).fits).toBe(false)
     expect(tlsDHeatmap.capacity!({ rows: ['a', 'b'], cols: Array.from({ length: 13 }, () => 'c') } as any, SZ, ctx).fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDHeatmap)
   })
 })

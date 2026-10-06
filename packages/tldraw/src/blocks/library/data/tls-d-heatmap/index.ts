@@ -25,9 +25,9 @@ export const tlsDHeatmap: BlockDefinition = {
       id: 'b_heatmap',
       type: 'tls.d.heatmap',
       props: {
-        rows: ['Mon', 'Tue'],
-        cols: ['AM', 'PM', 'Eve'],
-        values: [[3, 8, 5], [4, 9, 2]],
+        rows: ['Mon', 'Tue', 'Wed', 'Thu'],
+        cols: ['Morning', 'Afternoon', 'Evening'],
+        values: [[3, 8, 5], [4, 9, 2], [6, 7, 3], [2, 5, 9]],
       },
     },
   },

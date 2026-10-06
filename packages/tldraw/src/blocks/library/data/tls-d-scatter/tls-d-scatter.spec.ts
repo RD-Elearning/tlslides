@@ -5,6 +5,7 @@
 import { tlsDScatter } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf, textsOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 820, height: 500 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDScatter, props, size)
@@ -115,5 +116,11 @@ describe('tls.d.scatter', () => {
   it('capacity: more than 60 points fails', () => {
     const r = tlsDScatter.capacity!({ points: Array.from({ length: 61 }, (_, i) => ({ x: i, y: i })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDScatter)
   })
 })

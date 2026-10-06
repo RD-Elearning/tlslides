@@ -5,6 +5,7 @@
 import { tlsDBubble } from './index'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, chartCtx, isNoData, layoutOf } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 820, height: 500 }
 const lay = (props: Record<string, unknown>, size = SZ) => layoutOf(tlsDBubble, props, size)
@@ -91,5 +92,11 @@ describe('tls.d.bubble', () => {
   it('capacity: more than 30 points fails', () => {
     const r = tlsDBubble.capacity!({ points: Array.from({ length: 31 }, (_, i) => ({ x: i, y: i, r: 1 })) } as any, SZ, chartCtx(SZ))
     expect(r.fits).toBe(false)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDBubble)
   })
 })

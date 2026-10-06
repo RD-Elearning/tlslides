@@ -101,7 +101,9 @@ export function layout(props: HeatmapProps, ctx0: LayoutContext): LayoutNode {
   )
 
   if (legendH > 0) {
-    const y = H - lh - 4
+    // Right under the grid (cells are capped at 96 tall, so the box bottom can be far below it).
+    const gridBottom = headH + rows.length * ch + (rows.length - 1) * gap
+    const y = Math.min(H - lh - 4, gridBottom + sp.sm)
     const sw = 28
     const swH = Math.min(14, lineH(ls) - 4)
     const loT = fmtNum(lo, props.format)

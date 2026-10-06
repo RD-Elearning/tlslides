@@ -6,6 +6,7 @@ import { tlsDSparkline } from './index'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { absoluteLeaves, standardBlockSuite } from '../../text/standard-suite'
 import { assertChartSane, isNoData } from '../_chart/chart-test'
+import { assertExampleFits } from '../_chart/chart-test'
 
 const SZ = { width: 420, height: 90 }
 const lay = (props: Record<string, unknown>, size = SZ) => tlsDSparkline.layout({ ...(tlsDSparkline.defaults as any), ...props } as any, makeCtx(size, makeRegistry()))
@@ -81,5 +82,11 @@ describe('tls.d.sparkline', () => {
     const label = exact(t, 'label')
     const last = exact(t, 'last')
     expect(label.x + label.width).toBeLessThanOrEqual(last.x)
+  })
+})
+
+describe('RV05 — example fits its box (review G05)', () => {
+  it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
+    assertExampleFits(tlsDSparkline)
   })
 })

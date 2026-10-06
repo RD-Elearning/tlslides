@@ -15,6 +15,7 @@ import { BUBBLE_MAX_POINTS } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, dot, emptyState, faded, fmtNum, lineH, mutedStyle, niceAxis, numOrNull, oneLine, readableOn, root, str,
   textAligned, TEXT_SLACK, valueAxisLeft,
+  withRealWidths,
 } from '../_chart/kit'
 
 interface Bp {
@@ -25,7 +26,9 @@ interface Bp {
   idx: number
 }
 
-export function layout(props: BubbleProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: BubbleProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const pts: Bp[] = []

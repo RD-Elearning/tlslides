@@ -14,12 +14,18 @@ import { areaPath, linePath } from '../_engine/line-path'
 import type { Point } from '../_engine/line-path'
 import {
   asArr, capacityOf, chartColors, dot, emptyState, fmtNum, fmtSigned, isNum, lineH, mutedStyle, numOrNull, oneLine, pathNode, root, str, style, textAligned,
-  tintOf, TEXT_SLACK, readableOn,
+  tintOf, realWidth, readableOn,
 } from '../_chart/kit'
 
-export function layout(props: SparklineProps, ctx: LayoutContext): LayoutNode {
-  const W = Math.max(1, ctx.box.width)
-  const H = Math.max(1, ctx.box.height)
+/** Tallest a sparkline grows: it is a word-sized chart, not a region filler (RV05). */
+const MAX_H = 150
+
+export function layout(props: SparklineProps, ctx0: LayoutContext): LayoutNode {
+  const W = Math.max(1, ctx0.box.width)
+  // A strip, not a panel: in a tall region it keeps a 5:1-ish ratio and hugs the top instead of
+  // stretching to the whole region (it was 1440 x 700 on a full-width slide).
+  const H = Math.min(Math.max(1, ctx0.box.height), Math.max(64, Math.min(MAX_H, W * 0.3)))
+  const ctx: LayoutContext = { ...ctx0, box: { width: W, height: H } }
   const values = asArr<unknown>(props.values).slice(0, SPARK_MAX_VALUES).map(numOrNull)
   const finite = values.filter(isNum)
   if (finite.length < 2) return emptyState(ctx)
@@ -38,8 +44,8 @@ export function layout(props: SparklineProps, ctx: LayoutContext): LayoutNode {
   const last = finite[finite.length - 1]
   const delta = last - first
   const lastText = showLast === 'none' ? '' : showLast === 'delta' ? fmtSigned(delta, props.format) : fmtNum(last, props.format)
-  const lastW = lastText ? Math.min(W * 0.3, Math.ceil(ctx.measureText(lastText, ts).width * TEXT_SLACK) + 2) : 0
-  const labelW = label ? Math.min(W * 0.42, Math.ceil(ctx.measureText(label, ls).width * TEXT_SLACK) + 2) : 0
+  const lastW = lastText ? Math.min(W * 0.3, Math.ceil(realWidth(lastText, ts) * 1.04) + 2) : 0
+  const labelW = label ? Math.min(W * 0.42, Math.ceil(realWidth(label, ls) * 1.04) + 2) : 0
   const x0 = labelW ? labelW + gap : 0
   const x1 = Math.max(x0 + 8, W - (lastW ? lastW + gap : 0))
 

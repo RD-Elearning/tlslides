@@ -15,6 +15,7 @@ import { layoutLegend } from '../_engine/legend'
 import {
   asArr, capacityOf, chartColors, clamp, dimmed, dot, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, numOrNull, oneLine, pathNode,
   root, seriesColors, solidRect, str, textAligned, TEXT_SLACK, valueAxisLeft,
+  withRealWidths,
 } from '../_chart/kit'
 
 interface Pt {
@@ -25,7 +26,9 @@ interface Pt {
   idx: number
 }
 
-export function layout(props: ScatterProps, ctx: LayoutContext): LayoutNode {
+export function layout(props: ScatterProps, ctx0: LayoutContext): LayoutNode {
+  // Browser-true single-line widths for every label decision (RV05).
+  const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const pts: Pt[] = []
@@ -71,7 +74,9 @@ export function layout(props: ScatterProps, ctx: LayoutContext): LayoutNode {
   nodes.push(...yaxis.nodes)
   const plot = yaxis.plot
   const xspan = ax.max - ax.min || 1
-  const px = (v: number) => plot.x + plot.width * clamp((v - ax.min) / xspan, 0, 1)
+  // Points on the axis extremes keep their whole dot off the y-axis labels (RV05): inset by the radius.
+  const dotR = pts.length <= 20 ? 8 : pts.length <= 40 ? 6 : 5
+  const px = (v: number) => plot.x + dotR + Math.max(0, plot.width - 2 * dotR) * clamp((v - ax.min) / xspan, 0, 1)
   const py = yaxis.y
 
   // X tick labels (every n-th when they would crowd).
@@ -110,7 +115,7 @@ export function layout(props: ScatterProps, ctx: LayoutContext): LayoutNode {
   }
 
   // Points.
-  const r = pts.length <= 20 ? 8 : pts.length <= 40 ? 6 : 5
+  const r = dotR
   pts.forEach((p) => nodes.push(dot(px(p.x), py(p.y), r, colorOf(p), `point[${p.idx}]`, c.surface)))
 
   // Labels.
@@ -126,7 +131,8 @@ export function layout(props: ScatterProps, ctx: LayoutContext): LayoutNode {
     const cy = py(p.y)
     const right = cx + r + 4 + w <= W
     const x = right ? cx + r + 4 : cx - r - 4 - w
-    const y = cy - lh / 2
+    // Above the dot's centre line: a trend line usually runs through the points, and a label centred on it is struck out.
+    const y = cy - lh - 1
     const box = { x, y, w, h: lh }
     if (x < 0 || placed.some((b) => box.x < b.x + b.w && box.x + box.w > b.x && box.y < b.y + b.h && box.y + box.h > b.y)) continue
     placed.push(box)

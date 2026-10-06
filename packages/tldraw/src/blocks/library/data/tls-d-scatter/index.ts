@@ -26,12 +26,13 @@ export const tlsDScatter: BlockDefinition = {
       type: 'tls.d.scatter',
       props: {
         points: [
-          { x: 1, y: 3 },
-          { x: 2, y: 5 },
-          { x: 3, y: 4 },
-          { x: 4, y: 8 },
+          { x: 12, y: 34, label: 'Basic' },
+          { x: 24, y: 51, label: 'Plus' },
+          { x: 38, y: 47, label: 'Pro' },
+          { x: 55, y: 82, label: 'Max' },
         ],
         trendline: true,
+        labelPoints: 'all',
       },
     },
   },

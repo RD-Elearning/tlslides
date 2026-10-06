@@ -29,7 +29,7 @@ export const tlsDSparkline: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [420, 90], min: [120, 36] },
+  size: { preferred: [420, 90], min: [200, 60] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],
