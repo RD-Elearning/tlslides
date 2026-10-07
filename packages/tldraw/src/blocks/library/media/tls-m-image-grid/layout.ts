@@ -13,6 +13,7 @@ import type { ImageGridProps } from './schema'
 import { GRID_MAX_IMAGES } from './schema'
 import { altFindings, asArr, clamp, enumOf, imageLeaf, lineH, objs, onColor, side, str } from '../_kit'
 import { placeLines } from '../../diagram/_kit'
+import { byPrefix, slotItems } from '../../composite/_slots'
 
 export interface Rect {
   x: number
@@ -155,7 +156,10 @@ export function layout(props: ImageGridProps, ctx: LayoutContext): LayoutNode {
       nodes.push(...placeLines(ctx, cap, ink, { x: c.x + inset + 12, y: py + 6, width: Math.max(1, pw - 24) }, 'start', 1, `cap[${i}]`).nodes)
     }
   })
-  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: nodes }
+  // RVM5: each image's caption (pill + text) sits in a slot `caption[i]` emitted for every image,
+  // so caption i always follows image i in the stagger, even when an earlier image has none.
+  const children = r.hasCaps ? slotItems(nodes, r.items.length, 'caption', byPrefix('cap'), { width: W, height: H }) : nodes
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children }
 }
 
 export function lint(props: ImageGridProps): LintFinding[] {
