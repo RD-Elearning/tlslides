@@ -68,7 +68,7 @@ function derivePreferredSize(): [number, number] {
 type GsapLike = {
   fromTo(target: unknown, from: unknown, to: unknown): { kill(): void; then(cb?: () => void): Promise<void> }
   timeline(): {
-    fromTo(target: unknown, from: unknown, to: unknown): unknown
+    fromTo(target: unknown, from: unknown, to: unknown, position?: number): unknown
     then(cb?: () => void): Promise<void>
     kill(): void
   }
@@ -78,10 +78,31 @@ function isGsap(obj: unknown): obj is GsapLike {
   return !!obj && typeof obj === 'object' && typeof (obj as GsapLike).timeline === 'function'
 }
 
+/* ── choreography (RVM5) ──────────────────────────────────────────────────── */
+
+/**
+ * When each part starts (s): a clear hierarchy, kicker, then title, then subtitle, CTA last, each
+ * rising 24 px over `PART_S` on an out ease. Was a GSAP timeline that appended every tween after
+ * the previous one had finished (positionless `fromTo`), plus the host's 40 ms stagger: a 1.2 s
+ * chain whose steps did not overlap, and the gradient sweep eased in and out.
+ */
+export const HERO_AT: Record<string, number> = { kicker: 0, title: 0.15, subtitle: 0.4, cta: 0.6 }
+const PART_S = 0.6
+/** Split variant: the title halves slide in from ±`HALF_X` px (was ±100). */
+const HALF_X = 60
+/** Gradient-sweep variant: the backdrop wipes in first, the parts follow `SWEEP_LEAD` s later. */
+const SWEEP_S = 0.7
+const SWEEP_LEAD = 0.2
+
+/** The longest variant (gradient sweep): lead + the CTA's start + its rise, for chaining. */
+export const HERO_MS = Math.round((SWEEP_LEAD + HERO_AT.cta + PART_S) * 1000)
+
+const at = (part: HTMLElement, i: number): number => HERO_AT[part.dataset.part ?? ''] ?? 0.15 * i
+
 /* ── driver fallback (non-GSAP path) ──────────────────────────────────────── */
 
 /**
- * Fallback animation when GSAP is not available: stagger parts via the motion driver.
+ * Fallback animation when GSAP is not available: the same hierarchy via the motion driver.
  * Shared by all variants in the non-GSAP path.
  */
 function driverFallback(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void) {
@@ -95,9 +116,9 @@ function driverFallback(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     const h = rt.driver.play(part,
       { opacity: [0, 1], translate: ['0px 24px', '0px 0px'] },
       {
-        duration: rt.timing.durationMs,
-        delay: rt.timing.delayMs + i * rt.timing.staggerMs,
-        easing: rt.timing.ease,
+        duration: PART_S * 1000,
+        delay: rt.timing.delayMs + at(part, i) * 1000,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
         fill: 'forwards',
       }
     )
@@ -110,7 +131,7 @@ function driverFallback(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
 /* ── per-variant GSAP animations ──────────────────────────────────────────── */
 
 /**
- * Classic variant: stagger each data-part with a GSAP timeline, fading in from below.
+ * Classic variant: each data-part rises in at its place in the hierarchy (`HERO_AT`).
  */
 function animateClassicGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRuntime): void | (() => void) {
   const parts = root.querySelectorAll<HTMLElement>('[data-part]')
@@ -120,13 +141,11 @@ function animateClassicGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRu
   }
 
   const tl = gsap.timeline()
-  const staggerSec = rt.timing.staggerMs / 1000
-  const durationSec = rt.timing.durationMs / 1000
-
   parts.forEach((part, i) => {
     tl.fromTo(part,
       { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: durationSec, delay: i * staggerSec, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: PART_S, ease: 'power3.out' },
+      at(part, i)
     )
   })
 
@@ -137,52 +156,32 @@ function animateClassicGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRu
 }
 
 /**
- * Split variant: non-title parts stagger-fade from below; title halves slide
- * in from opposite sides (first from left, second from right).
+ * Split variant: non-title parts rise in at their place in the hierarchy; the title halves slide
+ * in from opposite sides (first from the left, second from the right) at the title's place.
  */
 function animateSplitGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRuntime): void | (() => void) {
   const tl = gsap.timeline()
-  const staggerSec = rt.timing.staggerMs / 1000
-  const durationSec = rt.timing.durationMs / 1000
 
   const titleEl = root.querySelector<HTMLElement>('[data-part="title"]')
   const allParts = root.querySelectorAll<HTMLElement>('[data-part]')
 
-  let partIndex = 0
-
-  // Non-title parts: staggered fade-in
-  allParts.forEach((part) => {
+  allParts.forEach((part, i) => {
     if (part === titleEl) return
     tl.fromTo(part,
       { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: durationSec, delay: partIndex * staggerSec, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: PART_S, ease: 'power3.out' },
+      at(part, i)
     )
-    partIndex++
   })
 
-  // Title halves: slide from opposite sides
   if (titleEl) {
     const first = titleEl.querySelector<HTMLElement>('[data-half="first"]')
     const second = titleEl.querySelector<HTMLElement>('[data-half="second"]')
-
-    // Make title visible immediately so halves can be positioned
-    tl.fromTo(titleEl,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.01, delay: partIndex * staggerSec }
-    )
-
-    if (first) {
-      tl.fromTo(first,
-        { opacity: 0, x: -100 },
-        { opacity: 1, x: 0, duration: durationSec, ease: 'power3.out' }
-      )
-    }
-    if (second) {
-      tl.fromTo(second,
-        { opacity: 0, x: 100 },
-        { opacity: 1, x: 0, duration: durationSec, ease: 'power3.out' }
-      )
-    }
+    const t = HERO_AT.title
+    // The title box only holds the halves (each hidden by its own from-state): show it at once.
+    tl.fromTo(titleEl, { opacity: 0 }, { opacity: 1, duration: 0.01 }, t)
+    if (first) tl.fromTo(first, { opacity: 0, x: -HALF_X }, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, t)
+    if (second) tl.fromTo(second, { opacity: 0, x: HALF_X }, { opacity: 1, x: 0, duration: 0.7, ease: 'power3.out' }, t + 0.08)
   }
 
   let resolved = false
@@ -192,8 +191,8 @@ function animateSplitGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRunt
 }
 
 /**
- * Gradient-sweep variant: a background gradient sweeps in from left, then
- * parts stagger-fade from below.
+ * Gradient-sweep variant: the background gradient wipes in from the left, then the parts rise in
+ * at their place in the hierarchy.
  */
 function animateGradientSweepGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMotionRuntime): void | (() => void) {
   const parts = root.querySelectorAll<HTMLElement>('[data-part]')
@@ -203,24 +202,22 @@ function animateGradientSweepGsap(root: HTMLElement, gsap: GsapLike, rt: BlockMo
   }
 
   const tl = gsap.timeline()
-  const staggerSec = rt.timing.staggerMs / 1000
-  const durationSec = rt.timing.durationMs / 1000
 
-  // Gradient sweep: clip-path from right-hidden to fully visible
   const gradientBg = root.querySelector<HTMLElement>('[data-gradient-bg]')
   if (gradientBg) {
     tl.fromTo(gradientBg,
       // Four explicit `%` terms on both ends: GSAP pairs the numbers in order (S16).
       { clipPath: 'inset(0% 100% 0% 0%)' },
-      { clipPath: 'inset(0% 0% 0% 0%)', duration: durationSec * 1.5, ease: 'power2.inOut' }
+      { clipPath: 'inset(0% 0% 0% 0%)', duration: SWEEP_S, ease: 'power3.out' },
+      0
     )
   }
 
-  // Parts: staggered fade-in
   parts.forEach((part, i) => {
     tl.fromTo(part,
       { opacity: 0, y: 24 },
-      { opacity: 1, y: 0, duration: durationSec, delay: i * staggerSec, ease: 'power3.out' }
+      { opacity: 1, y: 0, duration: PART_S, ease: 'power3.out' },
+      (gradientBg ? SWEEP_LEAD : 0) + at(part, i)
     )
   })
 
@@ -254,8 +251,13 @@ function heroAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => v
     return runShowcase(root, rt, { gsap: () => () => undefined, driver: () => [] })
   }
 
-  // Read variant from the root element's data attribute (set by the template)
-  const variant: HeroVariant = (root.dataset.variant as HeroVariant) ?? 'classic'
+  // Read the variant from the template's data attribute. RVM5: the template puts it on its outer
+  // div, inside the host element the viewer hands to animate(), so `root.dataset` alone never saw
+  // it and split / gradient-sweep always played the classic timeline in the viewer.
+  const variant: HeroVariant =
+    (root.dataset.variant as HeroVariant | undefined) ??
+    (root.querySelector<HTMLElement>('[data-variant]')?.dataset.variant as HeroVariant | undefined) ??
+    'classic'
 
   // GSAP path: per-variant timeline
   if (isGsap(rt.gsap)) {

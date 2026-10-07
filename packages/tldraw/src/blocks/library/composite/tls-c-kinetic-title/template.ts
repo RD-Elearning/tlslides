@@ -30,7 +30,7 @@ export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): st
         return `<div data-orb="${i}" style="${base}background:${accent};"></div>`
       })
       .join('')
-    out.push(`<div data-part="decor" style="position:absolute;inset:0;pointer-events:none;">${shapes}</div>`)
+    out.push(`<div data-part="decor" style="position:absolute;inset:0px;pointer-events:none;">${shapes}</div>`)
   }
 
   const kicker = str(props.kicker, 40)
