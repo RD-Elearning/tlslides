@@ -174,6 +174,84 @@ rule draws top-down, donut sweeps from 12 o'clock, `quote-in` chains, count-up c
 Open: `tls.c.feature-reveal` card stagger 140 → ≤ 120 ms (M6 / G01 owner); M3 moves the charts
 back to grow/draw/sweep presets with `partMotion`; `diagram-test.ts` `BROKEN` list (M4).
 
+## Final sweep (M6)
+
+Agent A, 2026-10-07. Commits: `5d6d5913` (engine), `5b2ed0ec` (gauge, steps), `a1213b9e` (journey),
+`001e85cb` (probe).
+
+### Fixed in M6
+
+| Item | Root cause | Fix |
+|---|---|---|
+| E-M5-1 images | nothing waited for an `<img>`; a photo that loaded after its fade started popped in at 0.7–1.0 | `playBlockReveal` holds an image part (hidden, no placeholder) until `img.decode()` resolves or `IMAGE_WAIT_MS` = 600 ms; the wait comes out of its delay; a newer reveal or a settle cancels the late start |
+| Settle on skip | the already-revealed / reduced path set only opacity, translate, scale | `settleBlockParts()` (DeckViewer and reduced motion use it): both scale axes, `clip-path: none` on any part that wipes / draws / clips, `stroke-dashoffset: 0` on drawn paths, sweep proxies cancelled (J3 on skip). DeckViewer.tsx: only this hunk committed |
+| Sweep start angle | `sweep` always opened from 12 o'clock | `partMotion` `startAngle` / `sweepAngle` (degrees, clockwise from 12) / `sweepCentre` (`x% y%` of the painted box). `tls.d.gauge` bands sweep from 9 o'clock round 180° about the ring centre (was a wipe-x) |
+| `tls.g.steps` vertical rail | one part for both directions, wiped across its 2 px | vertical rail = part `step[i].connector-v` with `wipe-down` |
+| `tls.c.journey` track | the dotted guide track was not a part and appeared in one frame (the probe's "A3" on journey was real) | `data-part="track"` (poster too), fades in first on every path |
+| Probe A1 | a from-state set the frame the wrapper starts to show read as a 1→0 jump | a jump towards hidden from a frame that showed nothing is ignored |
+| Probe A2 | stagger starts included the block fade / the from-state set | samples carry own opacity and clip; a member starts at its first own move towards rest (else the first visible inherited move) |
+| Probe A3 | paint-less wrappers judged on opacity | an element that paints nothing (wrapper, `root`) is judged on translate/scale only and has no J5 timing; a child the driver animates or that is invisible at registration is not its paint |
+| Probe A4 | two delegated `root` wrappers read as one family | a family is the part pattern under the same parent pattern |
+| Probe A5 | `inset:0` vs `inset: 0px` read as a J4 change | px units dropped before comparing |
+
+Specs: `motion/smoothness.spec.ts` (M6 block: sector start/turn, resolver passes the sweep, settle
+state, image hold / timeout / cancel); `motion-m3.spec` gauge preset, `motion-m4.spec` steps rail +
+OPTIONAL, `tls-g-steps.spec` vertical rail part — intended changes. Related suites pass except the
+pre-existing `DeckViewer.spec › retreating into an auto build step…` (the user's uncommitted
+DeckViewer edit). tsc 0.
+
+### Sweep
+
+`REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced`, every category, final
+build (one rebuild after the fixes). Cells: clean / rows (❌ = a row with any J✗).
+
+| Category | Blocks | static | subtle | expressive | reduced |
+|---|---|---|---|---|---|
+| structure | 13 | 13/13 | 13/13 | 13/13 | 13/13 |
+| decoration | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| heading | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| text | 4 | 4/4 | 4/4 | 4/4 | 4/4 |
+| list | 9 | 9/9 | 9/9 | 9/9 | 9/9 |
+| metric | 13 | 13/13 | 13/13 | 13/13 | 13/13 |
+| emphasis | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| learning | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| chart | 16 | 16/16 | 16/16 | 16/16 | 16/16 |
+| table | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| comparison | 10 | 10/10 | 10/10 | 10/10 | 10/10 |
+| process | 6 | 6/6 | 6/6 | 6/6 | 6/6 |
+| timeline | 4 | 4/4 | 4/4 | 3/4 ❌ | 4/4 |
+| hierarchy | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| relationship | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| cover | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| media | 7 | 7/7 | 7/7 | 7/7 | 7/7 |
+| agenda | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| people | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| divider | 1 | 1/1 | 1/1 | 1/1 | 1/1 |
+| closing | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| brand | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| chrome | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| **Total** | **129** | **129/129** | **129/129** | **128/129** | **129/129** |
+
+The one flagged row is `tls.c.journey` expressive, J5 stagger `label[*]` 267–283 ms on every run:
+the nodes and labels are timed by where the drawing line reaches each stop (gaps follow the path
+geometry, 5 stops over a 900 ms out-eased draw), not by a list stagger. Kept by design; J5's 120 ms
+item stagger is for list-like reveals. Every other row is clean, and the artefact-prone blocks M3–M5
+reported (progress-bar/ring, matrix-2x2, grouped-bar, waterfall, chevrons, stat-spotlight,
+feature-reveal, big-stat, hero, kinetic-title, c.steps, steps, gauge) were clean on two extra runs ×
+four styles.
+
+Visual check (`REVIEW_PASSES=gallery,drop,viewer REVIEW_MID=500`) on metric, process and timeline:
+no stuck parts, no console errors, every drop added a shape; looked at the gauge (settled and a
+mid-sweep frame from 9 o'clock), journey and steps PNGs — as designed. PNGs deleted, report.json
+kept.
+
+### Open
+
+- `tls.c.journey` label/node gaps exceed the 120 ms item stagger by design (above).
+- The editor/Present path (`render-dom.tsx` html host) still has no untouched-part guard (all html
+  blocks pass the S26 spec) and does not wait for images.
+- `DeckViewer.spec` retreat test waits on the user's uncommitted DeckViewer edit.
+
 ## 3. Progress
 
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
