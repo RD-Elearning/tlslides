@@ -223,7 +223,24 @@ const composite = defineCompositeBlock<CoverProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM5: a clear hierarchy — the photo / field (and its scrim) fades in in place, the logo with it
+  // (brand furniture, calm), then kicker, title (line by line when centred), subtitle; the meta line
+  // and the soft decoration come last. Under 1.1 s for a four-line title. Was `root` fade-up.
+  motion: {
+    parts: ['image', 'field', 'scrim', 'logo', 'kicker', 'title', 'subtitle', 'meta', 'decoration'],
+    preset: 'fade-up',
+    partMotion: {
+      image: { preset: 'sweep-nodes', delay: 0, stagger: 0 },
+      field: { preset: 'sweep-nodes', delay: 0, stagger: 0 },
+      scrim: { preset: 'sweep-nodes', delay: 0, stagger: 0 },
+      logo: { preset: 'sweep-nodes', delay: 0, stagger: 0 },
+      kicker: { preset: 'fade-up', delay: 100, stagger: 60 },
+      title: { preset: 'fade-up', delay: 220, stagger: 80 },
+      subtitle: { preset: 'fade-up', delay: 480, stagger: 60 },
+      meta: { preset: 'sweep-nodes', delay: 650, stagger: 0 },
+      decoration: { preset: 'sweep-nodes', delay: 650, stagger: 0 },
+    },
+  },
   build: buildCover,
 })
 

@@ -105,12 +105,19 @@ describe('slide composites: title length extremes and variants stay in the box',
   })
 })
 
+/** RVM5: recipe parts only another variant / style draws (motion-m5.spec checks each variant). */
+const VARIANT_PARTS: Record<string, RegExp | undefined> = {
+  'tls.c.cover': /^(field|scrim|decoration)$/,
+  'tls.c.divider': /^field$/,
+  'tls.c.recap': /^(card|number|point)\[\*\]$/,
+}
+
 describe('slide composites: layout-kind motion recipes name real parts', () => {
   for (const type of ['tls.c.cover', 'tls.c.divider', 'tls.c.agenda', 'tls.c.objectives', 'tls.c.closing', 'tls.c.recap', 'tls.c.contact', 'tls.t.qa', 'tls.c.quiz']) {
     it(`${type}: parts exist, every drawn leaf is covered, the preset animates`, () => {
       const d = def(type)
       const withCtx = { ...d, layout: ((props: any) => d.layout(props, ctx(d.size.preferred[0], d.size.preferred[1]))) as BlockDefinition['layout'] }
-      assertMotionTargetsExist(withCtx as BlockDefinition)
+      assertMotionTargetsExist(withCtx as BlockDefinition, { optional: VARIANT_PARTS[type] })
     })
   }
 })

@@ -227,7 +227,21 @@ const composite = defineCompositeBlock<ClosingProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM5: the panel fades in, the title (line by line) and the text rise in, the person (photo,
+  // name, role) and the contacts fade in in place, and the call to action comes last. Was `root`
+  // fade-up (one unit).
+  motion: {
+    parts: ['panel', 'title', 'text', 'person', 'contacts', 'cta'],
+    preset: 'fade-up',
+    partMotion: {
+      panel: { preset: 'sweep-nodes', delay: 0, stagger: 0 },
+      title: { preset: 'fade-up', delay: 0, stagger: 80 },
+      text: { preset: 'fade-up', delay: 200, stagger: 60 },
+      person: { preset: 'sweep-nodes', delay: 350, stagger: 50 },
+      contacts: { preset: 'sweep-nodes', delay: 600, stagger: 60 },
+      cta: { preset: 'fade-up', delay: 780, stagger: 0 },
+    },
+  },
   build: buildClosing,
 })
 

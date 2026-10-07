@@ -128,7 +128,18 @@ const composite = defineCompositeBlock<DividerProps>({
     avoid: 'The first slide: use tls.c.cover.',
     example: { id: 'b_divider', type: 'tls.c.divider', props: { number: '02', title: 'Describing data', subtitle: 'Centre, spread and shape', variant: 'numeral' } },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM5: the accent field (variant `field`) wipes in from the left, then the section number, the
+  // title (line by line when centred) and the subtitle rise in. Was `root` fade-up (one unit).
+  motion: {
+    parts: ['field', 'number', 'title', 'subtitle'],
+    preset: 'fade-up',
+    partMotion: {
+      field: { preset: 'wipe-x', delay: 0, stagger: 0 },
+      number: { preset: 'fade-up', delay: 120, stagger: 60 },
+      title: { preset: 'fade-up', delay: 230, stagger: 80 },
+      subtitle: { preset: 'fade-up', delay: 430, stagger: 60 },
+    },
+  },
   build: buildDivider,
 })
 
