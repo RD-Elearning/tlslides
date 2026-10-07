@@ -6,29 +6,37 @@
  * The walker recurses through:
  *  - `spec.props.children` — array of BlockSpec
  *  - `spec.children`       — array of BlockSpec (top-level)
- *  - `spec.props.<any>.id` — any nested `id` key inside a child spec's props
+ *  - any BlockSpec nested inside `spec.props` (an object with a string `type` and a
+ *    `props` object, e.g. a container's `props.children`)
+ *
+ * S20: an `id` on any other object inside props (a `tls.g.flow` node, which its edges'
+ * `from` / `to` refer to) is data that only needs to be unique within its block, so it is
+ * kept verbatim: regenerating it broke every reference to it.
  *
  * Everything is cloned via JSON round-trip so the caller never gets a reference
  * to the original (the example is shared module state).
  *
- * Pure + DOM-free: no `document`, `window`, `Date.now()`. `Utils.uniqueId` is
- * used for the new ids (it is deterministic in tests: a module-level counter).
+ * Pure + DOM-free: no `document`, `window`, `Date.now()`. `Utils.uniqueId()` (a
+ * random UUID-shaped string) is used for the new ids.
  */
 
 import { Utils } from '@tlslides/core'
 import type { BlockSpec } from './types'
 
-/** Generate a fresh, unique id. */
+/**
+ * Generate a fresh, unique id. `Utils.uniqueId(arg)` with an argument is its internal
+ * one-hex-digit helper (`uniqueId('block')` gave ids like "7", so siblings collided): call it bare.
+ */
 function freshId(): string {
-  return Utils.uniqueId('block')
+  return 'b_' + Utils.uniqueId()
 }
 
 /**
  * Regenerate every `id` in a BlockSpec tree, returning a deep clone.
  *
- * Walks `spec.id`, `spec.children` (each a BlockSpec), and any `id` key found
- * inside `spec.props` (which may itself contain nested `children` arrays or
- * block-shaped objects). Non-`id` data is preserved by reference-free JSON copy.
+ * Walks `spec.id`, `spec.children` (each a BlockSpec), and every BlockSpec nested
+ * inside `spec.props` (e.g. `children` arrays). Everything else, including the `id`
+ * of a plain data object in props, is preserved by reference-free JSON copy.
  */
 export function cloneSpecWithFreshIds(spec: BlockSpec): BlockSpec {
   // Start from a full JSON deep-clone so the original example object is never
@@ -51,30 +59,27 @@ export function cloneSpecWithFreshIds(spec: BlockSpec): BlockSpec {
   return clone
 }
 
+/** A nested BlockSpec: a string `type` plus a `props` object (a container's child). */
+function isBlockSpec(value: Record<string, unknown>): boolean {
+  return typeof value.type === 'string' && !!value.props && typeof value.props === 'object' && !Array.isArray(value.props)
+}
+
+/** Clone one value found inside props: a nested BlockSpec gets fresh ids, anything else is walked. */
+function cloneValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneValue)
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    return isBlockSpec(obj) ? cloneSpecWithFreshIds(obj as unknown as BlockSpec) : clonePropsWithFreshIds(obj)
+  }
+  return value // primitives are copied by the JSON round-trip already
+}
+
 /**
- * Walk an arbitrary props object, regenerating every `id` field in place on the
- * clone. Recurses into arrays and nested objects, and treats any object with
- * `type` + `props` as a nested BlockSpec (so `tls.l.row`'s `children` slot,
- * etc., get their ids refreshed too).
+ * Walk an arbitrary props object on the clone. Only nested BlockSpecs (so `tls.l.row`'s
+ * `children` slot, etc.) get fresh ids; a plain data object keeps its `id`, because other
+ * props may refer to it (S20: `tls.g.flow` edges name their nodes by id).
  */
 function clonePropsWithFreshIds(obj: Record<string, unknown>): Record<string, unknown> {
-  for (const [key, value] of Object.entries(obj)) {
-    if (key === 'id' && typeof value === 'string') {
-      obj[key] = freshId()
-      continue
-    }
-
-    if (Array.isArray(value)) {
-      obj[key] = value.map((item) => {
-        if (item && typeof item === 'object' && !Array.isArray(item)) {
-          return clonePropsWithFreshIds(item as Record<string, unknown>)
-        }
-        return item
-      })
-    } else if (value && typeof value === 'object') {
-      obj[key] = clonePropsWithFreshIds(value as Record<string, unknown>)
-    }
-    // primitives are copied by JSON round-trip already
-  }
+  for (const [key, value] of Object.entries(obj)) obj[key] = cloneValue(value)
   return obj
 }
