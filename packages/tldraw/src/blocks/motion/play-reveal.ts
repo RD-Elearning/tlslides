@@ -146,6 +146,30 @@ function countTarget(el: HTMLElement): HTMLElement | undefined {
   return /\d/.test(target.textContent ?? '') ? (target as HTMLElement) : undefined
 }
 
+/**
+ * M3 — the text a count-up shows at `progress` (0–1) of its target, in the target's own format:
+ * the same prefix/suffix, thousands separator and number of decimals ("1,250" counts
+ * "0" … "625" … "1,250", "$4.25M" counts "$0.00M" … "$4.25M"), so the number never changes
+ * shape on its last frame. A text with no number counts nothing (returns it unchanged).
+ */
+export function countFormat(text: string): (progress: number) => string {
+  const m = /^(.*?)(\d[\d.,]*)(.*)$/.exec(text)
+  if (!m) return () => text
+  const [, prefix, raw, suffix] = m
+  const grouped = /^\d{1,3}([.,]\d{3})+$/.exec(raw)
+  if (grouped) {
+    const sep = grouped[1][0]
+    const value = Number(raw.split(sep).join(''))
+    return (p) => prefix + Math.round(value * p).toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep) + suffix
+  }
+  const dec = /[.,]/.exec(raw)?.[0]
+  const decimals = dec ? raw.length - raw.indexOf(dec) - 1 : 0
+  const value = Number(dec ? raw.replace(dec, '.') : raw)
+  if (!Number.isFinite(value)) return () => text
+  return (p) =>
+    prefix + (decimals > 0 ? (value * p).toFixed(decimals).replace('.', dec ?? '.') : Math.round(value * p).toString()) + suffix
+}
+
 /** One tween a part element plays: on itself, or (a draw-on) on a stroked path inside it. */
 interface PartPlay {
   target: Element
@@ -228,22 +252,102 @@ function mode(values: number[]): number | undefined {
  * Per-element origins for a one-axis grow on its preset's default origin (M1b): bars below the
  * zero line grow down from it. The zero line is the edge most bars of the family share (bottom
  * for columns, left for bars); a bar whose opposite edge sits on it hangs below / left of zero
- * and grows from that edge instead. Waterfall-style floating bars need their own part origin.
+ * and grows from that edge instead. M3: the axis follows the family's geometry, floating
+ * (waterfall) bars grow from the level of the bar before them, and stacked segments grow about
+ * the zero line column by column.
  */
-function zeroLineOrigins(els: HTMLElement[], pm: ResolvedPartMotion, root: Element): (string | undefined)[] {
+function zeroLineOrigins(els: HTMLElement[], pm: ResolvedPartMotion, root: Element): GrowPlan {
   const preset = MOTION_PRESETS[pm.presetId ?? '']
-  const vertical = !!pm.keyframes.scaleY
-  const horizontal = !!pm.keyframes.scaleX
-  if (els.length < 2 || (!vertical && !horizontal) || !preset || pm.origin !== preset.origin) return els.map(() => pm.origin)
+  let vertical = !!pm.keyframes.scaleY
+  let horizontal = !!pm.keyframes.scaleX
+  const keep: GrowPlan = { origins: els.map(() => pm.origin) }
+  if (els.length < 2 || (!vertical && !horizontal) || !preset || pm.origin !== preset.origin) return keep
   const boxes = els.map((e) => layoutBox(e, root))
-  if (boxes.some((b) => !b || !(b.w > 0 && b.h > 0))) return els.map(() => pm.origin)
+  if (boxes.some((b) => !b || !(b.w > 0 && b.h > 0))) return keep
   const bs = boxes as { x: number; y: number; w: number; h: number }[]
+  // M3: the axis follows the family's geometry. Columns share one width and differ in height,
+  // bars of a horizontal chart share one height and differ in width; a chart with an
+  // `orientation` option names its bars the same either way, so the recipe cannot know.
+  const same = (vs: number[]) => vs.every((v) => Math.abs(v - vs[0]) <= 1)
+  let keyframes: MotionKeyframes | undefined
+  if (vertical && same(bs.map((b) => b.h)) === false && same(bs.map((b) => b.w)) === false) {
+    // neither a column family nor a bar family: leave it as authored
+  } else if (vertical && same(bs.map((b) => b.h)) && !same(bs.map((b) => b.w))) {
+    vertical = false
+    horizontal = true
+    keyframes = swapAxis(pm.keyframes, 'x')
+  } else if (horizontal && same(bs.map((b) => b.w)) && !same(bs.map((b) => b.h))) {
+    vertical = true
+    horizontal = false
+    keyframes = swapAxis(pm.keyframes, 'y')
+  }
+  const near = (a: number, b: number) => Math.abs(a - b) <= 1.5
+  // Stacked segments (`grow-segments`) scale about the family's zero line, so the segments of one
+  // stack grow together as one column (no gaps open between them), and the stacks stagger in
+  // column order: every segment of a stack shares its column's slot.
+  if (pm.presetId === 'grow-segments') {
+    const pct = (v: number) => `${Math.round(v * 100) / 100}%`
+    const rank = (vs: number[]) => {
+      const keys: number[] = []
+      for (const v of [...vs].sort((a, b) => a - b)) if (!keys.some((k) => near(k, v))) keys.push(v)
+      return vs.map((v) => keys.findIndex((k) => near(k, v)))
+    }
+    if (vertical) {
+      const zero = mode(bs.map((b) => b.y + b.h))
+      if (zero === undefined) return keep
+      return { origins: bs.map((b) => `50% ${pct(((zero - b.y) / b.h) * 100)}`), slots: rank(bs.map((b) => b.x)), ...(keyframes ? { keyframes } : {}) }
+    }
+    const zero = mode(bs.map((b) => b.x))
+    if (zero === undefined) return keep
+    return { origins: bs.map((b) => `${pct(((zero - b.x) / b.w) * 100)} 50%`), slots: rank(bs.map((b) => b.y)), ...(keyframes ? { keyframes } : {}) }
+  }
+  // Floating bars (a waterfall step) sit on neither side of the zero line: one that hangs from
+  // the level of the bar before it (its top on that bar's top or bottom edge) grows down from
+  // there; any other grows from its bottom.
   if (vertical) {
     const zero = mode(bs.map((b) => b.y + b.h))
-    return bs.map((b) => (zero !== undefined && Math.abs(b.y - zero) <= 1.5 && b.y + b.h > zero + 1 ? '50% 0%' : pm.origin))
+    const origins = bs.map((b, i) => {
+      if (zero === undefined) return '50% 100%'
+      if (near(b.y + b.h, zero)) return '50% 100%'
+      if (near(b.y, zero) && b.y + b.h > zero + 1) return '50% 0%'
+      const prev = i > 0 ? bs[i - 1] : undefined
+      if (prev && (near(b.y, prev.y) || near(b.y, prev.y + prev.h)) && !near(b.y + b.h, prev.y)) return '50% 0%'
+      return '50% 100%'
+    })
+    return { origins, ...(keyframes ? { keyframes } : {}) }
   }
   const zero = mode(bs.map((b) => b.x))
-  return bs.map((b) => (zero !== undefined && Math.abs(b.x + b.w - zero) <= 1.5 && b.x < zero - 1 ? '100% 50%' : pm.origin))
+  const origins = bs.map((b, i) => {
+    if (zero === undefined) return '0% 50%'
+    if (near(b.x, zero)) return '0% 50%'
+    if (near(b.x + b.w, zero) && b.x < zero - 1) return '100% 50%'
+    const prev = i > 0 ? bs[i - 1] : undefined
+    if (prev && (near(b.x + b.w, prev.x + prev.w) || near(b.x + b.w, prev.x)) && !near(b.x, prev.x + prev.w)) return '100% 50%'
+    return '0% 50%'
+  })
+  return { origins, ...(keyframes ? { keyframes } : {}) }
+}
+
+/** Per-element grow origins, and the family's keyframes when its axis was switched (M3). */
+interface GrowPlan {
+  origins: (string | undefined)[]
+  keyframes?: MotionKeyframes
+  /** Stagger slot per element (default: its index); stacked segments share their column's. */
+  slots?: number[]
+}
+
+/** The same one-axis grow along the other axis (`scaleY` ↔ `scaleX`). */
+function swapAxis(kf: MotionKeyframes, to: 'x' | 'y'): MotionKeyframes {
+  const out: MotionKeyframes = { ...kf }
+  if (to === 'x' && kf.scaleY) {
+    out.scaleX = kf.scaleY
+    delete out.scaleY
+  }
+  if (to === 'y' && kf.scaleX) {
+    out.scaleY = kf.scaleX
+    delete out.scaleX
+  }
+  return out
 }
 
 /** The left-to-right wipe a filled part gets in place of a draw-on (equal four-term insets). */
@@ -364,14 +468,17 @@ export function playBlockReveal(
   // 3. Set hidden state on ALL parts synchronously, before the block becomes visible.
   //    Parts are children of `el`, so they're invisible while the block is at opacity: 0.
   //    Measure before anything is hidden (a scale of 0 would change the rects).
-  const planned = partMotions.map((pm) => {
-    const { els, indexed } = partElements(el, pm.partName)
-    const origins = zeroLineOrigins(els, pm, el)
+  const planned = partMotions.map((pmIn) => {
+    const { els, indexed } = partElements(el, pmIn.partName)
+    const grow = zeroLineOrigins(els, pmIn, el)
+    const origins = grow.origins
+    const pm = grow.keyframes ? { ...pmIn, keyframes: grow.keyframes } : pmIn
     const u = pm.presetId === 'sweep' ? paintedUnion(els) : undefined
     const centre = u ? { x: (u.left + u.right) / 2, y: (u.top + u.bottom) / 2 } : undefined
     return {
       pm,
       indexed,
+      slots: grow.slots,
       els: els.map((partEl, i) => ({
         partEl,
         // count-up keeps its own textContent tween on the part element (step 6)
@@ -408,11 +515,11 @@ export function playBlockReveal(
   })
 
   // 6. Play part-level animations with stagger.
-  for (const { pm, els: planEls, indexed } of planned) {
+  for (const { pm, els: planEls, indexed, slots } of planned) {
     planEls.forEach(({ partEl, plays }, elementIndex) => {
       // P7: indexed elements of one part stagger by the preset's step (exact matches keep
-      // the part's own delay, as before).
-      const delay = pm.delayMs + (indexed ? elementIndex * (pm.staggerMs ?? 0) : 0)
+      // the part's own delay, as before). M3: stacked segments stagger by column.
+      const delay = pm.delayMs + (indexed ? (slots?.[elementIndex] ?? elementIndex) * (pm.staggerMs ?? 0) : 0)
       // Count-up: intercept onUpdate to tween textContent.
       // P7: count on the single text leaf inside the part (a one-line text part renders as
       // part > line div). A label with no digit ("Adoption" used to become "Adoption0Adoption")
@@ -421,10 +528,11 @@ export function playBlockReveal(
       const countEl = countTarget(partEl as HTMLElement)
       if (pm.presetId === 'count-up' && countEl) {
         const targetText = countEl.textContent ?? '0'
-        const targetValue = parseFloat(targetText.replace(/[^0-9.-]/g, '')) || 0
-        const isInteger = Number.isInteger(targetValue)
-        const prefix = targetText.match(/^[^0-9.-]*/)?.[0] ?? ''
-        const suffix = targetText.match(/[^0-9.]*$/)?.[0] ?? ''
+        const format = countFormat(targetText)
+        // M3: tabular figures while counting, so the digits do not change width every frame
+        // (Inter's "1" is two thirds of an "8"); the last frame restores the authored style.
+        const numeric = countEl.style.fontVariantNumeric
+        countEl.style.fontVariantNumeric = 'tabular-nums'
 
         // The entrance plays on the part; the count runs on a detached proxy (M1b) so settling
         // the part (an opacity/scale set, which stops the part's tweens) cannot freeze the
@@ -444,10 +552,11 @@ export function playBlockReveal(
           onUpdate: (progress: number) => {
             if (progress >= 1) {
               countEl.textContent = targetText
+              countEl.style.fontVariantNumeric = numeric
+              if (!countEl.getAttribute('style')) countEl.removeAttribute('style')
               return
             }
-            const current = targetValue * progress
-            countEl.textContent = prefix + (isInteger ? Math.round(current).toString() : current.toFixed(1)) + suffix
+            countEl.textContent = format(progress)
           },
         })
       } else {

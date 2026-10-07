@@ -372,7 +372,25 @@ export interface MotionRecipe {
    *  or spec substitutes another preset, and always under a spec-supplied `fade` (the `subtle`
    *  style stays a calm fade). A spec's `motion.parts[name].preset` still wins. Absent = every
    *  part plays the block preset. */
-  partMotion?: Record<string, { preset?: MotionPresetId; origin?: string }>
+  partMotion?: Record<string, PartMotionRecipe>
+}
+
+/**
+ * M1/M3 — one part's own choreography inside a block recipe (`MotionRecipe.partMotion`).
+ * Applies only when the block plays its recipe's showy preset (see `partMotion`).
+ */
+export interface PartMotionRecipe {
+  /** The part's own preset (a bar `grow-bars-y` while its label fades). */
+  preset?: MotionPresetId
+  /** `transform-origin` the part scales about (`'50% 100%'` = from the baseline). */
+  origin?: string
+  /** M3 — when the part starts, in ms after the block starts. Replaces the part's index
+   *  stagger, so a label can wait for its mark (bars at 0, value labels at 300). */
+  delay?: number
+  /** M3 — per-element stagger in ms between the indexed elements of this part (`bar` → `bar[0]`,
+   *  `bar[1]`…). Absent = the block preset's stagger. Give a mark and its labels the same
+   *  stagger so each label follows its own mark. */
+  stagger?: number
 }
 
 /**

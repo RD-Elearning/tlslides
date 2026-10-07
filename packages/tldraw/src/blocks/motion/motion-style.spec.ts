@@ -400,7 +400,8 @@ describe('P7 expressive recipes and count-up guard', () => {
       cancelAll() {},
     }
     playBlockReveal(el, { id: 'k', type: 'x', props: {}, motion: { preset: 'count-up' } }, { motion: { parts: ['value', 'tile'] } } as any, { driver, reducedMotion: false })
-    expect(seen.some((h) => h.includes('<div class="line">21%</div>'))).toBe(true)
+    // M3: the count runs on tabular figures (no width jitter) and the last frame restores the line
+    expect(seen.some((h) => h.includes('<div class="line" style="font-variant-numeric: tabular-nums;">21%</div>'))).toBe(true)
     expect(el.innerHTML).toBe('<div data-part="value" style=""><div class="line">42%</div></div><div data-part="tile" style=""><div>Label</div><div>17</div></div>'.replace(/ style=""/g, ''))
   })
 })

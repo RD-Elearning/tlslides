@@ -242,6 +242,10 @@ export function resolvePartMotion(
     }
   }
 
+  // M3: `split-in` is a pair entering from both sides: every second part playing it comes in
+  // from the right (the preset's keyframes are the left part's).
+  let splitCount = 0
+
   return parts.map((partName, index) => {
     const partOverride: PartMotionSpec | undefined = specMotion?.parts?.[partName]
     const recipePart = playsRecipe ? definitionMotion.partMotion?.[partName] : undefined
@@ -263,6 +267,10 @@ export function resolvePartMotion(
       : blockPreset
         ? { ...blockPreset.keyframes }
         : { opacity: [0, 1] }
+    if (partPresetId === 'split-in' && keyframes.translate) {
+      if (splitCount % 2 === 1) keyframes.translate = keyframes.translate.map((t) => t.replace(/^\s*-/, ''))
+      splitCount++
+    }
 
     // Timing: part overrides take priority, then block-level ease, then preset defaults.
     const partDuration =
@@ -288,11 +296,20 @@ export function resolvePartMotion(
         ? resolveDuration(partOverride.delay, 0)
         : resolveDuration(specMotion?.delay, 0)
 
-    const stepStagger = chainStep !== undefined ? partPreset?.staggerMs ?? 0 : staggerMs
+    // M3: a recipe part may set its own start (`delay`, replacing the index stagger) and its
+    // own per-element stagger, so a label waits for its mark (spec part overrides still win).
+    const stepStagger =
+      recipePart?.stagger !== undefined
+        ? Math.max(0, recipePart.stagger)
+        : chainStep !== undefined
+          ? partPreset?.staggerMs ?? 0
+          : staggerMs
     const delayMs =
-      chainStep !== undefined
-        ? baseDelay + chainStart[chainStep] + (index - chainStep) * (partPreset?.staggerMs ?? DURATION_TOKENS.stagger)
-        : baseDelay + (index > 0 ? staggerMs * index : 0)
+      partOverride?.delay === undefined && recipePart?.delay !== undefined
+        ? baseDelay + Math.max(0, recipePart.delay)
+        : chainStep !== undefined
+          ? baseDelay + chainStart[chainStep] + (index - chainStep) * (partPreset?.staggerMs ?? DURATION_TOKENS.stagger)
+          : baseDelay + (index > 0 ? staggerMs * index : 0)
 
     const isAmbient = partPreset?.isAmbient ?? false
     const origin = recipePart?.origin ?? partPreset?.origin

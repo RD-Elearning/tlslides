@@ -21,7 +21,7 @@ import { normalizeClipPath, pairClipPath } from './clip-path'
 import { createGsapDriver } from './gsap-driver'
 import type { GsapInstance, GsapTimeline } from './gsap-driver'
 import { CHAIN_OVERLAP, presetToEffect, resolvePartMotion } from './resolve-motion'
-import { playBlockReveal, sectorClip } from './play-reveal'
+import { countFormat, playBlockReveal, sectorClip } from './play-reveal'
 import { DURATION_TOKENS, EASING_TOKENS } from './tokens'
 import { AnimationEffect } from '~types'
 import { hidePartsForAnimate, revealUntouchedParts, untouchedParts } from './animate-guard'
@@ -481,5 +481,142 @@ describe('M1b — sweep from 12 o’clock, bars from the zero line', () => {
     const def = { type: 'test.m1b', motion: { parts: ['bar'], preset: 'grow-bars-y' } } as unknown as BlockDefinition
     playBlockReveal(el, { id: 'b', type: 'test.m1b', props: {}, motion: { preset: 'grow-bars-y' } } as BlockSpec, def, { driver, reducedMotion: false })
     expect(plays.filter((p) => p.target !== el).map((p) => p.opts.origin)).toEqual(['50% 100%', '50% 100%', '50% 0%'])
+  })
+})
+
+describe('M3 — charts: labels wait for their marks, grows follow the geometry, counts keep their format', () => {
+  /** Bars laid out with explicit layout boxes (jsdom has no layout). */
+  function bars(geo: Array<{ x: number; y: number; w: number; h: number }>) {
+    const el = document.createElement('div')
+    el.innerHTML = geo.map((_, i) => `<div data-part="bar[${i}]"></div>`).join('')
+    Array.from(el.querySelectorAll<HTMLElement>('[data-part]')).forEach((b, i) => {
+      Object.defineProperty(b, 'offsetTop', { value: geo[i].y })
+      Object.defineProperty(b, 'offsetLeft', { value: geo[i].x })
+      Object.defineProperty(b, 'offsetHeight', { value: geo[i].h })
+      Object.defineProperty(b, 'offsetWidth', { value: geo[i].w })
+      Object.defineProperty(b, 'offsetParent', { value: el })
+    })
+    return el
+  }
+  const grow = (el: HTMLElement, preset: string) => {
+    const { driver, plays } = recorder()
+    const def = { type: 'test.m3', motion: { parts: ['bar[*]'], preset } } as unknown as BlockDefinition
+    playBlockReveal(el, { id: 'b', type: 'test.m3', props: {}, motion: { preset } } as BlockSpec, def, { driver, reducedMotion: false })
+    return plays.filter((p) => p.target !== el)
+  }
+
+  it('a recipe part delay replaces its index stagger; its own stagger paces its elements', () => {
+    const recipe = {
+      parts: ['bar[*]', 'value[*]'],
+      preset: 'stagger-children',
+      partMotion: { 'bar[*]': { preset: 'grow-bars-y', stagger: 60 }, 'value[*]': { preset: 'fade', delay: 300, stagger: 60 } },
+    } as const
+    const [bar, value] = resolvePartMotion({ preset: 'stagger-children' }, recipe as never)
+    expect([bar.delayMs, bar.staggerMs]).toEqual([0, 60])
+    expect([value.delayMs, value.staggerMs]).toEqual([300, 60])
+    // a spec delay shifts both; a spec part override still wins (its delay + the index stagger, as before)
+    const shifted = resolvePartMotion({ preset: 'stagger-children', delay: 100, parts: { 'value[*]': { delay: 50 } } }, recipe as never)
+    expect(shifted.map((p) => p.delayMs)).toEqual([100, 50 + 40])
+    // under subtle (a spec fade) the recipe's parts play the fade, no delays of their own
+    expect(resolvePartMotion({ preset: 'fade' }, recipe as never).map((p) => [p.presetId, p.delayMs])).toEqual([
+      ['fade', 0],
+      ['fade', 0],
+    ])
+  })
+
+  it('a vertical grow on bars that share one height grows them along x, from their left edge', () => {
+    const plays = grow(bars([{ x: 0, y: 0, w: 300, h: 20 }, { x: 0, y: 40, w: 180, h: 20 }, { x: 0, y: 80, w: 90, h: 20 }]), 'grow-bars-y')
+    expect(plays.map((p) => Object.keys(p.keyframes))).toEqual([['scaleX'], ['scaleX'], ['scaleX']])
+    expect(plays.map((p) => p.opts.origin)).toEqual(['0% 50%', '0% 50%', '0% 50%'])
+  })
+
+  it('columns that share one width keep the vertical grow from the baseline', () => {
+    const plays = grow(bars([{ x: 0, y: 20, w: 40, h: 80 }, { x: 50, y: 60, w: 40, h: 40 }]), 'grow-bars-y')
+    expect(plays.map((p) => Object.keys(p.keyframes))).toEqual([['scaleY'], ['scaleY']])
+    expect(plays.map((p) => p.opts.origin)).toEqual(['50% 100%', '50% 100%'])
+  })
+
+  it('waterfall: a step down hangs from the level before it, a step up grows from it', () => {
+    // start 100 (0..100 on a zero line at y=100), +30 (floats 70..40), -15 (hangs 40..55), total 115
+    const plays = grow(
+      bars([
+        { x: 0, y: 0, w: 40, h: 100 },
+        { x: 50, y: -30, w: 40, h: 30 },
+        { x: 100, y: -30, w: 40, h: 15 },
+        { x: 150, y: -15, w: 40, h: 115 },
+      ]),
+      'grow-bars-y'
+    )
+    expect(plays.map((p) => p.opts.origin)).toEqual(['50% 100%', '50% 100%', '50% 0%', '50% 100%'])
+  })
+
+  it('stacked segments grow about the zero line, one column at a time (no gap opens in a stack)', () => {
+    // column 0: a base segment 50..100 and a top segment 20..50; column 1: one segment 30..100
+    const plays = grow(bars([{ x: 0, y: 50, w: 40, h: 50 }, { x: 50, y: 30, w: 40, h: 70 }, { x: 0, y: 20, w: 40, h: 30 }]), 'grow-segments')
+    expect(plays.map((p) => p.opts.origin)).toEqual(['50% 100%', '50% 100%', '50% 266.67%'])
+    expect(plays.map((p) => Object.keys(p.keyframes))).toEqual([['scaleY'], ['scaleY'], ['scaleY']])
+    const stagger = MOTION_PRESETS['grow-segments'].staggerMs!
+    expect(plays.map((p) => p.opts.delay)).toEqual([0, stagger, 0])
+  })
+
+  it('a horizontal stack grows from its left zero line, one row at a time', () => {
+    const plays = grow(bars([{ x: 0, y: 0, w: 60, h: 20 }, { x: 60, y: 0, w: 30, h: 20 }, { x: 0, y: 40, w: 80, h: 20 }]), 'grow-segments')
+    expect(plays.map((p) => Object.keys(p.keyframes))).toEqual([['scaleX'], ['scaleX'], ['scaleX']])
+    expect(plays.map((p) => p.opts.origin)).toEqual(['0% 50%', '-200% 50%', '0% 50%'])
+  })
+
+  it('countFormat keeps the prefix, suffix, grouping and decimals of the target', () => {
+    expect(countFormat('1,250')(0.5)).toBe('625')
+    expect(countFormat('1,250')(0.9)).toBe('1,125')
+    expect(countFormat('$4.2M')(0.5)).toBe('$2.1M')
+    expect(countFormat('$4.25M')(0)).toBe('$0.00M')
+    expect(countFormat('+30%')(0.5)).toBe('+15%')
+    expect(countFormat('-3.2%')(0.5)).toBe('-1.6%')
+    expect(countFormat('12,5 %')(1)).toBe('12,5 %')
+    expect(countFormat('1.250.000 đ')(0.5)).toBe('625.000 đ')
+    expect(countFormat('n/a')(0.5)).toBe('n/a')
+  })
+
+  it('count-up counts on tabular figures and ends on the exact text with the authored style', () => {
+    const el = document.createElement('div')
+    el.innerHTML = '<div data-part="value"><div>1,250</div></div>'
+    const line = el.querySelector('[data-part="value"] > div') as HTMLElement
+    const { driver, plays } = recorder()
+    const def = { type: 'test.m3', motion: { parts: ['value'], preset: 'count-up' } } as unknown as BlockDefinition
+    playBlockReveal(el, { id: 'b', type: 'test.m3', props: {}, motion: { preset: 'count-up' } } as BlockSpec, def, { driver, reducedMotion: false })
+    const counter = plays.find((p) => p.opts.onUpdate)!
+    counter.opts.onUpdate!(0.5)
+    expect(line.textContent).toBe('625')
+    expect(line.style.fontVariantNumeric).toBe('tabular-nums')
+    counter.opts.onUpdate!(1)
+    expect(line.textContent).toBe('1,250')
+    expect(line.style.fontVariantNumeric).toBe('')
+  })
+})
+
+describe('M3 — every entrance preset ends at rest (J3)', () => {
+  it('no non-ambient preset ends off its rest state', () => {
+    for (const id of PRESET_IDS) {
+      const p = MOTION_PRESETS[id]
+      if (p.isAmbient) continue
+      const kf = p.keyframes
+      const last = <T,>(a?: T[]) => (a ? a[a.length - 1] : undefined)
+      if (kf.opacity) expect([id, last(kf.opacity)]).toEqual([id, 1])
+      if (kf.translate) expect([id, String(last(kf.translate)).trim().split(/\s+/).every((t) => parseFloat(t) === 0)]).toEqual([id, true])
+      if (kf.scale) expect([id, last(kf.scale)]).toEqual([id, 1])
+      if (kf.scaleX) expect([id, last(kf.scaleX)]).toEqual([id, 1])
+      if (kf.scaleY) expect([id, last(kf.scaleY)]).toEqual([id, 1])
+    }
+  })
+})
+
+describe('M3 — split-in: a pair enters from both sides and settles at rest', () => {
+  it('the first part slides in from the left, the second from the right, both end at 0', () => {
+    const recipe = { parts: ['left', 'right', 'third'], preset: 'split-in' }
+    const [l, r, t] = resolvePartMotion({ preset: 'split-in' }, recipe as never)
+    expect(l.keyframes.translate).toEqual([`-${24}px 0`, '0 0'])
+    expect(r.keyframes.translate).toEqual([`${24}px 0`, '0 0'])
+    expect(t.keyframes.translate).toEqual([`-${24}px 0`, '0 0'])
+    expect(MOTION_PRESETS['split-in'].keyframes.translate).toEqual(['-24px 0', '0 0'])
   })
 })

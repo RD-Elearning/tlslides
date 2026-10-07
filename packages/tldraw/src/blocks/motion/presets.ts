@@ -383,7 +383,10 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     properties: ['opacity', 'translate'],
     keyframes: {
       opacity: [0, 1],
-      translate: [`-${DISTANCE_TOKENS.base}px 0`, `${DISTANCE_TOKENS.base}px 0`],
+      // M3: this read [-base, +base], so every part ended 24 px right of its layout (J3). The
+      // preset is the left part's entrance; `resolvePartMotion` mirrors every second part that
+      // plays it (from +base), so a pair still enters from both sides and both settle at 0.
+      translate: [`-${DISTANCE_TOKENS.base}px 0`, '0 0'],
     },
     duration: 'slow',
     easing: 'smoothOut',
