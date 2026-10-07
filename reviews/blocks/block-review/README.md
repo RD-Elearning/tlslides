@@ -133,7 +133,7 @@ The harness no longer presses ArrowRight to nudge a chain (DeckViewer turns that
 
 Run **one heavy thing at a time**: the dev server (~1 GB), one headless Chrome (~0.5 GB), jest or `pnpm build` never overlap.
 - Dev server with a heap cap: `NODE_OPTIONS=--max-old-space-size=1536 COREPACK_ENABLE_STRICT=0 nohup pnpm exec next dev -p 5433 > /tmp/next-5433.log 2>&1 &`.
-- Jest: `NODE_OPTIONS=--max-old-space-size=1536 ../../node_modules/.bin/jest --maxWorkers=1 -t '^(?!.*parity).*$' <paths>`; never several `jest` at once; never the full suite.
+- Jest: `NODE_OPTIONS=--max-old-space-size=1536 ../../node_modules/.bin/jest --maxWorkers=1 -t '^(?!.*([Pp]arity|DOM and SVG)).*$' <paths>`; never several `jest` at once; never the full suite.
 - Shoot one category at a time with `REVIEW_PASSES=gallery,drop,viewer REVIEW_MID=500` (the Present pass is the slowest and the one that holds the editor open: run it only for blocks you changed, with `REVIEW_BLOCKS=…`).
 - Batch fixes: rebuild dist (`pnpm build` writes ~30 MB twice plus declarations) once per 3–4 blocks, not after every edit; run `tsc` once before each rebuild.
 - Writes: shots are git-ignored but real files; when a group is finished delete its category folder (`rm -rf tools/visual/shots/review/<cat>`), keep only `report.json` copies if needed. Never keep video, never commit PNGs.
