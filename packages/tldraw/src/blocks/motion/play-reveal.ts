@@ -177,30 +177,34 @@ interface PartPlay {
   origin?: string
   /** A radial sweep (M1b): the target's clip-path is a sector about this centre, written each
    *  frame from 12 o'clock clockwise by a proxy tween's progress. */
-  sweep?: { cx: number; cy: number; rect: { left: number; top: number; width: number; height: number } }
+  sweep?: { cx: number; cy: number; rect: { left: number; top: number; width: number; height: number }; start: number; turn: number }
 }
 
 /**
- * A pie-sector clip-path about (cx, cy) (client px) covering `progress` of a turn from
- * 12 o'clock clockwise, in `%` of the element's client rect. Full turn → `''` (no clip).
+ * A pie-sector clip-path about (cx, cy) (client px) covering `progress` of a sweep that starts
+ * `startDeg` clockwise from 12 o'clock and turns `turnDeg` (M6: a 180° dial starts at -90 and
+ * turns 180), in `%` of the element's client rect. The end of the sweep → `''` (no clip).
  */
 export function sectorClip(
   cx: number,
   cy: number,
   rect: { left: number; top: number; width: number; height: number },
-  progress: number
+  progress: number,
+  startDeg = 0,
+  turnDeg = 360
 ): string {
   if (progress >= 1) return ''
   const R = 2 * Math.hypot(rect.width, rect.height) + Math.hypot(cx - rect.left, cy - rect.top)
   const pt = (a: number) =>
     `${(((cx + R * Math.sin(a) - rect.left) / rect.width) * 100).toFixed(3)}% ${(((cy - R * Math.cos(a) - rect.top) / rect.height) * 100).toFixed(3)}%`
-  const theta = Math.max(0, progress) * 2 * Math.PI
+  const a0 = (startDeg * Math.PI) / 180
+  const theta = Math.max(0, progress) * ((turnDeg * Math.PI) / 180)
   const pts = [
     `${(((cx - rect.left) / rect.width) * 100).toFixed(3)}% ${(((cy - rect.top) / rect.height) * 100).toFixed(3)}%`,
-    pt(0),
+    pt(a0),
   ]
-  for (let a = Math.PI / 4; a < theta; a += Math.PI / 4) pts.push(pt(a))
-  pts.push(pt(theta))
+  for (let a = Math.PI / 4; a < theta; a += Math.PI / 4) pts.push(pt(a0 + a))
+  pts.push(pt(a0 + theta))
   return `polygon(${pts.join(', ')})`
 }
 
@@ -410,7 +414,8 @@ function partPlays(
     // clockwise from 12 o'clock about the family's common centre; other fills wipe in.
     const r = partEl.getBoundingClientRect()
     if (pm.presetId === 'sweep' && centre && r.width > 0 && r.height > 0) {
-      return [{ target: partEl, keyframes: rest, origin, sweep: { cx: centre.x, cy: centre.y, rect: { left: r.left, top: r.top, width: r.width, height: r.height } } }]
+      const rect = { left: r.left, top: r.top, width: r.width, height: r.height }
+      return [{ target: partEl, keyframes: rest, origin, sweep: { cx: centre.x, cy: centre.y, rect, start: pm.sweep?.startAngle ?? 0, turn: pm.sweep?.sweepAngle ?? 360 } }]
     }
     return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin }]
   }
@@ -456,14 +461,11 @@ export function playBlockReveal(
   // 2. Reduced motion or no effect → set visible state immediately, no animation.
   if (reducedMotion || blockMotion.effect === null) {
     driver.set(el, blockVisibleState(blockMotion.effect ?? undefined))
-    // Also settle any parts to visible.
-    for (const pm of partMotions) {
-      for (const partEl of partElements(el, pm.partName).els) {
-        driver.set(partEl, { opacity: 1, translate: '0px 0px', scale: 1 })
-      }
-    }
+    settleBlockParts(el, spec, def, driver)
     return
   }
+  const token = (revealTokens.get(el) ?? 0) + 1
+  revealTokens.set(el, token)
 
   // 3. Set hidden state on ALL parts synchronously, before the block becomes visible.
   //    Parts are children of `el`, so they're invisible while the block is at opacity: 0.
@@ -474,7 +476,9 @@ export function playBlockReveal(
     const origins = grow.origins
     const pm = grow.keyframes ? { ...pmIn, keyframes: grow.keyframes } : pmIn
     const u = pm.presetId === 'sweep' ? paintedUnion(els) : undefined
-    const centre = u ? { x: (u.left + u.right) / 2, y: (u.top + u.bottom) / 2 } : undefined
+    // M6: the sweep's centre as a fraction of the painted box (a top half-ring: 50% 100%)
+    const [fx, fy] = (pm.sweep?.centre ?? '50% 50%').split(/\s+/).map((v) => (parseFloat(v) || 0) / 100)
+    const centre = u ? { x: u.left + (u.right - u.left) * fx, y: u.top + (u.bottom - u.top) * (fy ?? 0.5) } : undefined
     return {
       pm,
       indexed,
@@ -493,7 +497,7 @@ export function playBlockReveal(
         const hidden = hiddenStateFromKeyframes(p.keyframes)
         if (p.sweep) {
           sweepHandles.get(p.target)?.cancel()
-          hidden.clipPath = sectorClip(p.sweep.cx, p.sweep.cy, p.sweep.rect, 0)
+          hidden.clipPath = sectorClip(p.sweep.cx, p.sweep.cy, p.sweep.rect, 0, p.sweep.start, p.sweep.turn)
         }
         if (Object.keys(hidden).length > 0) driver.set(p.target, hidden)
       }
@@ -519,79 +523,151 @@ export function playBlockReveal(
     planEls.forEach(({ partEl, plays }, elementIndex) => {
       // P7: indexed elements of one part stagger by the preset's step (exact matches keep
       // the part's own delay, as before). M3: stacked segments stagger by column.
-      const delay = pm.delayMs + (indexed ? (slots?.[elementIndex] ?? elementIndex) * (pm.staggerMs ?? 0) : 0)
-      // Count-up: intercept onUpdate to tween textContent.
-      // P7: count on the single text leaf inside the part (a one-line text part renders as
-      // part > line div). A label with no digit ("Adoption" used to become "Adoption0Adoption")
-      // and a part with several children (a tile group, a wrapped paragraph) are never rewritten,
-      // and the last frame restores the exact original text ("1,250" would otherwise end "1250").
-      const countEl = countTarget(partEl as HTMLElement)
-      if (pm.presetId === 'count-up' && countEl) {
-        const targetText = countEl.textContent ?? '0'
-        const format = countFormat(targetText)
-        // M3: tabular figures while counting, so the digits do not change width every frame
-        // (Inter's "1" is two thirds of an "8"); the last frame restores the authored style. It is
-        // set on the part element (it inherits), so no other element is touched.
-        const host = partEl as HTMLElement
-        const numeric = host.style.fontVariantNumeric
-        host.style.fontVariantNumeric = 'tabular-nums'
+      const fullDelay = pm.delayMs + (indexed ? (slots?.[elementIndex] ?? elementIndex) * (pm.staggerMs ?? 0) : 0)
+      // M6 (E-M5-1): an image part waits (hidden) until its image is decoded, at most
+      // IMAGE_WAIT_MS, so a photo never pops in at 0.7–1.0 opacity after its fade; the wait is
+      // taken out of its delay. A newer reveal or settle of the block cancels the late start.
+      const pending = pendingImages(partEl as HTMLElement)
+      if (pending.length > 0) {
+        const t0 = Date.now()
+        void imagesReady(pending, IMAGE_WAIT_MS).then(() => {
+          if (!partEl.isConnected || revealTokens.get(el) !== token) return
+          startPart(Math.max(0, fullDelay - (Date.now() - t0)))
+        })
+        return
+      }
+      startPart(fullDelay)
 
-        // The entrance plays on the part; the count runs on a detached proxy (M1b) so settling
-        // the part (an opacity/scale set, which stops the part's tweens) cannot freeze the
-        // number half-way: the proxy always reaches its last frame and restores the text.
-        driver.play(partEl as HTMLElement, pm.keyframes, {
-          duration: pm.durationMs,
-          delay,
-          easing: pm.easing,
-          fill: 'forwards',
-        })
-        const counter = typeof document !== 'undefined' ? document.createElement('div') : (partEl as HTMLElement)
-        driver.play(counter, { opacity: [0, 1] }, {
-          duration: pm.durationMs,
-          delay,
-          easing: pm.easing,
-          fill: 'forwards',
-          onUpdate: (progress: number) => {
-            if (progress >= 1) {
-              countEl.textContent = targetText
-              host.style.fontVariantNumeric = numeric
-              if (!host.getAttribute('style')) host.removeAttribute('style')
-              return
+      function startPart(delay: number): void {
+        // Count-up: intercept onUpdate to tween textContent.
+        // P7: count on the single text leaf inside the part (a one-line text part renders as
+        // part > line div). A label with no digit ("Adoption" used to become "Adoption0Adoption")
+        // and a part with several children (a tile group, a wrapped paragraph) are never rewritten,
+        // and the last frame restores the exact original text ("1,250" would otherwise end "1250").
+        const countEl = countTarget(partEl as HTMLElement)
+        if (pm.presetId === 'count-up' && countEl) {
+          const targetText = countEl.textContent ?? '0'
+          const format = countFormat(targetText)
+          // M3: tabular figures while counting, so the digits do not change width every frame
+          // (Inter's "1" is two thirds of an "8"); the last frame restores the authored style. It is
+          // set on the part element (it inherits), so no other element is touched.
+          const host = partEl as HTMLElement
+          const numeric = host.style.fontVariantNumeric
+          host.style.fontVariantNumeric = 'tabular-nums'
+
+          // The entrance plays on the part; the count runs on a detached proxy (M1b) so settling
+          // the part (an opacity/scale set, which stops the part's tweens) cannot freeze the
+          // number half-way: the proxy always reaches its last frame and restores the text.
+          driver.play(partEl as HTMLElement, pm.keyframes, {
+            duration: pm.durationMs,
+            delay,
+            easing: pm.easing,
+            fill: 'forwards',
+          })
+          const counter = typeof document !== 'undefined' ? document.createElement('div') : (partEl as HTMLElement)
+          driver.play(counter, { opacity: [0, 1] }, {
+            duration: pm.durationMs,
+            delay,
+            easing: pm.easing,
+            fill: 'forwards',
+            onUpdate: (progress: number) => {
+              if (progress >= 1) {
+                countEl.textContent = targetText
+                host.style.fontVariantNumeric = numeric
+                if (!host.getAttribute('style')) host.removeAttribute('style')
+                return
+              }
+              countEl.textContent = format(progress)
+            },
+          })
+        } else {
+          for (const p of plays) {
+            if (Object.keys(p.keyframes).length > 0) {
+              driver.play(p.target, p.keyframes, {
+                duration: pm.durationMs,
+                delay,
+                easing: pm.easing,
+                fill: 'forwards',
+                ...(p.origin ? { origin: p.origin } : {}),
+              })
             }
-            countEl.textContent = format(progress)
-          },
-        })
-      } else {
-        for (const p of plays) {
-          if (Object.keys(p.keyframes).length > 0) {
-            driver.play(p.target, p.keyframes, {
-              duration: pm.durationMs,
-              delay,
-              easing: pm.easing,
-              fill: 'forwards',
-              ...(p.origin ? { origin: p.origin } : {}),
-            })
-          }
-          if (p.sweep) {
-            // The sector is not a keyframe pair any interpolator can tween, so a detached proxy
-            // carries the eased progress and each frame writes the sector. Settling the part
-            // (opacity/translate/scale sets) cannot kill it; its last frame removes the clip.
-            const { cx, cy, rect } = p.sweep
-            const target = p.target as HTMLElement
-            const proxy = typeof document !== 'undefined' ? document.createElement('div') : target
-            const handle = driver.play(proxy, { opacity: [0, 1] }, {
-              duration: pm.durationMs,
-              delay,
-              easing: pm.easing,
-              fill: 'forwards',
-              onUpdate: (progress: number) => {
-                target.style.clipPath = sectorClip(cx, cy, rect, progress)
-              },
-            })
-            sweepHandles.set(target, handle)
+            if (p.sweep) {
+              // The sector is not a keyframe pair any interpolator can tween, so a detached proxy
+              // carries the eased progress and each frame writes the sector. Settling the part
+              // (opacity/translate/scale sets) cannot kill it; its last frame removes the clip.
+              const { cx, cy, rect, start, turn } = p.sweep
+              const target = p.target as HTMLElement
+              const proxy = typeof document !== 'undefined' ? document.createElement('div') : target
+              const handle = driver.play(proxy, { opacity: [0, 1] }, {
+                duration: pm.durationMs,
+                delay,
+                easing: pm.easing,
+                fill: 'forwards',
+                onUpdate: (progress: number) => {
+                  target.style.clipPath = sectorClip(cx, cy, rect, progress, start, turn)
+                },
+              })
+              sweepHandles.set(target, handle)
+            }
           }
         }
       }
     })
+  }
+}
+
+// --- M6: images and settling --------------------------------------------------------------
+
+/** Longest an image part waits for its image before its entrance starts anyway. */
+export const IMAGE_WAIT_MS = 600
+
+/** Reveal generation per block element: a late (image-delayed) start of an older reveal or of a
+ *  settled block must not play. */
+const revealTokens = new WeakMap<Element, number>()
+
+/** The images under (or at) `el` that have not finished loading. A broken image counts as
+ *  finished (`complete`), so it never holds an entrance. */
+function pendingImages(el: HTMLElement): HTMLImageElement[] {
+  const imgs = el.tagName === 'IMG' ? [el as HTMLImageElement] : Array.from(el.querySelectorAll('img'))
+  return imgs.filter((i) => !i.complete)
+}
+
+/** Resolves when every image is decoded (or failed), or after `timeoutMs`. */
+function imagesReady(imgs: HTMLImageElement[], timeoutMs: number): Promise<void> {
+  const each = imgs.map((img) =>
+    typeof img.decode === 'function'
+      ? img.decode().catch(() => undefined)
+      : new Promise<void>((resolve) => {
+          img.addEventListener('load', () => resolve(), { once: true })
+          img.addEventListener('error', () => resolve(), { once: true })
+        })
+  )
+  return Promise.race([Promise.all(each).then(() => undefined), new Promise<void>((resolve) => setTimeout(resolve, timeoutMs))])
+}
+
+/**
+ * Settle every recipe part of a block to its rest state at once (M6): what a skip mid-chain,
+ * an already-revealed step and reduced motion show. Opacity, translate and scale (both axes);
+ * a part that clips (a wipe, the draw fallback, a running sweep) loses its clip; a drawn path
+ * gets offset 0. Running sweep proxies and image-delayed starts are cancelled.
+ */
+export function settleBlockParts(el: HTMLElement, spec: BlockSpec, def: BlockDefinition, driver: MotionDriver): void {
+  revealTokens.set(el, (revealTokens.get(el) ?? 0) + 1)
+  for (const pm of resolvePartMotion(spec.motion, def.motion)) {
+    const kf = pm.keyframes
+    for (const partEl of partElements(el, pm.partName).els) {
+      sweepHandles.get(partEl)?.cancel()
+      sweepHandles.delete(partEl)
+      const state: MotionState = { opacity: 1, translate: '0px 0px', scale: 1 }
+      if (kf.scaleX || kf.scaleY) {
+        state.scaleX = 1
+        state.scaleY = 1
+      }
+      if (kf.clipPath || kf.strokeDashoffset || partEl.style.clipPath) state.clipPath = 'none'
+      driver.set(partEl, state)
+      for (const g of [partEl, ...Array.from(partEl.querySelectorAll<SVGElement>('path, line, polyline, polygon, circle, ellipse'))]) {
+        if ((g as HTMLElement).style?.strokeDasharray) driver.set(g, { strokeDashoffset: '0' })
+      }
+    }
   }
 }

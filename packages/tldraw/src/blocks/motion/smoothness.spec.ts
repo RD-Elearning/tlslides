@@ -21,7 +21,7 @@ import { normalizeClipPath, pairClipPath } from './clip-path'
 import { createGsapDriver } from './gsap-driver'
 import type { GsapInstance, GsapTimeline } from './gsap-driver'
 import { CHAIN_OVERLAP, presetToEffect, resolvePartMotion } from './resolve-motion'
-import { countFormat, playBlockReveal, sectorClip } from './play-reveal'
+import { countFormat, IMAGE_WAIT_MS, playBlockReveal, sectorClip, settleBlockParts } from './play-reveal'
 import { DURATION_TOKENS, EASING_TOKENS } from './tokens'
 import { AnimationEffect } from '~types'
 import { hidePartsForAnimate, revealUntouchedParts, untouchedParts } from './animate-guard'
@@ -621,5 +621,97 @@ describe('M3 — split-in: a pair enters from both sides and settles at rest', (
     expect(r.keyframes.translate).toEqual([`${24}px 0`, '0 0'])
     expect(t.keyframes.translate).toEqual([`-${24}px 0`, '0 0'])
     expect(MOTION_PRESETS['split-in'].keyframes.translate).toEqual(['-24px 0', '0 0'])
+  })
+})
+
+// --- M6 ----------------------------------------------------------------------------
+
+describe('M6 — sweep start angle, settle, images', () => {
+  const rect = { left: 0, top: 0, width: 200, height: 100 }
+
+  it('sectorClip starts at startDeg and turns turnDeg (a 180° dial from 9 o’clock)', () => {
+    // centre at the bottom middle; at 0 the sector is the 9 o'clock ray
+    const first = sectorClip(100, 100, rect, 0, -90, 180).slice(8, -1).split(', ')[1].split(' ').map(parseFloat)
+    expect(first[0]).toBeLessThan(0) // far left
+    expect(first[1]).toBeCloseTo(100, 3) // level with the centre
+    const pts = sectorClip(100, 100, rect, 0.5, -90, 180).slice(8, -1).split(', ')
+    const [xe, ye] = pts[pts.length - 1].split(' ').map(parseFloat)
+    expect(xe).toBeCloseTo(50, 3) // 12 o'clock after half of a 180° turn
+    expect(ye).toBeLessThan(0)
+    expect(sectorClip(100, 100, rect, 1, -90, 180)).toBe('')
+  })
+
+  it('a recipe part passes startAngle / sweepAngle / sweepCentre to the resolved part', () => {
+    const recipe = { parts: ['band'], preset: 'fade' as const, partMotion: { band: { preset: 'sweep' as const, startAngle: -90, sweepAngle: 180, sweepCentre: '50% 100%' } } }
+    expect(resolvePartMotion(undefined, recipe)[0].sweep).toEqual({ startAngle: -90, sweepAngle: 180, centre: '50% 100%' })
+  })
+
+  it('settleBlockParts puts wipes, grows and draws at rest: no clip, both scale axes 1, dash offset 0', () => {
+    const el = document.createElement('div')
+    el.innerHTML = '<div data-part="wipe"></div><div data-part="bar"></div><svg data-part="line"><path style="stroke-dasharray: 120 120"></path></svg>'
+    ;(el.querySelector('[data-part="wipe"]') as HTMLElement).style.clipPath = 'inset(0% 40% 0% 0%)'
+    const def = {
+      type: 'test.m6',
+      motion: { parts: ['wipe', 'bar', 'line'], preset: 'fade', partMotion: { wipe: { preset: 'wipe-x' }, bar: { preset: 'grow-bars-y' }, line: { preset: 'draw-path' } } },
+    } as unknown as BlockDefinition
+    const { driver, sets } = recorder()
+    settleBlockParts(el, { id: 'b', type: 'test.m6', props: {} } as BlockSpec, def, driver)
+    const of = (part: string) => sets.find((x) => x.target === el.querySelector(`[data-part="${part}"]`))!.state
+    expect(of('wipe')).toMatchObject({ opacity: 1, clipPath: 'none' })
+    expect(of('bar')).toMatchObject({ opacity: 1, scaleX: 1, scaleY: 1 })
+    expect(of('line')).toMatchObject({ clipPath: 'none' })
+    expect(sets.find((x) => x.target === el.querySelector('path'))!.state).toEqual({ strokeDashoffset: '0' })
+  })
+
+  const imgDef = { type: 'test.m6img', motion: { parts: ['photo'], preset: 'fade' } } as unknown as BlockDefinition
+  const imgSpec = { id: 'b', type: 'test.m6img', props: {}, motion: { preset: 'fade' } } as BlockSpec
+  const slowImage = (decode: () => Promise<void>) => {
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    el.innerHTML = '<div data-part="photo"><img src="x.png"></div>'
+    const img = el.querySelector('img') as HTMLImageElement & { decode(): Promise<void> }
+    Object.defineProperty(img, 'complete', { value: false })
+    img.decode = decode
+    return { el, photo: el.querySelector('[data-part="photo"]')! }
+  }
+
+  it('an image part holds its entrance (hidden) until the image is decoded', async () => {
+    let decoded!: () => void
+    const { el, photo } = slowImage(() => new Promise<void>((r) => (decoded = r)))
+    const { driver, plays, sets } = recorder()
+    playBlockReveal(el, imgSpec, imgDef, { driver, reducedMotion: false })
+    expect(sets.find((x) => x.target === photo)!.state.opacity).toBe(0) // hidden meanwhile
+    expect(plays.filter((x) => x.target === photo)).toHaveLength(0)
+    decoded()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(plays.filter((x) => x.target === photo)).toHaveLength(1)
+    el.remove()
+  })
+
+  it('a broken or slow image never stalls the entrance (timeout)', async () => {
+    jest.useFakeTimers()
+    try {
+      const { el, photo } = slowImage(() => new Promise<void>(() => undefined)) // never settles
+      const { driver, plays } = recorder()
+      playBlockReveal(el, imgSpec, imgDef, { driver, reducedMotion: false })
+      jest.advanceTimersByTime(IMAGE_WAIT_MS + 1)
+      for (let i = 0; i < 4; i++) await Promise.resolve()
+      expect(plays.filter((x) => x.target === photo)).toHaveLength(1)
+      el.remove()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('a settle cancels an image-delayed start', async () => {
+    let decoded!: () => void
+    const { el, photo } = slowImage(() => new Promise<void>((r) => (decoded = r)))
+    const { driver, plays } = recorder()
+    playBlockReveal(el, imgSpec, imgDef, { driver, reducedMotion: false })
+    settleBlockParts(el, imgSpec, imgDef, driver)
+    decoded()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(plays.filter((x) => x.target === photo)).toHaveLength(0)
+    el.remove()
   })
 })

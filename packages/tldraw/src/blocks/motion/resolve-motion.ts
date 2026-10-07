@@ -187,6 +187,9 @@ export interface ResolvedPartMotion {
   /** M1 — `transform-origin` for the part's scale (recipe `partMotion` origin, else the
    *  preset's). Absent = the element centre. */
   origin?: string
+  /** M6 — a filled `sweep`'s start / turn (degrees, clockwise from 12 o'clock) and centre
+   *  (`x% y%` of the painted box). From the recipe's `partMotion`. */
+  sweep?: { startAngle?: number; sweepAngle?: number; centre?: string }
 }
 
 /**
@@ -324,6 +327,9 @@ export function resolvePartMotion(
       presetId: partPresetId,
       ...(stepStagger > 0 ? { staggerMs: stepStagger } : {}),
       ...(origin ? { origin } : {}),
+      ...(recipePart && (recipePart.startAngle !== undefined || recipePart.sweepAngle !== undefined || recipePart.sweepCentre !== undefined)
+        ? { sweep: { startAngle: recipePart.startAngle, sweepAngle: recipePart.sweepAngle, centre: recipePart.sweepCentre } }
+        : {}),
     }
   })
 }

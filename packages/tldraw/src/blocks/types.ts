@@ -391,6 +391,14 @@ export interface PartMotionRecipe {
    *  `bar[1]`…). Absent = the block preset's stagger. Give a mark and its labels the same
    *  stagger so each label follows its own mark. */
   stagger?: number
+  /** M6 — a `sweep` on a filled part: where the sector starts, in degrees clockwise from
+   *  12 o'clock (a 180° dial: -90 = 9 o'clock). Default 0. */
+  startAngle?: number
+  /** M6 — how far that sweep turns, in degrees (a 180° dial: 180). Default 360. */
+  sweepAngle?: number
+  /** M6 — the sweep's centre as `x% y%` of the box the part family paints (a top half-ring's
+   *  centre is `'50% 100%'`). Default `'50% 50%'`. */
+  sweepCentre?: string
 }
 
 /**

@@ -27,9 +27,8 @@ import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { autoRunEnd, entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
-import { partElements, playBlockReveal } from '~blocks/motion/play-reveal'
+import { playBlockReveal, settleBlockParts } from '~blocks/motion/play-reveal'
 import { hidePartsForAnimate, revealUntouchedParts } from '~blocks/motion/animate-guard'
-import { resolvePartMotion } from '~blocks/motion/resolve-motion'
 
 /**
  * `<DeckViewer>` — Q14's real, animated, read-only deck viewer (`reviews/blocks/BACKLOG-demo.md`
@@ -567,15 +566,9 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
             } else {
               // Already revealed (or reduced motion): settle to visible.
               motionDriver.set(el, visibleState(animation.effect))
-              // Also settle parts to visible.
-              if (blockSpec && blockDef) {
-                const partMotions = resolvePartMotion(blockSpec.motion, blockDef.motion)
-                for (const pm of partMotions) {
-                  for (const partEl of partElements(el, pm.partName).els) {
-                    motionDriver.set(partEl, { opacity: 1, translate: '0px 0px', scale: 1 })
-                  }
-                }
-              }
+              // Also settle parts to their rest state (M6: clip and dash offset too, so a wipe,
+              // draw or sweep cut short by a skip ends drawn, not half-way).
+              if (blockSpec && blockDef) settleBlockParts(el, blockSpec, blockDef, motionDriver)
             }
           } else {
             motionDriver.set(el, hiddenState(animation.effect))
