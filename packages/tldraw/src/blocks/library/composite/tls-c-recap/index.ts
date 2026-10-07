@@ -133,7 +133,20 @@ const composite = defineCompositeBlock<RecapProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-lines' },
+  // RVM5: the points read in first — `numbered`: badge, number, text 40 ms apart, points 120 ms
+  // apart, in place; `cards`: card, number, text — then the takeaway band and its texts.
+  // Was `root` stagger-lines (one unit).
+  motion: {
+    parts: ['points', 'card[*]', 'number[*]', 'point[*]', 'takeaway'],
+    preset: 'stagger-lines',
+    partMotion: {
+      points: { preset: 'sweep-nodes', delay: 0, stagger: 40 },
+      'card[*]': { preset: 'sweep-nodes', delay: 0, stagger: 120 },
+      'number[*]': { preset: 'fade-up', delay: 80, stagger: 120 },
+      'point[*]': { preset: 'fade-up', delay: 160, stagger: 120 },
+      takeaway: { preset: 'sweep-nodes', delay: 800, stagger: 60 },
+    },
+  },
   build: buildRecap,
 })
 

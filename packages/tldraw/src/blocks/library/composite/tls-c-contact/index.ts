@@ -144,7 +144,16 @@ const composite = defineCompositeBlock<ContactProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-lines' },
+  // RVM5: the person reads photo, name, role (in place), then each channel fades in, circle, icon,
+  // text 40 ms apart (channels 120 ms apart). Was `root` stagger-lines (one unit).
+  motion: {
+    parts: ['person', 'items'],
+    preset: 'stagger-lines',
+    partMotion: {
+      person: { preset: 'sweep-nodes', delay: 0, stagger: 50 },
+      items: { preset: 'sweep-nodes', delay: 250, stagger: 40 },
+    },
+  },
   build: buildContact,
 })
 

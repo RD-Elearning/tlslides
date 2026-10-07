@@ -115,7 +115,17 @@ const composite = defineCompositeBlock<ObjectivesProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-lines' },
+  // RVM5: the intro rises in, then each objective fades in in place, badge, number, text 40 ms
+  // apart (items 120 ms apart; six in about 1.2 s). Opacity only for the list, so a number never
+  // drifts inside its badge. Was `root` stagger-lines (one unit).
+  motion: {
+    parts: ['intro', 'list'],
+    preset: 'stagger-lines',
+    partMotion: {
+      intro: { preset: 'fade-up', delay: 0, stagger: 60 },
+      list: { preset: 'sweep-nodes', delay: 150, stagger: 40 },
+    },
+  },
   build: buildObjectives,
 })
 

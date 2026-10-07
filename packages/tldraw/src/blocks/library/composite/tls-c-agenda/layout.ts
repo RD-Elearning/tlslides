@@ -11,6 +11,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { slotItems } from '../_slots'
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import type { AgendaItem, AgendaProps } from './schema'
 
@@ -168,11 +169,17 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     y += rowHeight + gap
   }
 
+  // RVM5: each note sits in a slot `note[i]` emitted for every item (empty without a note), so
+  // note i always follows title i in the stagger even when an earlier item has no note.
+  const noteOf = (n: LayoutNode) => {
+    const m = /^item\[(\d+)\]\.note$/.exec(n.part ?? '')
+    return m ? Number(m[1]) : -1
+  }
   return {
     k: 'group',
     box: { x: 0, y: 0, width: ctx.box.width, height: totalContentHeight },
     part: 'root',
-    children,
+    children: slotItems(children, items.length, 'note', noteOf, { width: ctx.box.width, height: totalContentHeight }),
   }
 }
 

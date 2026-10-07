@@ -97,19 +97,22 @@ describe('tls.c.agenda', () => {
       }
     })
 
-    it('every concrete part in the layout matches some motion.parts wildcard', () => {
+    it('every concrete part in the layout matches some motion.parts wildcard (itself or its slot)', () => {
       const c = ctx({ width: 960, height: 540 })
       const node = tlsCAgenda.layout(defaults as any, c)
-      const layoutParts = collectParts(node).filter(p => p !== 'root')
       const motionParts = tlsCAgenda.motion.parts ?? []
-
-      for (const lp of layoutParts) {
-        const matches = motionParts.some(mp => {
+      const animated = (p: string) =>
+        motionParts.some(mp => {
           const pattern = mp.replace(/\[\*\]/g, '\\[\\d+\\]').replace(/\./g, '\\.')
-          return new RegExp(`^${pattern}$`).test(lp)
+          return new RegExp(`^${pattern}$`).test(p)
         })
-        expect(matches).toBe(true)
+      // RVM5: a note is animated by its per-item slot `note[i]` (the group above it)
+      const walk = (n: any, covered: boolean) => {
+        const here = covered || (n.part !== undefined && n.part !== 'root' && animated(n.part))
+        if (n.part !== undefined && n.part !== 'root') expect([n.part, here]).toEqual([n.part, true])
+        if (n.k === 'group') n.children.forEach((k: any) => walk(k, here))
       }
+      walk(node, false)
     })
   })
 
@@ -272,7 +275,10 @@ describe('tls.c.agenda', () => {
         c,
       )
       assertValidNode(node)
-      expect(node.children).toHaveLength(2) // index + title (no note)
+      // index + title + the (empty) note slot every item gets for the motion stagger (RVM5)
+      expect(node.children).toHaveLength(3)
+      expect((node as any).children[2].part).toBe('note[0]')
+      expect((node as any).children[2].children).toHaveLength(0)
     })
 
     it('handles 9+ items without throwing', () => {
@@ -280,8 +286,8 @@ describe('tls.c.agenda', () => {
       const items = Array.from({ length: 12 }, (_, i) => ({ title: `Item ${i + 1}` }))
       const node = tlsCAgenda.layout({ items } as any, c)
       assertValidNode(node)
-      // 12 items × 2 parts each (index + title) = 24
-      expect(node.children).toHaveLength(24)
+      // 12 items × 3 children each (index + title + an empty note slot, RVM5) = 36
+      expect(node.children).toHaveLength(36)
     })
 
     it('handles a 400-char title without throwing', () => {
