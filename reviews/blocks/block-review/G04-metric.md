@@ -104,8 +104,41 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 | Y2 | `layout/measure.ts` (`tableMetrics` Inter table, `estimateMetrics`) | Same as S10 but specific: the "inter" table has digits 0.52 em (real 0.62) and `%` 0.64 (real 0.98), `+` 0.52 (0.66). Any block outside the data family that centres or right-aligns a number with `ctx.measureText` drifts. The measured table is now in `library/data/_chart/inter-width.ts` (`realWidth`) and could replace the generated one. | `d-progress-bar.wide.png` before the fix |
 | Y3 | `tools/visual/scenarios/block-review.js` | The wide mid frames at 120/500 ms show the second block of an expressive slide at its final state (S8) so count-up/draw frames need `REVIEW_MID=450,600,750,900,1100`. With those the in-progress states are visible (hero-number 600-900, ring 600-900). | `custom/t-hero-number.wide.mid-450.png` equals the settled frame |
 
+## Motion pass (M3)
+
+Agent C, 2026-10-07. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` per category on the final build (`metric`, `chart`, `table`, `comparison`), plus `REVIEW_MOTION_PNG=1` mid frames (15/40/75 %) and `REVIEW_MOTION_DUMP=1` frame dumps for the changed blocks. Spec: `library/motion-m3.spec.ts` (all 42 M3 blocks: recipe parts exist, every drawn leaf animated or listed as chart frame, expressive 150–900 ms / out ease / stagger ≤ 120 ms / ≤ 2.5 s / block fade only, subtle opacity only, J6 preset per mark, every label after its mark, only numbers count, tables header-first, comparisons side by side).
+Engine (minimal, blocks several M3 blocks, with specs in `motion/smoothness.spec.ts`): `11d89574` (partMotion `delay`/`stagger`; one-axis grows follow the bars' geometry; waterfall steps grow from the previous level; stacked segments grow about the zero line by column; count-up keeps the target format on tabular figures; `split-in` settles at 0, mirrored pair) and `c827b476` (count-up tabular style on the part element). Stale specs fixed in `6a113855` (`timeline.spec`) and `16c519d3` (`motion-style.spec`).
+Shared conventions: `library/data/_chart/motion.ts` — the chart frame (grid, ticks, categories, legend, tracks) rides the block fade, marks start at 80 ms, labels `LABEL_AFTER` (260 ms) after their mark with the mark's stagger; labels fade with `sweep-nodes` (400 ms: a 250 ms `fade` on an already visible block jumps > 0.35 in its first frame, J1), points/dots/badges enter with `field-in` (`pop`/`pop-points` settle in ~100 ms, J5).
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a (no such motion: J6 applies to grows, draws and sweeps only). Probe artefacts (not block faults, reported to the controller) are marked ✅ with a note: **A1** a grow/clip part whose from-state is set in the same frame the block wrapper becomes visible reads as a 1→0 jump (prev frame hidden); **A2** J5 stagger: an element's first run merges with the block fade (effective opacity), so marks starting inside the fade are timed from the reveal; **A3** html wrapper `(block)` opacity 0→1 in one frame while its parts are still faint (E3 variant). Each was flaky across runs.
+
+**Counts:** 13/13 fixed (0 unchanged, 0 open).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.t.hero-number | ✅ | ✅ | ✅ | ✅ | 🔧 | n/a | ✅ | ✅ | `6a113855` | 🔧 expressive was block `count-up` (whole block zoomed in from 0.7; unit/caption rode it) → block fades, `value` counts up (format kept, tabular figures), unit and caption rise after |
+| tls.d.progress-bar | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `27ee6939` | 🔧 back to `grow-bars-x` from the track start, value counts with its fill, row by row (RV04 fade). A1 seen once |
+| tls.d.progress-ring | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `27ee6939` | 🔧 arc + caps in a `ring` group with an unpainted full-ring guide: sweeps clockwise from 12 o'clock over the still track, value counts. A1 seen once |
+| tls.d.stat-compare | ✅ | ✅ | ✅ | ✅ | 🔧 | n/a | ✅ | ✅ | `a342683c`, `c827b476` | 🔧 was block `count-up` (pill counted with the numbers) → before, after, connector wipe, pill + figure; J5 `<div>` stagger came from the count style on the text line (engine fix) |
+| tls.d.gauge | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `27ee6939` | 🔧 dial wipes in from its start side as one (a filled `sweep` opens at 12 o'clock: wrong for a 180° dial), value counts, needle/hub fade after (the pop was 100 ms, J5) |
+| tls.d.trend-badge | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `a342683c` | 🔧 arrow, figure and label rode the block fade ahead of the pill → pill first, figure counts, label after |
+| tls.d.bullet-chart | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `27ee6939` | 🔧 back to `grow-bars-x`, value counts, target wipes down after its bar (rode the block fade) |
+| tls.c.kpi-tile | ✅ | ✅ | ✅ | ✅ | 🔧 | n/a | ✅ | ✅ | `6a113855` | 🔧 was block `count-up` (zoom 0.7, delta counted too) → value counts as a part, delta rises after |
+| tls.c.kpi-row | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `6a113855` | 🔧 tiles rise left to right 100 ms apart, every tile value counts (numbers were final) |
+| tls.c.big-stat | ✅ | ✅ | ✅ | ✅ | 🔧 | n/a | ✅ | ✅ | `28b45edf` | 🔧 number fade was 100 ms (J5) and the count ~400 ms → 300 ms fade, 800 ms out-eased count in the target format on tabular figures. A3 once on subtle |
+| tls.c.stat-card | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `6a113855` | 🔧 `preset: 'stagger'` was not a preset id (moved as one piece) → icon pops, number counts, unit and caption rise |
+| tls.c.dashboard | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `331e975c` | 🔧 one `root` piece → KPIs rise, chart marks grow/draw/sweep (`composeWithChart` keeps the chart's roles: `chart[line][0]`…), labels after, insight last |
+| tls.c.stat-spotlight | ✅ | ✅ | 🔧 | 🔧 | 🔧 | 🔧 | ✅ | ✅ | `28b45edf` | 🔧 arc/count 1.8 s in-out, stats 150 ms apart → ≤ 900 ms out-eased, 120 ms, chain 2.1 s; arc is a path from 12 o'clock at rest fully drawn (J3: rotated circle read as 546 px), stat padding on an inner box (J4). A3 seen |
+
+**M3 — engine / probe issues for the controller** (not block-local):
+- **A1 (probe J1)**: a part whose entrance has no opacity term (`grow-*`, `sweep`, `wipe-*`) gets its from-state in the same frame the block wrapper's fade starts; when the sampled frame before was hidden (wrapper 0) the probe still reports the value jump (scale/clip 1 → 0.15). The earlier value was never visible; J1 should ignore a jump whose previous frame was hidden. Seen once each on progress-bar, progress-ring, matrix-2x2; clean on re-runs.
+- **A2 (probe J5 stagger)**: an element's sample includes the ancestors' opacity, so its first run starts at the block reveal when its own motion begins inside the block fade; a family with members starting inside and after the fade shows a false gap (grouped-bar 333 ms, waterfall connectors 417 ms; recipes are 60/120 ms, pinned in `motion-m3.spec`).
+- **A3 (probe E3 variant)**: an html block's wrapper goes 0 → 1 in one frame while its parts are still faint (≤ 0.2), flagged J1 + J5 `(block) 17 ms` (stat-spotlight, feature-reveal, big-stat subtle; alternates between runs).
+- **DeckViewer settle path** (`DeckViewer.tsx`, "already revealed: settle to visible"): sets `{opacity, translate, scale}` on parts only, not `clipPath` / `strokeDashoffset`; a skip mid-chain relies on running wipe/draw/sweep tweens finishing. Not seen as a fault; worth a `set` of the full rest state.
+- `sweep` opens filled parts from 12 o'clock only; a 180° gauge uses a `wipe-x` instead (a start-angle option would give it a true sweep).
+
 ## Session log
 
 | Date | Agent | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-06 | B1 agent | 13/13 reviewed: 12 fixed (`3d183129` `c81eeb2d` `883238df` `932752a3`), 1 unchanged | `withRealWidths` / `realWidth` are available to every block in `library/data/_chart`; use `assertExampleFits(def)` in a spec. Y1 (grow presets scale from the centre) affects every bar/ring/segment recipe. |
+| 2026-10-07 | agent C (M3) | Motion pass: 13/13 fixed (0 unchanged, 0 open). | Rows above; probe artefacts A1–A3 for the controller |
