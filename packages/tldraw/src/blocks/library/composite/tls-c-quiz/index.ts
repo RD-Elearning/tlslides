@@ -22,6 +22,7 @@ import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
+import { slotItems } from '../_slots'
 import { composeFlat, measureHeights, pick, strings, toMeasurable, type Piece } from '../_kit'
 
 export const QUIZ_MIN = 2
@@ -202,7 +203,15 @@ export function layoutQuiz(props: QuizProps, ctx: LayoutContext): LayoutNode {
   if (p.expl) {
     pieces.push({ id: 'explanation', spec: p.expl, box: { x: 0, y: y - p.gap + p.gap * 1.5, width: Math.max(0, ctx.box.width), height: p.explH } })
   }
-  return composeFlat(ctx, pieces, total)
+  const root = composeFlat(ctx, pieces, total)
+  // RVM5: one motion slot `row[i]` per option (its background or the `answer` panel, badge,
+  // letter and text), so the rows enter in order and the answer panel enters with its own row.
+  const rowOf = (n: LayoutNode): number => {
+    if (n.part === 'answer') return ans
+    const m = /^(optionbg|badge|letter|option)\[(\d+)\]/.exec(n.part ?? '')
+    return m ? Number(m[2]) : -1
+  }
+  return root.k === 'group' ? { ...root, children: slotItems(root.children, p.opts.length, 'row', rowOf, root.box) } : root
 }
 
 const composite = defineCompositeBlock<QuizProps>({
@@ -235,7 +244,19 @@ const composite = defineCompositeBlock<QuizProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-lines' },
+  // RVM5: the question rises in, then the options row by row (slots `row[i]`: background, badge,
+  // letter, text move together), the check mark settles on the right answer and the explanation
+  // comes last. Was `root` stagger-lines (one unit).
+  motion: {
+    parts: ['question', 'row[*]', 'answermark', 'explanation'],
+    preset: 'stagger-lines',
+    partMotion: {
+      question: { preset: 'fade-up', delay: 0, stagger: 60 },
+      'row[*]': { preset: 'fade-up', delay: 200, stagger: 120 },
+      answermark: { preset: 'field-in', delay: 900, stagger: 0 },
+      explanation: { preset: 'fade-up', delay: 1000, stagger: 0 },
+    },
+  },
   build: buildQuiz,
 })
 
