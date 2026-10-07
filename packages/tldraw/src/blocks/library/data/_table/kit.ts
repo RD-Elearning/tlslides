@@ -352,7 +352,10 @@ function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: 
         if (isFooter(ch.part)) {
           content.push({ k: 'rect', part: 'footer.rule', box: { x: 0, y: ch.box.y - rowGap / 2 - 0.5, width: W, height: 1 }, fill: { type: 'solid', color: c.line } })
         }
-        content.push({ k: 'group', part: isFooter(ch.part) ? 'footer' : rename(ch.part), box: groupBox, children: cells })
+        // RVM3: the footer row is also the next `row[n]` (inside its `footer` group), so the motion
+        // recipe's row stagger brings it in right after the last body row, however many there are
+        const row: LayoutNode = { k: 'group', part: rename(ch.part), box: groupBox, children: cells }
+        content.push(isFooter(ch.part) ? { k: 'group', part: 'footer', box: groupBox, children: [row] } : row)
       } else content.push({ ...ch, part: rename(ch.part) })
     }
   }
