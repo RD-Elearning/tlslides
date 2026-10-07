@@ -14,6 +14,7 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { objs, str } from '../../media/_kit'
+import { slotItems } from '../_slots'
 import { composeFlat, measureHeights, pick, type Piece } from '../_kit'
 
 export const TEAM_MIN = 2
@@ -182,7 +183,40 @@ export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
     const bio = showBio ? bioSpec(m, i, p.small) : undefined
     if (bio) pieces.push({ id: `bio[${i}]`, spec: bio, box: { x: ix, y: y + p.pad + p.avatarH[i] + sm, width: p.inner, height: p.bioH[i] }, align: 'center' })
   })
-  return composeFlat(ctx, pieces, total)
+  return motionSlots(composeFlat(ctx, pieces, total), p.people.length)
+}
+
+/**
+ * RVM5 — per-member motion slots, so every member reads photo, name, role, bio and the members
+ * follow each other in reading order whatever pieces each one has. The leaves of `person[i]`
+ * (the avatar: ring, photo or initials disc, letters, name, role) and `bio[i]` are regrouped into
+ * `face[i]` (the non-text leaves and the letters drawn on them), `name[i]` (the first other text),
+ * `role[i]` (the rest) and `about[i]` (the bio), each emitted for every member (empty when the
+ * member has no role or bio). Leaf names, positions and paint order are unchanged.
+ */
+function motionSlots(root: LayoutNode, n: number): LayoutNode {
+  if (root.k !== 'group') return root
+  const fam = new Map<LayoutNode, { f: 'face' | 'name' | 'role' | 'about'; i: number }>()
+  for (let i = 0; i < n; i++) {
+    const mine = root.children.filter((c) => c.part === `person[${i}]` || (c.part ?? '').startsWith(`person[${i}][`))
+    const discs = mine.filter((c) => c.k !== 'text')
+    const inside = (c: LayoutNode) => {
+      const cx = c.box.x + c.box.width / 2
+      const cy = c.box.y + c.box.height / 2
+      return discs.some((d) => cx >= d.box.x && cx <= d.box.x + d.box.width && cy >= d.box.y && cy <= d.box.y + d.box.height)
+    }
+    let texts = 0
+    for (const c of mine) {
+      if (c.k !== 'text' || inside(c)) fam.set(c, { f: 'face', i })
+      else fam.set(c, { f: texts++ === 0 ? 'name' : 'role', i })
+    }
+    for (const c of root.children) if (c.part === `bio[${i}]` || (c.part ?? '').startsWith(`bio[${i}][`)) fam.set(c, { f: 'about', i })
+  }
+  let children = root.children
+  for (const f of ['face', 'name', 'role', 'about'] as const) {
+    children = slotItems(children, n, f, (c) => (fam.get(c)?.f === f ? fam.get(c)!.i : -1), root.box)
+  }
+  return { ...root, children }
 }
 
 const composite = defineCompositeBlock<TeamProps>({
@@ -215,7 +249,19 @@ const composite = defineCompositeBlock<TeamProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-grid' },
+  // RVM5: members in reading order, 120 ms apart; each one reads card, photo (in place, no slide),
+  // name, role, bio. The slots come from `motionSlots`. Was `root` stagger-grid (one unit).
+  motion: {
+    parts: ['card[*]', 'face[*]', 'name[*]', 'role[*]', 'about[*]'],
+    preset: 'stagger-grid',
+    partMotion: {
+      'card[*]': { preset: 'sweep-nodes', delay: 0, stagger: 120 },
+      'face[*]': { preset: 'sweep-nodes', delay: 80, stagger: 120 },
+      'name[*]': { preset: 'fade-up', delay: 200, stagger: 120 },
+      'role[*]': { preset: 'fade-up', delay: 290, stagger: 120 },
+      'about[*]': { preset: 'fade-up', delay: 380, stagger: 120 },
+    },
+  },
   build: buildTeam,
 })
 

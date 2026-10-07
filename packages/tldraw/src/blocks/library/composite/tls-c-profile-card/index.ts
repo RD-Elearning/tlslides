@@ -113,7 +113,21 @@ const composite = defineCompositeBlock({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM5: the card reads top to bottom: its surface fades in, the portrait fades in in place (no
+  // slide), then name, role, bio and contact rise in one beat apart. Was `root` fade-up (one unit).
+  motion: {
+    parts: ['background', 'photo', 'photo.initials', 'name', 'role', 'bio', 'contact'],
+    preset: 'fade-up',
+    partMotion: {
+      background: { preset: 'sweep-nodes', delay: 0 },
+      photo: { preset: 'sweep-nodes', delay: 100 },
+      'photo.initials': { preset: 'sweep-nodes', delay: 100, stagger: 0 },
+      name: { preset: 'fade-up', delay: 250, stagger: 60 },
+      role: { preset: 'fade-up', delay: 360, stagger: 60 },
+      bio: { preset: 'fade-up', delay: 470, stagger: 60 },
+      contact: { preset: 'fade-up', delay: 580, stagger: 60 },
+    },
+  },
   build: buildProfileCard,
 })
 

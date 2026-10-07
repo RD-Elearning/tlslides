@@ -8,6 +8,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { slotItems } from '../../composite/_slots'
 import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { AvatarGroupProps } from './schema'
 import { GROUP_MAX_PEOPLE } from './schema'
@@ -86,7 +87,20 @@ export function layout(props: AvatarGroupProps, ctx: LayoutContext): LayoutNode 
       height = plan.s + gap / 2 + p.height
     }
   }
-  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: clamp(height, 0, Math.max(H, plan.s)) }, children: out }
+  const RH = clamp(height, 0, Math.max(H, plan.s))
+  // RVM5: one motion slot `seq[i]` per avatar (edge, disc, initials), then the +N bubble, then the
+  // caption, so they enter left to right whatever mix of photos and initials the row has.
+  const more = plan.more > 0 ? 1 : 0
+  const seq = (n: LayoutNode): number => {
+    const p = n.part ?? ''
+    const a = /^avatar\[(\d+)\]/.exec(p)
+    if (a) return Number(a[1])
+    if (p === 'more' || p.startsWith('more.')) return plan.shown
+    if (p === 'caption' || p.startsWith('caption[')) return plan.shown + more
+    return -1
+  }
+  const children = slotItems(out, plan.shown + more + (caption ? 1 : 0), 'seq', seq, { width: W, height: RH })
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: RH }, children }
 }
 
 export function capacity(props: AvatarGroupProps, _box: Size, _ctx: LayoutContext): CapacityReport {
