@@ -121,10 +121,12 @@ describe('blockShowDuration', () => {
         motion: { order: 1 },
       })
       const def = registry.get('tls.t.hero-number')!
-      // hero-number default motion preset is 'count-up'
-      expect(def.motion.preset).toBe('count-up')
+      // RVM3: hero-number's default preset is a calm 'fade-up'; its value counts up only under
+      // `motionStyle: expressive`, as a part preset of the expressive recipe
+      expect(def.motion.preset).toBe('fade-up')
+      expect(def.motion.partMotion?.value?.preset).toBe('count-up')
       const result = blockShowDuration(spec, def, registry)
-      expect(result.activeMs).toBe(DURATION_TOKENS.verySlow)
+      expect(result.activeMs).toBe(DURATION_TOKENS[MOTION_PRESETS['fade-up'].duration])
     })
   })
 

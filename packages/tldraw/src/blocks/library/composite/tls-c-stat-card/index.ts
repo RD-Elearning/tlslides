@@ -175,9 +175,19 @@ export const tlsCStatCard = defineCompositeBlock({
       },
     },
   },
+  // RVM3: `preset: 'stagger'` is not a preset id (styles fell back to fade-up and the card moved as
+  // one piece). Under `expressive` the card fades in, the icon pops, the number counts up and the
+  // unit and caption rise in after it; `subtle` (and the default) is one fade-up.
   motion: {
-    parts: ['root'],
-    preset: 'stagger',
+    parts: ['icon', 'value', 'unit', 'caption'],
+    preset: 'fade-up',
+    expressive: 'stagger-children',
+    partMotion: {
+      icon: { preset: 'field-in', delay: 0 },
+      value: { preset: 'count-up', delay: 80 },
+      unit: { preset: 'fade-up', delay: 300 },
+      caption: { preset: 'fade-up', delay: 360 },
+    },
   },
   build: buildStatCard,
 })
