@@ -34,6 +34,7 @@ const def = (type: string): BlockDefinition => {
 
 /** Recipe parts the example legitimately lacks (another orientation, icons, arrow heads). */
 const OPTIONAL: Record<string, RegExp> = {
+  'tls.g.steps': /^step\[\*\]\.connector-v$/, // vertical direction only (RVM6)
   'tls.g.funnel': /^col\[\*\]$/,
   'tls.g.timeline': /^(rail-y|stem\[\*\])$/,
   'tls.g.milestones': /^rail-y$/,
@@ -191,6 +192,7 @@ const preset = (type: string, part: string) => expressive(def(type)).parts.find(
 describe('RVM4 connectors draw on (J6) and labels wait for their shape', () => {
   it.each([
     ['tls.g.steps', 'step[*].connector', 'wipe-x'],
+    ['tls.g.steps', 'step[*].connector-v', 'wipe-down'], // RVM6: the vertical rail draws down
     ['tls.c.steps', 'connector[*]', 'wipe-x'],
     ['tls.g.cycle', 'arrow[*]', 'draw-path'],
     ['tls.g.flow', 'out[*]', 'draw-path'],

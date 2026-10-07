@@ -213,7 +213,7 @@ const MARKS: Record<string, Record<string, string>> = {
   'tls.d.progress-bar': { 'row[*].fill': 'grow-bars-x' },
   'tls.d.bullet-chart': { 'row[*].bar': 'grow-bars-x' },
   'tls.d.ranking': { 'row[*].bar': 'grow-bars-x' },
-  'tls.d.gauge': { 'bands[*]': 'wipe-x' },
+  'tls.d.gauge': { 'bands[*]': 'sweep' }, // RVM6: a 180° sweep from 9 o'clock (was wipe-x)
   'tls.d.scatter': { 'point[*]': 'field-in', trend: 'draw-path' },
   'tls.d.bubble': { 'point[*]': 'field-in' },
   'tls.g.matrix-2x2': { 'axes[y]': 'wipe-y', 'axes[x]': 'wipe-x' },

@@ -43,7 +43,8 @@ describe('tls.g.steps', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.steps example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGSteps))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGSteps))
+  // `connector-v` is the vertical rail (RVM6): only present with direction 'vertical'
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGSteps, { optional: /^step\[\*\]\.connector-v$/ }))
 })
 
 describe('tls.g.steps adapts to its box (RV07)', () => {
@@ -83,7 +84,8 @@ describe('tls.g.steps adapts to its box (RV07)', () => {
     expect(new Set(badges.map((b) => Math.round(b.x))).size).toBe(1)
     const titles = rectsOf(tree, /\.title$/)
     expect(titles[0].x).toBeGreaterThan(badges[0].x + badges[0].width)
-    expect(rectsOf(tree, /\.connector$/)).toHaveLength(3)
+    // RVM6: the vertical rail is its own motion part (`connector-v`, wipes down its length)
+    expect(rectsOf(tree, /\.connector-v$/)).toHaveLength(3)
   })
 
   it('accepts the legacy JSON-string form of steps', () => {

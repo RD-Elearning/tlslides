@@ -156,7 +156,8 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
         const y0 = BADGE + RAIL_PAD
         const tip = q.y - p.y - RAIL_PAD
         const end = connector === 'arrow' ? tip - ARROW : tip
-        kids.push(bar({ x: cx - THICK / 2, y: y0, width: THICK, height: Math.max(0, end - y0) }, c.muted, `step[${i}].connector`))
+        // RVM6: its own part so the vertical rail draws down its length (`wipe-down`)
+        kids.push(bar({ x: cx - THICK / 2, y: y0, width: THICK, height: Math.max(0, end - y0) }, c.muted, `step[${i}].connector-v`))
         if (connector === 'arrow') kids.push(inGroup(arrowHead(ctx, { x: p.x + cx, y: p.y + tip }, 0, 1, ARROW, c.muted, `step[${i}].connector-arrowhead`)))
       }
     }
