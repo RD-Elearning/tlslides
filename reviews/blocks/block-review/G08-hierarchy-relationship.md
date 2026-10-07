@@ -39,8 +39,27 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 
 - S20 and S21 as listed in G07 (flow drop breaks via `clone-spec.ts`; card scaling for wide blocks).
 
+## Motion pass (M4)
+
+Agent D, 2026-10-07. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` per category (`process`, `timeline`, `hierarchy`, `relationship`) on the final build, `REVIEW_MOTION_PNG=1` mid frames and `REVIEW_MOTION_DUMP=1` frame dumps for the flagged blocks. Spec: `library/motion-m4.spec.ts` (all 18 M4 blocks: recipe parts exist, every drawn leaf animated, expressive J5 with the example **and with the maximum item count**, subtle opacity only, connectors start after their source and no later than their target, labels after their own shape even with a text missing, journey tweens). Shared choreography in `library/diagram/_motion.ts` (G07/G08 only): `STEP` 120 ms between items, a connector `WIRE_AFTER` 80 ms after its source, its head `TIP_AFTER` 320 ms, a label `LABEL_AFTER` 150 ms after its shape; optional texts sit in per-item slots emitted for every item. No engine change.
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a. Probe artefacts (not block faults, flaky across runs, verified on frame dumps): **A1** a clip part's from-state set the frame the block shows reads as 1→0 (timeline `rail-x`, layers `slab[0]` once each, clean on re-run); **A2** J5 stagger folds the first element into the block fade (chevrons `seg[*]` 367 — dump: wipes start 540/670/790/890 ms, 120 apart; cycle/mindmap/hub-spoke `<path>` 300–417 — dump: hub wires start 650/780/890 ms); **A3** html wrapper `(block)` 0→1 in one frame (journey); **A4** c.steps `root` 150 once: title and description are delegated blocks whose wrappers are both named `root`, so the probe mixes two families (clean on re-run).
+
+**Counts:** 8/8 fixed (0 unchanged, 0 open).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.g.tree | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 grows root → leaves a level per STEP (`level[d]`); links draw from each parent as its children arrive (`links[d]`); `item[k]` order was layout order (a grandchild before its parent) |
+| tls.g.pyramid | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 levels settle about their own centre in reading order (`tier[i]`), label/leader/note slot `cap[i]` |
+| tls.g.layers | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 each layer wipes left to right over its own bar (`slab[i]`, flat or slanted), the stack fills top-down; `cap[i]` texts after. Probe J1 once = A1 |
+| tls.g.breakdown | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 the brace (stroked path) draws on after the whole; parts rise in top-down after it |
+| tls.g.mindmap | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 centre out, branch by branch: arm draws, topic settles, twigs draw, sub-topics; 6×4 < 1.5 s (sub-topics were staggered by flat index over all branches). Probe J5 = A2 |
+| tls.g.venn | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 circles settle about their own centre (`orb[i]`) in turn, labels after (`cap[i]`), the overlap label last (was each set rising 24 px with its texts) |
+| tls.g.hub-spoke | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 hub, then clockwise from 12 o'clock: wire draws out of the hub, card settles as it arrives, head + texts after. Probe J5 = A2 (dump: wires 650/780/890 ms) |
+| tls.g.bracket | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `1d513ba6` | 🔧 items settle in order with their text, the brace (stroked) draws on beside them, label last (were three fades) |
+
 ## Session log
 
 | Date | Agent | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-06 | B2 agent | G08 8/8: `d176893e` (tree, mindmap, layers, pyramid, hub-spoke, bracket + motion coverage of G07 cycle/funnel/milestones) | breakdown and venn unchanged. The motion-coverage helper is reusable for other families (`assertMotionTargetsExist`) |
+| 2026-10-07 | agent D (M4) | Motion pass: 8/8 fixed (0 unchanged, 0 open) | Rows above; probe artefacts A1–A4 for the controller |
