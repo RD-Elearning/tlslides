@@ -140,6 +140,40 @@ Use `partMotion` so only the bars/lines grow or draw while labels, axes and lege
 - `3cf6d7f8` (RV04) deleted `library/data/tls-d-bar/layout-horizontal.ts` (179 lines) in a commit about
   four other blocks; tsc is clean, but worth a look.
 
+### M1b (engine follow-up, 2026-10-07)
+
+Agent A. Commits: `719c9f1e` (engine), `ff044def` (probe).
+
+| Item | Root cause | Fix |
+|---|---|---|
+| E1 chained presets | `resolvePartMotion` gave every part the chained preset's own keyframes at once; `chain` was never read | Part *i* plays `chain[min(i, last)]`; each step starts when the previous one is 60 % through (`CHAIN_OVERLAP`); parts past the chain share the last step one stagger apart; recipe `partMotion` / spec part overrides still win. `quote-in`: glyph pops at 0, text at 150 ms, attribution at 450 ms |
+| E2 part easing | `blockEasing \|\| …` is always truthy, so a part preset's ease was dropped | A part playing its own preset (override, recipe part, chain step) keeps its easing unless the spec sets `ease`; `draw-path` / `sweep` ease out (`smoothOut`, was `ease-in-out`) |
+| E3 probe | an opaque wrapper with all parts hidden counted as visible | Content visibility per frame (visible + paints itself or a visible painting descendant); J1/J2 use it, J5 times only runs that showed something |
+| E4 probe | J4 compared style strings | Numbers rounded to 0.01 before comparing |
+| E5 probe | mid PNGs at fixed 150/400/800 ms from slide start | `REVIEW_MOTION_PNG=1` replays the slide and shoots at 15/40/75 % of the block's measured chain from its first movement |
+| E7 `wipe-down` | no clip-only top-down wipe | New preset `wipe-down` (`inset(0% 0% 100% 0%)` → `inset(0% 0% 0% 0%)`, panel-reveal, Wipe block effect; `wipe-y` is the bottom-up one). `tls.x.rule` vertical bar = part `rule-v` with `partMotion` wipe-down: it draws along its length |
+| count-up | the GSAP driver dropped `onUpdate`, so no number ever counted in the viewer | `onUpdate` gets the tween's eased ratio each frame and 1 at the end; the count runs on a detached proxy tween so a settle cannot freeze it half-way (trace: `$0.5M … $4.2M` over ~350 ms) |
+| sweep from 12 o'clock | filled arcs fell back to a left-to-right wipe | A filled `sweep` part gets a pie-sector clip about the family's common centre, opened clockwise from 12 o'clock by a proxy tween (`sectorClip`); stroked arcs still draw on. Checked on `tls.d.donut` + `sweep` |
+| negative bars | one origin per part | A one-axis grow on its preset origin finds the family's zero line (most common bottom / left edge, layout boxes) and grows bars hanging off it from that line (`50% 0%` / `100% 50%`). Waterfall floating bars still need their own part + origin |
+| probe: polygon clips | a sweep sector's raw area exceeds the box, so it read "fully visible" from frame one | Fraction measured inside the element box (24 × 24 grid) |
+
+Spec changes are all intended and named in the commit: presets 35 → 36 + id list, digest snapshot
+(`wipe-down`, motionCount 35), `tls-x-rule.spec` motion, `motion-m2.spec` OPTIONAL `rule-v`,
+`play-reveal.spec` count-up (the count is on a proxy). New cases in `motion/smoothness.spec.ts`
+(M1b block). Related specs: 543 pass; the same 4 pre-existing failures as after M1 (`timeline.spec`
+×2, `motion-style.spec` assert old G04/G05 recipes; `DeckViewer.spec` retreat = the user's
+uncommitted edit). tsc 0.
+
+**Probe after M1b** (`static,subtle,expressive,reduced`, heading + list + chart + `tls.x.rule`,
+116 block×style rows): all clean except `tls.d.scatter` / `tls.d.bubble` expressive J5 (`root`
+fades 100 ms; M3, as before) and `tls.c.feature-reveal` expressive J5 stagger `card[*]` 140 ms
+(authored `i * 0.14` in its animate: G01 block, above the 120 ms token; the old probe hid it
+behind the wrapper false positive). `tls.x.rule` clean in all styles; explicit checks: vertical
+rule draws top-down, donut sweeps from 12 o'clock, `quote-in` chains, count-up counts — all J1–J8 ✓.
+
+Open: `tls.c.feature-reveal` card stagger 140 → ≤ 120 ms (M6 / G01 owner); M3 moves the charts
+back to grow/draw/sweep presets with `partMotion`; `diagram-test.ts` `BROKEN` list (M4).
+
 ## 3. Progress
 
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
