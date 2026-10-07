@@ -256,7 +256,7 @@ kept.
 
 | Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
 |---|---|---|---|---|---|---|
-| Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1 | ✅ `6c496b90`, `480def10`, `071bc32b` (open: count-up `onUpdate` ignored by the GSAP driver, `sweep` on fills not from 12 o'clock, negative bars → M3) |
+| Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1, M1b, M6 | ✅ `6c496b90`, `480def10`, `071bc32b` (open: count-up `onUpdate` ignored by the GSAP driver, `sweep` on fills not from 12 o'clock, negative bars → M3) |
 | G01 structure | 13 | 13 | 13 | 0 | M2 | ✅ `55d29ae8` |
 | G02 heading, text, emphasis | 12 | 12 | 7 | 0 | M2 | ✅ `985f844b` |
 | G03 list | 9 | 9 | 3 | 0 | M2 | ✅ `2c5ea313` |
@@ -268,7 +268,7 @@ kept.
 | G08 hierarchy, relationship | 8 | 8 | 8 | 0 | M4 | ✅ `1d513ba6` |
 | G09 media, people, brand | 14 | 14 | 13 | 0 | M5 | ✅ `ef134492` |
 | G10 slide composites | 11 | 11 | 11 | 0 | M5 | ✅ `ea5f2674` |
-| **Total** | **129** | | | | | |
+| **Total** | **129** | **129** | **115** | **0** | M6 | ✅ final sweep 515/516 clean (journey expressive labels follow the line by design) |
 
 ## 4. Session log
 
@@ -281,3 +281,4 @@ kept.
 | 2026-10-07 | agent C (M3) | G04/G05/G06 42/42 fixed (engine `11d89574`, `c827b476`; G04 `27ee6939`…`331e975c`; G05 `a239d97f`…`7be9a324`; G06 `b355b640`…`fa97ba2b`; specs `16c519d3`; files `07067036`, `2157a34a`, `d1d8bbea`); feature-reveal stagger 120 ms `803a98e1` | Charts back on real grow/draw/sweep; count-up keeps format + tabular digits; per-part `delay`/`stagger` in recipes; `split-in` settles at 0. Open for M6 (controller/engine): probe A1 (hidden-state set the frame the block shows → false J1), A2 (J5 stagger folds the block fade in), A3 (html wrapper 0→1 while parts faint); DeckViewer settle-to-visible ignores clip-path/dash offset on a mid-chain skip; `sweep` start angle (gauge). Jest filter must also exclude `DOM and SVG` specs (README §4 updated). **Next: M4 = G07 + G08 (+ S20)** |
 | 2026-10-07 | agent D (M4) | G07/G08 18/18 fixed (`43ea9615`, `1d513ba6`, files `afcf05bd`, `17ef99f2`); S20 fixed `faf65ba9` (only nested blocks get fresh ids; full-length ids, the old 1-hex-digit ids could collide) | Diagrams build in flow order (flow by layer, tree by level, mind map by branch, edges draw from source); `diagram/_motion.ts` shared timing; `motion-m4.spec.ts` 100 tests incl. J5 at max item count. Probe artefacts A1–A3 again + A4 (two delegated `root` wrappers read as one family). Open: vertical `tls.g.steps` rail wipes across its 2 px. **Next: M5 = G09 + G10** |
 | 2026-10-07 | agent E (M5) | G09 14/14 (13 fixed), G10 11/11 fixed: `d218d00e`, `33626d57`, `5fc608fc`, `ef134492`, `a4f39319`, `0e73c615`, `faf891de`, `70378990`, `ea5f2674`; `motion-m5.spec.ts` (152 tests) `1d00a403`; files `67d003b0`, `2b5e8fb9` | Composites reveal in hierarchy (7 of 9 animated `root` only); `composite/_slots.ts` `slotItems` keeps per-item pieces in order; device-mock shadow J3, hero variants never played, kinetic-title animated `letter-spacing` (J4), testimonial 4 s → 0.7 s. **All 129 blocks motion-reviewed.** Open for M6: E-M5-1 images can pop in at 0.7–1.0 opacity when they load after their entrance starts (await `img.decode()`); settle-to-visible ignores clip-path/dash offset on skip; probe A1–A5; sweep start angle (gauge); vertical `tls.g.steps` rail |
+| 2026-10-07 | agent A (M6) + controller | Engine `5d6d5913` (images wait for `decode()` ≤ 600 ms; `settleBlockParts()` settles clip/dash on skip; sweep start angle), blocks `5b2ed0ec` (gauge sweeps its dial, vertical steps rail draws down), `a1213b9e` (journey track was an unanimated pop), probe A1–A5 `001e85cb`, notes `a03214d3` | **Motion pass complete.** Final sweep 129 blocks × 4 styles: 515/516 clean. Open (minor): journey label spacing > 120 ms by design; editor Present mode lacks the S26 guard and image wait (no visible symptom today). Still-open non-motion shared issues: README §5 |

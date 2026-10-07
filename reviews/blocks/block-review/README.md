@@ -195,7 +195,7 @@ Update a row when its group agent reports back. Counts are blocks whose Status i
 | G09 media, people, brand | 14 | 14 | 14 | 0 | S25, S26, S27 | `d942945c` | ✅ |
 | G10 slide composites | 11 | 11 | 8 | 0 | S28, S29 | `b4e0d84b` | ✅ |
 | G11 chrome, decoration | 10 | 10 | 6 | 0 | S24 | `a27ba24b` | ✅ |
-| **Total** | **129** | **129** | **120** | **1** (flow C2, S20) | | | **review complete** |
+| **Total** | **129** | **129** | **120** | **0** (flow C2 closed by S20, MOTION M4) | | | **review complete** (+ motion pass: [MOTION.md](MOTION.md)) |
 
 ## 7. Harness
 
