@@ -25,7 +25,8 @@ export function template(props: JourneyProps, ctx: HtmlTemplateContext): string 
     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="position:absolute;left:0;top:0;overflow:visible" aria-hidden="true">` +
       `<defs><linearGradient id="tls-journey-grad" x1="0" y1="0" x2="1" y2="0">` +
       `<stop offset="0" stop-color="${accent}"/><stop offset="1" stop-color="${accent2}"/></linearGradient></defs>` +
-      `<path d="${g.d}" fill="none" stroke="${track}" stroke-width="${g.stroke}" stroke-linecap="round" stroke-dasharray="1 ${g.stroke * 3}"/>` +
+      // RVM6: the dotted guide track is a part, so it fades in with the rest (it popped in one frame)
+      `<path data-part="track" d="${g.d}" fill="none" stroke="${track}" stroke-width="${g.stroke}" stroke-linecap="round" stroke-dasharray="1 ${g.stroke * 3}"/>` +
       `<path data-part="path" data-length="${g.length}" d="${g.d}" fill="none" stroke="url(#tls-journey-grad)" ` +
       `stroke-width="${g.stroke}" stroke-linecap="round" stroke-dasharray="${g.length}" style="stroke-dashoffset:0"/>` +
       `</svg>`

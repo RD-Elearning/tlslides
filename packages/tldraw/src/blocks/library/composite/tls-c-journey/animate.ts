@@ -50,10 +50,18 @@ function pathOf(root: HTMLElement): { el: Element; length: number } | undefined 
   return { el, length: Number(el.getAttribute('data-length')) || 0 }
 }
 
+/** The dotted guide track under the path. RVM6: a part that fades in first; it was not a part
+ *  and appeared in one frame when the block was shown (J1). */
+function trackOf(root: HTMLElement): Element | undefined {
+  return root.querySelector('[data-part="track"]') ?? undefined
+}
+
 function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: BlockMotionRuntime): () => void {
   const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
   // Every part owns its opacity in its own fromTo (no blanket set: it would undo the from-states).
   const path = pathOf(root)
+  const track = trackOf(root)
+  if (track) tl.fromTo(track, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out' }, 0)
   if (path) tl.fromTo(path.el, { strokeDashoffset: path.length, opacity: 1 }, { strokeDashoffset: 0, opacity: 1, duration: DRAW_S, ease: DRAW_EASE }, 0)
   for (const s of stops(root)) {
     const t = reachAt(s.at) * DRAW_S
@@ -69,6 +77,8 @@ function driverSteps(root: HTMLElement, _rt: BlockMotionRuntime): MotionStepList
   const steps: MotionStepList = []
   const path = pathOf(root)
   const drawMs = DRAW_S * 1000
+  const track = trackOf(root)
+  if (track) steps.push([track, { opacity: [0, 1] }, { duration: 300, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }])
   if (path) steps.push([path.el, { opacity: [1, 1], strokeDashoffset: [`${path.length}`, '0'] }, { duration: drawMs, easing: DRAW_CSS }])
   for (const s of stops(root)) {
     const t = reachAt(s.at) * drawMs

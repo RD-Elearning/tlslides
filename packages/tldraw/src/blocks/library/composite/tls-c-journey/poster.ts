@@ -24,6 +24,8 @@ export function poster(props: JourneyProps, ctx: LayoutContext): LayoutNode {
   const tok = labelTokens(items.length)
   const children: LayoutNode[] = [backdrop(W, H)]
 
+  // RVM6: the guide track is a part (under the path, same geometry), as in the template
+  if (items.length > 0) children.push({ k: 'path', part: 'track', box: full, d: g.d, stroke: { color: color(ctx, 'line'), width: g.stroke } })
   if (items.length > 0) children.push({ k: 'path', part: 'path', box: full, d: g.d, stroke: { color: accent, width: g.stroke } })
 
   const whenStyle: ResolvedTextStyle = { ...ctx.resolveText('caption', { letterSpacing: 0.06 }), color: accent }
