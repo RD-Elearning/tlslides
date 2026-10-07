@@ -53,7 +53,9 @@ function installSampler() {
     if (cs.boxShadow && cs.boxShadow !== 'none') return true
     for (const n of el.childNodes) {
       if (n.nodeType === 3 && n.textContent.trim()) return true
-      if (n.nodeType === 1 && !n.matches(TRACKED) && ownPaint(n, depth + 1)) return true
+      // M6/A3: a child the driver animates is tracked on its own, and one that is invisible now
+      // (a from-state) is not what this element paints
+      if (n.nodeType === 1 && !n.matches(TRACKED) && !mp.extra.has(n) && Number(getComputedStyle(n).opacity) >= 0.05 && ownPaint(n, depth + 1)) return true
     }
     return false
   }
@@ -107,7 +109,8 @@ function installSampler() {
         const b = parseStyle(el.getAttribute('style'))
         // M1b/E4: the CSSOM re-serialises numbers (452.333333px -> 452.333px) the first time a
         // tween writes the style; compare with the numbers rounded, not as strings.
-        const norm = (v) => (v === undefined ? v : v.replace(/-?\d*\.?\d+(e-?\d+)?/g, (x) => String(Math.round(parseFloat(x) * 100) / 100)))
+        // M6/A5: and `0` vs `0px` (inset:0 is re-serialised as inset: 0px): px units dropped
+        const norm = (v) => (v === undefined ? v : v.replace(/(\d)px\b/g, '$1').replace(/-?\d*\.?\d+(e-?\d+)?/g, (x) => String(Math.round(parseFloat(x) * 100) / 100)))
         for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
           if (norm(a[k]) !== norm(b[k])) mp.props[k] = (mp.props[k] || 0) + 1
         }
@@ -259,6 +262,10 @@ function installSampler() {
           +sy.toFixed(4),
           +(clipFraction(cs.clipPath, el) * ancClip(el.parentElement)).toFixed(4),
           +dashProgress(cs).toFixed(4),
+          // M6/A2: the element's own opacity and clip (without its ancestors'), so its own motion
+          // can be told from a wrapper fade around it
+          +Number(cs.opacity).toFixed(4),
+          +clipFraction(cs.clipPath, el).toFixed(4),
         ]
         row[id] = vals
         const p = mp.prev && mp.prev[id]
@@ -309,14 +316,17 @@ function installSampler() {
 // --- verdicts (node) ----------------------------------------------------------
 
 const VIS = 0.05
-const CH = { op: 0, tx: 1, ty: 2, sx: 3, sy: 4, clip: 5, dash: 6 }
-const EPS = [0.004, 0.3, 0.3, 0.003, 0.003, 0.004, 0.004]
+const CH = { op: 0, tx: 1, ty: 2, sx: 3, sy: 4, clip: 5, dash: 6, oop: 7, oclip: 8 }
+const EPS = [0.004, 0.3, 0.3, 0.003, 0.003, 0.004, 0.004, 0.004, 0.004]
+/** Channels the element moves itself (not inherited from a wrapper). */
+const OWN = [CH.tx, CH.ty, CH.sx, CH.sy, CH.dash, CH.oop, CH.oclip]
 const NON_COMPOSITOR = /^(width|height|top|left|right|bottom|font-size|font|line-height|margin.*|padding.*|inset|border.*width|letter-spacing)$/
 const NON_COMPOSITOR_ATTR = /^(x|y|width|height|r|cx|cy|rx|ry|d|points|x1|x2|y1|y2)$/
 
 const visible = (v) => v[CH.op] > VIS && v[CH.clip] > 0.01 && v[CH.sx] > 0.02 && v[CH.sy] > 0.02 && v[CH.dash] > 0.01
 const atRest = (v) => v[CH.op] >= 0.99 && Math.abs(v[CH.tx]) < 0.5 && Math.abs(v[CH.ty]) < 0.5 && Math.abs(v[CH.sx] - 1) < 0.005 && Math.abs(v[CH.sy] - 1) < 0.005 && v[CH.clip] >= 0.999 && v[CH.dash] >= 0.999
-const differs = (a, b) => a.some((x, i) => Math.abs(x - b[i]) > EPS[i])
+const differs = (a, b) => a.some((x, i) => b[i] !== undefined && Math.abs(x - b[i]) > EPS[i])
+const ownDiffers = (a, b) => OWN.some((i) => a[i] !== undefined && b[i] !== undefined && Math.abs(a[i] - b[i]) > EPS[i])
 const fam = (p) => p.replace(/\/\d+/g, '/*').replace(/\[\d+\]/g, '[*]')
 
 /**
@@ -393,7 +403,19 @@ function verdicts(rec, opts) {
         const dt = s[i].t - s[i - 1].t
         // a jump nobody can see (hidden on both frames, e.g. a from-state set under a
         // still-transparent wrapper) is not a snap
-        if (!shows(k, s[i - 1].f) && !shows(k, s[i].f)) continue
+        const prevShown = shows(k, s[i - 1].f)
+        if (!prevShown && !shows(k, s[i].f)) continue
+        // M6/A3: an element that paints nothing itself (a wrapper, a `root`) is judged on its
+        // translate/scale only; its opacity and clip reach the painting parts' effective values.
+        const paints = rec.els[k].paint !== false
+        // M6/A1: a jump towards hidden whose previous frame showed nothing (a from-state set the
+        // frame the wrapper starts to show) was never seen at its earlier value.
+        const towardsHidden = (ch) =>
+          ch === 'translate'
+            ? Math.hypot(b[CH.tx], b[CH.ty]) > Math.hypot(a[CH.tx], a[CH.ty])
+            : ch === 'scale'
+              ? Math.min(b[CH.sx], b[CH.sy]) < Math.min(a[CH.sx], a[CH.sy])
+              : b[CH[ch === 'opacity' ? 'op' : ch]] < a[CH[ch === 'opacity' ? 'op' : ch]]
         const jumps = [
           ['opacity', Math.abs(b[CH.op] - a[CH.op]), 0.35],
           ['translate', Math.hypot(b[CH.tx] - a[CH.tx], b[CH.ty] - a[CH.ty]), 40],
@@ -403,6 +425,8 @@ function verdicts(rec, opts) {
         ]
         for (const [ch, d, lim] of jumps) {
           if (d <= lim) continue
+          if (!paints && (ch === 'opacity' || ch === 'clip' || ch === 'dash')) continue
+          if (!prevShown && towardsHidden(ch)) continue
           // A one- or two-frame run is a snap; a longer run is a tween, exempt when it lasts
           // <= 100 ms (deliberate) or when the jump spans a frame gap (J8 noise).
           const snap = r.end - r.start < 2 || (dur > 100 && dt <= 50)
@@ -480,6 +504,9 @@ function verdicts(rec, opts) {
   const starts = {}
   for (const k of mine) {
     const s = S[k]
+    // M6/A3: an element that paints nothing has no visible timing of its own; its fade shows in
+    // the painting parts' effective values.
+    if (rec.els[k].paint === false) continue
     // Only runs that showed something count (M1b/E3): a wrapper whose parts were all hidden, or a
     // from-state set while the element was still invisible, has no visible timing of its own.
     const rs = runs(s).filter((r) => {
@@ -492,8 +519,28 @@ function verdicts(rec, opts) {
     first = Math.min(first, st)
     lastT = Math.max(lastT, en)
     const dur = en - st
-    const f = fam(rec.els[k].part)
-    ;(starts[f] = starts[f] || []).push(st)
+    // M6/A4: a family is the part name pattern under the same parent pattern (two delegated
+    // blocks' `root` wrappers are not one family). A2: a member starts when it starts moving
+    // itself, not when the block fade around it starts.
+    const par = rec.els[k].parent
+    const f = `${fam(rec.els[k].part)}|${par !== null && par !== undefined ? fam(rec.els[par].part) : ''}`
+    // (setting a from-state moves away from rest, so the start is the first own move towards it)
+    const away = (x) => Math.abs(x[CH.oop] - 1) + Math.abs(x[CH.oclip] - 1) + Math.abs(x[CH.dash] - 1) + Math.abs(x[CH.sx] - 1) + Math.abs(x[CH.sy] - 1) + Math.hypot(x[CH.tx], x[CH.ty]) / 100
+    let own = st
+    for (let i = rs[0].start; i <= rs[rs.length - 1].end; i++) {
+      const a = s[i - 1].v
+      const b = s[i].v
+      if (b[CH.oop] !== undefined && ownDiffers(a, b) && away(b) < away(a) - 0.001) { own = s[i - 1].t; break }
+    }
+    if (own === st) {
+      // nothing of its own moved: a clip/scale/draw inherited from a wrapping part (a chevron
+      // inside its wiping segment) — the first visible move towards rest, opacity aside
+      const awayEff = (x) => Math.abs(x[CH.clip] - 1) + Math.abs(x[CH.dash] - 1) + Math.abs(x[CH.sx] - 1) + Math.abs(x[CH.sy] - 1) + Math.hypot(x[CH.tx], x[CH.ty]) / 100
+      for (let i = rs[0].start; i <= rs[rs.length - 1].end; i++) {
+        if (shows(k, s[i].f) && awayEff(s[i].v) < awayEff(s[i - 1].v) - 0.001) { own = s[i - 1].t; break }
+      }
+    }
+    ;(starts[f] = starts[f] || []).push(own)
     // total change of the element: ignore micro-movements
     const a = s[rs[0].start - 1].v
     const b = s[rs[rs.length - 1].end].v
@@ -517,7 +564,7 @@ function verdicts(rec, opts) {
     arr.sort((x, y) => x - y)
     for (let i = 1; i < arr.length; i++) if (arr[i] - arr[i - 1] > maxStagger) { maxStagger = arr[i] - arr[i - 1]; staggerFam = f }
   }
-  if (maxStagger > 120 + 20) tim.push({ el: staggerFam, issue: 'stagger', ms: +maxStagger.toFixed(0) })
+  if (maxStagger > 120 + 20) tim.push({ el: staggerFam && staggerFam.split('|')[0], issue: 'stagger', ms: +maxStagger.toFixed(0) })
   const chainMs = first === Infinity ? 0 : lastT - first
   const cap = scope === 'slide' ? 3500 : 2500
   if (chainMs > cap) tim.push({ issue: 'chain', ms: +chainMs.toFixed(0), cap })
