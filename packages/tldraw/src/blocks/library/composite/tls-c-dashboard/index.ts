@@ -13,8 +13,8 @@ import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { objs } from '../../media/_kit'
-import { composeFlat, measureHeights, pick, toMeasurable, type Piece } from '../_kit'
-import { chartSlot, chartSpec, type ChartSlot } from '../_chart'
+import { measureHeights, pick, toMeasurable, type Piece } from '../_kit'
+import { chartMotion, chartSlot, chartSpec, composeWithChart, type ChartSlot } from '../_chart'
 
 export const DASH_MIN_KPIS = 2
 export const DASH_MAX_KPIS = 4
@@ -149,8 +149,10 @@ export function layoutDashboard(props: DashboardProps, ctx: LayoutContext): Layo
     pieces.push({ id: 'chart', spec: chart, box: { x, y: 0, width: p.chartW, height: ch } })
     if (ins) pieces.push({ id: 'insight', spec: ins, box: { x, y: ch + p.gap, width: p.insW, height: p.insH } })
   }
-  return composeFlat(ctx, pieces, total)
+  return composeWithChart(ctx, pieces, total)
 }
+
+const DASH_CHART = chartMotion(200)
 
 const composite = defineCompositeBlock<DashboardProps>({
   type: 'tls.c.dashboard',
@@ -182,7 +184,18 @@ const composite = defineCompositeBlock<DashboardProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM3: KPIs rise in, then the chart's marks grow / draw / sweep and its labels follow, then the
+  // insight; under `subtle` (and by default) every part fades up at once.
+  motion: {
+    parts: ['kpis', ...DASH_CHART.parts, 'insight'],
+    preset: 'fade-up',
+    expressive: 'stagger-children',
+    partMotion: {
+      kpis: { preset: 'fade-up', delay: 0, stagger: 40 },
+      ...DASH_CHART.partMotion,
+      insight: { preset: 'fade-up', delay: 700, stagger: 40 },
+    },
+  },
   build: buildDashboard,
 })
 
