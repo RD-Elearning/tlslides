@@ -108,8 +108,39 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 | Y6 | `text/_engine/color.ts` (`readableOn`) used by `_chart/line-family.ts` | A direct label takes the series colour solved for 4.5:1: coral `#ff6b6b` becomes `#e00000`-ish pure red next to a coral line. Blending 35-40% toward `text` would keep the hue and the contrast. Cosmetic. | `chart/d-line.wide.png`, `metric/c-dashboard.wide.png` |
 | Y7 | `layout/measure.ts` | The `inter` table is wrong for figures (see G04 Y2); `library/data/_chart/inter-width.ts` has measured widths, one source for both. | G04 Y2 |
 
+## Motion pass (M3)
+
+Agent C, 2026-10-07. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` per category on the final build (`metric`, `chart`, `table`, `comparison`), plus `REVIEW_MOTION_PNG=1` mid frames (15/40/75 %) and `REVIEW_MOTION_DUMP=1` frame dumps for the changed blocks. Spec: `library/motion-m3.spec.ts` (all 42 M3 blocks: recipe parts exist, every drawn leaf animated or listed as chart frame, expressive 150–900 ms / out ease / stagger ≤ 120 ms / ≤ 2.5 s / block fade only, subtle opacity only, J6 preset per mark, every label after its mark, only numbers count, tables header-first, comparisons side by side).
+Engine (minimal, blocks several M3 blocks, with specs in `motion/smoothness.spec.ts`): `11d89574` (partMotion `delay`/`stagger`; one-axis grows follow the bars' geometry; waterfall steps grow from the previous level; stacked segments grow about the zero line by column; count-up keeps the target format on tabular figures; `split-in` settles at 0, mirrored pair) and `c827b476` (count-up tabular style on the part element). Stale specs fixed in `6a113855` (`timeline.spec`) and `16c519d3` (`motion-style.spec`).
+Shared conventions: `library/data/_chart/motion.ts` — the chart frame (grid, ticks, categories, legend, tracks) rides the block fade, marks start at 80 ms, labels `LABEL_AFTER` (260 ms) after their mark with the mark's stagger; labels fade with `sweep-nodes` (400 ms: a 250 ms `fade` on an already visible block jumps > 0.35 in its first frame, J1), points/dots/badges enter with `field-in` (`pop`/`pop-points` settle in ~100 ms, J5).
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a (no such motion: J6 applies to grows, draws and sweeps only). Probe artefacts (not block faults, reported to the controller) are marked ✅ with a note: **A1** a grow/clip part whose from-state is set in the same frame the block wrapper becomes visible reads as a 1→0 jump (prev frame hidden); **A2** J5 stagger: an element's first run merges with the block fade (effective opacity), so marks starting inside the fade are timed from the reveal; **A3** html wrapper `(block)` opacity 0→1 in one frame while its parts are still faint (E3 variant). Each was flaky across runs.
+
+**Counts:** 16/16 fixed (0 unchanged, 0 open).
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.d.bar | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a239d97f` | 🔧 back to `grow-bars-y` from the zero line (x in a horizontal chart: engine follows the geometry); values after their bar; title fades |
+| tls.d.donut | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `4f4bf600` | 🔧 back to `sweep`: the ring opens clockwise from 12 o'clock as one, centre counts, labels after; `legend/*` matched nothing |
+| tls.d.line | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `f7e85361` | 🔧 back to `draw-path`: series draw from their first point, markers and end label after |
+| tls.d.area | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `f7e85361` | 🔧 fills `wipe-x` left to right (paired insets since M1) with their edge drawing on |
+| tls.d.grouped-bar | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a239d97f` | 🔧 back to `grow-bars-y`, values after their bar. Probe J5 stagger 333 = A2 |
+| tls.d.stacked-bar | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a239d97f` | 🔧 `grow-segments` about the zero line: each stack grows as one column (no gaps), columns 80 ms apart; totals after |
+| tls.d.pie | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `4f4bf600` | 🔧 back to `sweep`: the disc opens clockwise from 12 o'clock (one sector clips every slice), leaders draw and labels fade after |
+| tls.d.sparkline | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `f7e85361` | 🔧 line draws on with its fill wiping under it (fill rode the block fade), dot and last value after |
+| tls.d.waterfall | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a239d97f` | 🔧 steps grow from their own level (a drop hangs from the previous level: engine), connectors wipe across, values after. Probe J5 stagger 417 = A2 |
+| tls.d.funnel-chart | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `7be9a324` | 🔧 stages pour in top to bottom; names, counting values and drop-offs follow their stage (rode the block fade) |
+| tls.d.scatter | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `4f4bf600` | 🔧 block `pop-points` zoomed the chart from 0.7, frame opaque in 100 ms (J5 `root 100`) → frame fades, points `field-in`, labels after, trend draws on |
+| tls.d.radar | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `f7e85361` | 🔧 outline draws from 12 o'clock round the web, tint fades in behind, dots `field-in` (pop was 100 ms) |
+| tls.d.slope | 🔧 | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `f7e85361` | 🔧 lines draw rail to rail; end dots/labels arrive after (rode the block fade); 250 ms fade jumped 0.43 in a frame (J1) and end pops were 83 ms (J5) → 400 ms fades / `field-in` |
+| tls.d.bubble | ✅ | ✅ | ✅ | ✅ | 🔧 | n/a | ✅ | ✅ | `4f4bf600` | 🔧 same as scatter (block zoom, 100 ms frame); labels rode the block fade |
+| tls.d.heatmap | ✅ | ✅ | ✅ | ✅ | ✅ | n/a | ✅ | ✅ | `7be9a324` | 🔧 recipe `cell[*]` matched nothing → `cell` fades the grid in as a reading-order wave, each value after its cell |
+| tls.c.chart-insight | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `7be9a324` | 🔧 one `root` piece → chart marks grow/draw/sweep (`composeWithChart`), labels after, takeaway last |
+
+Engine / probe issues raised by M3: see `G04-metric.md` § Motion pass (M3) (A1–A3, DeckViewer settle path, gauge sweep start angle).
+
 ## Session log
 
 | Date | Agent | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-06 | B1 agent | 16/16 reviewed, 16 fixed (`3cf6d7f8` `1698ee42` `0ff35d76` `032bd592` `bbe26557` `7ffdac75`) | A frame trace (rAF + `getComputedStyle`) is the only way to see GSAP motion here: screenshots land between 700 and 860 ms and miss it. The viewer needs a dev-server restart after `pnpm build` (S5 again). tls.d.bar part names changed (bar[0][i]). |
+| 2026-10-07 | agent C (M3) | Motion pass: 16/16 fixed (0 unchanged, 0 open). | Rows above; probe artefacts A1–A3 for the controller |
