@@ -11,8 +11,8 @@ import type { BlockDefinition, BlockSchema, BlockSpec, LayoutContext, LayoutNode
 import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
-import { composeFlat, measureHeights, pick, toMeasurable, type Piece } from '../_kit'
-import { chartSlot, chartSpec, type ChartSlot } from '../_chart'
+import { measureHeights, pick, toMeasurable, type Piece } from '../_kit'
+import { chartMotion, chartSlot, chartSpec, composeWithChart, type ChartSlot } from '../_chart'
 
 export interface ChartInsightProps extends Record<string, unknown> {
   chart: ChartSlot
@@ -135,8 +135,10 @@ export function layoutChartInsight(props: ChartInsightProps, ctx: LayoutContext)
   }
   const src = sourceSpec(props)
   if (src) pieces.push({ id: 'source', spec: src, box: { x: 0, y: total - p.srcH, width: W, height: p.srcH } })
-  return composeFlat(ctx, pieces, total)
+  return composeWithChart(ctx, pieces, total)
 }
+
+const INSIGHT_CHART = chartMotion(0)
 
 const composite = defineCompositeBlock<ChartInsightProps>({
   type: 'tls.c.chart-insight',
@@ -165,7 +167,17 @@ const composite = defineCompositeBlock<ChartInsightProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM3: the chart's marks grow / draw / sweep and its labels follow, then the takeaway; under
+  // `subtle` (and by default) every part fades up at once. The source line rides the block fade.
+  motion: {
+    parts: [...INSIGHT_CHART.parts, 'insight'],
+    preset: 'fade-up',
+    expressive: 'stagger-children',
+    partMotion: {
+      ...INSIGHT_CHART.partMotion,
+      insight: { preset: 'fade-up', delay: 480, stagger: 40 },
+    },
+  },
   build: buildChartInsight,
 })
 
