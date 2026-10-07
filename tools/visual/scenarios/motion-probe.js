@@ -39,7 +39,26 @@ function installSampler() {
   // Elements are keyed by block + part + occurrence, not by node identity, so a block that
   // React remounts mid-run (dev StrictMode, a settle epoch) keeps one series.
   const keyIds = new Map()
-  function register(el, seen) {
+  const TRACKED = '[data-part], [data-shape-id]'
+  /** Does `el` paint anything itself (background, border, shadow, text, an image, an SVG shape),
+   *  not counting tracked descendants (they have their own series)? M1b/E3. */
+  function ownPaint(el, depth = 0) {
+    if (depth > 6) return false
+    const tag = el.tagName.toLowerCase()
+    if (['img', 'canvas', 'video', 'path', 'line', 'polyline', 'polygon', 'circle', 'ellipse', 'rect', 'text', 'image', 'use'].includes(tag)) return true
+    const cs = getComputedStyle(el)
+    const bg = cs.backgroundColor
+    if ((bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg)) || (cs.backgroundImage && cs.backgroundImage !== 'none')) return true
+    if (['Top', 'Right', 'Bottom', 'Left'].some((d) => parseFloat(cs['border' + d + 'Width']) > 0 && cs['border' + d + 'Style'] !== 'none')) return true
+    if (cs.boxShadow && cs.boxShadow !== 'none') return true
+    for (const n of el.childNodes) {
+      if (n.nodeType === 3 && n.textContent.trim()) return true
+      if (n.nodeType === 1 && !n.matches(TRACKED) && ownPaint(n, depth + 1)) return true
+    }
+    return false
+  }
+
+  function register(el, seen, idOfEl) {
     const wrap = el.closest('[data-shape-id]')
     const block = wrap ? wrap.getAttribute('data-block-id') : null
     const part = el.hasAttribute('data-shape-id') ? '(block)' : el.getAttribute('data-part') || `<${el.tagName.toLowerCase()}>`
@@ -48,10 +67,17 @@ function installSampler() {
     seen.set(base, n + 1)
     const key = `${base}|${n}`
     let id = keyIds.get(key)
-    if (id !== undefined) return id
-    id = mp.els.length
-    keyIds.set(key, id)
-    mp.els.push({ block, part, n, svg: el instanceof SVGElement })
+    if (id === undefined) {
+      id = mp.els.length
+      keyIds.set(key, id)
+      // nearest tracked ancestor (registered earlier this frame: document order)
+      let parent = null
+      for (let a = el.parentElement; a; a = a.parentElement) {
+        if (idOfEl.has(a)) { parent = idOfEl.get(a); break }
+      }
+      mp.els.push({ block, part, n, svg: el instanceof SVGElement, paint: ownPaint(el), parent })
+    }
+    idOfEl.set(el, id)
     return id
   }
 
@@ -79,8 +105,11 @@ function installSampler() {
       if (m.attributeName === 'style') {
         const a = parseStyle(m.oldValue)
         const b = parseStyle(el.getAttribute('style'))
+        // M1b/E4: the CSSOM re-serialises numbers (452.333333px -> 452.333px) the first time a
+        // tween writes the style; compare with the numbers rounded, not as strings.
+        const norm = (v) => (v === undefined ? v : v.replace(/-?\d*\.?\d+(e-?\d+)?/g, (x) => String(Math.round(parseFloat(x) * 100) / 100)))
         for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
-          if (a[k] !== b[k]) mp.props[k] = (mp.props[k] || 0) + 1
+          if (norm(a[k]) !== norm(b[k])) mp.props[k] = (mp.props[k] || 0) + 1
         }
         if (!el.hasAttribute('data-part') && !el.hasAttribute('data-shape-id')) mp.extra.add(el)
       } else if (m.attributeName !== 'class' && !m.attributeName.startsWith('data-')) {
@@ -129,13 +158,21 @@ function installSampler() {
         const [x, y] = p.trim().split(/\s+/)
         return [len(x, w), len(y, h)]
       })
-      let a = 0
-      for (let i = 0; i < pts.length; i++) {
-        const [x1, y1] = pts[i]
-        const [x2, y2] = pts[(i + 1) % pts.length]
-        a += x1 * y2 - x2 * y1
+      // Fraction of the box inside the polygon (a sweep sector reaches far outside the box, so
+      // its raw area says nothing): point-in-polygon on a 24 x 24 grid.
+      const inside = (x, y) => {
+        let c = false
+        for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+          const [xi, yi] = pts[i]
+          const [xj, yj] = pts[j]
+          if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi || 1e-9) + xi) c = !c
+        }
+        return c
       }
-      return Math.min(1, Math.abs(a) / 2 / (w * h))
+      const N = 24
+      let hit = 0
+      for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) if (inside(((i + 0.5) / N) * w, ((j + 0.5) / N) * h)) hit++
+      return hit / (N * N)
     }
     return 1
   }
@@ -208,9 +245,10 @@ function installSampler() {
       const els = [...sl.querySelectorAll('[data-shape-id], [data-part]'), ...[...mp.extra].filter((e) => e.isConnected && sl.contains(e) && e !== sl)]
       const row = {}
       const seen = new Map()
+      const idOfEl = new Map()
       let changed = false
       for (const el of els) {
-        const id = register(el, seen)
+        const id = register(el, seen, idOfEl)
         const cs = getComputedStyle(el)
         const [tx, ty, sx, sy] = transformOf(cs)
         const vals = [
@@ -224,7 +262,10 @@ function installSampler() {
         ]
         row[id] = vals
         const p = mp.prev && mp.prev[id]
-        if (!p || p.some((x, i) => Math.abs(x - vals[i]) > 0.002)) changed = true
+        if (!p || p.some((x, i) => Math.abs(x - vals[i]) > 0.002)) {
+          changed = true
+          if (p && mp.blockStart === null && mp.blockId && mp.els[id].block === mp.blockId) mp.blockStart = now - mp.t0
+        }
       }
       if (changed) mp.lastChange = performance.now()
       mp.prev = row
@@ -239,9 +280,11 @@ function installSampler() {
     requestAnimationFrame(frame)
   }
 
-  mp.start = (slideId) => {
+  mp.start = (slideId, blockId) => {
     mp.on = true
     mp.slideId = slideId
+    mp.blockId = blockId || null
+    mp.blockStart = null
     mp.frames = []
     mp.els = []
     keyIds.clear()
@@ -255,7 +298,7 @@ function installSampler() {
     mp.t0 = performance.now()
     requestAnimationFrame(frame)
   }
-  mp.status = () => ({ frames: mp.frames.length, quietMs: performance.now() - mp.lastChange, sinceStart: performance.now() - mp.t0 })
+  mp.status = () => ({ frames: mp.frames.length, quietMs: performance.now() - mp.lastChange, sinceStart: performance.now() - mp.t0, blockStart: mp.blockStart })
   mp.stop = () => {
     mp.on = false
     return { frames: mp.frames, els: mp.els, props: mp.props, attrs: mp.attrs, waapi: mp.waapi, added: mp.added, t0: mp.t0 }
@@ -275,6 +318,28 @@ const visible = (v) => v[CH.op] > VIS && v[CH.clip] > 0.01 && v[CH.sx] > 0.02 &&
 const atRest = (v) => v[CH.op] >= 0.99 && Math.abs(v[CH.tx]) < 0.5 && Math.abs(v[CH.ty]) < 0.5 && Math.abs(v[CH.sx] - 1) < 0.005 && Math.abs(v[CH.sy] - 1) < 0.005 && v[CH.clip] >= 0.999 && v[CH.dash] >= 0.999
 const differs = (a, b) => a.some((x, i) => Math.abs(x - b[i]) > EPS[i])
 const fam = (p) => p.replace(/\/\d+/g, '/*').replace(/\[\d+\]/g, '[*]')
+
+/**
+ * M1b/E3 — per frame, does the element show anything: visible itself and either painting itself
+ * or holding a visible descendant that does. A wrapper or `root` that turns opaque while every
+ * part inside is still hidden shows nothing, so its jump is not a snap.
+ */
+function contentVisible(rec) {
+  const kids = rec.els.map(() => [])
+  rec.els.forEach((e, k) => {
+    if (e.parent !== null && e.parent !== undefined) kids[e.parent].push(k)
+  })
+  // children have larger ids than their parents (registered later), so walk ids downwards
+  return rec.frames.map((fr) => {
+    const cv = {}
+    const ids = Object.keys(fr.row).map(Number).sort((a, b) => b - a)
+    for (const k of ids) {
+      const own = visible(fr.row[k])
+      cv[k] = own && (rec.els[k].paint !== false || kids[k].some((c) => cv[c]))
+    }
+    return cv
+  })
+}
 
 /** Per-element series: [{f, t, v}] for frames where the element exists. */
 function series(rec) {
@@ -307,6 +372,8 @@ function runs(s) {
 function verdicts(rec, opts) {
   const { blockId, scope, style, ref } = opts
   const S = series(rec)
+  const CV = contentVisible(rec)
+  const shows = (k, f) => !!CV[f][k]
   const label = (k) => `${rec.els[k].part}${rec.els[k].block && rec.els[k].block !== blockId ? '@' + rec.els[k].block : ''}`
   const inBlock = (k) => rec.els[k].block === blockId
   const all = rec.els.map((_, k) => k)
@@ -326,7 +393,7 @@ function verdicts(rec, opts) {
         const dt = s[i].t - s[i - 1].t
         // a jump nobody can see (hidden on both frames, e.g. a from-state set under a
         // still-transparent wrapper) is not a snap
-        if (!visible(a) && !visible(b)) continue
+        if (!shows(k, s[i - 1].f) && !shows(k, s[i].f)) continue
         const jumps = [
           ['opacity', Math.abs(b[CH.op] - a[CH.op]), 0.35],
           ['translate', Math.hypot(b[CH.tx] - a[CH.tx], b[CH.ty] - a[CH.ty]), 40],
@@ -357,7 +424,7 @@ function verdicts(rec, opts) {
     let seenVisible = -1
     let hiddenAfter = -1
     for (let i = 0; i < s.length; i++) {
-      const vis = visible(s[i].v)
+      const vis = shows(k, s[i].f)
       if (vis && seenVisible < 0) seenVisible = i
       else if (!vis && seenVisible >= 0 && hiddenAfter < 0) hiddenAfter = i
       else if (vis && hiddenAfter >= 0) {
@@ -413,7 +480,12 @@ function verdicts(rec, opts) {
   const starts = {}
   for (const k of mine) {
     const s = S[k]
-    const rs = runs(s)
+    // Only runs that showed something count (M1b/E3): a wrapper whose parts were all hidden, or a
+    // from-state set while the element was still invisible, has no visible timing of its own.
+    const rs = runs(s).filter((r) => {
+      for (let i = r.start - 1; i <= r.end; i++) if (shows(k, s[i].f)) return true
+      return false
+    })
     if (!rs.length) continue
     const st = s[rs[0].start - 1].t
     const en = s[rs[rs.length - 1].end].t

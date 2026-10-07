@@ -27,8 +27,8 @@
  *                 `[data-part]`, block wrapper and driver-touched element on every animation frame
  *                 from the ArrowRight that opens the slide until the chain is done + 300 ms, then
  *                 writes `motion.<style>` verdicts per block into report.json and prints one line
- *                 per block. REVIEW_MOTION_PNG=1 adds three mid PNGs (150/400/800 ms), which costs
- *                 frame timing; put `static` first in the styles so J3 compares each block's
+ *                 per block. REVIEW_MOTION_PNG=1 adds three mid PNGs at 15/40/75 % of the block's
+ *                 measured chain, timed from its first movement (on a replay of the slide); put `static` first in the styles so J3 compares each block's
  *                 end frame with its static render (authored opacities), else J3 expects opacity
  *                 1 / no transform / no clip; REVIEW_MOTION_DUMP=1 writes the raw samples. The motion pass alone keeps the other passes' data in an existing
  *                 report.json.
@@ -411,33 +411,43 @@ module.exports = {
         }
         await waitChain(page)
         await page.waitForTimeout(300)
-        await page.evaluate((id) => window.__mp.start(id), item.slideId)
-        await page.keyboard.press('ArrowRight')
-        at++
-        const t0 = Date.now()
-        let doneAt = 0
-        const shots = MOTION_PNG ? [150, 400, 800] : []
-        for (;;) {
-          const w = shots.length ? shots[0] - (Date.now() - t0) : 0
-          if (shots.length && w <= 0) {
-            const ms = shots.shift()
-            await page.screenshot({ path: path.join(OUT, `${slug(item.def.type)}.motion-${item.style}.mid-${ms}.png`) })
-            continue
+        // Record until done = every build step revealed, then 1.2 s more (a part's tween may run
+        // up to ~900 ms after its step, and a tween GSAP cannot interpolate shows no change until
+        // its last frame), and nothing moved for 300 ms.
+        const record = async (shotsAt) => {
+          await page.evaluate(([id, b]) => window.__mp.start(id, b), [item.slideId, item.blockId])
+          await page.keyboard.press('ArrowRight')
+          const t0 = Date.now()
+          let doneAt = 0
+          const shots = [...(shotsAt || [])]
+          for (;;) {
+            const ps = await page.evaluate(() => window.__mp.status())
+            if (shots.length && ps.blockStart !== null && ps.sinceStart >= ps.blockStart + shots[0].ms) {
+              const { pct } = shots.shift()
+              await page.screenshot({ path: path.join(OUT, `${slug(item.def.type)}.motion-${item.style}.mid-${pct}.png`) })
+              continue
+            }
+            const st = await viewerState(page)
+            if (st.slide === item.index && st.step >= st.steps) doneAt = doneAt || Date.now()
+            if (!shots.length && doneAt && Date.now() - doneAt > 1200 && ps.quietMs > 300 && ps.frames > 5) break
+            if (Date.now() - t0 > 12000) break
+            await page.waitForTimeout(shots.length ? 8 : 100)
           }
-          const st = await viewerState(page)
-          const ps = await page.evaluate(() => window.__mp.status())
-          // Done = every build step revealed, then 1.2 s more (a part's tween may run up to
-          // ~900 ms after its step, and a tween GSAP cannot interpolate shows no change until its
-          // last frame), and nothing moved for 300 ms.
-          if (st.slide === item.index && st.step >= st.steps) doneAt = doneAt || Date.now()
-          if (doneAt && Date.now() - doneAt > 1200 && ps.quietMs > 300 && ps.frames > 5) break
-          if (Date.now() - t0 > 12000) break
-          await page.waitForTimeout(Math.min(100, w || 100))
+          return page.evaluate(() => window.__mp.stop())
         }
-        const rec = await page.evaluate(() => window.__mp.stop())
+        const rec = await record()
+        at++
         if (process.env.REVIEW_MOTION_DUMP === '1') fs.writeFileSync(path.join(OUT, `${slug(item.def.type)}.motion-${item.style}.json`), JSON.stringify(rec))
         if (item.style === 'static') staticRef[item.def.type] = probe.restFrame(rec, item.blockId)
         const v = probe.verdicts(rec, { blockId: item.blockId, scope: item.def.scope, style: item.style, ref: staticRef[item.def.type] })
+        // E5: mid PNGs at 15/40/75 % of the block's own chain, timed from the block's first
+        // movement — a replay of the slide (back one slide, forward again), so the recording
+        // above keeps clean frame timing.
+        if (MOTION_PNG && v.J5 && v.J5.chainMs > 0) {
+          await page.keyboard.press('ArrowLeft')
+          await page.waitForTimeout(600)
+          await record([15, 40, 75].map((pct) => ({ pct, ms: (v.J5.chainMs * pct) / 100 })))
+        }
         const r = R(item.def.type)
         r.motion = r.motion || {}
         r.motion[item.style] = v
