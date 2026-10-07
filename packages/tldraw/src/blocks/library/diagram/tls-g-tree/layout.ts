@@ -15,6 +15,7 @@ import type { TreeNode } from '../../../layout/diagram'
 import type { TreeProps } from './schema'
 import { TREE_MAX_CHILDREN, TREE_MAX_NODES } from './schema'
 import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, lineH, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
+import { slot } from '../_motion'
 
 interface TNode {
   id: string
@@ -140,6 +141,8 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   const linkColor = c.line
   let edgeNo = 0
   let itemNo = 0
+  // RVM4: the depth each numbered group belongs to (an edge: its parent's), for the level slots.
+  const depthOf = new Map<LayoutNode, number>()
 
   // Links first (drawn under the boxes).
   for (const e of layoutRes.edges) {
@@ -164,7 +167,9 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
           return [{ x: x1, y: y1 }, { x: x1, y: ym }, { x: x2, y: ym }, { x: x2, y: y2 }]
         })()
     // One numbered group per link: the recipe animates `edge[*]`, the leaf keeps its id-path name.
-    nodes.push({ k: 'group', part: `edge[${edgeNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: [strokePath(ctx, polyline(pts), `link[${e.to}]`, linkColor, 3)] })
+    const g: LayoutNode = { k: 'group', part: `edge[${edgeNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: [strokePath(ctx, polyline(pts), `link[${e.to}]`, linkColor, 3)] }
+    depthOf.set(g, byId.get(e.from)?.depth ?? 0)
+    nodes.push(g)
   }
 
   const accent = c.accent
@@ -233,9 +238,20 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     if (sh) nodes.push(...placeLines(ctx, n.sub, { ...subS, color: subInk }, { x, y: top + lh + 2, width: w }, align, 1, `sub[${id}]`).nodes)
     // Everything of one node is one numbered group (`item[k]`) so the recipe can target it.
     const mine = nodes.splice(startLen)
-    nodes.push({ k: 'group', part: `item[${itemNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: mine })
+    const g: LayoutNode = { k: 'group', part: `item[${itemNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: mine }
+    depthOf.set(g, n.depth)
+    nodes.push(g)
   }
-  return root(ctx, nodes)
+  // RVM4: the tree grows level by level from the root: every node of depth d sits in `level[d]`,
+  // every link leaving depth d in `links[d]` (one of each per level, links under the boxes), so the
+  // recipe draws a level's links on from their parents as the next level arrives.
+  const L = levels
+  const box = { width: W, height: H }
+  const at = (part: string, d: number) => nodes.filter((n) => n.part?.startsWith(part) && depthOf.get(n) === d)
+  return root(ctx, [
+    ...Array.from({ length: L }, (_, d) => slot(`links[${d}]`, box, at('edge[', d))),
+    ...Array.from({ length: L }, (_, d) => slot(`level[${d}]`, box, at('item[', d))),
+  ])
 }
 
 export function capacity(props: TreeProps, box: Size, ctx: LayoutContext): CapacityReport {

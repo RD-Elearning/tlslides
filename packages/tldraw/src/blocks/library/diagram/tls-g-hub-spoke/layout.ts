@@ -15,6 +15,7 @@ import { iconLeaf } from '../../text/_engine/icon'
 import type { HubSpokeProps } from './schema'
 import { SPOKE_MAX } from './schema'
 import { arrowHead, asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, placeLines, polyline, rampColor, root, str, strokePath, style, tintOf } from '../_kit'
+import { slotsByIndex } from '../_motion'
 
 const hit = (a: Box, b: Box, pad = 6) => a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad
 
@@ -124,7 +125,21 @@ export function layout(props: HubSpokeProps, ctx: LayoutContext): LayoutNode {
     nodes.push(...placeLines(ctx, s.label, labelS, { x, y: ty, width: w }, isz2 ? 'start' : 'center', 1, `label[${i}]`).nodes)
     if (nh) nodes.push(...placeLines(ctx, s.text, noteS, { x, y: ty + lh + 2, width: w }, isz2 ? 'start' : 'center', nl, `text[${i}]`).nodes)
   })
-  return root(ctx, nodes)
+  // RVM4: motion slots per spoke, emitted for every spoke: its link (`wire[i]`, drawn out from the
+  // hub) and arrow head (`tip[i]`) stay under the boxes; its card settles about its own centre
+  // (`card[i]`, a tight group) and its icon, label and note follow (`cap[i]`).
+  const box = { width: W, height: H }
+  const isLink = (n: LayoutNode) => /^link\[/.test(n.part ?? '')
+  return root(ctx, [
+    ...slotsByIndex(nodes.filter(isLink), N, box, [
+      { name: 'wire', match: /^link\[(\d+)\]$/ },
+      { name: 'tip', match: /^link\[(\d+)\]\.head$/ },
+    ]),
+    ...slotsByIndex(nodes.filter((n) => !isLink(n)), N, box, [
+      { name: 'card', match: /^spoke\[(\d+)\]$/, tight: true },
+      { name: 'cap', match: /^(?:icon|label|text)\[(\d+)\]$/ },
+    ]),
+  ])
 }
 
 export function capacity(props: HubSpokeProps, box: Size, ctx: LayoutContext): CapacityReport {

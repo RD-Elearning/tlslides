@@ -84,7 +84,9 @@ describe('tls.g.venn', () => {
   })
 
   it('medium opacity is more opaque than soft', () => {
-    const op = (o: string) => (lay({ sets: sets(2), opacity: o }) as any).children[0].children[0].opacity
+    // RVM4: the faded disc group sits inside the set's motion slot (`set[0]` > `orb[0]`)
+    const faded = (n: any): any => (n.children?.some((c: any) => c.part === 'disc[0]') ? n : (n.children ?? []).map(faded).find(Boolean))
+    const op = (o: string) => faded(lay({ sets: sets(2), opacity: o }) as any).opacity
     expect(op('medium')).toBeGreaterThan(op('soft'))
   })
 

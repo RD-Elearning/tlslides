@@ -48,7 +48,9 @@ describe('tls.g.layers', () => {
 
   it('perspective slabs are slanted: the path is not an axis-aligned rectangle', () => {
     const t: any = lay({ layers: layers(3), style: 'perspective' })
-    const d = t.children.find((n: any) => n.part === 'layer[0]').d as string
+    // RVM4: the slab sits in its motion slot (`slab[0]`); find the leaf anywhere in the tree
+    const find = (n: any): any => (n.part === 'layer[0]' ? n : (n.children ?? []).map(find).find(Boolean))
+    const d = find(t).d as string
     const xs = [...d.matchAll(/[ML]\s*(-?[\d.]+)\s+(-?[\d.]+)/g)].map((m) => Number(m[1]))
     expect(new Set(xs).size).toBeGreaterThan(2)
   })

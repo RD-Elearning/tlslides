@@ -15,6 +15,7 @@ import { trapezoidPath } from '../../../layout/diagram'
 import type { PyramidProps } from './schema'
 import { PYRAMID_MAX } from './schema'
 import { TEXT_SLACK, asArr, capacityOf, chartColors, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { slotsByIndex } from '../_motion'
 
 const GAP = 6
 const PAD = 8
@@ -93,7 +94,15 @@ export function layout(props: PyramidProps, ctx: LayoutContext): LayoutNode {
       }
     }
   })
-  return root(ctx, nodes)
+  // RVM4: level i settles about its own centre (`tier[i]`), its label, leader and note follow as
+  // one slot (`cap[i]`, emitted for every level whether the label sits inside or beside it).
+  return root(
+    ctx,
+    slotsByIndex(nodes, N, { width: W, height: H }, [
+      { name: 'tier', match: /^level\[(\d+)\]$/, tight: true },
+      { name: 'cap', match: /^(?:label|note|leader|side)\[(\d+)\]$/ },
+    ])
+  )
 }
 
 export function capacity(props: PyramidProps, box: Size, ctx: LayoutContext): CapacityReport {

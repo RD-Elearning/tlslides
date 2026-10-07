@@ -13,6 +13,7 @@ import { iconLeaf } from '../../text/_engine/icon'
 import type { LayersProps } from './schema'
 import { LAYERS_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { slotsByIndex } from '../_motion'
 
 const GAP = 8
 
@@ -77,7 +78,15 @@ export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
       nodes.push(...placeLines(ctx, l.text, { ...noteS, color: c.text }, { x: colX, y: y + (rowH - nh) / 2, width: colW }, 'start', nl, `note[${i}]`).nodes)
     }
   })
-  return root(ctx, nodes)
+  // RVM4: layer i wipes in over its own bar (`slab[i]`, a tight group), its icon, label, note and
+  // leader follow as one slot (`cap[i]`, emitted for every layer).
+  return root(
+    ctx,
+    slotsByIndex(nodes, N, { width: W, height: H }, [
+      { name: 'slab', match: /^layer\[(\d+)\]$/, tight: true },
+      { name: 'cap', match: /^(?:label|note|leader|icon)\[(\d+)\]$/ },
+    ])
+  )
 }
 
 export function capacity(props: LayersProps, box: Size, ctx: LayoutContext): CapacityReport {

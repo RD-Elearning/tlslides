@@ -114,7 +114,22 @@ export function layout(props: VennProps, ctx: LayoutContext): LayoutNode {
         block(kids, s.label, s.text, cc.cx, cc.cy + cc.r + gap + bandB / 2 - gap / 2, w, Math.max(lineH(labelS), bandB - gap), `text[${i}]`)
       }
     }
-    nodes.push({ k: 'group', part: `set[${i}]`, box: { x: 0, y: 0, width: W, height: H }, children: kids })
+    // RVM4: inside the set, the circle (disc + ring) is a tight group (`orb[i]`) so it settles about
+    // its own centre, and its texts one full-box slot (`cap[i]`) that follows it.
+    const isOrb = (n: LayoutNode) => /^(disc|ring)\[\d+\]$/.test(n.part ?? '') || (n.k === 'group' && n.children.some((c) => /^disc\[/.test(c.part ?? '')))
+    const full = { x: 0, y: 0, width: W, height: H }
+    const ob = box(cc)
+    const orbBox = { x: ob.x - 2, y: ob.y - 2, width: ob.width + 4, height: ob.height + 4 }
+    const shift = (n: LayoutNode): LayoutNode => ({ ...n, box: { ...n.box, x: n.box.x - orbBox.x, y: n.box.y - orbBox.y } }) as LayoutNode
+    nodes.push({
+      k: 'group',
+      part: `set[${i}]`,
+      box: full,
+      children: [
+        { k: 'group', part: `orb[${i}]`, box: orbBox, children: kids.filter(isOrb).map(shift) },
+        { k: 'group', part: `cap[${i}]`, box: full, children: kids.filter((n) => !isOrb(n)) },
+      ],
+    })
   })
 
   // ---- overlap texts ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ import type { Box, CapacityReport, LayoutContext, LayoutNode, Size } from '../..
 import type { MindmapProps } from './schema'
 import { MIND_CHILDREN_MAX, MIND_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, emptyState, lineH, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, linesHeight } from '../_kit'
+import { around, slot } from '../_motion'
 
 const f = (v: number) => String(Math.round(v * 100) / 100)
 
@@ -106,7 +107,7 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
   const cFill = c.accent
   nodes.push({ k: 'rect', part: 'center', box: cBox, fill: { type: 'solid', color: cFill }, radius: cBox.height / 2 })
   textIn(cBox, center, bigS, onColor(ctx, cFill), 'center.label')
-  return root(ctx, [...links, ...nodes])
+  return root(ctx, slotBranches([...links, ...nodes], ctx.box.width, ctx.box.height))
 }
 
 export function capacity(props: MindmapProps, box: Size, ctx: LayoutContext): CapacityReport {
@@ -118,4 +119,32 @@ export function capacity(props: MindmapProps, box: Size, ctx: LayoutContext): Ca
     { kind: 'truncate', slot: 'branches' },
     { kind: 'paginate' },
   ])
+}
+
+/**
+ * RVM4: motion slots, branch by branch from the centre. Branch i is four slots, emitted for every
+ * branch: its link from the centre (`arm[i]`), its topic box with the label (`topic[i]`, a tight
+ * group so it settles about its own centre), the links to its sub-topics (`twigs[i]`) and the
+ * sub-topics (`kids[i]`). Links stay under the boxes; leaf names and positions are unchanged.
+ */
+function slotBranches(all: LayoutNode[], width: number, height: number): LayoutNode[] {
+  const box = { width: Math.max(0, width), height: Math.max(0, height) }
+  const branchOf = (re: RegExp) => (n: LayoutNode) => {
+    const m = re.exec(n.part ?? '')
+    return m ? Number(m[1]) : -1
+  }
+  const arm = branchOf(/^link\[(\d+)\]$/)
+  const twig = branchOf(/^link\[(\d+)\]\[\d+\]$/)
+  const topic = branchOf(/^branch\[(\d+)\](?:\.label)?$/)
+  const kid = branchOf(/^child\[(\d+)\]\[\d+\](?:\.label)?$/)
+  const n = Math.max(0, ...all.map((x) => topic(x) + 1))
+  const range = Array.from({ length: n }, (_, i) => i)
+  const rest = all.filter((x) => arm(x) < 0 && twig(x) < 0 && topic(x) < 0 && kid(x) < 0)
+  return [
+    ...range.map((i) => slot(`arm[${i}]`, box, all.filter((x) => arm(x) === i))),
+    ...range.map((i) => slot(`twigs[${i}]`, box, all.filter((x) => twig(x) === i))),
+    ...rest,
+    ...range.map((i) => around(`topic[${i}]`, all.filter((x) => topic(x) === i))),
+    ...range.map((i) => slot(`kids[${i}]`, box, all.filter((x) => kid(x) === i))),
+  ]
 }
