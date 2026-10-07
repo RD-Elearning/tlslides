@@ -1,11 +1,24 @@
 /**
- * Motion recipe for tls.d.progress-ring — the arc draws on (there is no `sweep` preset).
+ * Motion recipe for tls.d.progress-ring — the coloured arc sweeps round clockwise from 12 o'clock
+ * over the still grey track while the centre value counts up; the label and caption follow.
+ *
+ * RVM3: back to `sweep` (M1b sweeps a filled part from 12 o'clock about the centre of what it paints;
+ * the layout's `ring` group carries an unpainted full-ring guide so that centre is the ring's).
+ * RV05 had switched to `sweep-nodes`, a fade of the arc and its caps.
+ *
+ * The marks start at MARKS_AT, once the frame (the block's own fade) is mostly in.
  */
 
 import type { MotionRecipe } from '../../../types'
+import { MARKS_AT } from '../_chart/motion'
 
-// RV05: `sweep-nodes` fades the marks in one after another, in reading order. The scale/clip/dash presets either scale about the element centre (Y1) or do not interpolate under the GSAP driver (Y4), and `draw-path` does nothing on these paths.
 export const motion: MotionRecipe = {
-  parts: ['arc', 'arc.start', 'arc.end', 'value', 'label', 'caption'],
-  preset: 'sweep-nodes',
+  parts: ['ring', 'value', 'label', 'caption'],
+  preset: 'stagger-children',
+  partMotion: {
+    ring: { preset: 'sweep', delay: MARKS_AT },
+    value: { preset: 'count-up', delay: MARKS_AT },
+    label: { preset: 'sweep-nodes', delay: MARKS_AT + 300 },
+    caption: { preset: 'sweep-nodes', delay: MARKS_AT + 360 },
+  },
 }

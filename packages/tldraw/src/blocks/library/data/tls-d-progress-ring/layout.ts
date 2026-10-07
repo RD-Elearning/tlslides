@@ -11,7 +11,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { ProgressRingProps } from './schema'
-import { chartColors, clamp, dot, enumOf, fmtNum, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, realWidth, str, style, textAligned } from '../_chart/kit'
+import { chartColors, clamp, dot, enumOf, fmtNum, fullBox, lineH, mutedStyle, numOrNull, pathNode, ringArcPath, root, realWidth, str, style, textAligned } from '../_chart/kit'
 
 const THICK = { sm: 0.1, md: 0.16, lg: 0.24 } as const
 const FULL = Math.PI * 2
@@ -59,6 +59,12 @@ export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode
 
   const nodes: LayoutNode[] = []
   nodes.push(pathNode(ctx, ringArcPath(cx, cy, R, Ri, TOP, TOP + FULL), 'track', { fill: c.track }))
+  // RVM3: the arc, its caps and the overflow marker sit in one `ring` group that sweeps in
+  // clockwise from 12 o'clock (motion.ts). The sweep turns about the centre of what the group
+  // paints, which for a partial arc is not the ring's centre, so the group carries an unpainted
+  // full-ring guide that pins the centre; the grey track stays still behind it.
+  const arcNodes: LayoutNode[] = [{ k: 'path', box: fullBox(ctx), d: ringArcPath(cx, cy, R, Ri, TOP, TOP + FULL) }]
+  const arcStart = nodes.length
   const round = props.cap !== 'flat'
   if (frac > 0) {
     if (frac >= 1) {
@@ -79,6 +85,10 @@ export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode
     }
   }
   if (pct > 100.0001) nodes.push(dot(cx, cy - rm, t * 0.32, ctx.resolveColor('warning').color, 'overflow', c.surface))
+  if (nodes.length > arcStart) {
+    arcNodes.push(...nodes.splice(arcStart))
+    nodes.push({ k: 'group', part: 'ring', box: fullBox(ctx), children: arcNodes })
+  }
 
   // Centre value, scaled down until it sits inside the hole.
   const fmt = enumOf(props.format, ['percent', 'plain', 'compact', 'currency'] as const, 'percent')
