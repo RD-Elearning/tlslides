@@ -59,6 +59,7 @@ export function presetToEffect(presetId: string): AnimationEffect | null {
 
     case 'wipe-x':
     case 'wipe-y':
+    case 'wipe-down':
     case 'mask-reveal':
       return AnimationEffect.Wipe
 
@@ -111,6 +112,9 @@ export interface ResolvedBlockMotion {
   /** CSS easing string for the block-level entrance. */
   easing: string
 }
+
+/** A chained preset's next step starts when the previous one is this far through (M1b/E1). */
+export const CHAIN_OVERLAP = 0.6
 
 /** Default block-level timing when the spec doesn't override. */
 const BLOCK_DURATION_FALLBACK = 400
@@ -221,12 +225,34 @@ export function resolvePartMotion(
     blockPresetId === (definitionMotion.expressive ?? definitionMotion.preset) &&
     specMotion?.preset !== 'fade'
 
+  // M1b/E1: a chained preset plays its `chain` across the parts in recipe order — part i gets
+  // sub-preset min(i, last) — instead of its own keyframes on every part at once. Each step
+  // starts when the previous one is CHAIN_OVERLAP through (out-eased tails overlap), and parts
+  // past the end of the chain share the last step, one stagger apart.
+  const chain =
+    blockPreset?.isChained && blockPreset.chain
+      ? blockPreset.chain.filter((id) => MOTION_PRESETS[id] !== undefined)
+      : []
+  const chainStart: number[] = []
+  {
+    let t = 0
+    for (const id of chain) {
+      chainStart.push(t)
+      t += Math.round(DURATION_TOKENS[MOTION_PRESETS[id].duration] * CHAIN_OVERLAP)
+    }
+  }
+
   return parts.map((partName, index) => {
     const partOverride: PartMotionSpec | undefined = specMotion?.parts?.[partName]
     const recipePart = playsRecipe ? definitionMotion.partMotion?.[partName] : undefined
+    const chainStep =
+      chain.length > 0 && partOverride?.preset === undefined && recipePart?.preset === undefined
+        ? Math.min(index, chain.length - 1)
+        : undefined
 
     // Determine the preset for this part.
-    const partPresetId = partOverride?.preset ?? recipePart?.preset ?? blockPresetId
+    const partPresetId =
+      partOverride?.preset ?? recipePart?.preset ?? (chainStep !== undefined ? chain[chainStep] : blockPresetId)
     const partPreset: MotionPreset | undefined = MOTION_PRESETS[partPresetId]
 
     // Keyframes: use the part-specific preset if one was given; otherwise cascade the
@@ -246,10 +272,15 @@ export function resolvePartMotion(
           ? DURATION_TOKENS[partPreset.duration]
           : blockDuration
 
+    // M1b/E2: a part playing its own preset (override, recipe part, chain step) keeps that
+    // preset's easing (a pop bounces) unless the spec sets an ease; otherwise the block's.
+    const ownPreset = partPresetId !== blockPresetId && partPreset !== undefined
     const partEasing =
       partOverride?.ease !== undefined
         ? resolveEasing(partOverride.ease, blockEasing)
-        : blockEasing || (partPreset ? EASING_TOKENS[partPreset.easing] : 'cubic-bezier(0.22, 1, 0.36, 1)')
+        : specMotion?.ease === undefined && ownPreset
+          ? EASING_TOKENS[partPreset!.easing]
+          : blockEasing || (partPreset ? EASING_TOKENS[partPreset.easing] : 'cubic-bezier(0.22, 1, 0.36, 1)')
 
     // Base delay from the spec, plus stagger offset for parts after the first.
     const baseDelay =
@@ -257,7 +288,11 @@ export function resolvePartMotion(
         ? resolveDuration(partOverride.delay, 0)
         : resolveDuration(specMotion?.delay, 0)
 
-    const delayMs = baseDelay + (index > 0 ? staggerMs * index : 0)
+    const stepStagger = chainStep !== undefined ? partPreset?.staggerMs ?? 0 : staggerMs
+    const delayMs =
+      chainStep !== undefined
+        ? baseDelay + chainStart[chainStep] + (index - chainStep) * (partPreset?.staggerMs ?? DURATION_TOKENS.stagger)
+        : baseDelay + (index > 0 ? staggerMs * index : 0)
 
     const isAmbient = partPreset?.isAmbient ?? false
     const origin = recipePart?.origin ?? partPreset?.origin
@@ -270,7 +305,7 @@ export function resolvePartMotion(
       easing: partEasing,
       isAmbient,
       presetId: partPresetId,
-      ...(staggerMs > 0 ? { staggerMs } : {}),
+      ...(stepStagger > 0 ? { staggerMs: stepStagger } : {}),
       ...(origin ? { origin } : {}),
     }
   })

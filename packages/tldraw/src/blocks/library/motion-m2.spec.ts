@@ -32,6 +32,7 @@ const STATIC = ['tls.x.page-number', 'tls.x.footer-text', 'tls.x.logo-mark', 'tl
 /** Recipe parts the block's example legitimately lacks (shown only for some props). */
 const OPTIONAL: Record<string, RegExp> = {
   'tls.t.title': /^rule$/,
+  'tls.x.rule': /^rule-v$/, // the vertical rule's part (M1b/E7); the example is horizontal
   'tls.t.kicker': /^marker$/,
   'tls.t.definition': /^(pronunciation|meta|example\.bar|example)$/,
   'tls.t.takeaway': /^(icon|label)$/,

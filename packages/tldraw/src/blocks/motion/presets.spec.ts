@@ -18,8 +18,8 @@ import type { MotionPreset } from './presets'
 // ---------------------------------------------------------------------------
 
 describe('MOTION_PRESETS catalog', () => {
-  it('contains exactly 35 presets (§5.3)', () => {
-    expect(PRESET_IDS).toHaveLength(35)
+  it('contains the 35 §5.3 presets plus wipe-down (M1b)', () => {
+    expect(PRESET_IDS).toHaveLength(36)
   })
 
   it('includes every preset id from the §5.3 table', () => {
@@ -31,6 +31,7 @@ describe('MOTION_PRESETS catalog', () => {
       'pop',
       'wipe-x',
       'wipe-y',
+      'wipe-down',
       'mask-reveal',
       'reveal-down',
       'stagger-lines',

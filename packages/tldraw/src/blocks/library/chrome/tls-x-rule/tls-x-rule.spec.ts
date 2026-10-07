@@ -11,7 +11,8 @@ import { MOTION_PRESETS } from '../../../motion/presets'
 const ctx = (w = 1200, h = 40) => makeCtx({ width: w, height: h }, makeRegistry())
 const lay = (props: Record<string, unknown>, w = 1200, h = 40) =>
   tlsXRule.layout({ ...(tlsXRule.defaults as any), ...props } as any, ctx(w, h))
-const rule = (tree: any) => leavesOf(tree, 'rule')[0]
+// the bar: part `rule` (horizontal) or `rule-v` (vertical, M1b/E7)
+const rule = (tree: any) => leavesOf(tree, 'rule')[0] ?? leavesOf(tree, 'rule-v')[0]
 
 standardBlockSuite(tlsXRule, { noCapacity: true })
 
@@ -54,9 +55,12 @@ describe('tls.x.rule', () => {
     expect(rule(lay({})).k).toBe('rect')
   })
 
-  it('motion is wipe-x on the rule part, and the preset exists', () => {
-    expect(tlsXRule.motion).toEqual({ parts: ['rule'], preset: 'wipe-x' })
+  it('motion: a horizontal rule wipes from its start, a vertical one top-down (M1b/E7)', () => {
+    expect(tlsXRule.motion).toEqual({ parts: ['rule', 'rule-v'], preset: 'wipe-x', partMotion: { 'rule-v': { preset: 'wipe-down' } } })
     expect(MOTION_PRESETS['wipe-x']).toBeDefined()
+    expect(MOTION_PRESETS['wipe-down']).toBeDefined()
+    expect(rule(lay({})).part).toBe('rule')
+    expect(rule(lay({ axis: 'vertical' }, 40, 600)).part).toBe('rule-v')
   })
 
   it('category is decoration (not chrome)', () => {

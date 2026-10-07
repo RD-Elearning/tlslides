@@ -20,8 +20,10 @@ import { MOTION_PRESETS, PRESET_IDS } from './presets'
 import { normalizeClipPath, pairClipPath } from './clip-path'
 import { createGsapDriver } from './gsap-driver'
 import type { GsapInstance, GsapTimeline } from './gsap-driver'
-import { resolvePartMotion } from './resolve-motion'
-import { playBlockReveal } from './play-reveal'
+import { CHAIN_OVERLAP, presetToEffect, resolvePartMotion } from './resolve-motion'
+import { playBlockReveal, sectorClip } from './play-reveal'
+import { DURATION_TOKENS, EASING_TOKENS } from './tokens'
+import { AnimationEffect } from '~types'
 import { hidePartsForAnimate, revealUntouchedParts, untouchedParts } from './animate-guard'
 import { autoRunEnd } from '../../components/DeckViewer/motion-helpers'
 import { BUILT_IN_BLOCKS } from '../library'
@@ -363,5 +365,121 @@ describe('J7 — reduced motion shows an auto chain at once', () => {
     expect(autoRunEnd(steps, 2)).toBe(2)
     expect(autoRunEnd(steps, 3)).toBe(4)
     expect(autoRunEnd([], 0)).toBe(0)
+  })
+})
+
+// --- M1b ---------------------------------------------------------------------------
+
+describe('M1b/E1 — chained presets chain', () => {
+  it('quote-in: glyph pops, text staggers in, attribution fades — one step after another', () => {
+    const recipe = { parts: ['glyph', 'text', 'attribution'], preset: 'quote-in' as const }
+    const [glyph, text, attribution] = resolvePartMotion(undefined, recipe)
+    expect([glyph.presetId, text.presetId, attribution.presetId]).toEqual(['pop', 'stagger-lines', 'fade'])
+    const pop = Math.round(DURATION_TOKENS.fast * CHAIN_OVERLAP)
+    const lines = Math.round(DURATION_TOKENS.verySlow * CHAIN_OVERLAP)
+    expect([glyph.delayMs, text.delayMs, attribution.delayMs]).toEqual([0, pop, pop + lines])
+    expect(glyph.keyframes).toEqual(MOTION_PRESETS.pop.keyframes)
+  })
+
+  it('parts past the end of the chain share the last step, one stagger apart', () => {
+    const recipe = { parts: ['hub', 'spoke-a', 'spoke-b'], preset: 'radiate' as const }
+    const [hub, a, b] = resolvePartMotion(undefined, recipe)
+    expect([hub.presetId, a.presetId, b.presetId]).toEqual(['pop', 'stagger-children', 'stagger-children'])
+    expect(b.delayMs - a.delayMs).toBe(DURATION_TOKENS.stagger)
+    expect(a.staggerMs).toBe(DURATION_TOKENS.stagger)
+  })
+
+  it('a recipe part preset or a spec part override still wins over the chain', () => {
+    const recipe = { parts: ['glyph', 'text'], preset: 'quote-in' as const, partMotion: { glyph: { preset: 'fade' as const } } }
+    expect(resolvePartMotion(undefined, recipe).map((p) => p.presetId)).toEqual(['fade', 'stagger-lines'])
+  })
+})
+
+describe('M1b/E2 — a part preset keeps its own easing', () => {
+  it('a part playing pop bounces; the spec ease still wins', () => {
+    const recipe = { parts: ['badge', 'label'], preset: 'fade-up' as const, partMotion: { badge: { preset: 'pop' as const } } }
+    const [badge, label] = resolvePartMotion(undefined, recipe)
+    expect(badge.easing).toBe(EASING_TOKENS.bounce)
+    expect(label.easing).toBe(EASING_TOKENS.smoothOut)
+    expect(resolvePartMotion({ preset: 'fade-up', ease: 'linear' }, recipe)[0].easing).toBe(EASING_TOKENS.linear)
+  })
+
+  it('draw presets ease out (J5)', () => {
+    for (const id of ['draw-path', 'sweep']) expect([id, MOTION_PRESETS[id].easing]).toEqual([id, 'smoothOut'])
+  })
+})
+
+describe('M1b/E7 — wipe-down', () => {
+  it('is a clip-only top-down wipe with paired terms, a block-level wipe', () => {
+    const cp = MOTION_PRESETS['wipe-down'].keyframes.clipPath!
+    expect(cp).toEqual(['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'])
+    expect(Object.keys(MOTION_PRESETS['wipe-down'].keyframes)).toEqual(['clipPath'])
+    expect(presetToEffect('wipe-down')).toBe(AnimationEffect.Wipe)
+  })
+})
+
+describe('M1b — count-up counts under GSAP', () => {
+  it('onUpdate gets the eased ratio every frame and 1 at the end', async () => {
+    let to: Record<string, unknown> = {}
+    const tween = { ratio: 0.42, kill() {}, then: (cb?: () => void) => (Promise.resolve().then(() => cb && cb()), Promise.resolve()) }
+    const gsap = {
+      fromTo: (_t: unknown, _f: unknown, v: Record<string, unknown>) => ((to = v), tween),
+      timeline: () => ({}) as GsapTimeline,
+    } as unknown as GsapInstance
+    const seen: number[] = []
+    const h = createGsapDriver(gsap).play(document.createElement('div'), { opacity: [0, 1] }, { duration: 500, onUpdate: (p) => seen.push(p) })
+    ;(to.onUpdate as () => void)()
+    await h.finished
+    expect(seen).toEqual([0.42, 1])
+  })
+})
+
+describe('M1b — sweep from 12 o’clock, bars from the zero line', () => {
+  const rect = { left: 0, top: 0, width: 200, height: 100 }
+  it('sectorClip: empty at 0, no clip at 1, a quarter passes 12 and 3 o’clock', () => {
+    expect(sectorClip(100, 50, rect, 0)).toMatch(/^polygon\(50\.000% 50\.000%, 50\.000% -?[\d.]+%, 50\.000% -?[\d.]+%\)$/)
+    expect(sectorClip(100, 50, rect, 1)).toBe('')
+    const q = sectorClip(100, 50, rect, 0.25)
+    const pts = q.slice(8, -1).split(', ')
+    expect(pts.length).toBe(4) // centre, 12 o'clock, 1:30, 3 o'clock
+    expect(parseFloat(pts[pts.length - 1].split(' ')[1])).toBeCloseTo(50, 3) // ends level with the centre
+  })
+
+  it('a filled sweep part is clipped to an empty sector and opened by a proxy tween', () => {
+    const el = document.createElement('div')
+    el.innerHTML = '<div data-part="slice/0"></div><div data-part="slice/1"></div>'
+    const parts = Array.from(el.querySelectorAll<HTMLElement>('[data-part]'))
+    for (const p of parts) p.getBoundingClientRect = () => ({ left: 0, top: 0, right: 200, bottom: 200, width: 200, height: 200, x: 0, y: 0, toJSON() {} })
+    const { driver, plays, sets } = recorder()
+    const def = { type: 'test.m1b', motion: { parts: ['slice'], preset: 'sweep' } } as unknown as BlockDefinition
+    playBlockReveal(el, { id: 'b', type: 'test.m1b', props: {}, motion: { preset: 'sweep' } } as BlockSpec, def, { driver, reducedMotion: false })
+    for (const p of parts) {
+      expect(sets.find((x) => x.target === p)!.state.clipPath).toMatch(/^polygon\(50\.000% 50\.000%/)
+    }
+    const proxies = plays.filter((x) => x.opts.onUpdate && !parts.includes(x.target as HTMLElement) && x.target !== el)
+    expect(proxies).toHaveLength(2)
+    proxies[0].opts.onUpdate!(1)
+    expect(parts[0].style.clipPath).toBe('')
+  })
+
+  it('a bar hanging below the zero line grows down from it', () => {
+    const el = document.createElement('div')
+    el.innerHTML = '<div data-part="bar/0"></div><div data-part="bar/1"></div><div data-part="bar/2"></div>'
+    const geo = [
+      { top: 20, height: 80 }, // positive: bottom at 100
+      { top: 60, height: 40 }, // positive
+      { top: 100, height: 30 }, // negative: top on the zero line
+    ]
+    Array.from(el.querySelectorAll<HTMLElement>('[data-part]')).forEach((b, i) => {
+      Object.defineProperty(b, 'offsetTop', { value: geo[i].top })
+      Object.defineProperty(b, 'offsetLeft', { value: i * 50 })
+      Object.defineProperty(b, 'offsetHeight', { value: geo[i].height })
+      Object.defineProperty(b, 'offsetWidth', { value: 40 })
+      Object.defineProperty(b, 'offsetParent', { value: el })
+    })
+    const { driver, plays } = recorder()
+    const def = { type: 'test.m1b', motion: { parts: ['bar'], preset: 'grow-bars-y' } } as unknown as BlockDefinition
+    playBlockReveal(el, { id: 'b', type: 'test.m1b', props: {}, motion: { preset: 'grow-bars-y' } } as BlockSpec, def, { driver, reducedMotion: false })
+    expect(plays.filter((p) => p.target !== el).map((p) => p.opts.origin)).toEqual(['50% 100%', '50% 100%', '50% 0%'])
   })
 })

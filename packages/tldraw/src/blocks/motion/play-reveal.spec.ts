@@ -303,7 +303,11 @@ describe('playBlockReveal', () => {
       const valuePartEl = el.querySelector('[data-part="value"]')!
       const valuePlay = calls.play.find((c) => c.target === valuePartEl)
       expect(valuePlay).toBeDefined()
-      expect(valuePlay!.opts.onUpdate).toBeDefined()
+      // M1b (intended change): the count runs on a detached proxy tween, so settling the part
+      // (which stops the part's own tweens) cannot freeze the number half-way.
+      const countPlay = calls.play.find((c) => c.opts.onUpdate)
+      expect(countPlay).toBeDefined()
+      expect(countPlay!.target).not.toBe(valuePartEl)
       // The recording driver calls onUpdate(1) synchronously, so the textContent should be 42.
       expect(valuePartEl.textContent).toBe('42')
     })

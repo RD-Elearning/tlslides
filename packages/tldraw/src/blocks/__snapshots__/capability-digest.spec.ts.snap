@@ -51,6 +51,7 @@ Motion style: set \`motionStyle\` on the deck or a slide (slide wins) instead of
 - **pop** _badge_ — 250ms, triggers: withPrevious, afterPrevious, onClick
 - **wipe-x** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
 - **wipe-y** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
+- **wipe-down** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
 - **mask-reveal** _panel-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
 - **reveal-down** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
 - **stagger-lines** _text-reveal_ — 500ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
@@ -5255,7 +5256,7 @@ Object {
     "kpi-row",
     "blank",
   ],
-  "motionCount": 34,
+  "motionCount": 35,
   "motionPresetIds": Array [
     "fade",
     "fade-up",
@@ -5263,6 +5264,7 @@ Object {
     "pop",
     "wipe-x",
     "wipe-y",
+    "wipe-down",
     "mask-reveal",
     "reveal-down",
     "stagger-lines",

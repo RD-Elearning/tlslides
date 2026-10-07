@@ -41,7 +41,8 @@ export function layout(props: RuleProps, ctx: LayoutContext): LayoutNode {
       : { type: 'solid', color: ctx.resolveColor(tone === 'accent' ? 'accent' : 'line').color }
   const bar: LayoutNode = {
     k: 'rect',
-    part: 'rule',
+    // A vertical rule is its own motion part so it can draw top-down along its length (M1b/E7).
+    part: horizontal ? 'rule' : 'rule-v',
     box: { x: 0, y: 0, width, height },
     fill,
     ...(weight === 'hairline' ? {} : { radius: Math.min(t, width, height) / 2 }),

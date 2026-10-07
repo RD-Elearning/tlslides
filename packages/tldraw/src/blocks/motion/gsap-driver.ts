@@ -58,8 +58,16 @@ export interface GsapTimeline {
 }
 
 /** Structural type for the GSAP library object. */
+/** What `gsap.fromTo` returns, structurally. `ratio` (eased) / `progress()` feed `onUpdate`. */
+export interface GsapTween {
+  kill(): void
+  then(cb?: () => void): Promise<void>
+  ratio?: number
+  progress?(): number
+}
+
 export interface GsapInstance {
-  fromTo(target: unknown, from: GsapVars, to: GsapVars): { kill(): void; then(cb?: () => void): Promise<void> }
+  fromTo(target: unknown, from: GsapVars, to: GsapVars): GsapTween
   timeline(): GsapTimeline
   /** Real GSAP has it; `set()` uses it to stop older tweens of the same properties (S8). */
   killTweensOf?(target: unknown, props?: string): void
@@ -236,23 +244,37 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
     toVars.ease = cssEaseToGsap(opts.easing ?? 'ease-out')
     toVars.onComplete = undefined // resolved via .then()
 
-    const tween = gsap.fromTo(target, fromVars, toVars)
+    // M1b: `onUpdate(progress)` (count-up's number, a sweep's sector) gets the tween's eased
+    // progress every frame and 1 on completion. It used to be dropped, so nothing counted.
+    let tween: GsapTween | undefined
+    const onUpdate = opts.onUpdate
+    if (onUpdate) {
+      toVars.onUpdate = () => {
+        if (!tween) return
+        const p = typeof tween.ratio === 'number' ? tween.ratio : tween.progress ? tween.progress() : 0
+        onUpdate(Math.max(0, Math.min(1, p)))
+      }
+    }
+
+    tween = gsap.fromTo(target, fromVars, toVars)
     active.add(tween)
+    const started = tween
 
     let resolveFn: () => void
     const finished = new Promise<void>((resolve) => {
       resolveFn = resolve
     })
 
-    tween.then(() => {
-      active.delete(tween)
+    started.then(() => {
+      active.delete(started)
+      if (onUpdate) onUpdate(1)
       resolveFn()
     })
 
     return {
       cancel() {
-        tween.kill()
-        active.delete(tween)
+        started.kill()
+        active.delete(started)
         resolveFn()
       },
       finished,

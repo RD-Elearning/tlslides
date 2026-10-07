@@ -32,6 +32,7 @@ import type { AnimationEffect } from '~types'
 import type { MotionDriver, MotionKeyframes, MotionState } from './driver'
 import { resolveBlockMotion, resolvePartMotion } from './resolve-motion'
 import type { ResolvedPartMotion } from './resolve-motion'
+import { MOTION_PRESETS } from './presets'
 import type { BlockSpec, BlockDefinition } from '../types'
 
 // --- Types -------------------------------------------------------------------
@@ -150,6 +151,99 @@ interface PartPlay {
   target: Element
   keyframes: MotionKeyframes
   origin?: string
+  /** A radial sweep (M1b): the target's clip-path is a sector about this centre, written each
+   *  frame from 12 o'clock clockwise by a proxy tween's progress. */
+  sweep?: { cx: number; cy: number; rect: { left: number; top: number; width: number; height: number } }
+}
+
+/**
+ * A pie-sector clip-path about (cx, cy) (client px) covering `progress` of a turn from
+ * 12 o'clock clockwise, in `%` of the element's client rect. Full turn → `''` (no clip).
+ */
+export function sectorClip(
+  cx: number,
+  cy: number,
+  rect: { left: number; top: number; width: number; height: number },
+  progress: number
+): string {
+  if (progress >= 1) return ''
+  const R = 2 * Math.hypot(rect.width, rect.height) + Math.hypot(cx - rect.left, cy - rect.top)
+  const pt = (a: number) =>
+    `${(((cx + R * Math.sin(a) - rect.left) / rect.width) * 100).toFixed(3)}% ${(((cy - R * Math.cos(a) - rect.top) / rect.height) * 100).toFixed(3)}%`
+  const theta = Math.max(0, progress) * 2 * Math.PI
+  const pts = [
+    `${(((cx - rect.left) / rect.width) * 100).toFixed(3)}% ${(((cy - rect.top) / rect.height) * 100).toFixed(3)}%`,
+    pt(0),
+  ]
+  for (let a = Math.PI / 4; a < theta; a += Math.PI / 4) pts.push(pt(a))
+  pts.push(pt(theta))
+  return `polygon(${pts.join(', ')})`
+}
+
+/** Running sweep proxies per element, so a replay cancels the previous one. */
+const sweepHandles = new WeakMap<Element, { cancel(): void }>()
+
+/** The client-rect union of the geometry the elements paint (their SVG shapes, else themselves). */
+function paintedUnion(els: Element[]): { left: number; top: number; right: number; bottom: number } | undefined {
+  let u: { left: number; top: number; right: number; bottom: number } | undefined
+  for (const e of els) {
+    const shapes = Array.from(e.querySelectorAll('path, circle, ellipse, polygon, rect'))
+    for (const n of shapes.length ? shapes : [e]) {
+      const r = n.getBoundingClientRect()
+      if (!(r.width > 0 && r.height > 0)) continue
+      u = u
+        ? { left: Math.min(u.left, r.left), top: Math.min(u.top, r.top), right: Math.max(u.right, r.right), bottom: Math.max(u.bottom, r.bottom) }
+        : { left: r.left, top: r.top, right: r.right, bottom: r.bottom }
+    }
+  }
+  return u
+}
+
+/** Layout box of `node` relative to `root` (offset chain: transforms do not move it). */
+function layoutBox(node: HTMLElement, root: Element): { x: number; y: number; w: number; h: number } | undefined {
+  if (typeof node.offsetTop !== 'number') return undefined
+  let x = 0
+  let y = 0
+  let n: HTMLElement | null = node
+  while (n && n !== root) {
+    x += n.offsetLeft
+    y += n.offsetTop
+    n = n.offsetParent as HTMLElement | null
+    if (n && !root.contains(n) && n !== root) return undefined
+  }
+  return { x, y, w: node.offsetWidth, h: node.offsetHeight }
+}
+
+/** Most common value (1 px buckets). */
+function mode(values: number[]): number | undefined {
+  const count = new Map<number, number>()
+  for (const v of values) count.set(Math.round(v), (count.get(Math.round(v)) ?? 0) + 1)
+  let best: number | undefined
+  let n = 0
+  for (const [v, c] of count) if (c > n) [best, n] = [v, c]
+  return best
+}
+
+/**
+ * Per-element origins for a one-axis grow on its preset's default origin (M1b): bars below the
+ * zero line grow down from it. The zero line is the edge most bars of the family share (bottom
+ * for columns, left for bars); a bar whose opposite edge sits on it hangs below / left of zero
+ * and grows from that edge instead. Waterfall-style floating bars need their own part origin.
+ */
+function zeroLineOrigins(els: HTMLElement[], pm: ResolvedPartMotion, root: Element): (string | undefined)[] {
+  const preset = MOTION_PRESETS[pm.presetId ?? '']
+  const vertical = !!pm.keyframes.scaleY
+  const horizontal = !!pm.keyframes.scaleX
+  if (els.length < 2 || (!vertical && !horizontal) || !preset || pm.origin !== preset.origin) return els.map(() => pm.origin)
+  const boxes = els.map((e) => layoutBox(e, root))
+  if (boxes.some((b) => !b || !(b.w > 0 && b.h > 0))) return els.map(() => pm.origin)
+  const bs = boxes as { x: number; y: number; w: number; h: number }[]
+  if (vertical) {
+    const zero = mode(bs.map((b) => b.y + b.h))
+    return bs.map((b) => (zero !== undefined && Math.abs(b.y - zero) <= 1.5 && b.y + b.h > zero + 1 ? '50% 0%' : pm.origin))
+  }
+  const zero = mode(bs.map((b) => b.x))
+  return bs.map((b) => (zero !== undefined && Math.abs(b.x + b.w - zero) <= 1.5 && b.x < zero - 1 ? '100% 50%' : pm.origin))
 }
 
 /** The left-to-right wipe a filled part gets in place of a draw-on (equal four-term insets). */
@@ -196,13 +290,26 @@ function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undef
  *   wiped in left to right with an equal-term clip instead.
  * - Every other preset plays on the element itself, scaling about the part's origin.
  */
-function partPlays(partEl: HTMLElement, pm: ResolvedPartMotion): PartPlay[] {
+function partPlays(
+  partEl: HTMLElement,
+  pm: ResolvedPartMotion,
+  origin: string | undefined,
+  centre: { x: number; y: number } | undefined
+): PartPlay[] {
   const kf = pm.keyframes
-  if (!kf.strokeDashoffset) return [{ target: partEl, keyframes: kf, origin: pm.origin }]
+  if (!kf.strokeDashoffset) return [{ target: partEl, keyframes: kf, origin }]
   const rest: MotionKeyframes = { ...kf }
   delete rest.strokeDashoffset
   const strokes = strokedGeometry(partEl)
-  if (!strokes) return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin: pm.origin }]
+  if (!strokes) {
+    // M1b: a filled `sweep` part (pie slice, donut segment) is revealed by a sector growing
+    // clockwise from 12 o'clock about the family's common centre; other fills wipe in.
+    const r = partEl.getBoundingClientRect()
+    if (pm.presetId === 'sweep' && centre && r.width > 0 && r.height > 0) {
+      return [{ target: partEl, keyframes: rest, origin, sweep: { cx: centre.x, cy: centre.y, rect: { left: r.left, top: r.top, width: r.width, height: r.height } } }]
+    }
+    return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin }]
+  }
   const plays: PartPlay[] = strokes.map(({ el, len }) => {
     el.style.strokeDasharray = `${len} ${len}`
     return { target: el, keyframes: { strokeDashoffset: [String(len), '0'] } }
@@ -256,22 +363,33 @@ export function playBlockReveal(
 
   // 3. Set hidden state on ALL parts synchronously, before the block becomes visible.
   //    Parts are children of `el`, so they're invisible while the block is at opacity: 0.
+  //    Measure before anything is hidden (a scale of 0 would change the rects).
   const planned = partMotions.map((pm) => {
     const { els, indexed } = partElements(el, pm.partName)
+    const origins = zeroLineOrigins(els, pm, el)
+    const u = pm.presetId === 'sweep' ? paintedUnion(els) : undefined
+    const centre = u ? { x: (u.left + u.right) / 2, y: (u.top + u.bottom) / 2 } : undefined
     return {
       pm,
       indexed,
-      els: els.map((partEl) => ({
+      els: els.map((partEl, i) => ({
         partEl,
         // count-up keeps its own textContent tween on the part element (step 6)
-        plays: pm.presetId === 'count-up' && countTarget(partEl) ? [] : partPlays(partEl, pm),
+        plays: pm.presetId === 'count-up' && countTarget(partEl) ? [] : partPlays(partEl, pm, origins[i], centre),
       })),
     }
   })
   for (const { pm, els } of planned) {
     for (const { partEl, plays } of els) {
       if (plays.length === 0) driver.set(partEl, hiddenStateFromKeyframes(pm.keyframes))
-      for (const p of plays) driver.set(p.target, hiddenStateFromKeyframes(p.keyframes))
+      for (const p of plays) {
+        const hidden = hiddenStateFromKeyframes(p.keyframes)
+        if (p.sweep) {
+          sweepHandles.get(p.target)?.cancel()
+          hidden.clipPath = sectorClip(p.sweep.cx, p.sweep.cy, p.sweep.rect, 0)
+        }
+        if (Object.keys(hidden).length > 0) driver.set(p.target, hidden)
+      }
     }
   }
 
@@ -308,7 +426,17 @@ export function playBlockReveal(
         const prefix = targetText.match(/^[^0-9.-]*/)?.[0] ?? ''
         const suffix = targetText.match(/[^0-9.]*$/)?.[0] ?? ''
 
+        // The entrance plays on the part; the count runs on a detached proxy (M1b) so settling
+        // the part (an opacity/scale set, which stops the part's tweens) cannot freeze the
+        // number half-way: the proxy always reaches its last frame and restores the text.
         driver.play(partEl as HTMLElement, pm.keyframes, {
+          duration: pm.durationMs,
+          delay,
+          easing: pm.easing,
+          fill: 'forwards',
+        })
+        const counter = typeof document !== 'undefined' ? document.createElement('div') : (partEl as HTMLElement)
+        driver.play(counter, { opacity: [0, 1] }, {
           duration: pm.durationMs,
           delay,
           easing: pm.easing,
@@ -324,13 +452,33 @@ export function playBlockReveal(
         })
       } else {
         for (const p of plays) {
-          driver.play(p.target, p.keyframes, {
-            duration: pm.durationMs,
-            delay,
-            easing: pm.easing,
-            fill: 'forwards',
-            ...(p.origin ? { origin: p.origin } : {}),
-          })
+          if (Object.keys(p.keyframes).length > 0) {
+            driver.play(p.target, p.keyframes, {
+              duration: pm.durationMs,
+              delay,
+              easing: pm.easing,
+              fill: 'forwards',
+              ...(p.origin ? { origin: p.origin } : {}),
+            })
+          }
+          if (p.sweep) {
+            // The sector is not a keyframe pair any interpolator can tween, so a detached proxy
+            // carries the eased progress and each frame writes the sector. Settling the part
+            // (opacity/translate/scale sets) cannot kill it; its last frame removes the clip.
+            const { cx, cy, rect } = p.sweep
+            const target = p.target as HTMLElement
+            const proxy = typeof document !== 'undefined' ? document.createElement('div') : target
+            const handle = driver.play(proxy, { opacity: [0, 1] }, {
+              duration: pm.durationMs,
+              delay,
+              easing: pm.easing,
+              fill: 'forwards',
+              onUpdate: (progress: number) => {
+                target.style.clipPath = sectorClip(cx, cy, rect, progress)
+              },
+            })
+            sweepHandles.set(target, handle)
+          }
         }
       }
     })

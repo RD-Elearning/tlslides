@@ -1,5 +1,6 @@
 /**
- * Motion presets (05-motion-system.md §5.3) — 35 pure-data animation recipes.
+ * Motion presets (05-motion-system.md §5.3) — 35 pure-data animation recipes, plus `wipe-down`
+ * (M1b: the top-down clip wipe a vertical rule needs).
  *
  * Each preset declares which ALLOWED_PROPERTIES it touches, default keyframes built
  * from the token scale, and the token names for duration / easing. Chained presets
@@ -116,12 +117,24 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
     easing: 'smoothOut',
   },
 
-  // §5.3 row 7 — vertical wipe (panel-reveal)
+  // §5.3 row 7 — vertical wipe from the bottom edge up (panel-reveal)
   'wipe-y': {
     id: 'wipe-y',
     properties: ['clip-path'],
     keyframes: {
       clipPath: ['inset(100% 0% 0% 0%)', 'inset(0% 0% 0% 0%)'],
+    },
+    duration: 'medium',
+    easing: 'smoothOut',
+  },
+
+  // M1b/E7 — vertical wipe from the top edge down (panel-reveal): a vertical rule or bar draws
+  // along its length. Clip only, four equal-unit terms. (`wipe-y` is the bottom-up one.)
+  'wipe-down': {
+    id: 'wipe-down',
+    properties: ['clip-path'],
+    keyframes: {
+      clipPath: ['inset(0% 0% 100% 0%)', 'inset(0% 0% 0% 0%)'],
     },
     duration: 'medium',
     easing: 'smoothOut',
@@ -282,7 +295,8 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
       strokeDashoffset: ['100%', '0%'],
     },
     duration: 'slow',
-    easing: 'inOut',
+    // M1b/E2: an entrance eases out (J5); it was 'inOut'.
+    easing: 'smoothOut',
   },
 
   // §5.3 row 20 — draw-path on axis, then stagger-children on nodes (success-check)
@@ -306,7 +320,9 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
       strokeDashoffset: ['100%', '0%'],
     },
     duration: 'verySlow',
-    easing: 'inOut',
+    // M1b/E2: an entrance eases out (J5); it was 'inOut'. Filled parts sweep from 12 o'clock
+    // (playBlockReveal), stroked ones draw on.
+    easing: 'smoothOut',
   },
 
   // §5.3 row 22 — nodes reveal in rotational order around centre
@@ -502,7 +518,7 @@ for (const id of Object.keys(MOTION_PRESETS)) {
 
 // --- Derived helpers --------------------------------------------------------
 
-/** All 35 preset IDs in catalog order. */
+/** All preset IDs in catalog order (§5.3's 35 + `wipe-down`). */
 export const PRESET_IDS = Object.freeze(
   Object.keys(MOTION_PRESETS)
 ) as readonly (keyof typeof MOTION_PRESETS)[]

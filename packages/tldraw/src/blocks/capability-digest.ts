@@ -154,7 +154,7 @@ function classifyMotionPreset(id: string): string {
     id === 'reveal-down' || id === 'sweep-nodes' || id === 'split-in' || id === 'field-in'
   ) return 'text-reveal'
   if (id === 'pop' || id === 'pop-points') return 'badge'
-  if (id === 'wipe-x' || id === 'wipe-y' || id === 'mask-reveal') return 'panel-reveal'
+  if (id === 'wipe-x' || id === 'wipe-y' || id === 'wipe-down' || id === 'mask-reveal') return 'panel-reveal'
   if (id === 'grow-bars-x' || id === 'grow-bars-y' || id === 'grow-segments' || id === 'count-up') return 'card-resize'
   if (id === 'draw-path' || id === 'draw-axis-then-nodes' || id === 'sweep' || id === 'grow-branches') return 'success-check'
   return 'composite'
