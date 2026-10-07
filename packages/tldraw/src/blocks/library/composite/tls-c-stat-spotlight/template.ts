@@ -8,6 +8,7 @@ import type { HtmlTemplateContext } from '../../../types'
 import { roleVar, str } from '../_showcase'
 import type { StatSpotlightProps } from './schema'
 import { geometry, progressOf, statsOf } from './schema'
+import { arcPath } from './poster'
 
 export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): string {
   const W = ctx.box?.width ?? 1728
@@ -17,8 +18,8 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
   const accent2 = roleVar(ctx, 'accent2', 'accent2')
   const line = roleVar(ctx, 'surfaceAlt', 'surface-alt')
   const r = Math.max(0, g.d / 2 - g.sw / 2)
-  const c = 2 * Math.PI * r
   const p = progressOf(props)
+  const len = Math.round(2 * Math.PI * r * Math.min(1, Math.max(0, p)) * 100) / 100
   const t = ctx.tokens?.type
   const out: string[] = []
 
@@ -28,9 +29,12 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
       `<defs><linearGradient id="tls-spot-grad" x1="0" y1="0" x2="1" y2="1">` +
       `<stop offset="0" stop-color="${accent}"/><stop offset="1" stop-color="${accent2}"/></linearGradient></defs>` +
       `<circle cx="${g.d / 2}" cy="${g.d / 2}" r="${r}" fill="none" stroke="${line}" stroke-width="${g.sw}"/>` +
-      `<circle data-arc data-circumference="${c}" data-progress="${p}" cx="${g.d / 2}" cy="${g.d / 2}" r="${r}" fill="none" ` +
+      // RVM3: the arc is a path from 12 o'clock to its progress, dashed to its own length and at
+      // rest with no offset (fully drawn), so the timeline draws it 0 -> 100 % and its end state is
+      // its rest state (was a full circle rotated -90 deg, dashed short of its circumference)
+      `<path data-arc data-length="${len}" d="${arcPath(g.d / 2, g.d / 2, r, p)}" fill="none" ` +
       `stroke="url(#tls-spot-grad)" stroke-width="${g.sw}" stroke-linecap="round" ` +
-      `stroke-dasharray="${c}" style="stroke-dashoffset:${c * (1 - p)}" transform="rotate(-90 ${g.d / 2} ${g.d / 2})"/>` +
+      `stroke-dasharray="${len} ${len}" style="stroke-dashoffset:0"/>` +
       `</svg></div>`
   )
   out.push(
@@ -63,11 +67,13 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
     const w = (W - gap * (stats.length - 1)) / stats.length
     stats.forEach((s, i) => {
       out.push(
+        // RVM3: the padding sits on an inner box, so a tween's style rewrite of the part never
+        // touches a layout property (J4)
         `<div data-part="stat[${i}]" style="position:absolute;left:${i * (w + gap)}px;top:${g.statsY}px;width:${w}px;height:${g.statsH}px;` +
-          `box-sizing:border-box;padding:18px 0 0 28px;border-left:6px solid ${i % 2 ? accent2 : accent};">` +
+          `box-sizing:border-box;border-left:6px solid ${i % 2 ? accent2 : accent};"><div style="padding:18px 0 0 28px;">` +
           `<div data-stat-value style="font-size:${t?.heading?.size ?? 64}px;line-height:1.05;font-weight:800;color:${ctx.cssVar('on')};">${ctx.esc(s.value)}</div>` +
           `<div style="margin-top:8px;font-size:${t?.caption?.size ?? 22}px;line-height:1.4;color:${ctx.cssVar('text-muted')};">${ctx.esc(s.label)}</div>` +
-          `</div>`
+          `</div></div>`
       )
     })
   }

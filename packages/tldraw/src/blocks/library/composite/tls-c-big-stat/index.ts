@@ -26,6 +26,7 @@ import { createLayoutContext } from '../../../layout/layout-child'
 import { resolveTokens } from '../../../tokens'
 import { BUILT_IN_DECK_THEMES } from '../../../../state/shapes/shared/deck-theme'
 import { htmlHostNode } from '../../../html-block'
+import { countFormat } from '../../../motion/play-reveal'
 
 /** Summary for the AI: what this block is and when to use it. */
 const BIG_STAT_SUMMARY =
@@ -76,6 +77,16 @@ function derivePreferredSize(): [number, number] {
  * animate() may do anything to descendants of root and nothing to
  * root.style.transform.
  */
+/** RVM3 — expressive timing of `tls.c.big-stat`, in ms (J5 tokens). */
+export const BIG_STAT_TIMING = {
+  countMs: 800,
+  valueFadeMs: 300,
+  labelAt: 150,
+  labelMs: 450,
+  contextAt: 350,
+  contextMs: 350,
+} as const
+
 function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void) {
   const valueEl = root.querySelector<HTMLElement>('[data-part="value"]')
   const labelEl = root.querySelector<HTMLElement>('[data-part="label"]')
@@ -107,19 +118,25 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
   // The template/poster already wrote the correct formatted value; we just
   // need to animate from 0 to it.
   const targetText = valueEl.textContent ?? '0'
-  const targetValue = parseFloat(targetText.replace(/[^0-9.-]/g, '')) || 0
-  const isInteger = Number.isInteger(targetValue)
-  const prefix = targetText.match(/^[^0-9.-]*/)?.[0] ?? ''
-  const suffix = targetText.match(/[^0-9.]*$/)?.[0] ?? ''
+  // RVM3: count in the target's own format ("1,250" counts "625", "$4.25M" keeps two decimals) on
+  // tabular figures, so the number neither changes shape on its last frame nor jitters while it
+  // counts; the last frame restores the exact text and the authored style.
+  const format = countFormat(targetText)
+  const numeric = valueEl.style.fontVariantNumeric
 
   /** Write the intermediate count-up value to textContent. */
   const writeCountUp = (progress: number) => {
-    const current = targetValue * progress
-    valueEl.textContent =
-      prefix +
-      (isInteger ? Math.round(current).toString() : current.toFixed(1)) +
-      suffix
+    if (progress >= 1) {
+      valueEl.textContent = targetText
+      valueEl.style.fontVariantNumeric = numeric
+      return
+    }
+    valueEl.style.fontVariantNumeric = 'tabular-nums'
+    valueEl.textContent = format(progress)
   }
+  /** RVM3 timing (J5: each part 150–900 ms on an out ease); was the block duration (~400 ms), with
+   *  the number's fade at a quarter of it (100 ms). */
+  const T = BIG_STAT_TIMING
 
   // If the host provided GSAP, use a GSAP timeline
   if (rt.gsap && typeof rt.gsap === 'object' && rt.gsap !== null) {
@@ -132,7 +149,7 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     }
 
     const tl = gsap.timeline()
-    const durationSec = rt.timing.durationMs / 1000
+    const sec = (ms: number) => ms / 1000
 
     // Count-up: tween the value from 0 to target using onUpdate
     // GSAP's timeline().fromTo on a proxy object driving onUpdate
@@ -141,7 +158,7 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
       { progress: 0 },
       {
         progress: 1,
-        duration: durationSec,
+        duration: sec(T.countMs),
         ease: 'power3.out',
         onUpdate: () => {
           writeCountUp(proxy.progress)
@@ -152,30 +169,22 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     // The value part is hidden inline by the host until animate() reveals it. The count-up only
     // writes its text, so without this tween the number stayed at opacity 0 for ever on the GSAP
     // path (the label and context have their own tweens): the slide showed a label and no number.
-    tl.fromTo(valueEl, { opacity: 0 }, { opacity: 1, duration: durationSec * 0.25, ease: 'power2.out' }, 0)
+    tl.fromTo(valueEl, { opacity: 0 }, { opacity: 1, duration: sec(T.valueFadeMs), ease: 'power2.out' }, 0)
 
-    // Label slides in from below with opacity
+    // Label slides in from below with opacity, slightly after the count-up begins
     if (labelEl) {
-      tl.fromTo(labelEl,
-        { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, duration: durationSec * 0.6, ease: 'power3.out' },
-        0.15, // start slightly after the count-up begins
-      )
+      tl.fromTo(labelEl, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: sec(T.labelMs), ease: 'power3.out' }, sec(T.labelAt))
     }
 
     // Context fades in
     if (contextEl) {
-      tl.fromTo(contextEl,
-        { opacity: 0 },
-        { opacity: 1, duration: durationSec * 0.4, ease: 'power2.out' },
-        0.35,
-      )
+      tl.fromTo(contextEl, { opacity: 0 }, { opacity: 1, duration: sec(T.contextMs), ease: 'power2.out' }, sec(T.contextAt))
     }
 
     let resolved = false
     tl.then(() => {
-      // The count-up rounds ("4.25M" -> "4.3M"): finish on the exact formatted text.
-      valueEl.textContent = targetText
+      // Finish on the exact formatted text and the authored style.
+      writeCountUp(1)
       if (!resolved) { resolved = true; rt.onComplete() }
     })
 
@@ -190,7 +199,7 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
     valueEl,
     { opacity: [0, 1] },
     {
-      duration: rt.timing.durationMs,
+      duration: T.countMs,
       delay: rt.timing.delayMs,
       easing: rt.timing.ease,
       fill: 'forwards',
@@ -207,8 +216,8 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
       labelEl,
       { opacity: [0, 1], translate: ['0px 16px', '0px 0px'] },
       {
-        duration: rt.timing.durationMs * 0.6,
-        delay: rt.timing.delayMs + rt.timing.durationMs * 0.15,
+        duration: T.labelMs,
+        delay: rt.timing.delayMs + T.labelAt,
         easing: rt.timing.ease,
         fill: 'forwards',
       }
@@ -222,8 +231,8 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
       contextEl,
       { opacity: [0, 1] },
       {
-        duration: rt.timing.durationMs * 0.4,
-        delay: rt.timing.delayMs + rt.timing.durationMs * 0.35,
+        duration: T.contextMs,
+        delay: rt.timing.delayMs + T.contextAt,
         easing: rt.timing.ease,
         fill: 'forwards',
       }
@@ -232,7 +241,7 @@ function bigStatAnimate(root: HTMLElement, rt: BlockMotionRuntime): void | (() =
   }
 
   Promise.all(handles.map((h) => h.finished)).then(() => {
-    valueEl.textContent = targetText
+    writeCountUp(1)
     rt.onComplete()
   })
 

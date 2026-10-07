@@ -21,11 +21,15 @@ describe('tls.c.stat-spotlight — specifics', () => {
     expect(parseCount('n/a')).toBeUndefined()
   })
 
-  it('the arc dash offset in the template matches the progress', () => {
+  it('the arc in the template runs from 12 o’clock to the progress, dashed to its own length and fully drawn at rest (RVM3)', () => {
     const html = tlsCStatSpotlight.html!.template({ value: '50%', progress: 50, label: 'L' } as any, tplCtx())
-    const c = Number(/data-circumference="([\d.]+)"/.exec(html)![1])
-    const off = Number(/stroke-dashoffset:([\d.]+)/.exec(html)![1])
-    expect(off).toBeCloseTo(c / 2, 3)
+    const len = Number(/data-length="([\d.]+)"/.exec(html)![1])
+    const d = /data-arc[^>]* d="([^"]+)"/.exec(html)![1]
+    const [, r] = /A ([\d.]+) /.exec(d)!
+    expect(len).toBeCloseTo(Math.PI * Number(r), 1) // half of the circumference
+    expect(d).toContain(' 0 0 1 ') // a half arc, clockwise
+    expect(html).toContain(`stroke-dasharray="${len} ${len}"`)
+    expect(Number(/stroke-dashoffset:([\d.]+)/.exec(html)![1])).toBe(0)
   })
 
   it('arcPath draws a full ring as two halves and a partial arc with the right sweep', () => {
