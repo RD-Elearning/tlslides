@@ -27,6 +27,7 @@ import {
   SUBTLE_OFFSET_MS,
 } from './motion-style'
 import { partElements, playBlockReveal } from './play-reveal'
+import { resolvePartMotion } from './resolve-motion'
 import type { MotionDriver, MotionKeyframes, MotionOptions } from './driver'
 import demoDeck from '../__fixtures__/demo-deck.json'
 
@@ -174,7 +175,11 @@ describe('compileSlide with motionStyle', () => {
   it('expressive: recipe presets, chained in reading order with no clicks', () => {
     const { shapes } = compileSlide(slide({ motionStyle: 'expressive' }), FRAME, TOKENS, reg)
     const m = byBlockId(shapes)
-    expect((m.bar.props as any).$block.styleMotion.preset).toBe('grow-bars-y')
+    // RVM3: the bar chart's expressive recipe is `stagger-children` with its bars growing from the
+    // zero line as a part preset (`grow-bars-y`), its title and value labels fading around them
+    expect((m.bar.props as any).$block.styleMotion.preset).toBe('stagger-children')
+    const barParts = resolvePartMotion((m.bar.props as any).$block.styleMotion, reg.get('tls.d.bar')!.motion)
+    expect(barParts.find((p) => p.partName === 'bar[*][*]')!.presetId).toBe('grow-bars-y')
     expect(m.bar.animation!.effect).toBe(AnimationEffect.FadeIn)
     expect(m.title.animation!.order).toBe(0)
     expect(m.bar.animation!.order).toBe(1)
@@ -350,7 +355,10 @@ describe('P7 expressive recipes and count-up guard', () => {
 
   it('existing blocks declare showy expressive presets that exist', () => {
     expect(reg.get('tls.t.title')!.motion.expressive).toBe('words-in')
-    expect(reg.get('tls.c.kpi-tile')!.motion.expressive).toBe('count-up')
+    // RVM3: the tile fades in and its value counts up as a part preset (a block-level count-up
+    // zoomed the whole tile in from 0.7 and counted the delta too)
+    expect(reg.get('tls.c.kpi-tile')!.motion.expressive).toBe('stagger-children')
+    expect(reg.get('tls.c.kpi-tile')!.motion.partMotion?.value?.preset).toBe('count-up')
     const { shapes } = compileSlide(slide({ motionStyle: 'expressive' }), FRAME, TOKENS, reg)
     expect((byBlockId(shapes).title.props as any).$block.styleMotion.preset).toBe('words-in')
   })
@@ -401,7 +409,7 @@ describe('P7 expressive recipes and count-up guard', () => {
     }
     playBlockReveal(el, { id: 'k', type: 'x', props: {}, motion: { preset: 'count-up' } }, { motion: { parts: ['value', 'tile'] } } as any, { driver, reducedMotion: false })
     // M3: the count runs on tabular figures (no width jitter) and the last frame restores the line
-    expect(seen.some((h) => h.includes('<div class="line" style="font-variant-numeric: tabular-nums;">21%</div>'))).toBe(true)
+    expect(seen.some((h) => h.includes('<div data-part="value" style="font-variant-numeric: tabular-nums;"><div class="line">21%</div>'))).toBe(true)
     expect(el.innerHTML).toBe('<div data-part="value" style=""><div class="line">42%</div></div><div data-part="tile" style=""><div>Label</div><div>17</div></div>'.replace(/ style=""/g, ''))
   })
 })
