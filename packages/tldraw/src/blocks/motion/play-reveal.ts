@@ -530,9 +530,11 @@ export function playBlockReveal(
         const targetText = countEl.textContent ?? '0'
         const format = countFormat(targetText)
         // M3: tabular figures while counting, so the digits do not change width every frame
-        // (Inter's "1" is two thirds of an "8"); the last frame restores the authored style.
-        const numeric = countEl.style.fontVariantNumeric
-        countEl.style.fontVariantNumeric = 'tabular-nums'
+        // (Inter's "1" is two thirds of an "8"); the last frame restores the authored style. It is
+        // set on the part element (it inherits), so no other element is touched.
+        const host = partEl as HTMLElement
+        const numeric = host.style.fontVariantNumeric
+        host.style.fontVariantNumeric = 'tabular-nums'
 
         // The entrance plays on the part; the count runs on a detached proxy (M1b) so settling
         // the part (an opacity/scale set, which stops the part's tweens) cannot freeze the
@@ -552,8 +554,8 @@ export function playBlockReveal(
           onUpdate: (progress: number) => {
             if (progress >= 1) {
               countEl.textContent = targetText
-              countEl.style.fontVariantNumeric = numeric
-              if (!countEl.getAttribute('style')) countEl.removeAttribute('style')
+              host.style.fontVariantNumeric = numeric
+              if (!host.getAttribute('style')) host.removeAttribute('style')
               return
             }
             countEl.textContent = format(progress)

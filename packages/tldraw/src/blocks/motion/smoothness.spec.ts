@@ -580,6 +580,7 @@ describe('M3 — charts: labels wait for their marks, grows follow the geometry,
   it('count-up counts on tabular figures and ends on the exact text with the authored style', () => {
     const el = document.createElement('div')
     el.innerHTML = '<div data-part="value"><div>1,250</div></div>'
+    const part = el.querySelector('[data-part="value"]') as HTMLElement
     const line = el.querySelector('[data-part="value"] > div') as HTMLElement
     const { driver, plays } = recorder()
     const def = { type: 'test.m3', motion: { parts: ['value'], preset: 'count-up' } } as unknown as BlockDefinition
@@ -587,10 +588,12 @@ describe('M3 — charts: labels wait for their marks, grows follow the geometry,
     const counter = plays.find((p) => p.opts.onUpdate)!
     counter.opts.onUpdate!(0.5)
     expect(line.textContent).toBe('625')
-    expect(line.style.fontVariantNumeric).toBe('tabular-nums')
+    // on the part (inherited by the line), so the probe sees no other touched element
+    expect(part.style.fontVariantNumeric).toBe('tabular-nums')
+    expect(line.getAttribute('style')).toBeNull()
     counter.opts.onUpdate!(1)
     expect(line.textContent).toBe('1,250')
-    expect(line.style.fontVariantNumeric).toBe('')
+    expect(part.style.fontVariantNumeric).toBe('')
   })
 })
 
