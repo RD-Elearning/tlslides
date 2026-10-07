@@ -565,7 +565,8 @@ describe('tls.c.comparison', () => {
 
     it('motion has parts and preset', () => {
       expect(tlsCComparison.motion.parts).toBeDefined()
-      expect(tlsCComparison.motion.parts!.length).toBe(2)
+      // RVM3: titles, bullets and items (each bullet now has its own part)
+      expect(tlsCComparison.motion.parts).toEqual(['col[*].title', 'col[*].bullet[*]', 'col[*].item[*]'])
       expect(tlsCComparison.motion.preset).toBe('stagger-lines')
     })
   })

@@ -182,6 +182,9 @@ export function layoutProblemSolution(props: ProblemSolutionProps, ctx: LayoutCo
   return root
 }
 
+/** RVM3: the solution side follows the problem side by this much (ms; the J5 stagger cap). */
+const SIDE = 120
+
 const composite = defineCompositeBlock<ProblemSolutionProps>({
   type: 'tls.c.problem-solution',
   name: 'Problem and solution',
@@ -210,7 +213,24 @@ const composite = defineCompositeBlock<ProblemSolutionProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'fade-up' },
+  // RVM3: the problem side, then the solution side, side by side 120 ms apart (panel, icon, title,
+  // text), the arrow popping in between; `callouts` style: each callout as one piece. Bare family
+  // names, because a multi-line piece is numbered per line (`title[0][1]`). It was one `root` piece.
+  motion: {
+    parts: ['panel', 'icon', 'title', 'text', 'arrowbg', 'arrow', 'problem', 'solution'],
+    preset: 'fade-up',
+    expressive: 'stagger-children',
+    partMotion: {
+      panel: { preset: 'fade-up', delay: 0, stagger: SIDE },
+      icon: { preset: 'field-in', delay: 80, stagger: SIDE },
+      title: { preset: 'fade-up', delay: 60, stagger: SIDE },
+      text: { preset: 'fade-up', delay: 120, stagger: SIDE },
+      arrowbg: { preset: 'field-in', delay: 100 },
+      arrow: { preset: 'sweep-nodes', delay: 160 },
+      problem: { preset: 'fade-up', delay: 0, stagger: 0 },
+      solution: { preset: 'fade-up', delay: SIDE, stagger: 0 },
+    },
+  },
   build: buildProblemSolution,
 })
 

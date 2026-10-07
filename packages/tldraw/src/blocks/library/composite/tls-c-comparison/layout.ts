@@ -74,6 +74,7 @@ function layoutColumn(
     const m = ctx.measureText(itemText, itemStyle, Math.max(10, inner - indent))
     children.push({
       k: 'rect',
+      part: `col[${colIndex}].bullet[${j}]`,
       box: { x: ix, y: itemY + (lineH - dot) / 2, width: dot, height: dot },
       fill: { type: 'solid', color: bulletColor },
       radius: dot / 2,
@@ -142,8 +143,16 @@ export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode 
         radius: ctx.tokens.space.sm,
       } as LayoutNode)
     }
-    allChildren.push(...m.children)
   })
+  // RVM3: the columns' content in reading order across the columns (all titles, then the first item
+  // of every column, then the second…), so the motion recipe's stagger reveals the columns side by
+  // side, row by row. Nothing overlaps, so the paint order is free.
+  const rowOf = (n: LayoutNode) => {
+    const m = /\.(?:item|bullet)\[(\d+)\]$/.exec(n.part ?? '')
+    return m ? Number(m[1]) + 1 : 0
+  }
+  const rows = Math.max(0, ...measured.flatMap((m) => m.children.map(rowOf)))
+  for (let r = 0; r <= rows; r++) for (const m of measured) allChildren.push(...m.children.filter((n) => rowOf(n) === r))
 
   return {
     k: 'group',

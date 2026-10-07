@@ -240,7 +240,21 @@ const composite = defineCompositeBlock<CaseStudyProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-grid' },
+  // RVM3: the client line, then the three panels side by side left to right (challenge, solution,
+  // result), each label and text with its panel; the result metric counts up. Bare family names,
+  // because a multi-line piece is numbered per line. It was one `root` piece.
+  motion: {
+    parts: ['client', 'panel', 'label', 'text', 'metric', 'metriclabel'],
+    preset: 'stagger-grid',
+    partMotion: {
+      client: { preset: 'sweep-nodes', delay: 0 },
+      panel: { preset: 'fade-up', delay: 60, stagger: 120 },
+      label: { preset: 'sweep-nodes', delay: 120, stagger: 120 },
+      text: { preset: 'fade-up', delay: 160, stagger: 120 },
+      metric: { preset: 'count-up', delay: 360 },
+      metriclabel: { preset: 'sweep-nodes', delay: 440 },
+    },
+  },
   build: buildCaseStudy,
 })
 
