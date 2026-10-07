@@ -63,7 +63,9 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
         `font-style:italic;` +
         `margin-bottom:32px;` +
         `text-align:center;` +
-      `">"${escQuoteRichText(props.quote, ctx.esc)}"</div>`
+      // RVM5: the quotation marks are words of their own, so they enter with the first and the
+      // last word instead of showing with the (fading) container before the words.
+      `"><span data-word>"</span>${escQuoteRichText(props.quote, ctx.esc)}<span data-word>"</span></div>`
     )
   }
 

@@ -433,7 +433,7 @@ describe('tls.c.testimonial', () => {
   }
 
   describe('animate() — GSAP path', () => {
-    it('shows the quote container, animates its words and the attribution parts, and kills on dispose', () => {
+    it('fades the quote container in, animates its words and the attribution parts, and kills on dispose', () => {
       const { root, quoteDiv } = animateTree()
       const calls: Array<{ op: string; target: unknown; vars: unknown[] }> = []
       let killCount = 0
@@ -453,9 +453,13 @@ describe('tls.c.testimonial', () => {
         onComplete,
       } as any) as () => void
 
-      // the container is shown (it never gets a tween of its own: the viewer left it at opacity 0)
-      const shown = calls.filter((c) => c.op === 'set' && (c.vars[0] as any).opacity === 1).flatMap((c) => c.target as unknown[])
+      // the container is revealed by a tween of its own ending at opacity 1 (the viewer left it at 0;
+      // RVM5: it fades in under the first words, a set popped the quotation marks in one frame)
+      const shown = calls
+        .filter((c) => c.op === 'fromTo' && (c.vars[0] as any).opacity === 0 && (c.vars[1] as any).opacity === 1)
+        .flatMap((c) => (Array.isArray(c.target) ? c.target : [c.target]))
       expect(shown).toContain(quoteDiv)
+      expect(calls.filter((c) => c.op === 'set' && (Array.isArray(c.target) ? c.target : [c.target]).includes(quoteDiv))).toHaveLength(0)
       // 1 tween for both words + avatar, name, role
       const tweened = calls.filter((c) => c.op === 'fromTo').flatMap((c) => (Array.isArray(c.target) ? c.target : [c.target]))
       const words = Array.from(quoteDiv.querySelectorAll('[data-word]'))
@@ -470,7 +474,7 @@ describe('tls.c.testimonial', () => {
   })
 
   describe('animate() — driver fallback path', () => {
-    it('shows the quote container and plays every word and attribution part', async () => {
+    it('fades the quote container in and plays every word and attribution part', async () => {
       const { root, quoteDiv } = animateTree()
       const driverPlay = jest.fn(() => ({ cancel: jest.fn(), finished: Promise.resolve() }))
       const driverSet = jest.fn()
@@ -481,9 +485,11 @@ describe('tls.c.testimonial', () => {
         reducedMotion: false,
         onComplete,
       } as any)
-      expect(driverSet).toHaveBeenCalledWith(quoteDiv, { opacity: 1 })
-      // 2 words + 3 attribution parts
-      expect(driverPlay).toHaveBeenCalledTimes(5)
+      // RVM5: the container fades in (it holds the quotation marks), it is not set to 1
+      expect(driverPlay).toHaveBeenCalledWith(quoteDiv, { opacity: [0, 1] }, expect.objectContaining({ duration: 350 }))
+      expect(driverSet).not.toHaveBeenCalledWith(quoteDiv, { opacity: 1 })
+      // the container + 2 words + 3 attribution parts
+      expect(driverPlay).toHaveBeenCalledTimes(6)
       await new Promise((r) => setTimeout(r, 10))
       expect(onComplete).toHaveBeenCalledTimes(1)
       if (typeof disposer === 'function') disposer()
