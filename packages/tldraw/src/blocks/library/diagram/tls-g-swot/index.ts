@@ -116,7 +116,14 @@ const swotDef = defineCompositeBlock<SwotProps>({
       },
     },
   },
-  motion: { parts: ['root'], preset: 'stagger-grid' },
+  // RVM3: the four quadrant cards rise in in reading order (S, W, O, T), one stagger apart; each
+  // card's heading and bullets arrive with it. They were one `root` piece: the whole grid moved
+  // together (and its `stagger-grid` ease failed J5's out-ease check).
+  motion: {
+    parts: ['quad[*]'],
+    preset: 'stagger-grid',
+    partMotion: { 'quad[*]': { preset: 'fade-up', delay: 0, stagger: 100 } },
+  },
   build: buildSwot,
 })
 
@@ -132,6 +139,22 @@ function capacity(props: SwotProps): CapacityReport {
 /** Below this the nested cards would get negative boxes (grid gap + card padding): render nothing. */
 const MIN_BOX = { width: 120, height: 80 }
 
+/**
+ * RVM3: the grid's four cards are its outer container's `child/<i>` groups; every card nests more
+ * `child/<i>` groups, so a recipe cannot name the cards by that. They are re-tagged `quad[<i>]`
+ * (reading order) for the motion recipe; nothing inside them changes.
+ */
+function quadParts(tree: LayoutNode): LayoutNode {
+  const retag = (n: LayoutNode): LayoutNode =>
+    n.k === 'group'
+      ? { ...n, children: n.children.map((c) => (c.k === 'group' && /^child\/\d+$/.test(c.part ?? '') ? { ...c, part: `quad[${c.part!.slice(6)}]` } : c)) }
+      : n
+  if (tree.k !== 'group') return tree
+  // root group (re-tagged by defineCompositeBlock) > the grid container's own root > the cards
+  const inner = tree.children.length === 1 && tree.children[0].k === 'group' ? tree.children[0] : undefined
+  return inner ? { ...tree, children: [retag(inner)] } : retag(tree)
+}
+
 export const tlsGSwot: BlockDefinition = {
   ...swotDef,
   // Fill the region instead of reporting the card stack's content height (which overran the slide).
@@ -141,7 +164,7 @@ export const tlsGSwot: BlockDefinition = {
     if (!(width >= MIN_BOX.width && height >= MIN_BOX.height)) {
       return { k: 'group', part: 'root', box: { x: 0, y: 0, width: Math.max(0, width) || 0, height: Math.max(0, height) || 0 }, children: [] }
     }
-    return swotDef.layout(props, ctx)
+    return quadParts(swotDef.layout(props, ctx))
   }) as BlockDefinition['layout'],
   capacity: capacity as BlockDefinition['capacity'],
 }
