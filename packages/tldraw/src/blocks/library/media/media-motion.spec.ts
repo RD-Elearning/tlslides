@@ -31,7 +31,7 @@ describe('media / people / brand motion recipes', () => {
     tlsMLogo,
     tlsMLogoWall,
   ])('$type: parts exist, every drawn leaf is covered, the preset animates', (def) => {
-    assertMotionTargetsExist(def, { optional: /caption|cap\[|role|name|logo\.plate|more|heading|photo\.(ring|gap|initials)|initials|frame\.(address|url)|label/ })
+    assertMotionTargetsExist(def, { optional: /caption|cap\[|role|name|logo\.plate|more|heading|photo\.(ring|gap|initials)|initials|frame\.(address|url)|label|plate\[|divider\[/ })
   })
 })
 
