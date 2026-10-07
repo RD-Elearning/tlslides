@@ -14,6 +14,7 @@ import { trapezoidPath } from '../../../layout/diagram'
 import type { FunnelProps } from './schema'
 import { FUNNEL_MAX } from './schema'
 import { asArr, capacityOf, chartColors, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { shapeSlot, slot } from '../_motion'
 
 const TAPER = 0.3
 const GAP = 4
@@ -45,7 +46,9 @@ export function layout(props: FunnelProps, ctx: LayoutContext): LayoutNode {
       const botW = fw * widthAt((i + 1) / N)
       const fill = rampColor(ctx, 'gradient', i, N)
       const ink = onColor(ctx, fill)
-      nodes.push(pathNode(ctx, trapezoidPath({ x: (fw - topW) / 2, y, width: topW, height: rowH }, 0, (topW - botW) / 2), `stage[${i}]`, { fill }))
+      // RVM4: each stage pours in over its own shape (`seg[i]`, a tight group, wiped top-down).
+      nodes.push(shapeSlot(`seg[${i}]`, pathNode(ctx, trapezoidPath({ x: (fw - topW) / 2, y, width: topW, height: rowH }, 0, (topW - botW) / 2), `stage[${i}]`, { fill })))
+      const side: LayoutNode[] = []
       const tw = Math.max(8, botW - 24)
       const tx = (fw - tw) / 2
       if (inside) {
@@ -55,7 +58,7 @@ export function layout(props: FunnelProps, ctx: LayoutContext): LayoutNode {
         const nh = nl > 0 ? linesHeight(ctx, s.text, noteS, tw, nl) : 0
         const top = y + Math.max(0, (rowH - lh - (nh ? 2 + nh : 0)) / 2)
         nodes.push(...placeLines(ctx, s.label, { ...labelS, color: ink }, { x: tx, y: top, width: tw }, 'center', 1, `label[${i}]`).nodes)
-        if (nh) nodes.push(...placeLines(ctx, s.text, { ...noteS, color: ink }, { x: tx, y: top + lh + 2, width: tw }, 'center', nl, `note[${i}]`).nodes)
+        if (nh) side.push(...placeLines(ctx, s.text, { ...noteS, color: ink }, { x: tx, y: top + lh + 2, width: tw }, 'center', nl, `note[${i}]`).nodes)
       } else {
         const ll = Math.max(1, Math.min(2, Math.floor((rowH - 2) / lineH(labelS))))
         const lh = linesHeight(ctx, s.label, labelS, tw, ll)
@@ -64,10 +67,12 @@ export function layout(props: FunnelProps, ctx: LayoutContext): LayoutNode {
         if (s.text) {
           const nl = Math.max(1, Math.floor((rowH - 4) / lineH(noteS)))
           const nh = linesHeight(ctx, s.text, noteS, nw, nl)
-          nodes.push(solidRect({ x: (fw + topW) / 2 + 8, y: y + rowH / 2 - 1, width: Math.max(0, noteX - 10 - ((fw + topW) / 2 + 8)), height: 2 }, c.line, `leader[${i}]`))
-          nodes.push(...placeLines(ctx, s.text, { ...noteS, color: c.text }, { x: noteX, y: y + (rowH - nh) / 2, width: nw }, 'start', nl, `note[${i}]`).nodes)
+          side.push(solidRect({ x: (fw + topW) / 2 + 8, y: y + rowH / 2 - 1, width: Math.max(0, noteX - 10 - ((fw + topW) / 2 + 8)), height: 2 }, c.line, `leader[${i}]`))
+          side.push(...placeLines(ctx, s.text, { ...noteS, color: c.text }, { x: noteX, y: y + (rowH - nh) / 2, width: nw }, 'start', nl, `note[${i}]`).nodes)
         }
       }
+      // The note (and its leader) of stage i, emitted for every stage so side[i] is stage i's slot.
+      nodes.push(slot(`side[${i}]`, { width: W, height: H }, side))
     })
   } else {
     const colW = (W - (N - 1) * GAP) / N
@@ -80,7 +85,9 @@ export function layout(props: FunnelProps, ctx: LayoutContext): LayoutNode {
       const fill = rampColor(ctx, 'gradient', i, N)
       const ink = onColor(ctx, fill)
       const f = (v: number) => String(Math.round(v * 100) / 100)
-      nodes.push(pathNode(ctx, `M${f(x)} ${f(yc - hL / 2)}L${f(x + colW)} ${f(yc - hR / 2)}L${f(x + colW)} ${f(yc + hR / 2)}L${f(x)} ${f(yc + hL / 2)}Z`, `stage[${i}]`, { fill }))
+      // RVM4: each stage wipes in left to right over its own shape (`col[i]`, a tight group).
+      nodes.push(shapeSlot(`col[${i}]`, pathNode(ctx, `M${f(x)} ${f(yc - hL / 2)}L${f(x + colW)} ${f(yc - hR / 2)}L${f(x + colW)} ${f(yc + hR / 2)}L${f(x)} ${f(yc + hL / 2)}Z`, `stage[${i}]`, { fill })))
+      const side: LayoutNode[] = []
       const tw = Math.max(8, colW - 16)
       const tx = x + (colW - tw) / 2
       const lines = inside ? Math.max(1, Math.min(2, Math.floor((hR - 8) / lineH(labelS)))) : 2
@@ -92,12 +99,13 @@ export function layout(props: FunnelProps, ctx: LayoutContext): LayoutNode {
         if (nl > 0) top = yc - (lh + 2 + linesHeight(ctx, s.text, noteS, tw, nl)) / 2
       }
       nodes.push(...placeLines(ctx, s.label, { ...labelS, color: ink }, { x: tx, y: top, width: tw }, 'center', lines, `label[${i}]`).nodes)
-      if (inside && nl > 0) nodes.push(...placeLines(ctx, s.text, { ...noteS, color: ink }, { x: tx, y: top + lh + 2, width: tw }, 'center', nl, `note[${i}]`).nodes)
+      if (inside && nl > 0) side.push(...placeLines(ctx, s.text, { ...noteS, color: ink }, { x: tx, y: top + lh + 2, width: tw }, 'center', nl, `note[${i}]`).nodes)
       if (!inside && s.text) {
         const y = hs + 16
         const nlines = Math.max(1, Math.floor((H - y) / lineH(noteS)))
-        nodes.push(...placeLines(ctx, s.text, { ...noteS, color: c.text }, { x: x + 4, y, width: Math.max(8, colW - 8) }, 'center', nlines, `note[${i}]`).nodes)
+        side.push(...placeLines(ctx, s.text, { ...noteS, color: c.text }, { x: x + 4, y, width: Math.max(8, colW - 8) }, 'center', nlines, `note[${i}]`).nodes)
       }
+      nodes.push(slot(`side[${i}]`, { width: W, height: H }, side))
     })
   }
   return root(ctx, nodes)

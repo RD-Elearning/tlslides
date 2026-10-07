@@ -136,27 +136,31 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
       d.nodes.forEach((n) => ((n as any).propPath = `steps.${i}.description`))
       kids.push(...d.nodes)
     }
-    nodes.push({ k: 'group', part: `step[${i}]`, box: { x: p.x, y: p.y, width: horizontal ? colW : W, height: stepH }, children: kids })
-
-    // Connector to the next step (never across a row end).
+    // Connector to the next step (never across a row end). RVM4: it sits inside its step's group
+    // (in the group's coordinates), so it can never show before its step: when a row end skips a
+    // connector, the later ones' stagger slots move earlier, but their step still hides them.
+    // A path keeps its absolute `d`; its full-block box is shifted back by the group's offset.
+    const inGroup = (n: LayoutNode): LayoutNode => ({ ...n, box: { ...n.box, x: n.box.x - p.x, y: n.box.y - p.y } })
     const rowEnd = horizontal && (i % cols === cols - 1 || i === N - 1)
-    if (connector === 'none' || i >= N - 1 || rowEnd) return
-    const q = pos(i + 1)
-    if (horizontal) {
-      const cy = p.y + BADGE / 2
-      const x0 = p.x + BADGE + RAIL_PAD
-      const tip = q.x - RAIL_PAD
-      const end = connector === 'arrow' ? tip - ARROW : tip
-      nodes.push(bar({ x: x0, y: cy - THICK / 2, width: Math.max(0, end - x0), height: THICK }, c.muted, `step[${i}].connector`))
-      if (connector === 'arrow') nodes.push(arrowHead(ctx, { x: tip, y: cy }, 1, 0, ARROW, c.muted, `step[${i}].connector-arrowhead`))
-    } else {
-      const cx = p.x + BADGE / 2
-      const y0 = p.y + BADGE + RAIL_PAD
-      const tip = q.y - RAIL_PAD
-      const end = connector === 'arrow' ? tip - ARROW : tip
-      nodes.push(bar({ x: cx - THICK / 2, y: y0, width: THICK, height: Math.max(0, end - y0) }, c.muted, `step[${i}].connector`))
-      if (connector === 'arrow') nodes.push(arrowHead(ctx, { x: cx, y: tip }, 0, 1, ARROW, c.muted, `step[${i}].connector-arrowhead`))
+    if (connector !== 'none' && i < N - 1 && !rowEnd) {
+      const q = pos(i + 1)
+      if (horizontal) {
+        const cy = BADGE / 2
+        const x0 = BADGE + RAIL_PAD
+        const tip = q.x - p.x - RAIL_PAD
+        const end = connector === 'arrow' ? tip - ARROW : tip
+        kids.push(bar({ x: x0, y: cy - THICK / 2, width: Math.max(0, end - x0), height: THICK }, c.muted, `step[${i}].connector`))
+        if (connector === 'arrow') kids.push(inGroup(arrowHead(ctx, { x: p.x + tip, y: p.y + cy }, 1, 0, ARROW, c.muted, `step[${i}].connector-arrowhead`)))
+      } else {
+        const cx = BADGE / 2
+        const y0 = BADGE + RAIL_PAD
+        const tip = q.y - p.y - RAIL_PAD
+        const end = connector === 'arrow' ? tip - ARROW : tip
+        kids.push(bar({ x: cx - THICK / 2, y: y0, width: THICK, height: Math.max(0, end - y0) }, c.muted, `step[${i}].connector`))
+        if (connector === 'arrow') kids.push(inGroup(arrowHead(ctx, { x: p.x + cx, y: p.y + tip }, 0, 1, ARROW, c.muted, `step[${i}].connector-arrowhead`)))
+      }
     }
+    nodes.push({ k: 'group', part: `step[${i}]`, box: { x: p.x, y: p.y, width: horizontal ? colW : W, height: stepH }, children: kids })
   })
   return root(ctx, nodes)
 }

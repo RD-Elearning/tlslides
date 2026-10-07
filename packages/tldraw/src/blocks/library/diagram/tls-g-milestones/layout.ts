@@ -13,6 +13,7 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import type { MilestonesProps } from './schema'
 import { MILESTONES_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, objs, pathNode, placeLines, root, solidRect, str, style } from '../_kit'
+import { around, shapeSlot, slot } from '../_motion'
 
 const R = 14
 
@@ -109,7 +110,27 @@ export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
       }
     })
   }
-  return root(ctx, nodes)
+  return root(ctx, slotMilestones(nodes, N, vertical, W, H))
+}
+
+/**
+ * RVM4: motion slots. The line and its progress fill wipe as one along the axis (`rail-x` /
+ * `rail-y`), each diamond sits in a tight group (`gem[i]`) so it settles about its own centre,
+ * and each milestone's date + label share one slot (`cap[i]`, emitted for every milestone, so a
+ * missing date never shifts the later ones). Leaf names and positions are unchanged.
+ */
+function slotMilestones(nodes: LayoutNode[], N: number, vertical: boolean, W: number, H: number): LayoutNode[] {
+  const rail = nodes.filter((n) => n.part === 'line' || n.part === 'line.progress')
+  const caps: LayoutNode[][] = Array.from({ length: N }, () => [])
+  const out: LayoutNode[] = [around(vertical ? 'rail-y' : 'rail-x', rail)]
+  for (const n of nodes) {
+    if (rail.includes(n)) continue
+    const m = /^(ms|date|label)\[(\d+)\]$/.exec(n.part ?? '')
+    if (m && m[1] === 'ms') out.push(shapeSlot(`gem[${m[2]}]`, n))
+    else if (m) caps[Number(m[2])].push(n)
+    else out.push(n)
+  }
+  return [...out, ...caps.map((kids, i) => slot(`cap[${i}]`, { width: W, height: H }, kids))]
 }
 
 export function capacity(props: MilestonesProps, box: Size, ctx: LayoutContext): CapacityReport {

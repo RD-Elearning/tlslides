@@ -66,5 +66,5 @@ describe('tls.g.funnel', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.funnel example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGFunnel))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGFunnel))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGFunnel, { optional: /^col\[\*\]$/ }))
 })

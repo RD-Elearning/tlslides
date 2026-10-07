@@ -18,6 +18,7 @@ import { CYCLE_MAX } from './schema'
 import {
   arrowHead, asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, placeLines, rampColor, root, str, strokePath, style, tintOf,
 } from '../_kit'
+import { slot } from '../_motion'
 
 interface NodeBox {
   cx: number
@@ -78,8 +79,12 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
       const fill = rampColor(ctx, 'gradient', i, N)
       const ink = onColor(ctx, fill)
       nodes.push({ k: 'rect', part: `node[${i}]`, box: { x: nx - D / 2, y: ny - D / 2, width: D, height: D }, fill: { type: 'solid', color: fill }, radius: D / 2 })
-      if (s.icon) nodes.push(iconLeaf(s.icon, { x: nx - D * 0.3, y: ny - D * 0.3, width: D * 0.6, height: D * 0.6 }, ink, `icon[${i}]`))
-      else nodes.push(...placeLines(ctx, String(i + 1), { ...labelS, color: ink }, { x: nx - D / 2, y: ny - lineH(labelS) / 2, width: D }, 'center', 1, `num[${i}]`).nodes)
+      // RVM4: the number / icon and the label + note sit in per-node slots (`mark[i]`, `cap[i]`),
+      // emitted for every node, so slot i is always node i's in the motion stagger.
+      const mark: LayoutNode[] = []
+      const cap: LayoutNode[] = []
+      if (s.icon) mark.push(iconLeaf(s.icon, { x: nx - D * 0.3, y: ny - D * 0.3, width: D * 0.6, height: D * 0.6 }, ink, `icon[${i}]`))
+      else mark.push(...placeLines(ctx, String(i + 1), { ...labelS, color: ink }, { x: nx - D / 2, y: ny - lineH(labelS) / 2, width: D }, 'center', 1, `num[${i}]`).nodes)
 
       // Label + note, away from the centre.
       const cs = Math.cos(t)
@@ -89,8 +94,8 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
         const th = showText && s.text ? linesHeight(ctx, s.text, textS, w, 3) : 0
         const total = lh + (th ? 2 + th : 0)
         const y0 = anchor === 'top' ? y : anchor === 'bottom' ? y - total : y - total / 2
-        nodes.push(...placeLines(ctx, s.label, labelS, { x, y: y0, width: w }, align, 2, `label[${i}]`).nodes)
-        if (th) nodes.push(...placeLines(ctx, s.text, textS, { x, y: y0 + lh + 2, width: w }, align, 3, `text[${i}]`).nodes)
+        cap.push(...placeLines(ctx, s.label, labelS, { x, y: y0, width: w }, align, 2, `label[${i}]`).nodes)
+        if (th) cap.push(...placeLines(ctx, s.text, textS, { x, y: y0 + lh + 2, width: w }, align, 3, `text[${i}]`).nodes)
       }
       if (Math.abs(cs) < 0.25) {
         const x = clamp(nx - wV / 2, 0, Math.max(0, W - wV))
@@ -103,6 +108,7 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
         const w = Math.max(20, Math.min(260, nx - D / 2 - 10))
         place(nx - D / 2 - 10 - w, ny, w, 'end', 'mid')
       }
+      nodes.push(slot(`mark[${i}]`, { width: W, height: H }, mark), slot(`cap[${i}]`, { width: W, height: H }, cap))
     })
   } else {
     const CW = clamp(W * 0.24, 130, 240)
@@ -132,9 +138,12 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
       nodes.push({ k: 'rect', part: `node[${i}]`, box: { x: nx - CW / 2, y: ny - CH / 2, width: CW, height: CH }, fill: { type: 'solid', color: fill }, stroke: { color: edge, width: 2 }, radius: 14 })
       const top = ny - CH / 2 + pad
       const left = nx - CW / 2 + pad
-      if (s.icon) nodes.push(iconLeaf(s.icon, { x: left, y: top, width: 24, height: 24 }, edge, `icon[${i}]`))
-      nodes.push(...placeLines(ctx, s.label, labelS, { x: left + p.iconW, y: top, width: p.lw }, 'start', 2, `label[${i}]`).nodes)
-      if (p.tl > 0) nodes.push(...placeLines(ctx, s.text, textS, { x: left, y: top + Math.max(p.lh, p.iconW ? 24 : 0) + 4, width: iw }, 'start', p.tl, `text[${i}]`).nodes)
+      const mark: LayoutNode[] = []
+      const cap: LayoutNode[] = []
+      if (s.icon) mark.push(iconLeaf(s.icon, { x: left, y: top, width: 24, height: 24 }, edge, `icon[${i}]`))
+      cap.push(...placeLines(ctx, s.label, labelS, { x: left + p.iconW, y: top, width: p.lw }, 'start', 2, `label[${i}]`).nodes)
+      if (p.tl > 0) cap.push(...placeLines(ctx, s.text, textS, { x: left, y: top + Math.max(p.lh, p.iconW ? 24 : 0) + 4, width: iw }, 'start', p.tl, `text[${i}]`).nodes)
+      nodes.push(slot(`mark[${i}]`, { width: W, height: H }, mark), slot(`cap[${i}]`, { width: W, height: H }, cap))
     })
   }
 

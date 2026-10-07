@@ -107,5 +107,5 @@ describe('tls.g.timeline', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.timeline example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGTimeline))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTimeline))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTimeline, { optional: /^rail-y$/ }))
 })

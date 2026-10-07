@@ -72,5 +72,5 @@ describe('tls.g.milestones', () => {
 // RV07/08: the block's own example fits size.preferred and size.min (every line as wide as its glyphs).
 describe('tls.g.milestones example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGMilestones))
-  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGMilestones))
+  it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGMilestones, { optional: /^rail-y$/ }))
 })

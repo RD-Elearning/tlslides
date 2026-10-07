@@ -154,7 +154,31 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   if (n === 0) {
     return { k: 'group', box: { x: 0, y: 0, width: W, height: 0 }, part: 'root', children: [] }
   }
-  return orientation === 'horizontal' ? layoutHorizontal(steps, n, W, H, ctx) : layoutVertical(steps, n, W, H, ctx)
+  return slotSteps(orientation === 'horizontal' ? layoutHorizontal(steps, n, W, H, ctx) : layoutVertical(steps, n, W, H, ctx))
+}
+
+/**
+ * RVM4: wrap each step's nodes (badge, number, title, description and the connector leaving it)
+ * in a `step[i]` group with the block's box, so nothing of step i can show before step i's slot
+ * in the motion stagger — a missing description or a row end without a connector would otherwise
+ * shift every later one a slot early. Leaf names and positions are unchanged.
+ */
+function slotSteps(tree: LayoutNode): LayoutNode {
+  if (tree.k !== 'group') return tree
+  const groups = new Map<number, LayoutNode[]>()
+  for (const c of tree.children) {
+    const m = /^(?:step|connector)\[(\d+)\]/.exec(c.part ?? '')
+    const i = m ? Number(m[1]) : -1
+    if (!groups.has(i)) groups.set(i, [])
+    groups.get(i)!.push(c)
+  }
+  const box = { x: 0, y: 0, width: tree.box.width, height: tree.box.height }
+  const children: LayoutNode[] = []
+  for (const [i, kids] of groups) {
+    if (i < 0) children.push(...kids)
+    else children.push({ k: 'group', part: `step[${i}]`, box, children: kids })
+  }
+  return { ...tree, children }
 }
 
 /** Shift every node of a flat child list down by `dy` (vertical centring of the whole content). */

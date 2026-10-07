@@ -22,6 +22,7 @@ import { TIMELINE_MAX } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, numOrNull, objs, onColor, placeLines, root, solidRect, str, style, tintOf,
 } from '../_kit'
+import { around, slot } from '../_motion'
 
 export const MIN_CARD_W = 180
 const GAP = 14
@@ -58,6 +59,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const textS = mutedStyle(ctx, 'footnote')
   const D = nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40
   const nodes: LayoutNode[] = []
+  const cards: LayoutNode[][] = events.map(() => [])
 
   const nodeFill = (i: number) => (past(i) ? c.accent : c.track)
   const drawNode = (i: number, nx: number, ny: number) => {
@@ -71,11 +73,14 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       radius: D / 2,
       ...(ring ? { stroke: { color: c.surface, width: 3 } } : {}),
     })
+    // RVM4: the number / icon sits in a per-event slot (`mark[i]`), emitted for every event.
+    const mark: LayoutNode[] = []
     if (nodeStyle === 'icon' && events[i].icon) {
-      nodes.push(iconLeaf(events[i].icon, { x: nx - D * 0.3, y: ny - D * 0.3, width: D * 0.6, height: D * 0.6 }, onColor(ctx, fill), `icon[${i}]`))
+      mark.push(iconLeaf(events[i].icon, { x: nx - D * 0.3, y: ny - D * 0.3, width: D * 0.6, height: D * 0.6 }, onColor(ctx, fill), `icon[${i}]`))
     } else if (nodeStyle !== 'dot') {
-      nodes.push(...placeLines(ctx, String(i + 1), { ...titleS, color: onColor(ctx, fill) }, { x: nx - D / 2, y: ny - lineH(titleS) / 2, width: D }, 'center', 1, `num[${i}]`).nodes)
+      mark.push(...placeLines(ctx, String(i + 1), { ...titleS, color: onColor(ctx, fill) }, { x: nx - D / 2, y: ny - lineH(titleS) / 2, width: D }, 'center', 1, `num[${i}]`).nodes)
     }
+    nodes.push(slot(`mark[${i}]`, { width: W, height: H }, mark))
   }
 
   /** Date / title / note stack in `box`, at most `maxH` tall; returns its height. */
@@ -104,7 +109,8 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     group.push(...placeLines(ctx, e.title, tS, { ...inner, y }, align, titleLines, `title[${i}]`).nodes)
     y += th
     if (xh) group.push(...placeLines(ctx, e.text, textS, { ...inner, y: y + 4 }, align, nl, `text[${i}]`).nodes)
-    nodes.push(...group)
+    // RVM4: the date / title / note of event i in its own slot (`card[i]`).
+    cards[i].push(...group)
     return total
   }
 
@@ -127,8 +133,8 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       cardsH = Math.min(allowed, Math.max(...events.map((_, i) => measure(i))))
       axisY = Math.max(D / 2, (H - (D + STEM + cardsH)) / 2 + D / 2)
     }
-    nodes.push(solidRect({ x: 0, y: axisY - 2, width: W, height: 4 }, c.track, 'axis'))
-    if (now >= 0) nodes.push(solidRect({ x: 0, y: axisY - 2, width: Math.max(0, x(now)), height: 4 }, c.accent, 'axis.progress'))
+    // RVM4: the axis (and its progress fill) wipe left to right as one (`rail-x`).
+    nodes.push(around('rail-x', [solidRect({ x: 0, y: axisY - 2, width: W, height: 4 }, c.track, 'axis'), ...(now >= 0 ? [solidRect({ x: 0, y: axisY - 2, width: Math.max(0, x(now)), height: 4 }, c.accent, 'axis.progress')] : [])]))
     for (let i = 0; i < N; i++) {
       const nx = x(i)
       const above = mode.alternate && i % 2 === 0
@@ -149,12 +155,11 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       const dW = clamp(W * 0.16, 70, 200)
       const ax = dW + 12 + D / 2
       const cardX = ax + D / 2 + 16
-      nodes.push(solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(N - 1) - nodeY(0)) }, c.track, 'axis'))
-      if (now >= 0) nodes.push(solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(now) - nodeY(0)) }, c.accent, 'axis.progress'))
+      nodes.push(around('rail-y', [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(N - 1) - nodeY(0)) }, c.track, 'axis'), ...(now >= 0 ? [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(now) - nodeY(0)) }, c.accent, 'axis.progress')] : [])]))
       for (let i = 0; i < N; i++) {
         const ny = nodeY(i)
         const dS = past(i) ? dateS : { ...dateS, color: c.muted }
-        nodes.push(...placeLines(ctx, events[i].date, dS, { x: 0, y: ny - lineH(dS) / 2, width: dW }, 'end', 1, `date[${i}]`).nodes)
+        cards[i].push(...placeLines(ctx, events[i].date, dS, { x: 0, y: ny - lineH(dS) / 2, width: dW }, 'end', 1, `date[${i}]`).nodes)
         const top = ny - Math.max(D / 2, lineH(titleS) / 2)
         drawCard(i, { x: cardX, y: top, width: Math.max(8, W - cardX) }, 'start', Math.max(0, Math.min(pitch - 6, H - top)), 'top', false)
         drawNode(i, ax, ny)
@@ -162,8 +167,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     } else {
       const ax = W / 2
       const cardW = Math.max(8, W / 2 - D / 2 - 16)
-      nodes.push(solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(N - 1) - nodeY(0)) }, c.track, 'axis'))
-      if (now >= 0) nodes.push(solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(now) - nodeY(0)) }, c.accent, 'axis.progress'))
+      nodes.push(around('rail-y', [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(N - 1) - nodeY(0)) }, c.track, 'axis'), ...(now >= 0 ? [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(now) - nodeY(0)) }, c.accent, 'axis.progress')] : [])]))
       for (let i = 0; i < N; i++) {
         const ny = nodeY(i)
         const top = Math.max(0, ny - D / 2)
@@ -174,6 +178,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       }
     }
   }
+  nodes.push(...cards.map((kids, i) => slot(`card[${i}]`, { width: W, height: H }, kids)))
   return root(ctx, nodes)
 }
 

@@ -1,17 +1,27 @@
 /**
  * Motion for tls.c.journey.
  *
- * Expressive: the path draws from left to right at a constant speed; each node pops (with a
- * one-shot halo pulse) the moment the line reaches it, and its label rises in from the path side.
- * Subtle / reduced motion: `runShowcase`.
+ * Expressive: the path draws from left to right on an out ease (quick start, settling at the
+ * end); each node pops, with its halo opening behind it, the moment the line reaches it, and its
+ * label rises in from the path side. Subtle / reduced motion: `runShowcase`.
+ *
+ * RVM4 (MOTION.md J1/J3/J5): the draw was 2.6 s at a constant (linear) speed, nodes overshot to
+ * scale with `back.out(3)`, and each halo pulsed out to opacity 0 and was then *set* back to its
+ * resting opacity 1 at the end (a visible snap, and the block ran 3.4 s). Now the draw is 900 ms
+ * eased out, nodes are timed by the inverse of that ease, halos ease into their rest state, and
+ * the whole timeline ends within 1.6 s.
  */
 
 import type { BlockMotionRuntime } from '../../../types'
 import { all, runShowcase, type GsapLike, type MotionStepList } from '../_showcase'
 
 /** Path draw time (s) and the whole timeline (ms, for chaining). */
-const DRAW_S = 2.6
-export const JOURNEY_MS = 3400
+const DRAW_S = 0.9
+export const JOURNEY_MS = 1600
+/** The draw's ease (quadratic out) and when it reaches `p` (0–1) of the path, as 0–1 of the draw. */
+const DRAW_EASE = 'power1.out'
+const DRAW_CSS = 'cubic-bezier(0.5, 1, 0.89, 1)'
+const reachAt = (p: number) => 1 - Math.sqrt(Math.max(0, 1 - p))
 
 interface Stop {
   node: HTMLElement
@@ -44,17 +54,14 @@ function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: B
   const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
   // Every part owns its opacity in its own fromTo (no blanket set: it would undo the from-states).
   const path = pathOf(root)
-  if (path) tl.fromTo(path.el, { strokeDashoffset: path.length, opacity: 1 }, { strokeDashoffset: 0, opacity: 1, duration: DRAW_S, ease: 'none' }, 0)
+  if (path) tl.fromTo(path.el, { strokeDashoffset: path.length, opacity: 1 }, { strokeDashoffset: 0, opacity: 1, duration: DRAW_S, ease: DRAW_EASE }, 0)
   for (const s of stops(root)) {
-    const t = s.at * DRAW_S
-    tl.fromTo(s.node, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.55, ease: 'back.out(3)' }, Math.max(0, t - 0.08))
+    const t = reachAt(s.at) * DRAW_S
+    tl.fromTo(s.node, { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.45, ease: 'back.out(1.6)' }, Math.max(0, t - 0.05))
     const halo = s.node.querySelector('[data-halo]')
-    if (halo) tl.fromTo(halo, { scale: 0.6, opacity: 0.9 }, { scale: 2.2, opacity: 0, duration: 0.9, ease: 'power2.out' }, t)
-    if (s.label) tl.fromTo(s.label, { opacity: 0, y: s.above ? 28 : -28 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, t + 0.12)
+    if (halo) tl.fromTo(halo, { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'power2.out' }, t)
+    if (s.label) tl.fromTo(s.label, { opacity: 0, y: s.above ? 16 : -16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, t + 0.1)
   }
-  // Leave the halos at rest after their pulse.
-  const halos = all(root, '[data-halo]')
-  if (halos.length) tl.set(halos, { scale: 1, opacity: 1 }, DRAW_S + 0.8)
   return () => tl.kill()
 }
 
@@ -62,12 +69,12 @@ function driverSteps(root: HTMLElement, _rt: BlockMotionRuntime): MotionStepList
   const steps: MotionStepList = []
   const path = pathOf(root)
   const drawMs = DRAW_S * 1000
-  if (path) steps.push([path.el, { opacity: [1, 1], strokeDashoffset: [`${path.length}`, '0'] }, { duration: drawMs, easing: 'linear' }])
+  if (path) steps.push([path.el, { opacity: [1, 1], strokeDashoffset: [`${path.length}`, '0'] }, { duration: drawMs, easing: DRAW_CSS }])
   for (const s of stops(root)) {
-    const t = s.at * drawMs
-    steps.push([s.node, { opacity: [0, 1], scale: [0, 1] }, { duration: 550, delay: Math.max(0, t - 80), easing: 'cubic-bezier(0.34, 1.8, 0.64, 1)' }])
+    const t = reachAt(s.at) * drawMs
+    steps.push([s.node, { opacity: [0, 1], scale: [0.4, 1] }, { duration: 450, delay: Math.max(0, t - 50), easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' }])
     if (s.label) {
-      steps.push([s.label, { opacity: [0, 1], translate: [s.above ? '0px 28px' : '0px -28px', '0px 0px'] }, { duration: 600, delay: t + 120, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }])
+      steps.push([s.label, { opacity: [0, 1], translate: [s.above ? '0px 16px' : '0px -16px', '0px 0px'] }, { duration: 450, delay: t + 100, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }])
     }
   }
   return steps

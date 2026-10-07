@@ -6,6 +6,7 @@ import type { BlockDefinition, LayoutNode, Size } from '../../types'
 import { absoluteLeaves } from '../text/standard-suite'
 import { chartCtx } from '../data/_chart/chart-test'
 import { pathBounds } from './_kit'
+import { MOTION_PRESETS } from '../../motion/presets'
 
 export interface Rect {
   part: string
@@ -67,8 +68,8 @@ export const words = (n: number, len = 6) => Array.from({ length: n }, (_, i) =>
 
 /**
  * RV07/08: every part the block's motion recipe names matches at least one part of its own example
- * layout (same matching rule as `partElements` in motion/play-reveal.ts), and the preset really
- * animates under the GSAP driver (opacity / translate only: S14/S16).
+ * layout (same matching rule as `partElements` in motion/play-reveal.ts), every drawn leaf is
+ * under an animated part, and every `partMotion` entry names a recipe part and a real preset.
  */
 export function assertMotionTargetsExist(def: BlockDefinition, opts: { staticParts?: RegExp; optional?: RegExp } = {}): void {
   const parts: string[] = []
@@ -102,6 +103,10 @@ export function assertMotionTargetsExist(def: BlockDefinition, opts: { staticPar
     .filter((chain) => !chain.some((x) => matchers.some((m) => m(x))) && !(opts.staticParts && opts.staticParts.test(chain[chain.length - 1])))
     .map((chain) => chain[chain.length - 1])
   expect([def.type, 'uncovered', [...new Set(uncovered.map((x) => x.replace(/\d+/g, 'N')))]]).toEqual([def.type, 'uncovered', []])
-  const BROKEN = ['wipe-x', 'wipe-y', 'mask-reveal', 'draw-path', 'sweep', 'grow-bars-x', 'grow-bars-y', 'grow-segments', 'reveal-down', 'section-in', 'draw-axis-then-nodes', 'grow-branches']
-  expect([def.type, BROKEN.includes(def.motion.preset ?? '')]).toEqual([def.type, false])
+  // RVM4: the grow / draw / wipe presets animate since MOTION M1/M1b (the old `BROKEN` list is
+  // gone). Every per-part preset must be a recipe part with a real preset.
+  for (const [k, pm] of Object.entries(def.motion.partMotion ?? {})) {
+    expect([def.type, k, (def.motion.parts ?? []).includes(k)]).toEqual([def.type, k, true])
+    if (pm.preset) expect([def.type, k, pm.preset in MOTION_PRESETS]).toEqual([def.type, k, true])
+  }
 }

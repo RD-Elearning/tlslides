@@ -17,6 +17,7 @@ import { CHEVRONS_MAX } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, numOrNull, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf,
 } from '../_kit'
+import { shapeSlot } from '../_motion'
 
 const PAD = 10
 const GAP = 6
@@ -81,7 +82,8 @@ export function layout(props: ChevronsProps, ctx: LayoutContext): LayoutNode {
     // The current phase is the brand accent (or its series colour), never a mid-ramp blend.
     const fill = i === cur ? (mode === 'series' ? ramp : c.accent) : active ? ramp : tintOf(c.surface, ramp, 0.22)
     const ink = active ? onColor(ctx, fill) : c.text
-    nodes.push(pathNode(ctx, chevronPath(box, g.notch, i === 0, false), `chevron[${i}]`, { fill }))
+    // RVM4: each chevron sits in its own tight `seg[i]` group so its wipe runs over the shape.
+    nodes.push(shapeSlot(`seg[${i}]`, pathNode(ctx, chevronPath(box, g.notch, i === 0, false), `chevron[${i}]`, { fill })))
 
     const left = x + (i === 0 ? PAD : g.notch + 4)
     const w = insideW(i)

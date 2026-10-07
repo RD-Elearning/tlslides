@@ -15,6 +15,7 @@
 
 import type { Box, CapacityReport, LayoutContext, LayoutNode, LintFinding, Pt, Size } from '../../../types'
 import { connectorRoute, layeredDag } from '../../../layout/diagram'
+import { slot } from '../_motion'
 import type { DagResult } from '../../../layout/diagram'
 import type { FlowProps } from './schema'
 import { FLOW_MAX_EDGES, FLOW_MAX_NODES } from './schema'
@@ -83,9 +84,23 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
   const nodes: LayoutNode[] = []
   const f = (v: number) => String(Math.round(v * 100) / 100)
 
+  // RVM4: motion slots. Every node sits in the slot of its layer (`layer[k]`), and every edge's
+  // stem / head / label in the slots of its *source* layer (`out[k]`, `tip[k]`, `tag[k]`), one of
+  // each per layer even when empty, so slot k is layer k for the stagger: a layer fades in, then
+  // the edges leaving it draw on towards the next layer as it arrives (a back edge draws once its
+  // source is there; an edge that skips layers before its target appears).
+  const L = Math.max(1, ...Object.values(dag.layers).map((l) => l + 1))
+  const slots = (): LayoutNode[][] => Array.from({ length: L }, () => [])
+  const layerKids = slots()
+  const outKids = slots()
+  const tipKids = slots()
+  const tagKids = slots()
+  const layerOf = (id: string) => Math.min(L - 1, Math.max(0, dag.layers[id] ?? 0))
+
   // Nodes in layer order (so a staggered reveal follows the flow).
   const order = [...graph.nodes].sort((a, b) => (dag.layers[a.id] ?? 0) - (dag.layers[b.id] ?? 0))
   for (const n of order) {
+    const kids = layerKids[layerOf(n.id)]
     const b = dag.boxes[n.id]
     if (!b) continue
     const part = `node[${graph.nodes.indexOf(n)}]` // numeric: the motion recipe addresses node[*]
@@ -107,9 +122,9 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
     }
     if (n.kind === 'decision') {
       const d = `M${f(b.x + b.width / 2)} ${f(b.y)}L${f(b.x + b.width)} ${f(b.y + b.height / 2)}L${f(b.x + b.width / 2)} ${f(b.y + b.height)}L${f(b.x)} ${f(b.y + b.height / 2)}Z`
-      nodes.push(pathNode(ctx, d, part, { fill, stroke, strokeWidth: 2 }))
+      kids.push(pathNode(ctx, d, part, { fill, stroke, strokeWidth: 2 }))
     } else {
-      nodes.push({
+      kids.push({
         k: 'rect',
         part,
         box: { ...b },
@@ -121,7 +136,7 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
     const tw = Math.max(8, n.kind === 'decision' ? b.width * 0.58 : b.width - 20 - (n.kind === 'step' ? 0 : b.height * 0.3))
     const maxLines = Math.max(1, Math.min(3, Math.floor((n.kind === 'decision' ? b.height * 0.56 : b.height - 8) / lineH(labelS))))
     const th = linesHeight(ctx, n.label, labelS, tw, maxLines)
-    nodes.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x: b.x + (b.width - tw) / 2, y: b.y + Math.max(0, (b.height - th) / 2), width: tw }, 'center', maxLines, `${part}.label`).nodes)
+    kids.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x: b.x + (b.width - tw) / 2, y: b.y + Math.max(0, (b.height - th) / 2), width: tw }, 'center', maxLines, `${part}.label`).nodes)
   }
 
   // Edges.
@@ -133,6 +148,9 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
     if (!a || !b) continue
     const back = (dag.layers[e.from] ?? 0) > (dag.layers[e.to] ?? 0)
     const part = `edge[${e.index}]`
+    const k = layerOf(e.from)
+    const stems = outKids[k]
+    const heads = tipKids[k]
     let labelAt: { x: number; y: number; align: 'start' | 'center' | 'end'; w: number } | null = null
     const lines = dir === 'LR' ? 2 : 1
     const lw = Math.min(MAX_LABEL_W, Math.ceil(ctx.measureText(e.label, noteS).width * TEXT_SLACK) + 2)
@@ -145,8 +163,8 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
         const y0 = a.y + a.height
         const y1 = b.y + b.height
         const stemEnd = y1 + HEAD
-        nodes.push(strokePath(ctx, `M${f(ax)} ${f(y0)}C${f(ax)} ${f(bottom + CURVE)} ${f(bx)} ${f(bottom + CURVE)} ${f(bx)} ${f(stemEnd)}`, part, edgeColor, EDGE_W))
-        nodes.push(arrowHead(ctx, { x: bx, y: y1 }, 0, -1, HEAD, edgeColor, `${part}.head`))
+        stems.push(strokePath(ctx, `M${f(ax)} ${f(y0)}C${f(ax)} ${f(bottom + CURVE)} ${f(bx)} ${f(bottom + CURVE)} ${f(bx)} ${f(stemEnd)}`, part, edgeColor, EDGE_W))
+        heads.push(arrowHead(ctx, { x: bx, y: y1 }, 0, -1, HEAD, edgeColor, `${part}.head`))
         labelAt = { x: (ax + bx) / 2 - lw / 2, y: bottom + CURVE * 0.75 + 3, align: 'center', w: lw }
       } else {
         const ay = a.y + a.height / 2
@@ -155,8 +173,8 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
         const x0 = a.x + a.width
         const x1 = b.x + b.width
         const stemEnd = x1 + HEAD
-        nodes.push(strokePath(ctx, `M${f(x0)} ${f(ay)}C${f(right + CURVE)} ${f(ay)} ${f(right + CURVE)} ${f(by)} ${f(stemEnd)} ${f(by)}`, part, edgeColor, EDGE_W))
-        nodes.push(arrowHead(ctx, { x: x1, y: by }, -1, 0, HEAD, edgeColor, `${part}.head`))
+        stems.push(strokePath(ctx, `M${f(x0)} ${f(ay)}C${f(right + CURVE)} ${f(ay)} ${f(right + CURVE)} ${f(by)} ${f(stemEnd)} ${f(by)}`, part, edgeColor, EDGE_W))
+        heads.push(arrowHead(ctx, { x: x1, y: by }, -1, 0, HEAD, edgeColor, `${part}.head`))
         labelAt = { x: right + CURVE * 0.75 + 6, y: (ay + by) / 2 - lh / 2, align: 'start', w: Math.min(lw, Math.max(8, W - (right + CURVE * 0.75 + 6))) }
       }
     } else {
@@ -172,15 +190,22 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
       const uy = (tip.y - prev.y) / len
       const cut = Math.min(HEAD, len)
       const stem = [...pts.slice(0, -1), { x: tip.x - ux * cut, y: tip.y - uy * cut }]
-      nodes.push(strokePath(ctx, polyline(stem), part, edgeColor, EDGE_W))
-      nodes.push(arrowHead(ctx, tip, ux, uy, HEAD, edgeColor, `${part}.head`))
+      stems.push(strokePath(ctx, polyline(stem), part, edgeColor, EDGE_W))
+      heads.push(arrowHead(ctx, tip, ux, uy, HEAD, edgeColor, `${part}.head`))
       if (dir === 'LR') labelAt = { x: tip.x - HEAD - 4 - lw, y: tip.y - 3 - lh, align: 'end', w: lw }
       else labelAt = { x: tip.x + 8, y: tip.y - HEAD - 4 - lh, align: 'start', w: lw }
     }
     if (e.label && labelAt) {
-      nodes.push(...placeLines(ctx, e.label, { ...noteS, color: c.text }, { x: clamp(labelAt.x, 0, Math.max(0, W - labelAt.w)), y: Math.max(0, labelAt.y), width: labelAt.w }, labelAt.align, lines, `${part}.label`).nodes)
+      tagKids[k].push(...placeLines(ctx, e.label, { ...noteS, color: c.text }, { x: clamp(labelAt.x, 0, Math.max(0, W - labelAt.w)), y: Math.max(0, labelAt.y), width: labelAt.w }, labelAt.align, lines, `${part}.label`).nodes)
     }
   }
+  const box = { width: W, height: H }
+  nodes.push(
+    ...layerKids.map((kids, l) => slot(`layer[${l}]`, box, kids)),
+    ...outKids.map((kids, l) => slot(`out[${l}]`, box, kids)),
+    ...tipKids.map((kids, l) => slot(`tip[${l}]`, box, kids)),
+    ...tagKids.map((kids, l) => slot(`tag[${l}]`, box, kids))
+  )
   return root(ctx, nodes)
 }
 
