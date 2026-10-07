@@ -53,8 +53,41 @@ Problems whose fix lies outside this group's files (README §3 rule 1). The cont
 | S26 | tls.c.testimonial (and any html block) | The viewer hides every `[data-part]` before `animate()`; an `animate()` that only tweens descendants leaves the container invisible. The contract is written in `_showcase.ts` but nothing checks the older html blocks (hero, big-stat, feature-grid): G10 audits them | `people/c-testimonial.wide.png` before the fix | `components/DeckViewer/DeckViewer.tsx` (hide step), block `animate()` |
 | S27 | review harness | First shoot after a dev-server restart fails once or twice with `waitForSelector` timeouts (cold compile of `/edit` and `/view`); re-running works. Also `pkill -f 'next dev -p 5433'` run from a bash tool call kills the calling shell (pattern matches its own command line): use `pgrep -f` + `kill <pid>` | n/a | README §4 | 
 
+## Motion pass (M5)
+
+Agent E, 2026-10-07. Probe: `REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced` per category (`media`, `people`, `brand`) on the final build, `REVIEW_MOTION_PNG=1` mid frames (all 14 looked at), `REVIEW_MOTION_DUMP=1` frame dumps for the html block. Spec: `library/motion-m5.spec.ts` (G09 + G10, 152 tests: recipe parts exist in the example or a variant, every drawn leaf animated in every variant, expressive J5 with the example, each variant **and the maximum item count**, subtle opacity only, photos opacity/clip only, brand opacity only, reading order with optional pieces missing, html timelines on the GSAP and driver paths). Shared helper `library/composite/_slots.ts` (`slotItems`: an item's leaves regrouped into a full-box group `name[i]` emitted for every item, so a missing caption / bio / note never shifts a later one in the stagger; leaf names, positions and paint order unchanged). No engine change.
+Cells: ✅ pass · 🔧 fixed in this pass · ❌ open · n/a. After the pass every block is J1–J8 clean in all four styles except the known probe artefact **A3** on `tls.c.testimonial` expressive (`(block)` 0→1 in one frame: the html wrapper; frame dump: the largest per-frame opacity change of any painted part is 0.14, the quote container starting its fade).
+
+**Counts:** 13 fixed, 1 unchanged, 0 open.
+
+| Block | J1 | J2 | J3 | J4 | J5 | J6 | J7 | J8 | Fix commit | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| tls.c.image-text | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `d218d00e` | 🔧 photo slid 24 px with the text, all at once; now the photo fades in place, then kicker, title, body rise in (0 / 150 / 250 / 420 ms) |
+| tls.m.image | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `d218d00e` | 🔧 photo fades in place (no rise, no scale), caption rises 250 ms later |
+| tls.m.icon | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |  | one part, fade-up; clean in all styles, unchanged |
+| tls.m.icon-label | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `d218d00e` | 🔧 icon, then label 120 ms later (rose together) |
+| tls.m.image-grid | ✅ | 🔧 | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `33626d57` | 🔧 photos fade in place 120 ms apart in reading order (was stagger-grid, every photo slid); captions in slots `caption[i]` (pill + text) rise after their own photo, also with captions missing; overlay pills were in no part and showed with the block before their photo (J2) |
+| tls.m.image-compare | ✅ | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `33626d57` | 🔧 before, after, divider wipes down, handle settles (field-in: `pop` read as a 100 ms blink, J5), label pills last; same order in split and side modes; nothing slides |
+| tls.m.device-mock | ✅ | ✅ | 🔧 | ✅ | ✅ | 🔧 | ✅ | ✅ | `d218d00e` | 🔧 J3: the recipe faded the `frame.shadow` group, whose authored opacity 0.16 the entrance overwrote with 1 (shadow six times too dark); the inner `frame.shadow.rect` fades now. Frame, dots left to right, address bar, then the screenshot; no part moves (a rise would slide the screen out of its bezel) |
+| tls.c.testimonial | 🔧 | ✅ | ✅ | ✅ | 🔧 | 🔧 | ✅ | ✅ | `ef134492` | 🔧 J1: the quote box was `set` to 1 and its bare quotation marks popped in before the words (marks are word spans now, the box fades under them); J5: a 500-char quote ran ~4 s (word gap shrinks, all in by 0.7 s; expressiveMs 1800); portrait settles from 104 % in place, then name, role. Every part revealed by its own tween (no reliance on the S26 guard). Probe J1/J5 `(block)` = A3 |
+| tls.c.profile-card | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `5fc608fc` | 🔧 was `root` fade-up (one unit); surface, portrait (in place), name, role, bio, contact |
+| tls.c.team | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `5fc608fc` | 🔧 was `root` stagger-grid; per-member slots `face/name/role/about[i]`: card, photo, name, role, bio, members 120 ms apart in reading order (8 members 1.5 s) |
+| tls.m.avatar | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `5fc608fc` | 🔧 portrait (ring, gap, photo / initials) fades in place, then name, role (all rose together) |
+| tls.m.avatar-group | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `5fc608fc` | 🔧 slots `seq[i]` (edge, disc, letters) left to right 80 ms apart, then +N and caption; each of 7 patterns counted on its own before (initials before their disc) |
+| tls.m.logo | ✅ | ✅ | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a4f39319` | 🔧 brand furniture: plate and mark fade in place (was a 24 px rise) |
+| tls.m.logo-wall | ✅ | 🔧 | ✅ | ✅ | ✅ | 🔧 | ✅ | ✅ | `a4f39319` | 🔧 heading, logos 60 ms apart in place (16 in 1.4 s); optional plates / dividers were in no part and showed with the block before their logos |
+
+### Raised for the controller (M5)
+
+| # | Area | Finding | Suspected file |
+|---|---|---|---|
+| E-M5-1 | images vs. motion | Nothing waits for an `<img>` to load before its entrance. With the demo assets delayed 800 ms (Playwright route, cache off), image-grid / image-compare photos reached opacity > 0.05 at 557–789 ms but loaded at 822–890 ms, so each photo popped in at 0.72–0.99 opacity after its fade. No placeholder flash (the dashed placeholder is only for a missing url; an unloaded `<img>` paints nothing). Local `/demo` assets are cached and fine; remote / uploaded images will pop. Needs the chain to await `img.decode()` (with a timeout) for the slide, or image parts held until load | `components/DeckViewer/DeckViewer.tsx` (build start), `motion/play-reveal.ts` |
+| A3 | probe | Again on the html blocks (testimonial, hero, kinetic-title): `(block)` 0→1 in one frame while every painted part is hidden; frame dumps show no painted part changing more than 0.14 per frame | `tools/visual/scenarios/motion-probe.js` |
+| A5 | probe | J4 flagged `inset` on `tls.c.kinetic-title` (subtle and expressive): the decor div's `inset:0` is re-serialised as `inset: 0px` when the driver writes opacity, and the style-string compare reads it as a change. Worked around in the template (`inset:0px`); the probe could normalise units | `motion-probe.js` (J4 compare) |
+
 ## Session log
 
 | Date | Agent | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-06 | B4 agent | G09 14/14 fixed: `422a4c4b`, `b14f48f1`, `e50290b0`, `d942945c` | S25-S27 raised. Dev server was stale after the third build (S5): restarted with the heap cap, decks re-PUT by the harness. Shots for media/people/brand deleted |
+| 2026-10-07 | agent E (M5) | Motion pass: 13 fixed, 1 unchanged, 0 open (`d218d00e`, `33626d57`, `5fc608fc`, `ef134492`, `a4f39319`; spec `1d00a403`) | E-M5-1 (images not awaited before their entrance), probe A3, A5 for the controller |
