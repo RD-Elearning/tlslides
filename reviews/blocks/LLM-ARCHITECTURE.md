@@ -311,7 +311,7 @@ cat deck.json | node tools/layout-report/cli.js - --format json  # stdin
 
 JSON received: `{deck, slides: LayoutReport[], summary:{slides, errors, warnings,
 needsVisualCheck: slideId[]}}`. `LayoutReport = {slideId, layout, frame, metrics, regions,
-blocks: BlockReport[], findings: LayoutFinding[], margins, freeSpace, needsVisualCheck: blockId[]}`;
+blocks: BlockReport[], findings: LayoutFinding[], margins, freeSpace, needsVisualCheck: {blockId, reason}[]}`;
 `LayoutFinding = {code, severity:"error"|"warning"|"info", blockIds, message, fix?}`; `BlockReport`
 has `id, path, type, region, layer, z, box, natural, elastic, painted, contentOverflow, text[],
 capacity?, confidence`. Exit status 0 = report printed (findings do not change it), 2 = bad input.
@@ -340,9 +340,13 @@ Current SlideSpec: {…}
 
 Stop when a slide has no `error`/`warning`, or after **N = 2** repair rounds (then keep the best
 round by error count and flag the slide). `info` findings (`text/shrunk`, intended layering) never
-trigger a round. Then screenshot only `summary.needsVisualCheck` (blocks with confidence ≠ high:
-html-kind blocks measured from their poster, hosts without one); LO5 adds "within 5% of a
-threshold" to that list.
+trigger a round; nor do the LO5b composition hints (`layout/unbalanced`, `region/empty` — info,
+each with a numeric fix — and `layout/crowded`, a warning), which a planner may still act on. Then
+screenshot only `summary.needsVisualCheck` slides. Per block the report says why (LO5, calibrated
+against Chromium): confidence ≠ high (html-kind blocks measured from their poster, ±5% height;
+hosts without one), the editor wraps/paints the text differently from its true width (the editor
+still lays out with `estimateMetrics`), or painted content ends within the calibrated error margin
+of the frame edge / the next block. On the fixtures that is 21 of 95 slides.
 
 ### S5 · Render and review — the critic
 

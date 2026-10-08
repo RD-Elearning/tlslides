@@ -142,6 +142,11 @@ Exports from the package index: `measureBlock, analyzeSlide, formatLayoutReport,
 A CLI `tools/layout-report/` : `node … deck.json [--slide N] [--format text|json]` → report on stdout.
 Document the FastAPI loop in `LLM-ARCHITECTURE.md` (new section) and `guides/blocks-authoring.md`.
 
+### LO5b — Composition hints
+Pure, in `layout-report.ts`: `layout/unbalanced` (info; big empty band below/right), `region/empty`
+(info; a large declared region with no block), `layout/crowded` (warning; free < 10%), each with a
+numeric fix. Conservative thresholds; counts on the fixtures recorded in the notes.
+
 ### LO5 — Calibration & when to screenshot
 Compare report geometry with the real browser on the fixture decks (Playwright, existing
 `tools/visual` harness): per block, DOM content height vs `natural.height`, text line counts.
@@ -160,7 +165,7 @@ letter-spacing / bold in tableMetrics) if found.
 | LO2.1 | done | `e3fb6ace` | `anchor`/`anchorTo` on layered region blocks, backdrop-text `info`, title band = one title line, `regionAlign` fixed. `layout-anchor.spec.ts` 19 tests. Fixture `text/shrunk` 14 → 6, no new errors/warnings. tsc prod 0, spec 329 (= before). See Notes — LO2.1. |
 | LO3 | done | `770808fb` | `block-metrics.ts` `buildBlockMetrics` → committed `__generated__/block-metrics.json` (129 cards, 64 KB, one line per block) + `block-size-hints.ts`; staleness spec; index hint `[h≈0+104/L@840]`, index 18.8k chars (≤ 20k). `block-metrics.spec.ts` 13 tests. See Notes — LO3/LO4. |
 | LO4 | done | `770808fb` | Size-card API exported from `blocks/index.ts` (package root re-exports it); `turbo build:packages` exit 0, dist CJS verified. CLI `tools/layout-report/cli.js` (+ `load.js`, `gen-block-metrics.js`), 0.4-0.8 s per fixture deck. Docs: `LLM-ARCHITECTURE.md` §S4.1, `guides/blocks-authoring.md` §2.10. |
-| LO5 | todo | | |
+| LO5 | done | (this commit) | Browser calibration (289 blocks, 95 slides, 1 Chromium page); `tableMetrics` re-based on browser-measured Inter + letter-spacing + bold; exact Bézier `pathBounds`; `needsVisualCheck: {blockId, reason}[]`; LO5b composition hints. `layout-calibration.spec.ts` 14 tests. See Notes — LO5. |
 
 ### Notes — LO0 / LO1 (2026-10-08)
 
@@ -523,3 +528,119 @@ root through `export * from './blocks'`. `turbo run build:packages` exit 0;
 - Not done here: no visual scenario (headless data + CLI; LO5 owns browser calibration).
 - tsc prod 0, spec 329 (= before); eslint 0 errors on touched files (warnings: non-null
   assertions, same style as neighbours).
+
+### Notes — LO5 / LO5b (2026-10-08)
+
+**Harness.** `tools/layout-report/calibrate/run.js` bundles the real `<DeckViewer>` render path
+(working tree, React 17 from the package) + the 4 fixture decks into a scratch dir with the Inter
+woff2/@font-face that `examples/nextjs-sample` serves (`next/font`, Inter variable — Inter loaded,
+checked via `document.fonts`), then ONE headless Chromium page at 1920×1080 (scale 1, reduced
+motion, build step 999) visits all 95 slides (~40 s). Per block: union of painted DOM leaves (text
+node `Range` rects expanded to the line-height, svg geometry `getBoundingClientRect`, img, any
+box with a background/border; full-box backdrops excluded, as in `collectPaintedLeaves`); per
+layout text leaf: rendered lines, rendered line widths, and the browser's own wrap of the same text
+at the box width (+3% / +2 units tolerance, see below). `compare.js` joins with `analyzeDeck`
+(`table` and `estimate`). Raw JSON stays in `$TMPDIR/tls-calibration` (not committed). All 289
+compiled boxes matched the DOM wrappers exactly (0 units).
+
+**Calibration (painted height, report vs DOM; 280 layout-kind + 9 html-kind blocks).**
+
+| set | before LO5 fixes | after |
+|---|---|---|
+| layout kind, `table` (report default): median / p95 / blocks > 5% | 0.0% / 1.0% (6.0 units) / 9 | 0.0% / 0.6% (4.0 units) / 6 |
+| layout rigid / elastic, `table` p95 | 0.5% / 3.3% | 0.5% / 0.6% |
+| layout kind, `estimate` (= what the editor paints), abs p95 | 4.0 units | **0.7 units** |
+| html kind (export poster vs live HTML) median / p95 | 2.1% / 4.4% (20 units) | same (not touched) |
+| text line width, DOM ÷ `table` − 1: median [p05, p95] (1287 lines) | +4.9% [−3.0%, +22.3%] | **−0.2% [−4.2%, +5.0%]** |
+| text line width, DOM ÷ `estimate` − 1 | −8.5% [−22.4%, +25.5%] | same (editor unchanged) |
+| text lines ≠ browser wrap, `table` (1595 leaves) | 56 (3.5%, strict) | 2 (0.1%) |
+| text lines ≠ browser wrap, `estimate` | 67 (4.2%, strict) | 13 (0.8%) |
+
+"Strict" = wrap at exactly the box width; 50 of those 56 were shrink-wrapped labels (box = the
+text's own estimated width: "Churn", "Enterprise") that the DOM paints unwrapped 1-3 px wider than
+the box — invisible, so the after column uses +3%/+2 units. Line-count mismatch rate per block:
+html 4 of 9 (hero 4 vs 5 lines, kinetic-title 4 vs 7, feature-reveal 12 vs 13, feature-grid 7 vs
+8) — the poster wraps differently from the HTML template.
+
+**Worst blocks, and why.**
+- `tls.t.body`/`caption`/`subtitle`/`takeaway` (ms_11, sl_06, sl_03; 50% height): the *editor*
+  (`estimateMetrics`, 0.5385 em average) wraps a line that really fits to 2 lines; the DOM paints
+  that. Report (true width) says 1. Same root cause for `tls.c.team` tl_16 (8.5%: 18 text leaves
+  on screen vs 16) and the 5 remaining > 5% layout blocks.
+- `tls.g.arrow` sl_41 (82%) and `tls.m.decoration` sl_45 (9%): `pathBounds` used Bézier control
+  points. **Fixed** (exact extrema) → 0.
+- `tls.m.image` demo sl_06: asset not resolvable in the harness (alt text painted). Harness only.
+- Old `tableMetrics` Inter table was ~10% narrow per glyph vs the Inter the app serves (c +30%,
+  z +32%, "1" +47%, "%" +54%; accented Vietnamese/"…"/"→" used a 0.5385 default) and ignored
+  `letterSpacing` (−0.03 em on every text node) and bold. **Fixed:** the browser-measured table
+  (`_chart/inter-width.ts`, RV04 — re-measured here, identical) moved to `layout/inter-metrics.ts`
+  (+ Đ đ © ® ™ ∞ ≈ ≤ ≥, NFD base for accented Latin) and `tableMetrics` uses it, adds letter-spacing
+  per character, `INTER_BOLD_FACTOR` 1.05 for bold runs (measured 400→700: a-z 1.057, A-Z 1.029,
+  digits 1.047) and run `size`. Consumers of `tableMetrics` (chrome/composite kits, statement,
+  oracle, size cards) now measure true width. `estimateMetrics` and its average are untouched.
+- Screen overflow the report could not see before: 23 rendered (estimate) lines wider than their
+  box (score-pill/table headers +5-7%, ≤ 4 units) — under the 3-unit+tolerance check, left alone.
+
+**Decision: the editor stays on `estimateMetrics` in LO5.** Data says `tableMetrics` is the
+better editor metric (±5% vs −22/+25%; 0.1% vs 0.8% wrong line counts), but `estimateMetrics` is
+the layout of record for compile, DOM, SVG, export, autofit and ~10 block kits (`slide-layouts`
+title band slack, table kit, chart kit, closing …), so switching moves every fixture's boxes and
+snapshot. That is its own phase (proposed **LO6 — editor on tableMetrics**: flip
+`createLayoutContext`'s default, rebaseline goldens/collision, screenshot every fixture). Until then
+the report detects the disagreement itself (below), which covers every > 5% layout error found.
+
+**`needsVisualCheck: Array<{blockId, reason}>`** (was `string[]`; one entry per block, first
+reason wins), formatted as one `screenshot: id (reason); …` / `screenshot: not needed` line:
+1. confidence ≠ high (html poster ±5%; host without poster; layout threw);
+2. editor disagreement (when the report's metric is not `estimate`): the block re-laid with
+   `estimateMetrics` has a different text-leaf count or line count ("the editor wraps `text` to
+   2 lines on screen; its real width needs 1"), or an editor line's true width runs > 3 units past
+   its text box;
+3. near threshold: a non-elastic, painting block whose content ends within `NEAR_MARGIN` of the
+   frame edge or of the painted content of the next block below/beside it (`high`: max(4 units,
+   2% of its height) ≈ 4× the measured p95 error; `medium` max(12, 5%); `low` max(24, 10%);
+   horizontally 5% of its widest text line = the width p95).
+Fraction of slides needing a screenshot: **demo 3/8 (38%), tour 8/29 (28%), colorful 4/46 (9%),
+motion 6/12 (50%) — 21/95 (22%)**; 26 of 289 blocks (9 html poster, 10 editor wraps, 6 editor
+lines past their box, 1 leaf count). Near-threshold fires on none of the fixtures (gaps are ≥ the
+24-unit `space.md`), and on a synthetic body 2 units above the frame bottom (tested). The CLI's
+`summary.needsVisualCheck` stays a slide-id list.
+
+**LO5b composition hints** (thresholds in `layout-report.ts`): `layout/unbalanced` info when ≥ 60%
+of the frame is free and the empty band below the content is ≥ 40% of the frame height and ≥ 2×
+the top margin (fix: "fill ~N more units of height … or centre (move down ~N/2)"), else the same
+for the right side (≥ 40% width, ≥ 2× left) except cover/section/closing slides (left-aligned
+titles are a design choice) or when an empty region explains it; `region/empty` info for a
+declared region ≥ 8% of the frame with no block; `layout/crowded` warning below 10% free. On the
+fixtures (95 slides): **13 `layout/unbalanced`** (demo sl_02/04/07, tour tl_03/16/19/24/25,
+colorful sl_03/04/10/27, motion ms_10), **3 `region/empty`** (colorful sl_04 `title`, sl_09
+`text`, tour tl_26 `right`), **0 `layout/crowded`** (minimum free is 22%). Colorful sl_04: "content
+ends at y 502: the bottom 578 units (54%) are empty, 276 at the top … fill ~302 more units of
+height … or move it down ~151". Pinned as ratchets in `layout-calibration.spec.ts`.
+
+**Tests / gates.** New `layout-calibration.spec.ts` (14). Changed: `layout-report.spec.ts`
+(needsVisualCheck shape; the frame-edge test's title "Edge" → "Edge of the frame": with true widths
+a 4-letter title no longer paints past x 1920, the box still does), snapshots of demo sl_03/sl_08
+and the LO2 stacked example (true widths, the new `screenshot:` line), `capability-digest.spec.ts`
+kpi-row size hint (regenerated card `h≈180-6/item@840`), `block-metrics.json`/`block-size-hints.ts`
+regenerated (16 hints changed). **`tls.x.footer-text` `size.min` 380 → 400**: with true widths
+its own example ("Annual review 2026 · Confidential") ellipsised at 380 (`chrome-sizes.spec.ts`
+RV11 caught it; before, the narrow table hid that the DOM text was wider than its share). Passing with `--maxWorkers=1`: layout-report/-layers/-anchor/
+-calibration, `layout/`, block-metrics, capability-digest, slide-compiler, collision,
+slide-layouts, slide-composition, and `src/blocks/library` (144 suites, non-parity tests: 4838
+pass). Parity probes:
+`tls.c.testimonial` "DOM and SVG agree" fails (x off by 2) — **fails identically on HEAD**
+(checked in a detached worktree), pre-existing. tsc: prod 0, spec 329 (= before).
+
+**DeckViewer.spec.tsx verdict.** On HEAD (detached worktree, `git show`-equivalent, no stash):
+17/17 pass. The failure "retreating into an auto build step" comes from the user's uncommitted
+`DeckViewer.tsx` change (`retreat` now skips auto steps back to the last click), i.e. the spec
+encodes the old behaviour. Not touched.
+
+**Scope cuts / open, named.**
+- Editor still `estimateMetrics` (LO6 above); `estimateMetrics` itself not recalibrated.
+- html-kind posters not corrected (4/9 wrap differently); they stay `medium` → always screenshot.
+- Harness reuses the Next sample's `.next` font files; `run.js --font-css` to point elsewhere.
+- Kerning ignored (sum usually ≤ 3% wide); italic/other weights not measured.
+- No `tools/visual` scenario: the calibration harness *is* the browser check (shots via
+  `--shots`; colorful sl_04 and motion ms_04 looked at: Inter rendered, layout as the report says).

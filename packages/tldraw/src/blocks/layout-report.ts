@@ -4,7 +4,7 @@
  * Lets the AI *read* a slide's geometry instead of screenshotting it
  * (`reviews/blocks/layout-oracle/README.md`). The slide is compiled with the same `compileSlide`
  * the editor uses (so every box is the box the editor places), then each block is re-laid at its
- * final box with a chosen text-metrics provider (default `tableMetrics`, ~3% off real Inter) and
+ * final box with a chosen text-metrics provider (default `tableMetrics`, line widths ±5% of real Inter at p95 — LO5) and
  * its geometry is read straight off the `LayoutNode` tree via `measureBlock` /
  * `collectPaintedLeaves`.
  *
@@ -26,6 +26,7 @@ import type {
   Box,
   CapacityReport,
   DeckSpec,
+  LayoutNode,
   ResolvedTokens,
   Size,
   SlideSpec,
@@ -72,6 +73,10 @@ export type LayoutFindingCode =
   | 'content/overflow'
   | 'text/shrunk'
   | 'capacity/exceeded'
+  // LO5b composition hints (no geometry error; help an LLM compose without a screenshot).
+  | 'layout/unbalanced'
+  | 'layout/crowded'
+  | 'region/empty'
 
 export interface LayoutFinding {
   code: LayoutFindingCode
@@ -145,8 +150,16 @@ export interface LayoutReport {
   margins: { top: number; right: number; bottom: number; left: number }
   /** Share of the frame (by 40-unit cells) no block paints, 0-1. */
   freeSpace: number
-  /** Block ids whose geometry is not trustworthy without a screenshot. */
-  needsVisualCheck: string[]
+  /** LO5: the blocks worth a screenshot, each with why (confidence below `high`, the editor
+   *  wraps/paints its text differently from the report, or within the calibrated error margin of
+   *  an overflow/collision). Empty = the report alone is trustworthy for this slide. */
+  needsVisualCheck: VisualCheck[]
+}
+
+/** One entry of `LayoutReport.needsVisualCheck`. */
+export interface VisualCheck {
+  blockId: string
+  reason: string
 }
 
 export interface AnalyzeSlideOptions {
@@ -156,7 +169,7 @@ export interface AnalyzeSlideOptions {
   tokens?: ResolvedTokens
   /** Block registry. Default: the built-in blocks. */
   registry?: BlockRegistry
-  /** Text metrics: `'table'` (default, ~3%), `'estimate'` (what the editor uses today), or a
+  /** Text metrics: `'table'` (default, ±5% per line at p95), `'estimate'` (what the editor uses today), or a
    *  provider. */
   metrics?: 'table' | 'estimate' | MeasureTextProvider
 }
@@ -173,6 +186,26 @@ const OVERFLOW_TOL = 2
 const MIN_TEXT_COLLISION = 4
 /** ASCII map cell size in slide units (48×27 on a 1920×1080 frame). */
 export const MAP_CELL = 40
+
+/**
+ * LO5 calibration (browser vs report on the 4 fixture decks, 289 blocks; layout-oracle §3 LO5).
+ * Painted height error at the 95th percentile: layout kind 0.5% (0.7 units) once the editor and
+ * the report wrap text the same way, html kind (export poster vs live DOM) 4.4% (20 units).
+ * The near-threshold margin is a multiple of that error, never less than a few units.
+ */
+export const NEAR_MARGIN: Record<MeasureConfidence, { share: number; min: number }> = {
+  high: { share: 0.02, min: 4 },
+  medium: { share: 0.05, min: 12 },
+  low: { share: 0.1, min: 24 },
+}
+/** Text-width error at the 95th percentile (`tableMetrics` vs Chromium, 1287 lines): +5%. */
+const WIDTH_ERROR = 0.05
+
+/** LO5b thresholds (conservative; on the fixtures they fire on ~1 slide in 8). */
+const UNBALANCED_MARGIN = 0.4 // empty band below/right of the content, share of the frame
+const UNBALANCED_FREE = 0.6 // ... and at least this share of the frame is free
+const CROWDED_FREE = 0.1
+const EMPTY_REGION_AREA = 0.08 // a declared region this big (share of the frame) left empty
 
 const MINIMAL_SURFACE: SurfaceContext = {
   behind: { type: 'solid', color: '#ffffff' },
@@ -329,6 +362,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
   if (split) placed.push(...layeredPlaced(split.overlays))
 
   const findings: LayoutFinding[] = []
+  const visual: VisualCheck[] = []
   const intrinsicSizeCache = new Map<string, Size>()
   const blocks: BlockReport[] = []
 
@@ -394,6 +428,13 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
       const local = paintedBounds(collected)
       painted = local ? offset(local, box.x, box.y) : null
       text = collected.text.map((t) => toSlideText(t, box))
+      // LO5: the editor lays text out with `estimateMetrics` and the DOM paints those line breaks
+      // verbatim. Where that differs from what the text really needs, the screen is not what this
+      // report says — a screenshot is the only ground truth.
+      if (metricsName !== 'estimate' && !collected.posterHost && !collected.opaqueHost) {
+        const editor = editorTextCheck(def, props, ctx, box, provider, text, registry)
+        if (editor) visual.push({ blockId: id, reason: editor })
+      }
     } catch (err) {
       failed = err instanceof Error ? err.message : String(err)
     }
@@ -521,6 +562,16 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
     : { top: frame.height, right: frame.width, bottom: frame.height, left: frame.width }
   const freeSpace = freeRatio(frame, paintedAll)
 
+  // 7. LO5b composition hints (info/warning, from the summary numbers).
+  compositionFindings(frame, regions, blocks, margins, freeSpace, spec.role, findings)
+
+  // 8. LO5: what still needs a screenshot.
+  for (const b of blocks) {
+    if (b.confidence !== 'high') visual.push({ blockId: b.id, reason: `confidence ${b.confidence}: ${b.reason ?? 'geometry uncertain'}` })
+  }
+  visual.push(...nearThresholdChecks(blocks, frame))
+  const needsVisualCheck = mergeVisualChecks(visual, blocks)
+
   return {
     slideId: spec.id,
     layout: compiled.layout,
@@ -531,7 +582,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
     findings: sortFindings(findings),
     margins,
     freeSpace,
-    needsVisualCheck: blocks.filter((b) => b.confidence !== 'high').map((b) => b.id),
+    needsVisualCheck,
   }
 }
 
@@ -820,6 +871,201 @@ function sortFindings(f: LayoutFinding[]): LayoutFinding[] {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* LO5 — when to screenshot                                                         */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+type TextNode = Extract<LayoutNode, { k: 'text' }>
+
+function textNodes(n: LayoutNode, out: TextNode[] = []): TextNode[] {
+  if (n.k === 'text') out.push(n)
+  else if (n.k === 'group') for (const c of n.children) textNodes(c, out)
+  return out
+}
+
+/**
+ * Lay the block out the way the editor does (`estimateMetrics`) and compare with the report's
+ * text: a different line count, or an editor line whose real width (`provider`) runs past its
+ * text box, means the screen differs from the report. Returns the reason, or `undefined`.
+ */
+function editorTextCheck(
+  def: NonNullable<ReturnType<BlockRegistry['get']>>,
+  props: Record<string, unknown>,
+  ctx: ReturnType<typeof createLayoutContext>,
+  box: Box,
+  provider: MeasureTextProvider,
+  report: TextLeafReport[],
+  registry: BlockRegistry
+): string | undefined {
+  if (report.length === 0) return undefined
+  const editorCtx = createLayoutContext({
+    box: { width: box.width, height: box.height },
+    tokens: ctx.tokens,
+    surface: ctx.surface,
+    registry,
+    measureText: estimateMetrics,
+    ...(ctx.style ? { style: ctx.style } : {}),
+  })
+  const root = layoutBlock(def, props, editorCtx)
+  const editor = collectPaintedLeaves(root, { width: box.width, height: box.height }).text
+  if (editor.length !== report.length) {
+    return `the editor lays its text out differently (${editor.length} text leaves on screen, ${report.length} here)`
+  }
+  for (let i = 0; i < editor.length; i++) {
+    if (editor[i].lines !== report[i].lines) {
+      return `the editor wraps \`${textName(report[i])}\` to ${editor[i].lines} line${editor[i].lines === 1 ? '' : 's'} on screen; its real width needs ${report[i].lines}`
+    }
+  }
+  let worst = 0
+  let worstName = ''
+  for (const n of textNodes(root)) {
+    for (const line of n.lines) {
+      if (!line.text.trim()) continue
+      const over = provider(line.text.trimEnd(), n.style).width - n.box.width
+      if (over > worst) {
+        worst = over
+        worstName = n.propPath ?? n.part ?? 'text'
+      }
+    }
+  }
+  if (worst > OVERFLOW_TOL + 1) {
+    return `on screen a line of \`${worstName}\` paints ~${Math.ceil(worst)} units past its text box (the editor's width estimate is short)`
+  }
+  return undefined
+}
+
+function nearMargin(b: BlockReport, extent: number): number {
+  const m = NEAR_MARGIN[b.confidence]
+  return Math.max(m.min, m.share * extent)
+}
+
+/**
+ * Blocks whose painted content ends within the calibrated error margin of something it must not
+ * cross: the frame edge, or the painted content of another block below it / beside it.
+ * Elastic (fill) blocks are excluded (they reach their box edge by design), as are backdrops.
+ */
+function nearThresholdChecks(blocks: BlockReport[], frame: Size): VisualCheck[] {
+  const out: VisualCheck[] = []
+  for (const b of blocks) {
+    const p = b.painted
+    if (!p || b.elastic || b.layer === 'backdrop') continue
+    const bottom = p.y + p.height
+    const right = p.x + p.width
+    let below = frame.height - bottom
+    let belowWho = 'the frame bottom'
+    let beside = frame.width - right
+    let besideWho = 'the frame edge'
+    for (const o of blocks) {
+      const q = o.painted
+      if (o === b || !q || o.layer === 'backdrop' || b.layer !== o.layer) continue
+      const xOverlap = Math.min(right, q.x + q.width) - Math.max(p.x, q.x)
+      const yOverlap = Math.min(bottom, q.y + q.height) - Math.max(p.y, q.y)
+      if (xOverlap > 0 && q.y >= p.y + p.height / 2 && q.y - bottom < below) {
+        below = q.y - bottom
+        belowWho = o.id
+      }
+      if (yOverlap > 0 && q.x >= p.x + p.width / 2 && q.x - right < beside) {
+        beside = q.x - right
+        besideWho = o.id
+      }
+    }
+    const marginY = nearMargin(b, p.height)
+    // Width error scales with the widest text line (estimate lines are what the screen shows).
+    const widest = b.text.reduce((m, t) => Math.max(m, t.maxLineWidth), 0)
+    const marginX = widest > 0 ? Math.max(NEAR_MARGIN[b.confidence].min, WIDTH_ERROR * widest) : NEAR_MARGIN[b.confidence].min
+    if (below >= -TOL && below < marginY && b.text.length > 0) {
+      out.push({ blockId: b.id, reason: `content ends ${r(below)} units above ${belowWho} (error margin ${r(marginY)})` })
+    } else if (beside >= -TOL && beside < marginX && widest > 0) {
+      out.push({ blockId: b.id, reason: `text ends ${r(beside)} units before ${besideWho} (error margin ${r(marginX)})` })
+    }
+  }
+  return out
+}
+
+/** One entry per block (first reason wins), in block order. */
+function mergeVisualChecks(checks: VisualCheck[], blocks: BlockReport[]): VisualCheck[] {
+  const first = new Map<string, string>()
+  for (const c of checks) if (!first.has(c.blockId)) first.set(c.blockId, c.reason)
+  return blocks.filter((b) => first.has(b.id)).map((b) => ({ blockId: b.id, reason: first.get(b.id) as string }))
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* LO5b — composition hints                                                         */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Findings about the composition rather than an error: a big empty band (`layout/unbalanced`),
+ * a large declared region left empty (`region/empty`), almost no free space (`layout/crowded`).
+ * Conservative thresholds (above); each carries a numeric fix.
+ */
+function compositionFindings(
+  frame: Size,
+  regions: Record<string, Box>,
+  blocks: BlockReport[],
+  margins: LayoutReport['margins'],
+  freeSpace: number,
+  role: SlideSpec['role'],
+  out: LayoutFinding[]
+): void {
+  const painting = blocks.filter((b) => b.painted && b.layer !== 'backdrop')
+  if (painting.length === 0) return
+  const pct = (v: number) => Math.round(v * 100)
+
+  // Declared regions nobody uses.
+  const used = new Set(blocks.map((b) => b.region))
+  const emptyRegions = Object.entries(regions).filter(
+    ([name, rb]) => !used.has(name) && rb.width * rb.height >= EMPTY_REGION_AREA * frame.width * frame.height
+  )
+  for (const [name, rb] of emptyRegions) {
+    out.push({
+      code: 'region/empty',
+      severity: 'info',
+      blockIds: [],
+      message: `region \`${name}\` (${fmtBox(rb)}, ${pct((rb.width * rb.height) / (frame.width * frame.height))}% of the frame) has no block; it shows as empty space.`,
+      fix: `put a block in \`${name}\` (${r(rb.width)}x${r(rb.height)} available) or pick a layout without it`,
+    })
+  }
+
+  // A big empty band below / right of everything painted (backdrops included: a decoration is
+  // composition too). Left-aligned cover/section/closing text is a design choice, so the side
+  // check skips those roles.
+  if (freeSpace >= UNBALANCED_FREE) {
+    const { top, bottom, left, right } = margins
+    const contentRight = frame.width - right
+    const emptyRight = emptyRegions.some(([, rb]) => rb.x >= contentRight - TOL)
+    const sideOk = role === 'cover' || role === 'section' || role === 'closing'
+    if (bottom >= UNBALANCED_MARGIN * frame.height && bottom >= 2 * top) {
+      const lowest = painting.reduce((m, b) => ((b.painted as Box).y + (b.painted as Box).height > (m.painted as Box).y + (m.painted as Box).height ? b : m))
+      out.push({
+        code: 'layout/unbalanced',
+        severity: 'info',
+        blockIds: [lowest.id],
+        message: `content ends at y ${r(frame.height - bottom)}: the bottom ${r(bottom)} units (${pct(bottom / frame.height)}% of the frame) are empty, ${r(top)} at the top; ${pct(freeSpace)}% of the slide is free.`,
+        fix: `fill ~${r(bottom - top)} more units of height (larger size tokens, taller/more blocks), or centre the content vertically (move it down ~${r((bottom - top) / 2)})`,
+      })
+    } else if (!sideOk && !emptyRight && right >= UNBALANCED_MARGIN * frame.width && right >= 2 * left) {
+      const rightmost = painting.reduce((m, b) => ((b.painted as Box).x + (b.painted as Box).width > (m.painted as Box).x + (m.painted as Box).width ? b : m))
+      out.push({
+        code: 'layout/unbalanced',
+        severity: 'info',
+        blockIds: [rightmost.id],
+        message: `content ends at x ${r(contentRight)}: the right ${r(right)} units (${pct(right / frame.width)}% of the frame) are empty; ${pct(freeSpace)}% of the slide is free.`,
+        fix: `widen the content by ~${r(right - left)} units (a wider block or a two-column layout), or centre it (move it right ~${r((right - left) / 2)})`,
+      })
+    }
+  }
+
+  if (freeSpace < CROWDED_FREE) {
+    out.push({
+      code: 'layout/crowded',
+      severity: 'warning',
+      blockIds: painting.map((b) => b.id),
+      message: `only ${pct(freeSpace)}% of the slide is free (margins t${margins.top} r${margins.right} b${margins.bottom} l${margins.left}).`,
+      fix: `drop a block or shorten text until ≥ ${pct(CROWDED_FREE)}% is free, or split the slide in two`,
+    })
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* ASCII map                                                                        */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -948,9 +1194,11 @@ export function formatLayoutReport(report: LayoutReport, opts: { map?: boolean }
     }
   }
   const m = report.margins
+  lines.push(`margins t${m.top} r${m.right} b${m.bottom} l${m.left} | free ${Math.round(report.freeSpace * 100)}%`)
   lines.push(
-    `margins t${m.top} r${m.right} b${m.bottom} l${m.left} | free ${Math.round(report.freeSpace * 100)}%` +
-      (report.needsVisualCheck.length > 0 ? ` | screenshot: ${report.needsVisualCheck.join(', ')}` : '')
+    report.needsVisualCheck.length > 0
+      ? `screenshot: ${report.needsVisualCheck.map((c) => `${c.blockId} (${c.reason})`).join('; ')}`
+      : 'screenshot: not needed'
   )
   if (opts.map !== false) {
     const map = layoutMap(report)

@@ -183,7 +183,7 @@ describe('LO1 — findings', () => {
       id: 's_edge',
       layout: 'blank',
       regions: {},
-      free: [{ block: title('t', 'Edge'), box: { x: 1700, y: 96, width: 400, height: 120 } }],
+      free: [{ block: title('t', 'Edge of the frame'), box: { x: 1700, y: 96, width: 400, height: 120 } }],
     }
     const report = analyzeSlide(slide)
     const f = report.findings.find((x) => x.code === 'slide/overflow')!
@@ -211,7 +211,8 @@ describe('LO1 — findings', () => {
     const deck = loadDeck('demo-deck.json')
     const [report] = analyzeDeck({ ...deck, slides: deck.slides.filter((s) => s.id === 'sl_01') })
     expect(report.blocks[0].confidence).toBe('medium')
-    expect(report.needsVisualCheck).toEqual([report.blocks[0].id])
+    expect(report.needsVisualCheck.map((c) => c.blockId)).toEqual([report.blocks[0].id])
+    expect(report.needsVisualCheck[0].reason).toMatch(/confidence medium: .*poster/)
   })
 })
 

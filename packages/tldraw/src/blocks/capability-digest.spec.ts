@@ -476,7 +476,7 @@ describe('R7 — capability digest v2', () => {
         range: '2–5 items',
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
-        size: 'h 164–222@840',
+        size: 'h≈180-6/item@840',
       })
       const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))

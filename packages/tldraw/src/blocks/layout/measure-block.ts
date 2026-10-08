@@ -232,8 +232,9 @@ function arcPoints(
 
 /**
  * Bounding box of an SVG path's geometry, in the path's own coordinates (the node box's local
- * space: the DOM renderer draws `d` in a `viewBox="0 0 w h"` svg). Control points are included
- * (a slight over-estimate for curves); arcs are sampled. `null` when `d` has no points.
+ * space: the DOM renderer draws `d` in a `viewBox="0 0 w h"` svg). Bézier segments are bounded
+ * exactly (end points + per-axis extrema, LO5: control points over-reached the browser's
+ * `getBBox` by up to 82% on a curved arrow); arcs are sampled. `null` when `d` has no points.
  */
 export function pathBounds(d: string): Box | null {
   const tokens = d.match(PATH_TOKEN) ?? []
@@ -252,6 +253,40 @@ export function pathBounds(d: string): Box | null {
     x2 = Math.max(x2, px)
     y2 = Math.max(y2, py)
   }
+  // Exact Bézier bounds: end points plus the curve at each per-axis extremum in (0, 1).
+  const at3 = (a: number, b: number, c: number, d: number, t: number) => {
+    const u = 1 - t
+    return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d
+  }
+  const roots3 = (a: number, b: number, c: number, d: number): number[] => {
+    // d/dt of the cubic, divided by 3: qa t² + qb t + qc.
+    const qa = -a + 3 * b - 3 * c + d
+    const qb = 2 * (a - 2 * b + c)
+    const qc = b - a
+    if (Math.abs(qa) < 1e-12) return Math.abs(qb) < 1e-12 ? [] : [-qc / qb]
+    const disc = qb * qb - 4 * qa * qc
+    if (disc < 0) return []
+    const sq = Math.sqrt(disc)
+    return [(-qb + sq) / (2 * qa), (-qb - sq) / (2 * qa)]
+  }
+  const addCubic = (x0: number, y0: number, x1c: number, y1c: number, x2c: number, y2c: number, x3: number, y3: number) => {
+    add(x0, y0)
+    add(x3, y3)
+    for (const t of [...roots3(x0, x1c, x2c, x3), ...roots3(y0, y1c, y2c, y3)]) {
+      // Rounded to 1e-6 so float noise from the root solve does not leak into reported boxes.
+      if (t > 0 && t < 1) add(Math.round(at3(x0, x1c, x2c, x3, t) * 1e6) / 1e6, Math.round(at3(y0, y1c, y2c, y3, t) * 1e6) / 1e6)
+    }
+  }
+  // A quadratic is the cubic with its controls 2/3 of the way to the quadratic's control point.
+  const addQuad = (x0: number, y0: number, xc: number, yc: number, x2q: number, y2q: number) =>
+    addCubic(
+      x0, y0,
+      x0 + (2 / 3) * (xc - x0), y0 + (2 / 3) * (yc - y0),
+      x2q + (2 / 3) * (xc - x2q), y2q + (2 / 3) * (yc - y2q),
+      x2q, y2q
+    )
+  let prevCubic: [number, number] | null = null
+  let prevQuad: [number, number] | null = null
   let i = 0
   let cmd = ''
   while (i < tokens.length) {
@@ -295,6 +330,37 @@ export function pathBounds(d: string): Box | null {
         y = ey
         break
       }
+      case 'C':
+      case 'S': {
+        const [c1x, c1y]: [number, number] =
+          upper === 'C' ? [ox + nums[0], oy + nums[1]] : prevCubic ? [2 * x - prevCubic[0], 2 * y - prevCubic[1]] : [x, y]
+        const k = upper === 'C' ? 2 : 0
+        const c2x = ox + nums[k]
+        const c2y = oy + nums[k + 1]
+        const ex = ox + nums[k + 2]
+        const ey = oy + nums[k + 3]
+        addCubic(x, y, c1x, c1y, c2x, c2y, ex, ey)
+        x = ex
+        y = ey
+        prevCubic = [c2x, c2y]
+        prevQuad = null
+        continue
+      }
+      case 'Q':
+      case 'T': {
+        const ctrl: [number, number] =
+          upper === 'Q' ? [ox + nums[0], oy + nums[1]] : prevQuad ? [2 * x - prevQuad[0], 2 * y - prevQuad[1]] : [x, y]
+        const qx: number = ctrl[0]
+        const qy: number = ctrl[1]
+        const ex = ox + nums[arity - 2]
+        const ey = oy + nums[arity - 1]
+        addQuad(x, y, qx, qy, ex, ey)
+        x = ex
+        y = ey
+        prevQuad = [qx, qy]
+        prevCubic = null
+        continue
+      }
       default: {
         for (let k = 0; k < arity; k += 2) add(ox + nums[k], oy + nums[k + 1])
         x = ox + nums[arity - 2]
@@ -307,6 +373,8 @@ export function pathBounds(d: string): Box | null {
         }
       }
     }
+    prevCubic = null
+    prevQuad = null
   }
   if (x1 === Infinity) return null
   return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
@@ -434,7 +502,8 @@ function probe(def: BlockDefinition, props: Record<string, unknown>, ctx: Layout
 
 /**
  * Measure a block's natural size at `width`. `ctx` supplies tokens, the text-metrics provider
- * (pass `tableMetrics()` for ~3% accuracy; the default `estimateMetrics` is ±20-35%), the
+ * (pass `tableMetrics()`: line widths within ±5% of Chromium at p95, LO5; the default
+ * `estimateMetrics` is -22%/+25%), the
  * registry (for containers) and the instance `style` (padding/align are honoured through
  * `layoutBlock`, exactly as `compileSlide` does). Never throws.
  */
@@ -509,7 +578,7 @@ export function measureBlock(
     reason = 'html host without a poster: geometry unknown'
   } else if (kind === 'html' || ref.collected.posterHost) {
     confidence = 'medium'
-    reason = 'html block: geometry from its export poster, the live DOM may differ'
+    reason = 'html block: geometry from its export poster; the live DOM differs by up to ~5% in height and may wrap differently'
   } else if (ctx.measureText === estimateMetrics) {
     confidence = 'medium'
     reason = 'estimateMetrics text widths (±20-35%)'

@@ -29,7 +29,8 @@ export const tlsXFooterText: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 40], min: [380, 40] },
+  // LO5: min 380 → 400 — with browser-true Inter widths "Annual review 2026" needs a 175-unit share.
+  size: { preferred: [1200, 40], min: [400, 40] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],
