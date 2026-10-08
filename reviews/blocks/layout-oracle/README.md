@@ -154,6 +154,23 @@ Record error stats here; set `confidence` thresholds from data; `needsVisualChec
 `confidence != high` or within 5% of an overflow threshold. Fix the cheapest large gaps (e.g.
 letter-spacing / bold in tableMetrics) if found.
 
+### Next (open, in priority order)
+- **LO6 — editor on tableMetrics.** Switch `compileSlide`/editor text measurement from
+  `estimateMetrics` to the browser-calibrated `tableMetrics` (LO5 data: editor line-count mismatch
+  0.8% → ~0.1%, removes the "editor wraps differently" `needsVisualCheck` reason). Moves every
+  fixture layout/snapshot — re-baseline deliberately, verify visually on all 4 fixture decks.
+- **LO7 — html-kind blocks.** They are measured from their export poster, which wraps differently
+  from the live HTML (4/9 differ), so they always need a screenshot. Make poster text layout follow
+  the same metrics, or derive the html block's geometry from the layout tree.
+- **LO8 — loose ends.** Anchored overlay dragged in the editor snaps back on recompile; parity
+  probes `tls.c.testimonial` (fails on HEAD too) and `tls.d.progress-bar` (unverified); parity
+  worker keeps jest alive (kill by PID); `dist/index.mjs` not importable in plain node
+  (`@tlslides/core` lacks ESM named exports); real Next.js route import untested; size cards cover
+  default theme only, `tls.g.steps`/`tls.c.team` height fit poor.
+- **Machine rule:** WSL has 4 GB RAM + 3 GB swap. Run ONE code-writing agent at a time; jest
+  targeted with `--maxWorkers=1`; one tsc at a time; never jest/tsc while the dev server +
+  Chromium run. Parallel agents thrashed the disk and froze the machine on 2026-10-08.
+
 ## 3. Progress
 
 | Phase | Status | Commit | Notes |
@@ -166,6 +183,9 @@ letter-spacing / bold in tableMetrics) if found.
 | LO3 | done | `770808fb` | `block-metrics.ts` `buildBlockMetrics` → committed `__generated__/block-metrics.json` (129 cards, 64 KB, one line per block) + `block-size-hints.ts`; staleness spec; index hint `[h≈0+104/L@840]`, index 18.8k chars (≤ 20k). `block-metrics.spec.ts` 13 tests. See Notes — LO3/LO4. |
 | LO4 | done | `770808fb` | Size-card API exported from `blocks/index.ts` (package root re-exports it); `turbo build:packages` exit 0, dist CJS verified. CLI `tools/layout-report/cli.js` (+ `load.js`, `gen-block-metrics.js`), 0.4-0.8 s per fixture deck. Docs: `LLM-ARCHITECTURE.md` §S4.1, `guides/blocks-authoring.md` §2.10. |
 | LO5 | done | `7e3acc6f` | Browser calibration (289 blocks, 95 slides, 1 Chromium page); `tableMetrics` re-based on browser-measured Inter + letter-spacing + bold; exact Bézier `pathBounds`; `needsVisualCheck: {blockId, reason}[]`; LO5b composition hints. `layout-calibration.spec.ts` 14 tests. See Notes — LO5. |
+| LO6 | todo | | editor on tableMetrics — see §2 Next |
+| LO7 | todo | | html-kind geometry from live-equivalent layout |
+| LO8 | todo | | loose ends |
 
 ### Notes — LO0 / LO1 (2026-10-08)
 
