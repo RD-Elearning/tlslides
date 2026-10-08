@@ -24,12 +24,12 @@
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
   "scripts": {
-    "start": "yarn lask -d",
-    "build": "yarn lask",
-    "start:packages": "yarn start",
-    "start:core": "yarn start",
-    "build:core": "yarn build",
-    "build:packages": "yarn build",
+    "start": "pnpm lask -d",
+    "build": "pnpm lask",
+    "start:packages": "pnpm start",
+    "start:core": "pnpm start",
+    "build:core": "pnpm build",
+    "build:packages": "pnpm build",
     "lint": "eslint src/ --ext .ts,.tsx",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "test": "jest",
@@ -86,7 +86,7 @@
     "transform": {
       "^.+\\.(tsx|jsx|ts|js|mjs)?$": [
         "@swc-node/jest",
-        { "module": "commonjs" }
+        { "module": "commonjs", "swcOptions": { "jsc": { "parser": { "syntax": "typescript" } } } }
       ]
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
@@ -105,7 +105,10 @@
     "moduleNameMapper": {
       "@tlslides/tldraw": "<rootDir>/src",
       "\\~(.*)": "<rootDir>/src/$1"
-    }
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(playwright|playwright-core)/)"
+    ]
   },
   "gitHead": "4b1137849ad07da36fc8f0f19cb64e7535a79296"
 }

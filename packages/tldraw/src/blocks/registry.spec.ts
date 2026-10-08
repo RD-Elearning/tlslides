@@ -59,6 +59,22 @@ describe('BlockRegistry', () => {
       expect(byFamily).toHaveLength(1)
       expect(byFamily[0]).toBe(layout)
     })
+
+    it('lists definitions by category in BLOCK_CATEGORIES order, uncategorised under structure', () => {
+      const registry = new BlockRegistry()
+      const chart = { ...minimalDef('tls.a'), category: 'chart' as const }
+      const heading = { ...minimalDef('tls.b'), category: 'heading' as const }
+      const plain = minimalDef('tls.c')
+      registry.register(chart)
+      registry.register(heading)
+      registry.register(plain)
+
+      const grouped = registry.listByCategory()
+      expect(Array.from(grouped.keys())).toEqual(['structure', 'heading', 'chart'])
+      expect(grouped.get('structure')).toEqual([plain])
+      expect(grouped.get('chart')).toEqual([chart])
+      expect(grouped.has('metric')).toBe(false)
+    })
   })
 
   describe('duplicate registration throws', () => {

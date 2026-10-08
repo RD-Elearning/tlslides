@@ -110,11 +110,11 @@
 	},
 	"scripts": {
 		"start:vscode": "node scripts/dev",
-		"build:apps": "yarn build",
-		"build": "yarn package",
+		"build:apps": "pnpm build",
+		"build": "pnpm package",
 		"web": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=.",
-		"package": "cd ../editor && yarn build && cd ../extension && node scripts/build && node scripts/package",
-		"publish": "yarn package && vsce publish",
+		"package": "cd ../editor && pnpm build && cd ../extension && node scripts/build && node scripts/package",
+		"publish": "pnpm package && vsce publish",
 		"lint": "eslint src --ext ts"
 	},
 	"devDependencies": {

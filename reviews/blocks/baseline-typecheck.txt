@@ -1,0 +1,386 @@
+# Baseline measurements — Q0 · Fix the instrument
+# Captured: 2026-09-17T04:22:06+00:00
+#
+# Typecheck:  170 total / 52 non-spec / 118 spec
+# ESLint:     4 errors, 136 warnings
+# Jest:       127 suites, 1364 passed, 77 todo, 19 snapshots
+
+## Typecheck — tsc output (170 errors, filtered by: grep -E 'error TS')
+src/Tldraw.spec.tsx(61,14): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+src/blocks/layout/layout.spec.ts(333,28): error TS2322: Type 'Size' is not assignable to type 'Box'.
+src/blocks/layout/layout.spec.ts(352,27): error TS2322: Type 'Size' is not assignable to type 'Box'.
+src/blocks/library/layout/test-helpers.ts(64,7): error TS2739: Type 'Size' is missing the following properties from type 'Box': x, y
+src/blocks/library/layout/tls-l-card/index.ts(21,3): error TS2322: Type 'CardProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-card/index.ts(23,11): error TS2352: Conversion of type '(props: CardProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-card/schema.ts(9,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts(21,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts(33,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts(47,28): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts(59,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts(60,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-field/index.ts(21,3): error TS2322: Type 'FieldProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-field/tls-l-field.spec.ts(24,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-field/tls-l-field.spec.ts(25,25): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-footer/index.ts(21,3): error TS2322: Type 'FooterProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-footer/index.ts(23,11): error TS2352: Conversion of type '(props: FooterProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-footer/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-footer/schema.ts(17,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-footer/tls-l-footer.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-footer/tls-l-footer.spec.ts(32,25): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-footer/tls-l-footer.spec.ts(33,27): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-footer/tls-l-footer.spec.ts(49,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid-guide/index.ts(21,3): error TS2322: Type 'GridGuideProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-grid-guide/index.ts(23,11): error TS2352: Conversion of type '(props: GridGuideProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-grid-guide/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-grid-guide/tls-l-grid-guide.spec.ts(25,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid-guide/tls-l-grid-guide.spec.ts(31,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid-guide/tls-l-grid-guide.spec.ts(37,32): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid-guide/tls-l-grid-guide.spec.ts(48,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/index.ts(20,3): error TS2322: Type 'GridProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-grid/index.ts(22,11): error TS2352: Conversion of type '(props: GridProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-grid/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-grid/schema.ts(17,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-grid/schema.ts(25,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(32,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(35,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(36,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(37,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(38,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(60,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(72,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(73,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts(74,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-overlay/index.ts(21,3): error TS2322: Type 'OverlayProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-overlay/tls-l-overlay.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-overlay/tls-l-overlay.spec.ts(32,32): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-overlay/tls-l-overlay.spec.ts(45,19): error TS2339: Property 'clip' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-overlay/tls-l-overlay.spec.ts(53,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/index.ts(22,3): error TS2322: Type 'RepeaterProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-repeater/index.ts(24,11): error TS2352: Conversion of type '(props: RepeaterProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-repeater/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-repeater/schema.ts(17,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-repeater/schema.ts(24,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(32,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(34,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(35,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(49,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(51,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(52,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(63,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts(64,32): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/index.ts(21,3): error TS2322: Type 'RowProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-row/index.ts(23,11): error TS2352: Conversion of type '(props: RowProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-row/schema.ts(9,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(29,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(43,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(44,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(45,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts(46,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-safe-area/index.ts(21,3): error TS2322: Type 'SafeAreaProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-safe-area/index.ts(23,11): error TS2352: Conversion of type '(props: SafeAreaProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-safe-area/schema.ts(9,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-safe-area/tls-l-safe-area.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-safe-area/tls-l-safe-area.spec.ts(31,26): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-safe-area/tls-l-safe-area.spec.ts(48,26): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-safe-area/tls-l-safe-area.spec.ts(63,26): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-section/index.ts(21,3): error TS2322: Type 'SectionProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-section/index.ts(23,11): error TS2352: Conversion of type '(props: SectionProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-section/schema.ts(9,5): error TS2322: Type '{ kind: string; maxChars: number; role: "content"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-section/schema.ts(16,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-section/tls-l-section.spec.ts(21,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-section/tls-l-section.spec.ts(32,26): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-section/tls-l-section.spec.ts(45,28): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-section/tls-l-section.spec.ts(58,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/index.ts(21,3): error TS2322: Type 'SidebarProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-sidebar/index.ts(23,11): error TS2352: Conversion of type '(props: SidebarProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-sidebar/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-sidebar/schema.ts(17,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-sidebar/schema.ts(24,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(32,28): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(33,25): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(49,25): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(50,28): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts(62,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-spacer/index.ts(20,3): error TS2322: Type 'SpacerProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-spacer/tls-l-spacer.spec.ts(32,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/index.ts(21,3): error TS2322: Type 'SplitProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-split/index.ts(23,11): error TS2352: Conversion of type '(props: SplitProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-split/schema.ts(9,5): error TS2322: Type '{ kind: string; min: number; max: number; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-split/schema.ts(17,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-split/schema.ts(24,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(32,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(33,27): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(50,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(51,27): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts(66,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/index.ts(21,3): error TS2322: Type 'StackProps' is not assignable to type 'Record<string, unknown>'.
+src/blocks/library/layout/tls-l-stack/index.ts(23,11): error TS2352: Conversion of type '(props: StackProps, ctx: LayoutContext) => LayoutNode' to type '(props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/blocks/library/layout/tls-l-stack/schema.ts(9,5): error TS2322: Type '{ kind: string; values: string[]; role: "option"; label: string; help: string; }' is not assignable to type 'SlotSpec'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(20,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(29,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(43,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(44,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(45,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(46,23): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(63,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts(64,19): error TS2339: Property 'children' does not exist on type 'LayoutNode'.
+src/blocks/motion/motion.spec.ts(48,5): error TS2322: Type '9999' is not assignable to type '250'.
+src/blocks/motion/motion.spec.ts(76,5): error TS2322: Type '"step-end"' is not assignable to type '"linear"'.
+src/blocks/motion/motion.spec.ts(103,5): error TS2322: Type '999' is not assignable to type '24'.
+src/blocks/motion/motion.spec.ts(129,5): error TS2322: Type '0.5' is not assignable to type '0.96'.
+src/blocks/motion/motion.spec.ts(154,5): error TS2322: Type '99' is not assignable to type '8'.
+src/blocks/motion/motion.spec.ts(190,26): error TS2345: Argument of type '"transform" | "width" | "height" | "left" | "top" | "box-shadow"' is not assignable to parameter of type '"filter" | "opacity" | "scale" | "translate" | "clip-path" | "stroke-dashoffset"'.
+src/blocks/motion/motion.spec.ts(219,5): error TS2322: Type 'Mock<void, [prop: string, val: string]>' is not assignable to type 'string'.
+src/blocks/render-dom.spec.tsx(126,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(131,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(136,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(141,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(146,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(151,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(156,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(161,25): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(172,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(178,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(195,36): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(208,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(223,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(235,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(301,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(308,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(321,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(334,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(345,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(353,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(360,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(373,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(386,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(406,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(413,34): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.spec.tsx(458,36): error TS2345: Argument of type 'ReactNode' is not assignable to parameter of type 'ReactElement<any, string | JSXElementConstructor<any>>'.
+src/blocks/render-dom.tsx(146,15): error TS2322: Type 'string | number' is not assignable to type 'Fill | undefined'.
+src/blocks/render-svg.ts(82,12): error TS2339: Property 'fill' does not exist on type 'LayoutNode'.
+src/blocks/render-svg.ts(82,25): error TS2339: Property 'fill' does not exist on type 'LayoutNode'.
+src/blocks/render-svg.ts(83,29): error TS2339: Property 'fill' does not exist on type 'LayoutNode'.
+src/state/TldrawApp.frame.spec.ts(155,11): error TS2322: Type 'undefined' is not assignable to type 'TDExport'.
+src/state/TldrawApp.frame.spec.ts(155,51): error TS2493: Tuple type '[]' of length '0' has no element at index '0'.
+src/state/TldrawApp.frame.spec.ts(169,11): error TS2322: Type 'undefined' is not assignable to type 'TDExport'.
+src/state/TldrawApp.frame.spec.ts(169,51): error TS2493: Tuple type '[]' of length '0' has no element at index '0'.
+src/state/TldrawApp.presentation.spec.ts(45,10): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+src/state/commands/duplicatePage/duplicatePage.spec.ts(40,23): error TS2352: Conversion of type 'TLPageState' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+src/state/render/renderPageToSvg.spec.ts(375,49): error TS2322: Type '"start"' is not assignable to type 'AlignStyle | undefined'.
+src/state/render/renderPageToSvg.spec.ts(380,49): error TS2322: Type '"end"' is not assignable to type 'AlignStyle | undefined'.
+src/state/shapes/ComponentUtil/ComponentUtil.tsx(157,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown>'.
+src/state/shapes/shared/shape-styles.spec.ts(156,38): error TS2339: Property 'id' does not exist on type 'TLBackgroundFill'.
+
+## ESLint — npx eslint src/blocks --ext .ts,.tsx (4 errors, 136 warnings)
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/layout/layout.spec.ts
+   47:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  410:12  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  411:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  412:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/layout/measure.ts
+  469:10  warning  'applyLetterSpacing' is defined but never used  @typescript-eslint/no-unused-vars
+  469:43  warning  'letterSpacing' is defined but never used       @typescript-eslint/no-unused-vars
+  469:66  warning  'fontSize' is defined but never used            @typescript-eslint/no-unused-vars
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/layout/vertical-align.spec.ts
+  16:3   error    Type string trivially inferred from a string literal, remove type annotation  @typescript-eslint/no-inferrable-types
+  72:11  warning  'result' is assigned a value but never used                                   @typescript-eslint/no-unused-vars
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/test-helpers.ts
+  36:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-card/tls-l-card.spec.ts
+  15:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  44:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  58:57  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-field/schema.ts
+  9:18  error  An empty interface is equivalent to `{}`  @typescript-eslint/no-empty-interface
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-field/tls-l-field.spec.ts
+  14:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-footer/tls-l-footer.spec.ts
+  15:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:75  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-grid-guide/tls-l-grid-guide.spec.ts
+  14:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  30:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  36:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-grid/tls-l-grid.spec.ts
+  15:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  69:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-overlay/schema.ts
+  9:18  error  An empty interface is equivalent to `{}`  @typescript-eslint/no-empty-interface
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-overlay/tls-l-overlay.spec.ts
+  15:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-repeater/tls-l-repeater.spec.ts
+  15:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-row/tls-l-row.spec.ts
+  15:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-safe-area/tls-l-safe-area.spec.ts
+  15:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  28:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  45:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-section/tls-l-section.spec.ts
+  15:74  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  55:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-sidebar/tls-l-sidebar.spec.ts
+  15:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:95  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  59:97  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-spacer/schema.ts
+  9:18  error  An empty interface is equivalent to `{}`  @typescript-eslint/no-empty-interface
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-spacer/tls-l-spacer.spec.ts
+  14:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-split/tls-l-split.spec.ts
+  15:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  29:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  63:79  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/library/layout/tls-l-stack/tls-l-stack.spec.ts
+  15:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  27:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  38:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  60:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/motion/motion.spec.ts
+  269:11  warning  'handle' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  292:57  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  300:70  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  334:70  warning  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/motion/presets.spec.ts
+   14:15  warning  'MotionPreset' is defined but never used  @typescript-eslint/no-unused-vars
+   75:14  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  119:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  119:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:16  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  178:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  265:19  warning  'key' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/rich-text.spec.ts
+  204:26  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  235:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  236:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  237:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  238:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  239:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  474:24  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  474:49  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/shape-bridge.spec.ts
+  132:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  174:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  176:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  193:26  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+  228:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  237:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  246:20  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  296:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  372:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  381:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  405:29  warning  Forbidden non-null assertion              @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/slide-compiler.spec.ts
+   14:29  warning  'CompileSlideResult' is defined but never used  @typescript-eslint/no-unused-vars
+   15:37  warning  'Box' is defined but never used                 @typescript-eslint/no-unused-vars
+   15:42  warning  'ResolvedTokens' is defined but never used      @typescript-eslint/no-unused-vars
+  175:20  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+  176:21  warning  Forbidden non-null assertion                    @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/slide-composition.spec.ts
+  145:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  146:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  146:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  197:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  198:12  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/slide-layouts.spec.ts
+   11:46  warning  'SlideLayoutId' is defined but never used  @typescript-eslint/no-unused-vars
+   31:15  warning  'name' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   59:15  warning  'name' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   88:12  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+   99:56  warning  'label' is defined but never used          @typescript-eslint/no-unused-vars
+  135:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  142:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  149:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  156:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  163:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  168:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  174:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  182:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  191:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  200:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  205:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  212:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  226:23  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  241:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  249:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  251:11  warning  'tH' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  261:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+  268:21  warning  Forbidden non-null assertion               @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/surface.spec.ts
+   8:18  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  42:41  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  95:37  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+/home/bachx/workspace/vinhuni/tlslides/packages/tldraw/src/blocks/tokens.spec.ts
+  6:18  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+  7:18  warning  Forbidden non-null assertion  @typescript-eslint/no-non-null-assertion
+
+✖ 140 problems (4 errors, 136 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+
+
+## Jest — npx jest --silent (127 suites, 1364 passed, 77 todo, 19 snapshots)

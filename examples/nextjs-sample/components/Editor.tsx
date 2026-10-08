@@ -5,7 +5,7 @@ import { ColorStyle, TDShapeType, Tldraw, TldrawApp } from '@tlslides/tldraw'
 import type { DeckSlide, DeckTheme, TDDocument, Template } from '@tlslides/tldraw'
 import { blockToShape, shapeToBlock } from '@tlslides/tldraw'
 import { blockComponents } from './blocks'
-import { demoSpec, p18Components } from './p18-blocks'
+import { demoSpec, p18Components, liveBlockRegistry } from './p18-blocks'
 import { SlideManager } from './SlideManager'
 
 // Phase 5's hand-written host blocks and Phase 18's registry-driven ones share one canvas and one
@@ -289,7 +289,7 @@ export default function Editor() {
           onClearBackground={handleClearBackground}
         />
         <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
-          <Tldraw onMount={onMount} onPersist={onPersist} components={allComponents} />
+          <Tldraw onMount={onMount} onPersist={onPersist} components={allComponents} blockRegistry={liveBlockRegistry} />
         </div>
       </div>
     </div>

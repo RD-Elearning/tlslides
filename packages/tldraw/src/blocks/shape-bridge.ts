@@ -2,7 +2,8 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, Box } from './types'
+import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
+import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
  * Reserved key under ComponentShape.props where block metadata is stored.
@@ -20,6 +21,11 @@ export interface BlockToShapeOptions {
   parentId?: string
   /** Z-order index within the parent. Defaults to `1`. */
   childIndex?: number
+  /** The block definition's default motion recipe. When provided, `deriveShapeAnimation` resolves
+   *  the block-level animation from the spec's motion + this definition default, instead of
+   *  falling back to a hardcoded FadeIn. Carried by `compileSlide` (which has a registry) so the
+   *  persisted `ShapeAnimation` reflects the real preset rather than Phase 18's placeholder. */
+  definitionMotion?: MotionRecipe
 }
 
 /**
@@ -30,6 +36,11 @@ interface BlockMetadata {
   style?: BlockStyleSpec
   motion?: BlockMotionSpec
   children?: BlockSpec[]
+  /** P7 — motion derived from the slide's `motionStyle` by `compileSlide`. Never authored, never
+   *  returned by `shapeToBlock`; playback reads it through `shapeToRevealBlock`. */
+  styleMotion?: BlockMotionSpec
+  /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
+  motionStyle?: 'subtle' | 'expressive'
 }
 
 /**
@@ -86,15 +97,29 @@ export function blockToShape(
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
 
-  // Derive animation from motion if present
+  // Derive animation from motion if present.
+  // When a block definition's motion recipe is provided (via opts), use it as the
+  // fallback for preset resolution — this gives the real effect (FadeIn, SlideIn, etc.)
+  // instead of the Phase 18 hardcoded FadeIn. Without a definition, resolve purely from
+  // the spec's own fields (preset → effect mapping lives in resolve-motion.ts).
   let animation: ShapeAnimation | undefined = undefined
-  if (spec.motion && (spec.motion.order !== undefined || spec.motion.preset !== undefined)) {
-    animation = {
-      effect: AnimationEffect.FadeIn, // Phase 18 default; Phase 22 will expand this
-      trigger: spec.motion.trigger ?? AnimationTrigger.WithPrevious,
-      order: spec.motion.order ?? 0,
-      durationMs: typeof spec.motion.duration === 'number' ? spec.motion.duration : 400,
-      delayMs: typeof spec.motion.delay === 'number' ? spec.motion.delay : 0,
+  const defMotion = opts?.definitionMotion
+  if (defMotion) {
+    // Full resolution path: spec → definition → default preset.
+    animation = deriveShapeAnimation(spec.motion, defMotion)
+  } else if (spec.motion && (spec.motion.order !== undefined || spec.motion.preset !== undefined)) {
+    // Fallback: resolve from spec alone (no definition available). The effect mapping
+    // uses presetToEffect directly — the same four effects as the Phase 18 path.
+    const resolved = resolveBlockMotion(spec.motion, {})
+    if (resolved.effect !== null) {
+      animation = {
+        effect: resolved.effect,
+        trigger: resolved.trigger,
+        order: resolved.order,
+        durationMs: resolved.durationMs,
+        delayMs: resolved.delayMs,
+        easing: resolved.easing,
+      }
     }
   }
 
@@ -164,20 +189,51 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
     }
   }
 
-  // Reassemble the BlockSpec
+  // Reassemble the BlockSpec. Schema v1 requires `id`; a shape from before this field
+  // existed (or one authored by hand) simply has no `$block.id` — mint one rather than
+  // throwing, per `reviews/blocks/BACKLOG-demo.md` §2.2's note on `BlockSpec.id`.
   const spec: BlockSpec = {
+    id: meta.id ?? Utils.uniqueId(),
     type: shapeObj.componentId as string,
     props: clonedProps,
   }
 
-  if (meta.id !== undefined) {
-    spec.id = meta.id
-  }
   if (meta.style !== undefined) {
     spec.style = JSON.parse(JSON.stringify(meta.style))
   }
   if (meta.motion !== undefined) {
     spec.motion = JSON.parse(JSON.stringify(meta.motion))
+  }
+  // The persisted `ShapeAnimation` is the actual source of truth for playback — and the field a
+  // future inspector (R12) writes into directly, independently of `meta.motion`. Fold it into
+  // `spec.motion` when it has *diverged* from what `meta.motion` alone implies, so playback can
+  // never silently ignore a persisted delay/duration/effect/easing edit. When it has not diverged
+  // (the common case), `spec.motion` is returned verbatim and the DeckSpec round-trip stays
+  // lossless.
+  const animation = shapeObj.animation as ShapeAnimation | undefined
+  if (animation) {
+    // P7: a style-derived animation is implied by `$block.styleMotion`, not a divergence.
+    const implied = resolveBlockMotion(spec.motion ?? meta.styleMotion ?? {}, {})
+    const diverged =
+      animation.effect !== implied.effect ||
+      animation.trigger !== implied.trigger ||
+      animation.order !== implied.order ||
+      animation.durationMs !== implied.durationMs ||
+      animation.delayMs !== implied.delayMs ||
+      (animation.easing !== undefined && animation.easing !== implied.easing)
+    if (diverged) {
+      spec.motion = {
+        ...(spec.motion ?? {}),
+        effect: animation.effect,
+        trigger: animation.trigger,
+        order: animation.order,
+        duration: animation.durationMs,
+        delay: animation.delayMs,
+        // `easing` is an arbitrary CSS string; `ease` is the narrow token union but
+        // `resolveEasing` passes any non-token string through unchanged.
+        ...(animation.easing !== undefined ? { ease: animation.easing as EaseToken } : {}),
+      }
+    }
   }
   if (meta.children !== undefined) {
     spec.children = JSON.parse(JSON.stringify(meta.children))
@@ -187,4 +243,33 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   }
 
   return spec
+}
+
+/**
+ * P7 — the block spec playback should use: `shapeToBlock`, plus the style-derived motion as
+ * `motion` when the block has none of its own. Only for reveal code (DeckViewer,
+ * PresentationRuntime); never persist its result.
+ */
+export function shapeToRevealBlock(shape: unknown): BlockSpec | undefined {
+  const spec = shapeToBlock(shape)
+  if (!spec || spec.motion !== undefined) return spec
+  const meta = blockMetaOf(shape)
+  if (meta?.styleMotion) spec.motion = JSON.parse(JSON.stringify(meta.styleMotion))
+  return spec
+}
+
+/**
+ * P7 — the motion style an html block's `animate()` should honour (`BlockMotionRuntime.style`):
+ * `'subtle'` only when the compiler derived the block's motion from a subtle slide; otherwise
+ * `'expressive'` (the pre-P7 behaviour, also used for explicit block `motion`).
+ */
+export function revealStyleOf(shape: unknown): 'subtle' | 'expressive' {
+  return blockMetaOf(shape)?.motionStyle === 'subtle' ? 'subtle' : 'expressive'
+}
+
+function blockMetaOf(shape: unknown): BlockMetadata | undefined {
+  if (!shape || typeof shape !== 'object') return undefined
+  const props = (shape as Record<string, unknown>).props as Record<string, unknown> | undefined
+  const meta = props?.[BLOCK_PROP_KEY]
+  return meta && typeof meta === 'object' ? (meta as BlockMetadata) : undefined
 }

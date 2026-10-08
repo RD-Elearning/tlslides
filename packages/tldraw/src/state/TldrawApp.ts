@@ -235,6 +235,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   isCreating = false
 
+  /**
+   * B7 H5: callback for block drag-and-drop. When the canvas receives a drop
+   * with the `application/x-tls-block` mime type, the app's `onDrop` handler
+   * invokes this with `(type, screenPoint)` so the inserter can insert the block
+   * at the drop point. Wired up by `BlockInserterPanel`.
+   */
+  onBlockDrop: ((type: string, point: [number, number]) => void) | null = null
+
   originPoint = [0, 0]
 
   currentPoint = [0, 0]
@@ -3750,11 +3758,36 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   onDragOver: TLDropEventHandler = (e) => {
     e.preventDefault()
+    // B7 H5: when a block is being dragged, preventDefault so the drop fires.
+    if (e.dataTransfer.types?.includes('application/x-tls-block')) {
+      e.dataTransfer.dropEffect = 'copy'
+    }
   }
 
   onDrop: TLDropEventHandler = async (e) => {
     e.preventDefault()
     if (this.disableAssets) return this
+
+    const types = e.dataTransfer.types
+    if (types?.includes('application/x-tls-block')) {
+      // B7 H5: block drag-and-drop. Convert the canvas's own screen-space
+      // coordinates (clientX/clientY relative to the editor's bounding rect) to
+      // page-space, then hand the block type + page point to the callback that
+      // BlockInserterPanel wired in (which has the block registry in scope).
+      const type = e.dataTransfer.getData('application/x-tls-block')
+      // e.currentTarget is the DOM element receiving the drop — its bounding
+      // rect is the editor's own screen space (H4).
+      const rect = (e.currentTarget as Element | null)?.getBoundingClientRect()
+      const x = rect ? e.clientX - rect.left : e.clientX
+      const y = rect ? e.clientY - rect.top : e.clientY
+
+      if (this.onBlockDrop) {
+        this.onBlockDrop(type, [x, y] as [number, number])
+      }
+
+      return this
+    }
+
     if (e.dataTransfer.files?.length) {
       const file = e.dataTransfer.files[0]
       this.addMediaFromFile(file, [e.clientX, e.clientY])

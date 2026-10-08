@@ -1,0 +1,284 @@
+# Motion smoothness pass (2026-10-06)
+
+Follow-up to the block UI review ([README.md](README.md)). The user asked for a double check:
+**every block must animate as smoothly as possible.** The first review checked motion from a few
+screenshots (`REVIEW_MID`). That cannot see a snap between two frames, a part that flashes before
+it enters, or an animation that ends off its rest state. This pass measures motion frame by frame,
+fixes the shared engine faults first, and then re-checks all 129 blocks.
+
+README §3 (rules) and §4 (commands, **low-resource mode**) are binding here too. One subagent runs
+at a time, and each takes a batch of related groups.
+
+## 1. Smoothness criteria (per block, per motionStyle)
+
+| # | Criterion | Measured by |
+|---|---|---|
+| J1 | **No snap.** No part's opacity changes by more than 0.35, its translate by more than 40 px, or its clip inset by more than 35 % between two consecutive frames while it is tweening (a deliberate ≤ 100 ms tween is exempt). A jump on the last frame counts too (S16) | probe |
+| J2 | **No flash.** No part is visible (opacity > 0.05) before its own entrance starts, and none goes visible → hidden → visible (S8, S26) | probe |
+| J3 | **Ends at rest.** After the chain every part has opacity 1, an identity transform and no clip, so the final frame matches the static render | probe + PNG |
+| J4 | **Compositor-only.** Tweens touch only `opacity`, `transform`/`translate`/`scale`, `clip-path`, `stroke-dashoffset`; never `width`/`height`/`top`/`left`/font size | probe (property log) + code |
+| J5 | **Timing in tokens.** Each part tweens for 150–900 ms with an out ease (never `linear` on an entrance), a per-item stagger of at most 120 ms, and the whole element block chain done within 2.5 s (a slide composite within 3.5 s) | probe |
+| J6 | **Grows from the right origin.** Bars grow from their baseline, lines draw from their start, and a radial chart or donut sweeps from 12 o'clock, never from the element centre (S14) | PNG mid frames |
+| J7 | **Styles behave.** `static` shows the final frame at once, `subtle` uses calm opacity/short-translate entrances only, `expressive` may use the block's recipe; `prefers-reduced-motion` behaves like `static` | probe ×3 styles |
+| J8 | **Frame budget.** No frame gap over 100 ms during a chain in headless Chrome (the timing is noisy, so this is reported but only a finding when it repeats) | probe |
+
+## 2. Phases
+
+| Phase | Who | Scope | Done when |
+|---|---|---|---|
+| M0 | agent A | **Motion probe** in `tools/visual/scenarios/block-review.js`: new pass `motion` (in `REVIEW_PASSES`). In the viewer it records every `[data-part]` (and any element the driver tweens) on each `requestAnimationFrame` for the chain: computed opacity, transform matrix, clip-path and timestamp, plus the property names GSAP/WAAPI touch. It writes `motion` per block into `report.json` with J1–J5/J7/J8 verdicts and the worst offender, for `REVIEW_MOTION_STYLES=static,subtle,expressive` (default `expressive`) | `REVIEW_PASSES=motion REVIEW_CATEGORY=chart` writes verdicts; a known snap (a `wipe-x` part, S16) is flagged and an opacity fade is clean |
+| M1 | agent A | **Shared engine faults:** S16 (clip-path keyframes with unequal terms snap), S14 (grow presets scale about the centre: add a per-part transform origin and a real baseline grow; draw-path/sweep on fills), S8 (the second block shows final ~400 ms before its entrance), S26 (DeckViewer hides containers whose `animate()` only tweens descendants: make it impossible, or detect it in a spec across all html blocks), reduced-motion (J7) | Related motion specs and DeckViewer specs pass; tsc 0; the probe shows no J1/J2 hit for the presets; blocks that were switched away from grow/draw presets in G04/G05 because of S14 are listed for M3 |
+| M2 | agent B | Audit + fix **G01, G02, G03, G11** (structure, text, list, chrome/decoration) with the probe, all three styles | Every block row in §3 has J1–J8 ✅ or a written reason |
+| M3 | agent C | Audit + fix **G04, G05, G06** (metric, chart, table/comparison); move the charts back to real baseline grows and line draw-ons where M1 made them possible | Same |
+| M4 | agent D | Audit + fix **G07, G08** (process, timeline, hierarchy, relationship); also S20 (flow drop) since the flow edges draw on | Same |
+| M5 | agent E | Audit + fix **G09, G10** (media, people, brand, slide composites) | Same |
+| M6 | controller | Re-run `REVIEW_PASSES=motion` for every category on the final build, update this file and README §5/§6, push | All 129 rows ✅; README §5 statuses updated |
+
+Each agent records a row per block in its group file under a new heading `## Motion pass`
+(columns: block, J1–J8, fix commit, notes) and reports back. The controller updates §3 and §4.
+
+## Motion engine (M0–M1)
+
+Agent A, 2026-10-06. Commits: `6c496b90` (RVM0, probe), `480def10` (RVM1, engine).
+
+### Probe (M0)
+
+`tools/visual/scenarios/motion-probe.js`, used by the `motion` pass of `block-review.js` (not in
+the default passes). It builds its own deck (`review-<category>-motion`: a blank lead slide, then one
+slide per block per style; element blocks sit second after a title, which is the S8 case), opens
+each slide with ArrowRight and samples every `[data-part]`, block wrapper and driver-touched element
+on every animation frame until the chain is done + 1.2 s and 300 ms quiet. Per element: effective
+opacity (own × ancestors), translate, scale, visible clip fraction (own × ancestors), dash progress;
+plus the inline-style / attribute / WAAPI property names that change (J4). Verdicts J1/J2/J3/J4/J5/
+J7/J8 with the worst offender go to `report.json` → `blocks[type].motion[style]`, one summary line
+per block goes to stderr and `report.motionSummary`. A motion-only run merges into an existing
+`report.json`.
+
+```bash
+L=/tmp/tlslides-dist.lock
+flock -s $L env REVIEW_PASSES=motion REVIEW_CATEGORY=chart REVIEW_MOTION_STYLES=static,subtle,expressive,reduced \
+  node tools/visual/shoot.js block-review --width=1600 --height=900 2>&1 | grep -E '^tls\.|FAILED'
+#   REVIEW_BLOCKS=tls.d.bar,… REVIEW_CATEGORY=   one list instead of a category
+#   `reduced` = expressive with prefers-reduced-motion emulated
+#   put `static` FIRST: J3 then compares each block's end frame with its static render
+#   (authored opacities such as a radar area at 0.28 are not "stuck"); without it J3 expects 1/identity/no clip
+#   REVIEW_MOTION_PNG=1 three mid PNGs (150/400/800 ms; costs frame timing) · REVIEW_MOTION_DUMP=1 raw samples
+```
+
+Cost: ~2 s per block per style, one headless Chrome, no video. After a dev-server restart the first
+run can fail once (the API store is lost when `/view` compiles; S27): run it again.
+
+**Thresholds as implemented (use these in M2–M5).** J1: per frame, opacity > 0.35, translate > 40 px,
+clip or dash progress > 0.35, scale > 0.35; a change that lasts 1–2 frames is a snap, a longer run
+counts only if it lasts > 100 ms and the frame gap is ≤ 50 ms; a jump hidden on both frames is
+ignored. J2: visible = effective opacity > 0.05, clip > 1 %, scale > 0.02; flagged on visible →
+hidden → visible. J3: end frame equals the static render within 0.01 (else opacity ≥ 0.99, |translate|
+< 0.5 px, scale 1 ± 0.005, no clip). J4: no `width/height/top/left/right/bottom/font-size/margin/
+padding/inset/line-height/letter-spacing` style changes and no SVG geometry attribute changes. J5:
+each moving element 150–900 ms (± one frame), mid-time progress ≥ 0.55 (out ease), same-family
+stagger ≤ 120 ms (+ 20 ms slack), block chain ≤ 2.5 s (slide scope 3.5 s). J7: `static`/`reduced`
+nothing moves; `subtle` no scale/clip/draw and translate ≤ 12 px. J8: frame gaps > 100 ms while
+moving — a finding only when it repeats on a second run.
+
+### Engine faults fixed (M1)
+
+| Fault | Root cause | Fix |
+|---|---|---|
+| S16 clip snap | GSAP tweens a clip-path string by pairing its numbers in order and keeping the end's units: `inset(0 100% 0 0)` → `inset(0)` has one number, and even → `inset(0 0 0 0)` mixes `%` with unitless zeros; the element sat still and snapped at an end (probe: `tls.x.rule` clip 0 → 1 in one frame at ~880 ms) | `motion/clip-path.ts` pairs both insets as four terms of one unit; the GSAP driver applies it to every tween and `set`; presets, block-level wipe states, PresentationRuntime and the hero / kinetic-title literals use four `%` terms; a spec scans every `'inset(…)'` literal in `blocks/` and `components/` |
+| S14 grow / draw | `grow-*` were `scale 0→1` (both axes) about the element centre; `draw-path`/`sweep` tweened `stroke-dashoffset` 100 → 0 on elements with no dash array (nothing drawn) | `grow-bars-y` / `grow-segments` = `scaleY` from `50% 100%`, `grow-bars-x` = `scaleX` from `0% 50%` (new `scaleX`/`scaleY` keyframes under `scale`, `MotionOptions.origin`). `MotionRecipe.partMotion` (optional) gives a part its own preset and origin; it plays only with the recipe's showy preset (`expressive ?? preset`), never under a spec `fade` (subtle). Draw presets measure each stroked path (dash array = length, offset L → 0); a filled or non-SVG part gets an equal-term left-to-right clip wipe instead |
+| S8 flash | `driver.set()` did not stop tweens still running (or delayed) on the target, so hiding a block whose entrance was playing — Home on the first slide (what the old harness did), any build rewind — lost to that entrance: visible ~400–530 ms, then hidden, then re-entered. Separately the build sync was a passive effect, so a freshly mounted first slide painted every block final for one frame | GSAP `set` kills older tweens of the same properties (`killTweensOf`, `overwrite: 'auto'` fallback); WAAPI `set` cancels its own forwards-filled animations on those properties; DeckViewer's build sync is a layout effect (pre-paint). Probe: Home-rewind and first-mount cases J2 clean; 2-block expressive slides clean |
+| S26 hidden container | the viewer hides every `[data-part]` before `animate()`; nothing revealed a part `animate()` did not tween | `motion/animate-guard.ts`: DeckViewer hides through it and, on the block's `onComplete` (or the timeout), fades in (250 ms) any part still at the hidden opacity. `smoothness.spec.ts` runs all 8 html blocks' `animate()` (gsap and driver paths) and asserts each reveals every part by itself — all pass today |
+| J7 reduced motion | under `prefers-reduced-motion` blocks were hidden at slide entry and shown one frame later by the zero-delay chain (probe: every block J1/J7 ✗) | DeckViewer shows a run of auto steps at once (`autoRunEnd`); `subtle` was already calm (opacity only) and part presets from `partMotion` never apply under it |
+
+DeckViewer.tsx: only the M1 hunks were committed; the user's uncommitted edits stay in the tree.
+
+**Probe before → after** (`static,subtle,expressive,reduced`): chart (16 blocks) — before 16 ×
+`reduced` J1/J5/J7 ✗, radar/bubble J3 ✗ (probe artefact, fixed in M0 by the static reference),
+scatter/bubble expressive J5 ✗; after only scatter/bubble expressive J5 (`root` fades 100 ms: the
+block's own timing, M3). heading (3 blocks) — before 3 × `reduced` ✗; after all ✓. `tls.x.rule`
+expressive (wipe-x): before J1 ✗, after ✓. Spot check with explicit presets: `tls.d.bar` +
+`grow-bars-y` grows from the baseline, `tls.d.line` + `draw-path` draws from its start, both J1–J3 ✓.
+
+### For M3: blocks switched away from grow/draw/wipe presets (move back where it now looks right)
+
+| Block | Was | Now | Commit |
+|---|---|---|---|
+| tls.d.progress-bar | grow-bars-x | sweep-nodes | `3cf6d7f8` |
+| tls.d.bullet-chart | grow-bars-x | sweep-nodes | `3cf6d7f8` |
+| tls.d.progress-ring | grow-segments | sweep-nodes | `3cf6d7f8` |
+| tls.d.gauge | draw-path | sweep-nodes | `3cf6d7f8` |
+| tls.d.bar | grow-bars-y | stagger-children | `0ff35d76` |
+| tls.d.grouped-bar | grow-bars-y | stagger-children | `1698ee42` |
+| tls.d.stacked-bar | grow-segments | stagger-children | `1698ee42` |
+| tls.d.pie | grow-segments | sweep-nodes | `0ff35d76` |
+| tls.d.line | draw-path | sweep-nodes | `1698ee42` |
+| tls.d.area | wipe-x | sweep-nodes | `1698ee42` |
+| tls.d.sparkline | draw-path | sweep-nodes | `032bd592` |
+| tls.d.radar | draw-path | sweep-nodes | `bbe26557` |
+| tls.d.slope | draw-path | sweep-nodes | `bbe26557` |
+
+Use `partMotion` so only the bars/lines grow or draw while labels, axes and legends keep a fade
+(a block preset applies to every listed part). For M4: `tls.g.chevrons` left `wipe-x` (RV07), and
+`library/diagram/diagram-test.ts` still lists the grow/draw/wipe presets as `BROKEN`.
+
+### Still open
+
+- **`sweep` on filled arcs** (donut, pie, ring) falls back to a left-to-right wipe, not a sweep from
+  12 o'clock (J6). A radial reveal needs a per-slice approach (stroke-based ring, or `sweep-nodes`
+  in angular order); M3 decides per block.
+- **Negative bars** grow from the bottom edge too (origin is per part, not per value); a waterfall or
+  a bar below zero needs `partMotion` origin `50% 0%` on those parts.
+- **`grow-segments`** is vertical; a horizontal stack should give its segments `grow-bars-x`.
+- **count-up under GSAP**: the GSAP driver ignores `MotionOptions.onUpdate`, so `count-up` never
+  counts in the viewer (only fades/pops). Engine fix needed (map `onUpdate` to the tween's
+  progress) — affects G04/G10 counters.
+- The editor/Present path (`render-dom.tsx` html host) also hides parts before `animate()` but has no
+  untouched-part guard; harmless while all 8 html blocks pass the spec.
+- Failing specs not caused by M1: `timeline.spec` (hero-number recipe) and `motion-style.spec`
+  (bar recipe) assert recipes G04/G05 changed; `DeckViewer.spec › retreating into an auto build
+  step…` fails with the user's uncommitted retreat change (also without M1).
+- `3cf6d7f8` (RV04) deleted `library/data/tls-d-bar/layout-horizontal.ts` (179 lines) in a commit about
+  four other blocks; tsc is clean, but worth a look.
+
+### M1b (engine follow-up, 2026-10-07)
+
+Agent A. Commits: `719c9f1e` (engine), `ff044def` (probe).
+
+| Item | Root cause | Fix |
+|---|---|---|
+| E1 chained presets | `resolvePartMotion` gave every part the chained preset's own keyframes at once; `chain` was never read | Part *i* plays `chain[min(i, last)]`; each step starts when the previous one is 60 % through (`CHAIN_OVERLAP`); parts past the chain share the last step one stagger apart; recipe `partMotion` / spec part overrides still win. `quote-in`: glyph pops at 0, text at 150 ms, attribution at 450 ms |
+| E2 part easing | `blockEasing \|\| …` is always truthy, so a part preset's ease was dropped | A part playing its own preset (override, recipe part, chain step) keeps its easing unless the spec sets `ease`; `draw-path` / `sweep` ease out (`smoothOut`, was `ease-in-out`) |
+| E3 probe | an opaque wrapper with all parts hidden counted as visible | Content visibility per frame (visible + paints itself or a visible painting descendant); J1/J2 use it, J5 times only runs that showed something |
+| E4 probe | J4 compared style strings | Numbers rounded to 0.01 before comparing |
+| E5 probe | mid PNGs at fixed 150/400/800 ms from slide start | `REVIEW_MOTION_PNG=1` replays the slide and shoots at 15/40/75 % of the block's measured chain from its first movement |
+| E7 `wipe-down` | no clip-only top-down wipe | New preset `wipe-down` (`inset(0% 0% 100% 0%)` → `inset(0% 0% 0% 0%)`, panel-reveal, Wipe block effect; `wipe-y` is the bottom-up one). `tls.x.rule` vertical bar = part `rule-v` with `partMotion` wipe-down: it draws along its length |
+| count-up | the GSAP driver dropped `onUpdate`, so no number ever counted in the viewer | `onUpdate` gets the tween's eased ratio each frame and 1 at the end; the count runs on a detached proxy tween so a settle cannot freeze it half-way (trace: `$0.5M … $4.2M` over ~350 ms) |
+| sweep from 12 o'clock | filled arcs fell back to a left-to-right wipe | A filled `sweep` part gets a pie-sector clip about the family's common centre, opened clockwise from 12 o'clock by a proxy tween (`sectorClip`); stroked arcs still draw on. Checked on `tls.d.donut` + `sweep` |
+| negative bars | one origin per part | A one-axis grow on its preset origin finds the family's zero line (most common bottom / left edge, layout boxes) and grows bars hanging off it from that line (`50% 0%` / `100% 50%`). Waterfall floating bars still need their own part + origin |
+| probe: polygon clips | a sweep sector's raw area exceeds the box, so it read "fully visible" from frame one | Fraction measured inside the element box (24 × 24 grid) |
+
+Spec changes are all intended and named in the commit: presets 35 → 36 + id list, digest snapshot
+(`wipe-down`, motionCount 35), `tls-x-rule.spec` motion, `motion-m2.spec` OPTIONAL `rule-v`,
+`play-reveal.spec` count-up (the count is on a proxy). New cases in `motion/smoothness.spec.ts`
+(M1b block). Related specs: 543 pass; the same 4 pre-existing failures as after M1 (`timeline.spec`
+×2, `motion-style.spec` assert old G04/G05 recipes; `DeckViewer.spec` retreat = the user's
+uncommitted edit). tsc 0.
+
+**Probe after M1b** (`static,subtle,expressive,reduced`, heading + list + chart + `tls.x.rule`,
+116 block×style rows): all clean except `tls.d.scatter` / `tls.d.bubble` expressive J5 (`root`
+fades 100 ms; M3, as before) and `tls.c.feature-reveal` expressive J5 stagger `card[*]` 140 ms
+(authored `i * 0.14` in its animate: G01 block, above the 120 ms token; the old probe hid it
+behind the wrapper false positive). `tls.x.rule` clean in all styles; explicit checks: vertical
+rule draws top-down, donut sweeps from 12 o'clock, `quote-in` chains, count-up counts — all J1–J8 ✓.
+
+Open: `tls.c.feature-reveal` card stagger 140 → ≤ 120 ms (M6 / G01 owner); M3 moves the charts
+back to grow/draw/sweep presets with `partMotion`; `diagram-test.ts` `BROKEN` list (M4).
+
+## Final sweep (M6)
+
+Agent A, 2026-10-07. Commits: `5d6d5913` (engine), `5b2ed0ec` (gauge, steps), `a1213b9e` (journey),
+`001e85cb` (probe).
+
+### Fixed in M6
+
+| Item | Root cause | Fix |
+|---|---|---|
+| E-M5-1 images | nothing waited for an `<img>`; a photo that loaded after its fade started popped in at 0.7–1.0 | `playBlockReveal` holds an image part (hidden, no placeholder) until `img.decode()` resolves or `IMAGE_WAIT_MS` = 600 ms; the wait comes out of its delay; a newer reveal or a settle cancels the late start |
+| Settle on skip | the already-revealed / reduced path set only opacity, translate, scale | `settleBlockParts()` (DeckViewer and reduced motion use it): both scale axes, `clip-path: none` on any part that wipes / draws / clips, `stroke-dashoffset: 0` on drawn paths, sweep proxies cancelled (J3 on skip). DeckViewer.tsx: only this hunk committed |
+| Sweep start angle | `sweep` always opened from 12 o'clock | `partMotion` `startAngle` / `sweepAngle` (degrees, clockwise from 12) / `sweepCentre` (`x% y%` of the painted box). `tls.d.gauge` bands sweep from 9 o'clock round 180° about the ring centre (was a wipe-x) |
+| `tls.g.steps` vertical rail | one part for both directions, wiped across its 2 px | vertical rail = part `step[i].connector-v` with `wipe-down` |
+| `tls.c.journey` track | the dotted guide track was not a part and appeared in one frame (the probe's "A3" on journey was real) | `data-part="track"` (poster too), fades in first on every path |
+| Probe A1 | a from-state set the frame the wrapper starts to show read as a 1→0 jump | a jump towards hidden from a frame that showed nothing is ignored |
+| Probe A2 | stagger starts included the block fade / the from-state set | samples carry own opacity and clip; a member starts at its first own move towards rest (else the first visible inherited move) |
+| Probe A3 | paint-less wrappers judged on opacity | an element that paints nothing (wrapper, `root`) is judged on translate/scale only and has no J5 timing; a child the driver animates or that is invisible at registration is not its paint |
+| Probe A4 | two delegated `root` wrappers read as one family | a family is the part pattern under the same parent pattern |
+| Probe A5 | `inset:0` vs `inset: 0px` read as a J4 change | px units dropped before comparing |
+
+Specs: `motion/smoothness.spec.ts` (M6 block: sector start/turn, resolver passes the sweep, settle
+state, image hold / timeout / cancel); `motion-m3.spec` gauge preset, `motion-m4.spec` steps rail +
+OPTIONAL, `tls-g-steps.spec` vertical rail part — intended changes. Related suites pass except the
+pre-existing `DeckViewer.spec › retreating into an auto build step…` (the user's uncommitted
+DeckViewer edit). tsc 0.
+
+### Sweep
+
+`REVIEW_PASSES=motion REVIEW_MOTION_STYLES=static,subtle,expressive,reduced`, every category, final
+build (one rebuild after the fixes). Cells: clean / rows (❌ = a row with any J✗).
+
+| Category | Blocks | static | subtle | expressive | reduced |
+|---|---|---|---|---|---|
+| structure | 13 | 13/13 | 13/13 | 13/13 | 13/13 |
+| decoration | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| heading | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| text | 4 | 4/4 | 4/4 | 4/4 | 4/4 |
+| list | 9 | 9/9 | 9/9 | 9/9 | 9/9 |
+| metric | 13 | 13/13 | 13/13 | 13/13 | 13/13 |
+| emphasis | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| learning | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| chart | 16 | 16/16 | 16/16 | 16/16 | 16/16 |
+| table | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| comparison | 10 | 10/10 | 10/10 | 10/10 | 10/10 |
+| process | 6 | 6/6 | 6/6 | 6/6 | 6/6 |
+| timeline | 4 | 4/4 | 4/4 | 3/4 ❌ | 4/4 |
+| hierarchy | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| relationship | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| cover | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| media | 7 | 7/7 | 7/7 | 7/7 | 7/7 |
+| agenda | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| people | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| divider | 1 | 1/1 | 1/1 | 1/1 | 1/1 |
+| closing | 3 | 3/3 | 3/3 | 3/3 | 3/3 |
+| brand | 2 | 2/2 | 2/2 | 2/2 | 2/2 |
+| chrome | 5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| **Total** | **129** | **129/129** | **129/129** | **128/129** | **129/129** |
+
+The one flagged row is `tls.c.journey` expressive, J5 stagger `label[*]` 267–283 ms on every run:
+the nodes and labels are timed by where the drawing line reaches each stop (gaps follow the path
+geometry, 5 stops over a 900 ms out-eased draw), not by a list stagger. Kept by design; J5's 120 ms
+item stagger is for list-like reveals. Every other row is clean, and the artefact-prone blocks M3–M5
+reported (progress-bar/ring, matrix-2x2, grouped-bar, waterfall, chevrons, stat-spotlight,
+feature-reveal, big-stat, hero, kinetic-title, c.steps, steps, gauge) were clean on two extra runs ×
+four styles.
+
+Visual check (`REVIEW_PASSES=gallery,drop,viewer REVIEW_MID=500`) on metric, process and timeline:
+no stuck parts, no console errors, every drop added a shape; looked at the gauge (settled and a
+mid-sweep frame from 9 o'clock), journey and steps PNGs — as designed. PNGs deleted, report.json
+kept.
+
+### Open
+
+- `tls.c.journey` label/node gaps exceed the 120 ms item stagger by design (above).
+- The editor/Present path (`render-dom.tsx` html host) still has no untouched-part guard (all html
+  blocks pass the S26 spec) and does not wait for images.
+- `DeckViewer.spec` retreat test waits on the user's uncommitted DeckViewer edit.
+
+## 3. Progress
+
+| Group | Blocks | Motion ✅ | Fixed | Open | Phase | Status |
+|---|---|---|---|---|---|---|
+| Engine (probe + S8/S14/S16/S26) | — | — | — | — | M0–M1, M1b, M6 | ✅ `6c496b90`, `480def10`, `071bc32b` (open: count-up `onUpdate` ignored by the GSAP driver, `sweep` on fills not from 12 o'clock, negative bars → M3) |
+| G01 structure | 13 | 13 | 13 | 0 | M2 | ✅ `55d29ae8` |
+| G02 heading, text, emphasis | 12 | 12 | 7 | 0 | M2 | ✅ `985f844b` |
+| G03 list | 9 | 9 | 3 | 0 | M2 | ✅ `2c5ea313` |
+| G11 chrome, decoration | 10 | 10 | 8 | 0 (vertical rule reads as an appear: E7) | M2 | ✅ `b9d32ae4` |
+| G04 metric | 13 | 13 | 13 | 0 | M3 | ✅ `331e975c` |
+| G05 chart | 16 | 16 | 16 | 0 | M3 | ✅ `7be9a324` |
+| G06 table, comparison | 13 | 13 | 13 | 0 | M3 | ✅ `fa97ba2b` |
+| G07 process, timeline | 10 | 10 | 10 | 0 (vertical steps rail reads as a fade) | M4 | ✅ `43ea9615` |
+| G08 hierarchy, relationship | 8 | 8 | 8 | 0 | M4 | ✅ `1d513ba6` |
+| G09 media, people, brand | 14 | 14 | 13 | 0 | M5 | ✅ `ef134492` |
+| G10 slide composites | 11 | 11 | 11 | 0 | M5 | ✅ `ea5f2674` |
+| **Total** | **129** | **129** | **115** | **0** | M6 | ✅ final sweep 515/516 clean (journey expressive labels follow the line by design) |
+
+## 4. Session log
+
+| Date | Session | Moved | Notes for next session |
+|---|---|---|---|
+| 2026-10-06 | controller | Plan written | Start M0 + M1 (one agent). Resume from the first ⬜ row in §3 |
+| 2026-10-06 | agent A (M0+M1) | Probe `6c496b90`; engine `480def10` (S8 rewind/first-paint flash, S14 baseline grow + real draw-on + `partMotion`, S16 4-term clip pairs, S26 `animate-guard`, J7 reduced = static); notes `071bc32b` | chart/heading probe clean except scatter/bubble `root` 100 ms (J5, M3). Pre-existing spec failures: `timeline.spec`, `motion-style.spec` (assert old G04/G05 recipes, M3 fixes them), `DeckViewer.spec` retreat (user's uncommitted DeckViewer edit). **Next: M2 = G01 + G02 + G03 + G11** |
+| 2026-10-06 | agent B (M2) + controller | G01/G02/G03/G11: 44/44 clean (31 fixed, 13 unchanged): `b9d32ae4`, `985f844b`, `2c5ea313`, `55d29ae8` (+ `library/motion-m2.spec.ts`), rows `e67eb580` (its message says 15/29; the right count is 13 unchanged / 31 fixed). Controller repaired `tls-c-hero.spec.ts` (RV10 `9a29421e` had spliced the subtle-style test into a helper: TS1005, suite could not run; 52/52 pass now) | Engine/probe issues E1–E7 (detail in `G11-chrome-decoration.md`): **E1** chained presets (`quote-in`, `title-then-body`, `radiate`, `draw-axis-then-nodes`) never chain, `resolve-motion.ts`; **E2** `resolvePartMotion` drops a part preset's own easing; **E3** probe flags the html wrapper 0→1 while parts are hidden; **E4** probe J4 counts pixel-fraction reformatting; **E5** motion PNGs at fixed 150/400/800 ms miss element blocks that start ~520 ms; **E7** no clip top-down preset for vertical rules. Plus M1 opens: count-up `onUpdate`, sweep from 12 o'clock, negative bars. **Next: engine fix (E1–E5, E7 + M1 opens) before M3**, then re-probe M2 categories in M6 |
+| 2026-10-07 | agent A (M1b) | Engine `719c9f1e`, probe `ff044def`, notes `b886d857`: E1 chained presets chain (60 % overlap), E2 part preset ease wins, E3/E4/E5 probe fixes, E7 `wipe-down` + vertical rule, count-up `onUpdate`, donut/pie sweep from 12 o'clock, negative bars from the zero line | Probe on heading/list/chart/rule (116 rows) clean except J5: scatter/bubble `root` 100 ms, feature-reveal card stagger 140 ms. **Next: M3 = G04 + G05 + G06** (move charts back to grow/draw/sweep, fix stale `timeline.spec`/`motion-style.spec`, feature-reveal stagger) |
+| 2026-10-07 | agent C (M3) | G04/G05/G06 42/42 fixed (engine `11d89574`, `c827b476`; G04 `27ee6939`…`331e975c`; G05 `a239d97f`…`7be9a324`; G06 `b355b640`…`fa97ba2b`; specs `16c519d3`; files `07067036`, `2157a34a`, `d1d8bbea`); feature-reveal stagger 120 ms `803a98e1` | Charts back on real grow/draw/sweep; count-up keeps format + tabular digits; per-part `delay`/`stagger` in recipes; `split-in` settles at 0. Open for M6 (controller/engine): probe A1 (hidden-state set the frame the block shows → false J1), A2 (J5 stagger folds the block fade in), A3 (html wrapper 0→1 while parts faint); DeckViewer settle-to-visible ignores clip-path/dash offset on a mid-chain skip; `sweep` start angle (gauge). Jest filter must also exclude `DOM and SVG` specs (README §4 updated). **Next: M4 = G07 + G08 (+ S20)** |
+| 2026-10-07 | agent D (M4) | G07/G08 18/18 fixed (`43ea9615`, `1d513ba6`, files `afcf05bd`, `17ef99f2`); S20 fixed `faf65ba9` (only nested blocks get fresh ids; full-length ids, the old 1-hex-digit ids could collide) | Diagrams build in flow order (flow by layer, tree by level, mind map by branch, edges draw from source); `diagram/_motion.ts` shared timing; `motion-m4.spec.ts` 100 tests incl. J5 at max item count. Probe artefacts A1–A3 again + A4 (two delegated `root` wrappers read as one family). Open: vertical `tls.g.steps` rail wipes across its 2 px. **Next: M5 = G09 + G10** |
+| 2026-10-07 | agent E (M5) | G09 14/14 (13 fixed), G10 11/11 fixed: `d218d00e`, `33626d57`, `5fc608fc`, `ef134492`, `a4f39319`, `0e73c615`, `faf891de`, `70378990`, `ea5f2674`; `motion-m5.spec.ts` (152 tests) `1d00a403`; files `67d003b0`, `2b5e8fb9` | Composites reveal in hierarchy (7 of 9 animated `root` only); `composite/_slots.ts` `slotItems` keeps per-item pieces in order; device-mock shadow J3, hero variants never played, kinetic-title animated `letter-spacing` (J4), testimonial 4 s → 0.7 s. **All 129 blocks motion-reviewed.** Open for M6: E-M5-1 images can pop in at 0.7–1.0 opacity when they load after their entrance starts (await `img.decode()`); settle-to-visible ignores clip-path/dash offset on skip; probe A1–A5; sweep start angle (gauge); vertical `tls.g.steps` rail |
+| 2026-10-07 | agent A (M6) + controller | Engine `5d6d5913` (images wait for `decode()` ≤ 600 ms; `settleBlockParts()` settles clip/dash on skip; sweep start angle), blocks `5b2ed0ec` (gauge sweeps its dial, vertical steps rail draws down), `a1213b9e` (journey track was an unanimated pop), probe A1–A5 `001e85cb`, notes `a03214d3` | **Motion pass complete.** Final sweep 129 blocks × 4 styles: 515/516 clean. Open (minor): journey label spacing > 120 ms by design; editor Present mode lacks the S26 guard and image wait (no visible symptom today). Still-open non-motion shared issues: README §5 |

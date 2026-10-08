@@ -1,18 +1,14 @@
 # Development
 
-This repo is pinned to **Yarn Classic 1.22.17** (`package.json` → `"packageManager":
-"yarn@1.22.17"`). That's the canonical, lowest-friction path. The second half of this file is
-what was actually needed to get a clean install and build working with **pnpm** instead —
-verified end-to-end on Node v22.23.1 — keep it only if you have a specific reason to avoid Yarn
-Classic.
+This repo is pinned to **pnpm 12.8.1** (`package.json` → `"packageManager"`). Install with
+`COREPACK_ENABLE_STRICT=0 pnpm install`. Python tooling (`ppt-master/`) uses uv.
 
-## Canonical path: Yarn Classic
+## Run
 
 ```bash
 corepack enable
-corepack prepare yarn@1.22.17 --activate   # matches the pinned packageManager
-yarn install                                # installs all workspaces
-yarn start:www                              # packages in watch mode + Next dev server (apps/www)
+pnpm install                                # installs all workspaces
+pnpm start:www                              # packages in watch mode + Next dev server (apps/www)
 ```
 
 Then open `http://localhost:3000`.
@@ -21,21 +17,21 @@ Other useful root scripts (see root `package.json`):
 
 | Script | What it does |
 |---|---|
-| `yarn start` | `turbo run start --stream --parallel` — watch-builds every package/app at once (heavy) |
-| `yarn start:www` | watch-builds packages **and** runs `apps/www`'s `next dev` — best default for iterating on the editor UI |
-| `yarn start:packages` | watch-builds just `packages/*` (core, tldraw, vec, curve, intersect) |
-| `yarn build` | production build of everything |
-| `yarn build:packages` | production build of `packages/*` only |
-| `yarn test` | Jest across workspaces |
+| `pnpm start` | `turbo run start --stream --parallel` — watch-builds every package/app at once (heavy) |
+| `pnpm start:www` | watch-builds packages **and** runs `apps/www`'s `next dev` — best default for iterating on the editor UI |
+| `pnpm start:packages` | watch-builds just `packages/*` (core, tldraw, vec, curve, intersect) |
+| `pnpm build` | production build of everything |
+| `pnpm build:packages` | production build of `packages/*` only |
+| `pnpm test` | Jest across workspaces |
 | `yarn docs` | generates `TldrawApp` API docs via TypeDoc (see `guides/documentation.md`) |
 
 For a **lighter, non-Next.js** way to see the editor (`<Tldraw>`) render without `apps/www`'s
 auth/Liveblocks/Sentry/PWA baggage:
 
 ```bash
-yarn start:packages          # terminal 1 — watch-builds packages/core & packages/tldraw
+pnpm start:packages          # terminal 1 — watch-builds packages/core & packages/tldraw
 cd examples/tldraw-example
-yarn start                   # terminal 2 — esbuild dev server on http://localhost:5420
+pnpm start                   # terminal 2 — esbuild dev server on http://localhost:5420
 ```
 
 `examples/tldraw-example/src/basic.tsx`, `embedded.tsx`, `readonly.tsx`, `api-control.tsx` etc.
@@ -198,5 +194,5 @@ value and as a type, on the first run after those two fixes).
 
 ## Other scripts
 
-- Run `yarn test` to execute unit tests via [Jest](https://jestjs.io).
+- Run `pnpm test` to execute unit tests via [Jest](https://jestjs.io).
 - Run `yarn docs` to build the docs via [TypeDoc](https://typedoc.org/).

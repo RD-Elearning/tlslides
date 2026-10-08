@@ -5,6 +5,6 @@
     "access": "public",
     "directory": "dist"
   },
-  "npmClient": "yarn",
+  "npmClient": "pnpm",
   "useWorkspaces": true
 }

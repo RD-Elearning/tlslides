@@ -12,8 +12,8 @@
   ],
   "scripts": {
     "dev": "electron-esbuild dev",
-    "start:electron": "yarn dev",
-    "build:apps": "yarn build:electron",
+    "start:electron": "pnpm dev",
+    "build:apps": "pnpm build:electron",
     "build:electron": "electron-esbuild build",
     "package": "electron-builder"
   },

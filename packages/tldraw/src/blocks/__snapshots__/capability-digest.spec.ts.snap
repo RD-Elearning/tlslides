@@ -1,0 +1,5298 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`R7 — capability digest v2 snapshot test digest markdown matches snapshot (changes only when registry does) 1`] = `
+"# Slide block capabilities
+
+Generated from the live block library and slide layouts — do not hand-author a copy of this document, it will drift. Every block below is a closed vocabulary entry: pick a \`type\`, fill its declared slots, and never invent a region name, a slot, or a coordinate.
+
+## Color roles
+
+Use role names (e.g. \`accent\`, \`text\`) in slot values — never bare hex.
+
+- **surface**: Default background fill; resolved from theme.
+- **surfaceAlt**: Slightly tinted surface for alternating rows or cards.
+- **accent**: Primary brand accent for buttons, links, highlights.
+- **accent2**: Secondary accent for charts, secondary emphasis.
+- **text**: Primary text colour; contrast-solved against the surface (≥ 4.5:1).
+- **textMuted**: Secondary text colour for captions, footnotes; contrast-solved (≥ 4.5:1).
+- **positive**: Green status colour for growth, success, positive deltas.
+- **negative**: Red status colour for decline, errors, negative deltas.
+- **warning**: Amber status colour for caution, in-progress, mixed results.
+- **neutral**: Grey status colour for neutral or unavailable data.
+- **line**: Hairlines, dividers, gridlines; contrast-solved (≥ 1.4:1).
+- **scrim**: Dark overlay for text over images; semi-transparent black wash.
+
+## Style
+
+BlockStyleSpec fields (all optional; absent = theme default):
+
+- \`surface: ColorRole | string — block background\`
+- \`on: ColorRole | string — foreground colour (derived from surface when absent)\`
+- \`accent: ColorRole | string — emphasis colour\`
+- \`tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — visual tone\`
+- \`radius: RadiusToken | number — corner radius (none | sm | md | lg | xl | pill)\`
+- \`padding: SpaceToken | number | [number, number] — inner padding\`
+- \`gap: SpaceToken | number — gap between children\`
+- \`elevation: 0 | 1 | 2 — shadow level\`
+- \`align: 'start' | 'center' | 'end' — content alignment\`
+- \`density: 'compact' | 'default' | 'roomy' — visual compactness\`
+
+Gradient shape: \`Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }\`
+
+## Motion
+
+Set \`motion.preset\` on any block. Every preset below plays (no-op excluded).
+
+Motion style: set \`motionStyle\` on the deck or a slide (slide wins) instead of per-block \`motion\`: \`expressive\` for covers, key numbers and section openers; \`subtle\` for dense content; \`static\` for print/handouts.
+
+- **fade** _text-reveal_ — 250ms, triggers: withPrevious, afterPrevious, onClick
+- **fade-up** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **fade-down** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **pop** _badge_ — 250ms, triggers: withPrevious, afterPrevious, onClick
+- **wipe-x** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
+- **wipe-y** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
+- **wipe-down** _panel-reveal_ — 350ms, triggers: withPrevious, afterPrevious, onClick
+- **mask-reveal** _panel-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **reveal-down** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **stagger-lines** _text-reveal_ — 500ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **stagger-children** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **stagger-grid** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **words-in** _text-reveal_ — 500ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **quote-in** _composite_ — 1000ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-lines → fade)
+- **count-up** _card-resize_ — 500ms, triggers: withPrevious, afterPrevious, onClick
+- **grow-bars-x** _card-resize_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **grow-bars-y** _card-resize_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **grow-segments** _card-resize_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **draw-path** _success-check_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **draw-axis-then-nodes** _success-check_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: draw-path → stagger-children)
+- **sweep** _success-check_ — 500ms, triggers: withPrevious, afterPrevious, onClick
+- **sweep-nodes** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **pop-points** _badge_ — 250ms, triggers: withPrevious, afterPrevious, onClick, stagger 40ms
+- **radiate** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → stagger-children)
+- **grow-branches** _success-check_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: draw-path → stagger-children)
+- **split-in** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **field-in** _text-reveal_ — 400ms, triggers: withPrevious, afterPrevious, onClick
+- **title-then-body** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → fade)
+- **title-then-split** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → split-in)
+- **scrim-then-text** _composite_ — 750ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → stagger-lines)
+- **ken-burns** _ambient_ — 500ms, triggers: withPrevious, afterPrevious, onClick (loops)
+- **cover-in** _composite_ — 1400ms, triggers: withPrevious, afterPrevious, onClick (chains: fade → words-in → fade-up → fade)
+- **section-in** _composite_ — 1000ms, triggers: withPrevious, afterPrevious, onClick (chains: pop → wipe-x → fade-up)
+- **dashboard-in** _composite_ — 800ms, triggers: withPrevious, afterPrevious, onClick (chains: stagger-children → grow-bars-y)
+- **closing-in** _composite_ — 650ms, triggers: withPrevious, afterPrevious, onClick (chains: fade-up → pop)
+
+## Layouts
+
+Region names belong to the layout — pick a \`layout\`, then only use the regions it lists.
+
+| Layout | Regions | Use when |
+|---|---|---|
+| \`title\` (Title) | \`title\`, \`subtitle\` | Centered title + subtitle, ideal for simple title slides. |
+| \`section\` (Section) | \`title\`, \`subtitle\` | Large title + small subtitle for section dividers. |
+| \`two-column\` (Two Column) | \`title\`, \`left\`, \`right\` | Left/right split with a title bar — the workhorse layout. |
+| \`three-column\` (Three Column) | \`title\`, \`a\`, \`b\`, \`c\` | Equal thirds with a title bar — comparison or feature lists. |
+| \`four-up\` (Four Up) | \`title\`, \`q1\`, \`q2\`, \`q3\`, \`q4\` | 2×2 grid with a title bar — feature matrices, quadrants. |
+| \`image-left\` (Image Left) | \`title\`, \`image\`, \`text\` | Image (60%) left, text (40%) right — photo + caption. |
+| \`image-right\` (Image Right) | \`title\`, \`text\`, \`image\` | Text (40%) left, image (60%) right — text-first image support. |
+| \`image-top\` (Image Top) | \`title\`, \`image\`, \`text\` | Image (60%) top, text (40%) bottom — hero image layout. |
+| \`image-bottom\` (Image Bottom) | \`title\`, \`text\`, \`image\` | Text (40%) top, image (60%) bottom — caption-over-image. |
+| \`grid-3x2\` (Grid 3×2) | \`title\`, \`c1\`, \`c2\`, \`c3\`, \`c4\`, \`c5\`, \`c6\` | 3 columns × 2 rows — gallery, feature cards. |
+| \`grid-2x3\` (Grid 2×3) | \`title\`, \`a\`, \`b\`, \`c\`, \`d\`, \`e\`, \`f\` | 2 columns × 3 rows — compact data grid. |
+| \`comparison\` (Comparison) | \`title\`, \`left\`, \`right\` | Two equal columns for side-by-side comparison. |
+| \`timeline\` (Timeline) | \`title\`, \`timeline\` | Full-width horizontal timeline area with title. |
+| \`quote\` (Quote) | \`quote\`, \`attribution\` | Narrowed centered quote with attribution — testimonial slides. |
+| \`kpi-row\` (KPI Row) | \`title\`, \`kpi1\`, \`kpi2\`, \`kpi3\`, \`kpi4\` | Title + 4 equal KPI cells — dashboard-style metrics. |
+| \`blank\` (Blank) | \`content\` | Single content region, full safe area — maximum flexibility. |
+
+## Blocks
+
+### \`tls.c.agenda\` — Agenda
+
+Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
+
+**When:** Use for a table-of-contents or agenda slide listing 3–8 topics. Set \`current\` to highlight the active topic.
+**Avoid:** Do not use for more than 8 items (split into two sections), for a dated sequence (use tls.c.steps) or nested in another block: it fills the whole slide.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (title, note) (1–12 items) | 3–8 items. Each title should be 1–6 words. Notes are optional and brief. |
+| \`current\` | no | number | Index of the currently highlighted item (0-based). Omit or set to null to highlight none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_agenda\\",
+  \\"type\\": \\"tls.c.agenda\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"title\\": \\"Opening\\",
+        \\"note\\": \\"Welcome and agenda overview\\"
+      },
+      {
+        \\"title\\": \\"Q3 Results\\",
+        \\"note\\": \\"Revenue and growth metrics\\"
+      },
+      {
+        \\"title\\": \\"Strategy\\",
+        \\"note\\": \\"Next quarter priorities\\"
+      },
+      {
+        \\"title\\": \\"Q&A\\",
+        \\"note\\": \\"Questions and discussion\\"
+      }
+    ],
+    \\"current\\": 1
+  }
+}
+\`\`\`
+
+### \`tls.c.big-stat\` — Big Stat [html]
+
+Big number slide. One enormous headline metric with a short label and optional context line. Use for KPIs, milestones, and hero stats. _(family: composite; keywords: stat, big, number, kpi, metric, hero, headline, count)_
+
+**When:** Use for a single hero statistic — one big number with a label and optional context.
+**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number) or nested in another block.
+
+**Parts:** \`value\`, \`label\`, \`context\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number | The headline number to display. Any numeric value. |
+| \`label\` | yes | text (max 40 chars) | Short label describing the number. 1–4 words, e.g. \\"Total Revenue\\". |
+| \`showLabel\` | no | boolean | Toggle the label below the value on/off. |
+| \`context\` | no | text (max 60 chars) | Optional supporting line below the label (e.g. \\"vs last quarter\\"). |
+| \`showContext\` | no | boolean | Toggle the context line on/off. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234). |
+| \`prefix\` | no | text (max 4 chars) | Optional prefix before the number (e.g. \\"$\\", \\"€\\"). Max 4 chars. |
+| \`suffix\` | no | text (max 4 chars) | Optional suffix after the number (e.g. \\"%\\", \\"M\\"). Max 4 chars. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_big_stat\\",
+  \\"type\\": \\"tls.c.big-stat\\",
+  \\"props\\": {
+    \\"value\\": 4200000,
+    \\"label\\": \\"Total Revenue\\",
+    \\"context\\": \\"vs last quarter\\",
+    \\"format\\": \\"compact\\",
+    \\"prefix\\": \\"$\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.cards\` — Cards
+
+Row of 2-4 equal cards, each led by an icon, number or image, then title and text. _(family: composite; keywords: cards, pillars, benefits, offerings, three columns, features, icon cards)_
+
+**When:** Two to four framed pillars, benefits or offerings in a row, each with an icon (or number/image), a title and a one-sentence paragraph.
+**Avoid:** More than 4 items or icon-only entries: tls.c.feature-grid. Plain points: tls.t.bullets.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`cards\` | yes | list of object (icon, number, image, title, text) (2–4 items) | Each: title!, text, and the field named by lead (icon, number or image). |
+| \`lead\` | no | enum: icon \\\\| number \\\\| image \\\\| none | What tops each card. |
+| \`tone\` | no | enum: surface \\\\| alt \\\\| outline \\\\| accent-first | accent-first fills only the first card. |
+| \`align\` | no | enum: start \\\\| center |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cards\\",
+  \\"type\\": \\"tls.c.cards\\",
+  \\"props\\": {
+    \\"cards\\": [
+      {
+        \\"icon\\": \\"target\\",
+        \\"title\\": \\"Clear goals\\",
+        \\"text\\": \\"Every session starts from one question the data can answer.\\"
+      },
+      {
+        \\"icon\\": \\"chart-bar\\",
+        \\"title\\": \\"Hands-on data\\",
+        \\"text\\": \\"Real datasets, small enough to explore in class.\\"
+      },
+      {
+        \\"icon\\": \\"check\\",
+        \\"title\\": \\"Honest results\\",
+        \\"text\\": \\"Learn what a result does and does not show.\\"
+      }
+    ],
+    \\"lead\\": \\"icon\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.case-study\` — Case study
+
+Success story: challenge, solution and result, with one headline result number. _(family: composite; keywords: case study, success story, reference, project showcase, before after result, customer story)_
+
+**When:** Success stories, project showcases and references.
+**Avoid:** A generic 3-point list: tls.c.cards.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`client\` | no | text (max 40 chars) | Name of the client or project. |
+| \`challenge\` | yes | text (max 220 chars) | 1-2 sentences: the problem. |
+| \`solution\` | yes | text (max 220 chars) | 1-2 sentences: what was done. |
+| \`result\` | yes | text (max 220 chars) | 1-2 sentences: the outcome. |
+| \`metric\` | no | object (value, label) | Fields: value, label. |
+| \`layout\` | no | enum: columns \\\\| rows | rows = full-width bands. |
+| \`emphasis\` | no | enum: result \\\\| none | result = accent-filled result. |
+| \`showMetric\` | no | boolean |  |
+| \`showClient\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_case\\",
+  \\"type\\": \\"tls.c.case-study\\",
+  \\"props\\": {
+    \\"client\\": \\"Vinh University Library\\",
+    \\"challenge\\": \\"Long queues at peak hours.\\",
+    \\"solution\\": \\"Self-service kiosks and a renewal app.\\",
+    \\"result\\": \\"Queues gone, staff moved to study support.\\",
+    \\"metric\\": {
+      \\"value\\": \\"-80%\\",
+      \\"label\\": \\"waiting time\\"
+    },
+    \\"layout\\": \\"columns\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.chart-insight\` — Chart with Insight
+
+Chart with its key message in a takeaway panel and a source line. _(family: composite; keywords: chart, insight, takeaway, explained chart, so what, annotated chart, source)_
+
+**When:** A chart whose message must be stated explicitly (\\"Revenue doubled after launch\\"). The takeaway sits beside the chart, or under it in a narrow region.
+**Avoid:** Several KPIs: tls.c.dashboard. A bare chart: tls.d.line or tls.d.bar.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`chart\` | yes | object (kind, categories, series) | Fields: kind, categories, series[{name, values}]. bar/pie/donut use series[0] only. |
+| \`insight\` | yes | richText (max 200 chars) | The message of the chart in 1-2 sentences. |
+| \`insightTitle\` | no | text (max 40 chars) | \\"Key insight\\". |
+| \`source\` | no | text (max 120 chars) |  |
+| \`side\` | no | enum: right \\\\| left \\\\| below |  |
+| \`ratio\` | no | enum: 2:1 \\\\| 3:2 \\\\| 1:1 | Chart width : insight width. |
+| \`showSource\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_chart_insight\\",
+  \\"type\\": \\"tls.c.chart-insight\\",
+  \\"props\\": {
+    \\"chart\\": {
+      \\"kind\\": \\"line\\",
+      \\"categories\\": [
+        \\"Q1\\",
+        \\"Q2\\",
+        \\"Q3\\"
+      ],
+      \\"series\\": [
+        {
+          \\"name\\": \\"Users\\",
+          \\"values\\": [
+            12,
+            18,
+            27
+          ]
+        }
+      ]
+    },
+    \\"insight\\": \\"Users **doubled** in two quarters.\\",
+    \\"source\\": \\"Source: product analytics\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.closing\` — Closing
+
+Closing slide: thank-you title, call to action, contacts and a presenter. _(family: composite; keywords: closing, thank you, questions, end slide, contact, call to action, next step)_
+
+**When:** Last slide: thanks, Q&A, next step, how to reach us.
+**Avoid:** A summary of key points: use tls.c.recap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | yes | text (max 50 chars) | \\"Thank you\\", \\"Questions?\\". |
+| \`text\` | no | text (max 160 chars) |  |
+| \`cta\` | no | text (max 40 chars) | Next step, 2-5 words. |
+| \`contacts\` | no | list of text (max 60 chars) (0–4 items) | Email, site, handle. |
+| \`person\` | no | object (image, name, role) | Fields: image, name, role. |
+| \`variant\` | no | enum: centered \\\\| split | split = panel with person and contacts. |
+| \`ctaStyle\` | no | enum: button \\\\| link |  |
+| \`showCta\` | no | boolean |  |
+| \`showContacts\` | no | boolean |  |
+| \`showPerson\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_closing\\",
+  \\"type\\": \\"tls.c.closing\\",
+  \\"props\\": {
+    \\"title\\": \\"Thank you\\",
+    \\"text\\": \\"Questions are welcome.\\",
+    \\"cta\\": \\"Book office hours\\",
+    \\"contacts\\": [
+      \\"lan.tran@example.edu\\"
+    ],
+    \\"person\\": {
+      \\"name\\": \\"Dr. Tran Thi Lan\\",
+      \\"role\\": \\"Head of Data Science\\"
+    },
+    \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.comparison\` — Comparison
+
+Side-by-side columns, each with a title and a list of items, to contrast options, plans or viewpoints. One column can be highlighted as the recommended one. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
+
+**When:** Use to compare 2–3 options, plans, or viewpoints side by side. Set \`highlight\` to draw attention to the recommended column.
+**Avoid:** Do not use for more than 3 columns (split into two slides) or for sequential processes (use tls.c.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`columns\` | yes | list of object (title, items) (2–3 items) | 2–3 columns, each with a short title (2–6 words) and 2–6 short items (2–8 words each). |
+| \`highlight\` | no | number | Index (0-based) of the column to highlight with accent colour. Omit or null for none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_comparison\\",
+  \\"type\\": \\"tls.c.comparison\\",
+  \\"props\\": {
+    \\"columns\\": [
+      {
+        \\"title\\": \\"Build In-House\\",
+        \\"items\\": [
+          \\"Full control\\",
+          \\"Higher upfront cost\\",
+          \\"Longer timeline\\"
+        ]
+      },
+      {
+        \\"title\\": \\"Buy SaaS\\",
+        \\"items\\": [
+          \\"Quick setup\\",
+          \\"Lower upfront cost\\",
+          \\"Vendor lock-in risk\\"
+        ]
+      },
+      {
+        \\"title\\": \\"Hybrid\\",
+        \\"items\\": [
+          \\"Balanced approach\\",
+          \\"Moderate cost\\",
+          \\"Flexible roadmap\\"
+        ]
+      }
+    ],
+    \\"highlight\\": 2
+  }
+}
+\`\`\`
+
+### \`tls.c.contact\` — Contact
+
+Contact block: an optional person and email, phone, website, address or social lines, each with its icon. _(family: composite; keywords: contact, email, phone, website, address, social, reach us, get in touch)_
+
+**When:** Where to reach the presenter or the organisation.
+**Avoid:** A full closing slide: tls.c.closing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`person\` | no | object (image, name, role) | Fields: image, name, role. |
+| \`items\` | yes | list of object (kind, value) (1–6 items) | Each: kind (email, phone, web, address, social), value. The icon follows the kind. |
+| \`showPerson\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_contact\\",
+  \\"type\\": \\"tls.c.contact\\",
+  \\"props\\": {
+    \\"person\\": {
+      \\"name\\": \\"Dr. Tran Thi Lan\\",
+      \\"role\\": \\"Head of Data Science\\"
+    },
+    \\"items\\": [
+      {
+        \\"kind\\": \\"email\\",
+        \\"value\\": \\"lan.tran@example.edu\\"
+      },
+      {
+        \\"kind\\": \\"web\\",
+        \\"value\\": \\"stats.example.edu\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.cover\` — Cover
+
+Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(family: composite; keywords: cover, title slide, opening, first slide, intro, lecture title, photo)_
+
+**When:** First slide of a deck or talk.
+**Avoid:** Text-only opener with a button: tls.c.hero. Mid-deck sections: tls.c.divider.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`title\` | yes | richText (max 80 chars) | Up to 10 words. |
+| \`subtitle\` | no | text (max 140 chars) |  |
+| \`meta\` | no | text (max 80 chars) | Presenter, date. |
+| \`image\` | no | image |  |
+| \`alt\` | no | text (max 160 chars) |  |
+| \`logo\` | no | image |  |
+| \`variant\` | no | enum: centered \\\\| split \\\\| bleed | split = photo right; bleed = photo behind. |
+| \`decoration\` | no | enum: none \\\\| blob \\\\| arc \\\\| dots |  |
+| \`showKicker\` | no | boolean |  |
+| \`showSubtitle\` | no | boolean |  |
+| \`showMeta\` | no | boolean |  |
+| \`showLogo\` | no | boolean |  |
+| \`showImage\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cover\\",
+  \\"type\\": \\"tls.c.cover\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Lecture 1\\",
+    \\"title\\": \\"Introduction to Applied Statistics\\",
+    \\"subtitle\\": \\"From data to decisions\\",
+    \\"meta\\": \\"Dr. Tran Thi Lan · 2026\\",
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"logo\\": \\"/demo/logo-1.svg\\",
+    \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.dashboard\` — Dashboard
+
+KPI tiles, one chart and an insight note on one slide. _(family: composite; keywords: dashboard, kpi, overview, monthly review, status, results, metrics)_
+
+**When:** Performance overview: monthly review, project status, business results.
+**Avoid:** One number: tls.c.big-stat. One chart with an explanation: tls.c.chart-insight.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kpis\` | yes | list of object (label, value, delta, sparkline, polarity, format) (2–4 items) | Each: label!, value!, delta, sparkline[], polarity, format. |
+| \`chart\` | yes | object (kind, categories, series) | Fields: kind, categories, series[{name, values}]. bar/pie/donut use series[0] only. |
+| \`insight\` | no | text (max 160 chars) | One takeaway sentence. |
+| \`layout\` | no | enum: kpis-top \\\\| kpis-left |  |
+| \`chartRatio\` | no | enum: 2:1 \\\\| 1:1 | Chart width vs insight width. |
+| \`showInsight\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_dashboard\\",
+  \\"type\\": \\"tls.c.dashboard\\",
+  \\"props\\": {
+    \\"kpis\\": [
+      {
+        \\"label\\": \\"Revenue\\",
+        \\"value\\": 4200000,
+        \\"delta\\": 12.5,
+        \\"format\\": \\"compact\\"
+      },
+      {
+        \\"label\\": \\"NPS\\",
+        \\"value\\": 62,
+        \\"delta\\": 4
+      }
+    ],
+    \\"chart\\": {
+      \\"kind\\": \\"line\\",
+      \\"categories\\": [
+        \\"Jan\\",
+        \\"Feb\\",
+        \\"Mar\\"
+      ],
+      \\"series\\": [
+        {
+          \\"name\\": \\"Revenue\\",
+          \\"values\\": [
+            3.1,
+            3.6,
+            4.2
+          ]
+        }
+      ]
+    },
+    \\"insight\\": \\"Revenue grew every month.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.divider\` — Section Divider
+
+Section break: big section number, title and one-line intro. _(family: composite; keywords: divider, section, chapter, part, break, agenda item, transition slide)_
+
+**When:** Between major parts of a deck or chapters of a lecture.
+**Avoid:** The first slide: use tls.c.cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | no | text (max 8 chars) | \\"01\\", \\"II\\" or \\"Part 2\\". |
+| \`title\` | yes | text (max 60 chars) |  |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`variant\` | no | enum: numeral \\\\| field \\\\| minimal | field = accent background; minimal = no number. |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`showNumber\` | no | boolean |  |
+| \`showSubtitle\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_divider\\",
+  \\"type\\": \\"tls.c.divider\\",
+  \\"props\\": {
+    \\"number\\": \\"02\\",
+    \\"title\\": \\"Describing data\\",
+    \\"subtitle\\": \\"Centre, spread and shape\\",
+    \\"variant\\": \\"numeral\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.feature-grid\` — Feature Grid [html]
+
+Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
+
+**When:** Use for 2-6 feature highlights in a grid, each with an icon, a title and a short description (capabilities, services, product pillars).
+**Avoid:** Do not use for a comparison of options (use tls.c.comparison), for sequential steps (use tls.c.steps) or for 2-4 framed cards with a paragraph each (use tls.c.cards).
+
+**Parts:** \`cell[*].icon\`, \`cell[*].title\`, \`cell[*].desc\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`cells\` | yes | list of object (icon, title, desc) (2–6 items) | List of 2–6 feature cells, each with icon (icon id string), title (short, 1–4 words), and desc (one sentence). Describe features, benefits, or capabilities. |
+| \`columns\` | no | number (min 2, max 4) | Number of columns: 2, 3, or 4. Default is 3. |
+| \`gap\` | no | number (min 8, max 48) | Gap between cells in slide units. Default 24. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_feature_grid\\",
+  \\"type\\": \\"tls.c.feature-grid\\",
+  \\"props\\": {
+    \\"cells\\": [
+      {
+        \\"icon\\": \\"zap\\",
+        \\"title\\": \\"Fast\\",
+        \\"desc\\": \\"Optimised for speed at every layer.\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"Secure\\",
+        \\"desc\\": \\"End-to-end encryption by default.\\"
+      },
+      {
+        \\"icon\\": \\"globe\\",
+        \\"title\\": \\"Global\\",
+        \\"desc\\": \\"Deployed across 30+ regions.\\"
+      }
+    ],
+    \\"columns\\": 3,
+    \\"gap\\": 24
+  }
+}
+\`\`\`
+
+### \`tls.c.feature-reveal\` — Feature reveal [html]
+
+Grid of 3-6 icon cards (title + one line) that flip in one after another. _(family: composite; keywords: features, cards, benefits, skills, grid, icons, animated)_
+
+**When:** Key benefits, skills or pillars (3-6) as icon cards with a title and one line each, on a showcase slide with motionStyle expressive. Cards stay compact and centre in a tall region.
+**Avoid:** Dense or printed slides (use tls.c.feature-grid); steps in order (use tls.g.chevrons).
+
+**Parts:** \`card[*]\`, \`icon[*]\`, \`title[*]\`, \`text[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (icon, title, text) (3–6 items) | 3-6 cards, each { icon, title, text? }: a 1-4 word title and one sentence. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_reveal\\",
+  \\"type\\": \\"tls.c.feature-reveal\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"icon\\": \\"rocket\\",
+        \\"title\\": \\"Nhanh\\",
+        \\"text\\": \\"Dựng xong bài trình bày trong vài phút.\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"An toàn\\",
+        \\"text\\": \\"Dữ liệu được mã hóa mặc định.\\"
+      },
+      {
+        \\"icon\\": \\"heart\\",
+        \\"title\\": \\"Thân thiện\\",
+        \\"text\\": \\"Giao diện dễ dùng cho mọi người.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.hero\` — Hero [html]
+
+Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
+
+**When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle. Pick variant \\"classic\\" for a standard hero, \\"split\\" when you want the title to reveal from two halves sliding in from opposite sides, or \\"gradient-sweep\\" for a decorative background gradient that sweeps in behind the title on reveal.
+**Avoid:** Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.
+
+**Parts:** \`kicker\`, \`title\`, \`subtitle\`, \`cta\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 60 chars) | Short label above the title: section name, category, or status. 1–4 words. |
+| \`showKicker\` | no | boolean | Toggle the kicker label on/off. |
+| \`title\` | yes | richText (max 120 chars) | A concise slide title. Bold one key word for emphasis. Never a full sentence. Max 120 chars. |
+| \`subtitle\` | no | richText | Supporting line: date, audience, or context. 3–12 words. |
+| \`showSubtitle\` | no | boolean | Toggle the subtitle on/off. |
+| \`cta\` | no | text (max 40 chars) | Optional button text. Short imperative, 2–4 words. |
+| \`showCta\` | no | boolean | Toggle the call-to-action button on/off. |
+| \`variant\` | no | enum: classic \\\\| split \\\\| gradient-sweep | Visual style: \\"classic\\" (default) standard hero with staggered part reveal; \\"split\\" split-title reveal where halves slide in from opposite sides; \\"gradient-sweep\\" a decorative gradient sweeps in behind the title on reveal. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_hero\\",
+  \\"type\\": \\"tls.c.hero\\",
+  \\"props\\": {
+    \\"kicker\\": \\"QUARTERLY REVIEW\\",
+    \\"title\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"Margin fell on \\"
+        },
+        {
+          \\"text\\": \\"infrastructure\\",
+          \\"bold\\": true
+        }
+      ]
+    },
+    \\"subtitle\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"Q3 FY2026\\"
+        }
+      ]
+    },
+    \\"cta\\": \\"\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.image-text\` — Image + text
+
+Image beside or above a text cluster (kicker + title + body). Configurable placement and image ratio. _(family: composite; keywords: image, text, photo, picture, editorial, side-by-side, layout, composite)_
+
+**When:** Use when a slide needs an image alongside or above explanatory text — editorial layouts, feature descriptions, team slides.
+**Avoid:** Do not use for an image-only slide (use tls.m.image) or a text-only slide (use tls.t.title + tls.t.body).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image | Asset id or URL of the image to display beside or above the text. |
+| \`alt\` | yes | text (max 200 chars) | 1–10 words describing what the image shows. |
+| \`placement\` | no | enum: left \\\\| right \\\\| top | Where the image sits relative to the text cluster. |
+| \`imageRatio\` | no | number (min 0.2, max 0.8) | Fraction of the box given to the image (left/right splits width, top splits height). |
+| \`kicker\` | no | text (max 60 chars) | Short label above the title: section name, category, or status. 1–4 words. |
+| \`showKicker\` | no | boolean | Toggle the kicker label on/off. |
+| \`title\` | yes | text (max 120 chars) | A concise slide title. 3–10 words. Never a full sentence. |
+| \`showTitle\` | no | boolean | Toggle the title text on/off. |
+| \`body\` | no | text (max 500 chars) | 1–3 sentences of supporting body copy. |
+| \`showBody\` | no | boolean | Toggle the body text on/off. |
+| \`gutter\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg \\\\| xl | Gap between the image and the text cluster. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_text\\",
+  \\"type\\": \\"tls.c.image-text\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"alt\\": \\"Team meeting in conference room\\",
+    \\"placement\\": \\"left\\",
+    \\"kicker\\": \\"OVERVIEW\\",
+    \\"title\\": \\"Our design process\\",
+    \\"body\\": \\"We start with research, prototype rapidly, and validate with users before shipping.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.journey\` — Journey [html]
+
+Milestones on a curved path; the path draws and each node pops as the line reaches it. _(family: composite; keywords: journey, path, milestones, roadmap, stages, timeline, story)_
+
+**When:** A story of 3-6 stages or dates (a programme, a project, a career) told as one path.
+**Avoid:** Precise dated schedules (use tls.g.timeline); more than 6 stages (use tls.g.roadmap).
+
+**Parts:** \`path\`, \`node[*]\`, \`label[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`milestones\` | yes | list of object (when, title, text) (3–6 items) | 3-6 items in order, each { when, title, text? }: a date or stage, 2-5 words, one short line. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_journey\\",
+  \\"type\\": \\"tls.c.journey\\",
+  \\"props\\": {
+    \\"milestones\\": [
+      {
+        \\"when\\": \\"2024\\",
+        \\"title\\": \\"Ý tưởng\\"
+      },
+      {
+        \\"when\\": \\"2025\\",
+        \\"title\\": \\"Thử nghiệm\\"
+      },
+      {
+        \\"when\\": \\"2026\\",
+        \\"title\\": \\"Triển khai\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.kinetic-title\` — Kinetic title [html]
+
+Big animated title: words rise in one by one, accent rule draws, subtitle last. _(family: composite; keywords: title, cover, opener, section, animated, kinetic)_
+
+**When:** Deck cover or section opener that should feel energetic; pair with motionStyle expressive.
+**Avoid:** Content slides (use tls.t.title); a cover with photo or logo (use tls.c.cover).
+
+**Parts:** \`decor\`, \`kicker\`, \`title\`, \`rule\`, \`subtitle\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) | Small label above the title: course, event or section, e.g. \\"BÀI GIẢNG 1\\". |
+| \`title\` | yes | text (max 80 chars) | The talk or section title, 2-8 words, no full stop. |
+| \`highlight\` | no | text (max 40 chars) | Words of the title to colour with the accent; must appear in the title. |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`decoration\` | no | enum: orbs \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kinetic\\",
+  \\"type\\": \\"tls.c.kinetic-title\\",
+  \\"props\\": {
+    \\"kicker\\": \\"TUẦN 1\\",
+    \\"title\\": \\"Dữ liệu kể chuyện\\",
+    \\"highlight\\": \\"kể chuyện\\",
+    \\"subtitle\\": \\"Nhập môn khoa học dữ liệu\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.kpi-row\` — KPI Row
+
+Row of KPI tiles with an equal-width split, each showing value, change and label. _(family: composite; keywords: kpi, row, tiles, dashboard, metrics, numbers, stats)_
+
+**When:** Use to display 2–5 KPI metrics side-by-side in a row. Good for dashboards and summary slides.
+**Avoid:** Do not use for a single KPI (use tls.c.kpi-tile) or for more than 5 KPIs (split across slides).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`tiles\` | yes | list of object (value, delta, label, sparkline, polarity, format) (2–5 items) | 2–5 KPI tiles. Each needs a value and label. Use delta for change indicators and sparkline for trend. |
+| \`gap\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg | Horizontal spacing between tiles. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kpi_row\\",
+  \\"type\\": \\"tls.c.kpi-row\\",
+  \\"props\\": {
+    \\"tiles\\": [
+      {
+        \\"value\\": 4200000,
+        \\"delta\\": 12.5,
+        \\"label\\": \\"Revenue\\",
+        \\"polarity\\": \\"upGood\\",
+        \\"format\\": \\"compact\\"
+      },
+      {
+        \\"value\\": 3.1,
+        \\"delta\\": -0.8,
+        \\"label\\": \\"Churn %\\",
+        \\"polarity\\": \\"downGood\\",
+        \\"format\\": \\"percent\\"
+      },
+      {
+        \\"value\\": 892,
+        \\"delta\\": 42,
+        \\"label\\": \\"NPS\\",
+        \\"polarity\\": \\"upGood\\",
+        \\"format\\": \\"plain\\"
+      }
+    ],
+    \\"gap\\": \\"md\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.kpi-tile\` — KPI Tile
+
+Single KPI metric: headline number, change indicator, label, optional sparkline. Polarity-driven colour. _(family: composite; keywords: kpi, tile, metric, number, stat, value, delta, sparkline, dashboard)_
+
+**When:** Use to display a single KPI metric with its value, change indicator, and optional trend line.
+**Avoid:** Do not use for several KPIs side by side (use tls.c.kpi-row), for a plain unframed number (use tls.t.hero-number) or for a metric with an icon (use tls.c.stat-card).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number (min -1000000000000, max 1000000000000) | The headline metric number. Use a plain number; formatting is applied by the block. |
+| \`delta\` | no | number | Change indicator. Positive = improved, negative = declined (relative to polarity). |
+| \`showDelta\` | no | boolean | Toggle the change indicator on/off. |
+| \`label\` | no | text (max 30 chars) | Metric name. 1–3 words, never a sentence. |
+| \`showLabel\` | no | boolean | Toggle the metric label on/off. |
+| \`sparkline\` | no | list of number (2–20 items) | 2–20 numbers for a mini trend line. Omit for a single-point metric. |
+| \`showSparkline\` | no | boolean | Toggle the sparkline chart on/off. |
+| \`polarity\` | no | enum: upGood \\\\| downGood | Which direction is \\"good\\". upGood = higher is better (revenue). downGood = lower is better (churn). |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number formatting hint. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kpi_tile\\",
+  \\"type\\": \\"tls.c.kpi-tile\\",
+  \\"props\\": {
+    \\"value\\": 4200000,
+    \\"delta\\": 12.5,
+    \\"label\\": \\"Revenue\\",
+    \\"polarity\\": \\"upGood\\",
+    \\"format\\": \\"compact\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.objectives\` — Objectives
+
+Learning objectives or goals as a numbered, checked or icon list with an intro line. _(family: composite; keywords: objectives, learning outcomes, goals, aims, by the end, lecture start, workshop)_
+
+**When:** Start of a lecture, workshop or project: what the audience will achieve.
+**Avoid:** A list of topics to cover: tls.c.agenda.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`intro\` | no | text (max 120 chars) | \\"By the end of this session you will be able to\\". |
+| \`items\` | yes | list of text (max 120 chars) (2–6 items) | Start each with a verb. |
+| \`marker\` | no | enum: numbered \\\\| check \\\\| icon |  |
+| \`icon\` | no | icon | For marker icon. |
+| \`cols\` | no | enum: 1 \\\\| 2 | Two columns for numbered and check. |
+| \`showIntro\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_objectives\\",
+  \\"type\\": \\"tls.c.objectives\\",
+  \\"props\\": {
+    \\"intro\\": \\"By the end you will be able to:\\",
+    \\"items\\": [
+      \\"Describe a sample\\",
+      \\"Choose a fitting chart\\",
+      \\"Run a two-sample test\\"
+    ],
+    \\"marker\\": \\"numbered\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.problem-solution\` — Problem and solution
+
+A problem statement and its solution side by side, joined by an arrow. _(family: composite; keywords: problem, solution, pain point, pitch, proposal, challenge, fix, before and after)_
+
+**When:** Pitch and proposal slides framing a pain point and the answer to it.
+**Avoid:** A visual before and after: tls.g.before-after or tls.m.image-compare.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`problem\` | yes | object (title, text) | Fields: title, text. |
+| \`solution\` | yes | object (title, text) | Fields: title, text. |
+| \`showIcons\` | no | boolean |  |
+| \`style\` | no | enum: panels \\\\| callouts | callouts = danger and success notes. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ps\\",
+  \\"type\\": \\"tls.c.problem-solution\\",
+  \\"props\\": {
+    \\"problem\\": {
+      \\"title\\": \\"The problem\\",
+      \\"text\\": \\"Queues of **20 minutes** at peak hours.\\"
+    },
+    \\"solution\\": {
+      \\"title\\": \\"The solution\\",
+      \\"text\\": \\"Self-service kiosks: **under 4 minutes**.\\"
+    },
+    \\"showIcons\\": true,
+    \\"style\\": \\"panels\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.profile-card\` — Profile Card
+
+Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
+
+**When:** Introducing one person in detail: speaker bio, lecturer, team lead.
+**Avoid:** A row of people (use tls.m.avatar-group or a grid of tls.m.avatar); only a name and role (use tls.m.avatar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | no | image | Asset id or URL; initials when empty. |
+| \`name\` | yes | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) | Title and organisation, 1-8 words. |
+| \`bio\` | no | text (max 200 chars) | 1-2 sentences. |
+| \`contact\` | no | text (max 60 chars) | Email, handle or site. |
+| \`layout\` | no | enum: auto \\\\| stacked \\\\| side | auto = side by side in a landscape box, stacked in a portrait one; stacked = portrait above; side = portrait left. |
+| \`tone\` | no | enum: alt \\\\| surface | alt = filled card; surface = open. |
+| \`showBio\` | no | boolean |  |
+| \`showContact\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_profile_card\\",
+  \\"type\\": \\"tls.c.profile-card\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/portrait-1.svg\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"bio\\": \\"Leads the applied analytics group.\\",
+    \\"contact\\": \\"lan.tran@example.edu\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.quiz\` — Quiz
+
+Multiple-choice question with lettered options; the correct answer is highlighted. _(family: composite; keywords: quiz, multiple choice, question, knowledge check, poll, test, answer)_
+
+**When:** Knowledge checks in lectures and training.
+**Avoid:** Open questions with a written answer: tls.t.qa.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`question\` | yes | richText (max 200 chars) | One clear question. |
+| \`options\` | yes | list of text (max 80 chars) (2–5 items) | Short, parallel answers; lettered A-E automatically. |
+| \`answer\` | yes | number (min 0, max 4) | Zero-based index into options (0 = A). |
+| \`explanation\` | no | text (max 200 chars) | Why the answer is right. |
+| \`layout\` | no | enum: list \\\\| grid | grid = two columns. |
+| \`reveal\` | no | enum: shown \\\\| none | shown highlights the answer; none hides it. No click reveal. |
+| \`showExplanation\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quiz\\",
+  \\"type\\": \\"tls.c.quiz\\",
+  \\"props\\": {
+    \\"question\\": \\"Which measure resists outliers?\\",
+    \\"options\\": [
+      \\"The mean\\",
+      \\"The median\\",
+      \\"The range\\"
+    ],
+    \\"answer\\": 1,
+    \\"explanation\\": \\"The median ignores how far the extremes are.\\",
+    \\"layout\\": \\"list\\",
+    \\"reveal\\": \\"shown\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.quote-image\` — Quote over photo
+
+Large quote set over a full-bleed photo with a dark scrim, with name and role. _(family: composite; keywords: quote, inspirational, full bleed, photo, scrim, statement, big quote)_
+
+**When:** An emotional or inspirational quote as a full slide.
+**Avoid:** A customer testimonial with a face: tls.c.testimonial.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 160 chars) | 1-10 words describing the photo. |
+| \`quote\` | yes | richText (max 200 chars) | One or two sentences. |
+| \`name\` | no | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) |  |
+| \`anchor\` | no | enum: bottom-left \\\\| center \\\\| left | Where the text sits on the photo. |
+| \`scrim\` | no | enum: medium \\\\| strong | strong = darker wash for busy photos. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quote_image\\",
+  \\"type\\": \\"tls.c.quote-image\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"alt\\": \\"Students working together\\",
+    \\"quote\\": \\"Statistics lets data speak in sentences.\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"anchor\\": \\"bottom-left\\",
+    \\"scrim\\": \\"medium\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.recap\` — Recap
+
+Numbered key points to remember, closed by one takeaway line. _(family: composite; keywords: recap, summary, key points, what we learned, takeaways, review, wrap up)_
+
+**When:** End of a section or lecture: what we learned.
+**Avoid:** The final thank-you slide: tls.c.closing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of richText (max 140 chars) (2–5 items) | One sentence each; **bold** the key term. |
+| \`takeaway\` | no | text (max 140 chars) | The one thing to remember. |
+| \`style\` | no | enum: numbered \\\\| cards | cards = one panel per point. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_recap\\",
+  \\"type\\": \\"tls.c.recap\\",
+  \\"props\\": {
+    \\"points\\": [
+      \\"Describe data with centre and **spread**\\",
+      \\"Pick a chart for **one** question\\",
+      \\"Intervals describe the **method**\\"
+    ],
+    \\"takeaway\\": \\"Plot first, calculate second.\\",
+    \\"style\\": \\"numbered\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.stat-card\` — Stat Card
+
+KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
+
+**When:** One KPI in a filled card: icon, headline value, unit, caption. Best in a column or grid cell (450-700 wide); in a full-width region the card stretches.
+**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row) or for a metric with a change arrow or sparkline (use tls.c.kpi-tile).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | no | icon | Icon name from the set (zap, shield, globe, …). |
+| \`showIcon\` | no | boolean | Toggle the icon on/off. |
+| \`value\` | yes | text | The headline number. Include formatting, e.g. \\"$4.2M\\", \\"67%\\". |
+| \`unit\` | no | text | Unit label, 1–4 words. e.g. \\"Annual Revenue\\". |
+| \`caption\` | no | text | Short context, 1 line max. e.g. \\"FY2024 total\\". |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format hint for the renderer. |
+| \`emphasis\` | no | enum: default \\\\| accent \\\\| muted | Colour emphasis for the headline number. |
+| \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl | Inner padding of the card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stat_card\\",
+  \\"type\\": \\"tls.c.stat-card\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"value\\": \\"$4.2M\\",
+    \\"unit\\": \\"Annual Revenue\\",
+    \\"caption\\": \\"FY2024 total\\",
+    \\"format\\": \\"plain\\",
+    \\"emphasis\\": \\"accent\\",
+    \\"padding\\": \\"md\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.stat-spotlight\` — Stat spotlight [html]
+
+One key number in a progress ring that counts up, label beside it, up to 3 support stats. _(family: composite; keywords: stat, number, kpi, ring, percent, count-up, headline)_
+
+**When:** One number is the point of the slide (a result, a rate, a total); expressive slides.
+**Avoid:** Two to five equal metrics (use tls.c.kpi-row); a trend over time (use tls.d.line).
+
+**Parts:** \`ring\`, \`value\`, \`label\`, \`context\`, \`stat[*]\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | text (max 12 chars) | The number as it reads, unit included: \\"92%\\", \\"1.250\\", \\"4,6/5\\". |
+| \`label\` | yes | text (max 40 chars) |  |
+| \`context\` | no | text (max 100 chars) |  |
+| \`progress\` | no | number (min 0, max 100) | How much of the ring fills, 0-100; for a percentage use the same number. Default 100. |
+| \`stats\` | no | list of object (value, label) (0–3 items) | 0-3 smaller numbers, each { value, label }. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spot\\",
+  \\"type\\": \\"tls.c.stat-spotlight\\",
+  \\"props\\": {
+    \\"value\\": \\"87%\\",
+    \\"progress\\": 87,
+    \\"label\\": \\"Tỉ lệ hoàn thành\\",
+    \\"stats\\": [
+      {
+        \\"value\\": \\"312\\",
+        \\"label\\": \\"Sinh viên\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.steps\` — Steps
+
+Process or timeline of numbered steps with titles and optional descriptions. Arranges steps horizontally or vertically with thin connectors between them. _(family: composite; keywords: steps, process, timeline, flow, workflow, sequential, phases, roadmap, numbered)_
+
+**When:** A slide of 2-6 numbered steps read in sequence, each with a title and 1-2 line description.
+**Avoid:** A compact strip in a region (tls.g.steps); phases with a current one (tls.g.chevrons); dated events (tls.g.timeline); a plain list (tls.t.bullets).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (title, desc) (1–12 items) | 2–6 steps, each 2–8 words in the title. Description is optional, 1–2 sentences. |
+| \`orientation\` | no | enum: horizontal \\\\| vertical | Layout direction: horizontal (left to right) or vertical (top to bottom). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_steps\\",
+  \\"type\\": \\"tls.c.steps\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"title\\": \\"Plan\\",
+        \\"desc\\": \\"Scope, owners and a success measure\\"
+      },
+      {
+        \\"title\\": \\"Build\\",
+        \\"desc\\": \\"Two-week increments, a demo each\\"
+      },
+      {
+        \\"title\\": \\"Launch\\",
+        \\"desc\\": \\"Pilot team first, then everyone\\"
+      },
+      {
+        \\"title\\": \\"Learn\\",
+        \\"desc\\": \\"Review the numbers, adjust\\"
+      }
+    ],
+    \\"orientation\\": \\"horizontal\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.team\` — Team
+
+Grid of team members with photo, name, role and optional bio. _(family: composite; keywords: team, people, speakers, committee, staff, lecturers, research group, who we are)_
+
+**When:** Team, speakers, committee, research group.
+**Avoid:** One person: tls.c.profile-card. Faces only: tls.m.avatar-group.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`people\` | yes | list of object (image, name, role, bio) (2–8 items) | Each: name!, role, bio, image (initials when empty). |
+| \`cols\` | no | enum: auto \\\\| 2 \\\\| 3 \\\\| 4 | auto picks from the count. |
+| \`card\` | no | enum: plain \\\\| card | card = filled panel per person. |
+| \`showBio\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_team\\",
+  \\"type\\": \\"tls.c.team\\",
+  \\"props\\": {
+    \\"people\\": [
+      {
+        \\"image\\": \\"/demo/portrait-1.svg\\",
+        \\"name\\": \\"Dr. Tran Thi Lan\\",
+        \\"role\\": \\"Head of Data Science\\",
+        \\"bio\\": \\"Leads the analytics group.\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-2.svg\\",
+        \\"name\\": \\"Nguyen Van An\\",
+        \\"role\\": \\"Senior lecturer\\",
+        \\"bio\\": \\"Teaches inference.\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-3.svg\\",
+        \\"name\\": \\"Le Minh Chau\\",
+        \\"role\\": \\"Postdoc\\",
+        \\"bio\\": \\"Works on causal models.\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-4.svg\\",
+        \\"name\\": \\"Pham Quoc Bao\\",
+        \\"role\\": \\"PhD student\\",
+        \\"bio\\": \\"Builds forecasting tools.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.testimonial\` — Testimonial [html]
+
+Pull-quote testimonial with attribution. Quote text with speaker name, role, and optional avatar. Use for social proof, customer quotes, or endorsements. _(family: composite; keywords: testimonial, quote, pull-quote, endorsement, social-proof, attribution)_
+
+**When:** Use for a customer quote, testimonial, or endorsement — quote text with speaker name, role, and optional avatar.
+**Avoid:** Do not use for a plain pull quote without a named person (use tls.t.quote) or for an unattributed insight (use tls.t.takeaway).
+
+**Parts:** \`quote\`, \`avatar\`, \`name\`, \`role\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`quote\` | yes | richText (max 500 chars) | The testimonial quote. 1–3 sentences. Bold key phrases for emphasis. |
+| \`name\` | yes | text (max 60 chars) | Speaker's full name. 2–4 words. |
+| \`role\` | yes | text (max 80 chars) | Speaker's title or position. 2–8 words. |
+| \`avatar\` | no | text (max 200 chars) | Avatar image URL (https:) or asset id. Optional; shows initials when absent. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_testimonial\\",
+  \\"type\\": \\"tls.c.testimonial\\",
+  \\"props\\": {
+    \\"quote\\": \\"This product transformed how our team works. We shipped 3× faster in the first quarter.\\",
+    \\"name\\": \\"Jane Doe\\",
+    \\"role\\": \\"VP of Engineering\\",
+    \\"avatar\\": \\"\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.area\` — Area Chart
+
+Area chart: overlapping, stacked or 100% stacked fills over ordered categories on a zero baseline. _(family: data; keywords: area, stacked, volume, composition, time, chart)_
+
+**When:** Volume over time, composition over time (stacked).
+**Avoid:** Precise comparison of series (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–24 items) | Ordered x labels (periods). |
+| \`series\` | yes | list of object (name, values) (1–6 items) | One entry per series; values match categories. |
+| \`mode\` | no | enum: overlap \\\\| stacked \\\\| percent | stacked adds series up; percent shows shares. |
+| \`curve\` | no | enum: linear \\\\| monotone |  |
+| \`opacity\` | no | enum: soft \\\\| solid |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_area\\",
+  \\"type\\": \\"tls.d.area\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"2022\\",
+      \\"2023\\",
+      \\"2024\\",
+      \\"2025\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Web\\",
+        \\"values\\": [
+          30,
+          38,
+          46,
+          58
+        ]
+      },
+      {
+        \\"name\\": \\"Mobile\\",
+        \\"values\\": [
+          12,
+          20,
+          31,
+          44
+        ]
+      }
+    ],
+    \\"mode\\": \\"stacked\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.bar\` — Column Chart
+
+Column or horizontal bar chart of one series on a zero baseline, with gridlines and an optional highlighted bar. _(family: data; keywords: chart, bar, column, data, graph, vertical, horizontal)_
+
+**When:** Compare one measure across 2-12 categories. Horizontal orientation suits long labels; highlightIndex marks one bar.
+**Avoid:** Parts of a whole (use tls.d.pie); several series (use tls.d.grouped-bar); a trend over time (use tls.d.line); one number (use tls.t.hero-number).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (1–20 items) | Category labels along the X axis. |
+| \`series\` | yes | series of number (max 6) | Numeric values for each bar. Use null/NaN for missing data. |
+| \`highlightIndex\` | no | number (min -1) | Index of the bar to highlight with accent color. -1 = none. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal | vertical (default) = columns; horizontal = bars, for long labels. |
+| \`title\` | no | text (max 120 chars) | Chart title, shown above the chart area. |
+| \`valueLabels\` | no | enum: end \\\\| none | end (default) prints each value above its bar. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bar\\",
+  \\"type\\": \\"tls.d.bar\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"Q1\\",
+      \\"Q2\\",
+      \\"Q3\\",
+      \\"Q4\\"
+    ],
+    \\"series\\": [
+      42,
+      58,
+      71,
+      89
+    ],
+    \\"highlightIndex\\": 3,
+    \\"title\\": \\"Revenue by quarter ($M)\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.bubble\` — Bubble Chart
+
+Scatter plot with circle area for a third value, optional labels and size legend. _(family: data; keywords: bubble, portfolio, three variables, size, market, scatter)_
+
+**When:** Portfolio views (market size by growth by share).
+**Avoid:** Two measures only (use tls.d.scatter).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of object (x, y, r, label) (3–30 items) |  |
+| \`sizeLegend\` | no | boolean | Reference circles at the right. |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bubble\\",
+  \\"type\\": \\"tls.d.bubble\\",
+  \\"props\\": {
+    \\"points\\": [
+      {
+        \\"x\\": 12,
+        \\"y\\": 6,
+        \\"r\\": 30,
+        \\"label\\": \\"EMEA\\"
+      },
+      {
+        \\"x\\": 30,
+        \\"y\\": 21,
+        \\"r\\": 90,
+        \\"label\\": \\"APAC\\"
+      },
+      {
+        \\"x\\": 52,
+        \\"y\\": 13,
+        \\"r\\": 50,
+        \\"label\\": \\"AMER\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.bullet-chart\` — Bullet Chart
+
+Per-KPI value bar with a target tick over shaded range bands, with labels and values. _(family: data; keywords: bullet, target, kpi, actual vs target, performance)_
+
+**When:** Several KPIs each against its own target.
+**Avoid:** Progress with no target (use tls.d.progress-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, target, max) (1–5 items) | Each KPI: actual value, its target, optional scale maximum. |
+| \`bands\` | no | enum: three \\\\| none | three = poor / ok / good shading. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bullet\\",
+  \\"type\\": \\"tls.d.bullet-chart\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Revenue\\",
+        \\"value\\": 270,
+        \\"target\\": 300,
+        \\"max\\": 400
+      },
+      {
+        \\"label\\": \\"Margin\\",
+        \\"value\\": 22,
+        \\"target\\": 20,
+        \\"max\\": 30
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.compare-table\` — Comparison Table
+
+Options as columns, criteria as rows, with ticks, crosses or dot ratings and a highlighted winner. _(family: data; keywords: compare, matrix, features, competitors, versus, tick, rating)_
+
+**When:** Us vs competitors, plan features, tool selection.
+**Avoid:** Free-form pros and cons (tls.c.comparison). Prices: tls.d.pricing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`options\` | yes | list of text (max 24 chars) (2–5 items) | Column headers: the things compared. |
+| \`criteria\` | yes | list of text (max 40 chars) (2–12 items) | Row labels, one per row of cells. |
+| \`cells\` | yes | list of list of text (max 30 chars) | cells[criterion][option]: yes, no, partial, 1-5 or short text. |
+| \`cellKind\` | no | enum: check \\\\| rating \\\\| text | check: ticks and crosses; rating: dots; text: as written |
+| \`winner\` | no | number (min -1) |  |
+| \`zebra\` | no | boolean |  |
+| \`density\` | no | enum: default \\\\| compact |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_compare\\",
+  \\"type\\": \\"tls.d.compare-table\\",
+  \\"props\\": {
+    \\"options\\": [
+      \\"Ours\\",
+      \\"Rival\\"
+    ],
+    \\"criteria\\": [
+      \\"Offline mode\\",
+      \\"Open API\\",
+      \\"SSO\\"
+    ],
+    \\"cells\\": [
+      [
+        \\"yes\\",
+        \\"no\\"
+      ],
+      [
+        \\"yes\\",
+        \\"partial\\"
+      ],
+      [
+        \\"yes\\",
+        \\"yes\\"
+      ]
+    ],
+    \\"winner\\": 0
+  }
+}
+\`\`\`
+
+### \`tls.d.donut\` — Donut Chart
+
+Ring of up to six slices with a legend or outside labels, percentages and an optional centre value. _(family: data; keywords: chart, donut, ring, share, proportion, whole, percent)_
+
+**When:** Share of a whole with 2-6 parts and one number worth printing in the middle (a total, a count).
+**Avoid:** Many or similar-sized parts (use tls.d.bar); one rate (use tls.d.progress-ring); exact figures (use tls.d.table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`slices\` | yes | list of object (label, value, color) (0–6 items) | label!, value!, colour (optional). |
+| \`total\` | no | number | Above the sum, the rest of the ring stays empty. |
+| \`centerValue\` | no | text (max 12 chars) | Big text in the hole. |
+| \`centerLabel\` | no | text (max 24 chars) | Caption under it. |
+| \`labels\` | no | enum: legend \\\\| outside | legend (default) or outside. |
+| \`showPercent\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_donut_1\\",
+  \\"type\\": \\"tls.d.donut\\",
+  \\"props\\": {
+    \\"slices\\": [
+      {
+        \\"label\\": \\"Subscriptions\\",
+        \\"value\\": 48
+      },
+      {
+        \\"label\\": \\"Services\\",
+        \\"value\\": 27
+      },
+      {
+        \\"label\\": \\"Licences\\",
+        \\"value\\": 17
+      },
+      {
+        \\"label\\": \\"Other\\",
+        \\"value\\": 8
+      }
+    ],
+    \\"centerValue\\": \\"$4.2M\\",
+    \\"centerLabel\\": \\"Revenue\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.funnel-chart\` — Funnel Chart
+
+Funnel or bar stages sized by value, with the percentage lost between stages. _(family: data; keywords: funnel, conversion, pipeline, stages, drop-off, sales)_
+
+**When:** Conversion pipelines with real numbers.
+**Avoid:** A qualitative funnel without values (use tls.g.funnel).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stages\` | yes | list of object (label, value) (3–7 items) | Ordered from widest to narrowest, real counts. |
+| \`shape\` | no | enum: funnel \\\\| bars | bars = left-aligned bars. |
+| \`showDropoff\` | no | enum: percent \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_funnel\\",
+  \\"type\\": \\"tls.d.funnel-chart\\",
+  \\"props\\": {
+    \\"stages\\": [
+      {
+        \\"label\\": \\"Visits\\",
+        \\"value\\": 5000
+      },
+      {
+        \\"label\\": \\"Leads\\",
+        \\"value\\": 900
+      },
+      {
+        \\"label\\": \\"Deals\\",
+        \\"value\\": 120
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.gauge\` — Gauge
+
+Half-circle dial: threshold bands, a needle or marker at the value, tick labels. _(family: data; keywords: gauge, dial, score, nps, threshold, health, risk)_
+
+**When:** A score against thresholds (NPS, health, risk level).
+**Avoid:** Plain completion with no thresholds (use tls.d.progress-ring).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number |  |
+| \`min\` | no | number | Scale start. Default 0. |
+| \`max\` | no | number | Scale end. Default 100. |
+| \`label\` | no | text (max 40 chars) | What is measured. |
+| \`bands\` | no | list of object (to, tone) (0–5 items) | Ascending thresholds, each with a tone. |
+| \`needle\` | no | enum: needle \\\\| marker |  |
+| \`showTicks\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_gauge\\",
+  \\"type\\": \\"tls.d.gauge\\",
+  \\"props\\": {
+    \\"value\\": 42,
+    \\"min\\": -100,
+    \\"max\\": 100,
+    \\"label\\": \\"NPS\\",
+    \\"bands\\": [
+      {
+        \\"to\\": 0,
+        \\"tone\\": \\"negative\\"
+      },
+      {
+        \\"to\\": 50,
+        \\"tone\\": \\"warning\\"
+      },
+      {
+        \\"to\\": 100,
+        \\"tone\\": \\"positive\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.grouped-bar\` — Grouped Bar Chart
+
+Side-by-side columns or bars per category, one colour per series. _(family: data; keywords: grouped, clustered, bar, column, compare)_
+
+**When:** Comparing 2-4 series across categories (region by year).
+**Avoid:** One series (use tls.d.bar); parts of a total (use tls.d.stacked-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
+| \`series\` | yes | list of object (name, values) (2–4 items) | One entry per series; values match categories. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
+| \`groupGap\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`valueLabels\` | no | enum: none \\\\| end \\\\| inside |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Category to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_grouped\\",
+  \\"type\\": \\"tls.d.grouped-bar\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"EMEA\\",
+      \\"APAC\\",
+      \\"AMER\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"2024\\",
+        \\"values\\": [
+          42,
+          38,
+          55
+        ]
+      },
+      {
+        \\"name\\": \\"2025\\",
+        \\"values\\": [
+          51,
+          47,
+          62
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.heatmap\` — Heatmap
+
+Rows by columns of cells shaded by value, with optional numbers and a legend. _(family: data; keywords: heatmap, matrix, intensity, grid, correlation, weekday hour)_
+
+**When:** Patterns across two dimensions (weekday by hour, team by skill).
+**Avoid:** Exact values (tls.d.table). One dimension: tls.d.bar.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`rows\` | yes | list of text (max 24 chars) (2–12 items) |  |
+| \`cols\` | yes | list of text (max 16 chars) (2–12 items) | Short: they sit above narrow cells. |
+| \`values\` | yes | list of list of number | values[row][col]; missing or non-numeric = empty cell. |
+| \`ramp\` | no | enum: accent \\\\| diverging | diverging: negative / zero / positive |
+| \`showValues\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_heatmap\\",
+  \\"type\\": \\"tls.d.heatmap\\",
+  \\"props\\": {
+    \\"rows\\": [
+      \\"Mon\\",
+      \\"Tue\\",
+      \\"Wed\\",
+      \\"Thu\\"
+    ],
+    \\"cols\\": [
+      \\"Morning\\",
+      \\"Afternoon\\",
+      \\"Evening\\"
+    ],
+    \\"values\\": [
+      [
+        3,
+        8,
+        5
+      ],
+      [
+        4,
+        9,
+        2
+      ],
+      [
+        6,
+        7,
+        3
+      ],
+      [
+        2,
+        5,
+        9
+      ]
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.line\` — Line Chart
+
+Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
+
+**When:** Change over time, trends, comparing trajectories.
+**Avoid:** Unordered categories (use tls.d.bar); only two time points (use tls.d.slope).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–24 items) | Ordered x labels. |
+| \`series\` | yes | list of object (name, values) (1–6 items) | One line each; null = gap. |
+| \`curve\` | no | enum: linear \\\\| monotone |  |
+| \`markers\` | no | enum: none \\\\| last \\\\| all |  |
+| \`endLabels\` | no | boolean | Replaces the legend. |
+| \`baseline\` | no | enum: auto \\\\| zero |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Series to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_line\\",
+  \\"type\\": \\"tls.d.line\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"Q1\\",
+      \\"Q2\\",
+      \\"Q3\\",
+      \\"Q4\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Users\\",
+        \\"values\\": [
+          12,
+          18,
+          27,
+          40
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.pie\` — Pie Chart
+
+Pie of up to six slices with outside, inside or legend labels and percentages. _(family: data; keywords: pie, share, proportion, whole, percent, chart)_
+
+**When:** Share of a whole with up to 6 parts.
+**Avoid:** Similar-sized shares (use tls.d.bar); a ring with a centre number (use tls.d.donut).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–6 items) | One name per slice. |
+| \`values\` | yes | list of number (2–6 items) | One non-negative number per category. |
+| \`labels\` | no | enum: outside \\\\| inside \\\\| legend |  |
+| \`showPercent\` | no | boolean |  |
+| \`sort\` | no | enum: desc \\\\| none | desc = largest slice first. |
+| \`highlightIndex\` | no | number (min -1) | Slice to emphasise; others dim. -1 = none. |
+| \`startAngle\` | no | number | Degrees clockwise from 12 o'clock. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pie\\",
+  \\"type\\": \\"tls.d.pie\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"Direct\\",
+      \\"Partners\\",
+      \\"Online\\"
+    ],
+    \\"values\\": [
+      50,
+      30,
+      20
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.pricing\` — Pricing Plans
+
+Side-by-side plan cards: name, price, features and a button, one plan featured. _(family: data; keywords: pricing, plans, tiers, packages, subscription, offer)_
+
+**When:** Pricing tiers, packages, offer levels.
+**Avoid:** Many features across plans (tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`plans\` | yes | list of object (name, price, period, description, features, cta, featured) (2–4 items) | Mark one plan featured. Keep feature lists to a similar length. |
+| \`featuredStyle\` | no | enum: raised \\\\| outline \\\\| filled |  |
+| \`checkIcon\` | no | icon |  |
+| \`align\` | no | enum: top \\\\| stretch | stretch = equal height |
+| \`showCta\` | no | boolean |  |
+| \`showDescription\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pricing\\",
+  \\"type\\": \\"tls.d.pricing\\",
+  \\"props\\": {
+    \\"plans\\": [
+      {
+        \\"name\\": \\"Starter\\",
+        \\"price\\": \\"Free\\",
+        \\"features\\": [
+          \\"1 project\\",
+          \\"Community support\\"
+        ],
+        \\"cta\\": \\"Start\\"
+      },
+      {
+        \\"name\\": \\"Team\\",
+        \\"price\\": \\"$29\\",
+        \\"period\\": \\"/ month\\",
+        \\"description\\": \\"For teams\\",
+        \\"features\\": [
+          \\"Unlimited projects\\",
+          \\"Priority support\\"
+        ],
+        \\"cta\\": \\"Try\\",
+        \\"featured\\": true
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.progress-bar\` — Progress Bars
+
+Labelled bars filled to value / target, with percent or value text. _(family: data; keywords: progress, completion, target, goal, bar, percent)_
+
+**When:** Completion of goals, budgets spent, survey agreement levels.
+**Avoid:** Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, max) (1–6 items) | Progress toward a target: value / max. Short labels. |
+| \`showValue\` | no | enum: percent \\\\| value \\\\| none |  |
+| \`thickness\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`tone\` | no | enum: accent \\\\| status | status = red/amber/green by progress. |
+| \`labelPos\` | no | enum: above \\\\| left | left saves height. |
+| \`track\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_progress\\",
+  \\"type\\": \\"tls.d.progress-bar\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Hiring plan\\",
+        \\"value\\": 72
+      },
+      {
+        \\"label\\": \\"Budget\\",
+        \\"value\\": 41,
+        \\"max\\": 60
+      }
+    ],
+    \\"tone\\": \\"status\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.progress-ring\` — Progress Ring
+
+Ring filled to value / max with the figure in the centre, plus label and caption. _(family: data; keywords: progress, ring, dial, percent, completion, score)_
+
+**When:** One completion rate or score shown as a dial.
+**Avoid:** Shares of several parts (use tls.d.donut); several bars (use tls.d.progress-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number | Ring fills to value / max. |
+| \`max\` | no | number | Value that fills the ring. Default 100. |
+| \`label\` | no | text (max 40 chars) | What it measures. |
+| \`caption\` | no | text (max 80 chars) | One line of context. |
+| \`thickness\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`cap\` | no | enum: round \\\\| flat |  |
+| \`tone\` | no | enum: accent \\\\| status | status = red/amber/green by progress. |
+| \`format\` | no | enum: percent \\\\| plain \\\\| compact \\\\| currency | percent = share of max. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ring\\",
+  \\"type\\": \\"tls.d.progress-ring\\",
+  \\"props\\": {
+    \\"value\\": 68,
+    \\"label\\": \\"Course completion\\",
+    \\"caption\\": \\"34 of 50 lessons\\",
+    \\"tone\\": \\"status\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.radar\` — Radar Chart
+
+Spider chart: up to three shapes over three to eight axes, with grid rings and values. _(family: data; keywords: radar, spider, profile, skills, scores, criteria)_
+
+**When:** Profiles on several criteria (skills, product scores).
+**Avoid:** More than 3 series or 8 axes (use tls.d.compare-table); exact values (use tls.d.grouped-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`axes\` | yes | list of text (max 24 chars) (3–8 items) | Criteria around the dial, in order. |
+| \`series\` | yes | list of object (name, values) (1–3 items) | One shape each; one value per axis. |
+| \`max\` | no | number | Default: the largest value, rounded up. |
+| \`fill\` | no | boolean |  |
+| \`rings\` | no | number | Grid rings, 1-8. Default 4. |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_radar\\",
+  \\"type\\": \\"tls.d.radar\\",
+  \\"props\\": {
+    \\"axes\\": [
+      \\"Speed\\",
+      \\"Cost\\",
+      \\"Quality\\",
+      \\"Support\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Ours\\",
+        \\"values\\": [
+          8,
+          6,
+          9,
+          7
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.ranking\` — Ranking
+
+Leaderboard rows: position, name, value bar and value, with medals for the top three. _(family: data; keywords: ranking, leaderboard, top 10, top n, best, league table)_
+
+**When:** Top-N lists, leaderboards, top products.
+**Avoid:** No ranking intent (tls.d.bar). Many columns: tls.d.table.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, note) (3–10 items) | Any order: sorted by value unless sort is none. |
+| \`showBars\` | no | boolean |  |
+| \`medals\` | no | boolean |  |
+| \`sort\` | no | enum: desc \\\\| asc \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ranking\\",
+  \\"type\\": \\"tls.d.ranking\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Aurora\\",
+        \\"value\\": 4820
+      },
+      {
+        \\"label\\": \\"Beacon\\",
+        \\"value\\": 3910
+      },
+      {
+        \\"label\\": \\"Cobalt\\",
+        \\"value\\": 2740
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.scatter\` — Scatter Plot
+
+Points on nice x and y axes; group colours, quadrant lines, trend line, point labels. _(family: data; keywords: scatter, correlation, xy, plot, quadrant, regression)_
+
+**When:** Correlation, positioning of items on two measures.
+**Avoid:** Qualitative positioning (use tls.g.matrix-2x2).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of object (x, y, label, group) (3–60 items) |  |
+| \`quadrants\` | no | boolean | Cross lines at the middle of each axis. |
+| \`trendline\` | no | boolean | Least-squares fit. |
+| \`labelPoints\` | no | enum: none \\\\| highlighted \\\\| all |  |
+| \`highlightIndex\` | no | number (min -1) | Point to emphasise; others dim. -1 = none. |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_scatter\\",
+  \\"type\\": \\"tls.d.scatter\\",
+  \\"props\\": {
+    \\"points\\": [
+      {
+        \\"x\\": 12,
+        \\"y\\": 34,
+        \\"label\\": \\"Basic\\"
+      },
+      {
+        \\"x\\": 24,
+        \\"y\\": 51,
+        \\"label\\": \\"Plus\\"
+      },
+      {
+        \\"x\\": 38,
+        \\"y\\": 47,
+        \\"label\\": \\"Pro\\"
+      },
+      {
+        \\"x\\": 55,
+        \\"y\\": 82,
+        \\"label\\": \\"Max\\"
+      }
+    ],
+    \\"trendline\\": true,
+    \\"labelPoints\\": \\"all\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.scorecard\` — Scorecard
+
+Metric rows with the actual value, a target, and a green / amber / red status. _(family: data; keywords: scorecard, okr, kpi review, status, rag, health, sla)_
+
+**When:** OKR reviews, project health, SLA reports.
+**Avoid:** Raw data tables (tls.d.table). One metric: tls.c.kpi-tile.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value, target, status, note) (2–10 items) | Values and targets are text with units (\\"$4.2M\\", \\"98%\\"). |
+| \`showTarget\` | no | boolean |  |
+| \`statusStyle\` | no | enum: dot \\\\| pill \\\\| bar | bar = colour strip at the row start, no status column |
+| \`showNote\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_scorecard\\",
+  \\"type\\": \\"tls.d.scorecard\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Revenue\\",
+        \\"value\\": \\"$4.2M\\",
+        \\"target\\": \\"$4.0M\\",
+        \\"status\\": \\"good\\",
+        \\"note\\": \\"Early close\\"
+      },
+      {
+        \\"label\\": \\"Churn\\",
+        \\"value\\": \\"3.1%\\",
+        \\"target\\": \\"2.5%\\",
+        \\"status\\": \\"watch\\",
+        \\"note\\": \\"SMB tier\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.slope\` — Slope Chart
+
+Slope chart: one line per item between a start and an end column, with values and names. _(family: data; keywords: slope, before after, rank change, two points, rise, fall)_
+
+**When:** Change between exactly two points for several items.
+**Avoid:** Many time points (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`startLabel\` | yes | text (max 20 chars) | Left column, e.g. 2023. |
+| \`endLabel\` | yes | text (max 20 chars) | Right column, e.g. 2025. |
+| \`items\` | yes | list of object (name, start, end) (2–10 items) |  |
+| \`highlight\` | no | enum: none \\\\| risers \\\\| fallers | Others are dimmed. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_slope\\",
+  \\"type\\": \\"tls.d.slope\\",
+  \\"props\\": {
+    \\"startLabel\\": \\"2023\\",
+    \\"endLabel\\": \\"2025\\",
+    \\"items\\": [
+      {
+        \\"name\\": \\"North\\",
+        \\"start\\": 40,
+        \\"end\\": 58
+      },
+      {
+        \\"name\\": \\"South\\",
+        \\"start\\": 55,
+        \\"end\\": 47
+      }
+    ],
+    \\"highlight\\": \\"risers\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.sparkline\` — Sparkline
+
+Axis-free trend line with optional label, area tint, end dot and last value or change. _(family: data; keywords: sparkline, trend, mini chart, inline, tile)_
+
+**When:** A trend hint next to a number, in tables or tiles.
+**Avoid:** A chart someone must read values from (use tls.d.line).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`values\` | yes | list of number (3–60 items) | Ordered values, oldest first. |
+| \`label\` | no | text (max 30 chars) |  |
+| \`fill\` | no | boolean | Tint the area under the line. |
+| \`endDot\` | no | boolean |  |
+| \`showLast\` | no | enum: none \\\\| value \\\\| delta | delta = last minus first. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spark\\",
+  \\"type\\": \\"tls.d.sparkline\\",
+  \\"props\\": {
+    \\"values\\": [
+      4,
+      6,
+      5,
+      8,
+      9,
+      12
+    ],
+    \\"label\\": \\"Signups\\",
+    \\"showLast\\": \\"delta\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.stacked-bar\` — Stacked Bar Chart
+
+Stacked columns or bars with optional 100% scaling and totals. _(family: data; keywords: stacked, composition, total, share, bar)_
+
+**When:** Composition of a total across categories; with normalize, compare the mix.
+**Avoid:** Comparing individual series values (use tls.d.grouped-bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 24 chars) (2–12 items) | Axis labels, 1-2 words each. |
+| \`series\` | yes | list of object (name, values) (2–6 items) | One entry per series; values match categories. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
+| \`normalize\` | no | boolean |  |
+| \`totals\` | no | boolean |  |
+| \`valueLabels\` | no | enum: none \\\\| inside |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`legend\` | no | enum: top \\\\| bottom \\\\| right \\\\| none |  |
+| \`highlightIndex\` | no | number (min -1) | Category to emphasise; others dim. -1 = none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stacked\\",
+  \\"type\\": \\"tls.d.stacked-bar\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"2024\\",
+      \\"2025\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Product\\",
+        \\"values\\": [
+          30,
+          38
+        ]
+      },
+      {
+        \\"name\\": \\"Services\\",
+        \\"values\\": [
+          18,
+          26
+        ]
+      }
+    ],
+    \\"totals\\": true
+  }
+}
+\`\`\`
+
+### \`tls.d.stat-compare\` — Stat Compare
+
+Two labelled numbers with a connector and a coloured change pill (percent or absolute). _(family: data; keywords: compare, before, after, versus, change, delta, year)_
+
+**When:** Before vs after, last year vs this year, us vs benchmark.
+**Avoid:** More than two values (use tls.c.kpi-row or tls.d.bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`left\` | yes | object (label, value) |  |
+| \`right\` | yes | object (label, value) |  |
+| \`caption\` | no | text (max 100 chars) | One line of context. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`delta\` | no | enum: percent \\\\| absolute \\\\| none |  |
+| \`polarity\` | no | enum: upGood \\\\| downGood \\\\| neutral | Which direction is good; neutral = no colour. |
+| \`connector\` | no | enum: arrow \\\\| vs \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stat_compare\\",
+  \\"type\\": \\"tls.d.stat-compare\\",
+  \\"props\\": {
+    \\"left\\": {
+      \\"label\\": \\"2024\\",
+      \\"value\\": 4200
+    },
+    \\"right\\": {
+      \\"label\\": \\"2025\\",
+      \\"value\\": 5460
+    },
+    \\"format\\": \\"compact\\",
+    \\"caption\\": \\"Annual revenue\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.table\` — Table
+
+Table with header, aligned numbers, status dots, ratings and a totals row. _(family: data; keywords: table, grid, rows, columns, spreadsheet, schedule, specs)_
+
+**When:** Exact values in rows and columns (schedules, specs, results).
+**Avoid:** Fewer than 3 values (tls.c.kpi-row). Options vs criteria: tls.d.compare-table.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`columns\` | yes | list of object (label, kind, align, width) (1–8 items) | Set kind: number for figures. |
+| \`rows\` | yes | list of list of text (max 60 chars) (1–14 items) | One string per column. |
+| \`footer\` | no | list of text (max 40 chars) |  |
+| \`zebra\` | no | boolean |  |
+| \`rules\` | no | enum: horizontal \\\\| head \\\\| none |  |
+| \`header\` | no | enum: filled \\\\| bold \\\\| none |  |
+| \`emphasisRow\` | no | number (min -1) |  |
+| \`emphasisCol\` | no | number (min -1) |  |
+| \`density\` | no | enum: default \\\\| compact |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`showFooter\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_table\\",
+  \\"type\\": \\"tls.d.table\\",
+  \\"props\\": {
+    \\"columns\\": [
+      {
+        \\"label\\": \\"Plan\\"
+      },
+      {
+        \\"label\\": \\"Seats\\",
+        \\"kind\\": \\"number\\"
+      },
+      {
+        \\"label\\": \\"Price\\",
+        \\"kind\\": \\"number\\"
+      }
+    ],
+    \\"rows\\": [
+      [
+        \\"Starter\\",
+        \\"5\\",
+        \\"$49\\"
+      ],
+      [
+        \\"Team\\",
+        \\"25\\",
+        \\"$199\\"
+      ]
+    ],
+    \\"footer\\": [
+      \\"Total\\",
+      \\"30\\",
+      \\"$248\\"
+    ],
+    \\"zebra\\": true
+  }
+}
+\`\`\`
+
+### \`tls.d.trend-badge\` — Trend Badge
+
+Pill with a triangle arrow and a signed change, coloured by direction and polarity. _(family: data; keywords: trend, badge, delta, change, arrow, up, down)_
+
+**When:** Annotating a number elsewhere on the slide with its trend.
+**Avoid:** A standalone metric (use tls.c.kpi-tile).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`delta\` | yes | number | Signed change; the sign sets the arrow. |
+| \`label\` | no | text (max 30 chars) | Short context after the value. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+| \`polarity\` | no | enum: upGood \\\\| downGood \\\\| neutral | Which direction is good. |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_trend\\",
+  \\"type\\": \\"tls.d.trend-badge\\",
+  \\"props\\": {
+    \\"delta\\": -3.2,
+    \\"format\\": \\"percent\\",
+    \\"polarity\\": \\"downGood\\",
+    \\"label\\": \\"churn\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.waterfall\` — Waterfall Chart
+
+Bridge chart: floating bars for changes, full bars for totals, optional connectors. _(family: data; keywords: waterfall, bridge, variance, walk, revenue, budget)_
+
+**When:** Bridge from one figure to another (revenue bridge, budget variance).
+**Avoid:** Independent values (use tls.d.bar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, value, kind) (3–12 items) | Start total, signed changes, end total. |
+| \`connectors\` | no | boolean |  |
+| \`colorBy\` | no | enum: sign \\\\| single | sign = positive / negative roles. |
+| \`valueLabels\` | no | enum: end \\\\| none |  |
+| \`gridlines\` | no | enum: major \\\\| none |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_waterfall\\",
+  \\"type\\": \\"tls.d.waterfall\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Start\\",
+        \\"value\\": 100,
+        \\"kind\\": \\"total\\"
+      },
+      {
+        \\"label\\": \\"Growth\\",
+        \\"value\\": 30
+      },
+      {
+        \\"label\\": \\"Churn\\",
+        \\"value\\": -15
+      },
+      {
+        \\"label\\": \\"End\\",
+        \\"value\\": 115,
+        \\"kind\\": \\"total\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.arrow\` — Arrow
+
+A single straight, curved or elbow arrow in four directions with one or two heads and an optional label. _(family: diagram; keywords: arrow, pointer, connector, curved arrow, elbow, flow direction)_
+
+**When:** Pointing from one block to another on a free layout, with a word on the arrow.
+**Avoid:** Connecting steps in a process (use tls.g.flow, which draws its own connectors).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | no | text (max 30 chars) | Optional, 1-4 words, e.g. \\"then\\" or \\"+12%\\". |
+| \`kind\` | no | enum: straight \\\\| curved \\\\| elbow |  |
+| \`direction\` | no | enum: right \\\\| left \\\\| up \\\\| down |  |
+| \`heads\` | no | enum: end \\\\| both \\\\| none |  |
+| \`weight\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`tone\` | no | enum: accent \\\\| text \\\\| muted |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_arrow\\",
+  \\"type\\": \\"tls.g.arrow\\",
+  \\"props\\": {
+    \\"label\\": \\"Then\\",
+    \\"kind\\": \\"curved\\"
+  }
+}
+\`\`\`
+
+### \`tls.g.before-after\` — Before and After
+
+Before and after panels joined by an arrow, each with a tag, title, text and optional image. _(family: diagram; keywords: before, after, transformation, redesign, problem, solution, change)_
+
+**When:** Contrast over time: a transformation, redesign or problem turned into a solution.
+**Avoid:** Numeric before/after values (use tls.d.stat-compare).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`before\` | yes | object (label, title, text, image) | {label?, title, text?, image?} for the starting state. |
+| \`after\` | yes | object (label, title, text, image) | {label?, title, text?, image?} for the result. |
+| \`arrow\` | no | enum: arrow \\\\| chevron \\\\| none |  |
+| \`emphasis\` | no | enum: after \\\\| none | after = the After panel gets the accent. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_before_after\\",
+  \\"type\\": \\"tls.g.before-after\\",
+  \\"props\\": {
+    \\"before\\": {
+      \\"label\\": \\"Before\\",
+      \\"title\\": \\"Manual reports\\",
+      \\"text\\": \\"Copy and paste, 3 hours a week.\\"
+    },
+    \\"after\\": {
+      \\"label\\": \\"After\\",
+      \\"title\\": \\"Live dashboard\\",
+      \\"text\\": \\"Always current, shared by link.\\"
+    }
+  }
+}
+\`\`\`
+
+### \`tls.g.bracket\` — Bracket
+
+A curly or square bracket grouping 2-6 items under one label, label at the right, left or top. _(family: diagram; keywords: bracket, brace, group, together, membership, category)_
+
+**When:** Membership: these items together form one thing, named by the label.
+**Avoid:** Values that add up (use tls.g.breakdown).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | yes | text (max 40 chars) | What the items form together, 1-5 words. |
+| \`items\` | yes | list of text (max 60 chars) (2–6 items) | The members, short phrases. |
+| \`side\` | no | enum: right \\\\| left \\\\| top | Where the label sits relative to the items. |
+| \`style\` | no | enum: brace \\\\| bracket | brace = curly, bracket = square. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bracket\\",
+  \\"type\\": \\"tls.g.bracket\\",
+  \\"props\\": {
+    \\"label\\": \\"Core team\\",
+    \\"items\\": [
+      \\"Product lead\\",
+      \\"Tech lead\\",
+      \\"Design lead\\"
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.breakdown\` — Breakdown
+
+One whole box split into 2-6 parts with values, joined by a curly brace; can show each share. _(family: diagram; keywords: breakdown, split, components, cost, composition, parts of a whole)_
+
+**When:** Parent/child, one level: a cost breakdown or the components of one metric.
+**Avoid:** Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`whole\` | yes | object (label, value) | The thing being split: {label, value?}, e.g. {label: \\"Total cost\\", value: \\"$120k\\"}. |
+| \`parts\` | yes | list of object (label, value, note) (2–6 items) | {label, value?, note?} per part. Values like \\"$40k\\" or \\"25%\\". |
+| \`direction\` | no | enum: LR \\\\| TB | LR = whole left, parts right; TB = whole on top. |
+| \`showShare\` | no | boolean | Adds each part as % of the sum when every value is numeric. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_breakdown\\",
+  \\"type\\": \\"tls.g.breakdown\\",
+  \\"props\\": {
+    \\"whole\\": {
+      \\"label\\": \\"Total cost\\",
+      \\"value\\": \\"$120k\\"
+    },
+    \\"parts\\": [
+      {
+        \\"label\\": \\"People\\",
+        \\"value\\": \\"$70k\\"
+      },
+      {
+        \\"label\\": \\"Cloud\\",
+        \\"value\\": \\"$30k\\"
+      },
+      {
+        \\"label\\": \\"Tools\\",
+        \\"value\\": \\"$20k\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.chevrons\` — Chevron Process
+
+Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(family: diagram; keywords: chevrons, phases, process, arrows, stages, method)_
+
+**When:** Order: phases of a project or method, with an optional \\"we are here\\".
+**Avoid:** Steps that need descriptions longer than one line (use tls.c.steps). Dated phases go in tls.g.roadmap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, text) (3–7 items) | Phases in order, left to right. |
+| \`currentIndex\` | no | number (min -1, max 20) | 0-based index of the phase to highlight; -1 for none. |
+| \`fill\` | no | enum: gradient \\\\| single \\\\| series | gradient = accent to accent2. |
+| \`textPlacement\` | no | enum: inside \\\\| below | below gives longer notes more room. |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_chevrons\\",
+  \\"type\\": \\"tls.g.chevrons\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Discover\\",
+        \\"text\\": \\"Research the need\\"
+      },
+      {
+        \\"label\\": \\"Design\\",
+        \\"text\\": \\"Shape the concept\\"
+      },
+      {
+        \\"label\\": \\"Build\\",
+        \\"text\\": \\"Make it real\\"
+      },
+      {
+        \\"label\\": \\"Launch\\",
+        \\"text\\": \\"Release and learn\\"
+      }
+    ],
+    \\"currentIndex\\": 1
+  }
+}
+\`\`\`
+
+### \`tls.g.cycle\` — Cycle
+
+Steps arranged on a ring with arrows that loop back to the first step. _(family: diagram; keywords: cycle, loop, pdca, lifecycle, feedback, circular)_
+
+**When:** Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.
+**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, text, icon) (3–6 items) | Steps in loop order, the first sits at the top. |
+| \`center\` | no | text (max 30 chars) | Name of the loop. |
+| \`direction\` | no | enum: clockwise \\\\| counter |  |
+| \`nodeStyle\` | no | enum: circle \\\\| card | circle = numbered or icon node with the label outside. |
+| \`arrowStyle\` | no | enum: arc \\\\| none |  |
+| \`showCenter\` | no | boolean |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cycle\\",
+  \\"type\\": \\"tls.g.cycle\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Plan\\",
+        \\"text\\": \\"Set the goal\\"
+      },
+      {
+        \\"label\\": \\"Do\\",
+        \\"text\\": \\"Try the change\\"
+      },
+      {
+        \\"label\\": \\"Check\\",
+        \\"text\\": \\"Measure it\\"
+      },
+      {
+        \\"label\\": \\"Act\\",
+        \\"text\\": \\"Keep what works\\"
+      }
+    ],
+    \\"center\\": \\"PDCA\\"
+  }
+}
+\`\`\`
+
+### \`tls.g.flow\` — Flowchart
+
+Flowchart: steps, decisions, start and end joined by labelled arrows; unknown ids are reported. _(family: diagram; keywords: flowchart, flow, decision, branch, algorithm, approval)_
+
+**When:** Order with branches: decision logic, algorithms, approval paths.
+**Avoid:** A straight sequence (use tls.g.steps or tls.g.chevrons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`nodes\` | yes | list of object (id, label, kind) (2–12 items) |  |
+| \`edges\` | yes | list of object (from, to, label) (1–16 items) | Every from/to must be a node id. |
+| \`direction\` | no | enum: LR \\\\| TB | LR = left to right, TB = top to bottom. |
+| \`routing\` | no | enum: elbow \\\\| straight |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_flow\\",
+  \\"type\\": \\"tls.g.flow\\",
+  \\"props\\": {
+    \\"nodes\\": [
+      {
+        \\"id\\": \\"a\\",
+        \\"label\\": \\"Request\\",
+        \\"kind\\": \\"start\\"
+      },
+      {
+        \\"id\\": \\"b\\",
+        \\"label\\": \\"Valid?\\",
+        \\"kind\\": \\"decision\\"
+      },
+      {
+        \\"id\\": \\"c\\",
+        \\"label\\": \\"Process\\"
+      },
+      {
+        \\"id\\": \\"d\\",
+        \\"label\\": \\"Reject\\",
+        \\"kind\\": \\"end\\"
+      }
+    ],
+    \\"edges\\": [
+      {
+        \\"from\\": \\"a\\",
+        \\"to\\": \\"b\\"
+      },
+      {
+        \\"from\\": \\"b\\",
+        \\"to\\": \\"c\\",
+        \\"label\\": \\"Yes\\"
+      },
+      {
+        \\"from\\": \\"b\\",
+        \\"to\\": \\"d\\",
+        \\"label\\": \\"No\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.funnel\` — Funnel
+
+Narrowing stages from broad to focused, with a note per stage and no numbers. _(family: diagram; keywords: funnel, stages, narrowing, selection, pipeline)_
+
+**When:** Order with narrowing: marketing funnel, selection process (no numbers).
+**Avoid:** Funnels with real values (use tls.d.funnel-chart).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stages\` | yes | list of object (label, text) (3–6 items) | Broadest stage first. No numbers needed. |
+| \`orientation\` | no | enum: vertical \\\\| horizontal |  |
+| \`notes\` | no | enum: side \\\\| inside | side = beside (vertical) or below (horizontal). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_funnel_g\\",
+  \\"type\\": \\"tls.g.funnel\\",
+  \\"props\\": {
+    \\"stages\\": [
+      {
+        \\"label\\": \\"Aware\\",
+        \\"text\\": \\"People who hear about us\\"
+      },
+      {
+        \\"label\\": \\"Interested\\",
+        \\"text\\": \\"Visit and read\\"
+      },
+      {
+        \\"label\\": \\"Customer\\",
+        \\"text\\": \\"Pay and stay\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.hub-spoke\` — Hub and Spoke
+
+A central hub with 3-8 satellite cards on connecting lines, full circle or fanned over a half circle. _(family: diagram; keywords: hub, spoke, ecosystem, satellites, core, modules, stakeholders)_
+
+**When:** Centre/satellite: an ecosystem, stakeholders around a product, a core with modules.
+**Avoid:** Ordered loops (use tls.g.cycle) or parent/child levels (use tls.g.tree).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`hub\` | yes | object (label, icon) | The centre: {label, icon?}. |
+| \`spokes\` | yes | list of object (label, text, icon) (3–8 items) | Satellites {label, text?, icon?}, clockwise from the top. |
+| \`layout\` | no | enum: circle \\\\| half | half = spokes fan over the top half, hub at the bottom. |
+| \`connector\` | no | enum: line \\\\| arrow-out \\\\| arrow-in \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_hub\\",
+  \\"type\\": \\"tls.g.hub-spoke\\",
+  \\"props\\": {
+    \\"hub\\": {
+      \\"label\\": \\"Platform\\"
+    },
+    \\"spokes\\": [
+      {
+        \\"label\\": \\"Web\\"
+      },
+      {
+        \\"label\\": \\"Mobile\\"
+      },
+      {
+        \\"label\\": \\"API\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.iceberg\` — Iceberg
+
+An iceberg split at the waterline: a few visible items on the tip, more hidden items underneath. _(family: diagram; keywords: iceberg, hidden, visible, symptoms, root causes, waterline)_
+
+**When:** Contrast of the visible (symptoms, results) against the hidden (causes, effort).
+**Avoid:** Two equal sides (use tls.g.pros-cons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`above\` | yes | object (label, items) | {label, items[1-4]}: what everyone sees. |
+| \`below\` | yes | object (label, items) | {label, items[1-6]}: what is hidden. |
+| \`waterline\` | no | enum: third \\\\| half | third = the tip takes a third of the height. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_iceberg\\",
+  \\"type\\": \\"tls.g.iceberg\\",
+  \\"props\\": {
+    \\"above\\": {
+      \\"label\\": \\"Seen\\",
+      \\"items\\": [
+        \\"Late deliveries\\"
+      ]
+    },
+    \\"below\\": {
+      \\"label\\": \\"Hidden\\",
+      \\"items\\": [
+        \\"Unclear ownership\\",
+        \\"Manual handoffs\\"
+      ]
+    }
+  }
+}
+\`\`\`
+
+### \`tls.g.layers\` — Layers
+
+Stacked horizontal layers, each with a label, note and icon, flat or as slanted slabs. _(family: diagram; keywords: layers, stack, architecture, tech stack, osi, tiers)_
+
+**When:** Level: layered architectures and stacks such as app/services/data or the OSI model.
+**Avoid:** Narrowing or ranked levels (use tls.g.pyramid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`layers\` | yes | list of object (label, text, icon) (2–7 items) | Top layer first. {label, text?, icon?}. |
+| \`style\` | no | enum: flat \\\\| perspective | perspective = slanted slabs. |
+| \`notes\` | no | enum: side \\\\| inside | side = notes beside the stack, inside = in the bar. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_layers\\",
+  \\"type\\": \\"tls.g.layers\\",
+  \\"props\\": {
+    \\"layers\\": [
+      {
+        \\"label\\": \\"Application\\",
+        \\"text\\": \\"What users touch\\"
+      },
+      {
+        \\"label\\": \\"Services\\",
+        \\"text\\": \\"Business logic\\"
+      },
+      {
+        \\"label\\": \\"Data\\",
+        \\"text\\": \\"Storage\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.matrix-2x2\` — 2x2 Matrix
+
+Two-by-two quadrant grid with labelled axes and optional plotted points. _(family: diagram; keywords: matrix, 2x2, quadrant, prioritisation)_
+
+**When:** Contrast on two dimensions: effort/impact, urgent/important, BCG.
+**Avoid:** Many numeric points (use tls.d.scatter); SWOT (use tls.g.swot).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`xAxis\` | yes | object (low, high, title) | {low, high, title?} of the horizontal dimension. |
+| \`yAxis\` | yes | object (low, high, title) | {low, high, title?}; high is at the top. |
+| \`quadrants\` | yes | list of object (label, text) (4–4 items) | Exactly 4 {label, text?}: TL, TR, BL, BR. |
+| \`items\` | no | list of object (label, x, y) (0–12 items) | Points {label, x, y}, x and y in 0..1. |
+| \`highlight\` | no | enum: none \\\\| TL \\\\| TR \\\\| BL \\\\| BR |  |
+| \`style\` | no | enum: tinted \\\\| lines |  |
+| \`showItems\` | no | boolean |  |
+| \`showAxisTitles\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_matrix\\",
+  \\"type\\": \\"tls.g.matrix-2x2\\",
+  \\"props\\": {
+    \\"xAxis\\": {
+      \\"low\\": \\"Low\\",
+      \\"high\\": \\"High\\",
+      \\"title\\": \\"Effort\\"
+    },
+    \\"yAxis\\": {
+      \\"low\\": \\"Low\\",
+      \\"high\\": \\"High\\",
+      \\"title\\": \\"Impact\\"
+    },
+    \\"quadrants\\": [
+      {
+        \\"label\\": \\"Quick wins\\"
+      },
+      {
+        \\"label\\": \\"Big bets\\"
+      },
+      {
+        \\"label\\": \\"Fill-ins\\"
+      },
+      {
+        \\"label\\": \\"Avoid\\"
+      }
+    ],
+    \\"items\\": [
+      {
+        \\"label\\": \\"Onboarding\\",
+        \\"x\\": 0.2,
+        \\"y\\": 0.8
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.milestones\` — Milestones
+
+Key checkpoints as diamonds on a line, filled when done, each with a date and short label. _(family: diagram; keywords: milestones, checkpoints, dates, progress, deadlines)_
+
+**When:** Dated order of key checkpoints only (no descriptions).
+**Avoid:** Events that need descriptions (use tls.g.timeline).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (date, label, done) (2–8 items) | Checkpoints in date order; no descriptions. |
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`labels\` | no | enum: alternate \\\\| below | alternate = date and label swap sides; below = date above, label below. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_milestones\\",
+  \\"type\\": \\"tls.g.milestones\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"date\\": \\"Jan\\",
+        \\"label\\": \\"Kick-off\\",
+        \\"done\\": true
+      },
+      {
+        \\"date\\": \\"Mar\\",
+        \\"label\\": \\"Prototype\\",
+        \\"done\\": true
+      },
+      {
+        \\"date\\": \\"Jun\\",
+        \\"label\\": \\"Beta release\\"
+      },
+      {
+        \\"date\\": \\"Sep\\",
+        \\"label\\": \\"Launch\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.mindmap\` — Mind Map
+
+A central idea with 2-6 curved branches to topics, each with up to four subtopics. _(family: diagram; keywords: mind map, mindmap, brainstorm, topics, overview, branches)_
+
+**When:** Parent/child brainstorm: a topic overview or course map around one idea.
+**Avoid:** Formal reporting lines or strict levels (tls.g.tree); a hub with no sub-topics (tls.g.hub-spoke).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`center\` | yes | text (max 30 chars) | 1-4 words. |
+| \`branches\` | yes | list of object (label, children) (2–6 items) | {label, children?: [text, up to 4]} per topic. |
+| \`balance\` | no | enum: both \\\\| right | both = branches on both sides, right = all to the right. |
+| \`curve\` | no | boolean | Default on; off draws straight links. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_mindmap\\",
+  \\"type\\": \\"tls.g.mindmap\\",
+  \\"props\\": {
+    \\"center\\": \\"Launch plan\\",
+    \\"branches\\": [
+      {
+        \\"label\\": \\"Product\\",
+        \\"children\\": [
+          \\"Scope\\",
+          \\"Pricing\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Marketing\\",
+        \\"children\\": [
+          \\"Channels\\",
+          \\"Message\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Sales\\",
+        \\"children\\": [
+          \\"Pilot clients\\",
+          \\"Training\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Support\\",
+        \\"children\\": [
+          \\"Help centre\\",
+          \\"On-call\\"
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.pros-cons\` — Pros and Cons
+
+Two columns of advantages and disadvantages with check and cross marks and an optional verdict. _(family: diagram; keywords: pros, cons, advantages, disadvantages, trade-offs, verdict)_
+
+**When:** Contrast of one option upsides and downsides, with an optional conclusion.
+**Avoid:** Comparing several options (use tls.c.comparison or tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prosTitle\` | no | text (max 24 chars) | Defaults to \\"Pros\\". |
+| \`consTitle\` | no | text (max 24 chars) | Defaults to \\"Cons\\". |
+| \`pros\` | yes | list of text (max 90 chars) (1–6 items) | Advantages, short phrases. |
+| \`cons\` | yes | list of text (max 90 chars) (1–6 items) | Disadvantages, short phrases. |
+| \`verdict\` | no | text (max 120 chars) | One-sentence conclusion. |
+| \`style\` | no | enum: columns \\\\| cards |  |
+| \`balance\` | no | enum: equal \\\\| auto | auto = the longer column gets more width. |
+| \`showVerdict\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pros_cons\\",
+  \\"type\\": \\"tls.g.pros-cons\\",
+  \\"props\\": {
+    \\"pros\\": [
+      \\"Faster launch\\",
+      \\"Lower cost\\"
+    ],
+    \\"cons\\": [
+      \\"Less control\\"
+    ],
+    \\"verdict\\": \\"Worth it if speed matters most.\\"
+  }
+}
+\`\`\`
+
+### \`tls.g.pyramid\` — Pyramid
+
+Stacked pyramid levels from tip to base, each with a label and a note; can be inverted. _(family: diagram; keywords: pyramid, levels, tiers, maslow, hierarchy of needs, foundation)_
+
+**When:** Level: ranked tiers that build on each other, such as Maslow, priority tiers or foundation-to-goal stacks.
+**Avoid:** Equal-weight layers (use tls.g.layers) or a narrowing process (use tls.g.funnel).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`levels\` | yes | list of object (label, text) (3–6 items) | Top (tip) first, base last. Keep the tip label short. |
+| \`direction\` | no | enum: up \\\\| down | down = inverted pyramid, widest level first. |
+| \`notes\` | no | enum: side \\\\| inside \\\\| none | side = notes beside the pyramid with leaders. |
+| \`fill\` | no | enum: gradient \\\\| series \\\\| single |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pyramid\\",
+  \\"type\\": \\"tls.g.pyramid\\",
+  \\"props\\": {
+    \\"levels\\": [
+      {
+        \\"label\\": \\"Purpose\\",
+        \\"text\\": \\"Why we exist\\"
+      },
+      {
+        \\"label\\": \\"Strategy\\",
+        \\"text\\": \\"Where we play\\"
+      },
+      {
+        \\"label\\": \\"Operations\\",
+        \\"text\\": \\"How we deliver every day\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.roadmap\` — Roadmap
+
+Lanes of bars across periods, coloured by status, with a today line. _(family: diagram; keywords: roadmap, gantt, plan, schedule, lanes, quarters)_
+
+**When:** Dated order with overlap: product roadmap, project plan, semester plan.
+**Avoid:** Single-point events (use tls.g.timeline or tls.g.milestones).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`periods\` | yes | list of text (max 12 chars) (2–12 items) | Column headers in time order: Q1..Q4, months. |
+| \`lanes\` | yes | list of object (name, items) (1–6 items) | Per lane: name, items[{label,start,end,status done\\\\|active\\\\|planned\\\\|risk}]; start/end = 0-based period index, end inclusive. |
+| \`todayAt\` | no | number (min -1, max 12) | Period index, fractions ok (1.5 = mid second period); -1 none. |
+| \`statusColors\` | no | boolean | Off = one colour per lane. |
+| \`laneLabels\` | no | enum: left \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_roadmap\\",
+  \\"type\\": \\"tls.g.roadmap\\",
+  \\"props\\": {
+    \\"periods\\": [
+      \\"Q1\\",
+      \\"Q2\\",
+      \\"Q3\\",
+      \\"Q4\\"
+    ],
+    \\"lanes\\": [
+      {
+        \\"name\\": \\"Product\\",
+        \\"items\\": [
+          {
+            \\"label\\": \\"Redesign\\",
+            \\"start\\": 0,
+            \\"end\\": 1,
+            \\"status\\": \\"done\\"
+          },
+          {
+            \\"label\\": \\"Mobile app\\",
+            \\"start\\": 1.5,
+            \\"end\\": 3,
+            \\"status\\": \\"active\\"
+          }
+        ]
+      },
+      {
+        \\"name\\": \\"Platform\\",
+        \\"items\\": [
+          {
+            \\"label\\": \\"Migration\\",
+            \\"start\\": 0.5,
+            \\"end\\": 2,
+            \\"status\\": \\"active\\"
+          }
+        ]
+      }
+    ],
+    \\"todayAt\\": 1.5
+  }
+}
+\`\`\`
+
+### \`tls.g.steps\` — Steps Diagram
+
+Numbered step strip: accent badge, title and one-line description per step, joined by thin connectors. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
+
+**When:** A compact 2-8 step process inside a slide: numbered badge, title, short line per step.
+**Avoid:** A whole process slide (tls.c.steps); a current phase (tls.g.chevrons); a loop (tls.g.cycle); branching (tls.g.flow); dates (tls.g.timeline).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (title, description) (2–8 items) | Steps in order. Numbered 1..n automatically. |
+| \`direction\` | no | enum: horizontal \\\\| vertical | Row (wraps when narrow) or column. |
+| \`connector\` | no | enum: line \\\\| arrow \\\\| none | Between badges. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_steps_1\\",
+  \\"type\\": \\"tls.g.steps\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"title\\": \\"Brief\\",
+        \\"description\\": \\"Agree the goal and the audience\\"
+      },
+      {
+        \\"title\\": \\"Draft\\",
+        \\"description\\": \\"Build the first version\\"
+      },
+      {
+        \\"title\\": \\"Review\\",
+        \\"description\\": \\"Collect feedback from the team\\"
+      },
+      {
+        \\"title\\": \\"Publish\\",
+        \\"description\\": \\"Share it and track results\\"
+      }
+    ],
+    \\"direction\\": \\"horizontal\\",
+    \\"connector\\": \\"arrow\\"
+  },
+  \\"children\\": []
+}
+\`\`\`
+
+### \`tls.g.swot\` — SWOT
+
+SWOT grid: strengths, weaknesses, opportunities and threats as four bullet lists. _(family: diagram; keywords: swot, strengths, weaknesses, opportunities, threats, assessment)_
+
+**When:** Contrast: a strategic assessment of an organisation, product or idea (internal vs external, good vs bad).
+**Avoid:** Any other two-axis grid (use tls.g.matrix-2x2) or a plain pro/con list (use tls.g.pros-cons).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`strengths\` | yes | list of text (max 80 chars) (1–5 items) | Internal positives, 3-5 short phrases. |
+| \`weaknesses\` | yes | list of text (max 80 chars) (1–5 items) | Internal negatives. |
+| \`opportunities\` | yes | list of text (max 80 chars) (1–5 items) | External positives. |
+| \`threats\` | yes | list of text (max 80 chars) (1–5 items) | External negatives. |
+| \`style\` | no | enum: tinted \\\\| outline | tinted = coloured cards, outline = neutral cards. |
+| \`letters\` | no | boolean | A large S, W, O or T above each heading. Needs tall quadrants: full-width slide, 3 items or fewer. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_swot\\",
+  \\"type\\": \\"tls.g.swot\\",
+  \\"props\\": {
+    \\"strengths\\": [
+      \\"Strong brand\\",
+      \\"Loyal users\\"
+    ],
+    \\"weaknesses\\": [
+      \\"Small budget\\"
+    ],
+    \\"opportunities\\": [
+      \\"New markets\\"
+    ],
+    \\"threats\\": [
+      \\"New entrants\\"
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.timeline\` — Timeline
+
+Dated events along a horizontal or vertical axis, with a card per event and an optional now marker. _(family: diagram; keywords: timeline, history, dates, schedule, milestones, chronology)_
+
+**When:** Dated order: history, project timeline, course schedule.
+**Avoid:** Undated steps (use tls.g.steps). Overlapping periods go in tls.g.roadmap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`events\` | yes | list of object (date, title, text, icon) (3–8 items) | Events in date order, earliest first. |
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`alternate\` | no | boolean | Cards alternate above/below (or left/right) so more events fit. |
+| \`nowIndex\` | no | number (min -1, max 20) | 0-based index of the latest event reached; later events are muted. -1 for none. |
+| \`nodeStyle\` | no | enum: dot \\\\| icon \\\\| number |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_timeline\\",
+  \\"type\\": \\"tls.g.timeline\\",
+  \\"props\\": {
+    \\"events\\": [
+      {
+        \\"date\\": \\"2021\\",
+        \\"title\\": \\"Founded\\",
+        \\"text\\": \\"Two founders and a prototype\\"
+      },
+      {
+        \\"date\\": \\"2022\\",
+        \\"title\\": \\"First customers\\",
+        \\"text\\": \\"Ten pilots go live\\"
+      },
+      {
+        \\"date\\": \\"2023\\",
+        \\"title\\": \\"Series A\\",
+        \\"text\\": \\"Team grows to thirty\\"
+      },
+      {
+        \\"date\\": \\"2024\\",
+        \\"title\\": \\"Global launch\\",
+        \\"text\\": \\"Available in twelve countries\\"
+      }
+    ],
+    \\"nowIndex\\": 2
+  }
+}
+\`\`\`
+
+### \`tls.g.tree\` — Tree
+
+Org chart or hierarchy: a root box linked to children and grandchildren, top-down or left to right. _(family: diagram; keywords: tree, org chart, hierarchy, taxonomy, breakdown, structure)_
+
+**When:** Parent/child: org charts, taxonomies, the decomposition of a goal into parts.
+**Avoid:** Ordered steps or decisions (use tls.g.flow) or free brainstorming (use tls.g.mindmap).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`root\` | yes | object (label, sub, children) | Nested {label, sub?, children?: [{label, sub?, children?: [{label, sub?}]}]}. Max 3 levels, 15 nodes in all, 6 children per node. Labels 1-3 words. |
+| \`direction\` | no | enum: TB \\\\| LR | TB = top-down, LR = left to right (fits more leaves). |
+| \`nodeStyle\` | no | enum: card \\\\| pill \\\\| avatar | avatar adds a round monogram (initials) to each card. |
+| \`compact\` | no | boolean | Labels only, tighter boxes: fits more nodes. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_tree\\",
+  \\"type\\": \\"tls.g.tree\\",
+  \\"props\\": {
+    \\"root\\": {
+      \\"label\\": \\"Goal\\",
+      \\"children\\": [
+        {
+          \\"label\\": \\"Grow revenue\\",
+          \\"children\\": [
+            {
+              \\"label\\": \\"New markets\\"
+            },
+            {
+              \\"label\\": \\"Upsell\\"
+            }
+          ]
+        },
+        {
+          \\"label\\": \\"Cut cost\\",
+          \\"children\\": [
+            {
+              \\"label\\": \\"Automate\\"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+### \`tls.g.venn\` — Venn
+
+Two or three overlapping translucent circles with set labels and a label for what they share. _(family: diagram; keywords: venn, overlap, intersection, shared, circles, ikigai)_
+
+**When:** Overlap: what two or three sets share, such as a skills/market intersection.
+**Avoid:** More than 3 sets (use tls.d.compare-table) or ranked levels (use tls.g.pyramid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`sets\` | yes | list of object (label, text) (2–3 items) | 2 or 3 sets. Short labels. |
+| \`overlap\` | no | text (max 30 chars) | What all sets share. 1-3 words. |
+| \`pairOverlaps\` | no | list of text (max 24 chars) (0–3 items) | 3 sets only: shared by A+B, B+C, A+C, in that order. |
+| \`opacity\` | no | enum: soft \\\\| medium |  |
+| \`labels\` | no | enum: inside \\\\| outside | outside = set names beside the circles. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_venn\\",
+  \\"type\\": \\"tls.g.venn\\",
+  \\"props\\": {
+    \\"sets\\": [
+      {
+        \\"label\\": \\"Skills\\"
+      },
+      {
+        \\"label\\": \\"Passion\\"
+      }
+    ],
+    \\"overlap\\": \\"Sweet spot\\"
+  }
+}
+\`\`\`
+
+### \`tls.l.card\` — Card
+
+Filled container with configurable padding. _(family: layout; keywords: card, container, padding, filled)_
+
+**When:** Container: wrap child blocks (props.children; two or more are stacked) in a filled, padded panel. Use to group a heading and a paragraph into one visible tile.
+**Avoid:** Do not use for transparent grouping (use tls.l.stack without style) or for a titled area with a divider (use tls.l.section).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Inner padding of the card. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_card\\",
+  \\"type\\": \\"tls.l.card\\",
+  \\"props\\": {
+    \\"padding\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_card_1\\",
+        \\"type\\": \\"tls.t.title\\",
+        \\"props\\": {
+          \\"text\\": \\"Revenue up 42%\\",
+          \\"size\\": \\"subheading\\"
+        }
+      },
+      {
+        \\"id\\": \\"b_card_2\\",
+        \\"type\\": \\"tls.t.body\\",
+        \\"props\\": {
+          \\"text\\": \\"Driven by enterprise accounts in APAC.\\"
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.field\` — Field
+
+Full-bleed background fill. _(family: layout; keywords: field, background, fill, full-bleed)_
+
+**When:** A full-bleed colour or gradient layer (set through the block style.surface) painted first, behind other blocks; put it first inside a tls.l.overlay.
+**Avoid:** Do not use for visible content (it only paints a fill), or for a framed panel around content (use tls.l.card).
+
+_No slots._
+
+\`\`\`json
+{
+  \\"id\\": \\"b_field\\",
+  \\"type\\": \\"tls.l.field\\",
+  \\"props\\": {}
+}
+\`\`\`
+
+### \`tls.l.footer\` — Footer
+
+Content + footer layout with configurable footer height. _(family: layout; keywords: footer, bottom, content, page)_
+
+**When:** Container: children [main, footer]: a fixed-height strip (footerHeight) under the main area.
+**Avoid:** Do not use for an inline caption under one chart or image (use tls.t.caption).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`footerHeight\` | no | number (min 40, max 400) | Height of the footer area in slide units. |
+| \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between main content and footer. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | First child is main content, second is the footer. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_footer\\",
+  \\"type\\": \\"tls.l.footer\\",
+  \\"props\\": {
+    \\"footerHeight\\": 120,
+    \\"gutter\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"c1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Main content\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Footer\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.grid\` — Grid
+
+Grid layout with configurable columns, rows, and gap. _(family: layout; keywords: grid, columns, rows, table)_
+
+**When:** Container: child blocks (props.children) in a columns x rows grid of equal cells. For 4-9 cells.
+**Avoid:** Two columns: tls.l.split. One line: tls.l.row.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`columns\` | no | number (min 1, max 12) | Number of grid columns. |
+| \`rows\` | no | number (min 1, max 12) | Number of grid rows. |
+| \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between grid cells. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged in grid cells (row-major order). |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among cells: equal (same size) or content (sized to intrinsic). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_grid\\",
+  \\"type\\": \\"tls.l.grid\\",
+  \\"props\\": {
+    \\"columns\\": 2,
+    \\"rows\\": 2,
+    \\"gap\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"c1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Reach\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Revenue\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c3\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Cost\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c4\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Risk\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.grid-guide\` — Grid Guide
+
+Alignment grid guide with configurable divisions. Light guide lines; omitted from PNG/PDF export. _(family: layout; keywords: grid, guide, alignment, editor)_
+
+**When:** Alignment aid, no children: draws light guide lines at equal divisions over its box while editing. Never part of the story; remove before presenting.
+**Avoid:** Do not use to lay out content (use tls.l.grid) and never leave it on a slide that will be presented: the lines are drawn in the viewer too.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`divisions\` | no | number (min 2, max 12) | Number of grid divisions on each axis. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_gguide\\",
+  \\"type\\": \\"tls.l.grid-guide\\",
+  \\"props\\": {
+    \\"divisions\\": 3
+  }
+}
+\`\`\`
+
+### \`tls.l.overlay\` — Overlay
+
+Layered children z-stacked in the same box. _(family: layout; keywords: overlay, layer, stack, z-index)_
+
+**When:** Container: layer child blocks (props.children) in the same box, last on top, over a filled surface. Use for text on a panel, a badge on a photo or a background plus content.
+**Avoid:** Do not use for sequential layout (use tls.l.stack or tls.l.row) or for a plain background fill (use tls.l.field).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks layered z-stack style (last child on top). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_overlay\\",
+  \\"type\\": \\"tls.l.overlay\\",
+  \\"props\\": {
+    \\"children\\": [
+      {
+        \\"id\\": \\"o1\\",
+        \\"type\\": \\"tls.l.card\\",
+        \\"props\\": {}
+      },
+      {
+        \\"id\\": \\"o2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Drawn on top of the panel\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.repeater\` — Repeater
+
+Repeats a template child for each item in a given direction. _(family: layout; keywords: repeater, repeat, loop, list)_
+
+**When:** Container: repeat ONE template child (props.children[0]) count times in a column (direction 'y') or row ('x'). Use for N identical tiles; without a template it draws placeholder panels.
+**Avoid:** Do not use when the children differ from each other (use tls.l.stack or tls.l.grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`count\` | no | number (min 1, max 20) | Number of repetitions. |
+| \`direction\` | no | enum: x \\\\| y | Lay out repetitions horizontally (x) or vertically (y). |
+| \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between repeated items. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–1 blocks) | Template child to repeat. First child only — it is rendered count times. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_rep\\",
+  \\"type\\": \\"tls.l.repeater\\",
+  \\"props\\": {
+    \\"count\\": 3,
+    \\"direction\\": \\"y\\",
+    \\"gap\\": \\"sm\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_rep_1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Repeated item\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.row\` — Row
+
+Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, gap)_
+
+**When:** Container: 2-4 child blocks (props.children) side by side; sizing 'equal' or 'content'.
+**Avoid:** Do not use for vertical arrangement (use tls.l.stack) or for more than a few equal cells (use tls.l.grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between row children. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged horizontally. |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_row\\",
+  \\"type\\": \\"tls.l.row\\",
+  \\"props\\": {
+    \\"gap\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"c1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Problem\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Approach\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c3\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Result\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.safe-area\` — Safe Area
+
+Insets its child blocks by a configurable margin so content stays off the slide edge. _(family: layout; keywords: safe-area, margin, inset, editor)_
+
+**When:** Container: insets its child blocks (props.children) by a margin token and Use to keep content off the slide edge.
+**Avoid:** Do not use for spacing between blocks (use tls.l.stack gap) or for padding inside a panel (use tls.l.card). It draws nothing itself.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`inset\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Safe-area inset on all sides. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the safe area. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_safe\\",
+  \\"type\\": \\"tls.l.safe-area\\",
+  \\"props\\": {
+    \\"inset\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_safe_1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Content inside the margin\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.section\` — Section
+
+Titled section with divider and content area. _(family: layout; keywords: section, title, heading, divider)_
+
+**When:** Container: a title (props.title) with a divider and child blocks (props.children) below it. Use to introduce a named sub-area inside a region.
+**Avoid:** Do not use for the slide title (use tls.t.title) or for a filled panel without a heading (use tls.l.card).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 100 chars) | Section heading text. |
+| \`showTitle\` | no | boolean | Toggle the section title on/off. |
+| \`showDivider\` | no | boolean | Toggle the divider line below the title on/off. |
+| \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between title and children. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out below the title. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_section\\",
+  \\"type\\": \\"tls.l.section\\",
+  \\"props\\": {
+    \\"title\\": \\"Revenue Drivers\\",
+    \\"gap\\": \\"sm\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_section_1\\",
+        \\"type\\": \\"tls.t.bullets\\",
+        \\"props\\": {
+          \\"items\\": [
+            {
+              \\"text\\": \\"Enterprise APAC\\"
+            },
+            {
+              \\"text\\": \\"Self-serve upgrades\\"
+            },
+            {
+              \\"text\\": \\"Lower churn\\"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.sidebar\` — Sidebar
+
+Sidebar + main content layout with configurable width and side. _(family: layout; keywords: sidebar, panel, navigation, two-column)_
+
+**When:** Container: children [side, main]: a fixed-width column (sidebarWidth) beside the main area.
+**Avoid:** Do not use for equal-width columns (use tls.l.split or tls.l.grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`sidebarWidth\` | no | number (min 100, max 800) | Width of the sidebar panel in slide units. |
+| \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between sidebar and main content. |
+| \`sidebarSide\` | no | enum: start \\\\| end | Place the sidebar on the start (left) or end (right) side. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | First child is sidebar, second is main content. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_sidebar\\",
+  \\"type\\": \\"tls.l.sidebar\\",
+  \\"props\\": {
+    \\"sidebarWidth\\": 320,
+    \\"gutter\\": \\"md\\",
+    \\"sidebarSide\\": \\"start\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"c1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Sidebar\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Main content\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.spacer\` — Spacer
+
+Empty space for structural separation. _(family: layout; keywords: spacer, empty, gap, fill)_
+
+**When:** Invisible structural gap (no children, draws nothing): reserve empty space of a chosen size between neighbouring blocks. It looks empty in the gallery by design.
+**Avoid:** Do not use when the gap of a stack or row already provides the spacing.
+
+_No slots._
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spacer\\",
+  \\"type\\": \\"tls.l.spacer\\",
+  \\"props\\": {}
+}
+\`\`\`
+
+### \`tls.l.split\` — Split
+
+Two-panel split with configurable ratio and gutter. _(family: layout; keywords: split, columns, two-panel, sidebar)_
+
+**When:** Container: two child blocks (props.children, exactly two) side by side (axis 'x') or stacked (axis 'y'), divided by ratio (0.5 = halves) with a gutter.
+**Avoid:** Do not use for three or more panels (use tls.l.grid) or for a narrow fixed-width side column (use tls.l.sidebar).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`ratio\` | no | number (min 0.1, max 0.9) | Fraction of space given to the first panel (0.1–0.9). |
+| \`gutter\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between panels. |
+| \`axis\` | no | enum: x \\\\| y | Split direction: x (left/right) or y (top/bottom). |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) (0–2 blocks) | Two child blocks, one per panel. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_split\\",
+  \\"type\\": \\"tls.l.split\\",
+  \\"props\\": {
+    \\"ratio\\": 0.5,
+    \\"gutter\\": \\"md\\",
+    \\"axis\\": \\"x\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_split_1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Question\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"b_split_2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Answer\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.l.stack\` — Stack
+
+Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, gap)_
+
+**When:** Container: child blocks (props.children) one above the other, full width; sizing 'equal' or 'content'.
+**Avoid:** Horizontal: tls.l.row. Equal cells: tls.l.grid.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between stacked children. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks stacked vertically. |
+| \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stack\\",
+  \\"type\\": \\"tls.l.stack\\",
+  \\"props\\": {
+    \\"gap\\": \\"md\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"c1\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Claim\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c2\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Evidence\\",
+          \\"showIcon\\": false
+        }
+      },
+      {
+        \\"id\\": \\"c3\\",
+        \\"type\\": \\"tls.t.callout\\",
+        \\"props\\": {
+          \\"text\\": \\"Next step\\",
+          \\"showIcon\\": false
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.m.avatar\` — Avatar
+
+Portrait in a circle, rounded or square frame with name and role; initials when there is no photo. _(family: media; keywords: avatar, portrait, person, speaker, author, profile, headshot)_
+
+**When:** Naming one speaker, author or contact person with a portrait.
+**Avoid:** Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | no | image | Asset id or URL. Without one the avatar shows the name initials. |
+| \`name\` | yes | text (max 40 chars) |  |
+| \`role\` | no | text (max 50 chars) | Job title or relation, 1-6 words. |
+| \`shape\` | no | enum: circle \\\\| rounded \\\\| square |  |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg \\\\| xl |  |
+| \`layout\` | no | enum: stacked \\\\| inline | stacked = text under the portrait; inline = text beside it. |
+| \`align\` | no | enum: center \\\\| start | Stacked layout only. |
+| \`ring\` | no | boolean |  |
+| \`showName\` | no | boolean |  |
+| \`showRole\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_avatar\\",
+  \\"type\\": \\"tls.m.avatar\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/portrait-1.svg\\",
+    \\"name\\": \\"Dr. Tran Thi Lan\\",
+    \\"role\\": \\"Head of Data Science\\",
+    \\"size\\": \\"lg\\",
+    \\"ring\\": true
+  }
+}
+\`\`\`
+
+### \`tls.m.avatar-group\` — Avatar Group
+
+Overlapping row of small portraits (initials when no photo) with a +N overflow bubble. _(family: media; keywords: avatars, people, team, contributors, attendees, faces, stack)_
+
+**When:** Who is involved at a glance: contributors, attendees, a project team.
+**Avoid:** Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`people\` | yes | list of object (image, name) (2–20 items) | 2-20 items {image?, name}. No image shows initials of the name. |
+| \`max\` | no | number (min 1, max 12) | Avatars shown before the +N bubble (default 5). |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`overlap\` | no | enum: md \\\\| none \\\\| lg |  |
+| \`caption\` | no | text (max 60 chars) | e.g. \\"12 contributors\\". |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_avatar_group\\",
+  \\"type\\": \\"tls.m.avatar-group\\",
+  \\"props\\": {
+    \\"people\\": [
+      {
+        \\"image\\": \\"/demo/portrait-2.svg\\",
+        \\"name\\": \\"Linh Tran\\"
+      },
+      {
+        \\"image\\": \\"/demo/portrait-3.svg\\",
+        \\"name\\": \\"Minh Anh\\"
+      },
+      {
+        \\"name\\": \\"Bao Chau\\"
+      },
+      {
+        \\"name\\": \\"Ngoc Han\\"
+      }
+    ],
+    \\"max\\": 3,
+    \\"caption\\": \\"4 contributors\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.decoration\` — Decoration
+
+Decorative blob, arc, ring, dot grid, wave or corner in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent)_
+
+**When:** Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.
+**Avoid:** Anything that carries meaning (use a real block, e.g. tls.t.statement); texture over dense text.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner | Rotation turns blob and arc freely; wave and corner snap to quarter turns; ring and dots ignore it. |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
+| \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
+| \`rotation\` | no | number (min 0, max 359) | Degrees. |
+| \`seed\` | no | number (min 0, max 9999) | Same seed, same shape (blob, wave). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_decoration\\",
+  \\"type\\": \\"tls.m.decoration\\",
+  \\"props\\": {
+    \\"shape\\": \\"blob\\",
+    \\"tone\\": \\"accent2\\",
+    \\"opacity\\": \\"soft\\",
+    \\"seed\\": 7
+  }
+}
+\`\`\`
+
+### \`tls.m.device-mock\` — Device Mock
+
+Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from rects. _(family: media; keywords: device, mockup, screenshot, browser, phone, laptop, tablet, app)_
+
+**When:** Showing an app, website or product UI.
+**Avoid:** Photos (use tls.m.image); a screenshot plus text (use tls.c.image-text).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 120 chars) | What the screen shows. |
+| \`url\` | no | text (max 60 chars) | Address bar text (browser device only). |
+| \`device\` | no | enum: browser \\\\| laptop \\\\| phone \\\\| tablet |  |
+| \`tone\` | no | enum: light \\\\| dark |  |
+| \`shadow\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_device_mock\\",
+  \\"type\\": \\"tls.m.device-mock\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/photo-4.svg\\",
+    \\"alt\\": \\"Analytics dashboard\\",
+    \\"url\\": \\"app.example.com\\",
+    \\"device\\": \\"browser\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.icon\` — Icon
+
+SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
+
+**When:** Use to display a named SVG icon (zap, shield, globe, check, etc.) with proper theming. size sm is an inline glyph, lg/xl a standalone mark.
+**Avoid:** Do not use for photographs (use tls.m.image) or for an icon that needs a text label (use tls.m.icon-label).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | yes | icon | Choose a name from the icon list in the capability index. Unknown names render a placeholder. |
+| \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
+| \`size\` | no | enum: sm \\\\| md \\\\| lg \\\\| xl | sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_icon_1\\",
+  \\"type\\": \\"tls.m.icon\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"color\\": \\"accent\\",
+    \\"size\\": \\"lg\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.icon-label\` — Icon Label
+
+Icon with text label beneath. _(family: media; keywords: icon, label, button, nav, link)_
+
+**When:** Use to label a feature, action, or section with an icon and brief text.
+**Avoid:** Do not use for long descriptions (use tls.t.body) or for a grid of icon + title + description cells (use tls.c.feature-grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icon\` | yes | icon | Choose from the icon set: zap, shield, globe, check, etc. |
+| \`label\` | yes | text (max 100 chars) | Keep to 1-3 words. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default color role. |
+| \`size\` | no | enum: sm \\\\| md \\\\| lg | Size of the icon+label group. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_il_1\\",
+  \\"type\\": \\"tls.m.icon-label\\",
+  \\"props\\": {
+    \\"icon\\": \\"zap\\",
+    \\"label\\": \\"Power\\",
+    \\"color\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.icon-list\` — Icon list
+
+Stacked points, each with its own icon, title and short description. _(family: media; keywords: icons, benefits, features, list, points)_
+
+**When:** 3–6 benefits or features where each needs a recognisable icon, stacked in a column.
+**Avoid:** A grid of features (use tls.c.feature-grid); points without icons (use tls.t.bullets).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (icon, title, text) (2–6 items) | Title 2–5 words; description one short sentence. Pick an icon that names the idea. |
+| \`iconStyle\` | no | enum: plain \\\\| circle \\\\| square | circle and square put the icon on a tinted shape. |
+| \`iconTone\` | no | enum: accent \\\\| accent2 \\\\| text |  |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`showText\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_iconlist\\",
+  \\"type\\": \\"tls.m.icon-list\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"icon\\": \\"rocket\\",
+        \\"title\\": \\"Fast start\\",
+        \\"text\\": \\"Live in a week.\\"
+      },
+      {
+        \\"icon\\": \\"shield\\",
+        \\"title\\": \\"Secure\\",
+        \\"text\\": \\"Audit trails included.\\"
+      },
+      {
+        \\"icon\\": \\"sparkles\\",
+        \\"title\\": \\"Polished\\",
+        \\"text\\": \\"Looks right out of the box.\\"
+      }
+    ],
+    \\"iconStyle\\": \\"circle\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.image\` — Image
+
+Image with cover/contain fit, focal point, and optional caption. _(family: media; keywords: image, photo, picture, media, visual)_
+
+**When:** Use to display a photograph, screenshot, or illustration with optional caption.
+**Avoid:** Do not use for charts (use tls.d.bar), for background fills (use tls.l.field) or for an image with a text cluster (use tls.c.image-text).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`src\` | yes | image | Asset id or URL of the image to display. |
+| \`alt\` | yes | text (max 200 chars) | 1–10 words describing what the image shows. |
+| \`fit\` | no | enum: cover \\\\| contain | How the image fills its box: cover (crop to fill) or contain (letterbox). |
+| \`focal\` | no | object (fx, fy) | Focus area when fit is \\"cover\\". Default is center [0.5, 0.5]. |
+| \`caption\` | no | text (max 200 chars) | Optional caption displayed below the image. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image\\",
+  \\"type\\": \\"tls.m.image\\",
+  \\"props\\": {
+    \\"src\\": \\"/demo/photo-1.svg\\",
+    \\"alt\\": \\"Team meeting in conference room\\",
+    \\"fit\\": \\"cover\\",
+    \\"caption\\": \\"Team offsite, Q3 2026\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.image-compare\` — Image Compare
+
+Before and after images side by side or split down the middle, each labelled. _(family: media; keywords: before, after, compare, renovation, redesign, results, split)_
+
+**When:** A visual change: renovation, redesign, treatment or model results.
+**Avoid:** Text-only before/after (use tls.g.before-after); unrelated photos (use tls.m.image-grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`before\` | yes | object (image, alt, label) | {image, alt, label? (default Before/After, <= 24 chars)}. |
+| \`after\` | yes | object (image, alt, label) | {image, alt, label? (default Before/After, <= 24 chars)}. |
+| \`mode\` | no | enum: side \\\\| split | side = two frames; split = one frame, left half before, right half after. |
+| \`divider\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_compare\\",
+  \\"type\\": \\"tls.m.image-compare\\",
+  \\"props\\": {
+    \\"before\\": {
+      \\"image\\": \\"/demo/before.svg\\",
+      \\"alt\\": \\"Old dashboard\\",
+      \\"label\\": \\"Before\\"
+    },
+    \\"after\\": {
+      \\"image\\": \\"/demo/after.svg\\",
+      \\"alt\\": \\"New dashboard\\",
+      \\"label\\": \\"After\\"
+    },
+    \\"mode\\": \\"split\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.image-grid\` — Image Grid
+
+Images in even cells, a feature layout or a mosaic, with captions. _(family: media; keywords: gallery, photos, grid, portfolio, images, mosaic)_
+
+**When:** Several photos of equal importance: portfolio, event photos, product shots, a gallery.
+**Avoid:** One image plus text (use tls.c.image-text); one image (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`images\` | yes | list of object (image, alt, caption) (2–9 items) | 2-9 items {image, alt (1-10 words), caption?}. |
+| \`pattern\` | no | enum: even \\\\| feature-left \\\\| feature-top \\\\| mosaic | feature-* enlarges the first image. |
+| \`cols\` | no | enum: auto \\\\| 2 \\\\| 3 \\\\| 4 | Pattern even only. |
+| \`gap\` | no | enum: sm \\\\| md \\\\| none |  |
+| \`radius\` | no | enum: md \\\\| none \\\\| lg |  |
+| \`captions\` | no | enum: below \\\\| overlay \\\\| none |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_grid\\",
+  \\"type\\": \\"tls.m.image-grid\\",
+  \\"props\\": {
+    \\"images\\": [
+      {
+        \\"image\\": \\"/demo/photo-1.svg\\",
+        \\"alt\\": \\"Students at lab benches\\",
+        \\"caption\\": \\"Lab session\\"
+      },
+      {
+        \\"image\\": \\"/demo/photo-2.svg\\",
+        \\"alt\\": \\"Field trip group photo\\"
+      },
+      {
+        \\"image\\": \\"/demo/photo-3.svg\\",
+        \\"alt\\": \\"Project demo on stage\\"
+      }
+    ],
+    \\"pattern\\": \\"feature-left\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.logo\` — Logo
+
+One logo fitted inside a fixed height, never cropped, with an optional plate. _(family: media; keywords: logo, brand, partner, client, sponsor, wordmark)_
+
+**When:** One brand mark: partner, client, sponsor, the presenter organisation.
+**Avoid:** Several logos (use tls.m.logo-wall); a photo (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 80 chars) | The brand name. |
+| \`ratio\` | no | number (min 0.2, max 8) | Width / height of the logo file. Needed for align and plate; read from the asset when known. |
+| \`maxHeight\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`align\` | no | enum: center \\\\| start \\\\| end |  |
+| \`plate\` | no | enum: none \\\\| surface \\\\| alt | Background plate for logos that need contrast. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_logo\\",
+  \\"type\\": \\"tls.m.logo\\",
+  \\"props\\": {
+    \\"image\\": \\"/demo/logo-1.svg\\",
+    \\"alt\\": \\"Acme Corp\\",
+    \\"ratio\\": 4,
+    \\"maxHeight\\": \\"lg\\",
+    \\"plate\\": \\"alt\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.logo-wall\` — Logo Wall
+
+Even grid of logos at equal height or equal area, with an optional heading, plates and dividers. _(family: media; keywords: logos, clients, partners, sponsors, trusted by, integrations)_
+
+**When:** Clients, partners, sponsors, integrations, accreditations.
+**Avoid:** Fewer than 3 logos (use tls.m.logo); photos (use tls.m.image-grid).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`heading\` | no | text (max 60 chars) | e.g. \\"Trusted by\\". |
+| \`logos\` | yes | list of object (image, alt, ratio) (3–16 items) | 3-16 items {image, alt (brand name), ratio? (width / height, for equal weight)}. |
+| \`cols\` | no | enum: auto \\\\| 3 \\\\| 4 \\\\| 5 \\\\| 6 |  |
+| \`uniform\` | no | enum: height \\\\| area | height = same height; area = same visual area (needs ratio). |
+| \`plates\` | no | boolean |  |
+| \`dividers\` | no | boolean |  |
+| \`showHeading\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_logo_wall\\",
+  \\"type\\": \\"tls.m.logo-wall\\",
+  \\"props\\": {
+    \\"heading\\": \\"Trusted by\\",
+    \\"logos\\": [
+      {
+        \\"image\\": \\"/demo/logo-1.svg\\",
+        \\"alt\\": \\"Northwind\\",
+        \\"ratio\\": 4
+      },
+      {
+        \\"image\\": \\"/demo/logo-2.svg\\",
+        \\"alt\\": \\"Globex\\",
+        \\"ratio\\": 1
+      },
+      {
+        \\"image\\": \\"/demo/logo-3.svg\\",
+        \\"alt\\": \\"Initech\\",
+        \\"ratio\\": 3
+      },
+      {
+        \\"image\\": \\"/demo/logo-4.svg\\",
+        \\"alt\\": \\"Umbrella\\",
+        \\"ratio\\": 2
+      },
+      {
+        \\"image\\": \\"/demo/logo-5.svg\\",
+        \\"alt\\": \\"Hooli\\",
+        \\"ratio\\": 1.5
+      },
+      {
+        \\"image\\": \\"/demo/logo-6.svg\\",
+        \\"alt\\": \\"Stark\\",
+        \\"ratio\\": 3
+      }
+    ],
+    \\"uniform\\": \\"area\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.pattern\` — Pattern
+
+Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as one path. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background)_
+
+**When:** Texture behind a cover, divider or quote (put it in its own region, content on top). Tone accent shows clearly; line is very faint.
+**Avoid:** Content slides with dense text; one accent shape (use tls.m.decoration).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`pattern\` | no | enum: dots \\\\| grid \\\\| lines \\\\| diagonal |  |
+| \`scale\` | no | enum: md \\\\| sm \\\\| lg | Spacing of the marks. |
+| \`tone\` | no | enum: line \\\\| accent \\\\| alt |  |
+| \`opacity\` | no | enum: soft \\\\| medium | Ignored for tone alt. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pattern\\",
+  \\"type\\": \\"tls.m.pattern\\",
+  \\"props\\": {
+    \\"pattern\\": \\"dots\\",
+    \\"scale\\": \\"md\\",
+    \\"tone\\": \\"accent\\",
+    \\"opacity\\": \\"soft\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.body\` — Body
+
+Paragraph body text with RichText, autofit, and multi-column. _(family: text; keywords: body, paragraph, text, prose, copy, description)_
+
+**When:** Use for 1–3 sentences of body copy, descriptions, or prose.
+**Avoid:** Do not use for bullet lists (use tls.t.bullets), for a one-line label under an image or chart (use tls.t.caption) or for a data source citation (use tls.t.footnote).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText | A concise paragraph, 1–3 sentences. Use bold for key terms. |
+| \`columns\` | no | number (min 1, max 4) | Number of text columns. 1 = single paragraph. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+| \`autoFit\` | no | boolean | Shrink font when content overflows the box. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_body\\",
+  \\"type\\": \\"tls.t.body\\",
+  \\"props\\": {
+    \\"text\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"Design systems scale because every \\"
+        },
+        {
+          \\"text\\": \\"decision\\",
+          \\"bold\\": true
+        },
+        {
+          \\"text\\": \\" is made once and reused everywhere. Teams ship faster and the product stays consistent.\\"
+        }
+      ]
+    },
+    \\"columns\\": 1,
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.bullets\` — Bullet list
+
+Bullet list with dot/dash/chevron/number markers and indent levels. _(family: text; keywords: bullets, list, items, points, markers, unordered)_
+
+**When:** Use for 2–8 short items that the audience should scan, not read.
+**Avoid:** Do not use for sentences of prose (use tls.t.body), for ordered process steps (use tls.c.steps) or for icon-led feature cells (use tls.c.feature-grid). More than 8 items means two slides.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (text, level) (1–40 items) | 2–8 items, each 2–8 words. Start each with a verb or noun, not a full sentence. |
+| \`marker\` | no | enum: dot \\\\| dash \\\\| chevron \\\\| number \\\\| icon | Bullet style. |
+| \`indentLevels\` | no | boolean | Enable per-item indent levels for nested lists. |
+| \`spacing\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg | Vertical spacing between items. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bullets\\",
+  \\"type\\": \\"tls.t.bullets\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"text\\": \\"Revenue up 42% YoY\\"
+      },
+      {
+        \\"text\\": \\"Enterprise APAC drove growth\\"
+      },
+      {
+        \\"text\\": \\"Churn fell to 3.1%\\"
+      }
+    ],
+    \\"marker\\": \\"dot\\",
+    \\"spacing\\": \\"sm\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.callout\` — Callout
+
+Boxed note in one of five variants, with icon and optional title. _(family: text; keywords: callout, note, warning, tip, alert, caveat)_
+
+**When:** Warnings, tips, notes and caveats beside the main content.
+**Avoid:** The slide main conclusion (use tls.t.takeaway or tls.t.statement).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 50 chars) | 1–4 words, e.g. \\"Heads up\\". |
+| \`text\` | yes | richText (max 240 chars) | One or two sentences. **Bold** works. |
+| \`variant\` | no | enum: info \\\\| tip \\\\| warning \\\\| danger \\\\| success | Sets the colour role and default icon. |
+| \`fill\` | no | enum: tint \\\\| outline \\\\| solid |  |
+| \`icon\` | no | icon | Overrides the variant icon. |
+| \`showIcon\` | no | boolean |  |
+| \`showTitle\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_callout\\",
+  \\"type\\": \\"tls.t.callout\\",
+  \\"props\\": {
+    \\"title\\": \\"Tip\\",
+    \\"text\\": \\"Run the demo on **battery** first, then plug in.\\",
+    \\"variant\\": \\"tip\\",
+    \\"fill\\": \\"tint\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.caption\` — Caption
+
+Small caption text for images, charts, and media. _(family: text; keywords: caption, subtitle, description, label, small-text, source)_
+
+**When:** Use to describe or label one image or chart in a single line, placed right under it — 5–15 words.
+**Avoid:** Do not use for body text (use tls.t.body), as a title (use tls.t.title or tls.t.subtitle) or for a data source citation or footnote (use tls.t.footnote).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 200 chars) | A brief description, 5–15 words. State what the reader should notice. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+| \`position\` | no | enum: below \\\\| above \\\\| overlay | Where the caption sits relative to its referenced content. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cap\\",
+  \\"type\\": \\"tls.t.caption\\",
+  \\"props\\": {
+    \\"text\\": \\"Figure 2 — Store traffic peaks on Saturday afternoons\\",
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.checklist\` — Checklist
+
+Checklist with a done, open or blocked state per item. _(family: text; keywords: checklist, todo, requirements, status, objectives)_
+
+**When:** Requirements, prerequisites, launch checklists, learning objectives with a done state.
+**Avoid:** Plain points without a state (use tls.t.bullets); support across options (use tls.d.compare-table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (text, state) (2–10 items) | Short imperative or noun phrases. Set state on each; open is the default. |
+| \`doneStyle\` | no | enum: check \\\\| strike \\\\| dim | strike crosses out done items, dim greys them. |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`columns\` | no | enum: 1 \\\\| 2 |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_checklist\\",
+  \\"type\\": \\"tls.t.checklist\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"text\\": \\"Draft the outline\\",
+        \\"state\\": \\"done\\"
+      },
+      {
+        \\"text\\": \\"Review with the team\\",
+        \\"state\\": \\"open\\"
+      },
+      {
+        \\"text\\": \\"Legal approval\\",
+        \\"state\\": \\"blocked\\"
+      }
+    ],
+    \\"doneStyle\\": \\"strike\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.definition\` — Definition
+
+A term with its definition, optional pronunciation, part of speech and example. _(family: text; keywords: definition, term, glossary, vocabulary, concept)_
+
+**When:** Introducing a concept, glossary terms, vocabulary (lectures).
+**Avoid:** Several term and value pairs (use tls.t.kv-list).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`term\` | yes | text (max 40 chars) | The word or phrase being defined, 1–3 words. |
+| \`pronunciation\` | no | text (max 40 chars) | Optional, e.g. \\"/hyoo-RIS-tik/\\". |
+| \`partOfSpeech\` | no | text (max 20 chars) | Optional, e.g. \\"noun\\". |
+| \`definition\` | yes | richText (max 260 chars) | One or two sentences. **Bold** works. |
+| \`example\` | no | text (max 160 chars) | Optional usage example. |
+| \`layout\` | no | enum: stacked \\\\| inline | inline puts the term beside the definition. |
+| \`termTone\` | no | enum: accent \\\\| text |  |
+| \`showPronunciation\` | no | boolean |  |
+| \`showExample\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_definition\\",
+  \\"type\\": \\"tls.t.definition\\",
+  \\"props\\": {
+    \\"term\\": \\"Latency\\",
+    \\"pronunciation\\": \\"/LAY-ten-see/\\",
+    \\"partOfSpeech\\": \\"noun\\",
+    \\"definition\\": \\"The **delay** between a request and the first byte of its response.\\",
+    \\"example\\": \\"A 40 ms round trip feels instant.\\",
+    \\"layout\\": \\"stacked\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.footnote\` — Footnote
+
+Small-print source or footnote lines with an optional marker. _(family: text; keywords: footnote, source, reference, citation, small print)_
+
+**When:** Citing data sources under a chart or table, and footnotes.
+**Avoid:** A caption that describes an image (use tls.t.caption).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 200 chars) (1–4 items) | One source or note per line; no marker characters, the marker option adds them. |
+| \`marker\` | no | enum: none \\\\| number \\\\| asterisk \\\\| source | source prefixes the first line with \\"Source:\\". |
+| \`align\` | no | enum: start \\\\| end |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_footnote\\",
+  \\"type\\": \\"tls.t.footnote\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Eurostat, household energy survey 2025\\",
+      \\"Prices in constant 2020 euros\\"
+    ],
+    \\"marker\\": \\"source\\",
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.hero-number\` — Hero Number
+
+Large KPI number with optional unit and caption. _(family: text; keywords: kpi, number, stat, metric, hero, display, count)_
+
+**When:** Use for one standout metric ($4.2M, 67%) that anchors a KPI slide.
+**Avoid:** Do not use for several metrics in a row (use tls.c.kpi-row), for a number with a change arrow or sparkline (use tls.c.kpi-tile), or when the number should fill the whole slide (use tls.c.big-stat).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | no | text | The headline number. Include formatting, e.g. \\"$4.2M\\", \\"67%\\", \\"1,234\\". |
+| \`unit\` | no | text | Unit label, 1–4 words. e.g. \\"Annual Revenue\\", \\"Completion Rate\\". |
+| \`caption\` | no | text | Short context, 1 line max. e.g. \\"FY2024 total\\", \\"vs. last quarter\\". |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format hint for the renderer. |
+| \`emphasis\` | no | enum: default \\\\| accent \\\\| muted | Colour emphasis for the headline number. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kpi\\",
+  \\"type\\": \\"tls.t.hero-number\\",
+  \\"props\\": {
+    \\"value\\": \\"$4.2M\\",
+    \\"unit\\": \\"Annual Revenue\\",
+    \\"caption\\": \\"FY2024 total\\",
+    \\"format\\": \\"currency\\",
+    \\"emphasis\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.kicker\` — Kicker
+
+Small label above the title with case and tracking options. _(family: text; keywords: kicker, eyebrow, label, category, tag, section)_
+
+**When:** Use as a small category or section label above the title.
+**Avoid:** Do not use for the slide title itself (use tls.t.title) or for a sentence of explanation (use tls.t.subtitle).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 60 chars) | A short label: section name, category, or status. UPPERCASE by default. 1–4 words. |
+| \`case\` | no | enum: uppercase \\\\| lowercase \\\\| capitalize \\\\| none | Text transformation. Defaults to uppercase. |
+| \`tracking\` | no | enum: wide \\\\| normal \\\\| narrow | Letter spacing for the kicker text. |
+| \`marker\` | no | boolean | Show a small accent dot before the text. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kicker\\",
+  \\"type\\": \\"tls.t.kicker\\",
+  \\"props\\": {
+    \\"text\\": \\"OVERVIEW\\",
+    \\"case\\": \\"uppercase\\",
+    \\"tracking\\": \\"wide\\",
+    \\"marker\\": false
+  }
+}
+\`\`\`
+
+### \`tls.t.kv-list\` — Key-value list
+
+Key and value pairs in aligned columns, with dotted or ruled leaders. _(family: text; keywords: specs, facts, key value, details, schedule, terms)_
+
+**When:** Specs, facts, terms and conditions, a schedule of times.
+**Avoid:** Multi-column data (use tls.d.table).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (key, value) (2–10 items) | Short labels as keys; keep values to a phrase or a number with its unit. |
+| \`leader\` | no | enum: none \\\\| dots \\\\| rule | dots join key to value; rule draws a hairline under each row. |
+| \`valueAlign\` | no | enum: end \\\\| start |  |
+| \`keyTone\` | no | enum: muted \\\\| text |  |
+| \`columns\` | no | enum: 1 \\\\| 2 |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_kv\\",
+  \\"type\\": \\"tls.t.kv-list\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"key\\": \\"Start\\",
+        \\"value\\": \\"09:00\\"
+      },
+      {
+        \\"key\\": \\"Break\\",
+        \\"value\\": \\"10:30\\"
+      },
+      {
+        \\"key\\": \\"Finish\\",
+        \\"value\\": \\"12:00\\"
+      }
+    ],
+    \\"leader\\": \\"rule\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.numbered\` — Numbered list
+
+Numbered points in order, one or two columns. _(family: text; keywords: numbered, ordered, ranked, reasons)_
+
+**When:** Ordered points where the order or the count matters: \\"3 reasons\\", \\"5 rules\\".
+**Avoid:** Unordered points (use tls.t.bullets); process steps (use tls.g.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of richText (max 180 chars) (2–8 items) | Short sentences. Wrap a key phrase in **double asterisks** to bold it. |
+| \`markerStyle\` | no | enum: decimal \\\\| padded \\\\| roman \\\\| alpha \\\\| badge | badge puts the number in a filled circle. |
+| \`start\` | no | number (min 1) |  |
+| \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
+| \`columns\` | no | enum: 1 \\\\| 2 | Two balanced columns. |
+| \`markerTone\` | no | enum: accent \\\\| text \\\\| muted |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_numbered\\",
+  \\"type\\": \\"tls.t.numbered\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Define the audience\\",
+      \\"State the **one** message\\",
+      \\"Prove it with data\\",
+      \\"Ask for the decision\\"
+    ],
+    \\"markerStyle\\": \\"badge\\",
+    \\"markerTone\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.qa\` — Q and A
+
+Question and answer pairs with Q/A badges or numbers. _(family: text; keywords: faq, questions, answers, q&a, review, objections)_
+
+**When:** FAQ slides, review questions in a lecture, objection handling.
+**Avoid:** A multiple-choice question (use tls.c.quiz).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (q, a) (1–5 items) | Questions as the audience would ask them; answers one to two sentences. |
+| \`marker\` | no | enum: qa \\\\| numbered \\\\| none | qa shows \\"Q\\" and \\"A\\" badges; numbered numbers the questions. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_qa\\",
+  \\"type\\": \\"tls.t.qa\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"q\\": \\"Is it free?\\",
+        \\"a\\": \\"Yes, for individuals.\\"
+      },
+      {
+        \\"q\\": \\"Can I export?\\",
+        \\"a\\": \\"To **PDF** and PPTX.\\"
+      }
+    ],
+    \\"marker\\": \\"qa\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.quote\` — Quote
+
+Pull quote with decorative quotation glyph, attribution, and role. _(family: text; keywords: quote, blockquote, pull-quote, attribution, testimonial)_
+
+**When:** Use to feature a direct quote with attribution from a named person.
+**Avoid:** Do not use for anonymous insights (use tls.t.takeaway) or for a customer quote with name, role and avatar (use tls.c.testimonial).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | no | richText | The quoted text. Can be 1–3 sentences. |
+| \`attribution\` | no | text | Name of the person being quoted. |
+| \`role\` | no | text | Title or role of the attributed person. |
+| \`markStyle\` | no | enum: glyph \\\\| rule \\\\| none | How the quotation mark is rendered. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quote\\",
+  \\"type\\": \\"tls.t.quote\\",
+  \\"props\\": {
+    \\"text\\": \\"The only way to do great work is to love what you do.\\",
+    \\"attribution\\": \\"Steve Jobs\\",
+    \\"role\\": \\"Co-founder, Apple\\",
+    \\"markStyle\\": \\"glyph\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.statement\` — Statement
+
+One large claim that fills the slide, key words emphasised. _(family: text; keywords: statement, claim, conclusion, message, big text)_
+
+**When:** A single claim or conclusion that should fill the slide's attention.
+**Avoid:** A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText (max 140 chars) | One claim, a single sentence. Wrap the 1–3 key words in **double asterisks**. |
+| \`attribution\` | no | text (max 60 chars) | Optional source line, e.g. \\"Q3 board review\\". |
+| \`size\` | no | enum: xl \\\\| lg \\\\| md | Shrinks to fit, never below md. |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`emphasis\` | no | enum: accent \\\\| underline \\\\| highlight | How the **bold** words render: accent colour, accent underline, or accent highlight. |
+| \`showAttribution\` | no | boolean |  |
+| \`showMark\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_statement\\",
+  \\"type\\": \\"tls.t.statement\\",
+  \\"props\\": {
+    \\"text\\": \\"Retention, not acquisition, is our **growth engine**.\\",
+    \\"attribution\\": \\"FY26 strategy\\",
+    \\"size\\": \\"lg\\",
+    \\"emphasis\\": \\"highlight\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.subtitle\` — Subtitle
+
+Secondary heading below the title with RichText support. _(family: text; keywords: subtitle, subheading, secondary)_
+
+**When:** Use to add context, date, or audience below the title.
+**Avoid:** Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText | A brief supporting sentence or phrase. 3–12 words. Never repeat the title. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_sub\\",
+  \\"type\\": \\"tls.t.subtitle\\",
+  \\"props\\": {
+    \\"text\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"Q3 FY2026 · prepared for the \\"
+        },
+        {
+          \\"text\\": \\"board\\",
+          \\"italic\\": true
+        }
+      ]
+    },
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.tags\` — Tags
+
+Wrapping row of pill-shaped tags in soft, outline or solid tone. _(family: text; keywords: tags, chips, pills, skills, keywords, labels)_
+
+**When:** Skills, technologies, keywords, categories, labels on a profile.
+**Avoid:** Sentences (use tls.t.bullets); a single eyebrow label (use tls.t.kicker).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 30 chars) (1–12 items) | Single words or short noun phrases, 1–3 words each. |
+| \`tone\` | no | enum: soft \\\\| outline \\\\| solid |  |
+| \`shape\` | no | enum: pill \\\\| rect |  |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`colorBy\` | no | enum: single \\\\| cycle | cycle walks the series colours. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_tags\\",
+  \\"type\\": \\"tls.t.tags\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Python\\",
+      \\"SQL\\",
+      \\"Statistics\\",
+      \\"Dashboards\\"
+    ],
+    \\"tone\\": \\"soft\\",
+    \\"colorBy\\": \\"cycle\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.takeaway\` — Takeaway
+
+Highlighted insight text with accent bar and optional label. _(family: text; keywords: takeaway, insight, callout, highlight, key-point)_
+
+**When:** Use to call out a key insight, conclusion, or \\"so what\\" from data.
+**Avoid:** Do not use for quotes from named people (use tls.t.quote), for a tip, warning or caveat (use tls.t.callout) or for ordinary body text (use tls.t.body).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | no | richText | The insight or takeaway. 1–2 sentences, direct and clear. |
+| \`tone\` | no | enum: accent \\\\| positive \\\\| warning \\\\| muted | Visual tone that controls the accent bar and surface tint. |
+| \`icon\` | no | icon | Optional icon shown beside the label. |
+| \`label\` | no | text | Short label, 1–3 words. e.g. \\"Key Insight\\", \\"Remember\\". |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_take\\",
+  \\"type\\": \\"tls.t.takeaway\\",
+  \\"props\\": {
+    \\"text\\": \\"Compute spend grew 2.4x while revenue grew 1.2x.\\",
+    \\"tone\\": \\"accent\\",
+    \\"label\\": \\"Key Insight\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.title\` — Title
+
+Slide title with inline styling, autofit, and truncation. _(family: text; keywords: title, heading, hero, headline, slide)_
+
+**When:** Use as the primary heading on every content slide — the single most important text.
+**Avoid:** Do not use for an opening slide (use tls.c.hero), for a secondary line (use tls.t.subtitle) or for a small label above a title (use tls.t.kicker).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText | A concise slide title. Bold one key word for emphasis. Never a full sentence. |
+| \`size\` | no | enum: display \\\\| title \\\\| heading \\\\| subheading | Type scale step for the title. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+| \`rule\` | no | boolean | Show a short accent rule below the title. |
+| \`maxLines\` | no | number (min 1, max 10) | Maximum number of lines before truncation. Truncation adds a visible marker. |
+| \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_title\\",
+  \\"type\\": \\"tls.t.title\\",
+  \\"props\\": {
+    \\"text\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"Revenue \\"
+        },
+        {
+          \\"text\\": \\"grew 42%\\",
+          \\"bold\\": true
+        }
+      ]
+    },
+    \\"size\\": \\"title\\",
+    \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.x.footer-text\` — Footer Text
+
+One muted footer line of up to three short items with separators and an optional hairline. _(family: chrome; keywords: footer, deck title, confidential, date, running footer, chrome)_
+
+**When:** Repeating a deck title, event name, date or confidentiality note at the bottom of slides.
+**Avoid:** Sources and notes about the content (use tls.t.footnote).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of text (max 40 chars) (1–3 items) | Deck title, event or author, date or confidentiality note: short phrases, one line in total. |
+| \`align\` | no | enum: start \\\\| center \\\\| end \\\\| spread | spread puts the first item at the left edge and the last at the right. |
+| \`separator\` | no | enum: dot \\\\| bar \\\\| none |  |
+| \`showRule\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_footer_text\\",
+  \\"type\\": \\"tls.x.footer-text\\",
+  \\"props\\": {
+    \\"items\\": [
+      \\"Annual review 2026\\",
+      \\"Confidential\\"
+    ],
+    \\"align\\": \\"start\\",
+    \\"separator\\": \\"dot\\",
+    \\"showRule\\": true
+  }
+}
+\`\`\`
+
+### \`tls.x.header\` — Header
+
+A thin running header: a label at the left, meta at the right, optional hairline below. _(family: chrome; keywords: header, running header, section label, course code, chapter, chrome)_
+
+**When:** A consistent running header on content slides: course code, chapter, client name.
+**Avoid:** The slide title (use tls.t.title).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | no | text (max 40 chars) | Section, chapter or course code, shown at the left. |
+| \`meta\` | no | text (max 40 chars) | Client, date or version, shown at the right. |
+| \`showRule\` | no | boolean |  |
+| \`tone\` | no | enum: muted \\\\| accent | accent colours the label only; the meta stays muted. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_header\\",
+  \\"type\\": \\"tls.x.header\\",
+  \\"props\\": {
+    \\"label\\": \\"Chapter 2: Methods\\",
+    \\"meta\\": \\"BIO 201\\",
+    \\"showRule\\": true,
+    \\"tone\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.x.logo-mark\` — Logo Mark
+
+A small logo pinned to one corner of its box, fitted and never cropped. _(family: chrome; keywords: logo, brand, corner, watermark, chrome, every slide)_
+
+**When:** Brand presence on every content slide: a small mark in a corner.
+**Avoid:** A featured or large logo (use tls.m.logo).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image |  |
+| \`alt\` | yes | text (max 80 chars) | The brand name. |
+| \`ratio\` | no | number (min 0.2, max 8) | Width / height of the logo file. Needed for corner placement; read from the asset when known. |
+| \`size\` | no | enum: sm \\\\| md |  |
+| \`corner\` | no | enum: top-right \\\\| top-left \\\\| bottom-right \\\\| bottom-left | Which corner of its box the logo sits in. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_logo_mark\\",
+  \\"type\\": \\"tls.x.logo-mark\\",
+  \\"props\\": {
+    \\"image\\": \\"asset-acme\\",
+    \\"alt\\": \\"Acme Corp\\",
+    \\"ratio\\": 3,
+    \\"size\\": \\"sm\\",
+    \\"corner\\": \\"top-right\\"
+  }
+}
+\`\`\`
+
+### \`tls.x.page-number\` — Page Number
+
+Page number chrome element for slide footers. _(family: chrome; keywords: page, number, footer, pagination)_
+
+**When:** The slide number (optionally \\"3 / 24\\") in a footer corner of content slides; position it with align start, center or end.
+**Avoid:** Do not use as a content block: it is slide furniture only.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | yes | number (min 1) | Typically 1-2 digits. |
+| \`total\` | no | number (min 1) | Optional. Leave out for a bare number. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_page_1\\",
+  \\"type\\": \\"tls.x.page-number\\",
+  \\"props\\": {
+    \\"number\\": 3,
+    \\"total\\": 24,
+    \\"align\\": \\"end\\"
+  }
+}
+\`\`\`
+
+### \`tls.x.rule\` — Rule
+
+A thin divider line, horizontal or vertical, plain or accent gradient, or a short accent bar. _(family: chrome; keywords: rule, divider, line, separator, accent bar, underline)_
+
+**When:** Separating areas on free layouts, and a short accent bar under a heading.
+**Avoid:** Inside a container that already draws its own divider (use tls.l.section).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`axis\` | no | enum: horizontal \\\\| vertical |  |
+| \`weight\` | no | enum: hairline \\\\| md \\\\| bold | hairline 2, md 4, bold 8 slide units. |
+| \`tone\` | no | enum: line \\\\| accent \\\\| gradient | gradient runs from accent to accent2. |
+| \`length\` | no | enum: full \\\\| short | short is a 64 px bar at the start, e.g. under a heading. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_rule\\",
+  \\"type\\": \\"tls.x.rule\\",
+  \\"props\\": {
+    \\"axis\\": \\"horizontal\\",
+    \\"weight\\": \\"md\\",
+    \\"tone\\": \\"accent\\",
+    \\"length\\": \\"short\\"
+  }
+}
+\`\`\`
+
+### \`tls.x.watermark\` — Watermark
+
+Large faint horizontal text such as DRAFT or CONFIDENTIAL, centred and sized to the box. _(family: chrome; keywords: watermark, draft, confidential, stamp, chrome)_
+
+**When:** Draft, internal or confidential decks that need a status stamp behind the content.
+**Avoid:** Decorative or emphasised text (use tls.t.statement).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 20 chars) | One short word or phrase, usually upper case: DRAFT, CONFIDENTIAL. |
+| \`opacity\` | no | enum: faint \\\\| soft | faint is a barely visible 6% tint, soft 11%. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_watermark\\",
+  \\"type\\": \\"tls.x.watermark\\",
+  \\"props\\": {
+    \\"text\\": \\"DRAFT\\",
+    \\"opacity\\": \\"faint\\"
+  }
+}
+\`\`\`
+
+## Worked example — a valid slide
+
+Zero coordinates, zero colour values, zero font sizes. Region names come from the layout (\`two-column\` → \`title\`, \`left\`, \`right\`); block types and slots come from the tables above.
+
+\`\`\`json
+{
+  \\"id\\": \\"sl_03\\",
+  \\"layout\\": \\"two-column\\",
+  \\"role\\": \\"content\\",
+  \\"rhythm\\": \\"dense\\",
+  \\"regions\\": {
+    \\"title\\": [
+      {
+        \\"id\\": \\"b1\\",
+        \\"type\\": \\"tls.t.title\\",
+        \\"props\\": {
+          \\"text\\": {
+            \\"runs\\": [
+              {
+                \\"text\\": \\"Margin fell on \\"
+              },
+              {
+                \\"text\\": \\"infrastructure\\",
+                \\"bold\\": true
+              }
+            ]
+          }
+        }
+      }
+    ],
+    \\"left\\": [
+      {
+        \\"id\\": \\"b2\\",
+        \\"type\\": \\"tls.d.bar\\",
+        \\"props\\": {
+          \\"categories\\": [
+            \\"Q1\\",
+            \\"Q2\\",
+            \\"Q3\\"
+          ],
+          \\"series\\": [
+            64,
+            64,
+            61
+          ],
+          \\"highlightIndex\\": 2
+        },
+        \\"motion\\": {
+          \\"preset\\": \\"bars-grow\\",
+          \\"order\\": 2,
+          \\"trigger\\": \\"onClick\\"
+        }
+      }
+    ],
+    \\"right\\": [
+      {
+        \\"id\\": \\"b3\\",
+        \\"type\\": \\"tls.t.takeaway\\",
+        \\"props\\": {
+          \\"text\\": \\"Compute spend grew 2.4× while revenue grew 1.2×.\\"
+        },
+        \\"motion\\": {
+          \\"preset\\": \\"fade-up\\",
+          \\"order\\": 3
+        }
+      },
+      {
+        \\"id\\": \\"b4\\",
+        \\"type\\": \\"tls.t.caption\\",
+        \\"props\\": {
+          \\"text\\": \\"Source: internal Q3 financials\\"
+        }
+      }
+    ]
+  },
+  \\"notes\\": \\"Land on the 61 — this is the hinge slide.\\"
+}
+\`\`\`
+"
+`;
+
+exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
+Object {
+  "blockCount": 129,
+  "blockTypes": Array [
+    "tls.c.agenda",
+    "tls.c.big-stat",
+    "tls.c.cards",
+    "tls.c.case-study",
+    "tls.c.chart-insight",
+    "tls.c.closing",
+    "tls.c.comparison",
+    "tls.c.contact",
+    "tls.c.cover",
+    "tls.c.dashboard",
+    "tls.c.divider",
+    "tls.c.feature-grid",
+    "tls.c.feature-reveal",
+    "tls.c.hero",
+    "tls.c.image-text",
+    "tls.c.journey",
+    "tls.c.kinetic-title",
+    "tls.c.kpi-row",
+    "tls.c.kpi-tile",
+    "tls.c.objectives",
+    "tls.c.problem-solution",
+    "tls.c.profile-card",
+    "tls.c.quiz",
+    "tls.c.quote-image",
+    "tls.c.recap",
+    "tls.c.stat-card",
+    "tls.c.stat-spotlight",
+    "tls.c.steps",
+    "tls.c.team",
+    "tls.c.testimonial",
+    "tls.d.area",
+    "tls.d.bar",
+    "tls.d.bubble",
+    "tls.d.bullet-chart",
+    "tls.d.compare-table",
+    "tls.d.donut",
+    "tls.d.funnel-chart",
+    "tls.d.gauge",
+    "tls.d.grouped-bar",
+    "tls.d.heatmap",
+    "tls.d.line",
+    "tls.d.pie",
+    "tls.d.pricing",
+    "tls.d.progress-bar",
+    "tls.d.progress-ring",
+    "tls.d.radar",
+    "tls.d.ranking",
+    "tls.d.scatter",
+    "tls.d.scorecard",
+    "tls.d.slope",
+    "tls.d.sparkline",
+    "tls.d.stacked-bar",
+    "tls.d.stat-compare",
+    "tls.d.table",
+    "tls.d.trend-badge",
+    "tls.d.waterfall",
+    "tls.g.arrow",
+    "tls.g.before-after",
+    "tls.g.bracket",
+    "tls.g.breakdown",
+    "tls.g.chevrons",
+    "tls.g.cycle",
+    "tls.g.flow",
+    "tls.g.funnel",
+    "tls.g.hub-spoke",
+    "tls.g.iceberg",
+    "tls.g.layers",
+    "tls.g.matrix-2x2",
+    "tls.g.milestones",
+    "tls.g.mindmap",
+    "tls.g.pros-cons",
+    "tls.g.pyramid",
+    "tls.g.roadmap",
+    "tls.g.steps",
+    "tls.g.swot",
+    "tls.g.timeline",
+    "tls.g.tree",
+    "tls.g.venn",
+    "tls.l.card",
+    "tls.l.field",
+    "tls.l.footer",
+    "tls.l.grid",
+    "tls.l.grid-guide",
+    "tls.l.overlay",
+    "tls.l.repeater",
+    "tls.l.row",
+    "tls.l.safe-area",
+    "tls.l.section",
+    "tls.l.sidebar",
+    "tls.l.spacer",
+    "tls.l.split",
+    "tls.l.stack",
+    "tls.m.avatar",
+    "tls.m.avatar-group",
+    "tls.m.decoration",
+    "tls.m.device-mock",
+    "tls.m.icon",
+    "tls.m.icon-label",
+    "tls.m.icon-list",
+    "tls.m.image",
+    "tls.m.image-compare",
+    "tls.m.image-grid",
+    "tls.m.logo",
+    "tls.m.logo-wall",
+    "tls.m.pattern",
+    "tls.t.body",
+    "tls.t.bullets",
+    "tls.t.callout",
+    "tls.t.caption",
+    "tls.t.checklist",
+    "tls.t.definition",
+    "tls.t.footnote",
+    "tls.t.hero-number",
+    "tls.t.kicker",
+    "tls.t.kv-list",
+    "tls.t.numbered",
+    "tls.t.qa",
+    "tls.t.quote",
+    "tls.t.statement",
+    "tls.t.subtitle",
+    "tls.t.tags",
+    "tls.t.takeaway",
+    "tls.t.title",
+    "tls.x.footer-text",
+    "tls.x.header",
+    "tls.x.logo-mark",
+    "tls.x.page-number",
+    "tls.x.rule",
+    "tls.x.watermark",
+  ],
+  "colorRoleCount": 12,
+  "colorRoleIds": Array [
+    "surface",
+    "surfaceAlt",
+    "accent",
+    "accent2",
+    "text",
+    "textMuted",
+    "positive",
+    "negative",
+    "warning",
+    "neutral",
+    "line",
+    "scrim",
+  ],
+  "layoutCount": 16,
+  "layoutIds": Array [
+    "title",
+    "section",
+    "two-column",
+    "three-column",
+    "four-up",
+    "image-left",
+    "image-right",
+    "image-top",
+    "image-bottom",
+    "grid-3x2",
+    "grid-2x3",
+    "comparison",
+    "timeline",
+    "quote",
+    "kpi-row",
+    "blank",
+  ],
+  "motionCount": 35,
+  "motionPresetIds": Array [
+    "fade",
+    "fade-up",
+    "fade-down",
+    "pop",
+    "wipe-x",
+    "wipe-y",
+    "wipe-down",
+    "mask-reveal",
+    "reveal-down",
+    "stagger-lines",
+    "stagger-children",
+    "stagger-grid",
+    "words-in",
+    "quote-in",
+    "count-up",
+    "grow-bars-x",
+    "grow-bars-y",
+    "grow-segments",
+    "draw-path",
+    "draw-axis-then-nodes",
+    "sweep",
+    "sweep-nodes",
+    "pop-points",
+    "radiate",
+    "grow-branches",
+    "split-in",
+    "field-in",
+    "title-then-body",
+    "title-then-split",
+    "scrim-then-text",
+    "ken-burns",
+    "cover-in",
+    "section-in",
+    "dashboard-in",
+    "closing-in",
+  ],
+}
+`;

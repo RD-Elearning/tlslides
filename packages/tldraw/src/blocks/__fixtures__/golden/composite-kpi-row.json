@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "golden-composite-kpi-row",
+  "title": "KPI Row Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b1",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                { "value": 4200000, "delta": 12.5, "label": "Revenue", "polarity": "upGood", "format": "compact" },
+                { "value": 3.1, "delta": -0.8, "label": "Churn %", "polarity": "downGood", "format": "percent" },
+                { "value": 892, "delta": 42, "label": "NPS", "polarity": "upGood", "format": "plain" }
+              ],
+              "gap": "md"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   Tldraw,
   Deck,
-  DeckViewer,
+  DeckEmbed,
   TldrawApp,
   renderPageToSvg,
   renderSvgToPng,
@@ -45,7 +45,7 @@ void assertTypesReachable
 // importable from the published package, not just from this repo's own source tree.
 const reachability = {
   Deck: typeof Deck,
-  DeckViewer: typeof DeckViewer,
+  DeckEmbed: typeof DeckEmbed,
   renderPageToSvg: typeof renderPageToSvg,
   renderSvgToPng: typeof renderSvgToPng,
   builtInThemeCount: BUILT_IN_DECK_THEMES.length,

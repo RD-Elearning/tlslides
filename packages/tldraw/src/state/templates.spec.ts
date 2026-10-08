@@ -80,7 +80,7 @@ describe('buildTemplateShapes', () => {
     const shapes = buildTemplateShapes(template, undefined, theme, 'page1')
     const rect = shapes.find((s) => s.type === TDShapeType.Ellipse)
     if (rect && 'radius' in rect) {
-      ;(rect.radius as number[])[0] = 9999
+      (rect.radius as number[])[0] = 9999
     }
     shapes[0].point[0] = 9999
     expect(JSON.parse(JSON.stringify(BUILT_IN_TEMPLATES))).toEqual(original)

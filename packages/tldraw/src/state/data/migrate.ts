@@ -5,7 +5,7 @@ import { DEFAULT_SLIDE_SIZE } from '~constants'
 export function migrate(document: TDDocument, newVersion: number): TDDocument {
   const { version = 0 } = document
 
-  if (!('assets' in document)) {
+  if (!document.assets) {
     document.assets = {}
   }
 

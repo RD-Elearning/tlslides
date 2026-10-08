@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "golden-agenda",
+  "title": "Agenda Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "section",
+      "role": "cover",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.kicker",
+            "props": { "text": "OVERVIEW", "case": "uppercase", "tracking": "wide", "marker": false }
+          },
+          {
+            "id": "b2",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Today's " }, { "text": "Agenda", "bold": true }] }
+            }
+          }
+        ],
+        "subtitle": [
+          {
+            "id": "b3",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Financial review" },
+                { "text": "Product roadmap" },
+                { "text": "Team updates" },
+                { "text": "Q&A" }
+              ],
+              "marker": "number",
+              "spacing": "md"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

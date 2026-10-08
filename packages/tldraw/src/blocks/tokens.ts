@@ -46,6 +46,14 @@ import type {
 } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* Default font family (mirrors layout/layout-child.ts)                            */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** Default font family when the theme does not set one. Kept in sync with the
+ *  identically-named constant in `layout/layout-child.ts`. */
+const DEFAULT_FONT_FAMILY = '"Source Sans Pro", sans-serif'
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* DeckTokens — the persisted, optional override surface                           */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -188,7 +196,11 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
   const density = tokens?.density ?? 'default'
   const space = applyDensity({ ...SPACE_SCALE, ...tokens?.space }, density)
 
-  return { color, categorical, space, radius, type, elevation, motion, density }
+  // Resolve the deck's primary font family from the theme's heading/body family fields.
+  // Falls back to the built-in default when the theme doesn't set one.
+  const fontFamily = theme.fonts?.headingFamily ?? theme.fonts?.bodyFamily ?? DEFAULT_FONT_FAMILY
+
+  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

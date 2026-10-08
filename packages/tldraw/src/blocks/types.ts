@@ -5,7 +5,16 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationTrigger } from '~types'
+import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme } from '~types'
+// Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
+// itself imports type-only from this file — both directions are `import type`, so this is a
+// type-only circular reference, erased entirely at compile time. No runtime cycle exists.
+// Re-exported below so `DeckSpec.tokens` and any consumer importing from `./types` (the
+// app-facing contract module) can both reach it without also knowing it physically lives in
+// `./tokens`.
+import type { DeckTokens } from './tokens'
+export type { DeckTokens }
+import type { MotionDriver } from './motion/driver'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Block instance and spec                                                         */
@@ -19,8 +28,10 @@ export interface BlockSpec {
   /** Registry key of the definition, namespaced. Built-ins use `tls.`; a host uses its own. */
   type: string
   /** Stable within its slide. Used to target motion, to let AI cross-reference, and as the
-   *  animation part-key prefix. Generated on insert if absent. */
-  id?: string
+   *  animation part-key prefix. Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2): required —
+   *  this is the app-facing contract FastAPI and the AI exchange. `shapeToBlock` still reads
+   *  older shapes that predate this and mints an id when one is absent; it never throws. */
+  id: string
   /** Content + options. Validated against the definition's `schema`. */
   props: Record<string, unknown>
   /** Presentation overrides. Every field optional; the theme + definition defaults fill the rest. */
@@ -39,8 +50,8 @@ export interface BlockSpec {
  * universal style field is not.
  */
 export interface BlockStyleSpec {
-  /** The block's own background. ColorRole or literal hex or theme token. */
-  surface?: ColorRole | string
+  /** The block's own background. ColorRole, literal hex, theme token, or a Paint (gradient). */
+  surface?: ColorRole | string | Paint
   /** Foreground colour; derived from `surface` when absent. */
   on?: ColorRole | string
   /** The block's one emphasis colour. */
@@ -67,6 +78,10 @@ export interface BlockStyleSpec {
 export interface BlockMotionSpec {
   /** Motion preset ID: 'fade-up', 'stagger-lines', etc. */
   preset?: MotionPresetId
+  /** Explicit block-level `AnimationEffect`, when the persisted shape carries one that
+   *  does not round-trip through `preset` alone (e.g. written directly by an inspector).
+   *  Takes precedence over the preset→effect mapping in `resolveBlockMotion`. */
+  effect?: AnimationEffect
   /** When this block enters the build. */
   trigger?: AnimationTrigger
   /** Build order within the slide. */
@@ -118,7 +133,130 @@ export interface AmbientMotionSpec {
 /**
  * Supported block families. Blocks are grouped by structural purpose and rendering approach.
  */
+/**
+ * Semantic category: what a block is FOR (the family says how it is built). Closed set of 23;
+ * drives the gallery tabs and the AI capability index. See `reviews/blocks/block-library/01-taxonomy.md`.
+ */
+export type BlockCategory =
+  | 'structure' | 'heading' | 'text' | 'list' | 'emphasis'
+  | 'metric' | 'chart' | 'table' | 'comparison'
+  | 'process' | 'timeline' | 'hierarchy' | 'relationship'
+  | 'media' | 'people' | 'brand'
+  | 'cover' | 'divider' | 'agenda' | 'closing' | 'learning'
+  | 'chrome' | 'decoration'
+
+/** Placement scope: element = atom, group = self-contained unit for one region, slide = fills the content area (never nest). */
+export type BlockScope = 'element' | 'group' | 'slide'
+
+/** Category order used by the gallery and the AI index. */
+export const BLOCK_CATEGORIES: readonly BlockCategory[] = [
+  'structure', 'heading', 'text', 'list', 'emphasis',
+  'metric', 'chart', 'table', 'comparison',
+  'process', 'timeline', 'hierarchy', 'relationship',
+  'media', 'people', 'brand',
+  'cover', 'divider', 'agenda', 'closing', 'learning',
+  'chrome', 'decoration',
+]
+
+export const BLOCK_SCOPES: readonly BlockScope[] = ['element', 'group', 'slide']
+
+export const CATEGORY_INFO: Record<BlockCategory, { label: string; description: string }> = {
+  structure: { label: 'Structure', description: 'Invisible arrangement: stacks, grids, splits, guides' },
+  heading: { label: 'Headings', description: 'Text that names a slide or section' },
+  text: { label: 'Text', description: 'Running text and small print' },
+  list: { label: 'Lists', description: 'Several parallel items' },
+  emphasis: { label: 'Emphasis', description: 'One idea made to stand out' },
+  metric: { label: 'Metrics', description: 'One or a few numbers, possibly against a target' },
+  chart: { label: 'Charts', description: 'Quantitative chart with axes or slices' },
+  table: { label: 'Tables', description: 'Rows and columns of values' },
+  comparison: { label: 'Comparison', description: 'Two or more options set against each other' },
+  process: { label: 'Process', description: 'Ordered steps without dates' },
+  timeline: { label: 'Timeline', description: 'Ordered events with dates or periods' },
+  hierarchy: { label: 'Hierarchy', description: 'Parent/child or level structure' },
+  relationship: { label: 'Relationships', description: 'Overlap or connection between non-ordered things' },
+  media: { label: 'Media', description: 'Pictures and icons as the content' },
+  people: { label: 'People', description: 'Persons as the content' },
+  brand: { label: 'Brand', description: 'Logos' },
+  cover: { label: 'Covers', description: 'Deck or talk opener' },
+  divider: { label: 'Dividers', description: 'Section break between parts of a deck' },
+  agenda: { label: 'Agenda', description: "What's coming: agenda, contents, objectives" },
+  closing: { label: 'Closing', description: 'Ending: thanks, call to action, contact, recap' },
+  learning: { label: 'Learning', description: 'Teaching interactions' },
+  chrome: { label: 'Chrome', description: 'Slide furniture repeated on many slides' },
+  decoration: { label: 'Decoration', description: 'Visual-only shapes with no content' },
+}
+
 export type BlockFamily = 'layout' | 'text' | 'data' | 'diagram' | 'media' | 'composite' | 'chrome' | 'live'
+
+/**
+ * Block kind: how the block is authored and rendered. 'layout' (default) is a pure `layout()`
+ * function producing a LayoutNode tree. 'html' is an HTML template rendered as real DOM, with a
+ * generated `layout()` that returns a host node and a poster for SVG/export.
+ */
+export type BlockKind = 'layout' | 'html'
+
+/**
+ * Context passed to a `kind: 'html'` block's `template()` function. Provides escaping,
+ * CSS custom property resolution, the block's box, and resolved tokens. Templates MUST use
+ * `ctx.esc()` for all user-provided content — the DeckSpec carries `props` only, never markup
+ * (governing rule 2).
+ */
+export interface HtmlTemplateContext {
+  /** HTML-escape a string. Must be used for all user-provided content. */
+  esc(s: string): string
+  /** Resolve a CSS custom property by its role name (e.g. 'accent' → 'var(--tls-accent)'). */
+  cssVar(role: string): string
+  /** The block's box in slide units. */
+  box: Box
+  /** Resolved design tokens for this deck. */
+  tokens: ResolvedTokens
+}
+
+/**
+ * Block motion runtime, passed to `kind: 'html'` block's `animate(root, rt)`.
+ *
+ * The driver enforces the same allowed/forbidden property vocabulary on every element
+ * it is handed — including elements inside `animate()`. `animate()` may do anything
+ * to descendants of `root` (GSAP's `x`, `y`, `scale`, `rotation` are fine on parts)
+ * but must never set `root.style.transform` — `.tl-positioned-div` owns that.
+ *
+ * `onComplete` is load-bearing: the viewer chains `afterPrevious` and auto-advance
+ * on the promise it resolves. Three invariants:
+ * - Must be called exactly once (idempotent if called more).
+ * - The viewer creates the resolving promise *before* calling `mount`, so a
+ *   synchronous `onComplete` inside `animate` still resolves correctly.
+ * - If not called within `timing.durationMs + 2000`, the viewer warns (naming the
+ *   block id) and resolves the promise anyway.
+ */
+export interface BlockMotionRuntime {
+  /** The motion driver (WAAPI or GSAP-backed). `animate()` may call
+   *  `rt.driver.play(...)` on descendants, or use the raw `gsap` instance. */
+  driver: MotionDriver
+  /** The host's GSAP instance, if the driver was created with one.
+   *  `undefined` when using the default WAAPI driver. */
+  gsap?: unknown
+  /** Timing tokens for this animation step, in milliseconds. */
+  timing: {
+    /** Delay before the animation starts. */
+    delayMs: number
+    /** Duration of the animation. */
+    durationMs: number
+    /** Per-item stagger offset (for lists/grids). */
+    staggerMs: number
+    /** CSS easing string. */
+    ease: string
+  }
+  /** True when `prefers-reduced-motion: reduce` is active. `animate()` should skip
+   *  animation and call `onComplete()` immediately. */
+  reducedMotion: boolean
+  /** P7 — the slide's motion style for this block. `'subtle'`: play one calm fade, show numbers
+   *  at their final value, no choreography. `'expressive'` (or absent, for back-compat): the
+   *  block's full showy timeline. Set by the viewer from the compiled `$block.motionStyle`. */
+  style?: 'subtle' | 'expressive'
+  /** MUST be called when the animation completes (or is skipped for reduced motion).
+   *  The viewer awaits this promise for build-step chaining. Idempotent. */
+  onComplete(): void
+}
 
 /**
  * Runtime metadata and behaviour for a block type. The definition lives in code; each
@@ -133,10 +271,35 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   family: BlockFamily
   /** 'A' = pure layout, exports headlessly. 'B' = DOM-only. */
   tier: 'A' | 'B'
+  /** Block kind: 'layout' (default) = pure `layout()`, 'html' = HTML template with auto-generated
+   *  `layout()` that returns a host node. Absent means 'layout'. */
+  kind?: BlockKind
   /** One-line summary, shown in the inserter and given to the AI. */
   summary: string
   /** Keywords for inserter search and AI selection. */
   keywords: string[]
+  /** Semantic category: what the block is FOR. Drives the gallery tabs and the AI index. */
+  category?: BlockCategory
+  /** At most 90 chars. What the viewer sees, distinguishable from its category siblings. */
+  shortDescription?: string
+  /** element = an atom placed in a region/container; group = a self-contained unit that fills
+   *  one region; slide = designed to fill the whole content area (never nest it). */
+  scope?: BlockScope
+  /** Sibling block types worth considering instead. Each must resolve in the registry. */
+  related?: string[]
+
+  /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
+   *  example instance that passes `validateDeckSpec`. Every built-in block should provide
+   *  this; the capability digest renders it verbatim — no hand-written catalog text
+   *  outside this field. */
+  describe?: {
+    /** One sentence: when an LLM should reach for this block. */
+    when: string
+    /** One sentence: when NOT to use this block (reduces mis-selection). */
+    avoid: string
+    /** A valid BlockSpec with all required slots filled, used as a reference in the digest. */
+    example: BlockSpec
+  }
 
   /** Content and option schema. */
   schema: BlockSchema
@@ -148,13 +311,26 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   size: { preferred: [number, number]; min: [number, number]; aspect?: number }
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
-   *  This is the single source of truth for what the block looks like. */
+   *  This is the single source of truth for what the block looks like.
+   *  For `kind: 'html'`, this is auto-generated from the html template — do not provide. */
   layout(props: P, ctx: LayoutContext): LayoutNode
 
   /** Tier B only. When present, it draws the live block; `poster()` supplies the export image.
-   *  Tier A blocks leave both undefined. */
+   *  Tier A blocks leave both undefined.
+   *  For `kind: 'html'`, this is the existing top-level poster field — the poster is built by
+   *  the block author as a normal Tier-B poster, not nested inside `html`. */
   Component?: React.FC<BlockRenderProps<P>>
   poster?(props: P, ctx: LayoutContext): LayoutNode
+
+  /** `kind: 'html'` only. The HTML template and optional animation. */
+  html?: {
+    /** Return markup. MUST use `ctx.esc()` for all user content.
+     *  Parts are declared as `data-part` attributes matching `motion.parts`. */
+    template(props: P, ctx: HtmlTemplateContext): string
+    /** Optional animation hook. R3 fills rt; for R2, this signature is declared but not called.
+     *  Returns a disposer that cleans up running animations. */
+    animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)
+  }
 
   /** Named parts and default choreography. */
   motion: MotionRecipe
@@ -167,6 +343,11 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
 
   /** Escape hatch: return a TDShape array when a block cannot be expressed as LayoutNode. */
   toShapes?(props: P, box: Box, ctx: LayoutContext): TDShape[]
+
+  /** V4.1: Return intrinsic size of the block's content. Optional — containers use this
+   *  for flex-like distribution. Falls back to calling layout() with a probe box
+   *  when not implemented. */
+  intrinsicSize?(props: P, ctx: LayoutContext): Size
 }
 
 /**
@@ -178,7 +359,57 @@ export interface MotionRecipe {
   parts?: string[]
   /** Default motion preset. */
   preset?: MotionPresetId
+  /** P7 — the showy preset used when the slide's `motionStyle` is `'expressive'` and the block
+   *  has no own `motion`. Absent = `preset`. Must be an existing preset id. */
+  expressive?: MotionPresetId
+  /** P7 — how long the block's expressive timeline runs, in ms (html blocks with a long GSAP
+   *  timeline). Used as the block's duration under `'expressive'` so the next block in the
+   *  chain waits for it. Absent = the preset's duration. */
+  expressiveMs?: number
+  /** M1 — per-part choreography when the block plays its showy preset (`expressive`, else
+   *  `preset`): a part's own preset (bars `grow-bars-y` while labels fade) and the
+   *  `transform-origin` it scales about (`'50% 100%'` = from the baseline). Ignored when a style
+   *  or spec substitutes another preset, and always under a spec-supplied `fade` (the `subtle`
+   *  style stays a calm fade). A spec's `motion.parts[name].preset` still wins. Absent = every
+   *  part plays the block preset. */
+  partMotion?: Record<string, PartMotionRecipe>
 }
+
+/**
+ * M1/M3 — one part's own choreography inside a block recipe (`MotionRecipe.partMotion`).
+ * Applies only when the block plays its recipe's showy preset (see `partMotion`).
+ */
+export interface PartMotionRecipe {
+  /** The part's own preset (a bar `grow-bars-y` while its label fades). */
+  preset?: MotionPresetId
+  /** `transform-origin` the part scales about (`'50% 100%'` = from the baseline). */
+  origin?: string
+  /** M3 — when the part starts, in ms after the block starts. Replaces the part's index
+   *  stagger, so a label can wait for its mark (bars at 0, value labels at 300). */
+  delay?: number
+  /** M3 — per-element stagger in ms between the indexed elements of this part (`bar` → `bar[0]`,
+   *  `bar[1]`…). Absent = the block preset's stagger. Give a mark and its labels the same
+   *  stagger so each label follows its own mark. */
+  stagger?: number
+  /** M6 — a `sweep` on a filled part: where the sector starts, in degrees clockwise from
+   *  12 o'clock (a 180° dial: -90 = 9 o'clock). Default 0. */
+  startAngle?: number
+  /** M6 — how far that sweep turns, in degrees (a 180° dial: 180). Default 360. */
+  sweepAngle?: number
+  /** M6 — the sweep's centre as `x% y%` of the box the part family paints (a top half-ring's
+   *  centre is `'50% 100%'`). Default `'50% 50%'`. */
+  sweepCentre?: string
+}
+
+/**
+ * P7 — how much a slide (or the whole deck) moves. Applied by `compileSlide` to blocks that
+ * have no own `motion`: `static` = nothing animates; `subtle` = a short fade per block, all
+ * together; `expressive` = each block's showy recipe, chained in reading order without clicks.
+ */
+export type MotionStyle = 'static' | 'subtle' | 'expressive'
+
+/** The closed set of `MotionStyle` values (validator, JSON schema, digest). */
+export const MOTION_STYLES: readonly MotionStyle[] = ['static', 'subtle', 'expressive']
 
 /**
  * Schema of valid content for a block. Drives inserter UI, AI prompting, and linting.
@@ -204,6 +435,9 @@ export interface SlotSpec {
   required?: boolean
   /** Guidance for the AI: "One metric name, 1–3 words. Never a sentence." */
   guidance?: string
+  /** B4: when set, this boolean slot toggles the visibility of the element named by
+   *  this `part` value. The slot key must start with `show` (e.g. `showKicker`). */
+  toggles?: string
 }
 
 /**
@@ -275,11 +509,11 @@ export type LayoutNode =
   | { k: 'group'; box: Box; name?: string; part?: string; clip?: boolean; opacity?: number; children: LayoutNode[] }
   | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
-  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle }
-  | { k: 'image'; box: Box; part?: string; assetId: string; fit: 'cover' | 'contain'; radius?: number }
+  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle; propPath?: string }
+  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
-  | { k: 'host'; box: Box; part?: string; render: string }
+  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode; props?: Record<string, unknown>; vars?: Record<string, string> }
 
 /**
  * A 2D box: origin at top-left, measured in slide units (1920×1080 frame).
@@ -329,7 +563,12 @@ export interface Stroke {
 export interface TextLine {
   /** The text content. */
   text: string
-  /** Baseline position relative to the text node's origin. */
+  /** Distance from the top of the text box to the top of this line's line box, in slide units.
+   *  DOM renderer uses this for CSS `top`; SVG renderer uses `baseline` for SVG `<text y>`.
+   *  Optional for backward compatibility with older persisted data (additive schema). */
+  top?: number
+  /** Baseline position relative to the text node's origin. SVG renderer uses this for
+   *  `<tspan y="${node.box.y + line.baseline}">`. */
   baseline: number
   /** Width when rendered with the given style. */
   width: number
@@ -369,6 +608,8 @@ export interface ResolvedTextStyle {
   color: string
   /** Vertical alignment: start (top), center, end (bottom). */
   verticalAlign?: 'start' | 'center' | 'end'
+  /** Scale multiplier applied to font size. 1 = no scaling. Used by autofit and templates. */
+  scale?: number
 }
 
 /**
@@ -423,6 +664,8 @@ export interface LayoutContext {
   tokens: ResolvedTokens
   /** What is behind this block. Foreground colors are solved against it. */
   surface: SurfaceContext
+  /** The instance's raw BlockStyleSpec (read-only). Absent when no override is set. */
+  style?: BlockStyleSpec
   /** Resolve a colour role to a concrete, contrast-correct value. */
   resolveColor(role: ColorRole | string): ResolvedColor
   /** Resolve a type token to concrete size, line-height, and family. */
@@ -431,14 +674,33 @@ export interface LayoutContext {
   measureText(text: string | RichText, style: ResolvedTextStyle, maxWidth?: number): TextMetrics
   /** Lay a child block out inside `box`, returning its node. Containers only. */
   layoutChild(spec: BlockSpec, box: Box): LayoutNode
+  /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
+   *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
+   *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
+   *  way `layoutChild` is (registry access stays internal to the context, never a raw field a
+   *  block can introspect); implemented by `createLayoutContext` in terms of the standalone
+   *  `measureIntrinsicSize` in `layout/layout-child.ts`. Optional so a hand-built `LayoutContext`
+   *  in a test doesn't have to implement it. */
+  measureIntrinsicSize?(spec: BlockSpec): Size
+  /** H6: create a child context with a different box, preserving all providers/style/surface.
+   *  Used by `layoutBlock` to inset a block's own padding without breaking closure-bound
+   *  methods (`measureIntrinsicSize`, `layoutChild` resample their parent fill against the
+   *  original `options.box` — a spread copy would leak the outer box into them). Optional so
+   *  hand-built test contexts don't have to implement it. */
+  withBox?(size: Size): LayoutContext
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
+  /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided
+   *  or the asset is missing — the renderers show a dashed frame with alt text instead. */
+  resolveAsset?(id: string): string | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
   /** Current nesting depth. Capped at 4; deeper trees are an error. */
   depth: number
   /** True when laying out for export/thumbnail; false for live editor. */
   headless: boolean
+  /** F3.1: memo cache for intrinsic size measurement, scoped to one compile pass. */
+  intrinsicSizeCache?: Map<string, Size>
 }
 
 /**
@@ -506,6 +768,10 @@ export interface ResolvedTokens {
    *  (e.g. to decide whether it has room for an optional decorative element) without needing
    *  the original `DeckTokens` it was built from. */
   density: 'compact' | 'default' | 'roomy'
+  /** The deck's primary font family for block text, resolved from the theme's
+   *  `headingFamily`/`bodyFamily` (or the built-in default when the theme doesn't set one).
+   *  `defaultResolveText` reads this to replace the hardcoded fallback. */
+  fontFamily: string
 }
 
 /**
@@ -649,3 +915,92 @@ export type TypeToken =
  * Motion preset ID: 'fade-up', 'count-up', etc. Full list in Phase 22.
  */
 export type MotionPresetId = string
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* Slide / Master / Deck composition types                                         */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * A block placed at an explicit position on the slide, outside of any named region.
+ * Used for free-form elements that don't fit into the layout's region grid.
+ */
+export interface PlacedBlock {
+  block: BlockSpec
+  box: Box
+}
+
+/**
+ * A slide authored by AI or human. Pure JSON — round-trips through
+ * `JSON.parse(JSON.stringify(...))` unchanged.
+ */
+export interface SlideSpec {
+  /** Unique slide identifier. */
+  id: string
+  /** Named layout (e.g. `'title'`, `'two-column'`). */
+  layout: string
+  /** Semantic role hint for the slide. */
+  role?: 'cover' | 'section' | 'content' | 'closing'
+  /** Rhythm hint for the slide. */
+  rhythm?: 'anchor' | 'dense' | 'breath'
+  /** Named regions, each holding an array of BlockSpecs stacked vertically. */
+  regions: Record<string, BlockSpec[]>
+  /** Free-positioned blocks placed outside named regions. */
+  free?: PlacedBlock[]
+  /** Override slide background. */
+  background?: Paint
+  /** Speaker notes. */
+  notes?: string
+  /** When true, this slide is skipped in presentation mode. */
+  skip?: boolean
+  /** References a reusable `MasterSpec` by name. */
+  masterId?: string
+  /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
+  motionStyle?: MotionStyle
+}
+
+/**
+ * A reusable slide template — a background layer of named regions that a
+ * `SlideSpec` can reference via `masterId`. Not a slide itself; it supplies
+ * default `BlockSpec`s for the regions it declares.
+ */
+export interface MasterSpec {
+  /** Unique name, used as the key in `DeckSpec.masters` and as the target of `SlideSpec.masterId`. */
+  name: string
+  /** Named regions, each holding a default `BlockSpec`. */
+  blocks: Record<string, BlockSpec>
+  /** Default background for slides that use this master. */
+  background?: Paint
+  /** Default layout name. */
+  layout?: string
+}
+
+/**
+ * A complete deck specification: an ordered array of slides plus optional master
+ * definitions and deck-wide theme/metadata. Pure JSON. Schema v1
+ * (`reviews/blocks/BACKLOG-demo.md` §2.2) — this is the contract FastAPI stores and the AI
+ * writes to directly.
+ */
+export interface DeckSpec {
+  /** Schema version. Literal `1` — an unversioned or differently-versioned payload is a
+   *  contract violation, not a value this field can hold. */
+  version: 1
+  /** Document ID. FastAPI's key for this deck. */
+  id: string
+  /** Deck title. */
+  title: string
+  /** A built-in theme id (one of `BUILT_IN_DECK_THEMES`, e.g. `'mono-grid'`) or a full
+   *  `DeckTheme` object (a host's own brand kit). NEVER literal hex — see governing rule #3
+   *  (`reviews/blocks/README.md`): the AI writes a theme id, never a colour. */
+  theme: string | DeckTheme
+  /** Aspect ratio: a named preset, or an explicit `[width, height]` — see
+   *  `resolveDeckFrame` (`blocks/deck-document.ts`) for exactly how a tuple is interpreted. */
+  aspect: 'widescreen' | 'standard' | 'square' | [number, number]
+  /** Design token overrides (brand-kit overrides layered on top of `theme`). */
+  tokens?: DeckTokens
+  /** Reusable master templates. */
+  masters?: MasterSpec[]
+  /** Ordered slides. */
+  slides: SlideSpec[]
+  /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
+  motionStyle?: MotionStyle
+}

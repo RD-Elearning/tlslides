@@ -1,0 +1,67 @@
+/**
+ * Motion for tls.c.feature-reveal.
+ *
+ * Expressive: cards flip up from a 3D tilt (alternating left/right yaw) with a staggered
+ * overshoot (RVM2: 800 ms and a 48 px rise, inside the 900 ms per-part budget of J5), each icon bounces in with an elastic spin, titles and texts rise after their card.
+ * Subtle / reduced motion: `runShowcase`.
+ */
+
+import type { BlockMotionRuntime } from '../../../types'
+import { all, runShowcase, type GsapLike, type MotionStepList } from '../_showcase'
+
+/** Per-card stagger in seconds. RVM3: 0.14 -> 0.12, the J5 cap of 120 ms per item. */
+export const CARD_STAGGER = 0.12
+
+/** Length of the expressive timeline (the build chain waits this long): the last text of six cards
+ *  ends at 0.5 + 5 × 0.12 + 0.12 + 0.6 ≈ 1.8 s. It was 2400 ms with ~1 s of dead time (RVM2). */
+export const FEATURE_REVEAL_MS = 1900
+
+function family(root: HTMLElement, name: string): HTMLElement[] {
+  return all(root, '[data-part]').filter((e) => (e.getAttribute('data-part') ?? '').startsWith(`${name}[`))
+}
+
+function gsapTimeline(root: HTMLElement, gsap: GsapLike, done: () => void, rt: BlockMotionRuntime): () => void {
+  const tl = gsap.timeline({ onComplete: done, delay: rt.timing.delayMs / 1000 })
+  // Every part owns its opacity in its own fromTo (no blanket set: it would undo the from-states).
+  const cards = family(root, 'card')
+  cards.forEach((card, i) => {
+    tl.fromTo(
+      card,
+      { opacity: 0, rotationX: -70, rotationY: i % 2 ? 22 : -22, y: 48, scale: 0.82, transformOrigin: '50% 100%' },
+      { opacity: 1, rotationX: 0, rotationY: 0, y: 0, scale: 1, duration: 0.8, ease: 'back.out(1.4)' },
+      i * CARD_STAGGER
+    )
+  })
+  family(root, 'icon').forEach((icon, i) => {
+    tl.fromTo(icon, { scale: 0, rotation: -40, opacity: 1 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.8, ease: 'elastic.out(1, 0.45)' }, 0.35 + i * CARD_STAGGER)
+  })
+  const texts = [...family(root, 'title'), ...family(root, 'text')]
+  texts.forEach((el) => {
+    const i = Number(/\[(\d+)\]/.exec(el.getAttribute('data-part') ?? '')?.[1] ?? 0)
+    const isTitle = (el.getAttribute('data-part') ?? '').startsWith('title')
+    tl.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 0.5 + i * CARD_STAGGER + (isTitle ? 0 : 0.12))
+  })
+  return () => tl.kill()
+}
+
+function driverSteps(root: HTMLElement, _rt: BlockMotionRuntime): MotionStepList {
+  const steps: MotionStepList = []
+  const back = 'cubic-bezier(0.34, 1.4, 0.64, 1)'
+  const smooth = 'cubic-bezier(0.16, 1, 0.3, 1)'
+  family(root, 'card').forEach((card, i) => {
+    steps.push([card, { opacity: [0, 1], translate: ['0px 48px', '0px 0px'], scale: [0.82, 1] }, { duration: 800, delay: i * CARD_STAGGER * 1000, easing: back }])
+  })
+  family(root, 'icon').forEach((icon, i) => {
+    steps.push([icon, { opacity: [0, 1], scale: [0, 1] }, { duration: 800, delay: 350 + i * CARD_STAGGER * 1000, easing: 'cubic-bezier(0.34, 2.2, 0.64, 1)' }])
+  })
+  for (const el of [...family(root, 'title'), ...family(root, 'text')]) {
+    const part = el.getAttribute('data-part') ?? ''
+    const i = Number(/\[(\d+)\]/.exec(part)?.[1] ?? 0)
+    steps.push([el, { opacity: [0, 1], translate: ['0px 24px', '0px 0px'] }, { duration: 600, delay: 500 + i * CARD_STAGGER * 1000 + (part.startsWith('title') ? 0 : 120), easing: smooth }])
+  }
+  return steps
+}
+
+export function animate(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void) {
+  return runShowcase(root, rt, { gsap: gsapTimeline, driver: driverSteps })
+}

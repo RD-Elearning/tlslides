@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "golden-quote",
+  "title": "Quote Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "quote",
+      "role": "content",
+      "regions": {
+        "quote": [
+          {
+            "id": "b1",
+            "type": "tls.t.quote",
+            "props": {
+              "text": "The only way to do great work is to love what you do.",
+              "attribution": "Steve Jobs",
+              "role": "Co-founder, Apple",
+              "markStyle": "glyph"
+            }
+          }
+        ],
+        "attribution": [
+          {
+            "id": "b2",
+            "type": "tls.t.caption",
+            "props": { "text": "Stanford Commencement, 2005" }
+          }
+        ]
+      }
+    }
+  ]
+}

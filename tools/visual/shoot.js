@@ -60,9 +60,11 @@ const scenario = require(scenarioPath)
   const base = baseFlag || scenario.base || 'http://localhost:5431'
   const url = base + (scenario.route || '/')
   await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 })
-  // The editor mounts asynchronously and measures itself with a resize observer; nothing renders
-  // on the first frame.
-  await page.waitForSelector('#canvas', { timeout: 20000 })
+  // A scenario may declare its own readiness selector — the editor mounts `#canvas`, the
+  // read-only viewer mounts `[data-testid="deck-viewer"]`. Defaults to `#canvas` so existing
+  // editor scenarios are unchanged.
+  const readySelector = scenario.waitFor || '#canvas'
+  await page.waitForSelector(readySelector, { timeout: 20000 })
   await page.waitForTimeout(1500)
 
   const notes = (await scenario.run(page)) || {}

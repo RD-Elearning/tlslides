@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "id": "golden-title-only",
+  "title": "Title Only Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "title",
+      "role": "cover",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Annual " }, { "text": "Review", "bold": true }] }
+            }
+          }
+        ],
+        "subtitle": [
+          {
+            "id": "b2",
+            "type": "tls.t.subtitle",
+            "props": {
+              "text": { "runs": [{ "text": "Q4 FY2026" }] }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

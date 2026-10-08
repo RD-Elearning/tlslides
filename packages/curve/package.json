@@ -24,12 +24,12 @@
   "types": "./dist/index.d.ts",
   "source": "./dist/index.ts",
   "scripts": {
-    "start": "yarn lask -d",
-    "build": "yarn lask",
-    "start:packages": "yarn start",
-    "start:core": "yarn start",
-    "build:core": "yarn build",
-    "build:packages": "yarn build",
+    "start": "pnpm lask -d",
+    "build": "pnpm lask",
+    "start:packages": "pnpm start",
+    "start:core": "pnpm start",
+    "build:core": "pnpm build",
+    "build:packages": "pnpm build",
     "lint": "eslint src/ --ext .ts,.tsx",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
   },

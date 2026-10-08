@@ -200,6 +200,39 @@ describe('Deck facade — thumbnails', () => {
       globalThis.document = realDocument
     }
   })
+
+  // A5 — headless block rendering via Deck.getThumbnail.
+  it('per-call blocks callback overrides the Deck-stored default', () => {
+    const app = freshApp()
+    // Add a ComponentShape via Deck.addBlock (the proper creation path).
+    app.deck.addBlock('page1', { componentId: 'test-block' })
+    // Find the shape we just created.
+    const shapes = Object.values(app.document.pages.page1.shapes)
+    const block = shapes.find((s) => s.type === TDShapeType.Component)!
+    expect(block).toBeDefined()
+
+    const customSvg = '<g class="custom-block">Hello</g>'
+    const svg = app.deck.getThumbnail('page1', {
+      format: 'svg',
+      blocks: (s) => (s.componentId === 'test-block' ? customSvg : undefined),
+    })
+    expect(svg).toContain(customSvg)
+    expect(svg).not.toContain('Component: test-block')
+  })
+
+  it('Deck.blocks instance property is used as fallback when opts.blocks is absent', () => {
+    const app = freshApp()
+    app.deck.addBlock('page1', { componentId: 'stored-block' })
+
+    const customSvg = '<g class="stored">Stored</g>'
+    app.deck.blocks = (s) => (s.componentId === 'stored-block' ? customSvg : undefined)
+    const svg = app.deck.getThumbnail('page1', { format: 'svg' })
+    expect(svg).toContain(customSvg)
+    expect(svg).not.toContain('Component: stored-block')
+
+    // Cleanup: clear the stored blocks callback.
+    app.deck.blocks = undefined
+  })
 })
 
 describe('Deck facade — content', () => {
@@ -404,7 +437,9 @@ describe('Deck facade — PNG export', () => {
     const app = freshApp()
     // jsdom logs a "not implemented" console.error for the attempted `getContext('2d')` call —
     // expected (see the note above), silenced so it doesn't read as a real failure in CI output.
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {
+      // no-op: deliberately silencing the expected jsdom "not implemented" log (see note above)
+    })
     try {
       await expect(app.deck.exportSlidePng('page1')).resolves.toBeUndefined()
     } finally {

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "id": "golden-closing",
+  "title": "Closing Deck",
+  "theme": "mono-grid",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "title",
+      "role": "closing",
+      "regions": {
+        "title": [
+          {
+            "id": "b1",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Thank " }, { "text": "You", "bold": true }] },
+              "size": "display",
+              "align": "center"
+            }
+          }
+        ],
+        "subtitle": [
+          {
+            "id": "b2",
+            "type": "tls.t.subtitle",
+            "props": {
+              "text": { "runs": [{ "text": "Questions? Reach us at " }, { "text": "team@example.com", "bold": true }] },
+              "align": "center"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

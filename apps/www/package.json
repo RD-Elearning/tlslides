@@ -11,8 +11,8 @@
   "author": "@nimeshnayaju",
   "scripts": {
     "dev": "next dev",
-    "build:apps": "yarn build",
-    "build:www": "yarn build",
+    "build:apps": "pnpm build",
+    "build:www": "pnpm build",
     "build": "next build",
     "serve": "next serve",
     "lint": "next lint"

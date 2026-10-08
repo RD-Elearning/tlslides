@@ -1,0 +1,4719 @@
+{
+  "version": 1,
+  "id": "colorful-blocks-demo",
+  "title": "Colorful Blocks Demo",
+  "theme": "coral-pop",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "sl_01",
+      "layout": "title",
+      "role": "cover",
+      "regions": {
+        "title": [
+          {
+            "id": "b_01_hero",
+            "type": "tls.c.hero",
+            "props": {
+              "kicker": "BLOCK SHOWCASE",
+              "title": "All Block Types",
+              "subtitle": { "runs": [
+                { "text": "Beautiful," },
+                { "text": " colorful," },
+                { "text": " interactive" }
+              ] }
+            },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_02",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_02_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [{ "text": "Chart Blocks (tls-d-*)" }] },
+              "size": "heading"
+            },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_02_bar",
+            "type": "tls.d.bar",
+            "props": {
+              "categories": ["A", "B", "C", "D", "E"],
+              "series": [85, 72, 91, 68, 79],
+              "title": "Category Performance",
+              "highlightIndex": 2
+            },
+            "motion": { "preset": "grow-bars-y", "order": 2 }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_02_donut",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                { "value": 40, "color": "accent", "label": "Revenue" },
+                { "value": 30, "color": "blue", "label": "Cost" },
+                { "value": 20, "color": "accent2", "label": "Profit" },
+                { "value": 10, "color": "purple", "label": "Other" }
+              ],
+              "total": 100
+            },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_03",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_03_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Text Blocks (tls.t-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_03_heading",
+            "type": "tls.t.title",
+            "props": { "text": "Heading 1", "size": "subheading", "color": "accent1" },
+            "motion": { "preset": "fade-up", "order": 2 }
+          },
+          {
+            "id": "b_03_title2",
+            "type": "tls.t.title",
+            "props": { "text": "Title", "size": "heading", "color": "accent2" },
+            "motion": { "preset": "fade-up", "order": 3 }
+          },
+          {
+            "id": "b_03_subtitle",
+            "type": "tls.t.subtitle",
+            "props": { "text": "This is a subtitle with colorful text", "align": "start", "color": "accent3" },
+            "motion": { "preset": "fade-up", "order": 4 }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_03_bullets",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                { "text": "Bullet point in red", "marker": "filled", "color": "red" },
+                { "text": "Bullet point in blue", "marker": "circle", "color": "blue" },
+                { "text": "Bullet point in green", "marker": "dash", "color": "green" }
+              ],
+              "spacing": "md"
+            },
+            "motion": { "preset": "stagger-lines", "order": 5 }
+          },
+          {
+            "id": "b_03_quote",
+            "type": "tls.t.quote",
+            "props": {
+              "text": "Design for color!",
+              "attribution": "Creative Team",
+              "markStyle": "glyph"
+            },
+            "motion": { "preset": "quote-in", "order": 6 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_04",
+      "layout": "kpi-row",
+      "role": "content",
+      "regions": {
+        "kpi1": [
+          {
+            "id": "b_04_k1",
+            "type": "tls.t.hero-number",
+            "props": { "value": "52", "unit": "Colors", "format": "plain", "emphasis": "accent" },
+            "motion": { "preset": "count-up", "order": 1 }
+          }
+        ],
+        "kpi2": [
+          {
+            "id": "b_04_k2",
+            "type": "tls.t.hero-number",
+            "props": { "value": "12", "unit": "Block Types", "format": "plain", "emphasis": "default" },
+            "motion": { "preset": "count-up", "order": 2 }
+          }
+        ],
+        "kpi3": [
+          {
+            "id": "b_04_k3",
+            "type": "tls.t.hero-number",
+            "props": { "value": "3", "unit": "Families", "format": "plain", "emphasis": "accent2" },
+            "motion": { "preset": "count-up", "order": 3 }
+          }
+        ],
+        "kpi4": [
+          {
+            "id": "b_04_k4",
+            "type": "tls.t.hero-number",
+            "props": { "value": "∞", "unit": "Possibilities", "format": "plain", "emphasis": "muted" },
+            "motion": { "preset": "count-up", "order": 4 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_05",
+      "layout": "image-top",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_05_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Color Blocks (tls-c-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "image": [
+          {
+            "id": "b_05_grid",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "columns": 3,
+              "gap": 16,
+              "cells": [
+                {
+                  "title": "Red Alert",
+                  "desc": "Danger and warnings",
+                  "icon": "alert-triangle",
+                  "color": "red"
+                },
+                {
+                  "title": "Blue Info",
+                  "desc": "Information and data",
+                  "icon": "info",
+                  "color": "blue"
+                },
+                {
+                  "title": "Green Success",
+                  "desc": "Positive outcomes",
+                  "icon": "check",
+                  "color": "green"
+                }
+              ]
+            },
+            "motion": { "preset": "stagger-children", "order": 2 }
+          }
+        ],
+        "text": [
+          {
+            "id": "b_05_section",
+            "type": "tls.l.section",
+            "props": {
+              "title": "Section Example",
+              "children": [
+                { "id": "b_05_child", "type": "tls.t.body", "props": { "text": "A section with colored surface", "color": "accent1" } }
+              ]
+            },
+            "style": {
+              "surface": { "type": "solid", "color": "yellow" },
+              "on": "text"
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_06",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_06_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Diagram Blocks (tls.g-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_06_steps",
+            "type": "tls.g.steps",
+            "props": {
+              "steps": [
+                { "title": "Design", "description": "Plan with color" },
+                { "title": "Build", "description": "Create elements" },
+                { "title": "Test", "description": "Verify features" },
+                { "title": "Deploy", "description": "Go live" }
+              ],
+              "direction": "horizontal",
+              "connector": "arrow"
+            },
+            "motion": { "preset": "stagger-children", "order": 2 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_07",
+      "layout": "image-top",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_07_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Layout Blocks (tls-l-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "image": [
+          {
+            "id": "b_07_stack",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                { "id": "b_07_child1", "type": "tls.t.body", "props": { "text": "Stack Item 1", "color": "red" } },
+                { "id": "b_07_child2", "type": "tls.t.body", "props": { "text": "Stack Item 2", "color": "blue" } },
+                { "id": "b_07_child3", "type": "tls.t.body", "props": { "text": "Stack Item 3", "color": "green" } }
+              ]
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          }
+        ],
+        "text": [
+          {
+            "id": "b_07_grid",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "gap": 8,
+              "children": [
+                { "id": "b_07_g1", "type": "tls.d.bar", "props": { "categories": ["A"], "series": [100] } },
+                { "id": "b_07_g2", "type": "tls.d.bar", "props": { "categories": ["B"], "series": [75] } },
+                { "id": "b_07_g3", "type": "tls.d.bar", "props": { "categories": ["C"], "series": [50] } }
+              ]
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_08",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_08_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Media Blocks (tls.m-*)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          },
+          {
+            "id": "b_08_image",
+            "type": "tls.m.image",
+            "props": {
+              "src": "https://picsum.photos/seed/color1/400/200",
+              "alt": "Random colorful image 1",
+              "fit": "cover",
+              "radius": 8
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          },
+          {
+            "id": "b_08_image2",
+            "type": "tls.m.image",
+            "props": {
+              "src": "https://picsum.photos/seed/color2/400/200",
+              "alt": "Random colorful image 2",
+              "fit": "cover",
+              "radius": 8
+            },
+            "motion": { "preset": "fade-up", "order": 3 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_09",
+      "layout": "image-top",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_09_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Advanced Charts" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "image": [
+          {
+            "id": "b_09_large_donut",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                { "value": 35, "color": "red", "label": "Red Zone" },
+                { "value": 25, "color": "orange", "label": "Orange Zone" },
+                { "value": 20, "color": "yellow", "label": "Yellow Zone" },
+                { "value": 12, "color": "green", "label": "Green Zone" },
+                { "value": 8, "color": "blue", "label": "Blue Zone" }
+              ],
+              "total": 100
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_10",
+      "layout": "blank",
+      "role": "closing",
+      "regions": {
+        "content": [
+          {
+            "id": "b_10_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": { "runs": [
+                { "text": "Thank you!" },
+                { "text": " 🎨", "emoji": true }
+              ]},
+              "size": "display"
+            }
+          },
+          {
+            "id": "b_10_body",
+            "type": "tls.t.body",
+            "props": { "text": "All block types now work with full color support!", "align": "center" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_11",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_11_title",
+            "type": "tls.t.title",
+            "props": { "text": { "runs": [{ "text": "Composite Blocks (defineCompositeBlock)" }] }, "size": "heading" },
+            "motion": { "preset": "fade-up", "order": 1 }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_11_card",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_11_kpi_tile",
+                  "type": "tls.c.kpi-tile",
+                  "props": {
+                    "value": 4200000,
+                    "delta": 12.5,
+                    "label": "Revenue",
+                    "polarity": "upGood",
+                    "format": "compact"
+                  }
+                }
+              ]
+            },
+            "style": {
+              "surface": "card"
+            },
+            "motion": { "preset": "fade-up", "order": 2 }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_11_stat_card",
+            "type": "tls.c.stat-card",
+            "props": {
+              "icon": "zap",
+              "showIcon": true,
+              "value": "$4.2M",
+              "unit": "Annual Revenue",
+              "caption": "FY2024 total",
+              "format": "plain",
+              "emphasis": "accent",
+              "padding": "md"
+            },
+            "motion": { "preset": "fade-up", "order": 3, "trigger": "afterPrevious" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_12",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_12_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P1 lists",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_12_numbered",
+            "type": "tls.t.numbered",
+            "props": {
+              "items": [
+                "Define the audience",
+                "State the **one** message",
+                "Prove it with data"
+              ],
+              "markerStyle": "badge",
+              "markerTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_12_checklist",
+            "type": "tls.t.checklist",
+            "props": {
+              "items": [
+                {
+                  "text": "Outline drafted",
+                  "state": "done"
+                },
+                {
+                  "text": "Charts reviewed",
+                  "state": "done"
+                },
+                {
+                  "text": "Demo rehearsed",
+                  "state": "open"
+                },
+                {
+                  "text": "Legal sign-off",
+                  "state": "blocked"
+                }
+              ],
+              "doneStyle": "strike"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_12_iconlist",
+            "type": "tls.m.icon-list",
+            "props": {
+              "items": [
+                {
+                  "icon": "rocket",
+                  "title": "Launch faster",
+                  "text": "Weeks, not quarters."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Stay secure",
+                  "text": "Audit trails built in."
+                },
+                {
+                  "icon": "chart-line",
+                  "title": "See impact",
+                  "text": "Live dashboards."
+                }
+              ],
+              "iconStyle": "circle",
+              "iconTone": "accent"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_12_statement",
+            "type": "tls.t.statement",
+            "props": {
+              "text": "Make the **simplest** option the **default**.",
+              "attribution": "Design principle",
+              "size": "lg",
+              "emphasis": "accent"
+            },
+            "motion": {
+              "preset": "words-in",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_12_definition",
+            "type": "tls.t.definition",
+            "props": {
+              "term": "Heuristic",
+              "pronunciation": "/hyoo-RIS-tik/",
+              "partOfSpeech": "noun",
+              "definition": "A **rule of thumb** that finds a good-enough answer fast.",
+              "example": "Pick the shortest line.",
+              "layout": "stacked"
+            },
+            "motion": {
+              "preset": "title-then-body",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_12_callout",
+            "type": "tls.t.callout",
+            "props": {
+              "title": "Heads up",
+              "text": "Figures are **preliminary** until the audit closes.",
+              "variant": "warning",
+              "fill": "tint"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 7
+            }
+          },
+          {
+            "id": "b_12_footnote",
+            "type": "tls.t.footnote",
+            "props": {
+              "items": [
+                "Company filings, FY2025"
+              ],
+              "marker": "source"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_13",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_13_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 metrics",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_13_progress",
+            "type": "tls.d.progress-bar",
+            "props": {
+              "items": [
+                {
+                  "label": "Onboarding",
+                  "value": 86
+                },
+                {
+                  "label": "Documentation",
+                  "value": 58
+                },
+                {
+                  "label": "Test coverage",
+                  "value": 27
+                },
+                {
+                  "label": "Budget",
+                  "value": 52,
+                  "max": 60
+                }
+              ],
+              "tone": "status"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_13_ring",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 72,
+              "label": "Course completion",
+              "caption": "36 of 50 lessons"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_13_compare",
+            "type": "tls.d.stat-compare",
+            "props": {
+              "left": {
+                "label": "FY2024",
+                "value": 4200
+              },
+              "right": {
+                "label": "FY2025",
+                "value": 5460
+              },
+              "format": "compact",
+              "caption": "Annual recurring revenue"
+            },
+            "motion": {
+              "preset": "count-up",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_13_gauge",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 42,
+              "min": -100,
+              "max": 100,
+              "label": "Net promoter score",
+              "bands": [
+                {
+                  "to": 0,
+                  "tone": "negative"
+                },
+                {
+                  "to": 50,
+                  "tone": "warning"
+                },
+                {
+                  "to": 100,
+                  "tone": "positive"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_13_sparks",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_13_spark_a",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      12,
+                      14,
+                      13,
+                      18,
+                      17,
+                      22,
+                      21,
+                      27,
+                      31,
+                      30,
+                      36
+                    ],
+                    "label": "Weekly signups",
+                    "showLast": "delta"
+                  }
+                },
+                {
+                  "id": "b_13_spark_b",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      30,
+                      28,
+                      26,
+                      27,
+                      22,
+                      19,
+                      20,
+                      14,
+                      12
+                    ],
+                    "label": "Support tickets",
+                    "showLast": "delta",
+                    "fill": false
+                  }
+                },
+                {
+                  "id": "b_13_spark_c",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      5,
+                      5,
+                      6,
+                      5,
+                      7,
+                      6,
+                      8,
+                      9,
+                      9,
+                      12
+                    ],
+                    "label": "Active teams",
+                    "showLast": "value",
+                    "endDot": false
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_13_compare2",
+            "type": "tls.d.stat-compare",
+            "props": {
+              "left": {
+                "label": "Before",
+                "value": 18.4
+              },
+              "right": {
+                "label": "After",
+                "value": 12.1
+              },
+              "format": "plain",
+              "polarity": "downGood",
+              "delta": "absolute",
+              "connector": "vs"
+            },
+            "motion": {
+              "preset": "count-up",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_14",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_14_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 metrics, variants",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_14_ring2",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 24,
+              "label": "Churn target",
+              "tone": "status",
+              "thickness": "lg",
+              "cap": "flat"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_14_ring3",
+            "type": "tls.d.progress-ring",
+            "props": {
+              "value": 138,
+              "max": 100,
+              "label": "Over target",
+              "caption": "Marker shows overflow",
+              "thickness": "sm"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_14_progress2",
+            "type": "tls.d.progress-bar",
+            "props": {
+              "items": [
+                {
+                  "label": "North",
+                  "value": 320,
+                  "max": 400
+                },
+                {
+                  "label": "South",
+                  "value": 180,
+                  "max": 400
+                },
+                {
+                  "label": "East",
+                  "value": 410,
+                  "max": 400
+                }
+              ],
+              "labelPos": "left",
+              "showValue": "value",
+              "thickness": "sm"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_14_gauge2",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 63,
+              "label": "Capacity used",
+              "needle": "marker",
+              "bands": [
+                {
+                  "to": 60,
+                  "tone": "positive"
+                },
+                {
+                  "to": 85,
+                  "tone": "warning"
+                },
+                {
+                  "to": 100,
+                  "tone": "negative"
+                }
+              ],
+              "format": "percent"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_14_sparks2",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_14_spark_a",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      3,
+                      3,
+                      3,
+                      3,
+                      3
+                    ],
+                    "label": "Flat series",
+                    "showLast": "none"
+                  }
+                },
+                {
+                  "id": "b_14_spark_b",
+                  "type": "tls.d.sparkline",
+                  "props": {
+                    "values": [
+                      1,
+                      4,
+                      2,
+                      8,
+                      3,
+                      9,
+                      4,
+                      12,
+                      6,
+                      14,
+                      7,
+                      16
+                    ],
+                    "showLast": "value",
+                    "format": "compact"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_14_gauge3",
+            "type": "tls.d.gauge",
+            "props": {
+              "value": 55,
+              "label": "Progress",
+              "showTicks": false
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_15",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_15_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 charts",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_15_line",
+            "type": "tls.d.line",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Revenue",
+                  "values": [
+                    42,
+                    48,
+                    55,
+                    61,
+                    70,
+                    82
+                  ]
+                },
+                {
+                  "name": "Costs",
+                  "values": [
+                    38,
+                    41,
+                    45,
+                    47,
+                    52,
+                    55
+                  ]
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_15_area",
+            "type": "tls.d.area",
+            "props": {
+              "categories": [
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun"
+              ],
+              "series": [
+                {
+                  "name": "Web",
+                  "values": [
+                    30,
+                    34,
+                    41,
+                    45,
+                    52,
+                    60
+                  ]
+                },
+                {
+                  "name": "Mobile",
+                  "values": [
+                    18,
+                    24,
+                    28,
+                    36,
+                    44,
+                    53
+                  ]
+                },
+                {
+                  "name": "Partners",
+                  "values": [
+                    8,
+                    9,
+                    12,
+                    14,
+                    15,
+                    19
+                  ]
+                }
+              ],
+              "mode": "stacked",
+              "curve": "monotone"
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_15_grouped",
+            "type": "tls.d.grouped-bar",
+            "props": {
+              "categories": [
+                "North",
+                "South",
+                "East",
+                "West"
+              ],
+              "series": [
+                {
+                  "name": "2024",
+                  "values": [
+                    42,
+                    38,
+                    55,
+                    31
+                  ]
+                },
+                {
+                  "name": "2025",
+                  "values": [
+                    51,
+                    40,
+                    62,
+                    45
+                  ]
+                }
+              ],
+              "valueLabels": "end"
+            },
+            "motion": {
+              "preset": "grow-bars-y",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_15_stacked",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "series": [
+                {
+                  "name": "Product",
+                  "values": [
+                    30,
+                    34,
+                    38,
+                    45
+                  ]
+                },
+                {
+                  "name": "Services",
+                  "values": [
+                    18,
+                    20,
+                    26,
+                    28
+                  ]
+                },
+                {
+                  "name": "Support",
+                  "values": [
+                    8,
+                    9,
+                    10,
+                    12
+                  ]
+                }
+              ],
+              "totals": true
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_15_pie",
+            "type": "tls.d.pie",
+            "props": {
+              "categories": [
+                "Subscriptions",
+                "Services",
+                "Licences",
+                "Other"
+              ],
+              "values": [
+                48,
+                27,
+                17,
+                8
+              ]
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_15_stacked2",
+            "type": "tls.d.stacked-bar",
+            "props": {
+              "categories": [
+                "Mobile",
+                "Desktop",
+                "Tablet"
+              ],
+              "series": [
+                {
+                  "name": "Organic",
+                  "values": [
+                    40,
+                    55,
+                    30
+                  ]
+                },
+                {
+                  "name": "Paid",
+                  "values": [
+                    35,
+                    25,
+                    45
+                  ]
+                },
+                {
+                  "name": "Referral",
+                  "values": [
+                    25,
+                    20,
+                    25
+                  ]
+                }
+              ],
+              "orientation": "horizontal",
+              "normalize": true,
+              "valueLabels": "inside"
+            },
+            "motion": {
+              "preset": "grow-segments",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_16",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_16_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 charts, more",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_16_waterfall",
+            "type": "tls.d.waterfall",
+            "props": {
+              "steps": [
+                {
+                  "label": "FY24",
+                  "value": 120,
+                  "kind": "total"
+                },
+                {
+                  "label": "New logos",
+                  "value": 35
+                },
+                {
+                  "label": "Expansion",
+                  "value": 18
+                },
+                {
+                  "label": "Churn",
+                  "value": -22
+                },
+                {
+                  "label": "Pricing",
+                  "value": 9
+                },
+                {
+                  "label": "FY25",
+                  "value": 160,
+                  "kind": "total"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_16_funnel",
+            "type": "tls.d.funnel-chart",
+            "props": {
+              "stages": [
+                {
+                  "label": "Visitors",
+                  "value": 12000
+                },
+                {
+                  "label": "Sign-ups",
+                  "value": 4200
+                },
+                {
+                  "label": "Trials",
+                  "value": 1800
+                },
+                {
+                  "label": "Customers",
+                  "value": 540
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_16_scatter",
+            "type": "tls.d.scatter",
+            "props": {
+              "points": [
+                {
+                  "x": 12,
+                  "y": 30,
+                  "label": "Alpha",
+                  "group": "Core"
+                },
+                {
+                  "x": 25,
+                  "y": 44,
+                  "label": "Beta",
+                  "group": "Core"
+                },
+                {
+                  "x": 33,
+                  "y": 41,
+                  "label": "Gamma",
+                  "group": "Core"
+                },
+                {
+                  "x": 48,
+                  "y": 62,
+                  "label": "Delta",
+                  "group": "Growth"
+                },
+                {
+                  "x": 57,
+                  "y": 70,
+                  "label": "Epsilon",
+                  "group": "Growth"
+                },
+                {
+                  "x": 66,
+                  "y": 58,
+                  "label": "Zeta",
+                  "group": "Growth"
+                },
+                {
+                  "x": 78,
+                  "y": 85,
+                  "label": "Eta",
+                  "group": "Growth"
+                }
+              ],
+              "trendline": true,
+              "labelPoints": "all"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_16_radar",
+            "type": "tls.d.radar",
+            "props": {
+              "axes": [
+                "Speed",
+                "Quality",
+                "Cost",
+                "Support",
+                "Security",
+                "Usability"
+              ],
+              "series": [
+                {
+                  "name": "Ours",
+                  "values": [
+                    8,
+                    9,
+                    6,
+                    7,
+                    9,
+                    8
+                  ]
+                },
+                {
+                  "name": "Rival",
+                  "values": [
+                    6,
+                    7,
+                    8,
+                    5,
+                    6,
+                    7
+                  ]
+                }
+              ]
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_16_funnel2",
+            "type": "tls.d.funnel-chart",
+            "props": {
+              "stages": [
+                {
+                  "label": "Applied",
+                  "value": 800
+                },
+                {
+                  "label": "Screened",
+                  "value": 320
+                },
+                {
+                  "label": "Interviewed",
+                  "value": 90
+                },
+                {
+                  "label": "Offered",
+                  "value": 24
+                }
+              ],
+              "shape": "bars",
+              "showDropoff": "none",
+              "format": "plain"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_16_scatter2",
+            "type": "tls.d.scatter",
+            "props": {
+              "points": [
+                {
+                  "x": 1,
+                  "y": 8
+                },
+                {
+                  "x": 2,
+                  "y": 6
+                },
+                {
+                  "x": 3,
+                  "y": 9
+                },
+                {
+                  "x": 4,
+                  "y": 3,
+                  "label": "Outlier"
+                },
+                {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": 7,
+                  "y": 7
+                },
+                {
+                  "x": 8,
+                  "y": 1
+                }
+              ],
+              "quadrants": true,
+              "highlightIndex": 3,
+              "labelPoints": "highlighted"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_17",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_17_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 extras",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_17_bullet",
+            "type": "tls.d.bullet-chart",
+            "props": {
+              "items": [
+                {
+                  "label": "Revenue",
+                  "value": 270,
+                  "target": 300,
+                  "max": 400
+                },
+                {
+                  "label": "Profit",
+                  "value": 22,
+                  "target": 20,
+                  "max": 30
+                },
+                {
+                  "label": "New customers",
+                  "value": 1200,
+                  "target": 1500,
+                  "max": 2000
+                }
+              ],
+              "format": "compact"
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_17_slope",
+            "type": "tls.d.slope",
+            "props": {
+              "startLabel": "2023",
+              "endLabel": "2025",
+              "items": [
+                {
+                  "name": "North",
+                  "start": 40,
+                  "end": 58
+                },
+                {
+                  "name": "South",
+                  "start": 55,
+                  "end": 47
+                },
+                {
+                  "name": "East",
+                  "start": 31,
+                  "end": 44
+                },
+                {
+                  "name": "West",
+                  "start": 62,
+                  "end": 50
+                }
+              ],
+              "highlight": "risers"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_17_bubble",
+            "type": "tls.d.bubble",
+            "props": {
+              "points": [
+                {
+                  "x": 12,
+                  "y": 8,
+                  "r": 40,
+                  "label": "Alpha"
+                },
+                {
+                  "x": 28,
+                  "y": 22,
+                  "r": 120,
+                  "label": "Beta"
+                },
+                {
+                  "x": 45,
+                  "y": 15,
+                  "r": 75,
+                  "label": "Gamma"
+                },
+                {
+                  "x": 60,
+                  "y": 38,
+                  "r": 200,
+                  "label": "Delta"
+                },
+                {
+                  "x": 78,
+                  "y": 30,
+                  "r": 60,
+                  "label": "Epsilon"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_17_badges",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": 12,
+              "children": [
+                {
+                  "id": "b_17_badge_a",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": 12.5,
+                    "format": "percent",
+                    "label": "vs last quarter"
+                  }
+                },
+                {
+                  "id": "b_17_badge_b",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": -3.2,
+                    "format": "percent",
+                    "polarity": "downGood",
+                    "label": "churn",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "id": "b_17_badge_c",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": -420,
+                    "format": "compact",
+                    "label": "tickets",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "b_17_badge_d",
+                  "type": "tls.d.trend-badge",
+                  "props": {
+                    "delta": 0,
+                    "format": "plain",
+                    "polarity": "neutral",
+                    "label": "flat"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_17_slope2",
+            "type": "tls.d.slope",
+            "props": {
+              "startLabel": "Q1",
+              "endLabel": "Q4",
+              "items": [
+                {
+                  "name": "Basic",
+                  "start": 80,
+                  "end": 64
+                },
+                {
+                  "name": "Plus",
+                  "start": 70,
+                  "end": 71
+                },
+                {
+                  "name": "Pro",
+                  "start": 40,
+                  "end": 63
+                },
+                {
+                  "name": "Team",
+                  "start": 30,
+                  "end": 22
+                },
+                {
+                  "name": "Max",
+                  "start": 52,
+                  "end": 40
+                }
+              ],
+              "highlight": "fallers",
+              "format": "plain"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_17_bubble2",
+            "type": "tls.d.bubble",
+            "props": {
+              "points": [
+                {
+                  "x": 1,
+                  "y": 2,
+                  "r": 10
+                },
+                {
+                  "x": 2,
+                  "y": 5,
+                  "r": 30
+                },
+                {
+                  "x": 4,
+                  "y": 3,
+                  "r": 60
+                },
+                {
+                  "x": 5,
+                  "y": 8,
+                  "r": 20
+                },
+                {
+                  "x": 7,
+                  "y": 6,
+                  "r": 90
+                },
+                {
+                  "x": 8,
+                  "y": 9,
+                  "r": 5
+                }
+              ],
+              "sizeLegend": false,
+              "gridlines": "none"
+            },
+            "motion": {
+              "preset": "pop-points",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_18",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_18_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 tables",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_18_table",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Region"
+                },
+                {
+                  "label": "Revenue",
+                  "kind": "number"
+                },
+                {
+                  "label": "Growth",
+                  "kind": "number"
+                },
+                {
+                  "label": "Status",
+                  "kind": "status"
+                }
+              ],
+              "rows": [
+                [
+                  "North America",
+                  "4820",
+                  "12%",
+                  "good"
+                ],
+                [
+                  "Europe",
+                  "3150",
+                  "4%",
+                  "watch"
+                ],
+                [
+                  "Asia Pacific",
+                  "2740",
+                  "21%",
+                  "good"
+                ],
+                [
+                  "Latin America",
+                  "980",
+                  "-3%",
+                  "bad"
+                ],
+                [
+                  "Middle East",
+                  "640",
+                  "9%",
+                  "good"
+                ],
+                [
+                  "Revenue not reported",
+                  "n/a",
+                  "n/a",
+                  ""
+                ]
+              ],
+              "footer": [
+                "Total",
+                "12330",
+                "9%",
+                ""
+              ],
+              "zebra": true,
+              "emphasisRow": 2,
+              "format": "currency"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_18_compare",
+            "type": "tls.d.compare-table",
+            "props": {
+              "options": [
+                "Ours",
+                "Vendor A",
+                "Vendor B"
+              ],
+              "criteria": [
+                "Works offline",
+                "Single sign-on",
+                "Open API",
+                "Priority support",
+                "Audit log",
+                "Ease of use"
+              ],
+              "cells": [
+                [
+                  "yes",
+                  "no",
+                  "partial"
+                ],
+                [
+                  "yes",
+                  "yes",
+                  "no"
+                ],
+                [
+                  "yes",
+                  "partial",
+                  "yes"
+                ],
+                [
+                  "yes",
+                  "no",
+                  "no"
+                ],
+                [
+                  "yes",
+                  "yes",
+                  "partial"
+                ],
+                [
+                  "5",
+                  "3",
+                  "2"
+                ]
+              ],
+              "winner": 0
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_19",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_19_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 tables, more",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_19_score_pill",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Revenue",
+                  "value": "$4.2M",
+                  "target": "$4.0M",
+                  "status": "good"
+                },
+                {
+                  "label": "Churn",
+                  "value": "3.1%",
+                  "target": "2.5%",
+                  "status": "watch"
+                },
+                {
+                  "label": "NPS",
+                  "value": "41",
+                  "target": "50",
+                  "status": "bad"
+                },
+                {
+                  "label": "Uptime",
+                  "value": "99.97%",
+                  "target": "99.9%",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "pill",
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_19_ranking",
+            "type": "tls.d.ranking",
+            "props": {
+              "items": [
+                {
+                  "label": "Aurora Pro",
+                  "value": 4820,
+                  "note": "Enterprise"
+                },
+                {
+                  "label": "Beacon",
+                  "value": 3910
+                },
+                {
+                  "label": "Cobalt Lite",
+                  "value": 2740
+                },
+                {
+                  "label": "Drift",
+                  "value": 1980
+                },
+                {
+                  "label": "Ember",
+                  "value": 1210
+                }
+              ],
+              "format": "compact"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_19_heatmap",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Mon",
+                "Tue",
+                "Wed",
+                "Thu",
+                "Fri"
+              ],
+              "cols": [
+                "9am",
+                "11am",
+                "1pm",
+                "3pm",
+                "5pm"
+              ],
+              "values": [
+                [
+                  12,
+                  30,
+                  22,
+                  18,
+                  6
+                ],
+                [
+                  15,
+                  42,
+                  35,
+                  24,
+                  9
+                ],
+                [
+                  18,
+                  55,
+                  48,
+                  31,
+                  12
+                ],
+                [
+                  14,
+                  38,
+                  41,
+                  27,
+                  10
+                ],
+                [
+                  9,
+                  21,
+                  19,
+                  12,
+                  4
+                ]
+              ]
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_19_table_ck",
+            "type": "tls.d.table",
+            "props": {
+              "columns": [
+                {
+                  "label": "Plan"
+                },
+                {
+                  "label": "SSO",
+                  "kind": "check"
+                },
+                {
+                  "label": "Support",
+                  "kind": "rating"
+                },
+                {
+                  "label": "Seats",
+                  "kind": "number"
+                }
+              ],
+              "rows": [
+                [
+                  "Starter",
+                  "no",
+                  "2",
+                  "5"
+                ],
+                [
+                  "Team",
+                  "partial",
+                  "3",
+                  "25"
+                ],
+                [
+                  "Business",
+                  "yes",
+                  "4",
+                  "100"
+                ],
+                [
+                  "Enterprise",
+                  "yes",
+                  "5",
+                  "1000"
+                ]
+              ],
+              "density": "compact",
+              "header": "bold",
+              "rules": "horizontal"
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_19_score_bar",
+            "type": "tls.d.scorecard",
+            "props": {
+              "items": [
+                {
+                  "label": "Onboarding time",
+                  "value": "4 days",
+                  "target": "5 days",
+                  "status": "good",
+                  "note": "Down from 9"
+                },
+                {
+                  "label": "Ticket backlog",
+                  "value": "212",
+                  "target": "150",
+                  "status": "bad",
+                  "note": "Hiring in progress"
+                },
+                {
+                  "label": "Release cadence",
+                  "value": "2 / wk",
+                  "target": "2 / wk",
+                  "status": "good"
+                }
+              ],
+              "statusStyle": "bar",
+              "showTarget": false,
+              "showNote": false
+            },
+            "motion": {
+              "preset": "stagger-lines",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_19_heat_div",
+            "type": "tls.d.heatmap",
+            "props": {
+              "rows": [
+                "Alpha",
+                "Beta",
+                "Gamma",
+                "Delta"
+              ],
+              "cols": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "values": [
+                [
+                  8,
+                  3,
+                  -2,
+                  -6
+                ],
+                [
+                  5,
+                  -1,
+                  4,
+                  9
+                ],
+                [
+                  -7,
+                  -4,
+                  0,
+                  2
+                ],
+                [
+                  1,
+                  6,
+                  -3,
+                  5
+                ]
+              ],
+              "ramp": "diverging"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_20",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_20_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P2 pricing",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_20_pricing",
+            "type": "tls.d.pricing",
+            "props": {
+              "plans": [
+                {
+                  "name": "Starter",
+                  "price": "Free",
+                  "description": "For trying things out",
+                  "features": [
+                    "1 project",
+                    "Community support",
+                    "Basic analytics"
+                  ],
+                  "cta": "Start free"
+                },
+                {
+                  "name": "Team",
+                  "price": "$29",
+                  "period": "/ month",
+                  "description": "For growing teams",
+                  "features": [
+                    "Unlimited projects",
+                    "Priority support",
+                    "Advanced analytics",
+                    "Shared workspaces"
+                  ],
+                  "cta": "Start trial",
+                  "featured": true
+                },
+                {
+                  "name": "Business",
+                  "price": "$99",
+                  "period": "/ month",
+                  "description": "For whole organisations",
+                  "features": [
+                    "SSO and audit log",
+                    "Dedicated manager",
+                    "Custom integrations"
+                  ],
+                  "cta": "Contact sales"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_21",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_21_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Donut fixed: 100, 50/50, 25/75, four slices, 70/20/10, 6/94",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_21_d1",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 100,
+                  "color": "accent"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_21_d2",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 50,
+                  "color": "accent"
+                },
+                {
+                  "value": 50,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 4
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_21_d3",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 25,
+                  "color": "accent"
+                },
+                {
+                  "value": 75,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_21_d4",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 30,
+                  "color": "accent"
+                },
+                {
+                  "value": 25,
+                  "color": "accent2"
+                },
+                {
+                  "value": 25,
+                  "color": "positive"
+                },
+                {
+                  "value": 20,
+                  "color": "warning"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 6
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_21_d5",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 70,
+                  "color": "accent"
+                },
+                {
+                  "value": 20,
+                  "color": "accent2"
+                },
+                {
+                  "value": 10,
+                  "color": "positive"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 7
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_21_d6",
+            "type": "tls.d.donut",
+            "props": {
+              "slices": [
+                {
+                  "value": 6,
+                  "color": "accent"
+                },
+                {
+                  "value": 94,
+                  "color": "accent2"
+                }
+              ],
+              "total": 100
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 8
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_22",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_22_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_22_chev1",
+            "type": "tls.g.chevrons",
+            "props": {
+              "steps": [
+                {
+                  "label": "Discover",
+                  "text": "Research the need"
+                },
+                {
+                  "label": "Define",
+                  "text": "Frame the problem"
+                },
+                {
+                  "label": "Design",
+                  "text": "Shape the concept"
+                },
+                {
+                  "label": "Build",
+                  "text": "Make it real"
+                },
+                {
+                  "label": "Launch",
+                  "text": "Release and learn"
+                }
+              ],
+              "currentIndex": 2
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_22_chev2",
+            "type": "tls.g.chevrons",
+            "props": {
+              "steps": [
+                {
+                  "label": "Plan",
+                  "text": "Scope and budget agreed with the whole team"
+                },
+                {
+                  "label": "Do",
+                  "text": "Weekly sprints with a demo each Friday"
+                },
+                {
+                  "label": "Check",
+                  "text": "Measure against the goals we set"
+                }
+              ],
+              "fill": "series",
+              "textPlacement": "below"
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_23",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_23_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process: cycle and funnel",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_23_cycle",
+            "type": "tls.g.cycle",
+            "props": {
+              "steps": [
+                {
+                  "label": "Plan",
+                  "text": "Set the goal",
+                  "icon": "target"
+                },
+                {
+                  "label": "Do",
+                  "text": "Try the change",
+                  "icon": "rocket"
+                },
+                {
+                  "label": "Check",
+                  "text": "Measure it",
+                  "icon": "search"
+                },
+                {
+                  "label": "Act",
+                  "text": "Keep what works",
+                  "icon": "check"
+                }
+              ],
+              "center": "Improve"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_23_funnel",
+            "type": "tls.g.funnel",
+            "props": {
+              "stages": [
+                {
+                  "label": "Aware",
+                  "text": "People who hear about us"
+                },
+                {
+                  "label": "Interested",
+                  "text": "Visit the site and read"
+                },
+                {
+                  "label": "Trial",
+                  "text": "Try the product for free"
+                },
+                {
+                  "label": "Customer",
+                  "text": "Pay and stay"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_24",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_24_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 process: flowchart",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_24_flow",
+            "type": "tls.g.flow",
+            "props": {
+              "nodes": [
+                {
+                  "id": "start",
+                  "label": "New request",
+                  "kind": "start"
+                },
+                {
+                  "id": "valid",
+                  "label": "Valid?",
+                  "kind": "decision"
+                },
+                {
+                  "id": "review",
+                  "label": "Manager review"
+                },
+                {
+                  "id": "fix",
+                  "label": "Ask to fix"
+                },
+                {
+                  "id": "ok",
+                  "label": "Approved?",
+                  "kind": "decision"
+                },
+                {
+                  "id": "done",
+                  "label": "Order placed",
+                  "kind": "end"
+                },
+                {
+                  "id": "no",
+                  "label": "Rejected",
+                  "kind": "end"
+                }
+              ],
+              "edges": [
+                {
+                  "from": "start",
+                  "to": "valid"
+                },
+                {
+                  "from": "valid",
+                  "to": "review",
+                  "label": "Yes"
+                },
+                {
+                  "from": "valid",
+                  "to": "fix",
+                  "label": "No"
+                },
+                {
+                  "from": "fix",
+                  "to": "start"
+                },
+                {
+                  "from": "review",
+                  "to": "ok"
+                },
+                {
+                  "from": "ok",
+                  "to": "done",
+                  "label": "Yes"
+                },
+                {
+                  "from": "ok",
+                  "to": "no",
+                  "label": "No"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_25",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_25_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 timeline",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_25_timeline",
+            "type": "tls.g.timeline",
+            "props": {
+              "events": [
+                {
+                  "date": "2019",
+                  "title": "Founded",
+                  "text": "Two founders and a prototype"
+                },
+                {
+                  "date": "2020",
+                  "title": "First customers",
+                  "text": "Ten pilots go live"
+                },
+                {
+                  "date": "2021",
+                  "title": "Series A",
+                  "text": "Team grows to thirty"
+                },
+                {
+                  "date": "2022",
+                  "title": "Platform 2.0",
+                  "text": "A rebuilt core and open API"
+                },
+                {
+                  "date": "2023",
+                  "title": "Global launch",
+                  "text": "Available in twelve countries"
+                },
+                {
+                  "date": "2024",
+                  "title": "Profitable",
+                  "text": "First full year in the black"
+                }
+              ],
+              "alternate": true,
+              "nowIndex": 3,
+              "nodeStyle": "number"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_26",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_26_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 timeline: vertical and milestones",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_26_tl_v",
+            "type": "tls.g.timeline",
+            "props": {
+              "events": [
+                {
+                  "date": "Mon",
+                  "title": "Kick-off",
+                  "text": "Goals and roles"
+                },
+                {
+                  "date": "Tue",
+                  "title": "Workshop",
+                  "text": "Map the journey"
+                },
+                {
+                  "date": "Wed",
+                  "title": "Prototype",
+                  "text": "Clickable draft"
+                },
+                {
+                  "date": "Thu",
+                  "title": "Test",
+                  "text": "Five user sessions"
+                }
+              ],
+              "axis": "vertical",
+              "alternate": false,
+              "nodeStyle": "dot"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_26_ms_v",
+            "type": "tls.g.milestones",
+            "props": {
+              "items": [
+                {
+                  "date": "Jan",
+                  "label": "Kick-off",
+                  "done": true
+                },
+                {
+                  "date": "Mar",
+                  "label": "Prototype",
+                  "done": true
+                },
+                {
+                  "date": "Jun",
+                  "label": "Beta release"
+                },
+                {
+                  "date": "Sep",
+                  "label": "Launch"
+                }
+              ],
+              "axis": "vertical",
+              "labels": "below"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_27",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_27_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 roadmap",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_27_roadmap",
+            "type": "tls.g.roadmap",
+            "props": {
+              "periods": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "lanes": [
+                {
+                  "name": "Product",
+                  "items": [
+                    {
+                      "label": "Redesign",
+                      "start": 0,
+                      "end": 1,
+                      "status": "done"
+                    },
+                    {
+                      "label": "Mobile app",
+                      "start": 1.5,
+                      "end": 3,
+                      "status": "active"
+                    }
+                  ]
+                },
+                {
+                  "name": "Platform",
+                  "items": [
+                    {
+                      "label": "Migration",
+                      "start": 0.5,
+                      "end": 2,
+                      "status": "active"
+                    },
+                    {
+                      "label": "Scale-out",
+                      "start": 3,
+                      "end": 3,
+                      "status": "planned"
+                    },
+                    {
+                      "label": "Audit",
+                      "start": 1,
+                      "end": 2,
+                      "status": "risk"
+                    }
+                  ]
+                },
+                {
+                  "name": "Growth",
+                  "items": [
+                    {
+                      "label": "Launch",
+                      "start": 2,
+                      "end": 2.5,
+                      "status": "planned"
+                    }
+                  ]
+                }
+              ],
+              "todayAt": 1.5
+            },
+            "motion": {
+              "preset": "grow-bars-x",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_28",
+      "layout": "blank",
+      "role": "content",
+      "regions": {
+        "content": [
+          {
+            "id": "b_28_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 milestones",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          },
+          {
+            "id": "b_28_ms",
+            "type": "tls.g.milestones",
+            "props": {
+              "items": [
+                {
+                  "date": "Jan",
+                  "label": "Kick-off",
+                  "done": true
+                },
+                {
+                  "date": "Mar",
+                  "label": "Prototype",
+                  "done": true
+                },
+                {
+                  "date": "Jun",
+                  "label": "Beta release"
+                },
+                {
+                  "date": "Sep",
+                  "label": "Launch"
+                },
+                {
+                  "date": "Dec",
+                  "label": "Review"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_29",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_29_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: tree and pyramid",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_29_tree",
+            "type": "tls.g.tree",
+            "props": {
+              "root": {
+                "label": "CEO",
+                "sub": "Strategy",
+                "children": [
+                  {
+                    "label": "Product",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Design"
+                      },
+                      {
+                        "label": "Research"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Engineering",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Platform"
+                      },
+                      {
+                        "label": "Apps"
+                      },
+                      {
+                        "label": "Data"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Growth",
+                    "sub": "VP",
+                    "children": [
+                      {
+                        "label": "Marketing"
+                      },
+                      {
+                        "label": "Sales"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "direction": "TB",
+              "nodeStyle": "card"
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_29_pyr",
+            "type": "tls.g.pyramid",
+            "props": {
+              "levels": [
+                {
+                  "label": "Self-actualisation",
+                  "text": "Realise your potential"
+                },
+                {
+                  "label": "Esteem",
+                  "text": "Respect and recognition"
+                },
+                {
+                  "label": "Belonging",
+                  "text": "Friends, family, community"
+                },
+                {
+                  "label": "Safety",
+                  "text": "Security and stability"
+                },
+                {
+                  "label": "Physiological",
+                  "text": "Food, water, sleep"
+                }
+              ],
+              "notes": "side"
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_30",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_30_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: org chart, left to right",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_30_tree",
+            "type": "tls.g.tree",
+            "props": {
+              "root": {
+                "label": "Company",
+                "sub": "Holding",
+                "children": [
+                  {
+                    "label": "Europe",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "Germany"
+                      },
+                      {
+                        "label": "France"
+                      },
+                      {
+                        "label": "Italy"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Americas",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "USA"
+                      },
+                      {
+                        "label": "Brazil"
+                      }
+                    ]
+                  },
+                  {
+                    "label": "Asia",
+                    "sub": "Region",
+                    "children": [
+                      {
+                        "label": "Japan"
+                      },
+                      {
+                        "label": "India"
+                      },
+                      {
+                        "label": "Vietnam"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "direction": "LR",
+              "nodeStyle": "pill"
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_31",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_31_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: effort and impact",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_31_matrix",
+            "type": "tls.g.matrix-2x2",
+            "props": {
+              "xAxis": {
+                "low": "Low effort",
+                "high": "High effort",
+                "title": "Effort"
+              },
+              "yAxis": {
+                "low": "Low impact",
+                "high": "High impact",
+                "title": "Impact"
+              },
+              "quadrants": [
+                {
+                  "label": "Quick wins",
+                  "text": "Do these first"
+                },
+                {
+                  "label": "Big bets",
+                  "text": "Plan and fund"
+                },
+                {
+                  "label": "Fill-ins",
+                  "text": "Only if time allows"
+                },
+                {
+                  "label": "Money pits",
+                  "text": "Avoid"
+                }
+              ],
+              "items": [
+                {
+                  "label": "Onboarding",
+                  "x": 0.2,
+                  "y": 0.8
+                },
+                {
+                  "label": "New pricing",
+                  "x": 0.7,
+                  "y": 0.78
+                },
+                {
+                  "label": "Dark mode",
+                  "x": 0.3,
+                  "y": 0.3
+                },
+                {
+                  "label": "Rewrite",
+                  "x": 0.85,
+                  "y": 0.2
+                }
+              ],
+              "highlight": "TL"
+            },
+            "motion": {
+              "preset": "draw-axis-then-nodes",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_32",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_32_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: SWOT",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_32_swot",
+            "type": "tls.g.swot",
+            "props": {
+              "strengths": [
+                "Strong brand",
+                "Loyal customers",
+                "Lean team"
+              ],
+              "weaknesses": [
+                "Small budget",
+                "One key supplier"
+              ],
+              "opportunities": [
+                "New markets",
+                "Partner channels",
+                "AI tooling"
+              ],
+              "threats": [
+                "New entrants",
+                "Price pressure"
+              ],
+              "style": "tinted"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_33",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_33_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: pros and cons, venn",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_33_pc",
+            "type": "tls.g.pros-cons",
+            "props": {
+              "pros": [
+                "Faster to launch",
+                "Lower running cost",
+                "Scales with demand"
+              ],
+              "cons": [
+                "Less control",
+                "Vendor lock-in"
+              ],
+              "verdict": "Worth it if speed matters more than control.",
+              "style": "cards"
+            },
+            "motion": {
+              "preset": "split-in",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_33_venn",
+            "type": "tls.g.venn",
+            "props": {
+              "sets": [
+                {
+                  "label": "Skills",
+                  "text": "What we are good at"
+                },
+                {
+                  "label": "Passion",
+                  "text": "What we love"
+                },
+                {
+                  "label": "Market",
+                  "text": "What people pay for"
+                }
+              ],
+              "overlap": "Sweet spot",
+              "pairOverlaps": [
+                "Craft",
+                "Demand",
+                "Career"
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_34",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_34_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: diagrams nested in cards",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_34_cardl",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_34_tl",
+                  "type": "tls.g.timeline",
+                  "props": {
+                    "events": [
+                      {
+                        "date": "2022",
+                        "title": "Founded"
+                      },
+                      {
+                        "date": "2023",
+                        "title": "Launch"
+                      },
+                      {
+                        "date": "2025",
+                        "title": "Scale"
+                      }
+                    ],
+                    "axis": "horizontal"
+                  },
+                  "motion": {
+                    "preset": "draw-axis-then-nodes",
+                    "order": 2
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_34_cardr",
+            "type": "tls.l.card",
+            "props": {
+              "padding": "md",
+              "children": [
+                {
+                  "id": "b_34_fn",
+                  "type": "tls.g.funnel",
+                  "props": {
+                    "stages": [
+                      {
+                        "label": "Aware"
+                      },
+                      {
+                        "label": "Interested"
+                      },
+                      {
+                        "label": "Customer"
+                      }
+                    ],
+                    "notes": "inside"
+                  },
+                  "motion": {
+                    "preset": "stagger-children",
+                    "order": 2
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_35",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_35_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 strategy: SWOT with big letters",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_35_swot",
+            "type": "tls.g.swot",
+            "props": {
+              "strengths": [
+                "Strong brand",
+                "Loyal customers"
+              ],
+              "weaknesses": [
+                "Small budget",
+                "One supplier"
+              ],
+              "opportunities": [
+                "New markets",
+                "Partners"
+              ],
+              "threats": [
+                "New entrants",
+                "Price pressure"
+              ],
+              "style": "outline",
+              "letters": true
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_36",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_36_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 relationship: hub and spoke",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_36_hub",
+            "type": "tls.g.hub-spoke",
+            "props": {
+              "hub": {
+                "label": "Platform",
+                "icon": "layers"
+              },
+              "spokes": [
+                {
+                  "label": "Web app",
+                  "text": "Customer front door",
+                  "icon": "globe"
+                },
+                {
+                  "label": "Mobile",
+                  "text": "iOS and Android",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Payments",
+                  "text": "Cards and invoices",
+                  "icon": "credit-card"
+                },
+                {
+                  "label": "Analytics",
+                  "text": "Dashboards",
+                  "icon": "chart-bar"
+                },
+                {
+                  "label": "Support",
+                  "text": "Help desk",
+                  "icon": "message"
+                },
+                {
+                  "label": "Partners",
+                  "text": "Public API",
+                  "icon": "handshake"
+                }
+              ],
+              "layout": "circle",
+              "connector": "arrow-out"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_36_hub2",
+            "type": "tls.g.hub-spoke",
+            "props": {
+              "hub": {
+                "label": "Core"
+              },
+              "spokes": [
+                {
+                  "label": "Web app",
+                  "text": "Customer front door",
+                  "icon": "globe"
+                },
+                {
+                  "label": "Mobile",
+                  "text": "iOS and Android",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Payments",
+                  "text": "Cards and invoices",
+                  "icon": "credit-card"
+                },
+                {
+                  "label": "Analytics",
+                  "text": "Dashboards",
+                  "icon": "chart-bar"
+                },
+                {
+                  "label": "Support",
+                  "text": "Help desk",
+                  "icon": "message"
+                }
+              ],
+              "layout": "half",
+              "connector": "line"
+            },
+            "motion": {
+              "preset": "sweep-nodes",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_37",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_37_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: layers and breakdown",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_37_layers",
+            "type": "tls.g.layers",
+            "props": {
+              "layers": [
+                {
+                  "label": "Application",
+                  "text": "What users touch",
+                  "icon": "smartphone"
+                },
+                {
+                  "label": "Services",
+                  "text": "Business logic and APIs",
+                  "icon": "server"
+                },
+                {
+                  "label": "Data",
+                  "text": "Storage and pipelines",
+                  "icon": "database"
+                },
+                {
+                  "label": "Infrastructure",
+                  "text": "Compute, network, security",
+                  "icon": "cloud"
+                }
+              ],
+              "style": "perspective",
+              "notes": "side"
+            },
+            "motion": {
+              "preset": "reveal-down",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_37_bd",
+            "type": "tls.g.breakdown",
+            "props": {
+              "whole": {
+                "label": "Total cost",
+                "value": "$120k"
+              },
+              "parts": [
+                {
+                  "label": "People",
+                  "value": "$70k",
+                  "note": "Four engineers"
+                },
+                {
+                  "label": "Cloud",
+                  "value": "$30k",
+                  "note": "Hosting and data"
+                },
+                {
+                  "label": "Tools",
+                  "value": "$20k"
+                }
+              ],
+              "direction": "LR",
+              "showShare": true
+            },
+            "motion": {
+              "preset": "stagger-children",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_38",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_38_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 comparison: before and after",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_38_ba",
+            "type": "tls.g.before-after",
+            "props": {
+              "before": {
+                "label": "Before",
+                "title": "Manual reports",
+                "text": "Copy and paste data every Monday. Three hours a week, and the numbers are stale by Tuesday."
+              },
+              "after": {
+                "label": "After",
+                "title": "Live dashboard",
+                "text": "Always up to date and shared with one link. Nobody builds a report by hand any more."
+              },
+              "arrow": "arrow",
+              "emphasis": "after"
+            },
+            "motion": {
+              "preset": "split-in",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_39",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_39_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 hierarchy: mind map",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_39_mm",
+            "type": "tls.g.mindmap",
+            "props": {
+              "center": "Launch plan",
+              "branches": [
+                {
+                  "label": "Product",
+                  "children": [
+                    "Scope",
+                    "Quality",
+                    "Roadmap"
+                  ]
+                },
+                {
+                  "label": "Marketing",
+                  "children": [
+                    "Channels",
+                    "Message"
+                  ]
+                },
+                {
+                  "label": "Sales",
+                  "children": [
+                    "Pricing",
+                    "Pipeline",
+                    "Partners"
+                  ]
+                },
+                {
+                  "label": "Support",
+                  "children": [
+                    "Docs",
+                    "Training"
+                  ]
+                },
+                {
+                  "label": "People",
+                  "children": [
+                    "Hiring",
+                    "Onboarding"
+                  ]
+                }
+              ],
+              "balance": "both",
+              "curve": true
+            },
+            "motion": {
+              "preset": "grow-branches",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_40",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_40_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 relationship: bracket and iceberg",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_40_br",
+            "type": "tls.g.bracket",
+            "props": {
+              "label": "Core team",
+              "items": [
+                "Product lead",
+                "Tech lead",
+                "Design lead",
+                "Data lead"
+              ],
+              "side": "right",
+              "style": "brace"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_40_ice",
+            "type": "tls.g.iceberg",
+            "props": {
+              "above": {
+                "label": "What we see",
+                "items": [
+                  "Late deliveries",
+                  "Rising churn"
+                ]
+              },
+              "below": {
+                "label": "What causes it",
+                "items": [
+                  "Unclear ownership",
+                  "Manual handoffs",
+                  "Old tooling",
+                  "No shared metrics"
+                ]
+              },
+              "waterline": "third"
+            },
+            "motion": {
+              "preset": "reveal-down",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_41",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_41_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P3 decoration: arrows",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_41_a1",
+            "type": "tls.g.arrow",
+            "props": {
+              "label": "Then",
+              "kind": "curved",
+              "direction": "right",
+              "heads": "end",
+              "weight": "md",
+              "tone": "accent"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_41_a2",
+            "type": "tls.g.arrow",
+            "props": {
+              "label": "Feedback",
+              "kind": "elbow",
+              "direction": "right",
+              "heads": "both",
+              "weight": "lg",
+              "tone": "text"
+            },
+            "motion": {
+              "preset": "draw-path",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_42",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_42_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 gallery: image grid and compare",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_42_grid",
+            "type": "tls.m.image-grid",
+            "props": {
+              "images": [
+                {
+                  "image": "/demo/photo-1.svg",
+                  "alt": "Sunrise over orange hills",
+                  "caption": "Sunrise"
+                },
+                {
+                  "image": "/demo/photo-2.svg",
+                  "alt": "Blue hills at dusk",
+                  "caption": "Dusk"
+                },
+                {
+                  "image": "/demo/photo-3.svg",
+                  "alt": "Violet mountain range",
+                  "caption": "Peaks"
+                },
+                {
+                  "image": "/demo/photo-4.svg",
+                  "alt": "Green valley in the morning",
+                  "caption": "Valley"
+                },
+                {
+                  "image": "asset-not-uploaded-yet",
+                  "alt": "Photo not uploaded yet",
+                  "caption": "Missing"
+                }
+              ],
+              "pattern": "feature-left",
+              "captions": "overlay",
+              "gap": "md",
+              "radius": "md"
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_42_cmp",
+            "type": "tls.m.image-compare",
+            "props": {
+              "before": {
+                "image": "/demo/before.svg",
+                "alt": "Dim room with grey sofa",
+                "label": "Before"
+              },
+              "after": {
+                "image": "/demo/after.svg",
+                "alt": "Bright room with coral sofa and plant",
+                "label": "After"
+              },
+              "mode": "split",
+              "divider": true
+            },
+            "motion": {
+              "preset": "wipe-x",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_43",
+      "layout": "three-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_43_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 people: profile card, avatars, group",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "a": [
+          {
+            "id": "b_43_card",
+            "type": "tls.c.profile-card",
+            "props": {
+              "image": "/demo/portrait-1.svg",
+              "name": "Dr. Tran Thi Lan",
+              "role": "Head of Data Science",
+              "bio": "Leads the applied analytics group and teaches statistics for engineers.",
+              "contact": "lan.tran@example.edu",
+              "layout": "stacked",
+              "tone": "alt"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "b": [
+          {
+            "id": "b_43_stack1",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_av1",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-2.svg",
+                    "name": "Nguyen Van An",
+                    "role": "Senior lecturer",
+                    "layout": "inline",
+                    "size": "lg",
+                    "ring": true
+                  }
+                },
+                {
+                  "id": "b_43_av2",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "name": "Đặng Ánh Tuyết",
+                    "role": "Student representative",
+                    "layout": "inline",
+                    "size": "lg"
+                  }
+                },
+                {
+                  "id": "b_43_av3",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-3.svg",
+                    "name": "Linh",
+                    "role": "Teaching assistant",
+                    "layout": "inline",
+                    "size": "lg",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "c": [
+          {
+            "id": "b_43_stack2",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "lg",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_43_grp",
+                  "type": "tls.m.avatar-group",
+                  "props": {
+                    "people": [
+                      {
+                        "image": "/demo/portrait-1.svg",
+                        "name": "Lan Tran"
+                      },
+                      {
+                        "image": "/demo/portrait-2.svg",
+                        "name": "An Nguyen"
+                      },
+                      {
+                        "image": "/demo/portrait-3.svg",
+                        "name": "Linh Pham"
+                      },
+                      {
+                        "name": "Bao Chau"
+                      },
+                      {
+                        "image": "/demo/portrait-4.svg",
+                        "name": "Minh Anh"
+                      },
+                      {
+                        "name": "Quang Huy"
+                      },
+                      {
+                        "image": "/demo/portrait-5.svg",
+                        "name": "Thu Ha"
+                      },
+                      {
+                        "name": "Ngoc Han"
+                      }
+                    ],
+                    "max": 5,
+                    "size": "lg",
+                    "caption": "8 contributors"
+                  }
+                },
+                {
+                  "id": "b_43_av4",
+                  "type": "tls.m.avatar",
+                  "props": {
+                    "image": "/demo/portrait-6.svg",
+                    "name": "Hoang Minh",
+                    "role": "Project owner",
+                    "size": "xl",
+                    "shape": "rounded"
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_44",
+      "layout": "two-column",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_44_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 brand: logo wall, logo and device mock",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "b_44_wall",
+            "type": "tls.m.logo-wall",
+            "props": {
+              "heading": "Trusted by",
+              "logos": [
+                {
+                  "image": "/demo/logo-1.svg",
+                  "alt": "Northwind",
+                  "ratio": 4
+                },
+                {
+                  "image": "/demo/logo-2.svg",
+                  "alt": "Globex",
+                  "ratio": 1
+                },
+                {
+                  "image": "/demo/logo-3.svg",
+                  "alt": "Initech",
+                  "ratio": 3
+                },
+                {
+                  "image": "/demo/logo-4.svg",
+                  "alt": "Umbrella",
+                  "ratio": 2
+                },
+                {
+                  "image": "/demo/logo-5.svg",
+                  "alt": "Hooli",
+                  "ratio": 1.5
+                },
+                {
+                  "image": "/demo/logo-6.svg",
+                  "alt": "Stark",
+                  "ratio": 3
+                }
+              ],
+              "uniform": "area",
+              "plates": true
+            },
+            "motion": {
+              "preset": "stagger-grid",
+              "order": 2
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "b_44_right",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "md",
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "b_44_logo",
+                  "type": "tls.m.logo",
+                  "props": {
+                    "image": "/demo/logo-1.svg",
+                    "alt": "Northwind",
+                    "ratio": 4,
+                    "maxHeight": "lg",
+                    "plate": "alt"
+                  }
+                },
+                {
+                  "id": "b_44_dev",
+                  "type": "tls.m.device-mock",
+                  "props": {
+                    "image": "/demo/screenshot-1.svg",
+                    "alt": "Analytics dashboard with cards and a bar chart",
+                    "url": "app.example.edu/dashboard",
+                    "device": "browser",
+                    "tone": "light",
+                    "shadow": true
+                  }
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_45",
+      "layout": "grid-3x2",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_45_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 decoration: six shapes",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "b_45_a",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "blob",
+              "tone": "accent",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 7
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 2
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "b_45_b",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "arc",
+              "tone": "accent2",
+              "opacity": "medium",
+              "rotation": 30,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 3
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "b_45_c",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "ring",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 4
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "b_45_d",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "dots",
+              "tone": "accent2",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 5
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "b_45_e",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "wave",
+              "tone": "accent",
+              "opacity": "medium",
+              "rotation": 0,
+              "seed": 4
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 6
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "b_45_f",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "corner",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 90,
+              "seed": 1
+            },
+            "motion": {
+              "preset": "field-in",
+              "order": 7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sl_46",
+      "layout": "four-up",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_46_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "P4 pattern: dots, grid, lines, diagonal",
+              "size": "heading"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "q1": [
+          {
+            "id": "b_46_a",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "dots",
+              "scale": "md",
+              "tone": "accent",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ],
+        "q2": [
+          {
+            "id": "b_46_b",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "grid",
+              "scale": "md",
+              "tone": "line",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 3
+            }
+          }
+        ],
+        "q3": [
+          {
+            "id": "b_46_c",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "lines",
+              "scale": "sm",
+              "tone": "accent",
+              "opacity": "soft"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 4
+            }
+          }
+        ],
+        "q4": [
+          {
+            "id": "b_46_d",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "diagonal",
+              "scale": "md",
+              "tone": "line",
+              "opacity": "medium"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 5
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

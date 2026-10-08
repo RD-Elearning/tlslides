@@ -1,4 +1,4 @@
-import type { SlideBackground, TDDocument, TDInsertableContent } from '~types'
+import type { ComponentShape, SlideBackground, TDDocument, TDInsertableContent } from '~types'
 
 /**
  * A slide, as the `app.deck` facade (Phase 14) exposes it — a narrow, canvas-agnostic projection
@@ -55,6 +55,9 @@ export interface ThumbnailOptions {
    *  here, since sizing a `<img>`/wrapper element is entirely the host's call. For an actual
    *  raster image, see `Deck.exportSlidePng` (browser-only — see its own doc comment for why). */
   format?: 'dataUrl' | 'svg'
+  /** When supplied, `ComponentShape`s are rendered through this callback instead of the dashed
+   *  placeholder — see `RenderPageToSvgOptions.blocks` for the callback's contract and semantics. */
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 /** Options for `Deck.exportSlidePng`. */
@@ -62,6 +65,9 @@ export interface RenderSlidePngOptions {
   /** Multiplies the slide's own pixel dimensions before rasterizing. Defaults to `2` (a
    *  retina-sharp result), matching `TldrawApp.exportShapesAs`'s own PNG export. */
   scale?: number
+  /** When supplied, `ComponentShape`s are rendered through this callback instead of the dashed
+   *  placeholder — see `RenderPageToSvgOptions.blocks` for the callback's contract and semantics. */
+  blocks?: (shape: ComponentShape) => string | undefined
 }
 
 /** Options for `Deck.present`. */

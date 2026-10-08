@@ -13,7 +13,7 @@
   "scripts": {
     "start:vscode": "node scripts/dev.mjs -w",
     "build": "node scripts/build.mjs",
-    "build:apps": "yarn build"
+    "build:apps": "pnpm build"
   },
   "devDependencies": {
     "@tlslides/tldraw": "*",

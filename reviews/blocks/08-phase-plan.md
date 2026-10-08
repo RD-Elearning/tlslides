@@ -568,4 +568,69 @@ against the way a slide background does. Recorded in
 **Verified:** 99/99 suites, 726 passing (up from 95/639) · typecheck byte-identical to the
 10-error baseline · eslint `src/blocks` 0 errors, 0 warnings outside spec files · the 1800-sample
 sweep re-run independently · `tokens.png` screenshot inspected.
+
+### A1 notes — layout engine core (backlog task)
+
+`blocks/layout/` with four modules: `box-model.ts` (insetBox, anchorBox, splitBox), `measure.ts`
+(MeasureTextProvider interface + estimateMetrics), `layout-child.ts` (createLayoutContext factory +
+layoutChild with depth cap at 4), and barrel `index.ts`. Exported from `blocks/index.ts`.
+
+**One bug found in review: multi-line baselines were not cumulative.** Every `TextLine.baseline`
+was set to `lineHeight * 0.8` regardless of line index, so all lines in a multi-line text had
+identical baseline values (e.g. [29, 29, 29] for 3 lines). The `TextLine.baseline` doc says
+"relative to the text node's origin" — cumulative from (0,0) of the text box. Fixed to
+`Math.round(i * lineHeight + lineHeight * 0.8)`, producing [29, 66, 102] for the same input. The
+renderers (A2, A3) haven't been built yet so no consumer was broken, but the contract was wrong.
+
+**Scope cuts, named as follow-ups:**
+- `canvasMetrics` provider (browser, uses `CanvasRenderingContext2D.measureText`, opt-in) — deferred
+  to P23.
+- `tableMetrics` provider (Node, bundled per-face advance-width tables) — deferred to P23.
+- Deck-level provider decision (P23 makes it a deck-level choice, not per-call) — deferred to P23.
+
+**Verified:** 100/100 suites, 771 passing (up from 99/726) · typecheck 0 errors in non-spec source
+(down from 10 — the pre-existing spec-file errors appear to have been resolved) · eslint `src/blocks`
+0 errors, 27 warnings (all in spec files).
+
+---
+
+## Demo backlog — Q0 through Q20 (completion notes)
+
+A vertical slice consolidating work from planned phases P20–P24, P29–P32 into one shippable product: one `DeckSpec` JSON rendering as both an edit mode and an animated read-only mode, round-tripping back to JSON. Full backlog and task breakdowns in `BACKLOG-demo.md`.
+
+**Q0:** Typecheck instrument — fixed the broken tsc invocation in CONTINUE.md §4. Baselines recorded: Jest 46 suites / 1000 passed, typecheck 0 errors in non-spec source, eslint 0 errors.
+
+**Q1–Q5 (Spine repair):** Layout coordinate contract fixed (`layoutChild` now returns a group with explicit `box.x/y`, child relative to parent), `style.scale` wired into measurement and renderers, library lint cleanup, deck tokens in the editor (not fabricated defaults), parity harness hardened to check all 8 node kinds against actual DOM output.
+
+**Q6 (Schema v1):** `DeckSpec` with required `version`, `id`, `title`; `theme: string | DeckTheme`; `aspect` as a union; `SlideSpec.regions: Record<string, BlockSpec[]>` (multiple blocks per region) + `free[]` for positioned blocks; `BlockSpec.id` required; `TDPage.layout` and `TDPage.slideSpecId` written by the compiler.
+
+**Q7–Q9 (Foundation):** `compileSlide` v2 stacks blocks in regions, emits findings on unknown regions (with `nearestName` longest-prefix suggestion), returns layout id and spec id. `documentToDeckSpec` reverses it — a block that stays in its region round-trips semantic, one dragged into `free[]` round-trips with explicit coordinates. `deckLayoutContext` unifies three consumers (editor, viewer, headless export).
+
+**Q10–Q13 (Minimum block set):** 14 layout containers, 9 text blocks (title, subtitle, kicker, body, bullets, caption, hero-number, quote, takeaway), 1 data block (bar chart), chart engine (vertical bars, linear scale, series color assignment). All 24 blocks pass parity harness on all 8 node kinds across 3 widths.
+
+**Q14 (DeckViewer):** Editor-free read-only viewer component — `compileSlide` → `layout()` → `renderNodeToDom` + motion driver, no TldrawApp/MobX/canvas. The old editor-backed component is now exported as `<DeckEmbed>`. **Bug repaired in review:** Q14 was marked done but shipped the old editor component; the real viewer was never written. Import-graph test now walks the module graph transitively.
+
+**Q15 (Edit mode):** Edit route in Next.js sample loads `DeckSpec`, opens in `<Tldraw>`, Save calls `documentToDeckSpec` + PUT, reload shows the edit persisted. Round trip visible in a side-by-side comparison panel.
+
+**Q16 (Build-step motion):** Block-level reveal (`effect`, `trigger`, `order` on `BlockSpec.motion`) compiles to `ShapeAnimation`, drives build-step animation in the editor via `computeBuildSteps` (reused unmodified).
+
+**Q17 (Three-way parity):** Measurement tool for editor / viewer / SVG export geometry — **in progress, result not claimed**. Known visible discrepancy: slide 1's title renders smaller in the editor than the viewer from the same document.
+
+**Q18 (Next.js demo app + mock FastAPI):** Two routes: `/edit/[deckId]` (editor + save) and `/view/[deckId]` (viewer + animation). Mock API route handler at `/api/decks/[deckId]` reads static JSON, PUT stores in memory (no database). 6-slide demo deck with real text, theme id (not hex), layouts, regions, animations.
+
+**Q19 (Validation):** `validateDeckSpec` returns findings on 18 structural rules (unknown block type → nearest by keyword, missing required slot, over budget). `capabilityDigest` generated from `BUILT_IN_BLOCKS` and `SLIDE_LAYOUTS` — never hand-written, cannot drift.
+
+**Q20 (Close out):** This task — `RUN-demo.md` (verified commands from clean checkout), tracker update (README.md baselines and current-state table), phase notes.
+
+**Two tasks repaired after shipping:** Q4 (editor used hardcoded `DEFAULT_TOKENS`, not the deck's real tokens — visible as 3× size mismatch) and Q14 (real viewer never written, old editor component shipped). Both surfaced in 2026-09-17 review comparing implementation against spec. Import-graph test now catches this class of defect.
+
+**Scope cuts, named as follow-ups:**
+- Three-way parity (Q17) measurement is **incomplete** — the infrastructure exists, the test is not yet written.
+- Theme expansion (`theme: "mono-grid"` → full `DeckTheme` on documentToDeckSpec output) **loses the AI's form** on save. Valid per schema, documented as a known gap.
+- Part-level motion (`resolvePartMotion`) compiles but does not play; only block-level entrance reveal works.
+- Export demo (`exportSlidePng`) is not wired to a UI button, though the infrastructure exists.
+- No LLM involved; `validateDeckSpec` and `capabilityDigest` exist but nothing calls a model.
+- The mock API is in-memory only; no database, no auth, resets on server restart.
+
+**Verified:** 148 suites / 1716 passed / 77 todo · typecheck 0 errors in non-spec source · eslint `src/blocks` 0 errors · demo runs end to end (two routes, six slides, animations, round-trip edit/save/reload) — verified by driving a real browser, not by `curl`.
 </content>
