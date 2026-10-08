@@ -120,7 +120,7 @@ letter-spacing / bold in tableMetrics) if found.
 |---|---|---|---|
 | LO0 | done | `3322e42a` | `layout/measure-block.ts` (+ spec, 13 tests). Three probes, path geometry, elastic flag — see Notes. `measuredTotal` reduce fixed + regression test in `slide-compiler.spec.ts` (fails on the old code). |
 | LO1 | done | `3322e42a` | `layout-report.ts` (+ spec, 21 tests, snapshot of demo-deck `sl_03` and `sl_08`). `analyzeSlide`/`analyzeDeck`/`formatLayoutReport`/`layoutMap`, exported from `blocks/index.ts` only. All 95 fixture slides report in ~20 ms/slide. tsc: prod 0, spec 329 (= before). |
-| LO2 | done | (pending) | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
+| LO2 | done | `415d86a6` | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
 | LO3 | todo | | |
 | LO4 | todo | | |
 | LO5 | todo | | |
