@@ -81,6 +81,23 @@ Input: `SlideSpec` (+ tokens/registry/metrics provider, default tableMetrics). O
 overlapping slide yields `layout/overlap` and `text/collision`; a too-long body yields
 `text/overflow` with a numeric fix; text snapshot of one report is committed.
 
+### LO1.5 — Compiler flow fixes (`slide-compiler.ts`)
+The oracle's first findings were compiler bugs, not content problems:
+1. **Column-aware re-flow.** When any region overflowed, pass 2 stacked *all* regions by y, so an
+   overfull `left` pushed `right` below it. A region must only be pushed down by regions above it
+   that horizontally overlap it.
+2. **Fill blocks share a region.** A fill block (chart/image/donut — sizes to its box) stacked
+   with siblings took the full region height and pushed them off the frame (demo `sl_08`: steps
+   916 past the bottom; colorful `sl_06/20/24/25/27/28`: 4 past). Measure the non-fill blocks'
+   natural heights first, then give the fill blocks what is left (≥ `def.size.min`). Pure and
+   deterministic (reuse `measureBlock`'s elastic detection).
+3. **Never silent.** A region that still overflows after 1+2 keeps today's behaviour (stack and
+   push down), and the report flags it.
+
+**Done when:** a unit test per rule (fails on the old compiler); the `collision.spec.ts`
+frame-bounds gate (sl_05 only) is widened to every slide it now passes; fixture finding counts
+before/after recorded here; demo `sl_05`/`sl_08` screenshotted before/after in the real app.
+
 ### LO2 — Layers & intentional overlap
 Additive metadata: `BlockDefinition.layer?: 'backdrop' | 'content' | 'overlay'` (default derived:
 category `decoration` → `backdrop`, else `content`) and `BlockSpec.layer?` instance override.
@@ -120,6 +137,7 @@ letter-spacing / bold in tableMetrics) if found.
 |---|---|---|---|
 | LO0 | done | `3322e42a` | `layout/measure-block.ts` (+ spec, 13 tests). Three probes, path geometry, elastic flag — see Notes. `measuredTotal` reduce fixed + regression test in `slide-compiler.spec.ts` (fails on the old code). |
 | LO1 | done | `3322e42a` | `layout-report.ts` (+ spec, 21 tests, snapshot of demo-deck `sl_03` and `sl_08`). `analyzeSlide`/`analyzeDeck`/`formatLayoutReport`/`layoutMap`, exported from `blocks/index.ts` only. All 95 fixture slides report in ~20 ms/slide. tsc: prod 0, spec 329 (= before). |
+| LO1.5 | done | (this commit) | Column-aware re-flow, fill-aware region sizing; see Notes — LO1.5. |
 | LO2 | done | `415d86a6` | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
 | LO3 | todo | | |
 | LO4 | todo | | |
@@ -259,3 +277,74 @@ tags on block headings (digest snapshot updated).
   belongs with LO5's harness. `turbo run build:packages` not run (dist consumers unchanged).
 - Touched `layout-report.spec.ts` in one line (the LO1 placeholder `expect(b.layer).toBe('content')`
   now expects the definition's layer); `layout-report.spec.ts.snap` not touched by LO2.
+
+### Notes — LO1.5 (2026-10-08)
+
+**What changed (`slide-compiler.ts` only).**
+- `measureRegionBlocks` replaces the two duplicated measuring loops (pass 1 and placement used to
+  lay every block out twice; now once, shared). A single block in a region is untouched. With 2+
+  blocks, a block whose root claims the whole region (`root ≥ region height`) is re-measured
+  with `measureBlock` at the region size:
+  - `elastic` → **fill**: gets `(region − rigid/content siblings − gaps) / #fill`, at least
+    `def.size.min[1]`, never more than its old root;
+  - otherwise → **content** (root = `max(region, content)`, or a block that centres its content,
+    e.g. `tls.g.steps`): its painted height, verified by laying it out at that height and growing
+    by any spill (top inset / card padding), at least `size.min[1]`. If the region has **no** fill
+    block, the leftover is shared among the content blocks instead, so a `title + steps` slide
+    still gives steps the rest of the region (it centres there, as before) — just 100 units
+    shorter so it ends at the region bottom, not 4 past the frame.
+  The probe is only paid for region-claiming blocks in multi-block regions (deterministic, no
+  DOM). `CompileFinding`'s per-block `region/overflow` rule is unchanged.
+- `reflowRegions` (pass 2): regions are visited top to bottom; a region moves down only when a
+  region above it that **horizontally overlaps** it ends lower than its layout box did (overflow,
+  or itself pushed); it then starts at that bottom + `min(gap, layout spacing)` (regions that
+  overlapped vertically in the layout keep their offset). Regions are never moved *up* any more
+  (the old stack closed layout spacing between regions whenever anything overflowed).
+
+**Before → after, all 4 fixture decks (95 slides), `analyzeDeck`, default `table` metrics:**
+
+| code | before | after |
+|---|---|---|
+| error `slide/overflow` | 10 | **0** |
+| warning `region/overflow` | 11 | 3 |
+| warning `region/displaced` | 3 | 1 |
+| info `text/shrunk` | 14 | 14 |
+
+The 3 remaining `region/overflow` are real content-vs-region mismatches, not compiler bugs:
+`tls.c.hero` (317 / 472 tall) in the 128-unit `title` region of the `title` layout (colorful and
+demo `sl_01`), and demo `sl_05`'s 2-line quote (237) in the 140-unit `quote` region. The one
+`region/displaced` is `sl_05`'s attribution: `quote` and `attribution` are *stacked* regions
+(same x/width), so pushing it below the quote is correct — `sl_05` was never a side-by-side case
+(the side-by-side case is now a unit test on `two-column`).
+
+**Tests.** `slide-compiler.spec.ts` "LO1.5 flow fixes" (7 tests; 4 fail on the old compiler, 3
+are guards for unchanged behaviour). `layout-report.spec.ts`: the test that pinned the column
+bug as behaviour now asserts the fix (overflow still reported, `right` not displaced), plus a
+stacked-region `region/displaced` test and a fill-min overflow test (rule 3: 4 bars ×
+`min` 240 > region → `region/overflow` + `slide/overflow`). `sl_08` text snapshot updated (2
+errors, 2 warnings → none). `collision.spec.ts` frame-bounds gate widened from `sl_05` to
+**every slide of every fixture** (ratchet). tsc: prod 0, spec 329 (= before). eslint: 0 errors
+on touched files.
+
+**Visual check** (fixture demo deck served as a temporary `/view/` deck, `next dev -p 5433`,
+temporary `tools/visual` scenario, both removed; `build:packages` run between shots).
+`tools/visual/shots/lo15-{before,after}-sl_{05,08}.png` (git-ignored). `sl_08` before: title +
+a full-height donut, the steps diagram invisible below the frame. After: title, a smaller donut,
+and the 4-step diagram (Analyze → Validate) along the bottom, all inside the frame. `sl_05`:
+identical before/after (quote, attribution below it, caption below that — correct).
+
+**Not fixed, named.**
+- **Title band vs. title line** (optional item): `titleBand()` in `slide-layouts.ts` is
+  `type.heading.size + space.md`, but `tls.t.title` sets `type.title`; in `midnight` one title
+  line (104) is taller than the band (88), so every `motion-showcase` content title autofits to
+  80%. The principled fix is a band sized from the title line height, but that moves the body
+  region of every titled layout on every deck — a layout change outside LO1.5 (and
+  `slide-layouts.ts`) scope. Same for `tls.c.hero` in a `title` region: a cover block in a
+  one-line region is a block-choice error the report already names.
+- **`regionAlign` is dead with a registry**: placement aligns within the region's *natural*
+  height, so `quote: 'center'` never offsets. Pre-existing; fixing it moves every quote slide.
+- A `center`-aligned region that overflows grows downward only (pushes what is below) rather
+  than symmetrically.
+- Two LO1.5 assumptions to watch: content blocks are clamped to `size.min[1]` (e.g. `tls.g.steps`
+  125 → 150), and only *region-claiming* blocks are re-measured (a block whose root is
+  `region − 1` is treated as rigid).

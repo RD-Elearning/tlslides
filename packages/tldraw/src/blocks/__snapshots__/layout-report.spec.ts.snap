@@ -42,44 +42,40 @@ map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overl
 `;
 
 exports[`LO1 — committed text snapshot demo-deck sl_08 1`] = `
-"SLIDE sl_08 layout=blank frame=1920x1080 metrics=table | 3 blocks | 2 errors, 2 warnings
+"SLIDE sl_08 layout=blank frame=1920x1080 metrics=table | 3 blocks | 0 errors, 0 warnings
 regions: content 96,96 1728x888
 blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
 A b_08_title tls.t.title @content 96,96 1728x76 nat 494x74 | text 1L×74 ~55c/L
-B b_08_donut tls.d.donut @content 96,196 1728x888 fill | 4 text leaves 4L, longest legend/label-0 1L×24 ~18c/L
-C b_08_steps tls.g.steps @content 96,1108 1728x888 nat 1472x125 | 12 text leaves 12L, longest steps.1.description 1L×31 ~39c/L
-findings:
-E slide/overflow b_08_donut runs off the frame: 4 past bottom. FIX: b_08_donut fills its whole region height and region \`content\` stacks 3 blocks: give it a region of its own (another layout) or remove a block from \`content\`
-E slide/overflow b_08_steps runs off the frame: 916 past bottom. FIX: free 916 units: shorten b_08_steps, or shrink/move the blocks above it
-W region/overflow region \`content\` stacks 3 blocks = 1900 units, 1012 more than its 888 height; everything below is pushed down. FIX: b_08_donut fills the whole region height on its own: give b_08_donut a region of its own (another layout) or drop a block from \`content\`
-W region/displaced b_08_steps was moved out of its region \`content\` (y 96-984) to y 1108 by the compiler's region re-flow. FIX: shrink the blocks above b_08_steps in \`content\`
-margins t96 r96 b-535 l96 | free 37%
+B b_08_donut tls.d.donut @content 96,196 1728x614 fill | 4 text leaves 4L, longest legend/label-0 1L×24 ~18c/L
+C b_08_steps tls.g.steps @content 96,834 1728x150 nat 1472x125 | 12 text leaves 12L, longest steps.1.description 1L×31 ~39c/L
+findings: none
+margins t96 r96 b108 l96 | free 52%
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free
 ................................................
 ................................................
 ..AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
 ..AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
 ................................................
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.."
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+................................................
+..CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCccccccc..
+..CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCccccccc..
+..CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCccccccc..
+..cccccccccccccccccccccccccccccccccccccccccccc..
+................................................
+................................................"
 `;

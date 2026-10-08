@@ -19,17 +19,36 @@
  * - Pass 2: Re-flow y-positions within vertical runs when blocks are measured
  *   (registry provided). Fallback equal-split keeps original behavior unchanged.
  *
+ * LO1.5 (layout-oracle README) — two flow fixes found by `analyzeSlide`:
+ * - The re-flow is column-aware: a region is pushed down only by an overflowing (or pushed)
+ *   region above it that horizontally overlaps it (`reflowRegions`).
+ * - In a region with 2+ blocks, a block whose root claims the whole region is re-measured:
+ *   fill blocks (charts, images) share the height left after their siblings' natural heights,
+ *   content blocks shrink to what they paint (`measureRegionBlocks`).
+ *
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no side effects.
  */
 
 import type { ComponentShape } from '~types'
-import type { BlockDefinition, BlockSpec, Box, MotionStyle, Paint, ResolvedTokens, SlideSpec, Size, SurfaceContext } from './types'
+import type {
+  BlockDefinition,
+  BlockSpec,
+  Box,
+  LayoutContext,
+  MotionStyle,
+  Paint,
+  ResolvedTokens,
+  SlideSpec,
+  Size,
+  SurfaceContext,
+} from './types'
 import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
 import { layoutBlock } from './layout/layout-child'
+import { collectPaintedLeaves, measureBlock, paintedBounds } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
 
@@ -131,61 +150,25 @@ export function compileSlide(
   const regionAlignMap = resolvedLayout?.regionAlign
 
   // V2.1: Two-pass region resolution.
-  // Pre-compute natural heights when registry is provided.
+  // Pass 1 — measure every region's blocks once (LO1.5: fill-aware, see `measureRegionBlocks`);
+  // the same heights feed both the re-flow below and the placement loop.
   const regionNaturalHeights = new Map<string, number>()
+  const regionBlockHeights = new Map<string, number[]>()
   const knownRegionNames = Object.keys(regionBoxes)
   const gap = tokens.space.md
 
-  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
-  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
   // F3.1: one fresh memo cache per compile pass.
   const intrinsicSizeCache = new Map<string, Size>()
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
       const blocks = spec.regions[regionName] ?? []
-
       if (blocks.length === 0 || !regionBox) continue
 
-      const measureCtx = createLayoutContext({
-        box: { width: regionBox.width, height: regionBox.height },
-        tokens,
-        surface: MINIMAL_SURFACE,
-        registry,
-        intrinsicSizeCache, // F3.1: scoped memo cache
-      })
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache)
+      regionBlockHeights.set(regionName, blockHeights)
 
-      const blockHeights = blocks.map((block) => {
-        const def = registry.get(block.type)
-        if (!def) return -1
-        try {
-          // B3-H1: if the block has instance style overrides (padding/align), build a
-          // per-block ctx so layoutBlock can apply them. Otherwise keep the shared ctx.
-          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style` —
-          // that reserved key only exists on rendered editor shapes, see block-authoring
-          // README pitfall #3/#5).
-          const blockStyle = block.style
-          const usePerBlock =
-            blockStyle !== undefined &&
-            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
-          const ctx = usePerBlock
-            ? createLayoutContext({
-                box: { width: regionBox.width, height: regionBox.height },
-                tokens,
-                surface: MINIMAL_SURFACE,
-                registry,
-                intrinsicSizeCache,
-                style: blockStyle,
-              })
-            : measureCtx
-          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
-          return node.box.height
-        } catch {
-          return -1
-        }
-      })
-
-      // Compute natural height (measured blocks + gaps)
+      // Natural height = measured blocks + gaps.
       const gapsTotal = blocks.length > 1 ? (blocks.length - 1) * gap : 0
       // LO0: skip a block that failed to measure (-1); never reset the running sum.
       const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : sum), 0)
@@ -193,53 +176,12 @@ export function compileSlide(
     }
   }
 
-  // V2.1: Re-flow region y-positions based on natural heights (Pass 2).
-  // Sort regions by their layout y-position to identify vertical runs.
-  const regionYPositions = new Map<string, number>()
-  const regionYHeights = new Map<string, number>()
-
-  if (registry && regionNaturalHeights.size > 0) {
-    // Build a map of region -> naturalHeight for quick lookup
-    const needsReFlow = Object.keys(regionBoxes).some((regionName) => {
-      const naturalHeight = regionNaturalHeights.get(regionName)
-      const regionBox = regionBoxes[regionName]
-      return regionBox && naturalHeight && naturalHeight > regionBox.height
-    })
-
-    if (needsReFlow) {
-      const sortedByY = [...knownRegionNames].sort((a, b) => {
-        const boxA = regionBoxes[a]
-        const boxB = regionBoxes[b]
-        if (!boxA || !boxB) return 0
-        return boxA.y - boxB.y
-      })
-
-      // Find the first region with content to determine run start
-      const firstRegionWithContent = sortedByY.find((name) => {
-        const boxes = spec.regions[name] ?? []
-        return boxes.length > 0
-      })
-
-      if (firstRegionWithContent) {
-        let currentY = regionBoxes[firstRegionWithContent]?.y ?? 0
-        for (const regionName of sortedByY) {
-          const regionBox = regionBoxes[regionName]
-          if (!regionBox) continue
-
-          const blocks = spec.regions[regionName] ?? []
-          if (blocks.length === 0) continue
-
-          const naturalHeight = regionNaturalHeights.get(regionName) ?? regionBox.height
-          const effectiveHeight = Math.max(naturalHeight, regionBox.height)
-
-          regionYPositions.set(regionName, currentY)
-          regionYHeights.set(regionName, effectiveHeight)
-
-          currentY = currentY + effectiveHeight + gap
-        }
-      }
-    }
-  }
+  // Pass 2 — re-flow. LO1.5: column-aware. A region is pushed down only by the regions *above*
+  // it that horizontally overlap it and actually grew or moved; side-by-side columns flow
+  // independently (an overfull `left` no longer pushes `right` below it).
+  const regionYPositions = registry
+    ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (spec.regions[name] ?? []).length > 0, gap)
+    : new Map<string, number>()
 
   // 3. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
@@ -279,44 +221,7 @@ export function compileSlide(
     let blockHeights: number[]
 
     if (registry && blocks.length > 0) {
-      // Build a measurement context for this region.
-      const measureCtx = createLayoutContext({
-        box: { width: regionBox.width, height: regionBox.height },
-        tokens,
-        surface: MINIMAL_SURFACE,
-        registry,
-        intrinsicSizeCache, // F3.1: reuse scoped memo cache
-      })
-
-      blockHeights = blocks.map((block) => {
-        const def = registry.get(block.type)
-        if (!def) {
-          // Unknown block type: fallback to equal split height (computed below).
-          return -1
-        }
-        try {
-          // B3-H1: per-block ctx when instance style overrides are present.
-          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style`).
-          const blockStyle = block.style
-          const usePerBlock =
-            blockStyle !== undefined &&
-            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
-          const ctx = usePerBlock
-            ? createLayoutContext({
-                box: { width: regionBox.width, height: regionBox.height },
-                tokens,
-                surface: MINIMAL_SURFACE,
-                registry,
-                intrinsicSizeCache,
-                style: blockStyle,
-              })
-            : measureCtx
-          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
-          return node.box.height
-        } catch {
-          return -1
-        }
-      })
+      blockHeights = regionBlockHeights.get(regionName) ?? blocks.map(() => -1)
     } else {
       blockHeights = blocks.map(() => -1) // all fallback
     }
@@ -459,6 +364,189 @@ function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[]): voi
     meta.styleMotion = motion
     meta.motionStyle = style
   }
+}
+
+/** Rounding slack (slide units) for "claims the whole region" and overlap tests. */
+const FLOW_TOL = 1
+/** Verification passes when shrinking a content-sized block to its painted height. */
+const CONTENT_FIT_PASSES = 3
+
+/** LO1.5 — how a block's height is decided inside a multi-block region. */
+interface RegionSizing {
+  /** `rigid`: content-sized root, kept as measured. `content`: root claims the whole region but
+   *  its painted content is smaller. `fill`: content follows the box (chart, image, donut). */
+  kind: 'rigid' | 'content' | 'fill'
+  /** Height before distribution (rigid: root; content: painted height; fill: its min). */
+  height: number
+  /** Never taller than the root it returned at the full region height. */
+  cap: number
+}
+
+/**
+ * Measure every block of one region. Returns one height per block, `-1` for a block that could
+ * not be measured (unregistered / layout threw → equal-split fallback in the placement loop).
+ *
+ * A single block keeps the height its layout returns at the region box (as before LO1.5). With
+ * two or more blocks, a block whose root claims the whole region (`>= region height`) would push
+ * every sibling off the region, so it is re-measured with `measureBlock`:
+ * - `elastic` (fills its box: charts, images, a donut) → a `fill` block;
+ * - otherwise (the root is `max(region, content)` or the block centres its content) → a
+ *   `content` block at its painted height, verified by laying it out at that height.
+ * Then the region height left after rigid/content blocks and gaps is shared among the fill
+ * blocks (each at least `def.size.min[1]`); with no fill block, the leftover is shared among the
+ * `content` blocks instead, so a block that was designed to take the region still does, minus
+ * its siblings. Pure: same input, same heights.
+ */
+function measureRegionBlocks(
+  blocks: BlockSpec[],
+  regionBox: Box,
+  gap: number,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  intrinsicSizeCache: Map<string, Size>
+): number[] {
+  const regionSize = { width: regionBox.width, height: regionBox.height }
+  const sharedCtx = createLayoutContext({
+    box: regionSize,
+    tokens,
+    surface: MINIMAL_SURFACE,
+    registry,
+    intrinsicSizeCache, // F3.1: scoped memo cache
+  })
+  // B3-H1: a per-block ctx when instance style overrides (padding/align) are present. `style` is
+  // a top-level BlockSpec field in deck JSON (not `props.$block.style` — that reserved key only
+  // exists on rendered editor shapes, see block-authoring README pitfall #3/#5).
+  const ctxFor = (block: BlockSpec): LayoutContext => {
+    const blockStyle = block.style
+    const usePerBlock =
+      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined)
+    return usePerBlock
+      ? createLayoutContext({
+          box: regionSize,
+          tokens,
+          surface: MINIMAL_SURFACE,
+          registry,
+          intrinsicSizeCache,
+          style: blockStyle,
+        })
+      : sharedCtx
+  }
+
+  const roots = blocks.map((block) => {
+    const def = registry.get(block.type)
+    if (!def) return -1
+    try {
+      return layoutBlock(def, block.props as Record<string, unknown>, ctxFor(block)).box.height
+    } catch {
+      return -1
+    }
+  })
+  if (blocks.length < 2) return roots
+
+  const sizing: Array<RegionSizing | null> = blocks.map((block, i) => {
+    const root = roots[i]
+    if (root < 0) return null
+    if (root < regionBox.height - FLOW_TOL) return { kind: 'rigid', height: root, cap: root }
+    const def = registry.get(block.type)!
+    const props = block.props as Record<string, unknown>
+    const ctx = ctxFor(block)
+    const minH = Math.min(def.size.min?.[1] ?? 0, root)
+    const m = measureBlock(def, props, regionBox.width, ctx, { height: regionBox.height })
+    if (m.reason?.startsWith('layout threw')) return { kind: 'rigid', height: root, cap: root }
+    if (m.elastic) return { kind: 'fill', height: minH, cap: root }
+    const fitted = fitContentHeight(def, props, ctx, regionBox.width, m.natural.height, root)
+    return { kind: 'content', height: Math.min(root, Math.max(fitted, minH)), cap: root }
+  })
+
+  const fixedTotal = sizing.reduce((sum, s) => sum + (s && s.kind !== 'fill' ? s.height : 0), 0)
+  const gapsTotal = (blocks.length - 1) * gap
+  const flexKind: RegionSizing['kind'] = sizing.some((s) => s?.kind === 'fill') ? 'fill' : 'content'
+  const flex = sizing.filter((s): s is RegionSizing => s !== null && s.kind === flexKind)
+  // Failed blocks (-1) take an equal split of what is left in the placement loop; leave them out.
+  const flexBase = flexKind === 'content' ? flex.reduce((sum, s) => sum + s.height, 0) : 0
+  const room = regionBox.height - gapsTotal - (fixedTotal - flexBase)
+  if (flex.length > 0) {
+    if (flexKind === 'fill') {
+      const share = room / flex.length
+      for (const s of flex) s.height = Math.min(s.cap, Math.max(s.height, share))
+    } else {
+      const extra = Math.max(0, room - flexBase) / flex.length
+      for (const s of flex) s.height = Math.min(s.cap, s.height + extra)
+    }
+  }
+  return sizing.map((s, i) => (s ? s.height : roots[i]))
+}
+
+/**
+ * Height at which a content-sized block paints entirely inside its box: start from its painted
+ * height (`measureBlock`'s tall probe) and grow by whatever spills out (a top inset, a card's
+ * padding) until it fits, at most `cap` (its height at the full region).
+ */
+function fitContentHeight(
+  def: BlockDefinition,
+  props: Record<string, unknown>,
+  ctx: LayoutContext,
+  width: number,
+  natural: number,
+  cap: number
+): number {
+  let h = Math.min(cap, Math.max(1, Math.ceil(natural)))
+  for (let i = 0; i < CONTENT_FIT_PASSES && h < cap; i++) {
+    const size = { width, height: h }
+    let bounds: Box | null
+    try {
+      const node = layoutBlock(def, props, ctx.withBox ? ctx.withBox(size) : ctx)
+      bounds = paintedBounds(collectPaintedLeaves(node, size))
+    } catch {
+      return cap
+    }
+    if (!bounds) return h
+    const spill = Math.max(0, bounds.y + bounds.height - h) + Math.max(0, -bounds.y)
+    if (spill <= FLOW_TOL) return h
+    h = Math.min(cap, Math.ceil(h + spill))
+  }
+  return h
+}
+
+/**
+ * LO1.5 — column-aware region re-flow. Regions are visited top to bottom; a region moves down
+ * only when a region *above it that horizontally overlaps it* ends lower than its layout box did
+ * (it overflowed, or was itself pushed). It then starts below that region's flowed bottom plus
+ * `min(gap, layout spacing)`; regions that originally overlapped vertically keep their offset.
+ * A region's flowed height is `max(natural, layout height)`. Returns region → flowed y; regions
+ * that do not move are left out (callers fall back to the layout y).
+ */
+function reflowRegions(
+  names: string[],
+  regionBoxes: Record<string, Box>,
+  naturalHeights: Map<string, number>,
+  hasContent: (name: string) => boolean,
+  gap: number
+): Map<string, number> {
+  const out = new Map<string, number>()
+  const order = names
+    .filter((n) => regionBoxes[n] && hasContent(n))
+    .sort((a, b) => regionBoxes[a].y - regionBoxes[b].y || regionBoxes[a].x - regionBoxes[b].x)
+  const flowed: Array<{ box: Box; y: number; height: number }> = []
+  for (const name of order) {
+    const box = regionBoxes[name]
+    let y = box.y
+    for (const p of flowed) {
+      if (p.box.y >= box.y) continue // not above
+      const overlapsX = p.box.x < box.x + box.width - FLOW_TOL && box.x < p.box.x + p.box.width - FLOW_TOL
+      if (!overlapsX) continue
+      const origBottom = p.box.y + p.box.height
+      const bottom = p.y + p.height
+      const grew = bottom - origBottom
+      if (grew <= FLOW_TOL) continue
+      const spacing = box.y - origBottom
+      y = spacing < 0 ? Math.max(y, box.y + grew) : Math.max(y, bottom + Math.min(gap, spacing))
+    }
+    const height = Math.max(naturalHeights.get(name) ?? box.height, box.height)
+    flowed.push({ box, y, height })
+    if (y !== box.y) out.set(name, y)
+  }
+  return out
 }
 
 /** Minimal surface context for measurement — neutral white, no image. */

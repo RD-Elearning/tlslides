@@ -129,7 +129,9 @@ describe('LO1 — findings', () => {
     expect(f.fix).toMatch(/move b\d to region `left`/)
   })
 
-  it("the compiler's re-flow pushing a side-by-side region down → region/displaced", () => {
+  // LO1.5: this slide used to pin the compiler bug (an overfull `left` pushed `right` below it).
+  // The re-flow is column-aware now: the overflow is still reported, the side-by-side column stays.
+  it('an overfull column → region/overflow, but the side-by-side region is not displaced (LO1.5)', () => {
     const slide: SlideSpec = {
       id: 's_reflow',
       layout: 'two-column',
@@ -141,10 +143,39 @@ describe('LO1 — findings', () => {
     }
     const report = analyzeSlide(slide)
     expect(report.findings.map((f) => f.code)).toContain('region/overflow')
+    expect(report.findings.find((x) => x.code === 'region/displaced')).toBeUndefined()
+    const cap = report.blocks.find((b) => b.id === 'cap')!
+    expect(cap.box.y).toBe(report.regions.right.y)
+  })
+
+  it('fill blocks whose minimum heights cannot fit their region are still reported (LO1.5)', () => {
+    // LO1.5 shares a region among fill blocks, but never below `size.min`: 4 bars × min 240 +
+    // gaps exceed the 888 `blank` region, so content still ends past the frame — never silently.
+    const data = { data: [{ label: 'A', value: 3 }, { label: 'B', value: 2 }] }
+    const bars = ['b1', 'b2', 'b3', 'b4'].map((id) => ({ id, type: 'tls.d.bar', props: data }))
+    const report = analyzeSlide({ id: 's_fill_min', layout: 'blank', regions: { content: bars } })
+    const codes = report.findings.map((f) => f.code)
+    expect(codes).toContain('region/overflow')
+    expect(codes).toContain('slide/overflow')
+    const last = report.blocks.find((b) => b.id === 'b4')!
+    expect(last.box.y + last.box.height).toBeGreaterThan(report.frame.height)
+  })
+
+  it('an overfull region pushing the region below it down → region/displaced', () => {
+    const slide: SlideSpec = {
+      id: 's_reflow_stack',
+      layout: 'quote',
+      regions: {
+        quote: [{ id: 'q', type: 'tls.t.body', props: { text: LONG_BODY } }],
+        attribution: [{ id: 'cap', type: 'tls.t.caption', props: { text: 'Source: internal survey' } }],
+      },
+    }
+    const report = analyzeSlide(slide)
+    expect(report.findings.map((f) => f.code)).toContain('region/overflow')
     const f = report.findings.find((x) => x.code === 'region/displaced')!
     expect(f).toBeDefined()
     expect(f.blockIds).toEqual(['cap'])
-    expect(f.fix).toMatch(/fix the overflow of region `left`/)
+    expect(f.fix).toMatch(/fix the overflow of region `quote`/)
   })
 
   it('a block past the frame edge → slide/overflow', () => {
