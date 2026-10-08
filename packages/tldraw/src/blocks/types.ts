@@ -42,7 +42,25 @@ export interface BlockSpec {
   children?: BlockSpec[]
   /** Bridges to the Phase 13 template slot system. */
   slot?: string
+  /**
+   * LO2 — paint layer of this instance; overrides the definition's `layer`. In a slide *region*,
+   * an explicit `'backdrop'` or `'overlay'` takes the block out of the region's vertical stack:
+   * it gets the whole region box and paints behind (`backdrop`) or on top of (`overlay`) every
+   * stacked block — the AI-writable way to layer blocks into one composite look.
+   * `'content'` (or absent) = stacked as usual. In `free[]` and inside containers it only
+   * classifies overlaps for the layout report; z there is the array order.
+   */
+  layer?: BlockLayer
 }
+
+/**
+ * LO2 — paint layer. `backdrop` sits behind content and may be overlapped (shapes, bands,
+ * patterns); `content` must not overlap other content; `overlay` sits on top and may cover
+ * content but none of its text (badges, stickers, annotation arrows).
+ */
+export type BlockLayer = 'backdrop' | 'content' | 'overlay'
+
+export const BLOCK_LAYERS: readonly BlockLayer[] = ['backdrop', 'content', 'overlay']
 
 /**
  * Style overrides for a block. Deliberately small: anything a block needs that is not
@@ -287,6 +305,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   scope?: BlockScope
   /** Sibling block types worth considering instead. Each must resolve in the registry. */
   related?: string[]
+  /** LO2 — paint layer. Absent = derived: category `decoration` → `backdrop`, else `content`.
+   *  Set it only where the derivation is wrong. See `BlockLayer`. */
+  layer?: BlockLayer
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide

@@ -120,7 +120,7 @@ letter-spacing / bold in tableMetrics) if found.
 |---|---|---|---|
 | LO0 | done | `3322e42a` | `layout/measure-block.ts` (+ spec, 13 tests). Three probes, path geometry, elastic flag — see Notes. `measuredTotal` reduce fixed + regression test in `slide-compiler.spec.ts` (fails on the old code). |
 | LO1 | done | `3322e42a` | `layout-report.ts` (+ spec, 21 tests, snapshot of demo-deck `sl_03` and `sl_08`). `analyzeSlide`/`analyzeDeck`/`formatLayoutReport`/`layoutMap`, exported from `blocks/index.ts` only. All 95 fixture slides report in ~20 ms/slide. tsc: prod 0, spec 329 (= before). |
-| LO2 | todo | | |
+| LO2 | done | (pending) | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
 | LO3 | todo | | |
 | LO4 | todo | | |
 | LO5 | todo | | |
@@ -194,3 +194,68 @@ letter-spacing / bold in tableMetrics) if found.
   `compileSlide`'s measuring pass).
 - `turbo run build:packages` not run (no dist consumer changed; a rebuild races a running
   `next dev`). tsc prod 0 / spec 329 before and after; eslint 0 errors on touched files.
+
+### Notes — LO2 (2026-10-08)
+
+**Layer assignments (audit of all 129 `BUILT_IN_BLOCKS`).** Derivation: `def.layer` ?? category
+`decoration` → `backdrop` ?? `content`. Non-content after the audit (pinned by a test):
+- `backdrop`: `tls.l.field`, `tls.m.decoration`, `tls.m.pattern` (derived);
+  `tls.x.watermark` (chrome, explicit), `tls.l.grid-guide` (structure, explicit).
+- `overlay`: `tls.d.trend-badge` (metric, explicit), `tls.g.arrow` (decoration → explicit overlay:
+  an annotation arrow is drawn over what it points at).
+- `content` override: `tls.x.rule` (decoration → explicit content: a divider sits between blocks;
+  behind text it would strike it through).
+Everything else is content, including `tls.l.card`/`tls.l.overlay` (containers) and the chrome
+corner blocks (they go in their own region, never over content).
+
+**z-order, verified.** `compileSlide` emits regions in `Object.entries(spec.regions)` order, each
+region's blocks top-down, then `free[]`, with one `childIndex` counter; the editor paints by
+`childIndex`, and `documentToDeckSpec` walks shapes by it. So before LO2 z = authored order, and a
+region's blocks never overlap each other at all (they stack).
+
+**The AI-writable overlap path.** The AI never writes `free[]` (SCHEMA.md), and a region stacks,
+so before LO2 the AI had no way to put a backdrop under content. Chosen: an explicit
+`BlockSpec.layer: 'backdrop' | 'overlay'` on a **region** block takes it out of the stack. It gets
+the region box (layout box ∪ the region's stacked shapes, so a re-flowed/overflowing region is
+still covered), takes no stacking space, and z is fixed by layer: region backdrops under every
+other shape, region overlays over every other shape, authored order within a layer; `childIndex`
+is renumbered 1..n. Why this one: no coordinates, no cross-block references (an `anchor` to
+another block's box would need id resolution, cycle checks and a second placement pass), the flow
+compile is untouched (`compileLayered` compiles the flow with the layered blocks removed, then adds
+them), and the result is a pure function of the spec. Only an *explicit* instance layer moves a
+block: a decoration with no `layer` still stacks, so every existing deck compiles byte-identically
+(the fixture suites pass unchanged). `layer` persists in `$block.layer`, so the editor round trip
+keeps it.
+
+**Report changes.** `blockLayer()` is real; `BlockReport.outOfFlow` marks layered region blocks,
+which are excluded from region fill/overflow/displacement maths. An overlay covers text only where
+it *paints* (`OverlapParty.painted`): a region overlay's box is the whole region, so box ∩ text
+would flag every badge. The map draws backdrops only where no other block is and overlays only
+where they paint, so intended layering is not a `#`.
+
+**Validation/schema/digest.** `validateDeckSpec`: `block/layer` error for a value outside the
+vocabulary, `block/layer-nested` warning for a non-content layer inside a container. JSON schema:
+`layer` enum on every block node. Index: ` · backdrop`/` · overlay` on the 7 lines plus one
+"Layers" rule paragraph (index still ≤ 20k, tested); full digest: same paragraph + `[backdrop]`
+tags on block headings (digest snapshot updated).
+
+**Stacked example** (`two-column`; `left` = decoration backdrop + stat-card, `right` = kpi-tile
++ trend-badge overlay): 0 errors, `I layout/overlap … backdrop blob sits behind card (intended)`,
+`I layout/overlap … overlay badge over kpi covers no text (intended)` — snapshot in
+`__snapshots__/layout-layers.spec.ts.snap`.
+
+**Scope cuts, named.**
+- **Overlay anchoring.** A region overlay gets the whole region box; where it paints is the
+  block's own layout (the trend-badge centres vertically). A corner/edge anchor (`style.align`
+  or a new `anchor` field) is the obvious next step for "badge on the card's corner".
+- **Motion style** does not stagger layered region blocks (they keep their own/definition
+  motion); adding them would renumber the flow's reading order.
+- **Watermark × text** is a `text/collision` error by the plan's rule ("regardless of layer"),
+  so a DRAFT watermark behind a title always errors; a faint-backdrop exception is a policy call.
+- **Decompiler region order**: a round trip keeps `layer` and boxes, but rebuilds region keys in
+  `childIndex` order (pre-existing), so flow z can permute between regions.
+- Backdrop-only map cells under a full-region card are hidden by the card (block line shows it).
+- No visual scenario: the change is headless compile/report; a browser check of a layered slide
+  belongs with LO5's harness. `turbo run build:packages` not run (dist consumers unchanged).
+- Touched `layout-report.spec.ts` in one line (the LO1 placeholder `expect(b.layer).toBe('content')`
+  now expects the definition's layer); `layout-report.spec.ts.snap` not touched by LO2.

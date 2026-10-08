@@ -112,7 +112,35 @@ interface BlockSpec {
   style?: BlockStyleSpec             // presentation overrides
   motion?: BlockMotionSpec           // animation overrides
   children?: BlockSpec[]             // for container blocks only
+  layer?: 'backdrop' | 'content' | 'overlay'  // LO2 — paint layer / stacking (see below)
 }
+```
+
+**`layer`** (LO2, optional) — the block's paint layer. Absent = the definition's layer
+(`BlockDefinition.layer`, else category `decoration` → `backdrop`, else `content`). This is the
+**AI-writable way to overlap blocks** into one composite look (the AI never writes `free[]`):
+
+- In a slide **region**, an explicit `"backdrop"` or `"overlay"` takes the block **out of the
+  region's vertical stack**. It gets the whole region box (grown to cover the region's stacked
+  blocks if they overflow) and takes no stacking space; the other blocks are placed exactly as if
+  it were absent. z is deterministic: every region backdrop paints under every other block of the
+  slide, every region overlay over every other block, authored order within each layer.
+- `"content"` or absent = stacked as usual. A decoration block *without* an explicit `layer`
+  still stacks (old decks compile unchanged); its derived `backdrop` only affects overlap checks.
+- In `free[]` and inside containers `layer` only classifies overlaps for the layout report; z
+  there is the array order (`validateDeckSpec` warns `block/layer-nested` for a container child).
+- The layout report's policy (`analyzeSlide`): content ∩ content → `layout/overlap` error;
+  backdrop ∩ anything → `info` when the backdrop is behind, error when it paints over;
+  overlay ∩ content → `info` unless what the overlay *paints* covers a text leaf
+  (`text/occluded`); text ∩ text across blocks → `text/collision` regardless of layer.
+
+```json
+"left": [
+  { "id": "b_blob", "type": "tls.m.decoration", "layer": "backdrop",
+    "props": { "shape": "blob", "tone": "accent2", "opacity": "soft", "seed": 7 } },
+  { "id": "b_card", "type": "tls.c.stat-card",
+    "props": { "icon": "zap", "value": "$4.2M", "unit": "Annual Revenue" } }
+]
 ```
 
 **`id`** — required at the DeckSpec layer. Generated on insert if absent (internal shapes may
@@ -468,7 +496,8 @@ moves it to `free[]` with its new coordinates on save.
 
 3. **`free[]` is the round-trip safety net.** Blocks dragged out of their region get explicit
    coordinates in `free[]`. The AI never writes `free[]`. Changing `aspect` with non-empty
-   `free[]` will misplace those blocks — the host must report this.
+   `free[]` will misplace those blocks — the host must report this. Intentional overlap is
+   written with `BlockSpec.layer` in a region instead (LO2).
 
 4. **`BlockSpec.id` is required.** FastAPI uses it for partial updates. Internal shapes that
    lack one get an id minted by the bridge layer.

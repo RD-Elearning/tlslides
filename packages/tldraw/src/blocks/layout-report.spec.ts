@@ -6,6 +6,8 @@ import * as path from 'path'
 import type { ComponentShape } from '~types'
 import type { BlockSpec, DeckSpec, SlideSpec } from './types'
 import { deckSpecToDocument } from './deck-document'
+import { definitionLayer } from './block-layer'
+import { defaultBlockRegistry } from './validate-deck-spec'
 import {
   analyzeDeck,
   analyzeSlide,
@@ -55,7 +57,8 @@ describe('LO1 — every fixture deck produces a report', () => {
             shape.size[1],
           ])
           expect(Number.isFinite(b.natural.height)).toBe(true)
-          expect(b.layer).toBe('content')
+          // LO2: no fixture sets an instance `layer`, so every block is on its definition's layer.
+          expect(b.layer).toBe(definitionLayer(defaultBlockRegistry().get(b.type)))
         }
         const text = formatLayoutReport(report)
         expect(text).toBe(formatLayoutReport(report)) // deterministic

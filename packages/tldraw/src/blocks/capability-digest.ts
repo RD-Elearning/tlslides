@@ -18,7 +18,9 @@ import { SLIDE_LAYOUTS } from './slide-layouts'
 import { resolveTokens } from './tokens'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import type { BlockCategory, BlockDefinition, BlockScope, ColorRole, ResolvedTokens, SlotSpec, SlotType } from './types'
+import type { BlockLayer } from './types'
 import { BLOCK_CATEGORIES, CATEGORY_INFO } from './types'
+import { definitionLayer } from './block-layer'
 import { ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
@@ -54,6 +56,8 @@ export interface CapabilityBlockDigest {
   avoid?: string
   /** R7: a filled example BlockSpec. */
   example?: unknown
+  /** LO2: paint layer, only when not `content`. */
+  layer?: BlockLayer
 }
 
 /** One entry of the compact catalog index (tier 1 of the two-tier digest). */
@@ -65,6 +69,8 @@ export interface CapabilityIndexEntry {
   range?: string
   shortDescription: string
   related?: string[]
+  /** LO2: paint layer, only when not `content`. */
+  layer?: BlockLayer
 }
 
 export interface CapabilityIndexOptions {
@@ -231,6 +237,7 @@ export function capabilityDigestData(registry?: BlockRegistry, opts?: Capability
       slots: Object.entries(def.schema ?? {}).map(([name, slot]) => describeSlot(name, slot)),
       ...(def.kind === 'html' && def.motion?.parts ? { parts: [...def.motion.parts] } : {}),
       ...(def.describe ? { when: def.describe.when, avoid: def.describe.avoid, example: def.describe.example } : {}),
+      ...layerField(def),
     }))
 
   const layouts: CapabilityLayoutDigest[] = SLIDE_LAYOUTS.map((layout) => {
@@ -338,6 +345,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
     lines.push(`Gradient shape: \`${data.style.gradient}\``)
     lines.push('')
+    lines.push(LAYER_LINE)
+    lines.push('')
 
     // ── Motion ──
     lines.push('## Motion')
@@ -376,7 +385,7 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
   lines.push('## Blocks')
   lines.push('')
   for (const b of data.blocks) {
-    const kindTag = b.kind ? ` [${b.kind}]` : ''
+    const kindTag = (b.kind ? ` [${b.kind}]` : '') + (b.layer ? ` [${b.layer}]` : '')
     lines.push(`### \`${b.type}\` — ${b.name}${kindTag}`)
     lines.push('')
     lines.push(filtered ? b.summary : `${b.summary} _(family: ${b.family}; keywords: ${b.keywords.join(', ') || '—'})_`)
@@ -488,9 +497,23 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         ...(range ? { range } : {}),
         shortDescription: def.shortDescription ?? def.summary,
         ...(def.related && def.related.length ? { related: [...def.related] } : {}),
+        ...layerField(def),
       }
     })
 }
+
+/** LO2 — `{ layer }` for a non-content block, `{}` otherwise (keeps the digest compact). */
+function layerField(def: BlockDefinition): { layer?: BlockLayer } {
+  const layer = definitionLayer(def)
+  return layer === 'content' ? {} : { layer }
+}
+
+/** LO2 — how the planner layers blocks into one composite look. */
+const LAYER_LINE =
+  'Layers: to stack blocks, put them in the same region and set `layer` on the block: `"backdrop"` takes the ' +
+  'whole region box behind the region\'s other blocks (a field, pattern or decoration under a card), `"overlay"` ' +
+  'takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. Blocks marked ' +
+  '`backdrop`/`overlay` below default to that layer only for overlap checks; `layer` still has to be set to stack.'
 
 /** P7 — one line telling the planner how to use deck/slide motion styles. */
 const MOTION_STYLE_LINE =
@@ -519,7 +542,9 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   lines.push('- `group`: a self-contained unit. One per region; may sit inside `tls.l.card` or `tls.l.section`.')
   lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
   lines.push('')
-  lines.push('Line format: `type · category · scope · item range — what the viewer sees`. Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('Line format: `type · category · scope · item range · layer — what the viewer sees` (layer only when not content). Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('')
+  lines.push(LAYER_LINE)
   lines.push('')
   lines.push(MOTION_STYLE_LINE)
   lines.push('')
@@ -529,7 +554,7 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
     lines.push(`## ${CATEGORY_INFO[cat].label} — ${CATEGORY_INFO[cat].description}`)
     lines.push('')
     for (const e of inCat) {
-      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''} — ${e.shortDescription}`)
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}`)
     }
     lines.push('')
   }

@@ -39,6 +39,8 @@ BlockStyleSpec fields (all optional; absent = theme default):
 
 Gradient shape: \`Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }\`
 
+Layers: to stack blocks, put them in the same region and set \`layer\` on the block: \`\\"backdrop\\"\` takes the whole region box behind the region's other blocks (a field, pattern or decoration under a card), \`\\"overlay\\"\` takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. Blocks marked \`backdrop\`/\`overlay\` below default to that layer only for overlap checks; \`layer\` still has to be set to stack.
+
 ## Motion
 
 Set \`motion.preset\` on any block. Every preset below plays (no-op excluded).
@@ -2298,7 +2300,7 @@ Table with header, aligned numbers, status dots, ratings and a totals row. _(fam
 }
 \`\`\`
 
-### \`tls.d.trend-badge\` — Trend Badge
+### \`tls.d.trend-badge\` — Trend Badge [overlay]
 
 Pill with a triangle arrow and a signed change, coloured by direction and polarity. _(family: data; keywords: trend, badge, delta, change, arrow, up, down)_
 
@@ -2371,7 +2373,7 @@ Bridge chart: floating bars for changes, full bars for totals, optional connecto
 }
 \`\`\`
 
-### \`tls.g.arrow\` — Arrow
+### \`tls.g.arrow\` — Arrow [overlay]
 
 A single straight, curved or elbow arrow in four directions with one or two heads and an optional label. _(family: diagram; keywords: arrow, pointer, connector, curved arrow, elbow, flow direction)_
 
@@ -3328,7 +3330,7 @@ Filled container with configurable padding. _(family: layout; keywords: card, co
 }
 \`\`\`
 
-### \`tls.l.field\` — Field
+### \`tls.l.field\` — Field [backdrop]
 
 Full-bleed background fill. _(family: layout; keywords: field, background, fill, full-bleed)_
 
@@ -3448,7 +3450,7 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 }
 \`\`\`
 
-### \`tls.l.grid-guide\` — Grid Guide
+### \`tls.l.grid-guide\` — Grid Guide [backdrop]
 
 Alignment grid guide with configurable divisions. Light guide lines; omitted from PNG/PDF export. _(family: layout; keywords: grid, guide, alignment, editor)_
 
@@ -3896,7 +3898,7 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
 }
 \`\`\`
 
-### \`tls.m.decoration\` — Decoration
+### \`tls.m.decoration\` — Decoration [backdrop]
 
 Decorative blob, arc, ring, dot grid, wave or corner in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent)_
 
@@ -4239,7 +4241,7 @@ Even grid of logos at equal height or equal area, with an optional heading, plat
 }
 \`\`\`
 
-### \`tls.m.pattern\` — Pattern
+### \`tls.m.pattern\` — Pattern [backdrop]
 
 Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as one path. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background)_
 
@@ -4984,7 +4986,7 @@ A thin divider line, horizontal or vertical, plain or accent gradient, or a shor
 }
 \`\`\`
 
-### \`tls.x.watermark\` — Watermark
+### \`tls.x.watermark\` — Watermark [backdrop]
 
 Large faint horizontal text such as DRAFT or CONFIDENTIAL, centred and sized to the box. _(family: chrome; keywords: watermark, draft, confidential, stamp, chrome)_
 

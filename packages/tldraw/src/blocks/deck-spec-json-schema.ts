@@ -12,7 +12,7 @@ import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import type { SlotSpec, SlotType } from './types'
-import { MOTION_STYLES } from './types'
+import { BLOCK_LAYERS, MOTION_STYLES } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -173,6 +173,13 @@ function blockSchema(
         description: 'Child blocks (container blocks only).',
       },
       slot: { type: 'string' },
+      layer: {
+        enum: [...BLOCK_LAYERS],
+        description:
+          'Paint layer. In a slide region, "backdrop" takes the whole region box behind the stacked blocks and ' +
+          '"overlay" the whole region box on top of them (both leave the vertical stack); "content"/absent = stacked. ' +
+          'Default is the block type\'s own layer (decoration blocks are backdrops).',
+      },
     },
     additionalProperties: false,
     oneOf: blockTypeSchemas,

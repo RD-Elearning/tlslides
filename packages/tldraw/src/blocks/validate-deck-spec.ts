@@ -19,7 +19,8 @@ import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
-import { MOTION_STYLES } from './types'
+import { BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
@@ -547,6 +548,28 @@ function validateBlockTree(
       path: `${path}.props`,
       message: `Block ${label}'s "props" must be an object; got ${describeType(block.props)}.`,
     })
+  }
+
+  // LO2 — paint layer: closed vocabulary. Out-of-flow placement only happens for a slide-level
+  // region block; inside a container it just classifies overlaps.
+  if (block.layer !== undefined) {
+    if (!isBlockLayer(block.layer)) {
+      findings.push({
+        level: 'error',
+        rule: 'block/layer',
+        path: `${path}.layer`,
+        message:
+          `Block ${label}'s "layer" is ${stringifyForMessage(block.layer)}; it must be one of ${BLOCK_LAYERS.map((l) => `"${l}"`).join(', ')}.` +
+          ` Use "backdrop" to put a block behind the other blocks of its region, "overlay" to put it on top.`,
+      })
+    } else if (depth > 1 && block.layer !== 'content') {
+      findings.push({
+        level: 'warning',
+        rule: 'block/layer-nested',
+        path: `${path}.layer`,
+        message: `Block ${label} sets layer "${block.layer}" inside a container; only a block placed directly in a slide region is taken out of the stack. Move it to the region, or use tls.l.overlay.`,
+      })
+    }
   }
 
   if (block.children !== undefined) {

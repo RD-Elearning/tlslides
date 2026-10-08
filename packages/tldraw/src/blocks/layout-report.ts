@@ -11,15 +11,17 @@
  * Findings carry a concrete, numeric `fix` an LLM can act on. The text form is deterministic and
  * compact (one line per block, findings, a 48×27 ASCII occupancy map).
  *
- * Layers (LO2): every block is `content` until LO2 lands. `blockLayer()` is the single lookup
- * LO2 replaces; `classifyOverlap()` already implements the whole layer policy.
+ * Layers (LO2): `blockLayer()` (`block-layer.ts`) — `block.layer` ?? `def.layer` ?? category
+ * `decoration` → backdrop, else content; `classifyOverlap()` applies the layer policy. z is the
+ * compiled `childIndex` (region backdrops under everything, region overlays over everything,
+ * `free[]` in array order — see `compileLayered`).
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type {
-  BlockDefinition,
+  BlockLayer,
   BlockSpec,
   Box,
   CapacityReport,
@@ -31,7 +33,8 @@ import type {
 } from './types'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
-import { compileSlide, type CompileFinding } from './slide-compiler'
+import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
+import { blockLayer } from './block-layer'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { resolveTokens } from './tokens'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
@@ -52,7 +55,8 @@ import {
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /** Paint layer of a block (LO2). `backdrop` sits behind content, `overlay` on top of it. */
-export type BlockLayer = 'backdrop' | 'content' | 'overlay'
+export type { BlockLayer } from './types'
+export { blockLayer } from './block-layer'
 
 export type LayoutFindingCode =
   | 'slide/overflow'
@@ -105,6 +109,9 @@ export interface BlockReport {
   /** Region name, or `'free'` for `spec.free[]`. */
   region: string
   layer: BlockLayer
+  /** LO2: a region block with an explicit backdrop/overlay `layer` — it takes the region box and
+   *  is not part of the region's vertical stack (excluded from region fill/overflow maths). */
+  outOfFlow?: true
   /** Paint order: higher paints on top (the compiled `childIndex`). */
   z: number
   /** The box the editor gives the block (slide coordinates). */
@@ -176,14 +183,6 @@ const MINIMAL_SURFACE: SurfaceContext = {
 /* Layer policy (LO2 plugs in here)                                                 */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-/**
- * The paint layer of a block instance. LO1: always `content`. LO2 replaces the body with
- * `block.layer ?? def.layer ?? (def.category === 'decoration' ? 'backdrop' : 'content')`.
- */
-export function blockLayer(_block: BlockSpec, _def?: BlockDefinition): BlockLayer {
-  return 'content'
-}
-
 /** One side of an overlap, as `classifyOverlap` needs it. */
 export interface OverlapParty {
   id: string
@@ -191,6 +190,9 @@ export interface OverlapParty {
   z: number
   /** Painted text leaves, slide coordinates. */
   text: Box[]
+  /** LO2: painted union, slide coordinates. An overlay covers text only where it paints (a
+   *  region overlay's box is the whole region). Absent = the box overlap is used. */
+  painted?: Box | null
 }
 
 /**
@@ -225,7 +227,8 @@ export function classifyOverlap(
   if (a.layer === 'overlay' || b.layer === 'overlay') {
     const overlay = a.layer === 'overlay' ? a : b
     const content = overlay === a ? b : a
-    const covers = overlay.z > content.z && content.text.some((t) => area(intersect(t, overlap)) > MIN_TEXT_COLLISION)
+    const cover = overlay.painted ? intersect(overlay.painted, overlap) : overlap
+    const covers = overlay.z > content.z && !!cover && content.text.some((t) => area(intersect(t, cover)) > MIN_TEXT_COLLISION)
     return covers
       ? { code: 'text/occluded', severity: 'error', note: `overlay ${overlay.id} covers text of ${content.id}` }
       : { code: 'layout/overlap', severity: 'info', note: `overlay ${overlay.id} over ${content.id} covers no text (intended)` }
@@ -284,6 +287,7 @@ interface Placed {
   block: BlockSpec
   path: string
   region: string
+  outOfFlow?: true
 }
 
 /**
@@ -303,14 +307,25 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
     getSlideLayout(spec.layout as Parameters<typeof getSlideLayout>[0]) ?? SLIDE_LAYOUTS.find((l) => l.id === 'blank')
   const regions = layoutDef ? layoutDef.compile(frame, tokens) : {}
 
-  // 2. Pair compiled shapes with their specs (same order `compileSlide` emits them).
+  // 2. Pair compiled shapes with their specs (same order `compileSlide` emits them: region
+  //    backdrops, stacked region blocks, free[], region overlays — LO2).
   const placed: Placed[] = []
+  const split = splitLayeredBlocks(spec)
+  const layeredPlaced = (list: NonNullable<typeof split>['backdrops']) =>
+    list
+      .filter((l) => regions[l.region])
+      .map((l) => ({ block: l.block, path: `regions.${l.region}[${l.index}]`, region: l.region, outOfFlow: true as const }))
+  if (split) placed.push(...layeredPlaced(split.backdrops))
   for (const [regionName, blocks] of Object.entries(spec.regions)) {
     if (!regions[regionName] || blocks.length === 0) continue
-    blocks.forEach((block, i) => placed.push({ block, path: `regions.${regionName}[${i}]`, region: regionName }))
+    blocks.forEach((block, i) => {
+      if (split && (block.layer === 'backdrop' || block.layer === 'overlay')) return
+      placed.push({ block, path: `regions.${regionName}[${i}]`, region: regionName })
+    })
   }
   const free = spec.free ?? []
   free.forEach((entry, i) => placed.push({ block: entry.block, path: `free[${i}]`, region: 'free' }))
+  if (split) placed.push(...layeredPlaced(split.overlays))
 
   const findings: LayoutFinding[] = []
   const intrinsicSizeCache = new Map<string, Size>()
@@ -330,6 +345,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
       type: p.block.type,
       region: p.region,
       layer: blockLayer(p.block, def),
+      ...(p.outOfFlow ? { outOfFlow: p.outOfFlow } : {}),
       z: shape.childIndex,
       box,
     }
@@ -427,7 +443,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
   // The compiler flags one block taller than its region; a region overfilled by a *stack* of
   // blocks that each fit is re-flowed silently. Report that too.
   for (const [name, rb] of Object.entries(regions)) {
-    const inRegion = blocks.filter((b) => b.region === name)
+    const inRegion = blocks.filter((b) => b.region === name && !b.outOfFlow)
     if (inRegion.length < 2 || compiled.findings.some((f) => f.rule === 'region/overflow' && f.region === name)) continue
     const used = inRegion.reduce((sum, b) => sum + b.box.height, 0) + (inRegion.length - 1) * gap
     const over = Math.ceil(used - rb.height)
@@ -461,7 +477,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
   )
   for (const b of blocks) {
     const rb = regions[b.region]
-    if (!rb) continue
+    if (!rb || b.outOfFlow) continue
     const below = b.box.y > rb.y + rb.height - TOL
     const above = b.box.y + b.box.height < rb.y + TOL
     if (!below && !above) continue
@@ -480,7 +496,7 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
 
   // 4. Per-block findings.
   for (const b of blocks) {
-    const regionCount = b.region === 'free' ? 1 : blocks.filter((x) => x.region === b.region).length
+    const regionCount = b.region === 'free' ? 1 : blocks.filter((x) => x.region === b.region && !x.outOfFlow).length
     blockFindings(b, frame, regionFree, regionCount, findings)
   }
 
@@ -600,7 +616,7 @@ function cutTextFix(b: BlockReport, need: number): string | undefined {
 function regionFreeSpace(regions: Record<string, Box>, blocks: BlockReport[], gap: number): Record<string, number> {
   const free: Record<string, number> = {}
   for (const [name, rb] of Object.entries(regions)) {
-    const inRegion = blocks.filter((b) => b.region === name)
+    const inRegion = blocks.filter((b) => b.region === name && !b.outOfFlow)
     const used = inRegion.reduce((s, b) => s + b.box.height, 0) + Math.max(0, inRegion.length - 1) * gap
     free[name] = r(rb.height - used - (inRegion.length > 0 ? gap : 0))
   }
@@ -769,7 +785,7 @@ function pairFindings(a: BlockReport, b: BlockReport, out: LayoutFinding[]): voi
 }
 
 function party(b: BlockReport): OverlapParty {
-  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted) }
+  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted }
 }
 
 /** The smaller of the two moves that separates `b` from `a` (down or sideways). */
@@ -817,7 +833,8 @@ function freeRatio(frame: Size, painted: Box[]): number {
  * The occupancy map: one char per 40×40 cell, sampled at the cell centre. Upper-case letter =
  * that block paints here; lower-case = inside its box but nothing painted (allocated, empty);
  * `#` = two or more blocks (painted content or boxes); `!` = content painted outside its own
- * box; `.` = empty. Blocks past the 26th share `*`.
+ * box; `.` = empty. Blocks past the 26th share `*`. Layers (LO2): backdrops are drawn only where
+ * no other block is, overlays only where they paint — so intended layering is not a `#`.
  */
 export function layoutMap(report: LayoutReport): string[] {
   const cols = Math.ceil(report.frame.width / MAP_CELL)
@@ -832,8 +849,14 @@ export function layoutMap(report: LayoutReport): string[] {
       let boxes = 0
       let painter: BlockReport | undefined
       let owner: BlockReport | undefined
-      for (const b of report.blocks) {
-        const inBox = containsPt(b.box, cx, cy)
+      // LO2: a backdrop shows only where nothing else is; an overlay counts only where it paints
+      // (a region overlay's box is the whole region). Intended layering is then not a `#`.
+      const front = report.blocks.filter((b) => b.layer !== 'backdrop')
+      const hit = (b: BlockReport) =>
+        (b.layer !== 'overlay' && containsPt(b.box, cx, cy)) || (!!b.painted && containsPt(b.painted, cx, cy))
+      const layer = front.some(hit) ? front : report.blocks.filter((b) => b.layer === 'backdrop')
+      for (const b of layer) {
+        const inBox = b.layer !== 'overlay' && containsPt(b.box, cx, cy)
         if (inBox) {
           boxes++
           owner = b

@@ -210,6 +210,10 @@ export type {
   OverlapParty,
   AnalyzeSlideOptions,
 } from './layout-report'
+// LO2 — paint layers (`BlockSpec.layer` / `BlockDefinition.layer`).
+export { definitionLayer, isBlockLayer } from './block-layer'
+export { splitLayeredBlocks } from './slide-compiler'
+export type { LayeredSplit, LayeredRegionBlock } from './slide-compiler'
 
 // Shared nearest-name suggestion, used by both `compileSlide`'s region findings and
 // `validateDeckSpec`'s — so the same misspelled name gets the same suggested fix from both.

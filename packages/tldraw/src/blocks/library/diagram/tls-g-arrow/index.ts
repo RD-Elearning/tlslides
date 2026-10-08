@@ -16,6 +16,8 @@ export const tlsGArrow: BlockDefinition = {
   keywords: ['arrow', 'pointer', 'connector', 'curved arrow', 'elbow', 'flow direction'],
   category: 'decoration',
   scope: 'element',
+  // LO2: an annotation arrow is drawn over what it points at.
+  layer: 'overlay',
   shortDescription: 'Standalone straight, curved or elbow arrow with an optional label',
   related: ['tls.g.flow'],
   describe: {

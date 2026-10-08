@@ -16,6 +16,8 @@ export const tlsXRule: BlockDefinition = {
   keywords: ['rule', 'divider', 'line', 'separator', 'accent bar', 'underline'],
   category: 'decoration',
   scope: 'element',
+  // LO2: a divider sits between blocks; behind text it would strike it through.
+  layer: 'content',
   shortDescription: 'Horizontal or vertical divider line, plain or accent gradient',
   related: ['tls.m.decoration', 'tls.l.section'],
   describe: {

@@ -106,6 +106,10 @@ export function compileSlide(
   registry?: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
+  // LO2: blocks with an explicit `layer: 'backdrop' | 'overlay'` in a region are out of flow.
+  const layered = splitLayeredBlocks(spec)
+  if (layered) return compileLayered(layered, frame, tokens, registry, opts)
+
   const findings: CompileFinding[] = []
   // P7: blocks with no own `motion` that a slide/deck motion style may animate.
   const styleCandidates: StyleCandidate[] = []
@@ -496,4 +500,104 @@ function resolveRegions(
  */
 function nearestRegion(target: string, knownRegions: string[]): string | undefined {
   return nearestName(target, knownRegions)
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* LO2 — layered region blocks (backdrop / overlay)                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** One region block taken out of the vertical stack by an explicit `layer`. */
+export interface LayeredRegionBlock {
+  region: string
+  /** Index in the authored `spec.regions[region]` array. */
+  index: number
+  block: BlockSpec
+  layer: 'backdrop' | 'overlay'
+}
+
+export interface LayeredSplit {
+  /** The slide with every layered block removed from its region (region keys kept). */
+  flow: SlideSpec
+  backdrops: LayeredRegionBlock[]
+  overlays: LayeredRegionBlock[]
+}
+
+/**
+ * Split a slide's region blocks into the stacked flow and the out-of-flow layered blocks
+ * (`BlockSpec.layer` explicitly `'backdrop'` or `'overlay'`). `undefined` when there are none, so
+ * a slide without layers compiles through exactly the code path it always did.
+ */
+export function splitLayeredBlocks(spec: SlideSpec): LayeredSplit | undefined {
+  const backdrops: LayeredRegionBlock[] = []
+  const overlays: LayeredRegionBlock[] = []
+  const regions: Record<string, BlockSpec[]> = {}
+  for (const [region, blocks] of Object.entries(spec.regions)) {
+    if (!Array.isArray(blocks)) {
+      regions[region] = blocks
+      continue
+    }
+    regions[region] = []
+    blocks.forEach((block, index) => {
+      const layer = block?.layer
+      if (layer === 'backdrop') backdrops.push({ region, index, block, layer })
+      else if (layer === 'overlay') overlays.push({ region, index, block, layer })
+      else regions[region].push(block)
+    })
+  }
+  if (backdrops.length === 0 && overlays.length === 0) return undefined
+  return { flow: { ...spec, regions }, backdrops, overlays }
+}
+
+/**
+ * Compile a slide with layered region blocks, deterministically:
+ * 1. the flow (everything else) compiles exactly as `compileSlide` always does;
+ * 2. each layered block gets its region's box — the layout box, grown to cover the region's
+ *    stacked blocks when they overflow or were re-flowed — and does not take part in stacking;
+ * 3. z: every backdrop paints under every other shape, every overlay over every other shape
+ *    (authored order within each layer). `childIndex` is renumbered 1..n in that order and the
+ *    returned `shapes` array is in that order.
+ * Layered blocks keep their own/definition motion; the slide's `motionStyle` does not stagger
+ * them (it would renumber the flow's reading order).
+ */
+function compileLayered(
+  split: LayeredSplit,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  opts: CompileSlideOptions | undefined
+): CompileSlideResult {
+  const result = compileSlide(split.flow, frame, tokens, registry, opts)
+  const { regionBoxes } = resolveRegions(split.flow.layout, frame, tokens)
+
+  const regionExtent = (region: string): Box | undefined => {
+    const rb = regionBoxes[region]
+    if (!rb) return undefined
+    const ids = new Set((split.flow.regions[region] ?? []).map((b) => b.id))
+    let x1 = rb.x
+    let y1 = rb.y
+    let x2 = rb.x + rb.width
+    let y2 = rb.y + rb.height
+    for (const shape of result.shapes) {
+      const id = (shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id
+      if (id === undefined || !ids.has(id)) continue
+      x1 = Math.min(x1, shape.point[0])
+      y1 = Math.min(y1, shape.point[1])
+      x2 = Math.max(x2, shape.point[0] + shape.size[0])
+      y2 = Math.max(y2, shape.point[1] + shape.size[1])
+    }
+    return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
+  }
+
+  const place = (l: LayeredRegionBlock): ComponentShape[] => {
+    const box = regionExtent(l.region)
+    // Unknown region: the flow compile already reported `region/unknown` for it.
+    if (!box) return []
+    return [blockToShape(l.block, box, { definitionMotion: registry?.get(l.block.type)?.motion })]
+  }
+
+  const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
+  shapes.forEach((shape, i) => {
+    shape.childIndex = i + 1
+  })
+  return { ...result, shapes }
 }

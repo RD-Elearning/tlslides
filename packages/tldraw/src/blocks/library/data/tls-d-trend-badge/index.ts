@@ -16,6 +16,8 @@ export const tlsDTrendBadge: BlockDefinition = {
   keywords: ['trend', 'badge', 'delta', 'change', 'arrow', 'up', 'down'],
   category: 'metric',
   scope: 'element',
+  // LO2: a badge is meant to sit on a card or number corner.
+  layer: 'overlay',
   shortDescription: 'Small pill with an up or down arrow and a change value',
   related: ['tls.c.kpi-tile', 'tls.d.stat-compare'],
   describe: {
