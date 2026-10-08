@@ -172,6 +172,45 @@ export type {
   CapabilityDetailOptions,
 } from './capability-digest'
 
+// LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
+// geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact
+// LLM-facing text (`reviews/blocks/layout-oracle/README.md`). Package-level export is LO4.
+export {
+  measureBlock,
+  collectPaintedLeaves,
+  paintedBounds,
+  pathBounds,
+  unionBox,
+  DEFAULT_PROBE_HEIGHT,
+} from './layout/measure-block'
+export type {
+  BlockMeasure,
+  MeasureBlockOptions,
+  MeasureConfidence,
+  PaintedLeaf,
+  TextLeafMeasure,
+  CollectedLeaves,
+} from './layout/measure-block'
+export {
+  analyzeSlide,
+  analyzeDeck,
+  formatLayoutReport,
+  layoutMap,
+  blockLayer,
+  classifyOverlap,
+  MAP_CELL,
+} from './layout-report'
+export type {
+  LayoutReport,
+  BlockReport,
+  TextLeafReport,
+  LayoutFinding,
+  LayoutFindingCode,
+  BlockLayer,
+  OverlapParty,
+  AnalyzeSlideOptions,
+} from './layout-report'
+
 // Shared nearest-name suggestion, used by both `compileSlide`'s region findings and
 // `validateDeckSpec`'s — so the same misspelled name gets the same suggested fix from both.
 export { levenshtein, nearestName } from './nearest-name'

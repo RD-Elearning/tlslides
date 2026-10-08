@@ -786,3 +786,25 @@ describe('compileSlide', () => {
     })
   })
 })
+
+/* ── LO0: natural region height survives an unmeasurable block ──────────────── */
+
+describe('compileSlide — natural height with an unmeasurable block (LO0)', () => {
+  it('a block that fails to measure does not reset the region total, so the region still re-flows', () => {
+    const registry = new BlockRegistry()
+    registerBuiltInBlocks(registry)
+    const long = 'Design systems scale because every decision is made once and reused everywhere. '.repeat(6)
+    const tall: BlockSpec = { type: 'tls.t.body', id: 'tall', props: { text: long } }
+    // `tls.text` is not registered: it measures as -1. Listed *after* the tall block, the old
+    // reduce `(sum, h) => (h > 0 ? sum + h : 0)` reset the region's natural height to 0 here.
+    const unknown: BlockSpec = { type: 'tls.text', id: 'unknown', props: { text: 'x' } }
+    const sub: BlockSpec = { type: 'tls.t.caption', id: 'sub', props: { text: 'Subtitle' } }
+    const spec: SlideSpec = { id: 's', layout: 'title', regions: { title: [tall, unknown], subtitle: [sub] } }
+    const result = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const byId = (id: string) => result.shapes.find((s) => (s.props.$block as { id?: string }).id === id)!
+    const tallShape = byId('tall')
+    const subShape = byId('sub')
+    // The subtitle region is re-flowed below the title region's real content.
+    expect(subShape.point[1]).toBeGreaterThanOrEqual(tallShape.point[1] + tallShape.size[1])
+  })
+})

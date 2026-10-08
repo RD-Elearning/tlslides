@@ -183,7 +183,8 @@ export function compileSlide(
 
       // Compute natural height (measured blocks + gaps)
       const gapsTotal = blocks.length > 1 ? (blocks.length - 1) * gap : 0
-      const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : 0), 0)
+      // LO0: skip a block that failed to measure (-1); never reset the running sum.
+      const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : sum), 0)
       regionNaturalHeights.set(regionName, measuredTotal + gapsTotal)
     }
   }
