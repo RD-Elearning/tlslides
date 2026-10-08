@@ -158,8 +158,8 @@ letter-spacing / bold in tableMetrics) if found.
 | LO1.5 | done | `525495b4` | Column-aware re-flow, fill-aware region sizing; see Notes — LO1.5. |
 | LO2 | done | `415d86a6` | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
 | LO2.1 | done | `e3fb6ace` | `anchor`/`anchorTo` on layered region blocks, backdrop-text `info`, title band = one title line, `regionAlign` fixed. `layout-anchor.spec.ts` 19 tests. Fixture `text/shrunk` 14 → 6, no new errors/warnings. tsc prod 0, spec 329 (= before). See Notes — LO2.1. |
-| LO3 | todo | | |
-| LO4 | todo | | |
+| LO3 | done | (this commit) | `block-metrics.ts` `buildBlockMetrics` → committed `__generated__/block-metrics.json` (129 cards, 64 KB, one line per block) + `block-size-hints.ts`; staleness spec; index hint `[h≈0+104/L@840]`, index 18.8k chars (≤ 20k). `block-metrics.spec.ts` 13 tests. See Notes — LO3/LO4. |
+| LO4 | done | (this commit) | Size-card API exported from `blocks/index.ts` (package root re-exports it); `turbo build:packages` exit 0, dist CJS verified. CLI `tools/layout-report/cli.js` (+ `load.js`, `gen-block-metrics.js`), 0.4-0.8 s per fixture deck. Docs: `LLM-ARCHITECTURE.md` §S4.1, `guides/blocks-authoring.md` §2.10. |
 | LO5 | todo | | |
 
 ### Notes — LO0 / LO1 (2026-10-08)
@@ -451,3 +451,75 @@ motion run, same title band as HEAD): title "Kết quả học tập — express
   report re-lays with `tableMetrics`, which may differ by a few units (no finding seen).
 - `tls.c.hero` in the `title` region and `sl_05`'s quote overflow remain (content choices).
 
+### Notes — LO3 / LO4 (2026-10-08)
+
+**Size cards (LO3).** Per block, at reference widths 1728/840/544 (`null` below `size.min[0]`):
+the example (`describe.example.props` over `defaults`) is measured once per width; the model then
+varies **one** prop — the first required content `list`/`series` slot (items, from its min ≥ 1 to
+its max, capped at 8, example items cycled), else the content text slot with the largest
+`maxChars` (synthetic text sized for 1-4 lines from the example's chars-per-line, capped at
+`maxChars`), else nothing (`fixed`) — and fits `h ≈ base + per·x` by least squares with
+`err = max |model − measured|`. `poor` when `err > max(8, 5% of the tallest sample)`; the index
+then prints the sampled range (`h 164–222@840`) instead of a line. Built-in census: 21 lines,
+45 items, 10 fixed, 48 `fill` (elastic at every usable width: charts, images, diagrams, stretch
+containers), 5 containers with a `blocks` slot (no model, note says so); 9 cards have a model
+`null` at some widths because the block is elastic there only (e.g. `tls.t.quote` clamps at its
+preferred height when narrow). Html-kind blocks are measured from their poster → `confidence:
+medium`. Generation: ~1 s in node, ~3 s inside jest.
+
+**Deviation: two generated files.** `capability-digest.ts` cannot `import` the JSON — the package
+tsconfig is `composite` and its `include` lists only `.ts`, so tsc fails with TS6307 (verified).
+Rather than touch tsconfig, the generator also writes `__generated__/block-size-hints.ts`
+(type → hint string). One script writes both, one spec checks both
+(`node tools/layout-report/gen-block-metrics.js`). `CapabilityIndexEntry.size` is the hint; the
+`capability-digest.spec.ts` kpi-row `toEqual` now includes it.
+
+**Model vs `measureBlock` on content the generator never saw** (`block-metrics.spec.ts` pins
+these; x_est = planner estimate `ceil(chars / (0.85·cpl))`):
+
+| block @w | var | x | x_est | model | measured |
+|---|---|---|---|---|---|
+| tls.t.title @840 | lines | 6 | 6 | 622 | 622 |
+| tls.t.callout @840 | lines | 4 | 4 | 259 | 259 |
+| tls.t.body @1728 | lines | 3 | 4 | 122 (162 with x_est) | 122 |
+| tls.c.testimonial @840 (html) | lines | 6 | 6 | 532 | 533 |
+| tls.l.section @840 | lines | 2 | 3 | 298 (351 with x_est) | 299 |
+| tls.t.bullets @840 | items | 5 | – | 277 | 277 |
+| tls.d.ranking @840 | items | 6 | – | 504 | 504 |
+| tls.c.contact @840 | items | 3 | – | 412 | 412 |
+
+Given the true line/item count the model is within 1 unit; the error budget is the planner's
+line estimate, which with the 0.85 factor over-counts (safe side) and never under-counted here.
+Poor fits are where the shape is not linear: `tls.g.steps` (err 66 @840), `tls.c.team` (239
+@1728, rows of 4), `tls.c.feature-grid` (100), `tls.c.kpi-row` @544 (wraps).
+
+**CLI (LO4).** `node tools/layout-report/cli.js deck.json [--slide id|index] [--format text|json]
+[--no-map] [--text-metrics table|estimate] [--dist]`, `--metrics [--types a,b]`, `-` = stdin. TS in
+plain node: `load.js` bundles `src/blocks/index.ts` in memory with the repo's own esbuild 0.14
+(the one `lask` uses) and `tsconfig.build.json` (paths + `jsx: react`), compiled as a module
+inside the package so `react` resolves; `--dist` loads `dist/index.js` instead. `@swc-node/register`
+(the parity worker's loader) was tried first and does not resolve the `~` path aliases. No
+dependency added or changed. Fixture decks (whole deck, wall clock incl. bundling): demo 8 slides
+0.43 s (3 warnings, screenshot sl_01, sl_07), tour 29 slides 0.58 s (clean), colorful 46 slides
+0.74 s (1 warning), motion-showcase 12 slides 0.46 s. `--dist --metrics` output is byte-identical
+to the committed JSON.
+
+**Build/exports.** `measureBlock, analyzeSlide, analyzeDeck, formatLayoutReport, buildBlockMetrics`
+(+ `sizeHint`, `blockSizeHints`, the stringifiers, `METRICS_WIDTHS`, all types) reach the package
+root through `export * from './blocks'`. `turbo run build:packages` exit 0;
+`require('packages/tldraw/dist/index.js')` exposes all of them in plain node.
+
+**Scope cuts, named.**
+- **ESM dist in raw node fails** (`import()` of `dist/index.mjs`: `@tlslides/core` is CJS without
+  named ESM exports). Pre-existing, unrelated to LO4; bundlers (Next.js) are fine, and the CLI
+  uses CJS. A Next.js API route import was not exercised (Next wiring stays deferred).
+- One model per block, one varied prop. A card with title + body varies the body; an `items`
+  model assumes example-length items (multi-line items are taller than `per`).
+- Default theme only. A theme with a bigger type scale (midnight) changes heights; the oracle
+  (`analyzeSlide` with the deck's tokens) is the answer there, not the card.
+- Negative bases (`h≈-18+59/item`) are the honest least-squares intercept (no item → no gap),
+  not clamped.
+- The CLI's exit status ignores findings (FastAPI reads `summary`); no `--fail-on-error`.
+- Not done here: no visual scenario (headless data + CLI; LO5 owns browser calibration).
+- tsc prod 0, spec 329 (= before); eslint 0 errors on touched files (warnings: non-null
+  assertions, same style as neighbours).

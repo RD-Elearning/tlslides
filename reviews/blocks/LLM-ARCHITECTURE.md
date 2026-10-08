@@ -249,6 +249,101 @@ each with its findings, and returns replacement `SlideSpec`s for those keys. Two
 a slide still failing after that is flagged in the report and rendered with the fallback layout
 so the deck is never broken. Every repair round is one version (`source: 'repair'`).
 
+### S4.1 · Layout oracle loop — geometry without screenshots (LO3/LO4)
+
+Design and status: [layout-oracle/README.md](layout-oracle/README.md). Every block's look is a
+pure `layout()` tree with real Inter glyph metrics, so whether content fits, overlaps or runs
+off the frame is *computed* in Node, in milliseconds. A screenshot is taken only for what the
+report itself flags as uncertain.
+
+```
+S2 plan ── reads size cards (index hints `[h≈…]`, full cards on demand)
+   │
+S3 fill ── DeckSpec
+   │
+   ▼
+analyze (CLI / exported analyzeDeck, ~5-20 ms/slide)
+   │ findings with severity error|warning ──► repair call with formatLayoutReport text
+   │                                           (failing slides only) ──► analyze again
+   │                                           max 2 rounds (same budget as S4 repair)
+   ▼ clean, or rounds exhausted
+screenshot only slides whose report.needsVisualCheck is non-empty (S5 critic)
+```
+
+**1. Planning — size cards.** `buildBlockMetrics()` is sampled from `measureBlock`, never
+authored. The committed copy is `packages/tldraw/src/blocks/__generated__/block-metrics.json`
+(also `node tools/layout-report/cli.js --metrics [--types a,b]`). The capability index carries a
+terse hint per block: `[h≈0+104/L@840]` (base + per line of the main text, at width 840),
+`[h≈-18+59/item@840]` (per list item), `[h≈43@840]` (fixed), `[h 164–222@840]` (poor linear fit:
+the sampled range), `[h=fill]` (takes whatever height it is given). The planner turns text into
+lines with `lines ≈ ceil(chars / (0.85 · cpl))` (cpl from the card; the 0.85 absorbs word-wrap
+loss and errs on the long side). One card (one JSON line per block):
+
+```json
+"tls.t.callout": {"kind":"layout","scope":"element","category":"emphasis","layer":"content",
+  "size":{"preferred":[800,200],"min":[480,180]},"fill":false,
+  "text":{"title":{"fontSize":28,"lineHeight":40.6,"cpl":[101,46,27]},
+          "text":{"fontSize":28,"lineHeight":40.6,"cpl":[100,45,26]}},
+  "model":{"var":"lines","slot":"text","at":{
+     "544":{"base":98,"per":40.4,"err":1,"x":[1,4],"h":[138,259]},
+     "840":{"base":97,"per":40.5,"err":1,"x":[1,5],"h":[138,300]},
+     "1728":{"base":97,"per":40.5,"err":1,"x":[1,3],"h":[138,219]}}},
+  "confidence":"high"}
+```
+
+Shape (`BlockMetricsFile`): `{version:1, theme, metrics:"table", widths:[1728,840,544],
+blocks:{[type]: {kind, scope, category, layer, size:{preferred,min,aspect?}, fill,
+text:{[slot]: {fontSize, lineHeight, cpl:(number|null)[]}}, model: null | {var:"lines"|"items"|"fixed",
+slot?, at:{[width]: null | {base, per, err, x:[min,max], h:[min,max], poor?:true}}},
+confidence:"high"|"medium"|"low", note?}}}`. `cpl`/`at` entries follow `widths`; `null` = below
+the block's min width, fills its box there, or unmeasurable. Other props keep the block's
+`describe.example` values, so an `items` model assumes example-length items. Numbers are for
+the default theme; a theme with a larger type scale needs the oracle, not the card.
+
+**2. Checking — the report.** FastAPI calls the CLI as a subprocess (or a Next.js route that
+imports `analyzeDeck`/`formatLayoutReport` from `@tlslides/tldraw`):
+
+```bash
+node tools/layout-report/cli.js deck.json --format json          # whole deck, JSON
+node tools/layout-report/cli.js deck.json --slide sl_05 --no-map # one slide, prompt text
+cat deck.json | node tools/layout-report/cli.js - --format json  # stdin
+```
+
+JSON received: `{deck, slides: LayoutReport[], summary:{slides, errors, warnings,
+needsVisualCheck: slideId[]}}`. `LayoutReport = {slideId, layout, frame, metrics, regions,
+blocks: BlockReport[], findings: LayoutFinding[], margins, freeSpace, needsVisualCheck: blockId[]}`;
+`LayoutFinding = {code, severity:"error"|"warning"|"info", blockIds, message, fix?}`; `BlockReport`
+has `id, path, type, region, layer, z, box, natural, elastic, painted, contentOverflow, text[],
+capacity?, confidence`. Exit status 0 = report printed (findings do not change it), 2 = bad input.
+Measured: 0.3-0.8 s per call for a whole fixture deck (8-46 slides), most of it bundling.
+
+**3. Fixing — the prompt.** Only slides with an `error` or `warning` go back, as
+`formatLayoutReport` text (≤ 2.5k chars a slide with the map; `--no-map` for a tighter prompt):
+
+```text
+The slide below does not fit. Return a replacement SlideSpec for slide sl_05 only (JSON, nothing
+else). Apply each FIX; prefer shortening text over changing blocks, and changing blocks over
+changing the layout. Keep ids.
+
+SLIDE sl_05 layout=quote frame=1920x1080 metrics=table | 2 blocks | 0 errors, 2 warnings
+regions: quote 355,427 1210x140 | attribution 355,615 1210x38
+blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
+A b_05_quote tls.t.quote @quote 355,427 1210x237 fill | text 2L×52 ~61c/L, attribution 1L×41 ~91c/L
+B b_05_cap tls.t.caption @attribution 355,688 1210x33 nat 274x31 | text 1L×31 ~123c/L
+findings:
+W region/overflow Block "b_05_quote" measures 237 slide units tall, exceeding the "quote" region height of 140 slide units. FIX: shrink b_05_quote by 97 units (…): cut `text` to ≤ 1 line (~61 chars/line, ≤ 61 chars; now 2 lines, 67 chars)
+W region/displaced b_05_cap was moved out of its region `attribution` (y 615-653) to y 688 by the compiler's region re-flow. FIX: fix the overflow of region `quote`; b_05_cap then returns to `attribution`
+margins t459 r432 b361 l355 | free 89%
+
+Current SlideSpec: {…}
+```
+
+Stop when a slide has no `error`/`warning`, or after **N = 2** repair rounds (then keep the best
+round by error count and flag the slide). `info` findings (`text/shrunk`, intended layering) never
+trigger a round. Then screenshot only `summary.needsVisualCheck` (blocks with confidence ≠ high:
+html-kind blocks measured from their poster, hosts without one); LO5 adds "within 5% of a
+threshold" to that list.
+
 ### S5 · Render and review — the critic
 
 Detailed in §5. Output: `ReviewReport` + optionally `DeckSpec` v2 (`source: 'review'`).

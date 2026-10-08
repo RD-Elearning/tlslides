@@ -21,6 +21,7 @@ import type { BlockCategory, BlockDefinition, BlockScope, ColorRole, ResolvedTok
 import type { BlockLayer } from './types'
 import { BLOCK_CATEGORIES, CATEGORY_INFO } from './types'
 import { definitionLayer } from './block-layer'
+import { BLOCK_SIZE_HINTS } from './__generated__/block-size-hints'
 import { ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
@@ -71,6 +72,9 @@ export interface CapabilityIndexEntry {
   related?: string[]
   /** LO2: paint layer, only when not `content`. */
   layer?: BlockLayer
+  /** LO3: height hint from the size cards (`block-metrics.json`), e.g. `h≈0+104/L@840`. Absent
+   *  for blocks without a card (a host block) or without an honest number. */
+  size?: string
 }
 
 export interface CapabilityIndexOptions {
@@ -498,6 +502,7 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         shortDescription: def.shortDescription ?? def.summary,
         ...(def.related && def.related.length ? { related: [...def.related] } : {}),
         ...layerField(def),
+        ...(BLOCK_SIZE_HINTS[def.type] ? { size: BLOCK_SIZE_HINTS[def.type] } : {}),
       }
     })
 }
@@ -516,6 +521,12 @@ const LAYER_LINE =
   '(`fill` or `top-left`…`bottom-right`, `center`) puts it at natural size on that corner/edge; `anchorTo: "<id>"` ' +
   'anchors to a stacked block of the region (a badge on a card corner). Blocks marked ' +
   '`backdrop`/`overlay` below default to that layer only for overlap checks; `layer` still has to be set to stack.'
+
+/** LO3 — how to read the `[h…]` size hints. */
+const SIZE_LINE =
+  'Height hints (slide units, 1920×1080 frame, default theme, at the width after `@`): `h≈B+P/L` = B + P per ' +
+  'line of the main text, `h≈B+P/item` = per list item, `h≈B` = fixed, `h X–Y` = varies (sampled range), ' +
+  '`h=fill` = takes the height it is given. Plan regions so content fits; the layout report checks it.'
 
 /** P7 — one line telling the planner how to use deck/slide motion styles. */
 const MOTION_STYLE_LINE =
@@ -544,7 +555,9 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   lines.push('- `group`: a self-contained unit. One per region; may sit inside `tls.l.card` or `tls.l.section`.')
   lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
   lines.push('')
-  lines.push('Line format: `type · category · scope · item range · layer — what the viewer sees` (layer only when not content). Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('Line format: `type · category · scope · item range · layer — what the viewer sees [height]` (layer only when not content). Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('')
+  lines.push(SIZE_LINE)
   lines.push('')
   lines.push(LAYER_LINE)
   lines.push('')
@@ -556,7 +569,7 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
     lines.push(`## ${CATEGORY_INFO[cat].label} — ${CATEGORY_INFO[cat].description}`)
     lines.push('')
     for (const e of inCat) {
-      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}`)
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}`)
     }
     lines.push('')
   }

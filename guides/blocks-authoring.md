@@ -353,6 +353,37 @@ same thing everywhere: `legend` (top/bottom/right/none), `valueLabels` (none/end
 Design rules live in the engine: one series gets direct labels, not a legend; bars have a zero
 baseline; at most one recessive gridline set; no 3D, no dual axis.
 
+### 2.10 Layer, fill and size cards — what the layout oracle reads
+
+The AI plans with **size cards** and checks with the **layout report**
+([reviews/blocks/layout-oracle/README.md](../reviews/blocks/layout-oracle/README.md),
+LLM side in [LLM-ARCHITECTURE.md](../reviews/blocks/LLM-ARCHITECTURE.md) §S4.1). Both are read off
+your `layout()` tree, so an author's job is mostly to keep the tree honest:
+
+- **Layer.** Default: category `decoration` → `backdrop`, else `content`. Set `layer` on the
+  definition only when the block is meant to be drawn under content (`'backdrop'`: a field, a
+  watermark) or over it (`'overlay'`: a badge, an arrow). Overlays must not paint over text; a
+  default `anchor` (LO2.1) says where a layered instance sits at natural size.
+- **Fill.** A block whose painted content follows its box (chart, image, donut, a stretched grid)
+  is detected as *fill* by `measureBlock`; its card has no height model and the index shows
+  `[h=fill]`. Do not fake a natural height — but a *content* block should not return a root box
+  taller than what it paints unless it centres or stretches on purpose, or it is reported as fill.
+- **Name your text.** Give text nodes `propPath` (the slot path, `items.${i}.text`) or a `part`;
+  the cards key `fontSize`/`lineHeight`/chars-per-line by it, and the report's fixes ("cut `text`
+  to ≤ 1 line") name it.
+- **`describe.example` is the sample.** Every model varies one prop (the first required content
+  list, else the largest text slot) and keeps the example for the rest, so a realistic example
+  gives a realistic card.
+- **Keep the cards fresh.** Changing a block's layout, sizes, schema or example changes its
+  card. `block-metrics.spec.ts` fails with the command to run:
+
+  ```bash
+  node tools/layout-report/gen-block-metrics.js   # rewrites __generated__/block-metrics.json + block-size-hints.ts
+  ```
+
+  Commit both files with the block change. To check one slide while authoring:
+  `node tools/layout-report/cli.js deck.json --slide <id>`.
+
 ## 3. FastAPI + LLM integration — how a model picks blocks
 
 The frontend never talks to the LLM. It talks to FastAPI in `DeckSpec` JSON; FastAPI owns the
