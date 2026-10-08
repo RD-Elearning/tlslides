@@ -113,6 +113,9 @@ interface BlockSpec {
   motion?: BlockMotionSpec           // animation overrides
   children?: BlockSpec[]             // for container blocks only
   layer?: 'backdrop' | 'content' | 'overlay'  // LO2 — paint layer / stacking (see below)
+  anchor?: 'fill' | 'top-left' | 'top' | 'top-right' | 'left' | 'center'
+         | 'right' | 'bottom-left' | 'bottom' | 'bottom-right'  // LO2.1 — layered placement
+  anchorTo?: string                  // LO2.1 — id of a stacked block in the same region
 }
 ```
 
@@ -121,9 +124,18 @@ interface BlockSpec {
 **AI-writable way to overlap blocks** into one composite look (the AI never writes `free[]`):
 
 - In a slide **region**, an explicit `"backdrop"` or `"overlay"` takes the block **out of the
-  region's vertical stack**. It gets the whole region box (grown to cover the region's stacked
-  blocks if they overflow) and takes no stacking space; the other blocks are placed exactly as if
-  it were absent. z is deterministic: every region backdrop paints under every other block of the
+  region's vertical stack**. It takes no stacking space; the other blocks are placed exactly as if
+  it were absent. Where it goes (LO2.1):
+  - **anchor box** = the region box (grown to cover the region's stacked blocks if they overflow),
+    or, with `anchorTo: "<id>"`, the *painted* box of that stacked block of the same region
+    (a badge on a card's corner), inset by `space.sm`. An unknown or layered target falls back
+    to the region box (`validateDeckSpec`: `block/anchor-target` error);
+  - **`anchor`** = `"fill"` → the whole anchor box (LO2 behaviour); any other value → the block's
+    natural size (`measureBlock`, grown until it paints that size unshrunk, clamped to the anchor
+    box) at that corner/edge. Absent = the definition's `anchor` (`tls.d.trend-badge`:
+    `"top-right"`), else `"fill"` (watermark, decoration, arrow);
+  - `anchor`/`anchorTo` on a block without such a layer, or inside a container, is ignored
+    (`block/anchor-unused` warning). z is deterministic: every region backdrop paints under every other block of the
   slide, every region overlay over every other block, authored order within each layer.
 - `"content"` or absent = stacked as usual. A decoration block *without* an explicit `layer`
   still stacks (old decks compile unchanged); its derived `backdrop` only affects overlap checks.
@@ -132,14 +144,17 @@ interface BlockSpec {
 - The layout report's policy (`analyzeSlide`): content ∩ content → `layout/overlap` error;
   backdrop ∩ anything → `info` when the backdrop is behind, error when it paints over;
   overlay ∩ content → `info` unless what the overlay *paints* covers a text leaf
-  (`text/occluded`); text ∩ text across blocks → `text/collision` regardless of layer.
+  (`text/occluded`); text ∩ text across blocks → `text/collision` error, except (LO2.1) when one
+  side is a backdrop painting *behind* the other (a watermark behind a title) → `info`.
 
 ```json
 "left": [
   { "id": "b_blob", "type": "tls.m.decoration", "layer": "backdrop",
     "props": { "shape": "blob", "tone": "accent2", "opacity": "soft", "seed": 7 } },
   { "id": "b_card", "type": "tls.c.stat-card",
-    "props": { "icon": "zap", "value": "$4.2M", "unit": "Annual Revenue" } }
+    "props": { "icon": "zap", "value": "$4.2M", "unit": "Annual Revenue" } },
+  { "id": "b_trend", "type": "tls.d.trend-badge", "layer": "overlay", "anchorTo": "b_card",
+    "props": { "delta": 12, "format": "percent" } }
 ]
 ```
 

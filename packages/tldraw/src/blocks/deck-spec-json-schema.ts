@@ -12,7 +12,7 @@ import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import type { SlotSpec, SlotType } from './types'
-import { BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -176,9 +176,22 @@ function blockSchema(
       layer: {
         enum: [...BLOCK_LAYERS],
         description:
-          'Paint layer. In a slide region, "backdrop" takes the whole region box behind the stacked blocks and ' +
-          '"overlay" the whole region box on top of them (both leave the vertical stack); "content"/absent = stacked. ' +
+          'Paint layer. In a slide region, "backdrop" is placed (see anchor) behind the stacked blocks and ' +
+          '"overlay" on top of them (both leave the vertical stack); "content"/absent = stacked. ' +
           'Default is the block type\'s own layer (decoration blocks are backdrops).',
+      },
+      anchor: {
+        enum: [...BLOCK_ANCHORS],
+        description:
+          'Only with layer "backdrop"/"overlay" in a region: where the block sits in its anchor box (the region, ' +
+          'or the anchorTo block). "fill" = the whole box; any other value = the block\'s natural size at that ' +
+          'edge/corner. Default is the block type\'s anchor (trend badge: "top-right"), else "fill".',
+      },
+      anchorTo: {
+        type: 'string',
+        description:
+          'Only with layer "backdrop"/"overlay": id of a stacked block in the same region whose painted box is the ' +
+          'anchor box (e.g. a badge on a card corner, inset by space.sm).',
       },
     },
     additionalProperties: false,

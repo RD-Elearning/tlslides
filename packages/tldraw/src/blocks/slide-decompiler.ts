@@ -120,6 +120,32 @@ function matchToRegion(
 }
 
 /**
+ * LO2.1 — a layered region block (`layer` backdrop/overlay) placed by an `anchor` has its natural
+ * size, not the region's width, so `shapeMatchesRegion` cannot find it. It belongs to the region
+ * whose x-range contains it (within `tolerance`) and whose top it does not start above; the
+ * nearest such top wins. Recompiling re-derives its box from `anchor`/`anchorTo`.
+ */
+function matchLayeredToRegion(
+  shape: { point: number[]; size: number[] },
+  regionBoxes: Record<string, Box>,
+  tolerance: number
+): string | undefined {
+  let bestName: string | undefined
+  let bestDist = Infinity
+  for (const [name, box] of Object.entries(regionBoxes)) {
+    const inX = shape.point[0] >= box.x - tolerance && shape.point[0] + shape.size[0] <= box.x + box.width + tolerance
+    const inY = shape.point[1] >= box.y - tolerance
+    if (!inX || !inY) continue
+    const dist = Math.abs(shape.point[1] - box.y)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestName = name
+    }
+  }
+  return bestName
+}
+
+/**
  * Derive a `DeckSpec.aspect` from a `[width, height]` page size.
  *
  * Matches against `SLIDE_ASPECT_PRESETS` by value comparison; returns the named
@@ -245,7 +271,10 @@ export function pageToSlideSpec(
       continue
     }
     const shapeForMatch = { point: shapePoint, size: shapeSize }
-    const matchedRegion = matchToRegion(shapeForMatch, regionBoxes, tolerance)
+    const layered = blockSpec.layer === 'backdrop' || blockSpec.layer === 'overlay'
+    const matchedRegion =
+      matchToRegion(shapeForMatch, regionBoxes, tolerance) ??
+      (layered ? matchLayeredToRegion(shapeForMatch, regionBoxes, tolerance) : undefined)
 
     if (matchedRegion) {
       if (!regionEntries[matchedRegion]) regionEntries[matchedRegion] = []

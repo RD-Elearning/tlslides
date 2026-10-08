@@ -2,13 +2,13 @@
 
 exports[`LO1 — committed text snapshot demo-deck sl_03 1`] = `
 "SLIDE sl_03 layout=two-column frame=1920x1080 metrics=table | 5 blocks | 0 errors, 0 warnings
-regions: title 96,96 1728x88 | left 96,232 840x752 | right 984,232 840x752
+regions: title 96,96 1728x108 | left 96,252 840x732 | right 984,252 840x732
 blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
 A b_03_title tls.t.title @title 96,96 1728x76 nat 794x74 | text 1L×74 ~60c/L
-B b_03_bar tls.d.bar @left 96,232 840x752 fill | 12 text leaves 12L, longest title 1L×53 ~36c/L
-C b_03_take tls.t.takeaway @right 984,232 840x130 nat 840x130 | label 1L×31 ~76c/L, text 1L×39 ~59c/L
-D b_03_bullets tls.t.bullets @right 984,386 840x161 nat 620x159 | 6 text leaves 6L, longest items.0.text 1L×41 ~61c/L
-E b_03_cap tls.t.caption @right 984,571 840x33 nat 280x31 | text 1L×31 ~90c/L
+B b_03_bar tls.d.bar @left 96,252 840x732 fill | 12 text leaves 12L, longest title 1L×53 ~36c/L
+C b_03_take tls.t.takeaway @right 984,252 840x130 nat 840x130 | label 1L×31 ~76c/L, text 1L×39 ~59c/L
+D b_03_bullets tls.t.bullets @right 984,406 840x161 nat 620x159 | 6 text leaves 6L, longest items.0.text 1L×41 ~61c/L
+E b_03_cap tls.t.caption @right 984,591 840x33 nat 280x31 | text 1L×31 ~90c/L
 findings: none
 margins t96 r266 b98 l96 | free 58%
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free
@@ -18,16 +18,16 @@ map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overl
 ..AAAAAAAAAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaa..
 ................................................
 ................................................
+..BBBBBBBBBBBBBBBBBBBBB..ccccccccccccccccccccc..
 ..BBBBBBBBBBBBBBBBBBBBB..CCCCCCCCCCCCCCCCccccc..
 ..BBBBBBBBBBBBBBBBBBBBB..CCCCCCCCCCCCCCCCccccc..
 ..BBBBBBBBBBBBBBBBBBBBB..ccccccccccccccccccccc..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
 ..BBBBBBBBBBBBBBBBBBBBB.........................
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDdddddd..
 ..BBBBBBBBBBBBBBBBBBBBB..EEEEEEEeeeeeeeeeeeeee..
-..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................

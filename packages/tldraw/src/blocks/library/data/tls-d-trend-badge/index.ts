@@ -18,6 +18,8 @@ export const tlsDTrendBadge: BlockDefinition = {
   scope: 'element',
   // LO2: a badge is meant to sit on a card or number corner.
   layer: 'overlay',
+  // LO2.1: layered out of the stack it keeps its pill size, in the anchor box's top-right corner.
+  anchor: 'top-right',
   shortDescription: 'Small pill with an up or down arrow and a change value',
   related: ['tls.c.kpi-tile', 'tls.d.stat-compare'],
   describe: {

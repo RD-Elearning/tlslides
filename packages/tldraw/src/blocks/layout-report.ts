@@ -109,8 +109,9 @@ export interface BlockReport {
   /** Region name, or `'free'` for `spec.free[]`. */
   region: string
   layer: BlockLayer
-  /** LO2: a region block with an explicit backdrop/overlay `layer` — it takes the region box and
-   *  is not part of the region's vertical stack (excluded from region fill/overflow maths). */
+  /** LO2: a region block with an explicit backdrop/overlay `layer` — it takes the region (LO2.1:
+   *  or `anchorTo`) box, or its natural size at an `anchor`, and is not part of the region's
+   *  vertical stack (excluded from region fill/overflow maths). */
   outOfFlow?: true
   /** Paint order: higher paints on top (the compiled `childIndex`). */
   z: number
@@ -197,7 +198,7 @@ export interface OverlapParty {
 
 /**
  * Classify a box ∩ box overlap by layer policy (layout-oracle §LO2). Text ∩ text across blocks
- * is reported separately (`text/collision`) regardless of layer.
+ * is reported separately (`text/collision`): an error, `info` when one side is a backdrop behind (LO2.1).
  *
  * - content ∩ content → `layout/overlap` error (warning when the painted content does not meet);
  * - backdrop ∩ anything → allowed (`info`) when the backdrop paints *behind*, else error;
@@ -761,7 +762,8 @@ function pairFindings(a: BlockReport, b: BlockReport, out: LayoutFinding[]): voi
     }
   }
 
-  // Text leaf ∩ text leaf across blocks — an error regardless of layer.
+  // Text leaf ∩ text leaf across blocks — an error, except under a backdrop (LO2.1): a backdrop's
+  // text (a watermark) is designed to sit behind content text, so that is `info` when it is behind.
   let hits = 0
   let worst: Box | null = null
   for (const ta of a.text) {
@@ -774,14 +776,24 @@ function pairFindings(a: BlockReport, b: BlockReport, out: LayoutFinding[]): voi
     }
   }
   if (hits > 0 && worst) {
+    const behind = backdropBehind(a, b)
     out.push({
       code: 'text/collision',
-      severity: 'error',
+      severity: behind ? 'info' : 'error',
       blockIds: [a.id, b.id],
-      message: `text of ${a.id} and ${b.id} overlaps in ${hits} place${hits === 1 ? '' : 's'} (worst ${r(worst.width)}x${r(worst.height)} at ${r(worst.x)},${r(worst.y)}).`,
-      fix: separationFix(a, b, worst),
+      message:
+        `text of ${a.id} and ${b.id} overlaps in ${hits} place${hits === 1 ? '' : 's'} (worst ${r(worst.width)}x${r(worst.height)} at ${r(worst.x)},${r(worst.y)})` +
+        (behind ? `: backdrop ${behind.id} sits behind (intended).` : '.'),
+      ...(behind ? {} : { fix: separationFix(a, b, worst) }),
     })
   }
+}
+
+/** LO2.1 — the backdrop of a pair when exactly one side is a backdrop and it paints behind the other. */
+function backdropBehind(a: BlockReport, b: BlockReport): BlockReport | undefined {
+  if (a.layer === 'backdrop' && b.layer !== 'backdrop' && a.z < b.z) return a
+  if (b.layer === 'backdrop' && a.layer !== 'backdrop' && b.z < a.z) return b
+  return undefined
 }
 
 function party(b: BlockReport): OverlapParty {

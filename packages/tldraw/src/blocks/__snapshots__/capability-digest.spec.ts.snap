@@ -39,7 +39,7 @@ BlockStyleSpec fields (all optional; absent = theme default):
 
 Gradient shape: \`Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }\`
 
-Layers: to stack blocks, put them in the same region and set \`layer\` on the block: \`\\"backdrop\\"\` takes the whole region box behind the region's other blocks (a field, pattern or decoration under a card), \`\\"overlay\\"\` takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. Blocks marked \`backdrop\`/\`overlay\` below default to that layer only for overlap checks; \`layer\` still has to be set to stack.
+Layers: to stack blocks, put them in the same region and set \`layer\` on the block: \`\\"backdrop\\"\` takes the whole region box behind the region's other blocks (a field, pattern or decoration under a card), \`\\"overlay\\"\` takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. \`anchor\` (\`fill\` or \`top-left\`…\`bottom-right\`, \`center\`) puts it at natural size on that corner/edge; \`anchorTo: \\"<id>\\"\` anchors to a stacked block of the region (a badge on a card corner). Blocks marked \`backdrop\`/\`overlay\` below default to that layer only for overlap checks; \`layer\` still has to be set to stack.
 
 ## Motion
 

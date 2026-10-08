@@ -43,9 +43,16 @@ function contentArea(frame: { width: number; height: number }, tokens: ResolvedT
   return { x: m, y: m, width: Math.max(0, frame.width - 2 * m), height: Math.max(0, frame.height - 2 * m) }
 }
 
-/** Title-band height: roughly the type `heading` size plus some breathing room. */
+/**
+ * Title-band height: one line of the `title` type token (what `tls.t.title` sets by default) plus
+ * `space.3xs` of measuring slack (the editor's `estimateMetrics` reports a line as
+ * `round(size × lineHeight) + 2`), and never less than the old `heading` size plus breathing room.
+ * LO2.1: the band used to be `heading + md` (88 at the default scale), shorter than one 104-unit
+ * title line, so every default-size title autofit-shrank in it.
+ */
 function titleBand(tokens: ResolvedTokens): number {
-  return tokens.type.heading.size + tokens.space.md
+  const titleLine = Math.ceil(tokens.type.title.size * tokens.type.title.lineHeight) + tokens.space['3xs']
+  return Math.max(tokens.type.heading.size + tokens.space.md, titleLine)
 }
 
 /** Small title-band height for `section`. */

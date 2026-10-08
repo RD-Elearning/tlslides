@@ -19,8 +19,8 @@ import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
-import { BLOCK_LAYERS, MOTION_STYLES } from './types'
-import { isBlockLayer } from './block-layer'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
@@ -333,6 +333,7 @@ function validateSlide(
       blocksRaw.forEach((blockRaw, bi) => {
         validateBlockTree(blockRaw, `${regionPath}[${bi}]`, reg, seenBlockIds, findings, [], [], 1, tokens)
       })
+      validateRegionAnchors(blocksRaw, regionName, regionPath, findings)
     }
   }
 
@@ -570,6 +571,33 @@ function validateBlockTree(
         message: `Block ${label} sets layer "${block.layer}" inside a container; only a block placed directly in a slide region is taken out of the stack. Move it to the region, or use tls.l.overlay.`,
       })
     }
+  }
+
+  // LO2.1 — anchor of a layered block: closed vocabulary; placement only for a region block with
+  // an explicit backdrop/overlay layer (checked per region, where `anchorTo` can be resolved).
+  if (block.anchor !== undefined && !isBlockAnchor(block.anchor)) {
+    findings.push({
+      level: 'error',
+      rule: 'block/anchor',
+      path: `${path}.anchor`,
+      message:
+        `Block ${label}'s "anchor" is ${stringifyForMessage(block.anchor)}; it must be one of ${BLOCK_ANCHORS.map((a) => `"${a}"`).join(', ')}.`,
+    })
+  }
+  if (block.anchorTo !== undefined && (typeof block.anchorTo !== 'string' || block.anchorTo === '')) {
+    findings.push({
+      level: 'error',
+      rule: 'block/anchor-target',
+      path: `${path}.anchorTo`,
+      message: `Block ${label}'s "anchorTo" must be the id of another block in the same region; got ${describeType(block.anchorTo)}.`,
+    })
+  } else if (depth > 1 && (block.anchor !== undefined || block.anchorTo !== undefined)) {
+    findings.push({
+      level: 'warning',
+      rule: 'block/anchor-unused',
+      path: `${path}.${block.anchorTo !== undefined ? 'anchorTo' : 'anchor'}`,
+      message: `Block ${label} sets an anchor inside a container; anchors only place a layered block directly in a slide region. It is ignored here.`,
+    })
   }
 
   if (block.children !== undefined) {
@@ -1104,4 +1132,44 @@ function stringifyForMessage(value: unknown): string {
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * LO2.1 — region-level anchor checks: `anchor`/`anchorTo` only place a block with an explicit
+ * `layer: "backdrop" | "overlay"`, and `anchorTo` must name a *stacked* block of the same region
+ * (the compiler resolves it in one pass after the stack is placed; anything else falls back to the
+ * region box).
+ */
+function validateRegionAnchors(blocks: unknown[], regionName: string, regionPath: string, findings: DeckFinding[]): void {
+  const layered = (b: Record<string, unknown>) => b.layer === 'backdrop' || b.layer === 'overlay'
+  const stackedIds = blocks
+    .filter((b): b is Record<string, unknown> => isRecord(b) && !layered(b) && typeof b.id === 'string')
+    .map((b) => b.id as string)
+  blocks.forEach((b, bi) => {
+    if (!isRecord(b) || (b.anchor === undefined && b.anchorTo === undefined)) return
+    const path = `${regionPath}[${bi}]`
+    const label = typeof b.id === 'string' ? `"${b.id}"` : `at ${path}`
+    if (!layered(b)) {
+      findings.push({
+        level: 'warning',
+        rule: 'block/anchor-unused',
+        path: `${path}.${b.anchorTo !== undefined ? 'anchorTo' : 'anchor'}`,
+        message: `Block ${label} sets an anchor but no "layer"; a stacked block ignores it. Add "layer": "overlay" (or "backdrop") to place it by its anchor.`,
+      })
+      return
+    }
+    if (typeof b.anchorTo !== 'string' || b.anchorTo === '') return
+    if (!stackedIds.includes(b.anchorTo)) {
+      const suggestion = nearestName(b.anchorTo, stackedIds)
+      findings.push({
+        level: 'error',
+        rule: 'block/anchor-target',
+        path: `${path}.anchorTo`,
+        message:
+          `Block ${label}'s "anchorTo" is "${b.anchorTo}", which is not a stacked block of region "${regionName}"; it falls back to the region box.` +
+          (stackedIds.length ? ` Stacked blocks here: ${stackedIds.join(', ')}.` : ' This region has no stacked block.'),
+        ...(suggestion ? { suggestion } : {}),
+      })
+    }
+  })
 }

@@ -5,8 +5,8 @@
  * Pure and DOM-free.
  */
 
-import type { BlockDefinition, BlockLayer, BlockSpec } from './types'
-import { BLOCK_LAYERS } from './types'
+import type { BlockAnchor, BlockDefinition, BlockLayer, BlockSpec } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS } from './types'
 
 /** The definition's layer: explicit `def.layer`, else category `decoration` → `backdrop`, else `content`. */
 export function definitionLayer(def: BlockDefinition | undefined): BlockLayer {
@@ -22,4 +22,15 @@ export function blockLayer(block: BlockSpec, def?: BlockDefinition): BlockLayer 
 
 export function isBlockLayer(v: unknown): v is BlockLayer {
   return typeof v === 'string' && (BLOCK_LAYERS as readonly string[]).includes(v)
+}
+
+export function isBlockAnchor(v: unknown): v is BlockAnchor {
+  return typeof v === 'string' && (BLOCK_ANCHORS as readonly string[]).includes(v)
+}
+
+/** LO2.1 — the anchor of a layered instance: `block.anchor` ?? `def.anchor` ?? `'fill'`. */
+export function blockAnchor(block: BlockSpec, def?: BlockDefinition): BlockAnchor {
+  if (isBlockAnchor(block.anchor)) return block.anchor
+  if (def && isBlockAnchor(def.anchor)) return def.anchor
+  return 'fill'
 }

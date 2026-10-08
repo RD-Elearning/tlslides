@@ -202,7 +202,7 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     expect(has(analyzeSlide(slide), 'layout/overlap', 'error', ['c1', 'c2'])).toBe(true)
   })
 
-  it('text ∩ text across blocks → text/collision regardless of layer', () => {
+  it('text ∩ text across blocks → text/collision; info only under a backdrop that is behind (LO2.1)', () => {
     const box = { x: 96, y: 96, width: 1200, height: 160 }
     const slide: SlideSpec = {
       id: 's',
@@ -216,7 +216,16 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     const r = analyzeSlide(slide)
     expect(r.blocks[0].layer).toBe('backdrop')
     expect(has(r, 'layout/overlap', 'info', ['w', 't'])).toBe(true)
-    expect(has(r, 'text/collision', 'error', ['w', 't'])).toBe(true)
+    // LO2.1: a watermark is designed to sit behind the title — the collision is intended.
+    expect(has(r, 'text/collision', 'info', ['w', 't'])).toBe(true)
+    expect(has(r, 'text/collision', 'error', ['w', 't'])).toBe(false)
+    expect(errors(r)).toEqual([])
+    // The same watermark *above* the title (later in free[] = higher z) is still an error.
+    const above = analyzeSlide({ ...slide, free: [slide.free![1], slide.free![0]] })
+    expect(has(above, 'text/collision', 'error', ['w', 't'])).toBe(true)
+    // Content text ∩ content text stays an error.
+    const two = analyzeSlide({ ...slide, free: [slide.free![1], { block: title('t2', 'Revenue grew 42% this year'), box }] })
+    expect(has(two, 'text/collision', 'error', ['t', 't2'])).toBe(true)
   })
 
   it('a backdrop above content in z → error', () => {

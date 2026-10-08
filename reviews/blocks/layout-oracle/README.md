@@ -105,11 +105,29 @@ Policy in the report:
 - content ∩ content → `layout/overlap` (error);
 - backdrop ∩ anything → allowed (`info`), but backdrop must be *behind* (z-order) — else error;
 - overlay ∩ content → allowed if it covers no text leaf of the content block, else `text/occluded`;
-- any text leaf ∩ text leaf of another block → `text/collision` (error) regardless of layer.
+- any text leaf ∩ text leaf of another block → `text/collision` (error) regardless of layer —
+  *amended by LO2.1:* `info` when one side is a backdrop painting behind the other.
 Also `validateDeckSpec` accepts the new field; JSON schema + digest mention it.
 
 **Done when:** a slide with a decoration block under a card reports no error; the same with a
 badge over the card's title reports `text/occluded`.
+
+### LO2.1 — Anchors, backdrop text, title band (follow-ups of LO2 / LO1.5)
+1. **Anchor for layered blocks.** Additive `BlockSpec.anchor?: 'fill' | 'top-left' | 'top' |
+   'top-right' | 'left' | 'center' | 'right' | 'bottom-left' | 'bottom' | 'bottom-right'` and
+   `BlockSpec.anchorTo?: '<id>'` (a *stacked* block of the same region; its painted box becomes the
+   anchor box, inset `space.sm`), plus `BlockDefinition.anchor?` as the type default. `'fill'` =
+   LO2's whole box; anything else = natural size (`measureBlock`, grown until it paints unshrunk,
+   clamped to the anchor box) at that edge/corner. Default: `def.anchor` ?? `'fill'`.
+2. **Backdrop text policy.** Text ∩ text where one side is a backdrop painting *behind* →
+   `text/collision` `info` (a watermark behind a title is intended); content/overlay text ∩ text
+   stays an error; a backdrop painting over text stays an error.
+3. **Title band = one title line.** `titleBand()` from `type.title` line height (LO1.5 open item),
+   and `regionAlign` (`quote: 'center'`) actually offsets when the content is shorter than the region.
+
+**Done when:** a badge with `anchorTo` sits in the card's corner with 0 errors; the watermark ×
+title pair is `info`; fixture `text/shrunk` count drops with no new errors/warnings; validator,
+JSON schema, SCHEMA.md and the digest name `anchor`/`anchorTo`; one screenshot each.
 
 ### LO3 — Size cards (`block-metrics.ts` + generated `block-metrics.json`)
 For every block in `BUILT_IN_BLOCKS`, sampled via `measureBlock` from its `defaults` /
@@ -139,6 +157,7 @@ letter-spacing / bold in tableMetrics) if found.
 | LO1 | done | `3322e42a` | `layout-report.ts` (+ spec, 21 tests, snapshot of demo-deck `sl_03` and `sl_08`). `analyzeSlide`/`analyzeDeck`/`formatLayoutReport`/`layoutMap`, exported from `blocks/index.ts` only. All 95 fixture slides report in ~20 ms/slide. tsc: prod 0, spec 329 (= before). |
 | LO1.5 | done | `525495b4` | Column-aware re-flow, fill-aware region sizing; see Notes — LO1.5. |
 | LO2 | done | `415d86a6` | `BlockLayer` on `BlockDefinition`/`BlockSpec`, `block-layer.ts`; 7 non-content built-ins; AI-writable stacking = explicit `layer` on a region block (out of the stack, region box, z under/over the flow) in `compileLayered` (separate section of `slide-compiler.ts`); overlay occlusion judged by what it paints; map hides intended layering. `layout-layers.spec.ts` 17 tests + 1 snapshot. tsc prod 0, spec 329 (= before). See Notes — LO2. |
+| LO2.1 | done | (this commit) | `anchor`/`anchorTo` on layered region blocks, backdrop-text `info`, title band = one title line, `regionAlign` fixed. `layout-anchor.spec.ts` 19 tests. Fixture `text/shrunk` 14 → 6, no new errors/warnings. tsc prod 0, spec 329 (= before). See Notes — LO2.1. |
 | LO3 | todo | | |
 | LO4 | todo | | |
 | LO5 | todo | | |
@@ -348,3 +367,87 @@ identical before/after (quote, attribution below it, caption below that — corr
 - Two LO1.5 assumptions to watch: content blocks are clamped to `size.min[1]` (e.g. `tls.g.steps`
   125 → 150), and only *region-claiming* blocks are re-measured (a block whose root is
   `region − 1` is treated as rigid).
+
+### Notes — LO2.1 (2026-10-08)
+
+**Anchors (`slide-compiler.ts` `anchoredBox`, `compileLayered`).** `BlockSpec.anchor` /
+`BlockSpec.anchorTo` / `BlockDefinition.anchor` (types + `BLOCK_ANCHORS`, `blockAnchor()` in
+`block-layer.ts`). Decision on the default: `def.anchor ?? 'fill'`. Only `tls.d.trend-badge` sets
+`anchor: 'top-right'` (a pill with a natural size); `tls.g.arrow` stays `fill` (it draws across
+whatever box it gets — it is elastic, so a corner anchor gives it `size.preferred`), as do the
+backdrops. Natural size = `measureBlock`'s painted size, then grown (≤ 6 passes) until the block
+paints that size unshrunk inside the box — the badge shrinks its type in a box only as tall as its
+pill, so a plain natural box would draw a smaller badge. Clamped to the region, **not** raised to
+`size.min` (deviation: the badge's min width 180 is wider than a `+5%` pill, and the pill is
+left-aligned in its box, so clamping to min would move it off the corner).
+`anchorTo` is resolved in the same single pass, after the flow is placed: target must be a
+*stacked* block of the same region, so there are no chains or cycles. Its anchor box is the
+target's **visible** extent (painted leaves ∪ full-box backdrops, clipped to its box): a card's
+surface is its corner; a text-only block's corner is its text. Corner/edge anchors inside a
+target are inset `space.sm`. Unknown/layered target → region box. Persisted in `$block.anchor` /
+`$block.anchorTo`; the decompiler now assigns a layered block whose box is not region-wide to the
+region whose x-range contains it (`matchLayeredToRegion`), so the round trip keeps it out of
+`free[]` and recompiles to the same boxes (tested).
+
+**Backdrop text policy (`layout-report.ts`).** `text/collision` is `info` (no fix) when exactly
+one side is a backdrop with lower z; a backdrop above text, and content/overlay text ∩ text, stay
+errors (tested both ways). LO2 policy text in §2 amended.
+
+**Title band (`slide-layouts.ts`).** `titleBand = max(heading + md, ceil(title.size ×
+title.lineHeight) + space.3xs)` = 108 at the default scale (was 88). The `3xs` is measuring slack:
+the editor's `estimateMetrics` reports one line as `round(size × lh) + 2` = 106, so a band of
+exactly one line (104) still autofit to 96%. Every titled layout's body regions start 20 units
+lower and are 20 shorter. **`regionAlign`** now aligns within `max(layout box, natural)`;
+`quote: 'center'` centres a short quote (tested). On the fixtures it changes nothing (the only
+quote slide overflows its region).
+
+**Before → after, 4 fixture decks (95 slides), `analyzeDeck`, table metrics:**
+
+| code | before | after |
+|---|---|---|
+| error (any) | 0 | 0 |
+| warning `region/overflow` | 3 | 3 |
+| warning `region/displaced` | 1 | 1 |
+| info `text/shrunk` | 14 | **6** |
+
+The 8 gone are motion-showcase `ms_04`–`ms_11` (80% → 100%). Left: `ms_02/03` (long titles,
+80/88% — content, not band), tour `tl_18/19` (96%), colorful `sl_21` (84%), demo `sl_04` kpi value.
+
+**Validation / schema / digest.** `block/anchor` (error, vocabulary), `block/anchor-target`
+(error: not a string, or not a stacked block of the region; with `suggestion`),
+`block/anchor-unused` (warning: no backdrop/overlay layer, or inside a container). JSON schema:
+`anchor` enum + `anchorTo`. SCHEMA.md `BlockSpec` + example. Digest: one sentence added to the
+Layers paragraph (index still ≤ 20k, tested); digest snapshot updated for that line only.
+
+**Tests.** New `layout-anchor.spec.ts` (19). Changed: `layout-layers.spec.ts` — the
+"regardless of layer" test now asserts the new policy *and* that backdrop-above and
+content×content collisions stay errors; its stacked-example snapshot moves the badge to the
+right region's top-right (114×50 instead of the region box) and the 20-unit title-band shift;
+`layout-report.spec.ts.snap` `sl_03`: same 20-unit shift only. Targeted suites (slide-compiler,
+-decompiler, -layouts, -composition, layout-report/-layers/-anchor, collision, validate, digest,
+shape-bridge, deck-document/-context, demo contract/roundtrip, motion*) pass with
+`--maxWorkers=1`. `DeckViewer.spec.tsx` has one failure ("retreating into an auto build step")
+in build-step navigation — that file has the user's uncommitted `DeckViewer.tsx` changes; not
+geometry, not investigated. tsc prod 0 / spec 329; eslint 0 errors on touched files.
+
+**Visual check** (temporary `/view/zz-lo21` deck + `tools/visual` scenario, both removed;
+`build:packages` before the shots). `tools/visual/shots/lo21-anchor.png`: the `-3.2%` badge sits
+in the stat card's top-right corner, 16 units in from both edges, clear of the icon and value;
+the `+5%` badge (no `anchorTo`) at the right region's top-right, beside the kpi tile; the faint
+DRAFT watermark shows behind the title text. First shot (before the fix below) put the badge
+mid-card: the anchor box was the card's painted *content*, which excludes its full-box surface —
+fixed to the visible extent. `lo21-after-ms_04.png` vs `lo21-before-ms_04.png` (the 2026-10-03
+motion run, same title band as HEAD): title "Kết quả học tập — expressive" now at full size
+(was visibly shrunk), body 20 units lower, nothing off-frame.
+
+**Scope cuts, named.**
+- Anchors only for *region* blocks with an explicit layer; `free[]` and container children
+  ignore them. `anchorTo` cannot cross regions or target another layered block.
+- No offset/overhang (a badge straddling a card's edge); inset is fixed `space.sm` for
+  `anchorTo`, 0 for a region.
+- A user who drags an anchored overlay in the editor gets it re-anchored on recompile (same
+  known limitation as region snapping).
+- Badge label widths: the anchored size is measured with the compile's `estimateMetrics`; the
+  report re-lays with `tableMetrics`, which may differ by a few units (no finding seen).
+- `tls.c.hero` in the `title` region and `sl_05`'s quote overflow remain (content choices).
+

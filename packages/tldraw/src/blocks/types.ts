@@ -51,7 +51,49 @@ export interface BlockSpec {
    * classifies overlaps for the layout report; z there is the array order.
    */
   layer?: BlockLayer
+  /**
+   * LO2.1 — where a layered region block (`layer: 'backdrop' | 'overlay'`) sits inside its
+   * anchor box. `'fill'` = the whole box (LO2 behaviour); any other value = the block's natural
+   * size (`measureBlock`, clamped to `size.min` and the anchor box) at that edge/corner. Absent =
+   * the definition's `anchor`, else `'fill'`. Ignored for stacked (content) blocks.
+   */
+  anchor?: BlockAnchor
+  /**
+   * LO2.1 — id of a *stacked* block in the same region whose painted box is the anchor box
+   * (instead of the region's box), e.g. a trend badge on a card's corner. Corner/edge anchors
+   * are inset by `space.sm` inside that block. Only meaningful with an explicit backdrop/overlay
+   * `layer`; an unknown or non-stacked target falls back to the region box.
+   */
+  anchorTo?: string
 }
+
+/**
+ * LO2.1 — anchor of a layered block inside its anchor box (region, or `anchorTo` block).
+ */
+export type BlockAnchor =
+  | 'fill'
+  | 'top-left'
+  | 'top'
+  | 'top-right'
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'bottom-left'
+  | 'bottom'
+  | 'bottom-right'
+
+export const BLOCK_ANCHORS: readonly BlockAnchor[] = [
+  'fill',
+  'top-left',
+  'top',
+  'top-right',
+  'left',
+  'center',
+  'right',
+  'bottom-left',
+  'bottom',
+  'bottom-right',
+]
 
 /**
  * LO2 — paint layer. `backdrop` sits behind content and may be overlapped (shapes, bands,
@@ -308,6 +350,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   /** LO2 — paint layer. Absent = derived: category `decoration` → `backdrop`, else `content`.
    *  Set it only where the derivation is wrong. See `BlockLayer`. */
   layer?: BlockLayer
+  /** LO2.1 — default `BlockSpec.anchor` when an instance is layered out of the stack. Absent =
+   *  `'fill'`. Set it for a block with a natural size of its own (a badge → `'top-right'`). */
+  anchor?: BlockAnchor
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide

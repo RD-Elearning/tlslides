@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
+import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
 import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
@@ -38,6 +38,9 @@ interface BlockMetadata {
   children?: BlockSpec[]
   /** LO2 — the instance's explicit paint layer (`BlockSpec.layer`). */
   layer?: BlockLayer
+  /** LO2.1 — `BlockSpec.anchor` / `BlockSpec.anchorTo`. */
+  anchor?: BlockAnchor
+  anchorTo?: string
   /** P7 — motion derived from the slide's `motionStyle` by `compileSlide`. Never authored, never
    *  returned by `shapeToBlock`; playback reads it through `shapeToRevealBlock`. */
   styleMotion?: BlockMotionSpec
@@ -98,6 +101,8 @@ export function blockToShape(
   if (spec.layer !== undefined) {
     metadata.layer = spec.layer
   }
+  if (spec.anchor !== undefined) metadata.anchor = spec.anchor
+  if (spec.anchorTo !== undefined) metadata.anchorTo = spec.anchorTo
 
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
@@ -246,6 +251,8 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   if (meta.layer !== undefined) {
     spec.layer = meta.layer
   }
+  if (meta.anchor !== undefined) spec.anchor = meta.anchor
+  if (meta.anchorTo !== undefined) spec.anchorTo = meta.anchorTo
   if (shapeObj.slot !== undefined) {
     spec.slot = shapeObj.slot as string
   }

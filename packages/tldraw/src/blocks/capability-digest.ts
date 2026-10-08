@@ -512,7 +512,9 @@ function layerField(def: BlockDefinition): { layer?: BlockLayer } {
 const LAYER_LINE =
   'Layers: to stack blocks, put them in the same region and set `layer` on the block: `"backdrop"` takes the ' +
   'whole region box behind the region\'s other blocks (a field, pattern or decoration under a card), `"overlay"` ' +
-  'takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. Blocks marked ' +
+  'takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. `anchor` ' +
+  '(`fill` or `top-left`…`bottom-right`, `center`) puts it at natural size on that corner/edge; `anchorTo: "<id>"` ' +
+  'anchors to a stacked block of the region (a badge on a card corner). Blocks marked ' +
   '`backdrop`/`overlay` below default to that layer only for overlap checks; `layer` still has to be set to stack.'
 
 /** P7 — one line telling the planner how to use deck/slide motion styles. */

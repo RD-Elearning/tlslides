@@ -31,6 +31,7 @@
 
 import type { ComponentShape } from '~types'
 import type {
+  BlockAnchor,
   BlockDefinition,
   BlockSpec,
   Box,
@@ -48,9 +49,10 @@ import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
 import { layoutBlock } from './layout/layout-child'
-import { collectPaintedLeaves, measureBlock, paintedBounds } from './layout/measure-block'
+import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
+import { blockAnchor } from './block-layer'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -239,7 +241,11 @@ export function compileSlide(
 
     // V2.1: Use natural height when registry provided for effective region height.
     const hasRegistry = registry !== undefined
-    const regionEffectiveHeight = hasRegistry ? (regionNaturalHeights.get(regionName) ?? regionBox.height) : regionBox.height
+    // LO2.1: align within the layout box (or the natural height when that is taller). Aligning
+    // within the natural height alone left no leftover, so `center`/`end` never took effect.
+    const regionEffectiveHeight = hasRegistry
+      ? Math.max(regionBox.height, regionNaturalHeights.get(regionName) ?? regionBox.height)
+      : regionBox.height
     const totalAssigned = finalHeights.reduce((sum, h) => sum + h, 0) + gapsTotal
     const leftoverInRegion = regionEffectiveHeight - totalAssigned
 
@@ -640,7 +646,10 @@ export function splitLayeredBlocks(spec: SlideSpec): LayeredSplit | undefined {
  * Compile a slide with layered region blocks, deterministically:
  * 1. the flow (everything else) compiles exactly as `compileSlide` always does;
  * 2. each layered block gets its region's box — the layout box, grown to cover the region's
- *    stacked blocks when they overflow or were re-flowed — and does not take part in stacking;
+ *    stacked blocks when they overflow or were re-flowed — or, with `anchorTo`, the painted box
+ *    of that stacked block of the same region (LO2.1); `anchor: 'fill'` takes that whole box,
+ *    any other anchor the block's natural size at that edge/corner (`anchoredBox`). It does not
+ *    take part in stacking;
  * 3. z: every backdrop paints under every other shape, every overlay over every other shape
  *    (authored order within each layer). `childIndex` is renumbered 1..n in that order and the
  *    returned `shapes` array is in that order.
@@ -676,11 +685,27 @@ function compileLayered(
     return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
   }
 
+  // LO2.1: the painted box of a stacked block in the same region, for `anchorTo`.
+  const targetBox = (l: LayeredRegionBlock): Box | undefined => {
+    const targetId = l.block.anchorTo
+    if (typeof targetId !== 'string') return undefined
+    const target = (split.flow.regions[l.region] ?? []).find((b) => b.id === targetId)
+    if (!target) return undefined
+    const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === targetId)
+    if (!shape) return undefined
+    const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+    const painted = registry ? paintedBoxOf(target, box, tokens, registry) : null
+    return painted ?? box
+  }
+
   const place = (l: LayeredRegionBlock): ComponentShape[] => {
-    const box = regionExtent(l.region)
+    const region = regionExtent(l.region)
     // Unknown region: the flow compile already reported `region/unknown` for it.
-    if (!box) return []
-    return [blockToShape(l.block, box, { definitionMotion: registry?.get(l.block.type)?.motion })]
+    if (!region) return []
+    const def = registry?.get(l.block.type)
+    const target = targetBox(l)
+    const box = anchoredBox(l.block, def, target ?? region, target ? tokens.space.sm : 0, tokens, registry, region)
+    return [blockToShape(l.block, box, { definitionMotion: def?.motion })]
   }
 
   const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
@@ -688,4 +713,112 @@ function compileLayered(
     shape.childIndex = i + 1
   })
   return { ...result, shapes }
+}
+
+/** Visible extent of a placed block — painted leaves *and* full-box backdrops (a card's surface
+ *  is its corner), slide coordinates; `null` when it paints nothing or throws. */
+function paintedBoxOf(block: BlockSpec, box: Box, tokens: ResolvedTokens, registry: BlockRegistry): Box | null {
+  const def = registry.get(block.type)
+  if (!def) return null
+  const size = { width: box.width, height: box.height }
+  try {
+    const ctx = createLayoutContext({ box: size, tokens, surface: MINIMAL_SURFACE, registry, ...(block.style ? { style: block.style } : {}) })
+    const c = collectPaintedLeaves(layoutBlock(def, block.props as Record<string, unknown>, ctx), size)
+    const local = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+    if (!local) return null
+    // Clip to the block's own box: an anchor never follows content that overflows it.
+    const x1 = Math.max(box.x, box.x + local.x)
+    const y1 = Math.max(box.y, box.y + local.y)
+    const x2 = Math.min(box.x + box.width, box.x + local.x + local.width)
+    const y2 = Math.min(box.y + box.height, box.y + local.y + local.height)
+    return x2 > x1 && y2 > y1 ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : null
+  } catch {
+    return null
+  }
+}
+
+/** Passes `anchoredSize` may grow a box by before it accepts what the block paints. */
+const ANCHOR_FIT_PASSES = 6
+
+/**
+ * LO2.1 — the box of a layered block inside `container` (its region's extent, or the visible box
+ * of its `anchorTo` block). `'fill'` → the container. Any other anchor → the block's natural size
+ * (sized within `bounds`, default the container: a badge on a small target keeps its own size)
+ * at that edge/corner of the container shrunk by `inset`. Pure and deterministic.
+ */
+export function anchoredBox(
+  block: BlockSpec,
+  def: BlockDefinition | undefined,
+  container: Box,
+  inset: number,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  bounds: Box = container
+): Box {
+  const anchor: BlockAnchor = blockAnchor(block, def)
+  if (anchor === 'fill' || !def || !registry) return container
+  const inner =
+    container.width > 2 * inset && container.height > 2 * inset
+      ? { x: container.x + inset, y: container.y + inset, width: container.width - 2 * inset, height: container.height - 2 * inset }
+      : container
+  const { width: w, height: h } = anchoredSize(block, def, bounds, tokens, registry)
+  const [col, row] = ANCHOR_GRID[anchor]
+  return {
+    x: inner.x + ((inner.width - w) * col) / 2,
+    y: inner.y + ((inner.height - h) * row) / 2,
+    width: w,
+    height: h,
+  }
+}
+
+/** Anchor → [column, row] in halves: 0 = start, 1 = centre, 2 = end. */
+const ANCHOR_GRID: Record<Exclude<BlockAnchor, 'fill'>, [number, number]> = {
+  'top-left': [0, 0],
+  top: [1, 0],
+  'top-right': [2, 0],
+  left: [0, 1],
+  center: [1, 1],
+  right: [2, 1],
+  'bottom-left': [0, 2],
+  bottom: [1, 2],
+  'bottom-right': [2, 2],
+}
+
+/**
+ * Natural size of a layered block inside `inner`: `measureBlock`'s painted size, then grown until
+ * the block paints that size inside the box (a badge shrinks its type in a box only as tall as
+ * its pill). Elastic blocks (no natural size) and blocks whose layout throws get
+ * `size.preferred`. Always clamped to `inner`.
+ */
+function anchoredSize(block: BlockSpec, def: BlockDefinition, inner: Box, tokens: ResolvedTokens, registry: BlockRegistry): Size {
+  const props = block.props as Record<string, unknown>
+  const ctxAt = (size: Size) =>
+    createLayoutContext({ box: size, tokens, surface: MINIMAL_SURFACE, registry, ...(block.style ? { style: block.style } : {}) })
+  const clampW = (v: number) => Math.max(1, Math.min(inner.width, Math.ceil(v)))
+  const clampH = (v: number) => Math.max(1, Math.min(inner.height, Math.ceil(v)))
+  const m = measureBlock(def, props, inner.width, ctxAt({ width: inner.width, height: inner.height }), { height: inner.height })
+  if (m.elastic || m.reason?.startsWith('layout threw') || m.natural.height <= 0) {
+    return { width: clampW(def.size.preferred[0]), height: clampH(def.size.preferred[1]) }
+  }
+  const want = m.natural
+  let w = clampW(want.width)
+  let h = clampH(want.height)
+  for (let i = 0; i < ANCHOR_FIT_PASSES; i++) {
+    let b: Box | null
+    try {
+      b = paintedBounds(collectPaintedLeaves(layoutBlock(def, props, ctxAt({ width: w, height: h })), { width: w, height: h }))
+    } catch {
+      break
+    }
+    if (!b) break
+    const spillH = Math.max(0, b.y + b.height - h) + Math.max(0, -b.y)
+    const spillW = Math.max(0, b.x + b.width - w) + Math.max(0, -b.x)
+    const shortH = Math.max(0, want.height - b.height)
+    const shortW = Math.max(0, want.width - b.width)
+    // Height first: a box too short shrinks type, which also narrows what is painted.
+    if ((spillH > FLOW_TOL || shortH > FLOW_TOL) && h < inner.height) h = clampH(h + Math.max(spillH, shortH))
+    else if ((spillW > FLOW_TOL || shortW > FLOW_TOL) && w < inner.width) w = clampW(w + Math.max(spillW, shortW))
+    else break
+  }
+  return { width: w, height: h }
 }
