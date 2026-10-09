@@ -198,8 +198,9 @@ export function squigglePath(W: number, H: number, quarter: number, stroke: numb
 export function zigzagPath(W: number, H: number, quarter: number, stroke: number): string {
   const { L, D, map } = axisMap(W, H, quarter)
   const m = stroke + 1
-  const teeth = Math.max(3, Math.round(L / Math.max(1, D) * 1.5))
-  const amp = Math.max(0, D / 2 - m)
+  // a band of small teeth (rick-rack), not a letter: teeth about as wide as the band is tall
+  const teeth = Math.max(4, Math.round((L / Math.max(1, D)) * 3))
+  const amp = Math.max(0, Math.min(D / 2 - m, ((L - 2 * m) / (teeth * 2)) * 0.9))
   const pts: Pt[] = []
   for (let i = 0; i <= teeth * 2; i++) pts.push(map(m + ((L - 2 * m) * i) / (teeth * 2), D / 2 + (i % 2 === 0 ? amp : -amp)))
   return `M${pts.map((p) => `${f(p[0])} ${f(p[1])}`).join('L')}`
