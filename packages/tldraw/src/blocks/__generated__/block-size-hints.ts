@@ -46,7 +46,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.d.heatmap': 'h=fill',
   'tls.d.line': 'h=fill',
   'tls.d.pie': 'h≈285@544',
-  'tls.d.pricing': 'h≈472+13/item@840',
+  'tls.d.pricing': 'h 525–822@840',
   'tls.d.progress-bar': 'h≈-16+73/item@840',
   'tls.d.progress-ring': 'h=fill',
   'tls.d.radar': 'h 349–434@544',

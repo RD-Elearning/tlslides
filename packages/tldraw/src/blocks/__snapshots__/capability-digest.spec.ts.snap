@@ -5438,7 +5438,7 @@ also: tls.d.ranking, tls.d.scorecard
 ## Comparison
 tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style
 tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–298@840] knobs: cellKind, zebra, density
-tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈472+13/item@840] knobs: featuredStyle, align, showCta
+tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h 525–822@840] knobs: featuredStyle, align, showCta
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow, emphasis
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight, style, showItems
 tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h≈168+73/item@840] knobs: style, balance, showVerdict

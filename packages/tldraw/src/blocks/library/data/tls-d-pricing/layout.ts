@@ -26,6 +26,8 @@ import { placeText } from '../../text/_engine/text-place'
 
 /** Measured text is up to ~35% narrower than the real font; wrap a little early. */
 const WRAP = 1.12
+/** Price/period box slack over the measured width (AC4: measured widths are true since LO5; was 1.2). */
+const PRICE_SLACK = 1.05
 
 interface Plan {
   name: string
@@ -51,6 +53,26 @@ function readPlans(props: PricingProps): Plan[] {
     }))
 }
 
+/**
+ * AC4 lead review — type tiers, roomy first. A tall box (a pricing slide's whole region) takes the
+ * roomy tier: bigger name, price, features and button, more padding; the first tier whose tallest
+ * card fits the box wins (fixed point: laid out again at its own painted height it picks the same
+ * tier, since a tier that did not fit the box cannot fit a shorter one). `compact` is the old look.
+ */
+interface Tier {
+  pad: 'lg' | 'xl'
+  name: 'lead' | 'subheading'
+  price: (n: number) => 'display' | 'title' | 'heading'
+  small: 'caption' | 'body'
+  gap: 'xs' | 'sm'
+  /** stretch: cards grow to this × their content (≤ the box), button at the foot */
+  grow: number
+}
+const TIERS: Tier[] = [
+  { pad: 'xl', name: 'subheading', price: (n) => (n >= 4 ? 'title' : 'display'), small: 'body', gap: 'sm', grow: 1.25 },
+  { pad: 'lg', name: 'lead', price: (n) => (n >= 4 ? 'heading' : 'title'), small: 'caption', gap: 'xs', grow: 1 },
+]
+
 interface Content {
   nodes: LayoutNode[]
   /** Height of everything above the button (and the button's own height when present). */
@@ -58,12 +80,20 @@ interface Content {
   ctaH: number
   /** Re-place the button at the card bottom: returns its nodes for a given card height. */
   cta: (cardH: number) => LayoutNode[]
+  /** the tier's card padding */
+  pad: number
+  /** where the rule (features) would start without alignment */
+  ruleY: number
+  /** the price (and period) fit the card width at the shrink floor or above */
+  priceFits: boolean
 }
 
 /** The card's content, relative to the card's top-left corner. */
-function buildContent(ctx: LayoutContext, p: Plan, i: number, cardW: number, o: { filled: boolean; showCta: boolean; showDesc: boolean; icon: string; count: number }): Content {
+function buildContent(ctx: LayoutContext, p: Plan, i: number, cardW: number, o: { filled: boolean; showCta: boolean; showDesc: boolean; icon: string; count: number; tier: Tier; ruleAt?: number }): Content {
   const sp = ctx.tokens.space
-  const pad = sp.lg
+  const t = o.tier
+  const pad = sp[t.pad]
+  const gx = sp[t.gap]
   const innerW = Math.max(1, cardW - pad * 2)
   const accent = ctx.resolveColor('accent').color
   const text = ctx.resolveColor('text').color
@@ -74,40 +104,45 @@ function buildContent(ctx: LayoutContext, p: Plan, i: number, cardW: number, o: 
   const nodes: LayoutNode[] = []
   let y = pad
 
-  const nameStyle: ResolvedTextStyle = { ...ctx.resolveText('lead'), color: ink }
+  const nameStyle: ResolvedTextStyle = { ...ctx.resolveText(t.name), color: ink }
   const nm = placeText(ctx, p.name, nameStyle, { x: pad, y, width: innerW / WRAP }, 'start', { part: `name[${i}]` })
   nodes.push(...nm.nodes)
-  y += nm.height + sp.xs
+  y += nm.height + gx
 
   // Price: one line, shrunk until it fits with the real font's slack.
-  const base = ctx.resolveText(o.count >= 4 ? 'heading' : 'title', { letterSpacing: -0.02 })
+  const base = ctx.resolveText(t.price(o.count), { letterSpacing: -0.02 })
   let scale = 1
   let priceW = ctx.measureText(p.price, base).width
-  const periodStyle: ResolvedTextStyle = { ...ctx.resolveText('caption'), color: soft }
-  const periodW = p.period ? ctx.measureText(p.period, periodStyle).width * 1.2 + sp.xs : 0
-  while ((priceW * 1.2 + periodW) * scale > innerW && scale > 0.4) scale -= 0.05
+  const periodStyle: ResolvedTextStyle = { ...ctx.resolveText(t.small), color: soft }
+  const periodW = p.period ? ctx.measureText(p.period, periodStyle).width * PRICE_SLACK + sp.sm : 0
+  while ((priceW * PRICE_SLACK + periodW) * scale > innerW && scale > 0.4) scale -= 0.05
+  const priceFits = (priceW * PRICE_SLACK + periodW) * scale <= innerW
   const priceStyle: ResolvedTextStyle = { ...base, size: base.size * scale, scale, color: ink }
   const pm = ctx.measureText(p.price, priceStyle)
   priceW = pm.width
-  nodes.push({ k: 'text', part: `price[${i}]`, box: { x: pad, y, width: Math.max(1, priceW * 1.2), height: pm.height }, lines: pm.lines, style: priceStyle })
+  nodes.push({ k: 'text', part: `price[${i}]`, box: { x: pad, y, width: Math.max(1, priceW * PRICE_SLACK), height: pm.height }, lines: pm.lines, style: priceStyle })
   if (p.period) {
     const per = ctx.measureText(p.period, periodStyle)
-    nodes.push({ k: 'text', part: `period[${i}]`, box: { x: pad + priceW * 1.2 + sp.xs, y: y + pm.height - per.height - pm.height * 0.12, width: Math.max(1, per.width * 1.2), height: per.height }, lines: per.lines, style: periodStyle })
+    nodes.push({ k: 'text', part: `period[${i}]`, box: { x: pad + priceW * PRICE_SLACK + sp.sm, y: y + pm.height - per.height - pm.height * 0.12, width: Math.max(1, per.width * PRICE_SLACK), height: per.height }, lines: per.lines, style: periodStyle })
   }
-  y += pm.height + sp.xs
+  y += pm.height + gx
 
   if (o.showDesc && p.description) {
-    const ds: ResolvedTextStyle = { ...ctx.resolveText('caption'), color: soft }
+    const ds: ResolvedTextStyle = { ...ctx.resolveText(t.small), color: soft }
     const dm = placeText(ctx, p.description, ds, { x: pad, y, width: innerW / WRAP }, 'start', { part: `description[${i}]` })
     nodes.push(...dm.nodes)
     y += dm.height + sp.sm
   }
 
+  // stretch: the rule and features start at the same height on every card (a plan without a
+  // description would otherwise start its list higher than its neighbour)
+  const ruleY = y
+  if (o.ruleAt !== undefined && o.ruleAt > y) y = o.ruleAt
   if (p.features.length > 0) {
     const rule = o.filled ? tintOf(accent, ink, 0.35) : tintOf(alt, ctx.resolveColor('line').color, 0.9)
     nodes.push({ k: 'rect', part: `rule[${i}]`, box: { x: pad, y, width: innerW, height: 2 }, fill: { type: 'solid', color: rule } })
     y += 2 + sp.sm
-    const fs: ResolvedTextStyle = { ...ctx.resolveText('caption'), color: ink }
+    const fs: ResolvedTextStyle = { ...ctx.resolveText(t.small), color: ink }
     const isz = Math.round(fs.size * 1.15)
     const tx = pad + isz + sp.xs
     const tw = Math.max(1, (cardW - pad - tx) / WRAP)
@@ -116,15 +151,15 @@ function buildContent(ctx: LayoutContext, p: Plan, i: number, cardW: number, o: 
       const rowH = Math.max(tm.height, lineH(fs))
       nodes.push(iconLeaf(o.icon, { x: pad, y: y + (lineH(fs) - isz) / 2, width: isz, height: isz }, o.filled ? ink : accent, `feature[${i}].${j}.icon`))
       nodes.push(...tm.nodes)
-      y += rowH + sp.xs
+      y += rowH + gx
     })
-    y -= sp.xs
+    y -= gx
   }
 
   let ctaH = 0
   let cta: Content['cta'] = () => []
   if (o.showCta && p.cta) {
-    const cs: ResolvedTextStyle = { ...ctx.resolveText('caption'), color: ink }
+    const cs: ResolvedTextStyle = { ...ctx.resolveText(t.small), color: ink }
     const cm = ctx.measureText(p.cta, cs)
     ctaH = Math.round(lineH(cs) + sp.sm * 1.5)
     const fillBtn = p.featured || o.filled
@@ -142,11 +177,11 @@ function buildContent(ctx: LayoutContext, p: Plan, i: number, cardW: number, o: 
     }
     void cm
   }
-  return { nodes, bodyH: y, ctaH, cta }
+  return { nodes, bodyH: y, ctaH, cta, pad, ruleY, priceFits }
 }
 
-function needed(c: Content, pad: number, gap: number): number {
-  return c.bodyH + (c.ctaH > 0 ? gap + c.ctaH : 0) + pad
+function needed(c: Content, gap: number): number {
+  return c.bodyH + (c.ctaH > 0 ? gap + c.ctaH : 0) + c.pad
 }
 
 function compute(props: PricingProps, ctx: LayoutContext, W: number, H: number) {
@@ -161,9 +196,22 @@ function compute(props: PricingProps, ctx: LayoutContext, W: number, H: number) 
   const showCta = isShown(props, 'showCta')
   const showDesc = isShown(props, 'showDescription')
   const icon = typeof props.checkIcon === 'string' && props.checkIcon ? props.checkIcon : 'check'
-  const contents = plans.map((p, i) => buildContent(ctx, p, i, cardW, { filled: style === 'filled' && p.featured, showCta, showDesc, icon, count: n }))
-  const need = contents.map((c) => needed(c, sp.lg, sp.md))
   const raise = style === 'raised' && plans.some((p) => p.featured) ? sp.md : 0
+  let pick: { contents: Content[]; need: number[]; tier: Tier } | undefined
+  for (const tier of TIERS) {
+    const build = (ruleAt?: number) => plans.map((p, i) => buildContent(ctx, p, i, cardW, { filled: style === 'filled' && p.featured, showCta, showDesc, icon, count: n, tier, ruleAt }))
+    let contents = build()
+    if (stretch) contents = build(Math.max(...contents.map((c) => c.ruleY)))
+    const need = contents.map((c) => needed(c, sp.md))
+    pick = { contents, need, tier }
+    if (Math.max(...need) + raise <= H + 1e-6 && contents.every((c) => c.priceFits)) break
+  }
+  const { contents, tier } = pick!
+  // stretch: the cards claim `grow` × their content up front (≤ the box less the raise), so a
+  // roomy pricing slide fills its region instead of sitting short and top-heavy
+  const tallestNeed = Math.max(...pick!.need)
+  const grown = stretch && tier.grow > 1 ? Math.max(tallestNeed, Math.min(H - raise, tallestNeed * tier.grow)) : tallestNeed
+  const need = pick!.need.map((v) => (stretch ? Math.max(v, grown) : v))
   return { plans, contents, need, cardW, gap, style, stretch, raise, icon }
 }
 

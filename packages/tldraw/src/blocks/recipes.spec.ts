@@ -111,6 +111,10 @@ describe('AC0 slide recipes', () => {
       expect(regionFill(id)).toBeGreaterThanOrEqual(0.55)
     })
   }
+  it('AC4 lead review: the pricing recipe takes the roomy tier and fills most of its region', () => {
+    // su_04 had short, top-heavy cards with the bottom half of the region empty
+    expect(regionFill('comparison-pricing')).toBeGreaterThanOrEqual(0.8)
+  })
   it('sparse titled recipes (stack < 50% of its region) do not grow in number', () => {
     // AC3 pre-item: 11 → 3 (roomy tiers in the blocks; chevrons below-notes and alternating timeline
     // in their recipes). AC3: 3 → 0 — comparison-table, process-steps and process-chevrons state

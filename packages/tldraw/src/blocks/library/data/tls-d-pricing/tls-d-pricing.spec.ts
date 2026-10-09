@@ -107,7 +107,10 @@ describe('tls.d.pricing', () => {
   it('a long price shrinks to fit its card; a long feature wraps', () => {
     const size = { width: 700, height: 900 }
     const t = lay({ plans: [{ name: 'A', price: '$1,299,000', period: '/ year', features: ['An exceptionally long feature description that has to wrap'], cta: 'Go' }, plan(2)] }, size)
-    expect((exact(t, 'price[0]').node as any).style.size).toBeLessThan(96)
+    // AC4: the base size depends on the type tier (roomy in a tall box), so the shrink is the scale
+    const price = exact(t, 'price[0]')
+    expect((price.node as any).style.scale).toBeLessThan(1)
+    expect(price.x + price.width).toBeLessThanOrEqual(exact(t, 'card[0]').x + exact(t, 'card[0]').width)
     expect((exact(t, 'feature[0].0').node as any).lines.length).toBeGreaterThan(1)
     assertChartSane(t, size)
   })
@@ -132,5 +135,32 @@ describe('tls.d.pricing', () => {
 describe('RV06 — example fits its box (review G06)', () => {
   it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
     assertExampleFits(tlsDPricing)
+  })
+})
+
+describe('AC4 lead review — roomy tier', () => {
+  const ex = () => tlsDPricing.describe!.example.props as any
+  const painted = (t: any) => {
+    const ls = absoluteLeaves(t)
+    return Math.max(...ls.map((l) => l.y + l.height)) - Math.min(...ls.map((l) => l.y))
+  }
+  it('a tall box takes bigger type and the cards fill most of it; a short box keeps the compact tier', () => {
+    const tall = lay(ex(), { width: 1728, height: 758 })
+    const short = lay(ex(), { width: 1728, height: 520 })
+    const size = (t: any) => (exact(t, 'price[0]').node as any).style.size
+    expect(size(tall)).toBeGreaterThan(size(short))
+    expect(painted(tall) / 758).toBeGreaterThanOrEqual(0.8)
+    assertContained(short, { width: 1728, height: 520 })
+  })
+  it('fixed point: laid out again at its own painted height it picks the same tier and height', () => {
+    const a = lay(ex(), { width: 1728, height: 758 })
+    const h = Math.ceil(painted(a))
+    const b = lay(ex(), { width: 1728, height: h })
+    expect((exact(b, 'price[0]').node as any).style.size).toBe((exact(a, 'price[0]').node as any).style.size)
+    expect(Math.abs(painted(b) - painted(a))).toBeLessThanOrEqual(1)
+  })
+  it('stretch: every card starts its rule (feature list) at the same height', () => {
+    const t = lay({ plans: [{ name: 'A', price: 'Free', features: ['x'], cta: 'Go' }, { name: 'B', price: '$9', description: 'For teams of any size', features: ['y'], cta: 'Go' }] }, { width: 1728, height: 758 })
+    expect(exact(t, 'rule[0]').y).toBeCloseTo(exact(t, 'rule[1]').y, 3)
   })
 })
