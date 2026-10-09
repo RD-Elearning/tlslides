@@ -8,6 +8,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { tintOf } from '../../text/_engine/color'
 
 export interface FeatureCell {
   icon: string
@@ -19,6 +20,12 @@ export interface FeatureGridProps extends Record<string, unknown> {
   cells: FeatureCell[]
   columns?: 2 | 3 | 4
   gap?: number
+  /** AC2: `plain` (default) or `card` — each cell on a tinted rounded card. */
+  cell?: 'plain' | 'card'
+  /** AC2: `start` (default) or `center` — icon and text centred in the cell. */
+  align?: 'start' | 'center'
+  /** AC2: `plain` (default) or `circle` — the icon on a tinted disc. */
+  iconStyle?: 'plain' | 'circle'
 }
 
 export const schema: BlockSchema = {
@@ -32,7 +39,7 @@ export const schema: BlockSchema = {
             type: { kind: 'icon' },
             role: 'content',
             label: 'Icon',
-            help: 'Icon id, e.g. "zap". Unresolvable ids degrade to a labelled frame.',
+            help: 'Icon id, e.g. "zap".',
           },
           title: {
             type: { kind: 'text', maxChars: 40 },
@@ -56,21 +63,34 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Feature cells',
     required: true,
-    guidance:
-      'List of 2–6 feature cells, each with icon (icon id string), title (short, 1–4 words), ' +
-      'and desc (one sentence). Describe features, benefits, or capabilities.',
+    guidance: '2–6 features, benefits or capabilities.',
   },
   columns: {
     type: { kind: 'number', min: 2, max: 4 },
     role: 'option',
     label: 'Columns',
-    guidance: 'Number of columns: 2, 3, or 4. Default is 3.',
+    guidance: 'Default 3.',
   },
   gap: {
     type: { kind: 'number', min: 8, max: 48 },
     role: 'option',
     label: 'Gap',
-    guidance: 'Gap between cells in slide units. Default 24.',
+    guidance: 'Slide units. Default 24.',
+  },
+  cell: {
+    type: { kind: 'enum', values: ['plain', 'card'] },
+    role: 'option',
+    label: 'Cell',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Alignment',
+  },
+  iconStyle: {
+    type: { kind: 'enum', values: ['plain', 'circle'] },
+    role: 'option',
+    label: 'Icon style',
   },
 }
 
@@ -92,4 +112,17 @@ export function effectiveColumns(width: number, columns: number | undefined, gap
   const want = Math.max(1, Math.min(4, Math.round(Number(columns) || 3)))
   const fit = Math.max(1, Math.floor((width + gap) / (MIN_CELL_WIDTH + gap)))
   return Math.max(1, Math.min(want, fit, Math.max(1, count)))
+}
+
+/** AC2 card cell: inner padding and corner radius (template and poster). */
+export const FG_CARD_PAD = 28
+export const FG_CARD_RADIUS = 16
+/** AC2 `iconStyle: circle`: the glyph size inside the 48-unit disc. */
+export const FG_CIRCLE_GLYPH = 28
+
+/** Card background and disc tint, from the resolved tokens (same colours in template and poster). */
+export function featureGridColors(color: Record<string, string> | undefined): { card: string; disc: string } {
+  const surface = color?.surface ?? '#ffffff'
+  const accent = color?.accent ?? '#2563eb'
+  return { card: color?.surfaceAlt ?? tintOf(surface, accent, 0.06), disc: tintOf(surface, accent, 0.16) }
 }

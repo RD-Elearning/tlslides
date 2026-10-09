@@ -9,7 +9,8 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import { effectiveColumns, type FeatureGridProps } from './schema'
+import { effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, FG_CIRCLE_GLYPH, type FeatureGridProps } from './schema'
+import { alignText } from '../_kit'
 import { getIcon } from '../../../icons'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON, FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
@@ -21,6 +22,13 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   const cols = effectiveColumns(w, props.columns, gap, cells.length)
 
   const cellW = (w - (cols - 1) * gap) / cols
+  // AC2 knobs: card cells (padded, tinted), centred alignment, icon on a disc.
+  const card = props.cell === 'card'
+  const center = props.align === 'center'
+  const circle = props.iconStyle === 'circle'
+  const P = card ? FG_CARD_PAD : 0
+  const innerW = Math.max(1, cellW - 2 * P)
+  const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
   const rows = Math.ceil(cells.length / cols)
   const iconSize = FG_ICON
   const iconMargin = FG_ICON_GAP
@@ -33,14 +41,14 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   // Measure each cell to find per-cell heights, then pick the max per row
   const cellData = cells.map((cell) => {
     const titleResolved = titleStyleOf()
-    const m1 = ctx.measureText(cell.title, titleResolved, cellW)
+    const m1 = ctx.measureText(cell.title, titleResolved, innerW)
     const mTitle = { lines: m1.lines, height: cssTextHeight(m1.lines.length, titleResolved) }
 
     const descResolved = descStyleOf()
-    const m2 = ctx.measureText(cell.desc, descResolved, cellW)
+    const m2 = ctx.measureText(cell.desc, descResolved, innerW)
     const mDesc = { lines: m2.lines, height: cssTextHeight(m2.lines.length, descResolved) }
 
-    const cellH = iconSize + iconMargin + mTitle.height + titleMargin + mDesc.height
+    const cellH = 2 * P + iconSize + iconMargin + mTitle.height + titleMargin + mDesc.height
     return { cell, mTitle, mDesc, cellH }
   })
 
@@ -78,14 +86,25 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     const { mTitle, mDesc } = cellData[i]
     const cell = cellData[i].cell
     const iconColor = ctx.resolveColor('accent').color
+    if (card) {
+      children.push({ k: 'rect', part: `cell[${i}].card`, box: { x, y, width: cellW, height: rowHeights[r] }, fill: { type: 'solid', color: colors.card }, radius: FG_CARD_RADIUS })
+    }
+    const ix = x + P
+    const iy = y + P
+    const iconX = center ? ix + (innerW - iconSize) / 2 : ix
 
     // Icon - use icon node kind, or fallback rect for unknown icons
     const iconDef = getIcon(cell.icon as string)
-    if (iconDef) {
+    if (circle) {
+      children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
+      const g = FG_CIRCLE_GLYPH
+      const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
+      if (iconDef) children.push({ k: 'icon', box: gb, icon: iconDef.path, fill: iconColor, strokeWidth: 1.5 })
+    } else if (iconDef) {
       children.push({
         k: 'icon',
         part: `cell[${i}].icon`,
-        box: { x, y, width: iconSize, height: iconSize },
+        box: { x: iconX, y: iy, width: iconSize, height: iconSize },
         icon: iconDef.path,
         fill: iconColor,
         strokeWidth: 1.5,
@@ -95,33 +114,34 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
       children.push({
         k: 'rect',
         part: `cell[${i}].icon`,
-        box: { x, y, width: iconSize, height: iconSize },
+        box: { x: iconX, y: iy, width: iconSize, height: iconSize },
         fill: { type: 'solid', color: iconColor },
         radius: 4,
       })
     }
 
+    const align = center ? 'center' : 'start'
     // Title
     const titleResolved = titleStyleOf()
-    children.push({
+    children.push(...alignText([{
       k: 'text',
       part: `cell[${i}].title`,
       propPath: `cells.${i}.title`,
-      box: { x, y: y + iconSize + iconMargin, width: cellW, height: mTitle.height },
+      box: { x: ix, y: iy + iconSize + iconMargin, width: innerW, height: mTitle.height },
       lines: mTitle.lines,
       style: titleResolved,
-    })
+    }], align))
 
     // Description
     const descResolved = descStyleOf()
-    children.push({
+    children.push(...alignText([{
       k: 'text',
       part: `cell[${i}].desc`,
       propPath: `cells.${i}.desc`,
-      box: { x, y: y + iconSize + iconMargin + mTitle.height + titleMargin, width: cellW, height: mDesc.height },
+      box: { x: ix, y: iy + iconSize + iconMargin + mTitle.height + titleMargin, width: innerW, height: mDesc.height },
       lines: mDesc.lines,
       style: descResolved,
-    })
+    }], align))
   }
 
   return {

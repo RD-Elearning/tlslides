@@ -220,6 +220,97 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_05",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k5t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Why teams switch (card, centred, disc)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k5a",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                {
+                  "icon": "zap",
+                  "title": "Fast",
+                  "desc": "Optimised for speed at every layer of the stack."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Secure",
+                  "desc": "End-to-end encryption keeps your data safe."
+                },
+                {
+                  "icon": "globe",
+                  "title": "Global",
+                  "desc": "Deployed across 30+ regions worldwide."
+                }
+              ],
+              "cell": "card",
+              "align": "center",
+              "iconStyle": "circle"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_06",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k6t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Why teams switch (cards, 2 columns)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k6a",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                {
+                  "icon": "zap",
+                  "title": "Fast",
+                  "desc": "Optimised for speed at every layer of the stack."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Secure",
+                  "desc": "End-to-end encryption keeps your data safe."
+                },
+                {
+                  "icon": "globe",
+                  "title": "Global",
+                  "desc": "Deployed across 30+ regions worldwide."
+                },
+                {
+                  "icon": "users",
+                  "title": "Shared",
+                  "desc": "Every report can be shared with a link."
+                }
+              ],
+              "columns": 2,
+              "cell": "card",
+              "iconStyle": "circle"
+            }
+          }
+        ]
+      }
     }
   ]
 }

@@ -569,9 +569,12 @@ Grid of feature cells, each with an icon, title, and description. 2–6 cells ar
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`cells\` | yes | list of object (icon, title, desc) (2–6 items) | List of 2–6 feature cells, each with icon (icon id string), title (short, 1–4 words), and desc (one sentence). Describe features, benefits, or capabilities. |
-| \`columns\` | no | number (min 2, max 4) | Number of columns: 2, 3, or 4. Default is 3. |
-| \`gap\` | no | number (min 8, max 48) | Gap between cells in slide units. Default 24. |
+| \`cells\` | yes | list of object (icon, title, desc) (2–6 items) | 2–6 features, benefits or capabilities. |
+| \`columns\` | no | number (min 2, max 4) | Default 3. |
+| \`gap\` | no | number (min 8, max 48) | Slide units. Default 24. |
+| \`cell\` | no | enum: plain \\\\| card |  |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`iconStyle\` | no | enum: plain \\\\| circle |  |
 
 \`\`\`json
 {
@@ -5390,11 +5393,10 @@ also: tls.t.caption, tls.t.definition
 
 ## Lists
 tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by an icon, number or image, then title and text [h=fill] knobs: lead, tone, align
-tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 167–442@1728]
-tls.c.feature-reveal · list · group · 3–6 items — Icon cards in a grid that flip up one after another with a 3D tilt [h 333–682@840]
+tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 167–442@1728] knobs: cell, align, iconStyle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle, iconTone, spacing
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker, spacing
-also: tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
+also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
 
 ## Emphasis
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@840] knobs: markStyle

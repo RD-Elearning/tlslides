@@ -72,9 +72,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.t.checklist': t2(['doneStyle', 'spacing', 'columns']),
   'tls.t.kv-list': t2(['leader', 'valueAlign', 'keyTone', 'columns']),
   'tls.t.tags': t2(['tone', 'shape', 'size', 'align', 'colorBy']),
-  'tls.c.feature-grid': t1([], ['tls.m.icon-label']),
+  'tls.c.feature-grid': t1(['cell', 'align', 'iconStyle'], ['tls.m.icon-label', 'tls.c.feature-reveal']),
   'tls.c.cards': t1(['lead', 'tone', 'align'], ['tls.c.stat-card']),
-  'tls.c.feature-reveal': t1(),
+  'tls.c.feature-reveal': t2(),
   'tls.m.icon-list': t1(['iconStyle', 'iconTone', 'spacing'], ['tls.m.icon-label']),
 
   // ── metric ──

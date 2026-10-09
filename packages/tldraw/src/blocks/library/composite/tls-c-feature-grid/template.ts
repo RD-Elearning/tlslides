@@ -9,7 +9,7 @@
  */
 
 import type { HtmlTemplateContext } from '../../../types'
-import { effectiveColumns, type FeatureGridProps } from './schema'
+import { effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, FG_CIRCLE_GLYPH, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 import { posterText } from '../../../html-block'
 
@@ -36,6 +36,12 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
 
   // LO7: with a poster (the live host) the text parts paint its lines and metrics.
   const pt = posterText(ctx)
+  // AC2 knobs (the poster draws the same geometry).
+  const card = props.cell === 'card'
+  const center = props.align === 'center'
+  const circle = props.iconStyle === 'circle'
+  const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
+  const glyph = circle ? FG_CIRCLE_GLYPH : FG_ICON
 
   const cellHtml = cells
     .map((cell, i) => {
@@ -46,6 +52,8 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
         `<div style="` +
           `min-width:0;` +
           `box-sizing:border-box;` +
+          (card ? `padding:${FG_CARD_PAD}px;background:${colors.card};border-radius:${FG_CARD_RADIUS}px;` : '') +
+          (center ? `text-align:center;` : '') +
         `">` +
           // Icon - render as inline SVG with the correct path
           `<div data-part="cell[${i}].icon" style="` +
@@ -54,9 +62,11 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
             `margin-bottom:${FG_ICON_GAP}px;` +
             // LO7: a block, not inline-block - an inline-block icon sat on the line's baseline and
             // the strut's descent pushed the title ~3 units below where the poster puts it.
-            `display:block;` +
+            `display:${circle ? 'flex' : 'block'};` +
+            (circle ? `align-items:center;justify-content:center;border-radius:50%;background:${colors.disc};` : '') +
+            (center ? `margin-left:auto;margin-right:auto;` : '') +
           `">` +
-            `<svg viewBox="0 0 24 24" width="${FG_ICON}" height="${FG_ICON}" fill="${fillColor}" style="display:block;">` +
+            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" fill="${fillColor}" style="display:block;">` +
               `<path d="${iconPath}" stroke="none"/>` +
             `</svg>` +
           `</div>` +
@@ -83,7 +93,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
       `display:grid;` +
       `grid-template-columns:repeat(${cols},minmax(0,1fr));` +
       `gap:${gap}px;` +
-      `align-items:start;` +
+      `align-items:${card ? 'stretch' : 'start'};` +
     `">${cellHtml}</div>`
   )
 }

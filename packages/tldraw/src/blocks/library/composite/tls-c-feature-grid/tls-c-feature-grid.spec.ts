@@ -734,3 +734,55 @@ describe('RV03 — fits its box, reflows, releases every part', () => {
     expect(played.sort()).toEqual([...parts].sort())
   })
 })
+
+describe('AC2 — look knobs (cell, align, iconStyle)', () => {
+  const DEF = tlsCFeatureGrid
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: n.part, k: n.k })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['cell: card', { cell: 'card' }],
+    ['align: center', { align: 'center' }],
+    ['iconStyle: circle', { iconStyle: 'circle' }],
+    ['card + center + circle', { cell: 'card', align: 'center', iconStyle: 'circle' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.cell.type as any).values).toEqual(['plain', 'card'])
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+    expect((DEF.schema.iconStyle.type as any).values).toEqual(['plain', 'circle'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...(DEF.describe!.example.props as any), ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('card paints one card per cell; center centres the icon; circle paints a disc', () => {
+    const props = { ...(DEF.describe!.example.props as any), cell: 'card', align: 'center', iconStyle: 'circle' }
+    const node = poster(props, ctx({ width: 1200, height: 600 }))
+    const ls = leaves(node)
+    const n = props.cells.length
+    expect(ls.filter((l) => /^cell\[\d+\]\.card$/.test(l.part ?? '')).length).toBe(n)
+    const disc = ls.find((l) => l.part === 'cell[0].icon' && l.k === 'rect')!
+    const card = ls.find((l) => l.part === 'cell[0].card')!
+    expect(Math.abs(disc.x + disc.w / 2 - (card.x + card.w / 2))).toBeLessThan(1)
+    const html = template(props, { ...makeTemplateCtx(ctx({ width: 1200, height: 600 })), box: { x: 0, y: 0, width: 1200, height: 600 } } as any)
+    expect(html).toContain('border-radius:50%')
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('align-items:stretch')
+  })
+})
