@@ -119,6 +119,8 @@ Agenda or contents slide: numbered items with titles and optional notes. The cur
 |---|---|---|---|
 | \`items\` | yes | list of object (title, note) (1–12 items) | 3–8 items. Each title should be 1–6 words. Notes are optional and brief. |
 | \`current\` | no | number | Index of the currently highlighted item (0-based). Omit or set to null to highlight none. |
+| \`variant\` | no | enum: list \\\\| cards | \`cards\`: each item on a card. |
+| \`numbering\` | no | enum: plain \\\\| badge \\\\| none | \`badge\`: number in an accent disc. |
 
 \`\`\`json
 {
@@ -5480,7 +5482,7 @@ tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by 
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant, align
 
 ## Agenda
-tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h≈-21+156/item@840]
+tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h≈-21+156/item@840] knobs: variant, numbering
 also: tls.c.objectives
 
 ## Closing

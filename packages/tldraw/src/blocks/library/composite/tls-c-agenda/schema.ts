@@ -16,6 +16,11 @@ export interface AgendaItem {
 export interface AgendaProps extends Record<string, unknown> {
   items: AgendaItem[]
   current?: number | null
+  /** AC2: `list` (default) or `cards` (each item on a soft card; two columns make a card grid). */
+  variant?: 'list' | 'cards'
+  /** AC2: `plain` (default, a small muted number), `badge` (the number in an accent disc, filled
+   *  for the current item) or `none`. */
+  numbering?: 'plain' | 'badge' | 'none'
 }
 
 export const schema: BlockSchema = {
@@ -43,6 +48,18 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Current item',
     help: 'Index of the currently highlighted item (0-based). Omit or set to null to highlight none.',
+  },
+  variant: {
+    type: { kind: 'enum', values: ['list', 'cards'] },
+    role: 'option',
+    label: 'Variant',
+    guidance: '`cards`: each item on a card.',
+  },
+  numbering: {
+    type: { kind: 'enum', values: ['plain', 'badge', 'none'] },
+    role: 'option',
+    label: 'Numbering',
+    guidance: '`badge`: number in an accent disc.',
   },
 }
 

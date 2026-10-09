@@ -455,6 +455,50 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_12",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k12t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Today's agenda"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k12a",
+            "type": "tls.c.agenda",
+            "props": {
+              "items": [
+                {
+                  "title": "Where we are",
+                  "note": "Revenue, customers and retention"
+                },
+                {
+                  "title": "What we learned",
+                  "note": "Three signals from the market"
+                },
+                {
+                  "title": "Options",
+                  "note": "Build, partner or buy"
+                },
+                {
+                  "title": "The ask",
+                  "note": "Budget and next steps"
+                }
+              ],
+              "current": 1,
+              "variant": "cards",
+              "numbering": "badge"
+            }
+          }
+        ]
+      }
     }
   ]
 }

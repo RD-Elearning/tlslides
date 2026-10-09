@@ -179,7 +179,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.device-mock': t2(['device', 'tone', 'shadow']),
 
   // ── agenda ──
-  'tls.c.agenda': t1([], ['tls.c.objectives', 'tls.t.numbered', 'tls.t.checklist']),
+  'tls.c.agenda': t1(['variant', 'numbering'], ['tls.c.objectives', 'tls.t.numbered', 'tls.t.checklist']),
   'tls.c.objectives': t2(['marker', 'cols', 'showIntro']),
 
   // ── people ──

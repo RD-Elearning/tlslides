@@ -12,6 +12,8 @@
  */
 
 import { slotItems } from '../_slots'
+import { alignText } from '../_kit'
+import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import type { AgendaItem, AgendaProps } from './schema'
 
@@ -56,22 +58,29 @@ const TIERS: ReadonlyArray<{ title: TypeToken; note: TypeToken; index: TypeToken
 const TWO_COLUMN_MIN_WIDTH = 1200
 const TWO_COLUMN_MIN_ITEMS = 4
 const TWO_COLUMN_MAX_ITEMS = 8
+/** AC2 `numbering: badge`: the disc's diameter as a multiple of the index type size. */
+const BADGE_DISC = 2
 
 export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   const n = (props.items ?? []).length
   const cols = ctx.box.width >= TWO_COLUMN_MIN_WIDTH && n >= TWO_COLUMN_MIN_ITEMS && n <= TWO_COLUMN_MAX_ITEMS ? 2 : 1
-  let node = place(props, ctx, TIERS[TIERS.length - 1], cols)
-  for (const tier of TIERS) {
-    const candidate = place(props, ctx, tier, cols)
-    if (candidate.box.height <= ctx.box.height + 0.5 || tier === TIERS[TIERS.length - 1]) {
-      node = candidate
-      break
+  // AC2 `variant: cards`: the cards' padding shrinks before the type does not fit at all; a box
+  // that holds no tier as cards lays the items out as the list (the look is a preference).
+  const pads: Array<CardPad | undefined> = props.variant === 'cards' ? ['lg', 'sm', undefined] : [undefined]
+  let node: LayoutNode | undefined
+  for (const pad of pads) {
+    for (const tier of TIERS) {
+      const candidate = place(props, ctx, tier, cols, pad)
+      if (candidate.box.height <= ctx.box.height + 0.5) return candidate
+      if (!pad && tier === TIERS[TIERS.length - 1]) node = candidate
     }
   }
-  return node
+  return node as LayoutNode
 }
 
-function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number], cols: 1 | 2 = 1): LayoutNode {
+type CardPad = 'lg' | 'sm'
+
+function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number], cols: 1 | 2 = 1, cardPad?: CardPad): LayoutNode {
   const items = props.items ?? []
   const currentIdx = props.current != null ? props.current : null
 
@@ -84,17 +93,26 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     }
   }
 
+  // AC2 knobs: `variant: cards` puts each item on a card (inner padding `pad`); `numbering`
+  // `badge` draws the number in a disc, `none` drops the number column.
+  const cards = cardPad !== undefined
+  const numbering = props.numbering === 'badge' || props.numbering === 'none' ? props.numbering : 'plain'
+  const pad = cardPad ? ctx.tokens.space[cardPad] : 0
   // Two columns hold half the rows, so the rows get more air (AC1.5).
-  const gap = ctx.tokens.space[cols === 2 ? 'xl' : tier.gap]
+  const gap0 = ctx.tokens.space[cols === 2 ? 'xl' : tier.gap]
+  const gap = cards ? Math.max(gap0, ctx.tokens.space[cardPad === 'lg' ? 'md' : 'sm']) : gap0
   const indexStyle0 = ctx.resolveText(tier.index)
   // two digits at the index size, never narrower than the old fixed column
-  const indexWidth = Math.max(ctx.tokens.space.xl, Math.ceil(ctx.measureText('88', indexStyle0, 1000).width) + ctx.tokens.space.xs)
+  const plainIndexWidth = Math.max(ctx.tokens.space.xl, Math.ceil(ctx.measureText('88', indexStyle0, 1000).width) + ctx.tokens.space.xs)
+  const disc = Math.round(indexStyle0.size * BADGE_DISC)
+  const indexWidth = numbering === 'none' ? 0 : numbering === 'badge' ? disc : plainIndexWidth
+  const indexGap = numbering === 'none' ? 0 : numbering === 'badge' ? ctx.tokens.space.md : ctx.tokens.space.sm
 
   const inner: Size = { width: ctx.box.width, height: ctx.box.height }
   const colGap = ctx.tokens.space['2xl']
   const colW = cols === 2 ? Math.max(0, (inner.width - colGap) / 2) : inner.width
   const perCol = Math.ceil(items.length / cols)
-  const contentWidth = Math.max(0, colW - indexWidth - ctx.tokens.space.sm)
+  const contentWidth = Math.max(0, colW - 2 * pad - indexWidth - indexGap)
 
   // Resolve text styles
   const baseTitleStyle = ctx.resolveText(tier.title)
@@ -109,11 +127,14 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
       ? { ...baseTitleStyle, size: baseTitleStyle.size * 1.15 }
       : baseTitleStyle
 
-    const { titleHeight, noteHeight, rowHeight } = measureRow(
-      item, titleStyle, noteStyle, contentWidth, ctx,
-    )
+    const m = measureRow(item, titleStyle, noteStyle, contentWidth, ctx)
+    // A badge centres on the title's first line; a disc taller than that line pushes the text down.
+    const lineH = titleStyle.size * (titleStyle.scale ?? 1) * titleStyle.lineHeight
+    const textDy = numbering === 'badge' ? Math.max(0, (disc - lineH) / 2) : 0
+    const discDy = numbering === 'badge' ? Math.max(0, (lineH - disc) / 2) : 0
+    const rowHeight = Math.max(m.rowHeight + textDy, numbering === 'badge' ? discDy + disc : 0) + 2 * pad
 
-    return { item, i, isCurrent, titleStyle, titleHeight, noteHeight, rowHeight }
+    return { item, i, isCurrent, titleStyle, titleHeight: m.titleHeight, noteHeight: m.noteHeight, rowHeight, textDy, discDy }
   })
 
   // Compute total content height
@@ -129,11 +150,23 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
 
   // Place nodes
   const children: LayoutNode[] = []
+  const accent = ctx.resolveColor('accent').color
+  const surface = ctx.resolveColor('surface').color
 
   for (const row of rows) {
-    const { item, i, isCurrent, titleStyle, titleHeight, noteHeight } = row
-    const y = rowY[i % perCol]
+    const { item, i, isCurrent, titleStyle, titleHeight, noteHeight, textDy, discDy } = row
     const x0 = Math.floor(i / perCol) * (colW + colGap)
+    if (cards) {
+      // Structural card (no part): every card in a row is as tall as the row.
+      children.push({
+        k: 'rect',
+        box: { x: x0, y: rowY[i % perCol], width: colW, height: rowH[i % perCol] },
+        fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color },
+        radius: ctx.tokens.radius.md,
+      })
+    }
+    const y = rowY[i % perCol] + pad
+    const cx = x0 + pad
 
     // Resolve colors based on current state
     const indexColor = isCurrent
@@ -146,25 +179,46 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
 
     // Index number
     const indexText = `${i + 1}`
-    const indexStyle: ResolvedTextStyle = {
-      ...indexStyle0,
-      color: indexColor,
+    if (numbering === 'plain') {
+      const indexStyle: ResolvedTextStyle = {
+        ...indexStyle0,
+        color: indexColor,
+      }
+      const indexM = ctx.measureText(indexText, indexStyle, indexWidth)
+      children.push({
+        k: 'text',
+        part: `item[${i}].index`,
+        box: { x: cx, y, width: indexWidth, height: indexM.height },
+        lines: indexM.lines,
+        style: { ...indexStyle, color: indexColor },
+      })
+    } else if (numbering === 'badge') {
+      // The disc and its number reveal together as the item's index part. Current item: an accent
+      // disc with the on-accent number; the others: a soft accent tint with the accent number.
+      const fill = isCurrent ? accent : tintOf(surface, accent, 0.14)
+      const ink = isCurrent ? readableOn(onColor(ctx, accent), accent) : readableOn(accent, fill)
+      const numStyle: ResolvedTextStyle = { ...indexStyle0, color: ink }
+      const numM = ctx.measureText(indexText, numStyle, disc)
+      const numH = numM.height
+      const dy = y + discDy
+      children.push({
+        k: 'group',
+        part: `item[${i}].index`,
+        box: { x: 0, y: 0, width: ctx.box.width, height: totalContentHeight },
+        children: [
+          { k: 'rect', box: { x: cx, y: dy, width: disc, height: disc }, fill: { type: 'solid', color: fill }, radius: disc / 2 },
+          ...alignText([{ k: 'text', box: { x: cx, y: dy + (disc - numH) / 2, width: disc, height: numH }, lines: numM.lines, style: numStyle }], 'center'),
+        ],
+      })
     }
-    const indexM = ctx.measureText(indexText, indexStyle, indexWidth)
-    children.push({
-      k: 'text',
-      part: `item[${i}].index`,
-      box: { x: x0, y, width: indexWidth, height: indexM.height },
-      lines: indexM.lines,
-      style: { ...indexStyle, color: indexColor },
-    })
 
     // Title
+    const tx = cx + indexWidth + indexGap
     const titleM = ctx.measureText(item.title, titleStyle, contentWidth)
     children.push({
       k: 'text',
       part: `item[${i}].title`,
-      box: { x: x0 + indexWidth + ctx.tokens.space.sm, y, width: contentWidth, height: titleHeight },
+      box: { x: tx, y: y + textDy, width: contentWidth, height: titleHeight },
       lines: titleM.lines,
       style: { ...titleStyle, color: titleColor },
     })
@@ -176,8 +230,8 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
         k: 'text',
         part: `item[${i}].note`,
         box: {
-          x: x0 + indexWidth + ctx.tokens.space.sm,
-          y: y + titleHeight + ctx.tokens.space.xs,
+          x: tx,
+          y: y + textDy + titleHeight + ctx.tokens.space.xs,
           width: contentWidth,
           height: noteHeight,
         },
