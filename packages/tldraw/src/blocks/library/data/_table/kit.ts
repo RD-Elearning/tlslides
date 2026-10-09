@@ -190,6 +190,13 @@ export function compactCtx(ctx: LayoutContext): LayoutContext {
   return { ...ctx, resolveText: (token, over) => ctx.resolveText((step as Record<string, any>)[token] ?? token, over) }
 }
 
+/** AC3 pre-item: a context whose `body` and `caption` text resolve one token larger (the roomy
+ *  tier a table takes when it is alone in a tall box). */
+export function roomyCtx(ctx: LayoutContext): LayoutContext {
+  const step = { body: 'lead', caption: 'body' } as const
+  return { ...ctx, resolveText: (token, over) => ctx.resolveText((step as Record<string, any>)[token] ?? token, over) }
+}
+
 /* ───────────────────────────── build ───────────────────────────── */
 
 export interface TableInput {
@@ -201,7 +208,11 @@ export interface TableInput {
   /** Relative width per column (undefined: text columns share the leftover, others hug content). */
   weights?: ReadonlyArray<number | undefined>
   width: number
-  density?: 'default' | 'compact'
+  /** `roomy` is internal (never a prop value): `buildTable` takes it when the table fits `fitHeight`. */
+  density?: 'default' | 'compact' | 'roomy'
+  /** AC3 pre-item: the box height; a default-density table that fits it one type step larger (and
+   *  as wide) is laid out roomy. A ladder of fixed-height candidates, so it is a fixed point. */
+  fitHeight?: number
   zebra?: boolean
   rules?: 'none' | 'head' | 'rows'
   header?: 'filled' | 'bold' | 'none'
@@ -257,6 +268,10 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
  * to the compact density (smaller text and padding) before words start wrapping letter by letter.
  */
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
+  if ((o.density ?? 'default') === 'default' && (o.fitHeight ?? 0) > 0) {
+    const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
+    if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return roomy
+  }
   const first = buildCore(ctx0, o)
   if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return buildCore(ctx0, { ...o, density: 'compact' })
   return first
@@ -265,10 +280,11 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
 function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
-  const ctx = withNumberMetrics(compact ? compactCtx(ctx0) : ctx0)
+  const roomy = o.density === 'roomy'
+  const ctx = withNumberMetrics(compact ? compactCtx(ctx0) : roomy ? roomyCtx(ctx0) : ctx0)
   const sp = ctx.tokens.space
   const cols = Math.max(1, o.kinds.length)
-  const cellPad = compact ? sp.xs : sp.sm
+  const cellPad = compact ? sp.xs : roomy ? sp.md : sp.sm
   const rowGap = 2
   const header = o.header === 'bold' || o.header === 'none' ? o.header : 'filled'
   const W = Math.max(1, o.width)

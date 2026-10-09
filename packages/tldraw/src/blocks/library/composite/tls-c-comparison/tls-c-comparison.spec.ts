@@ -623,11 +623,11 @@ describe('AC2 — look knobs (style)', () => {
     expect(Math.abs(cards[0].box.height - node.box.height)).toBeLessThan(0.5)
   })
 
-  it('cards / versus grow the type with a tall box (heading titles, lead items); plain keeps its type', () => {
+  it('cards / versus / plain grow the type with a tall box (heading titles, lead items; plain since AC3)', () => {
     const c = ctx({ width: 1728, height: 758 })
     const titleSize = (p: any) => (leaves(layout(p, c)).find((l) => l.part === 'col[0].title') as any).style.size
     expect(titleSize({ ...example, style: 'cards' })).toBe(c.resolveText('heading').size)
-    expect(titleSize(example)).toBe(c.resolveText('subheading').size)
+    expect(titleSize(example)).toBe(c.resolveText('heading').size)
     const short = leaves(layout({ ...example, style: 'cards' }, ctx({ width: 1200, height: 200 }))).find((l) => l.part === 'col[0].title') as any
     expect(short.style.size).toBe(c.resolveText('subheading').size)
   })

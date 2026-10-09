@@ -13,7 +13,7 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
-import { onColor } from '../../text/_engine/color'
+import { onColor, readableOn } from '../../text/_engine/color'
 import { objs, str } from '../../media/_kit'
 import { composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
 
@@ -119,6 +119,10 @@ interface Plan {
   small: boolean
   /** AC2: the `lead: number` numeral's type step. */
   numeral: NumeralStep
+  /** AC3 pre-item: the roomy tier (lead-size text, bigger icon, heading titles for ≤ 3 cards). */
+  roomy: boolean
+  titleSize: 'heading' | 'subheading'
+  iconSize: number
 }
 
 /** AC2: four or more cards keep body-size text when each card's text column is at least this wide. */
@@ -135,18 +139,28 @@ function plan(props: CardsProps, ctx: LayoutContext): Plan {
   return planText(props, ctx, 'heading')
 }
 
+/** AC3 pre-item: the roomy tier is taken when its stretched cards fill no more than the box. A
+ *  ladder of fixed-height candidates (roomy, body, caption), first that fits: laid out again at its
+ *  own height the block picks the same candidate. */
+const ROOMY_STRETCH = 1.3
+
 function planText(props: CardsProps, ctx: LayoutContext, numeral: NumeralStep): Plan {
+  const H = ctx.box.height
+  if (H > 0) {
+    const big = planAt(props, ctx, false, numeral, true)
+    if (big.needed <= H + 0.5) return big
+  }
   // AC2: four or more cards read at body size when the measure is wide enough and the taller cards
   // still fit the box; otherwise caption, as before.
   const roomy = planAt(props, ctx, false, numeral)
-  if (!roomy.small && roomy.items.length >= 4 && ctx.box.height > 0 && roomy.needed > ctx.box.height) return planAt(props, ctx, true, numeral)
+  if (!roomy.small && roomy.items.length >= 4 && H > 0 && roomy.needed > H) return planAt(props, ctx, true, numeral)
   return roomy
 }
 
 /** The numeral's text style (AC2 giant steps; accent unless the card is filled). */
 const numeralStyle = (ctx: LayoutContext, step: NumeralStep, color: string) => ({ ...ctx.resolveText(step, { lineHeight: 1.05, letterSpacing: -0.02 }), color })
 
-function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, numeral: NumeralStep = 'heading'): Plan {
+function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, numeral: NumeralStep = 'heading', roomy = false): Plan {
   const items = itemsOf(props)
   const n = Math.max(1, items.length)
   const lead = pick(props.lead, LEADS, 'icon')
@@ -162,14 +176,22 @@ function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, nume
     const st = numeralStyle(ctx, numeral, '')
     return Math.ceil(Math.max(1, ...items.filter((c) => c.number).map((c) => ctx.measureText(c.number as string, st, inner).height)))
   }
-  const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? (numeral !== 'heading' ? giant() : Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight)) : Math.min(260, Math.round(inner * 0.6))
-  const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })), inner)
-  const small = n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
-  const textH = measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
+  const iconSize = roomy ? 72 : 56
+  const titleSize: Plan['titleSize'] = roomy && n <= 3 ? 'heading' : 'subheading'
+  const leadH = !hasLead ? 0 : lead === 'icon' ? iconSize + 16 : lead === 'number' ? (numeral !== 'heading' ? giant() : Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight)) : Math.min(260, Math.round(inner * 0.6))
+  const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: titleSize } })), inner)
+  const small = !roomy && n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
+  const leadStyle = ctx.resolveText('lead')
+  const textH = roomy
+    ? items.map((c) => (c.text ? ctx.measureText(c.text, leadStyle, inner).height : 0))
+    : measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
   const sm = ctx.tokens.space.sm
   const body = Math.max(0, ...items.map((c, i) => titleH[i] + (c.text ? sm + textH[i] : 0)))
-  const needed = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
-  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small, numeral }
+  const content = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
+  // The roomy tier claims its stretch up front (cards ≤ the box), so it never overflows a box.
+  const needed = roomy ? Math.round(content * ROOMY_STRETCH) : content
+  if (roomy && inner < BODY_MIN_INNER) return { items, cw, gap, pad, inner, leadH, titleH, textH, needed: Infinity, small, numeral, roomy, titleSize, iconSize }
+  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small, numeral, roomy, titleSize, iconSize }
 }
 
 /** Place the cards. Exported for tests. */
@@ -183,7 +205,7 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const n = p.items.length
   const sm = ctx.tokens.space.sm
   // Cards hug their content with a little air; a tall region no longer stretches them to 460 (RV03).
-  const total = Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
+  const total = p.roomy ? p.needed : Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
   const small = p.small
@@ -215,7 +237,7 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     if (p.leadH) {
       const lbox = { x: ix, y, width: p.inner, height: p.leadH }
       if (lead === 'icon' && c.icon) {
-        const size = 56
+        const size = p.iconSize
         pieces.push({ id: `lead[${i}]`, raw: [iconLeaf(c.icon, { x: center ? ix + (p.inner - size) / 2 : ix, y: y + (p.leadH - size) / 2, width: size, height: size }, fg ?? accent)], box: lbox })
       } else if (lead === 'number' && c.number) {
         if (p.numeral !== 'heading') {
@@ -230,9 +252,15 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
       }
       y += p.leadH + sm * 1.5
     }
-    pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading', ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
+    pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: p.titleSize, ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
     y += p.titleH[i] + sm
-    if (c.text) {
+    if (c.text && p.roomy) {
+      // Roomy tier: lead-size text as a leaf (no body block takes the lead step).
+      const surfHex = tone === 'outline' ? ctx.resolveColor('surface').color : fillColor
+      const st = { ...ctx.resolveText('lead'), color: fg ?? readableOn(ctx.resolveColor('text').color, surfHex) }
+      const m = ctx.measureText(c.text, st, p.inner)
+      pieces.push({ id: `text[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: { x: ix, y, width: p.inner, height: p.textH[i] }, align: al })
+    } else if (c.text) {
       pieces.push({
         id: `text[${i}]`,
         spec: { id: `text-${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text, ...(fg ? { color: fg } : {}), ...on } },

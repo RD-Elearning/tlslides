@@ -127,9 +127,14 @@ describe('RV03 — honest size', () => {
     }
   })
 
-  it('cards hug their content in a tall region instead of stretching to 460', () => {
+  it('cards hug their content in a tall region instead of stretching to it', () => {
+    // AC3 pre-item: a tall box takes the roomy tier (lead text, heading titles), stretched 1.3x its
+    // content; still well short of the region (it was < 520 with the body tier).
     const tall = layoutAt(tlsCCards, EX, 1500, 900)
-    expect(tall.box.height).toBeLessThan(520)
+    expect(tall.box.height).toBeLessThan(0.8 * 900)
+    // laid out again at its own height it picks the same tier (fixed point)
+    const again = layoutAt(tlsCCards, EX, 1500, tall.box.height)
+    expect(again.box.height).toBe(tall.box.height)
   })
 })
 

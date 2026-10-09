@@ -42,7 +42,8 @@ function read(props: CompareTableProps, width: number): { input: TableInput; row
 
 export function layout(props: CompareTableProps, ctx: LayoutContext): LayoutNode {
   const r = read(props, Math.max(1, ctx.box.width))
-  return r ? buildTable(ctx, r.input).tree : emptyState(ctx)
+  // AC3 pre-item: one type step larger when the table fits its box that way.
+  return r ? buildTable(ctx, { ...r.input, fitHeight: ctx.box.height }).tree : emptyState(ctx)
 }
 
 export function capacity(props: CompareTableProps, box: Size, ctx: LayoutContext): CapacityReport {

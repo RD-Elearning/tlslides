@@ -43,7 +43,10 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   const cards = enumOf(props.style, ['columns', 'cards'] as const, 'columns') === 'cards'
   const auto = enumOf(props.balance, ['equal', 'auto'] as const, 'equal') === 'auto'
   const verdict = isShown(props, 'showVerdict') ? str(props.verdict).trim() : ''
-  const headS = style(ctx, 'subheading', c.text)
+  // AC3 pre-item: the roomy tier (heading column titles, lead points) for pros/cons alone in a
+  // tall, wide box. The block fills its box, so the tier follows the box size.
+  const roomy = H >= 480 && W >= 1200
+  const headS = style(ctx, roomy ? 'heading' : 'subheading', c.text)
   const bigS = style(ctx, 'caption', c.text)
   const nodes: LayoutNode[] = []
 
@@ -58,13 +61,13 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
 
   // Vertical budget.
   const pad = cards ? 20 : 0
-  const headH = Math.min(headS.size * headS.lineHeight, 60)
+  const headH = roomy ? headS.size * headS.lineHeight : Math.min(headS.size * headS.lineHeight, 60)
   const ruleGap = cards ? 12 : 16
   const headBlock = headH + ruleGap + (cards ? 0 : 3 + 8)
   let verdictH = 0
   let verdictLines = 0
   // AC1.5: the verdict is the slide's conclusion — body size, not caption.
-  const vS = style(ctx, H >= 400 ? 'body' : 'caption', c.text)
+  const vS = style(ctx, roomy ? 'lead' : H >= 400 ? 'body' : 'caption', c.text)
   const vPad = H >= 400 ? 22 : 14
   if (verdict) {
     verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
@@ -77,11 +80,13 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   // footnote, with a tighter gap, so every point stays on the block.
   const pitch = bodyH / maxRows
   const bodyS = style(ctx, 'body', c.text)
-  const textS = pitch >= lineH(bodyS) + 12 ? bodyS : pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
+  const leadS = style(ctx, 'lead', c.text)
+  const big = roomy && pitch >= lineH(leadS) + 2 * ROW_GAP_BODY
+  const textS = big ? leadS : pitch >= lineH(bodyS) + 12 ? bodyS : pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
   const lh = lineH(textS)
-  const ROW_GAP = clamp(pitch - lh, 3, textS === bodyS ? ROW_GAP_BODY : ROW_GAP_MAX)
+  const ROW_GAP = clamp(pitch - lh, 3, big ? 1.25 * ROW_GAP_BODY : textS === bodyS ? ROW_GAP_BODY : ROW_GAP_MAX)
   const linesAllowed = clamp(Math.floor((pitch - ROW_GAP) / lh), 1, 3)
-  const MARK = Math.round(clamp(Math.min(lh * 0.95, pitch - ROW_GAP), 14, 30))
+  const MARK = Math.round(clamp(Math.min(lh * 0.95, pitch - ROW_GAP), 14, big ? 40 : 30))
 
   // AC1.5: content-sized — the columns are as tall as their rows (no tall empty boxes), the verdict
   // follows them, and the whole composition is centred vertically in the box.

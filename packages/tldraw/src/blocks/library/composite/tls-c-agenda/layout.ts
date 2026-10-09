@@ -45,7 +45,12 @@ function measureRow(
  * Type tiers, biggest first. An agenda is a whole slide, so it takes the largest tier whose rows fit
  * the box (the old fixed `body` tier left a 4-item agenda as a small list in a corner).
  */
-const TIERS: ReadonlyArray<{ title: TypeToken; note: TypeToken; index: TypeToken; gap: 'sm' | 'md' }> = [
+type Tier = { title: TypeToken; note: TypeToken; index: TypeToken; gap: 'sm' | 'md' | 'xl'; roomy?: boolean }
+const TIERS: ReadonlyArray<Tier> = [
+  // AC3 pre-item: the roomy tier for an agenda alone under a title in a tall region — lead notes, a
+  // subheading index and wide rows; a list draws a hairline over each item so the air reads as
+  // structure (a table of contents), cards get `xl` padding.
+  { title: 'heading', note: 'lead', index: 'subheading', gap: 'xl', roomy: true },
   { title: 'heading', note: 'body', index: 'body', gap: 'md' },
   { title: 'subheading', note: 'caption', index: 'caption', gap: 'md' },
   { title: 'lead', note: 'caption', index: 'caption', gap: 'sm' },
@@ -66,10 +71,12 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   const cols = ctx.box.width >= TWO_COLUMN_MIN_WIDTH && n >= TWO_COLUMN_MIN_ITEMS && n <= TWO_COLUMN_MAX_ITEMS ? 2 : 1
   // AC2 `variant: cards`: the cards' padding shrinks before the type does not fit at all; a box
   // that holds no tier as cards lays the items out as the list (the look is a preference).
-  const pads: Array<CardPad | undefined> = props.variant === 'cards' ? ['lg', 'sm', undefined] : [undefined]
+  const pads: Array<CardPad | undefined> = props.variant === 'cards' ? ['xl', 'lg', 'sm', undefined] : [undefined]
   let node: LayoutNode | undefined
   for (const pad of pads) {
     for (const tier of TIERS) {
+      // The roomy tier pairs with `xl` card padding (or the list); `xl` padding with nothing else.
+      if (pad === 'xl' ? !tier.roomy : tier.roomy && pad !== undefined) continue
       const candidate = place(props, ctx, tier, cols, pad)
       if (candidate.box.height <= ctx.box.height + 0.5) return candidate
       if (!pad && tier === TIERS[TIERS.length - 1]) node = candidate
@@ -78,7 +85,7 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   return node as LayoutNode
 }
 
-type CardPad = 'lg' | 'sm'
+type CardPad = 'xl' | 'lg' | 'sm'
 
 function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number], cols: 1 | 2 = 1, cardPad?: CardPad): LayoutNode {
   const items = props.items ?? []
@@ -99,8 +106,11 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
   const numbering = props.numbering === 'badge' || props.numbering === 'none' ? props.numbering : 'plain'
   const pad = cardPad ? ctx.tokens.space[cardPad] : 0
   // Two columns hold half the rows, so the rows get more air (AC1.5).
-  const gap0 = ctx.tokens.space[cols === 2 ? 'xl' : tier.gap]
-  const gap = cards ? Math.max(gap0, ctx.tokens.space[cardPad === 'lg' ? 'md' : 'sm']) : gap0
+  const gap0 = tier.roomy ? ctx.tokens.space[cols === 2 && !cards ? '3xl' : 'xl'] : ctx.tokens.space[cols === 2 ? 'xl' : tier.gap]
+  const gap = cards ? Math.max(gap0, ctx.tokens.space[cardPad === 'sm' ? 'sm' : 'md']) : gap0
+  // Roomy list: a hairline over every item, `rulePad` above the item's text.
+  const rule = tier.roomy && !cards ? Math.max(2, Math.round(ctx.tokens.space['3xs'] / 2)) : 0
+  const rulePad = rule ? ctx.tokens.space.lg : 0
   const indexStyle0 = ctx.resolveText(tier.index)
   // two digits at the index size, never narrower than the old fixed column
   const plainIndexWidth = Math.max(ctx.tokens.space.xl, Math.ceil(ctx.measureText('88', indexStyle0, 1000).width) + ctx.tokens.space.xs)
@@ -132,7 +142,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     const lineH = titleStyle.size * (titleStyle.scale ?? 1) * titleStyle.lineHeight
     const textDy = numbering === 'badge' ? Math.max(0, (disc - lineH) / 2) : 0
     const discDy = numbering === 'badge' ? Math.max(0, (lineH - disc) / 2) : 0
-    const rowHeight = Math.max(m.rowHeight + textDy, numbering === 'badge' ? discDy + disc : 0) + 2 * pad
+    const rowHeight = Math.max(m.rowHeight + textDy, numbering === 'badge' ? discDy + disc : 0) + 2 * pad + rulePad
 
     return { item, i, isCurrent, titleStyle, titleHeight: m.titleHeight, noteHeight: m.noteHeight, rowHeight, textDy, discDy }
   })
@@ -165,7 +175,14 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
         radius: ctx.tokens.radius.md,
       })
     }
-    const y = rowY[i % perCol] + pad
+    if (rule) {
+      children.push({
+        k: 'rect',
+        box: { x: x0, y: rowY[i % perCol], width: colW, height: rule },
+        fill: { type: 'solid', color: ctx.resolveColor('line').color },
+      })
+    }
+    const y = rowY[i % perCol] + pad + rulePad
     const cx = x0 + pad
 
     // Resolve colors based on current state

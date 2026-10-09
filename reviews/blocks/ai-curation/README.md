@@ -1231,3 +1231,73 @@ composite-geometry, motion-style, slide-layouts — all pass. Parity-probe chunk
   known skipped issue.
 - kinetic-title orbs can touch a long start-aligned title (the ring is translucent).
 - The CTA pill in closing is wider on the right than the left (pre-existing `ctaW` × 1.05).
+
+### Notes — AC2 (lead review of `sheet5-knobs`, AC3 pre-item)
+
+**Issue.** Titled content slides read as a small, vertically centred block with a big empty band
+between title and content (kn_04/05/12/13/14/15; recipes agenda-full 44%, comparison-options 37%,
+process-chevrons 11%, process-timeline 16%).
+
+**Decision: grow the blocks, keep the centred region.** Anchoring the stack nearer the title only
+moves the band below the content (and trips `layout/unbalanced`); the band is the block being
+small for its region. Each sparse block got a **roomy tier** — bigger type, padding and gaps —
+taken only when the block has the height. Two rules keep it honest:
+- content-sized blocks pick the first fitting candidate of a fixed-height ladder (roomy, then the
+  old tiers), and a stretch is `min(H, k × content)` claimed up front, so laid out again at its own
+  height the block picks the same tier (fixed point; cards spec proves it, calibration 0 box deltas);
+- blocks whose root is the whole box (chevrons, timeline, steps, before-after, pros-cons) choose by
+  box height (`H ≥ 480`) and width, since their box is always the region.
+
+| Block | Roomy tier |
+|---|---|
+| `tls.c.cards` | lead text, heading titles (≤ 3 cards), 72 icon, cards 1.3× content |
+| `tls.c.agenda` | heading titles, lead notes, subheading index, a hairline over each list item (TOC look), `xl` card padding |
+| `tls.c.comparison` | heading + lead, `2xl` padding; **`plain` takes the type tiers too** (was body only) |
+| `tls.c.kpi-tile` / `kpi-row` | a `title`-step value when `display` is too wide (4 tiles); `card`/`accent-bar` rows stretch to 1.35× the tiles, tile centred |
+| `tls.c.feature-grid` | heading titles, lead descriptions, 64 icon / 1.25× disc, 40 card padding, card rows 1.25×; the poster chooses, the template reads the tier back from the poster (title leaf size) and pins the stretched row heights |
+| `tls.g.chevrons` | subheading labels (heading with `below`), body notes inside / lead notes below, 160–280 tall |
+| `tls.g.timeline` | horizontal: body dates, subheading titles, body notes, 420-wide cards, 1.5× node, 2× stem |
+| `tls.c.steps` | horizontal one row: heading titles, 72 badge |
+| `tls.c.team` | one row: xl portraits (lg with four), body bios, wider padding |
+| `tls.g.pros-cons` | heading column titles, lead points, lead verdict (W ≥ 1200) |
+| `tls.g.before-after` | heading title, lead text, caption tag, 40 padding, panels ≥ 52% of the box |
+| `tls.d.table` / `compare-table` | one type step larger (`body→lead`), `md` cell padding, when the table fits its box that way (internal `density: 'roomy'`, never a prop value) |
+
+Recipes: `content-feature-grid` uses `cell: card`, `process-chevrons` `textPlacement: below`,
+`process-timeline` `alternate: true`.
+
+**Numbers (region fill of the titled `timeline` recipes, before → after).** agenda-full 0.44 →
+0.61, content-cards 0.69 → 0.92, content-feature-grid 0.29 → 0.61, data-kpi-row 0.62 → 0.78,
+data-table 0.42 → 0.51, comparison-options 0.37 → 0.53, pros-cons 0.43 → 0.50, before-after 0.38 →
+0.52, comparison-table 0.32 → 0.41, process-steps 0.27 → 0.37, process-chevrons 0.11 → 0.37,
+process-timeline 0.16 → 0.57, people-team 0.45 → 0.67. knobs: kn_01 0.57 → 0.71, kn_04 0.54 →
+0.68, kn_05 0.39 → 0.62, kn_12 0.56 → 0.69, kn_13 0.52 → 0.61, kn_14 0.52 → 0.67, kn_15 0.38 → 0.53.
+Style decks: st_02 agenda 0.39–0.48 → 0.56–0.75, st_04 cards 0.59–0.61 → 0.78–0.83, st_06
+pros-cons 0.61–0.69 → 0.79–0.90. **Ratchet tightened:** `KNOWN_SPARSE` 11 → 3 (`comparison-table`,
+`process-steps`, `process-chevrons`); `FILLS_ITS_REGION` (≥ 55%) 6 → 10 (+ agenda-full,
+content-feature-grid, process-timeline, people-team).
+
+**Defaults that changed on existing decks (recorded, judged better in the shots):** every deck with
+one of these blocks in a tall region gets the roomy tier — the four style decks, demo-deck,
+block-library-tour, colorful, motion-showcase. Their `analyzeDeck` findings are identical to HEAD
+(compared against a `git archive` of HEAD). Size cards regenerated: several hints became ranges
+(`kpi-row h 150–289@544`, `agenda h 169–981@1728`, …) because the height now depends on the room;
+digest snapshot and the LO2 stacked snapshot (kpi tile value now the `title` step) updated, and the
+`capabilityIndexData` kpi-row `size` expectation follows the card. Spec subjects changed, not
+loosened: agenda child counts include the roomy hairline; feature-grid's circle test passes the
+poster to the template (the real host path) and allows the roomy 96 disc; comparison `plain` now
+takes heading; cards "hug in a tall region" is `< 0.8 × box` plus a fixed-point check.
+
+**Verification.** cli.js corporate/minimal/gradient/knobs: 0/0/0, `needsVisualCheck` empty.
+Calibration (recipes deck of the 19 titled recipes + knobs): 73 rows, 0 missing, 0 box deltas > 1;
+html parts 45: 0 line-count mismatches; one layout over-count (cards roomy text 2 vs browser 1).
+Shots looked at (`chk-recipes.png`, `chk-knobs.png`). tsc prod 0, spec 329. Specs: the 13 touched
+blocks + scorecard, recipes, digest, conformance, layout-report, block-metrics, styles,
+slide-composition, demo-deck-*, layout-layers/anchor/calibration, tour, motion-showcase,
+html-poster-geometry, slide-compiler/decompiler, deck-document, composite-geometry, motion-m2..m5,
+list-sizes, render-dom — pass. Digest top-8 11,951 / 12,000, tier-1 15,301 / 16,000.
+
+**Still weak.** chevrons and steps stay < 40% at the example's short content (thin by nature; a
+takeaway under them would help but the fill blocks then centre with a gap); compare-table 41%;
+the team example's avatar URLs do not load offline (alt text shows in the shot, pre-existing).
+

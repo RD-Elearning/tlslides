@@ -275,10 +275,13 @@ describe('tls.c.agenda', () => {
         c,
       )
       assertValidNode(node)
-      // index + title + the (empty) note slot every item gets for the motion stagger (RVM5)
-      expect(node.children).toHaveLength(3)
-      expect((node as any).children[2].part).toBe('note[0]')
-      expect((node as any).children[2].children).toHaveLength(0)
+      // AC3 pre-item: a box this tall takes the roomy tier, whose list draws a structural hairline
+      // (no part) over each item: hairline + index + title + the (empty) note slot every item gets
+      // for the motion stagger (RVM5)
+      expect(node.children).toHaveLength(4)
+      expect((node as any).children[0].part).toBeUndefined()
+      expect((node as any).children[3].part).toBe('note[0]')
+      expect((node as any).children[3].children).toHaveLength(0)
     })
 
     it('handles 9+ items without throwing', () => {
@@ -286,8 +289,8 @@ describe('tls.c.agenda', () => {
       const items = Array.from({ length: 12 }, (_, i) => ({ title: `Item ${i + 1}` }))
       const node = tlsCAgenda.layout({ items } as any, c)
       assertValidNode(node)
-      // 12 items × 3 children each (index + title + an empty note slot, RVM5) = 36
-      expect(node.children).toHaveLength(36)
+      // 12 items × 4 children each (roomy hairline + index + title + an empty note slot, RVM5) = 48
+      expect(node.children).toHaveLength(48)
     })
 
     it('handles a 400-char title without throwing', () => {
@@ -312,8 +315,8 @@ describe('tls.c.agenda', () => {
         c,
       )
       assertValidNode(node)
-      // 2 items × 3 parts each (index + title + note) = 6
-      expect(node.children).toHaveLength(6)
+      // 2 items × (roomy hairline + index + title + note) = 8
+      expect(node.children).toHaveLength(8)
       const parts = collectParts(node)
       expect(parts).toContain('item[0].index')
       expect(parts).toContain('item[0].title')

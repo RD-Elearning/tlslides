@@ -22,6 +22,11 @@ import { shapeSlot } from '../_motion'
 const PAD = 10
 const GAP = 6
 const MIN_CHEVRON_W = 96
+/** AC3 pre-item: the roomy tier (subheading labels, body notes inside or lead notes below, taller
+ *  chevrons) for chevrons alone in a tall box; the block fills its box, so the tier follows H. */
+const ROOMY_MIN_H = 480
+const ROOMY_MIN_CW = 300
+const ROOMY_PAD = 24
 
 interface Geo {
   N: number
@@ -32,8 +37,8 @@ interface Geo {
   pitch: number
 }
 
-function geometry(W: number, H: number, N: number, contentH: number, below: boolean, belowH: number): Geo {
-  const wantH = clamp(contentH + 2 * PAD, 84, 200)
+function geometry(W: number, H: number, N: number, contentH: number, below: boolean, belowH: number, roomy = false): Geo {
+  const wantH = roomy ? clamp(contentH + 2 * ROOMY_PAD, below ? 200 : 160, 280) : clamp(contentH + 2 * PAD, 84, 200)
   const room = below ? Math.max(1, H - belowH) : H
   const chevH = Math.max(1, Math.min(room, wantH))
   const notch = clamp(Math.min(chevH * 0.28, W / (N * 2.6)), 6, 40)
@@ -57,21 +62,22 @@ export function layout(props: ChevronsProps, ctx: LayoutContext): LayoutNode {
   const showText = isShown(props, 'showText') && steps.some((s) => s.text)
   const rawCur = numOrNull(props.currentIndex)
   const cur = rawCur !== null && Math.round(rawCur) >= 0 && Math.round(rawCur) < N ? Math.round(rawCur) : -1
-  const labelS = style(ctx, 'caption', c.text)
-  const textS = mutedStyle(ctx, 'footnote')
   const below = placement === 'below' && showText
+  const roomy = H >= ROOMY_MIN_H && (W + (N - 1) * (40 - GAP)) / N >= ROOMY_MIN_CW
+  const labelS = style(ctx, roomy ? (below ? 'heading' : 'subheading') : 'caption', c.text)
+  const textS = mutedStyle(ctx, roomy ? (below ? 'lead' : 'body') : 'footnote')
 
   // Provisional geometry (content height is measured at the final widths below).
-  let g = geometry(W, H, N, lineH(labelS) * 2, below, 0)
+  let g = geometry(W, H, N, lineH(labelS) * 2, below, 0, roomy)
   const insideW = (i: number) => Math.max(8, g.cw - (i === 0 ? PAD : g.notch + 4) - (g.notch + 2))
   const maxLabelH = Math.max(...steps.map((s, i) => linesHeight(ctx, s.label, labelS, insideW(i), 2)))
   const maxTextH = showText && !below ? Math.max(...steps.map((s, i) => linesHeight(ctx, s.text, textS, insideW(i), 4))) : 0
   let belowH = 0
   if (below) {
     const colW = Math.max(8, g.pitch - 8)
-    belowH = Math.max(...steps.map((s) => linesHeight(ctx, s.text, textS, colW, 4))) + 14
+    belowH = Math.max(...steps.map((s) => linesHeight(ctx, s.text, textS, colW, 4))) + (roomy ? 28 : 14)
   }
-  g = geometry(W, H, N, maxLabelH + (maxTextH ? maxTextH + 4 : 0), below, belowH)
+  g = geometry(W, H, N, maxLabelH + (maxTextH ? maxTextH + 4 : 0), below, belowH, roomy)
 
   const nodes: LayoutNode[] = []
   steps.forEach((s, i) => {
@@ -100,7 +106,7 @@ export function layout(props: ChevronsProps, ctx: LayoutContext): LayoutNode {
     if (below && s.text) {
       const colW = Math.max(8, g.pitch - 8)
       const cx = x + g.cw / 2
-      nodes.push(...placeLines(ctx, s.text, active ? { ...textS, color: c.text } : textS, { x: cx - colW / 2, y: g.chevY + g.chevH + 12, width: colW }, 'center', 4, `text[${i}]`).nodes)
+      nodes.push(...placeLines(ctx, s.text, active ? { ...textS, color: c.text } : textS, { x: cx - colW / 2, y: g.chevY + g.chevH + (roomy ? 24 : 12), width: colW }, 'center', 4, `text[${i}]`).nodes)
     }
   })
   return root(ctx, nodes)

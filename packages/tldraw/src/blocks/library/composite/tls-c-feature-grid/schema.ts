@@ -130,6 +130,35 @@ export function circleIcon(cellW: number): { disc: number; glyph: number } {
   return { disc, glyph: Math.max(FG_CIRCLE_GLYPH, Math.round(disc * 0.6)) }
 }
 
+/**
+ * AC3 pre-item: the grid's tiers. `roomy` (heading titles, lead descriptions, a 64 icon, 40 card
+ * padding, card rows stretched 1.25x) is taken when the grid fits its box at that size, so a
+ * feature grid alone under a title is not a thin band in a tall region; else `base`, the AC2 look.
+ * The poster chooses (it measures); the template reads the choice back from the poster.
+ */
+export interface FgTier {
+  roomy: boolean
+  title: 'heading' | 'subheading'
+  desc: 'lead' | 'body'
+  icon: number
+  pad: number
+  /** Card rows are this many times their content (claimed up front, so the choice is a fixed point). */
+  stretch: number
+}
+export const FG_TIERS: readonly FgTier[] = [
+  { roomy: true, title: 'heading', desc: 'lead', icon: 64, pad: 40, stretch: 1.25 },
+  { roomy: false, title: 'subheading', desc: 'body', icon: 48, pad: FG_CARD_PAD, stretch: 1 },
+]
+/** Cells narrower than this keep the base tier (heading titles need the measure). */
+export const FG_ROOMY_MIN_CELL = 400
+/** The disc for a tier: the roomy tier's discs are 1.25x (still ≤ 96). */
+export function tierCircleIcon(cellW: number, tier: FgTier): { disc: number; glyph: number } {
+  const base = circleIcon(cellW)
+  if (!tier.roomy) return base
+  const disc = Math.min(96, Math.round(base.disc * 1.25))
+  return { disc, glyph: Math.round(disc * 0.6) }
+}
+
 /** Card background and disc tint, from the resolved tokens (same colours in template and poster). */
 export function featureGridColors(color: Record<string, string> | undefined): { card: string; disc: string } {
   const surface = color?.surface ?? '#ffffff'

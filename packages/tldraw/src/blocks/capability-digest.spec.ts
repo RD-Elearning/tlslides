@@ -477,7 +477,7 @@ describe('R7 — capability digest v2', () => {
         range: '2–5 items',
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
-        size: 'h≈180-6/item@840',
+        size: 'h 150–289@544', // AC3 pre-item: card rows stretch with the box (a range, not a linear model)
         aiTier: 1,
         looks: ['tile', 'gap'],
         absorbs: ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge'],

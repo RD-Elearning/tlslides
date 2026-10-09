@@ -99,17 +99,20 @@ describe('AC0 slide recipes', () => {
     }
     return best
   }
-  const FILLS_ITS_REGION = ['data-kpi-row', 'process-roadmap', 'content-cards', 'comparison-pricing', 'data-chart-insight', 'data-stat-spotlight']
+  // AC3 pre-item: the roomy tiers (agenda, feature-grid, timeline, team) joined the list.
+  const FILLS_ITS_REGION = [
+    'data-kpi-row', 'process-roadmap', 'content-cards', 'comparison-pricing', 'data-chart-insight', 'data-stat-spotlight',
+    'agenda-full', 'content-feature-grid', 'process-timeline', 'people-team',
+  ]
   for (const id of FILLS_ITS_REGION) {
     it(`recipe "${id}" fills at least 55% of its region`, () => {
       expect(regionFill(id)).toBeGreaterThanOrEqual(0.55)
     })
   }
   it('sparse titled recipes (stack < 50% of its region) do not grow in number', () => {
-    const KNOWN_SPARSE = [
-      'agenda-full', 'content-feature-grid', 'data-table', 'comparison-options', 'comparison-pros-cons', 'comparison-before-after',
-      'comparison-table', 'process-steps', 'process-chevrons', 'process-timeline', 'people-team',
-    ]
+    // AC3 pre-item: 11 → 3 (roomy tiers in the blocks; chevrons below-notes and alternating timeline
+    // in their recipes). The three left are thin by nature at the example's content.
+    const KNOWN_SPARSE = ['comparison-table', 'process-steps', 'process-chevrons']
     const titled = RECIPES.filter((r) => r.regions.title && r.layout === 'timeline')
     const sparse = titled.filter((r) => regionFill(r.id) < 0.5).map((r) => r.id)
     for (const id of sparse) expect(KNOWN_SPARSE).toContain(id)

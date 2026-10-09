@@ -9,13 +9,27 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import { circleIcon, effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, type FeatureGridProps } from './schema'
+import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
 import { alignText } from '../_kit'
 import { getIcon } from '../../../icons'
 import { cssTextHeight } from '../../../html-block'
-import { FG_ICON, FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
+import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
 
 export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode {
+  // AC3 pre-item: the roomy tier when it fits the box (see FG_TIERS); a ladder of fixed-height
+  // candidates, so laid out again at its own height the grid picks the same tier.
+  const H = ctx.box.height
+  const [roomy, base] = FG_TIERS
+  const cols = effectiveColumns(ctx.box.width, props.columns, props.gap ?? 24, (props.cells ?? []).length)
+  const cellW = (ctx.box.width - (cols - 1) * (props.gap ?? 24)) / cols
+  if (H > 0 && cellW >= FG_ROOMY_MIN_CELL) {
+    const node = posterAt(props, ctx, roomy)
+    if (node.box.height <= H + 0.5) return node
+  }
+  return posterAt(props, ctx, base)
+}
+
+function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): LayoutNode {
   const cells = props.cells ?? []
   const gap = props.gap ?? 24
   const w = ctx.box.width
@@ -26,17 +40,17 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   const card = props.cell === 'card'
   const center = props.align === 'center'
   const circle = props.iconStyle === 'circle'
-  const P = card ? FG_CARD_PAD : 0
+  const P = card ? tier.pad : 0
   const innerW = Math.max(1, cellW - 2 * P)
   const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
   const rows = Math.ceil(cells.length / cols)
-  const iconSize = circle ? circleIcon(cellW).disc : FG_ICON
+  const iconSize = circle ? tierCircleIcon(cellW, tier).disc : tier.icon
   const iconMargin = FG_ICON_GAP
   const titleMargin = FG_TITLE_GAP
   // LO7: the template's metrics (its line-heights, no tracking); heights are CSS line boxes, so
   // the grid below is where the live HTML puts every part.
-  const titleStyleOf = () => ({ ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: FG_LH.title }), color: ctx.resolveColor('text').color })
-  const descStyleOf = () => ({ ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: FG_LH.desc }), color: ctx.resolveColor('textMuted').color })
+  const titleStyleOf = () => ({ ...ctx.resolveText(tier.title, { letterSpacing: 0, lineHeight: FG_LH.title }), color: ctx.resolveColor('text').color })
+  const descStyleOf = () => ({ ...ctx.resolveText(tier.desc, { letterSpacing: 0, lineHeight: FG_LH.desc }), color: ctx.resolveColor('textMuted').color })
 
   // Measure each cell to find per-cell heights, then pick the max per row
   const cellData = cells.map((cell) => {
@@ -61,7 +75,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     for (let c = start; c < end; c++) {
       maxH = Math.max(maxH, cellData[c].cellH)
     }
-    rowHeights.push(maxH)
+    rowHeights.push(card && tier.stretch > 1 ? Math.round(maxH * tier.stretch) : maxH)
   }
 
   // Total height
@@ -97,7 +111,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     const iconDef = getIcon(cell.icon as string)
     if (circle) {
       children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
-      const g = circleIcon(cellW).glyph
+      const g = tierCircleIcon(cellW, tier).glyph
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
       if (iconDef) children.push({ k: 'icon', box: gb, icon: iconDef.path, fill: iconColor, strokeWidth: 1.5 })
     } else if (iconDef) {

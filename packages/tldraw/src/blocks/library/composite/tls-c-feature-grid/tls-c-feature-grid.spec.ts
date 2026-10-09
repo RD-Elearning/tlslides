@@ -778,7 +778,8 @@ describe('AC2 — look knobs (cell, align, iconStyle)', () => {
       const ls = leaves(node)
       const disc = ls.find((l) => l.part === 'cell[0].icon' && l.k === 'rect')!
       const glyph = ls.find((l) => l.k === 'icon')!
-      const html = template(props, { ...makeTemplateCtx(ctx({ width: w, height: 900 })), box: { x: 0, y: 0, width: w, height: 900 } } as any)
+      // AC3 pre-item: the template reads the tier back from its poster (the host passes it).
+      const html = template(props, { ...makeTemplateCtx(ctx({ width: w, height: 900 })), box: { x: 0, y: 0, width: w, height: 900 }, poster: node } as any)
       expect(html).toContain(`width:${disc.w}px;height:${disc.w}px;`)
       expect(html).toContain(`width="${glyph.w}" height="${glyph.w}"`)
       return { disc: disc.w, glyph: glyph.w }
@@ -788,7 +789,8 @@ describe('AC2 — look knobs (cell, align, iconStyle)', () => {
     expect(pref.glyph).toBeGreaterThanOrEqual(32)
     const wide = sizeAt(1728)
     expect(wide.disc).toBeGreaterThan(pref.disc)
-    expect(wide.disc).toBeLessThanOrEqual(80)
+    // AC3 pre-item: 1728 wide and 900 tall takes the roomy tier, whose disc is 1.25x (cap 96).
+    expect(wide.disc).toBeLessThanOrEqual(96)
   })
 
   it('card paints one card per cell; center centres the icon; circle paints a disc', () => {

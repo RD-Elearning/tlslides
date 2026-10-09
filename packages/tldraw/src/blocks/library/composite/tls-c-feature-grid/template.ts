@@ -9,7 +9,7 @@
  */
 
 import type { HtmlTemplateContext } from '../../../types'
-import { circleIcon, effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, type FeatureGridProps } from './schema'
+import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 import { posterText } from '../../../html-block'
 
@@ -42,9 +42,24 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const circle = props.iconStyle === 'circle'
   const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
   const cellW = (ctx.box.width - (cols - 1) * gap) / cols
-  const disc = circleIcon(cellW)
-  const iconBox = circle ? disc.disc : FG_ICON
-  const glyph = circle ? disc.glyph : FG_ICON
+  // AC3 pre-item: the poster chose the tier (it measures); a heading-size title leaf means roomy.
+  const t0 = pt.leaves('cells.0.title')[0]
+  const tier = t0 && t0.style.size >= ctx.tokens.type.heading.size - 0.5 ? FG_TIERS[0] : FG_TIERS[1]
+  const disc = tierCircleIcon(cellW, tier)
+  const iconBox = circle ? disc.disc : tier.icon
+  const glyph = circle ? disc.glyph : tier.icon
+  // Stretched card rows: the poster's card heights, row by row.
+  const rowHs: number[] = []
+  if (card && tier.stretch > 1 && ctx.poster) {
+    const walk = (n: import('../../../types').LayoutNode): void => {
+      if (n.k === 'group') n.children.forEach(walk)
+      else if (n.k === 'rect' && /^cell\[(\d+)\]\.card$/.test(n.part ?? '')) {
+        const i = Number(/\d+/.exec(n.part as string)![0])
+        if (i % cols === 0) rowHs[Math.floor(i / cols)] = n.box.height
+      }
+    }
+    walk(ctx.poster)
+  }
 
   const cellHtml = cells
     .map((cell, i) => {
@@ -55,7 +70,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
         `<div style="` +
           `min-width:0;` +
           `box-sizing:border-box;` +
-          (card ? `padding:${FG_CARD_PAD}px;background:${colors.card};border-radius:${FG_CARD_RADIUS}px;` : '') +
+          (card ? `padding:${tier.pad}px;background:${colors.card};border-radius:${FG_CARD_RADIUS}px;` : '') +
           (center ? `text-align:center;` : '') +
         `">` +
           // Icon - render as inline SVG with the correct path
@@ -76,14 +91,14 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
           // Title
           `<div data-part="cell[${i}].title" style="` +
             `font-family:var(--tls-font-family);` +
-            pt.css(`cells.${i}.title`, `font-size:var(--tls-type-subheading);line-height:${FG_LH.title};`) +
+            pt.css(`cells.${i}.title`, `font-size:var(--tls-type-${tier.title});line-height:${FG_LH.title};`) +
             `color:${ctx.cssVar('on')};` +
             `margin-bottom:${FG_TITLE_GAP}px;` +
           `">${pt.html(`cells.${i}.title`, ctx.esc(cell.title))}</div>` +
           // Description
           `<div data-part="cell[${i}].desc" style="` +
             `font-family:var(--tls-font-family);` +
-            pt.css(`cells.${i}.desc`, `font-size:var(--tls-type-body);line-height:${FG_LH.desc};`) +
+            pt.css(`cells.${i}.desc`, `font-size:var(--tls-type-${tier.desc});line-height:${FG_LH.desc};`) +
             `color:${ctx.cssVar('text-muted')};` +
           `">${pt.html(`cells.${i}.desc`, ctx.esc(cell.desc))}</div>` +
         `</div>`
@@ -96,6 +111,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
       `display:grid;` +
       `grid-template-columns:repeat(${cols},minmax(0,1fr));` +
       `gap:${gap}px;` +
+      (rowHs.length ? `grid-template-rows:${rowHs.map((h) => `${h}px`).join(' ')};` : '') +
       `align-items:${card ? 'stretch' : 'start'};` +
     `">${cellHtml}</div>`
   )

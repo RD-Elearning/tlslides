@@ -67,8 +67,15 @@ function buildMarker(index: number, x: number, y: number, size: number, ctx: Lay
 /**
  * Measure the intrinsic height of a title text (for layout positioning).
  */
-function measureTitleHeight(title: string, width: number, ctx: LayoutContext): number {
-  const style = ctx.resolveText(STEP_TITLE_TYPE_TOKEN, { letterSpacing: -0.03 })
+/** AC3 pre-item: the roomy tier (heading titles, a 72 badge, wider gaps) for horizontal steps alone
+ *  in a tall box. The block fills its box (root = box), so the tier follows the box height. */
+const ROOMY_MIN_H = 480
+const ROOMY_MIN_COL = 360
+const ROOMY_MARKER = 72
+type TitleToken = 'subheading' | 'heading'
+
+function measureTitleHeight(title: string, width: number, ctx: LayoutContext, token: TitleToken = STEP_TITLE_TYPE_TOKEN): number {
+  const style = ctx.resolveText(token, { letterSpacing: -0.03 })
   const m = ctx.measureText(title, style, width)
   return m.height
 }
@@ -93,11 +100,12 @@ function buildTitle(
   w: number,
   availableH: number,
   ctx: LayoutContext,
+  token: TitleToken = STEP_TITLE_TYPE_TOKEN,
 ): LayoutNode {
   const spec: BlockSpec = {
     id: `step-${index}-title`,
     type: 'tls.t.title',
-    props: { text: title, size: STEP_TITLE_TYPE_TOKEN },
+    props: { text: title, size: token },
   }
   const wrapper = ctx.layoutChild(spec, { x, y, width: w, height: availableH })
   // Override the wrapper group's part with our step-specific part name.
@@ -201,16 +209,19 @@ function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: n
   const rows = Math.ceil(n / Math.min(n, fit))
   const cols = Math.ceil(n / rows)
   const stepWidth = Math.max(10, (W - (cols - 1) * GAP) / cols)
-  const markerGap = ctx.tokens.space.sm
+  const roomy = rows === 1 && H >= ROOMY_MIN_H && stepWidth >= ROOMY_MIN_COL
+  const markerGap = ctx.tokens.space[roomy ? 'lg' : 'sm']
+  const MARKER = roomy ? ROOMY_MARKER : MARKER_SIZE
+  const token: TitleToken = roomy ? 'heading' : STEP_TITLE_TYPE_TOKEN
 
   const heights = steps.map((s) => {
-    const t = measureTitleHeight(s.title, stepWidth, ctx)
+    const t = measureTitleHeight(s.title, stepWidth, ctx, token) + (roomy && s.desc ? ctx.tokens.space.xs : 0)
     const d = s.desc ? measureDescHeight(s.desc, stepWidth, ctx) : 0
     return { t, d }
   })
   const rowH = (r: number) => {
     const slice = heights.slice(r * cols, r * cols + cols)
-    return MARKER_SIZE + markerGap + Math.max(...slice.map((h) => h.t + h.d))
+    return MARKER + markerGap + Math.max(...slice.map((h) => h.t + h.d))
   }
   const rowGap = ctx.tokens.space.xl
   const total = Array.from({ length: rows }, (_, r) => rowH(r)).reduce((a, b) => a + b, 0) + (rows - 1) * rowGap
@@ -223,15 +234,15 @@ function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: n
       if (i >= n) break
       const step = steps[i]
       const x = c * (stepWidth + GAP)
-      children.push(...buildMarker(i, x, y0, MARKER_SIZE, ctx))
-      const titleY = y0 + MARKER_SIZE + markerGap
-      children.push(buildTitle(i, step.title, x, titleY, stepWidth, heights[i].t, ctx))
+      children.push(...buildMarker(i, x, y0, MARKER, ctx))
+      const titleY = y0 + MARKER + markerGap
+      children.push(buildTitle(i, step.title, x, titleY, stepWidth, heights[i].t, ctx, token))
       if (step.desc) children.push(buildDesc(i, step.desc, x, titleY + heights[i].t, stepWidth, heights[i].d, ctx))
       // Rail to the next badge in the same row.
       if (c < cols - 1 && i < n - 1) {
-        const from = x + MARKER_SIZE + RAIL_PAD
+        const from = x + MARKER + RAIL_PAD
         const to = x + stepWidth + GAP - RAIL_PAD
-        children.push(buildConnector(i, from, y0 + (MARKER_SIZE - CONNECTOR_THICKNESS) / 2, Math.max(1, to - from), CONNECTOR_THICKNESS, ctx))
+        children.push(buildConnector(i, from, y0 + (MARKER - CONNECTOR_THICKNESS) / 2, Math.max(1, to - from), CONNECTOR_THICKNESS, ctx))
       }
     }
     y0 += rowH(r) + rowGap

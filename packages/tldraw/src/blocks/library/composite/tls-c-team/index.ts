@@ -94,7 +94,7 @@ export function colsFor(n: number, cols: unknown, width?: number, gap = 0): numb
   return k
 }
 
-const avatarSpec = (m: TeamMember, i: number, size: 'md' | 'lg'): BlockSpec => ({
+const avatarSpec = (m: TeamMember, i: number, size: 'md' | 'lg' | 'xl'): BlockSpec => ({
   id: `person-${i}`,
   type: 'tls.m.avatar',
   props: { image: m.image ?? '', name: m.name, role: m.role ?? '', size, layout: 'stacked', align: 'center' },
@@ -124,7 +124,7 @@ interface Plan {
   gap: number
   pad: number
   inner: number
-  size: 'md' | 'lg'
+  size: 'md' | 'lg' | 'xl'
   small: boolean
   showBio: boolean
   avatarH: number[]
@@ -133,18 +133,18 @@ interface Plan {
   needed: number
 }
 
-function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = false): Plan {
+function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = false, roomy = false): Plan {
   const people = membersOf(props)
   const n = Math.max(1, people.length)
   const W = Math.max(0, ctx.box.width) || 0
   const gap = ctx.tokens.space.lg
   const cols = colsFor(n, props.cols, W, gap)
   const rows = Math.max(1, Math.ceil(n / cols))
-  const pad = props.card === 'plain' ? 0 : ctx.tokens.space.lg
+  const pad = props.card === 'plain' ? 0 : ctx.tokens.space[roomy && cols <= 3 ? 'xl' : roomy ? 'md' : 'lg']
   const cw = Math.max(0, (W - gap * (cols - 1)) / cols)
   const inner = Math.max(0, cw - 2 * pad)
-  const size = compact || cols >= 4 || cw < 380 ? 'md' : 'lg'
-  const small = cols >= 3
+  const size = roomy ? (cols >= 4 ? 'lg' : 'xl') : compact || cols >= 4 || cw < 380 ? 'md' : 'lg'
+  const small = !roomy && cols >= 3
   const showBio = isShown(props, 'showBio') && !dropBio
   const avatarH = measureHeights(ctx, people.map((m, i) => avatarSpec(m, i, size)), inner)
   const bioH = measureHeights(ctx, people.map((m, i) => bioSpec(m, i, small) ?? { id: `b${i}`, type: 'tls.t.caption', props: { text: ' ' } }), inner)
@@ -156,8 +156,10 @@ function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = f
 
 export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
   const H = Math.max(0, ctx.box.height) || 0
-  // big portraits first; when the grid is taller than the box, smaller ones
-  let p = plan(props, ctx)
+  // AC3 pre-item: the roomy tier (xl portraits, lg with four columns, body bios, xl padding) when one row of wide cards fits
+  // the box that way; then big portraits; when the grid is taller than the box, smaller ones.
+  const r = H > 0 ? plan(props, ctx, false, false, true) : undefined
+  let p = r && r.rows === 1 && r.cw >= 380 && r.needed <= H + 0.5 ? r : plan(props, ctx)
   if (p.size === 'lg' && H > 0 && p.needed > H) p = plan(props, ctx, true)
   // still too tall (half-width region): the bios are the secondary part, drop them before clipping
   if (H > 0 && p.needed > H && p.showBio) p = plan(props, ctx, true, true)

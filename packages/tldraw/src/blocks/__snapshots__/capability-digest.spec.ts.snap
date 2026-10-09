@@ -5359,7 +5359,7 @@ section-title · section+title — title only — quiet section break
 content-statement · blank — content: tls.t.statement — one message, key words in accent
 content-bullets-image · two-column+title — left: tls.t.bullets; right: tls.m.image — a few points beside a picture
 content-cards · timeline+title — timeline: tls.c.cards — 2–4 parallel points
-content-feature-grid · timeline+title — timeline: tls.c.feature-grid — features or benefits with icons
+content-feature-grid · timeline+title — timeline: tls.c.feature-grid(cell=card) — features or benefits with icons
 content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list — vertical icon points beside a photo
 content-image-text · blank — content: tls.c.image-text — photo-led story with a heading and text
 ### data
@@ -5378,8 +5378,8 @@ comparison-matrix · timeline+title — timeline: tls.g.matrix-2x2 — items on 
 comparison-table · timeline+title — timeline: tls.d.compare-table — feature matrix
 ### process
 process-steps · timeline+title — timeline: tls.c.steps — ordered steps, explained
-process-chevrons · timeline+title — timeline: tls.g.chevrons — phases with a current one
-process-timeline · timeline+title — timeline: tls.g.timeline — dated events
+process-chevrons · timeline+title — timeline: tls.g.chevrons(textPlacement=below) — phases with a current one
+process-timeline · timeline+title — timeline: tls.g.timeline(alternate=true) — dated events
 process-roadmap · timeline+title — timeline: tls.g.roadmap + tls.t.takeaway(size=lead) — plan over periods and lanes, with the key milestone
 ### people
 people-team · timeline+title — timeline: tls.c.team — team members
@@ -5406,7 +5406,7 @@ also: tls.t.caption, tls.t.definition
 
 ## Lists
 tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by an icon, number or image, then title and text [h=fill] knobs: lead, tone, align, numeral
-tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 167–442@1728] knobs: cell, align, iconStyle
+tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 221–574@1728] knobs: cell, align, iconStyle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle, iconTone, spacing
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker, spacing
 also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
@@ -5419,7 +5419,7 @@ also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈334+50/L@840] knobs: variant, align, format, showContext, showLabel
-tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: tile, gap
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–289@544] knobs: tile, gap
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
@@ -5432,12 +5432,12 @@ tls.d.line · chart · group · 2–24 items — Lines over ordered categories, 
 also: tls.d.area, tls.d.bubble, tls.d.funnel-chart, tls.d.heatmap, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.waterfall
 
 ## Tables
-tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h≈222@840] knobs: zebra, rules, header, density
+tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h 222–284@840] knobs: zebra, rules, header, density
 also: tls.d.ranking, tls.d.scorecard
 
 ## Comparison
-tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈121+50/item@1728] knobs: style
-tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h≈232@840] knobs: cellKind, zebra, density
+tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style
+tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–298@840] knobs: cellKind, zebra, density
 tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈363+59/item@840] knobs: featuredStyle, align, showCta
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow, emphasis
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight, style, showItems
@@ -5445,13 +5445,13 @@ tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantag
 also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.swot
 
 ## Process
-tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 160–613@840] knobs: orientation
-tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h≈63+7/item@840] knobs: fill, textPlacement
+tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation
+tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill, textPlacement
 also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels
-tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 221–269@840] knobs: axis, alternate, nodeStyle
+tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 269–549@840] knobs: axis, alternate, nodeStyle
 also: tls.c.journey, tls.g.milestones
 
 ## Hierarchy
@@ -5469,7 +5469,7 @@ tls.m.image-grid · media · group · 2–9 items — Grid of images in even cel
 also: tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
 
 ## People
-tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 332–845@1728] knobs: cols, card, showBio
+tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 440–845@1728] knobs: cols, card, showBio
 tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840] knobs: variant
 also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
 
@@ -5486,7 +5486,7 @@ tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by 
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant, align
 
 ## Agenda
-tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h≈-21+156/item@840] knobs: variant, numbering
+tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h 169–981@1728] knobs: variant, numbering
 also: tls.c.objectives
 
 ## Closing

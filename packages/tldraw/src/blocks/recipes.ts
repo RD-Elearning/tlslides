@@ -105,7 +105,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'content-feature-grid',
     role: 'content',
     layout: 'timeline',
-    regions: { title: [TITLE], timeline: [b('tls.c.feature-grid')] },
+    regions: { title: [TITLE], timeline: [b('tls.c.feature-grid', { cell: 'card' })] },
     when: 'features or benefits with icons',
   },
   {
@@ -165,8 +165,8 @@ export const RECIPES: readonly SlideRecipe[] = [
 
   // ── process ──
   { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps')] }, when: 'ordered steps, explained' },
-  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons')] }, when: 'phases with a current one' },
-  { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline')] }, when: 'dated events' },
+  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' })] }, when: 'phases with a current one' },
+  { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline', { alternate: true })] }, when: 'dated events' },
   { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan over periods and lanes, with the key milestone' },
 
   // ── people ──

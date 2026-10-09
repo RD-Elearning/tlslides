@@ -19,6 +19,8 @@ import { insetBox } from '../../../layout/box-model'
 
 /** AC2 `tile: accent-bar`: the bar's width down the card's left edge. */
 const TILE_BAR = 8
+/** AC3 pre-item: how far a `card` / `accent-bar` row may stretch past its tiles' content. */
+const CARD_STRETCH = 1.35
 
 export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
   const W = ctx.box.width
@@ -66,7 +68,7 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
     })
 
   /** The card behind each tile (one group per tile, so the card reveals with its tile). */
-  const withCards = (nodes: LayoutNode[], h: number): LayoutNode[] =>
+  const withCards = (nodes: LayoutNode[], h: number, dy = 0): LayoutNode[] =>
     look === 'plain'
       ? nodes
       : nodes.map((n, i) => {
@@ -79,7 +81,7 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
             children: [
               { k: 'rect', box: { x: 0, y: 0, width: card.width, height: card.height }, fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color }, radius: r },
               ...(bar ? [{ k: 'rect', box: { x: 0, y: 0, width: bar, height: card.height }, fill: { type: 'solid', color: ctx.resolveColor('accent').color }, radius: [r, 0, 0, r] } as LayoutNode] : []),
-              { ...n, part: undefined, box: { ...n.box, x: n.box.x - card.x, y: n.box.y - card.y } },
+              { ...n, part: undefined, box: { ...n.box, x: n.box.x - card.x, y: n.box.y - card.y + dy } },
             ],
           } as LayoutNode
         })
@@ -96,8 +98,13 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
   // Each tile keeps its own bottom padding (tile box = painted + md), so a tile that chose its
   // big tier in the tall first pass still has the height for it in the second.
   if (painted > 0 && rowH < H - 1) children = place((h = Math.max(0, rowH - inner.y)))
-  const rootH = painted > 0 ? rowH : H
-  children = withCards(children, Math.min(h, rootH - inner.y))
+  // AC3 pre-item: cards stretch up to CARD_STRETCH× the tiles' content (never past the box), the
+  // tile centred on its card — a card row under a title no longer reads as a thin strip. `min(H, k×
+  // content)` is a fixed point: laid out again at that height the tiles pick the same tier.
+  const stretched = look !== 'plain' && painted > 0 ? Math.min(H, Math.ceil(rowH * CARD_STRETCH)) : rowH
+  const rootH = painted > 0 ? stretched : H
+  const cardH = Math.min(h, rowH - inner.y) + (stretched - rowH)
+  children = withCards(children, look === 'plain' ? Math.min(h, rootH - inner.y) : cardH, (stretched - rowH) / 2)
 
   return {
     k: 'group',

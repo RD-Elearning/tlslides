@@ -69,7 +69,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   // compact tier (heading value, caption label/delta) as before.
   const formattedValue = formatValue(props.value, props.format)
   const showDelta = isShown(props, 'showDelta') && delta != null
-  const tierHeight = (valueToken: 'display' | 'heading', smallToken: 'body' | 'caption'): number => {
+  const tierHeight = (valueToken: 'display' | 'title' | 'heading', smallToken: 'body' | 'caption'): number => {
     const small = ctx.resolveText(smallToken)
     const value = ctx.resolveText(valueToken)
     const labelH = isShown(props, 'showLabel') ? ctx.measureText(props.label ?? '', small, inner.width).height + ctx.tokens.space.xs : 0
@@ -80,7 +80,13 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   const big =
     inner.height + 0.5 >= tierHeight('display', 'body') &&
     realWidth(formattedValue, ctx.resolveText('display')) * 1.03 <= inner.width
-  const smallToken = big ? 'body' : 'caption'
+  // AC3 pre-item: a tile too narrow for the display number (four tiles in a row) but with the height
+  // takes the `title` step instead of dropping to the compact heading.
+  const mid =
+    !big &&
+    inner.height + 0.5 >= tierHeight('title', 'body') &&
+    realWidth(formattedValue, ctx.resolveText('title')) * 1.03 <= inner.width
+  const smallToken = big || mid ? 'body' : 'caption'
 
 // --- label (top, muted) ---
   if (isShown(props, 'showLabel')) {
@@ -100,7 +106,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   // --- value (big number) ---
   // One line, shrunk (to 0.5) until the browser-true width fits the tile: a long value ("$1,234,567")
   // used to wrap or run out of a narrow tile (RV04).
-  let valueStyle = ctx.resolveText(big ? 'display' : 'heading')
+  let valueStyle = ctx.resolveText(big ? 'display' : mid ? 'title' : 'heading')
   for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
     valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
   }
