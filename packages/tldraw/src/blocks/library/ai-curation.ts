@@ -94,7 +94,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
 
   // ── emphasis ──
   'tls.t.quote': t1(['markStyle']),
-  'tls.t.takeaway': t1(['tone'], ['tls.t.callout']),
+  'tls.t.takeaway': t1(['tone', 'size'], ['tls.t.callout']),
   'tls.t.statement': t1(['size', 'align', 'emphasis', 'showMark'], ['tls.t.callout']),
   'tls.t.callout': t2(['variant', 'fill', 'showIcon', 'showTitle']),
   'tls.c.quote-image': t2(['anchor', 'scrim']),
@@ -119,7 +119,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.slope': t2(['highlight', 'format']),
   'tls.d.bubble': t2(['sizeLegend', 'gridlines', 'format']),
   'tls.d.heatmap': t2(['ramp', 'showValues', 'format']),
-  'tls.c.chart-insight': t1(['side', 'ratio', 'showSource'], ['tls.c.dashboard']),
+  'tls.c.chart-insight': t1(['side', 'ratio', 'showSource', 'insightSize'], ['tls.c.dashboard']),
 
   // ── table ──
   'tls.d.table': t1(['zebra', 'rules', 'header', 'density'], ['tls.d.scorecard', 'tls.d.ranking', 'tls.t.kv-list']),

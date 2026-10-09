@@ -1,0 +1,225 @@
+{
+  "version": 1,
+  "id": "style-knobs",
+  "title": "AC2 look knobs",
+  "theme": "corporate-navy",
+  "style": "corporate",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "kn_01",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k1t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three numbers that moved this year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k1a",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                {
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "label": "Revenue",
+                  "polarity": "upGood",
+                  "format": "compact"
+                },
+                {
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "label": "Churn %",
+                  "polarity": "downGood",
+                  "format": "percent"
+                },
+                {
+                  "value": 64,
+                  "delta": 9,
+                  "label": "NPS",
+                  "polarity": "upGood",
+                  "format": "plain"
+                }
+              ]
+            }
+          },
+          {
+            "id": "k1b",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "Growth came from retention, not new logos.",
+              "label": "So what",
+              "size": "lead"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_02",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k2t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Roadmap for next year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k2a",
+            "type": "tls.g.roadmap",
+            "props": {
+              "periods": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "lanes": [
+                {
+                  "name": "Product",
+                  "items": [
+                    {
+                      "label": "Redesign",
+                      "start": 0,
+                      "end": 1,
+                      "status": "done"
+                    },
+                    {
+                      "label": "Mobile app",
+                      "start": 1.5,
+                      "end": 3,
+                      "status": "active"
+                    }
+                  ]
+                },
+                {
+                  "name": "Platform",
+                  "items": [
+                    {
+                      "label": "Migration",
+                      "start": 0.5,
+                      "end": 2,
+                      "status": "active"
+                    }
+                  ]
+                }
+              ],
+              "todayAt": 1.5
+            }
+          },
+          {
+            "id": "k2b",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "The mobile app ships before the Q4 renewals.",
+              "label": "Key milestone",
+              "size": "lead"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_03",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k3t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Revenue grew 42% in a year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k3a",
+            "type": "tls.c.chart-insight",
+            "props": {
+              "chart": {
+                "kind": "bar",
+                "categories": [
+                  "Q1",
+                  "Q2",
+                  "Q3",
+                  "Q4"
+                ],
+                "series": [
+                  {
+                    "name": "Revenue ($M)",
+                    "values": [
+                      8.1,
+                      9.4,
+                      10.2,
+                      11.5
+                    ]
+                  }
+                ]
+              },
+              "insight": "Revenue **grew 42%**, led by team plans.",
+              "insightSize": "lead",
+              "source": "Source: finance, FY2026"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_04",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k4t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Four principles"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k4a",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "target",
+                  "title": "Focus",
+                  "text": "One question per session, answered with data."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Evidence",
+                  "text": "Real datasets, small enough to explore."
+                },
+                {
+                  "icon": "check",
+                  "title": "Honesty",
+                  "text": "Say what a result does not show."
+                },
+                {
+                  "icon": "users",
+                  "title": "Together",
+                  "text": "Every review is done in pairs."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

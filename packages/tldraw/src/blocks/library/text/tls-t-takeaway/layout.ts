@@ -75,9 +75,19 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
   }
 
   // ── Text ─────────────────────────────────────────────────────────────
-  const textStyle = ctx.resolveText('body', { lineHeight: 1.4 })
+  // AC2 `size: 'lead'`: the bigger tier when it fits the box height; a short box keeps `body`.
+  const bodyStyle = ctx.resolveText('body', { lineHeight: 1.4 })
+  let textStyle = bodyStyle
+  let textMetrics = ctx.measureText(props.text, bodyStyle, contentW)
+  if (props.size === 'lead') {
+    const leadStyle = ctx.resolveText('lead', { lineHeight: 1.3 })
+    const leadMetrics = ctx.measureText(props.text, leadStyle, contentW)
+    if (!(ctx.box.height > 0) || y + leadMetrics.height + pad <= ctx.box.height + 0.5) {
+      textStyle = leadStyle
+      textMetrics = leadMetrics
+    }
+  }
   const textColor = ctx.resolveColor('text')
-  const textMetrics = ctx.measureText(props.text, textStyle, contentW)
   const textHeight = textMetrics.height
 
   children.push({

@@ -42,30 +42,37 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
   const tileWidth = (inner.width - totalGaps) / tileCount
   const tileHeight = inner.height
 
-  const children: LayoutNode[] = []
+  const place = (h: number): LayoutNode[] =>
+    tiles.map((tile, i) => {
+      const x = inner.x + i * (tileWidth + gap)
+      // Delegate to tls.c.kpi-tile via ctx.layoutChild.
+      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile } }
+      const tileNode = ctx.layoutChild(tileSpec, { x, y: inner.y, width: tileWidth, height: h })
+      // Override the wrapper's part name with our indexed name: tile[0], tile[1], …
+      // Do NOT re-wrap — layoutChild already returns a wrapper group at the correct coordinates.
+      return { ...tileNode, part: `tile[${i}]` }
+    })
 
-  for (let i = 0; i < tileCount; i++) {
-    const tile = tiles[i]
-    const x = inner.x + i * (tileWidth + gap)
-
-    // Delegate to tls.c.kpi-tile via ctx.layoutChild.
-    const tileSpec = {
-      id: `kpi-tile-${i}`,
-      type: 'tls.c.kpi-tile',
-      props: { ...tile },
-    }
-
-    const tileNode = ctx.layoutChild(tileSpec, { x, y: inner.y, width: tileWidth, height: tileHeight })
-
-    // Override the wrapper's part name with our indexed name: tile[0], tile[1], …
-    // Do NOT re-wrap — layoutChild already returns a wrapper group at the correct coordinates.
-    children.push({ ...tileNode, part: `tile[${i}]` })
-  }
+  // AC2: content-sized. Tiles paint their content from the top, so a row stretched over a tall
+  // region left an empty band between the tiles and the next block (a takeaway). The row is as tall
+  // as its tallest tile's painted content; the region then centres the row and its sibling.
+  let children = place(tileHeight)
+  const painted = Math.max(0, ...children.map((n) => leafBottom(n, 0) - inner.y))
+  const rowH = Math.min(H, Math.ceil(inner.y + painted + ctx.tokens.space.md))
+  if (painted > 0 && rowH < H - 1) children = place(Math.max(0, rowH - inner.y - ctx.tokens.space.md))
+  const rootH = painted > 0 ? rowH : H
 
   return {
     k: 'group',
-    box: { x: 0, y: 0, width: W, height: H },
+    box: { x: 0, y: 0, width: W, height: rootH },
     part: 'root',
     children,
   }
+}
+
+/** Lowest painted edge under `node` (leaf nodes only; group boxes are their allotted box). */
+function leafBottom(node: LayoutNode, offY: number): number {
+  const y = offY + node.box.y
+  if (node.k === 'group') return Math.max(0, ...(node.children ?? []).map((c) => leafBottom(c, y)))
+  return y + node.box.height
 }

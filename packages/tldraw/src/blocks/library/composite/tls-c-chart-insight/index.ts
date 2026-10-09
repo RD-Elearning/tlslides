@@ -22,6 +22,8 @@ export interface ChartInsightProps extends Record<string, unknown> {
   side?: 'right' | 'left' | 'below'
   ratio?: '2:1' | '3:2' | '1:1'
   showSource?: boolean
+  /** Takeaway text tier (`tls.t.takeaway` `size`): `lead` reads at a glance beside a tall chart. */
+  insightSize?: 'body' | 'lead'
 }
 
 export const schema: BlockSchema = {
@@ -32,6 +34,7 @@ export const schema: BlockSchema = {
   side: enumSlot(['right', 'left', 'below'], 'Insight side'),
   ratio: enumSlot(['2:1', '3:2', '1:1'], 'Chart share', 'Chart width : insight width.'),
   showSource: { type: { kind: 'boolean' }, role: 'option', label: 'Show source', toggles: 'source' },
+  insightSize: enumSlot(['body', 'lead'], 'Insight size'),
 }
 
 export const defaults: ChartInsightProps = {
@@ -55,7 +58,12 @@ function insightSpec(props: ChartInsightProps): BlockSpec {
   return {
     id: 'insight',
     type: 'tls.t.takeaway',
-    props: { text: toMeasurable(props.insight), label: props.insightTitle ?? '', tone: 'accent' },
+    props: {
+      text: toMeasurable(props.insight),
+      label: props.insightTitle ?? '',
+      tone: 'accent',
+      ...(props.insightSize === 'lead' ? { size: 'lead' } : {}),
+    },
   }
 }
 

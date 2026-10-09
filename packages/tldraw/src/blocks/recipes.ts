@@ -128,7 +128,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'data-chart-insight',
     role: 'data',
     layout: 'timeline',
-    regions: { title: [TITLE], timeline: [b('tls.c.chart-insight')] },
+    regions: { title: [TITLE], timeline: [b('tls.c.chart-insight', { insightSize: 'lead' })] },
     when: 'one chart with its takeaway and source',
   },
   {
@@ -139,7 +139,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     when: 'one rate with three supporting numbers',
   },
   { id: 'data-big-stat', role: 'data', layout: 'blank', regions: { content: [b('tls.c.big-stat')] }, when: 'one giant number' },
-  { id: 'data-kpi-row', role: 'data', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.kpi-row'), b('tls.t.takeaway')] }, when: '2–5 headline KPIs and what they mean' },
+  { id: 'data-kpi-row', role: 'data', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.kpi-row'), b('tls.t.takeaway', { size: 'lead' })] }, when: '2–5 headline KPIs and what they mean' },
   {
     id: 'data-table',
     role: 'data',
@@ -151,7 +151,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'data-bar-takeaway',
     role: 'data',
     layout: 'two-column',
-    regions: { title: [TITLE], left: [b('tls.d.bar')], right: [b('tls.t.takeaway')] },
+    regions: { title: [TITLE], left: [b('tls.d.bar')], right: [b('tls.t.takeaway', { size: 'lead' })] },
     when: 'single-series bars with the so-what beside',
   },
 
@@ -167,7 +167,7 @@ export const RECIPES: readonly SlideRecipe[] = [
   { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps')] }, when: 'ordered steps, explained' },
   { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons')] }, when: 'phases with a current one' },
   { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline')] }, when: 'dated events' },
-  { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway')] }, when: 'plan over periods and lanes, with the key milestone' },
+  { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan over periods and lanes, with the key milestone' },
 
   // ── people ──
   { id: 'people-team', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.team')] }, when: 'team members' },

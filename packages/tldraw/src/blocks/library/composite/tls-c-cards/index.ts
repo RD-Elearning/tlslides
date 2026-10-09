@@ -107,9 +107,22 @@ interface Plan {
   titleH: number[]
   textH: number[]
   needed: number
+  /** Card text at caption size (4+ cards with a narrow measure); body otherwise. */
+  small: boolean
 }
 
+/** AC2: four or more cards keep body-size text when each card's text column is at least this wide. */
+const BODY_MIN_INNER = 280
+
 function plan(props: CardsProps, ctx: LayoutContext): Plan {
+  // AC2: four or more cards read at body size when the measure is wide enough and the taller cards
+  // still fit the box; otherwise caption, as before.
+  const roomy = planAt(props, ctx, false)
+  if (!roomy.small && roomy.items.length >= 4 && ctx.box.height > 0 && roomy.needed > ctx.box.height) return planAt(props, ctx, true)
+  return roomy
+}
+
+function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean): Plan {
   const items = itemsOf(props)
   const n = Math.max(1, items.length)
   const lead = pick(props.lead, LEADS, 'icon')
@@ -122,11 +135,12 @@ function plan(props: CardsProps, ctx: LayoutContext): Plan {
   const hasLead = lead !== 'none' && items.some((c) => (lead === 'icon' ? c.icon : lead === 'number' ? c.number : c.image))
   const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight) : Math.min(260, Math.round(inner * 0.6))
   const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })), inner)
-  const textH = measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: n >= 4 ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
+  const small = n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
+  const textH = measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
   const sm = ctx.tokens.space.sm
   const body = Math.max(0, ...items.map((c, i) => titleH[i] + (c.text ? sm + textH[i] : 0)))
   const needed = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
-  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed }
+  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small }
 }
 
 /** Place the cards. Exported for tests. */
@@ -143,7 +157,7 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const total = Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
-  const small = n >= 4
+  const small = p.small
 
   p.items.forEach((c, i) => {
     const x = i * (p.cw + p.gap)
