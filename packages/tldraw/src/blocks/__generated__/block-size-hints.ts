@@ -74,7 +74,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.g.matrix-2x2': 'h=fill',
   'tls.g.milestones': 'h 158–189@840',
   'tls.g.mindmap': 'h=fill',
-  'tls.g.pros-cons': 'h≈144+69/item@840',
+  'tls.g.pros-cons': 'h≈168+73/item@840',
   'tls.g.pyramid': 'h≈-6+136/item@840',
   'tls.g.roadmap': 'h≈259@840',
   'tls.g.steps': 'h 125–333@840',

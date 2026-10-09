@@ -23,7 +23,9 @@ import { withRealWidths } from '../../data/_chart/kit'
 
 const COL_GAP = 40
 const ROW_GAP_MAX = 14
-const ROW_GAP_BODY = 28
+const ROW_GAP_BODY = 32
+/** Space between the columns and the verdict band. */
+const VERDICT_GAP = 32
 
 const items = (v: unknown): string[] => asArr(v).map(str).filter((s) => s.trim() !== '').slice(0, PROS_CONS_MAX)
 
@@ -63,13 +65,13 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   let verdictLines = 0
   // AC1.5: the verdict is the slide's conclusion — body size, not caption.
   const vS = style(ctx, H >= 400 ? 'body' : 'caption', c.text)
-  const vPad = 14
+  const vPad = H >= 400 ? 22 : 14
   if (verdict) {
     verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
     verdictH = linesHeight(ctx, verdict, vS, Math.max(10, W - 2 * (vPad + 12)), verdictLines) + 2 * vPad
   }
   const bodyTop = pad + headBlock
-  const bodyH = Math.max(1, H - verdictH - (verdict ? 20 : 0) - bodyTop - pad)
+  const bodyH = Math.max(1, H - verdictH - (verdict ? VERDICT_GAP : 0) - bodyTop - pad)
   const maxRows = Math.max(1, pros.length, cons.length)
   // AC1.5: points read at body size when the box has room; dense lists step down to caption, then
   // footnote, with a tighter gap, so every point stays on the block.
@@ -88,8 +90,8 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
     return list.map((text) => Math.max(linesHeight(ctx, text, textS, tw, linesAllowed), MARK))
   }
   const listH = (hs: number[]) => hs.reduce((n, h) => n + h, 0) + Math.max(0, hs.length - 1) * ROW_GAP
-  const colH = Math.min(H - verdictH - (verdict ? 20 : 0), bodyTop + Math.max(listH(rowHeights(pros, colW[0])), listH(rowHeights(cons, colW[1]))) + pad + (cards ? 0 : 4))
-  const contentH = colH + (verdict ? 20 + verdictH : 0)
+  const colH = Math.min(H - verdictH - (verdict ? VERDICT_GAP : 0), bodyTop + Math.max(listH(rowHeights(pros, colW[0])), listH(rowHeights(cons, colW[1]))) + pad + (cards ? 0 : 4))
+  const contentH = colH + (verdict ? VERDICT_GAP + verdictH : 0)
   const dy = Math.max(0, Math.round((H - contentH) / 2))
 
   const column = (idx: 0 | 1, title: string, list: string[], color: string, kind: 'pro' | 'con') => {
@@ -127,7 +129,7 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
 
   if (verdict) {
     const vout: LayoutNode[] = []
-    const y = dy + colH + 20
+    const y = dy + colH + VERDICT_GAP
     vout.push({ k: 'rect', part: 'verdict[band]', box: { x: 0, y, width: W, height: verdictH }, fill: { type: 'solid', color: tintOf(c.surface, c.accent, 0.16) }, stroke: { color: c.accent, width: 2 }, radius: 14 })
     const vw = Math.max(10, W - 2 * (vPad + 12))
     const th = linesHeight(ctx, verdict, vS, vw, verdictLines)
