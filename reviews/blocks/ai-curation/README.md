@@ -805,7 +805,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
 | AC2 | ✅ done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba`; part 2b: `d95333f1`, `3c4ea4d4`, `f6523e8d`, `c2151e22`, `591ed78f`, `466c13b7`, `3d546a40`, `c9d46d14` | §2.3 ranks 1–2 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero; agenda, comparison, kpi-row, closing, cards, kinetic-title) + lead-review fixes; see Notes — AC2 (part 1), (part 2a), (part 2b) |
-| AC3 | ✅ done 2026-10-09 | see Notes — AC3 | heading/body families, 11 measured families (font-widths.js, registry replaces name sniffing), sample + harness load the fonts; minimal = Be Vietnam Pro, gradient = Plus Jakarta Sans headings |
+| AC3 | ✅ done 2026-10-09 | `75348089`, `ea78f120`, `dab26adf` (pre-item: `a563f5d7`, `0f309f96`, `5f3d4bf3`) | heading/body families, 11 measured families + kerning pairs (Inter too), registry replaces name sniffing, sample + harness load the fonts, Vietnamese fixture deck; minimal = Be Vietnam Pro, gradient = Plus Jakarta Sans headings; sparse-recipe ratchet 3 → 0; see Notes — AC3 and AC3 (finish) |
 | AC4 | ⬜ | | |
 | AC5 | ⬜ | | |
 | AC6 | ⬜ | | |
@@ -823,6 +823,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC2 part 2a | Lead-review issues (1)–(3): kpi-row display tier, roadmap roomy tier, recipes region-fill gate; feature-grid disc scales with the cell; data-URI photo in `knobs.json`. §2.3 rank 1 knobs: stat-spotlight `visual`/`statsPlacement`, big-stat `variant`/`align`, hero `align`/`decoration`; `data-big-stat` recipe centred (allowance removed) | Next: AC2 part 2b — rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing` big-type, `cards` numeral). Read Notes — AC2 (part 2a) "Open" first: 11 sparse timeline recipes are a named ratchet; digest top-8 has 72 chars of headroom. |
 | 2026-10-09 | AC2 part 2b | Lead review of part 2a: big-stat large tier (number grows with the box), hero CTA on-accent label. §2.3 rank 2: agenda `variant`/`numbering`, comparison `style` (cards, versus), kpi-row `tile`, closing `variant: big-type`, cards `numeral: giant`, kinetic-title `tone`. AC2 ✅ | Next: AC3. Read Notes — AC2 (part 2b) "Open": the titled timeline recipes are still sparse by default (ratchet unchanged); digest top-8 has 49 chars of headroom (budget kept at 12,000). |
 | 2026-10-09 | AC2 lead review + AC3 | Roomy tiers so titled slides fill their region (sparse ratchet 11 → 3); heading/body families, 11 measured families, `font-widths.js`, fonts in sample + harness; minimal/gradient heading faces | Next: AC4. Read Notes — AC2 (lead review) and Notes — AC3 "Open". |
+| 2026-10-09 | AC3 finish + AC4 | Kerning pairs (Inter p95 3.8 → 3.0 %), Vietnamese fixture, ratchet 3 → 0; AC4 below | See Notes — AC3 (finish) and Notes — AC4. |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1388,4 +1389,82 @@ into an auto build step" fails — it exercises navigation in the user's uncommi
 **Open.** Vietnamese sample text is measured by `font-widths.js --check` (canvas), not yet by a
 fixture slide in the harness (the style decks' copy is English). The 7 AC5 styles' fonts are
 measured and loaded but not used until AC5.
+
+### Notes — AC3 (finish, 2026-10-09)
+
+The first AC3 session ended with Inter at text-width |abs| p95 3.8 % (over the ≤ 3 % gate) and the
+Vietnamese text not yet in the harness. Finished in `ea78f120` and `dab26adf`.
+
+**Why Inter was 3.8 %.** Three causes, found by measuring in the harness page itself:
+1. *A harness artefact.* `measure.js` took a line's width from a `Range` over the whole line div.
+   A wrapped line keeps its trailing space (`white-space: pre`), so lines came out one space too wide
+   (+3–4.5 % on the st_04 card text). That also produced the "+0 % overflow" on st_04. Fixed: the
+   range now ends at the last visible character. Inter p95 went to 3.5 %.
+2. *Kerning.* The per-glyph tables add up advances, but the browser kerns (`font-kerning: auto`):
+   "8.1" is −9 %, "3.1%" −4.7 %, "Wo" −0.05 em. **Decision: measure kerning pairs.** `font-widths.js`
+   measures `w(ab) − w(a) − w(b)` with `canvas.measureText` at 1000 px for every pair of visible
+   ASCII characters. It stores pairs of at least 0.005 em, rounded to 0.005 em and grouped by value
+   (`FaceMetrics.kern`, e.g. `{ "-0.05": "Wo…" }`). Counts: Inter 1,092 pairs (`font-metrics/
+   inter-kern.ts`, from the sample's `next/font` files via `fonts.js interFaceCss()`; Inter keeps its
+   LO5 advance table, which matches canvas to 0.0005 em), Playfair 1,415, Be Vietnam Pro 835,
+   Fraunces 517, Plus Jakarta Sans 457, Archivo 496, Patrick Hand 4, Nunito 1,394, Bricolage 3,062,
+   Source Serif 4 1,998, Crimson Pro 2,018 and Source Code Pro 0. That adds 0.6–3.3 KB per file.
+   `faceKernEm` looks up a pair; accented letters kern as their NFD base letters, and bold reuses the
+   400 pairs. `tableMetrics` (per character, with the previous character) and the chart kit's
+   `realWidth` apply them. `font-widths.js --check` now also compares the kern groups.
+   Running-text sentences, oracle vs canvas, p95: Inter regular 0.9 % (was 3.5 %), Be Vietnam Pro
+   0.6 % (was 1.6 %), Crimson Pro 0.6 % (was 1.1 %), all others ≤ 0.8 %.
+3. *Pixel rounding (left as is).* Headless Chromium on Linux rounds every advance to a whole pixel,
+   so a 22 px label is +3–4 % and an 18 px label −2–3 % against the font's own widths, while 36 px
+   and above are within 1 %. Modelling that would fit the harness, not the hosts (Mac and Windows
+   position glyphs at subpixels), so it is not modelled. It is what is left in Inter's p95.
+   The LO5 pin "Hello World = 551 at 100 px" was one such rounded number: the unkerned sum, 550.5,
+   matched it by luck. The spec now pins the 1000 px value, 5471 ± 3, which is tighter, plus
+   547.1 ± 1 at 100 px.
+
+**Line-count metric.** The harness checks the browser's wrap at the box width (strict) and at the box
++ 3 % (tolerant, the LO5 metric). Each alone reported a few "mismatches" that are measurement noise:
+- strict flagged shrink-wrapped labels the DOM paints unwrapped (9);
+- tolerant flagged card lines 0–3 % over the box that the table correctly breaks (6).
+
+`stats.js` now counts a mismatch only when the table's count lies outside [tolerant, strict]. With
+kerning the boxes are tighter, so this matters more than before. `STRICT=1` and `TOL=1` still give
+the one-sided numbers.
+
+**Vietnamese in the harness.** New `__fixtures__/styles/vietnamese.json` uses the `minimal` style
+(Be Vietnam Pro / Inter) with 4 slides: cover, cards, pros-cons with Vietnamese headings, and
+closing. It reports clean, and `widths.js` has an `ALL vietnamese` group: 37 lines, |abs| p95 1.9 %.
+The shots were looked at (`ac3-vi.png`): stacked diacritics render on every line and nothing is
+clipped.
+
+**Effect on existing decks.** Kerning narrows Inter text by about 0.5 %. The `analyzeDeck` findings
+of all 8 fixture decks are identical to HEAD (compared against a `git archive` of HEAD). Size cards
+were regenerated: `big-stat` h 385 → 388 (the number scales up a little) and `pie` 287 → 285.
+Snapshots updated: LO1 demo sl_03/sl_08 and the LO2 stacked example (±1–4 units of natural width),
+plus the digest.
+
+**Pre-item ratchet (recipes.spec).** `KNOWN_SPARSE` went 3 → **0**. `comparison-table`,
+`process-steps` and `process-chevrons` now end with a lead `tls.t.takeaway`, as `process-roadmap`
+does. Region fill went 0.41 / 0.37 / 0.37 → 0.60 / 0.77 / 0.77, and all three joined
+`FILLS_ITS_REGION` (10 → 13). The ratchet is now two-way: the sparse set must *equal* the list, so a
+fixed recipe has to leave it. Shots looked at (`rc.png`): for steps and chevrons the takeaway sits
+at the region foot as a conclusion band, with a gap above it (the diagram keeps its box). Acceptable,
+but this is where a future `regionAlign` would help.
+
+**Verification.**
+- `cli.js` on corporate, minimal, gradient, knobs and vietnamese: 0 errors, 0 warnings, 0 info;
+  `needsVisualCheck` empty.
+- Calibration `--shots` on all 46 slides (knobs + 3 styles + vietnamese): 74 rows, 0 missing,
+  0 box deltas > 1, **0 line-count mismatches** (html parts 36: 0).
+- Text width |abs| p95: **all 2.7 %**, Inter 3.0 %, Be Vietnam Pro 1.2 %, Plus Jakarta Sans 0.7 %,
+  Vietnamese 1.9 %. Left: 2 kicker/contact no-wrap overflows of +2–3 % (22 px rounding).
+- tsc prod 0, spec 329.
+- Specs (`--maxWorkers=1`) pass: all of `src/blocks` (library in three chunks: 1,013 + 3,045 +
+  1,199; top-level, layout, styles, motion, icons: 1,891), and `font-metrics.spec` (+1, kerning).
+- Digest: top-8 11,951 / 12,000, tier-1 15,444 / 16,000 (style-filtered 15,125–15,626), full
+  18,777 / 20,000.
+
+**Open.** Inter **bold** is still regular × 1.05: running bold text is about 2–3 % wide, which is
+the safe side. A measured Inter 700 table would fix it, at the cost of re-laying every bold Inter
+run.
 
