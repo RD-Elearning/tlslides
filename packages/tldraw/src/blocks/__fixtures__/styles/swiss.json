@@ -1,0 +1,249 @@
+{
+  "version": 1,
+  "id": "style-swiss",
+  "title": "Strategy review — swiss",
+  "theme": "swiss-red",
+  "style": "swiss",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "st_01",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "b_cover",
+            "type": "tls.c.cover",
+            "props": {
+              "kicker": "Strategy review 2027",
+              "title": "Growing beyond one product",
+              "subtitle": "Where we win next, and what it takes",
+              "meta": "Leadership offsite · March 2027"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_02",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "b_t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Agenda"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_agenda",
+            "type": "tls.c.agenda",
+            "props": {
+              "items": [
+                {
+                  "title": "Where we are",
+                  "note": "Revenue, customers and retention"
+                },
+                {
+                  "title": "What we learned",
+                  "note": "Three signals from the market"
+                },
+                {
+                  "title": "Options",
+                  "note": "Build, partner or buy"
+                },
+                {
+                  "title": "The ask",
+                  "note": "Budget and next steps"
+                }
+              ],
+              "current": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_03",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "b_divider",
+            "type": "tls.c.divider",
+            "props": {
+              "number": "01",
+              "title": "Where we are",
+              "subtitle": "A strong core, a narrow base"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_04",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "b_t4",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three signals from our customers"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_cards",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "users",
+                  "title": "Teams, not users",
+                  "text": "Most new seats come from teams adding colleagues."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Reports drive renewals",
+                  "text": "Accounts that share reports renew twice as often."
+                },
+                {
+                  "icon": "target",
+                  "title": "Mid-market gap",
+                  "text": "Firms of 200 to 2,000 people have no clear choice."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_05",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "b_t5",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Revenue grew 42% in a year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_chart",
+            "type": "tls.c.chart-insight",
+            "props": {
+              "chart": {
+                "kind": "bar",
+                "categories": [
+                  "Q1",
+                  "Q2",
+                  "Q3",
+                  "Q4"
+                ],
+                "series": [
+                  {
+                    "name": "Revenue ($M)",
+                    "values": [
+                      8.1,
+                      9.4,
+                      10.2,
+                      11.5
+                    ]
+                  }
+                ]
+              },
+              "insight": "Revenue **grew 42%**, led by team plans.",
+              "insightSize": "lead",
+              "source": "Source: finance, FY2026"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_06",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "b_t6",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Partnering beats building alone"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_pc",
+            "type": "tls.g.pros-cons",
+            "props": {
+              "pros": [
+                "Live with customers in two quarters, not six",
+                "Their sales team brings 400 mid-market accounts",
+                "Upfront cost under $1.2M",
+                "We keep our engineers on the core product"
+              ],
+              "cons": [
+                "Less control over the shared roadmap",
+                "20% of partner revenue goes to them",
+                "Exit terms need legal review"
+              ],
+              "verdict": "Partner now; revisit building in 2028."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_07",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "b_quote",
+            "type": "tls.t.quote",
+            "props": {
+              "text": "We stopped buying tools for one person and started buying them for the whole team.",
+              "attribution": "Linh Pham",
+              "role": "COO, Saigon Logistics"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "st_08",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "b_closing",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Thank you",
+              "text": "Approve the partner pilot and a $1.2M budget.",
+              "cta": "Decide by April 15",
+              "contacts": [
+                "strategy@northwind.example"
+              ],
+              "person": {
+                "name": "Mai Tran",
+                "role": "Head of Strategy"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

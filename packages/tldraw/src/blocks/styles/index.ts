@@ -17,10 +17,28 @@ import type { BlockSpec, DeckSpec, DeckStyle, DeckTokens, MasterSpec, SlideSpec 
 import { CORPORATE_STYLE } from './corporate'
 import { MINIMAL_STYLE } from './minimal'
 import { GRADIENT_STYLE } from './gradient'
+import { LUXURY_STYLE } from './luxury'
+import { EDITORIAL_STYLE } from './editorial'
+import { GLASS_STYLE } from './glass'
+import { SWISS_STYLE } from './swiss'
+import { DOODLE_STYLE } from './doodle'
+import { MEMPHIS_STYLE } from './memphis'
+import { CONSULTING_STYLE } from './consulting'
 import { textWidthRatio } from '../layout/font-metrics'
 
-/** Every built-in deck style. AC5 adds the remaining seven. */
-export const BUILT_IN_STYLES: readonly DeckStyle[] = [CORPORATE_STYLE, MINIMAL_STYLE, GRADIENT_STYLE]
+/** Every built-in deck style (ai-curation §3.1: ten styles in four families). */
+export const BUILT_IN_STYLES: readonly DeckStyle[] = [
+  CORPORATE_STYLE,
+  MINIMAL_STYLE,
+  GRADIENT_STYLE,
+  LUXURY_STYLE,
+  EDITORIAL_STYLE,
+  GLASS_STYLE,
+  SWISS_STYLE,
+  DOODLE_STYLE,
+  MEMPHIS_STYLE,
+  CONSULTING_STYLE,
+]
 
 /** Reserved master-name prefix for style masters. */
 export const STYLE_MASTER_PREFIX = 'style:'

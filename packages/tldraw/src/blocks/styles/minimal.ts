@@ -50,7 +50,6 @@ export const MINIMAL_STYLE: DeckStyle = {
     body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
   },
   tokens: {
-    density: 'roomy',
     radius: { sm: 6, md: 12, lg: 12, xl: 16 },
     type: { display: { size: 136 }, title: { size: 80, lineHeight: 1.1 }, heading: { size: 56 } },
   },

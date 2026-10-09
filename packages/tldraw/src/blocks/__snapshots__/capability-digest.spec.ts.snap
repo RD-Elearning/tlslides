@@ -5340,6 +5340,13 @@ Set \`style\` on the deck and \`theme\` to one of its palettes; ask for the styl
 corporate (professional) — palettes: corporate-navy, midnight, mono-grid
 minimal (premium) — palettes: minimal-white, minimal-stone
 gradient (modern) — palettes: gradient-night, gradient-dawn
+luxury (premium) — palettes: luxury-noir, luxury-ivory
+editorial (premium) — palettes: editorial-ink, ivory-editorial
+glass (modern) — palettes: glass-violet, glass-pastel
+swiss (modern) — palettes: swiss-red, swiss-blue
+doodle (playful) — palettes: doodle-paper, doodle-kids
+memphis (playful) — palettes: memphis-pop
+consulting (professional) — palettes: consulting-ink
 
 ## Recipes
 

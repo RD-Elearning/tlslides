@@ -15,6 +15,9 @@ import { contrastRatio, hexToRgb, relativeLuminance } from '../color-math'
 import { BLOCK_PROP_KEY, shapeToAuthoredBlock, shapeToBlock } from '../shape-bridge'
 import type { ComponentShape } from '~types'
 import type { DeckSpec } from '../types'
+import { buildBlockMetrics } from '../block-metrics'
+import { resolveTokens } from '../tokens'
+import { deckSpecTokens, resolveDeckTheme } from '../index'
 
 const FIX = path.resolve(__dirname, '../__fixtures__/styles')
 const DECKS: DeckSpec[] = BUILT_IN_STYLES.map((s) => JSON.parse(fs.readFileSync(path.join(FIX, `${s.id}.json`), 'utf8')))
@@ -149,5 +152,29 @@ describe('validator + JSON schema', () => {
     const schema = deckSpecJsonSchema() as any
     expect(schema.properties.style.enum).toEqual(BUILT_IN_STYLES.map((s) => s.id))
     expect(schema.properties.theme.oneOf[0].enum).toContain('gradient-night')
+  })
+})
+
+describe('AC5 — oracle validity per style (§3.5)', () => {
+  const tier1 = BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).map((d) => d.type)
+  // Every palette: a style whose type scale or font breaks a block's size.min is a wrong style.
+  const cases = BUILT_IN_STYLES.flatMap((s) => s.palettes.map((p) => [`${s.id}/${p.id}`, s, p.id] as const))
+  it.each(cases)('%s: every tier-1 example still fits its size.min', (_n, style, palette) => {
+    const tokens = resolveTokens(resolveDeckTheme(palette, style.id), deckSpecTokens({ style: style.id }))
+    const file = buildBlockMetrics(undefined, { types: tier1, tokens, blockDefaults: style.blockDefaults, themeName: `${style.id}/${palette}` })
+    const broken = Object.entries(file.blocks)
+      .filter(([, c]) => c.atMin && !c.atMin.fits)
+      .map(([t, c]) => `${t} h=${c.atMin!.h}`)
+    expect(broken).toEqual([])
+  })
+})
+
+describe('AC5 — every palette passes the contrast spec', () => {
+  // text ≥ 4.5:1 on background and surface (above, per style) and textMuted ≥ 3:1 on both
+  it.each(BUILT_IN_STYLES.flatMap((s) => s.palettes.map((p) => [p.id, p] as const)))('%s', (_id, p) => {
+    for (const bg of [p.colors.background, p.colors.surface]) {
+      expect(contrastRatio(lum(p.colors.text), lum(bg))).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio(lum(p.colors.textMuted), lum(bg))).toBeGreaterThanOrEqual(3)
+    }
   })
 })

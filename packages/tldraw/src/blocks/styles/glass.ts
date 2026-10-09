@@ -1,0 +1,118 @@
+import { FontStyle } from '~types'
+import type { BlockSpec, DeckStyle, MasterSpec, Paint } from '../types'
+import { motif, placePx } from './_place'
+
+/**
+ * AC5 — Modern & Digital "Glassmorphism" (`reviews/blocks/ai-curation/README.md` §3.3). A deep
+ * violet-to-blue gradient (or a pastel one) with `mesh` glows and large lit `orb`s behind the
+ * content; every card is frosted glass (translucent white, light hairline, soft shadow; html
+ * blocks add a DOM-only backdrop blur). Plus Jakarta Sans over Inter, very round corners.
+ * The palette's `background` → `surface` pair is the gradient.
+ */
+const FONTS = { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter"' }
+
+const GRADIENT = (angle: number): Paint => ({
+  type: 'linearGradient',
+  angle,
+  stops: [
+    { color: 'theme:background', at: 0 },
+    { color: 'theme:surface', at: 1 },
+  ],
+})
+const MESH: BlockSpec = { id: 'style-mesh', type: 'tls.m.pattern', props: { pattern: 'mesh', opacity: 'medium', scale: 'md' } }
+const GRAIN: BlockSpec = { id: 'style-grain', type: 'tls.m.pattern', props: { pattern: 'grain', tone: 'line', opacity: 'soft', scale: 'md' } }
+const orb = (tone: string, x: number, y: number, s: number) => placePx(motif('orb', { tone, opacity: 'strong' }), x, y, s, s)
+
+const MASTERS: MasterSpec[] = [
+  {
+    name: 'cover',
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1560, 56, 300), 'orb-b': orb('accent2', 110, 720, 260), 'orb-c': orb('accent', 1640, 820, 140), grain: GRAIN },
+    background: GRADIENT(135),
+  },
+  {
+    name: 'section',
+    // the divider is flush left: one big orb fills the free right half
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1120, 180, 640), 'orb-b': orb('accent2', 1640, 120, 180), grain: GRAIN },
+    background: GRADIENT(120),
+  },
+  {
+    name: 'content',
+    // orbs in the corners of the margin, peeking from under the edge cards: never under text
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1650, 850, 210), 'orb-b': orb('accent2', 1736, 40, 130), grain: GRAIN },
+    background: GRADIENT(150),
+  },
+]
+
+export const GLASS_STYLE: DeckStyle = {
+  id: 'glass',
+  family: 'modern',
+  name: 'Glass',
+  brief:
+    'Glassmorphism deck: violet-to-blue gradient with soft glows and lit orbs, content on frosted glass ' +
+    'cards with light edges, very round corners, big friendly headlines. Content on glass, never bare.',
+  palettes: [
+    {
+      id: 'glass-violet',
+      name: 'Glass Violet',
+      colors: {
+        background: '#4C1D95',
+        surface: '#1E3A8A',
+        text: '#FFFFFF',
+        textMuted: '#DCD7FB',
+        accent1: '#F0ABFC',
+        accent2: '#67E8F9',
+        positive: '#6EE7B7',
+        negative: '#FCA5A5',
+        warning: '#FCD34D',
+      },
+      fonts: FONTS,
+      shapeDefaults: { isFilled: true, cornerRadius: 32 },
+    },
+    {
+      id: 'glass-pastel',
+      name: 'Glass Pastel',
+      colors: {
+        background: '#E0E7FF',
+        surface: '#FCE7F3',
+        text: '#1E1B4B',
+        textMuted: '#4C4A75',
+        accent1: '#7C3AED',
+        accent2: '#DB2777',
+        positive: '#047857',
+        negative: '#B91C1C',
+        warning: '#92400E',
+      },
+      fonts: FONTS,
+      shapeDefaults: { isFilled: true, cornerRadius: 32 },
+    },
+  ],
+  fonts: {
+    heading: { family: 'Plus Jakarta Sans', fallback: FontStyle.Sans, metricsKey: 'plus-jakarta-sans' },
+    body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
+  },
+  tokens: {
+    radius: { sm: 16, md: 24, lg: 32, xl: 40 },
+    type: { display: { size: 150, lineHeight: 1.02 }, title: { size: 88, lineHeight: 1.06 } },
+    motion: { ease: { 'ease-out': 'cubic-bezier(0.16, 1, 0.3, 1)' } },
+  },
+  surface: { card: 'glass', stroke: 'hairline', shadow: 1 },
+  masters: MASTERS,
+  motionStyle: 'expressive',
+  blockDefaults: {
+    'tls.c.cover': { variant: 'centered', decoration: 'none' },
+    'tls.c.divider': { variant: 'numeral', align: 'start' },
+    'tls.c.cards': { tone: 'surface', lead: 'icon', align: 'start' },
+    'tls.c.agenda': { variant: 'cards', numbering: 'badge' },
+    'tls.c.feature-grid': { cell: 'card' },
+    'tls.c.kpi-row': { tile: 'card' },
+    'tls.c.comparison': { style: 'cards' },
+    'tls.c.chart-insight': { side: 'right' },
+    'tls.t.quote': { markStyle: 'glyph' },
+    'tls.t.takeaway': { tone: 'accent' },
+    'tls.c.closing': { variant: 'centered' },
+    'tls.g.pros-cons': { style: 'cards' },
+  },
+  prefer: [],
+  avoid: ['tls.d.table', 'tls.d.compare-table', 'tls.d.heatmap', 'tls.t.footnote'],
+  rules: ['Content on glass cards over the glow, never on bare background.', 'At most three chart series.', 'Short, friendly headlines.'],
+}
