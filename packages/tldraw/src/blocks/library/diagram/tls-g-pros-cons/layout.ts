@@ -43,10 +43,10 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   const cards = enumOf(props.style, ['columns', 'cards'] as const, 'columns') === 'cards'
   const auto = enumOf(props.balance, ['equal', 'auto'] as const, 'equal') === 'auto'
   const verdict = isShown(props, 'showVerdict') ? str(props.verdict).trim() : ''
-  // AC3 pre-item: the roomy tier (heading column titles, lead points) for pros/cons alone in a
-  // tall, wide box. The block fills its box, so the tier follows the box size.
-  const roomy = H >= 480 && W >= 1200
-  const headS = style(ctx, roomy ? 'heading' : 'subheading', c.text)
+  // AC3 pre-item: the roomy tier (heading column titles, lead points, lead verdict) for pros/cons
+  // alone in a tall, wide box — only when its points get the lead size; otherwise the AC1.5 budget
+  // (the heading titles would squeeze dense points to one ellipsised line). The block fills its box,
+  // so the tier follows the box size.
   const bigS = style(ctx, 'caption', c.text)
   const nodes: LayoutNode[] = []
 
@@ -61,27 +61,33 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
 
   // Vertical budget.
   const pad = cards ? 20 : 0
-  const headH = roomy ? headS.size * headS.lineHeight : Math.min(headS.size * headS.lineHeight, 60)
   const ruleGap = cards ? 12 : 16
-  const headBlock = headH + ruleGap + (cards ? 0 : 3 + 8)
-  let verdictH = 0
-  let verdictLines = 0
-  // AC1.5: the verdict is the slide's conclusion — body size, not caption.
-  const vS = style(ctx, roomy ? 'lead' : H >= 400 ? 'body' : 'caption', c.text)
-  const vPad = H >= 400 ? 22 : 14
-  if (verdict) {
-    verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
-    verdictH = linesHeight(ctx, verdict, vS, Math.max(10, W - 2 * (vPad + 12)), verdictLines) + 2 * vPad
-  }
-  const bodyTop = pad + headBlock
-  const bodyH = Math.max(1, H - verdictH - (verdict ? VERDICT_GAP : 0) - bodyTop - pad)
   const maxRows = Math.max(1, pros.length, cons.length)
-  // AC1.5: points read at body size when the box has room; dense lists step down to caption, then
-  // footnote, with a tighter gap, so every point stays on the block.
-  const pitch = bodyH / maxRows
   const bodyS = style(ctx, 'body', c.text)
   const leadS = style(ctx, 'lead', c.text)
-  const big = roomy && pitch >= lineH(leadS) + 2 * ROW_GAP_BODY
+  const budget = (roomy: boolean) => {
+    const headS = style(ctx, roomy ? 'heading' : 'subheading', c.text)
+    const headH = roomy ? headS.size * headS.lineHeight : Math.min(headS.size * headS.lineHeight, 60)
+    const headBlock = headH + ruleGap + (cards ? 0 : 3 + 8)
+    let verdictH = 0
+    let verdictLines = 0
+    // AC1.5: the verdict is the slide's conclusion — body size, not caption.
+    const vS = style(ctx, roomy ? 'lead' : H >= 400 ? 'body' : 'caption', c.text)
+    const vPad = H >= 400 ? 22 : 14
+    if (verdict) {
+      verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
+      verdictH = linesHeight(ctx, verdict, vS, Math.max(10, W - 2 * (vPad + 12)), verdictLines) + 2 * vPad
+    }
+    const bodyTop = pad + headBlock
+    const bodyH = Math.max(1, H - verdictH - (verdict ? VERDICT_GAP : 0) - bodyTop - pad)
+    // AC1.5: points read at body size when the box has room; dense lists step down to caption, then
+    // footnote, with a tighter gap, so every point stays on the block.
+    const pitch = bodyH / maxRows
+    const big = roomy && pitch >= lineH(leadS) + 2 * ROW_GAP_BODY
+    return { headS, headH, verdictH, verdictLines, vS, vPad, bodyTop, pitch, big }
+  }
+  const tried = H >= 480 && W >= 1200 ? budget(true) : undefined
+  const { headS, headH, verdictH, verdictLines, vS, vPad, bodyTop, pitch, big } = tried && tried.big ? tried : budget(false)
   const textS = big ? leadS : pitch >= lineH(bodyS) + 12 ? bodyS : pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
   const lh = lineH(textS)
   const ROW_GAP = clamp(pitch - lh, 3, big ? 1.25 * ROW_GAP_BODY : textS === bodyS ? ROW_GAP_BODY : ROW_GAP_MAX)
