@@ -804,7 +804,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
-| AC2 | 🟡 part 1 done 2026-10-09 | `85c841de`, `609cc2d1`, `57ed1409` | AC1.5 leftovers + knobs on feature-grid and testimonial; stat-spotlight, big-stat and the rest of §2.3 ranks 1–2 remain; see Notes — AC2 (part 1) |
+| AC2 | 🟡 part 2a done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba` | §2.3 rank 1 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero) + lead-review fixes; rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing`, `cards`) remains; see Notes — AC2 (part 1), (part 2a) |
 | AC3 | ⬜ | | |
 | AC4 | ⬜ | | |
 | AC5 | ⬜ | | |
@@ -820,6 +820,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC1.5 | Composition polish (lead review of the AC1 sheets) | Next: AC2. Open items in Notes — AC1.5 "Not done" (chart takeaway size, kpi-row/roadmap paint gap, cards caption text). |
 | 2026-10-09 | AC2 part 1 | Takeaway `size`, chart-insight `insightSize`, content-sized kpi-row/roadmap, body text in wide cards; feature-grid `cell`/`align`/`iconStyle`; testimonial `variant: photo`; `knobs.json` | Next: AC2 part 2 — `stat-spotlight`, `big-stat`, then `hero`, `kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing`, `cards` numeral. Read Notes — AC2 (part 1) "Remains" first. |
 | 2026-10-09 | lead review | Looked at `sheet3-knobs.png` (AC2 part 1) | Open visual issues for AC2 part 2: (1) `knobs.json` kn_01 kpi-row and kn_02 roadmap slides still sit in the top half with the bottom ~45% empty — the `title-body`-type layout does not centre its region like `blank`/`timeline` (AC1.5); make the recipe/region balanced and let the balance gate catch it; (2) feature-grid `iconStyle: circle` icons read too small (~24 units) — scale icon with cell size; (3) testimonial photo fixture has no image (placeholder only) — add a data-URI image. Then continue §2.3. |
+| 2026-10-09 | AC2 part 2a | Lead-review issues (1)–(3): kpi-row display tier, roadmap roomy tier, recipes region-fill gate; feature-grid disc scales with the cell; data-URI photo in `knobs.json`. §2.3 rank 1 knobs: stat-spotlight `visual`/`statsPlacement`, big-stat `variant`/`align`, hero `align`/`decoration`; `data-big-stat` recipe centred (allowance removed) | Next: AC2 part 2b — rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing` big-type, `cards` numeral). Read Notes — AC2 (part 2a) "Open" first: 11 sparse timeline recipes are a named ratchet; digest top-8 has 72 chars of headroom. |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1062,3 +1063,83 @@ Parity-probe chunks (LO8) were not run this session.
 - The top-8 digest detail sits just under 12k: each new knob on a large html block costs ~50 chars;
   part 2 will have to trim guidance the same way or record a budget decision.
 
+### Notes — AC2 (part 2a)
+
+**Lead-review issues.**
+- (1) kn_01 kpi-row / kn_02 roadmap (`89e49c55`). Measured first: the `timeline` region *does*
+  centre its stack since AC1.5 (shots: kn_01 content 410–800 of 1080). What read as "top half,
+  bottom empty" is a stack that is small for its region — kpi-row + takeaway painted 45% of the
+  758-unit region, roadmap + takeaway 51%, with heading-size numbers and footnote-size lanes. Root
+  fix in the blocks, no fixture change: `tls.c.kpi-tile` uses a display tier (value `display`,
+  label/delta `body`) when its box has the height for it, else the compact tier as before (its
+  `size.preferred` 400×220 → 400×320, so the size card stays content-sized, `h≈265@840`, not
+  `fill`); `tls.c.kpi-row` keeps each tile's bottom padding so the tier is stable when the row is
+  re-laid at its content height. `tls.g.roadmap` gets a roomy tier (caption labels, body lane names,
+  40-unit bars growing to 1.75×) when the box holds it. Result: kpi-row recipe 45% → 59%, roadmap
+  51% → 66% of the region; kn_01 free 83% → 78%, kn_02 72% → 67%. Side effects (reports otherwise
+  identical, findings unchanged on all 8 fixture decks): colorful sl_11/sl_27 and motion ms_08/ms_09
+  KPI tiles and roadmap are bigger (looked at: better); the LO2 stacked snapshot's kpi tile is now
+  reported `fill` and its old `capacity/exceeded` warning is gone. **Gate:** `layout/unbalanced`
+  cannot see a centred-but-small stack, and an oracle rule that would have caught kn_01 also fires
+  on 11 other timeline recipes and on fixture slides pinned by the LO5b "does not spam" ratchet, so
+  the check lives in `recipes.spec`: `data-kpi-row`, `process-roadmap`, `content-cards`,
+  `comparison-pricing`, `data-chart-insight`, `data-stat-spotlight` must paint ≥ 55% of their region
+  (HEAD failed it for kpi-row and roadmap), and the titled timeline recipes below 50% are a named
+  ratchet (may not grow).
+- (2) feature-grid `iconStyle: circle` (`349e4203`): `circleIcon(cellW)` — disc 15% of the cell
+  (48..80), glyph 60% of the disc — shared by template and poster. size.preferred (384-wide cells):
+  58 disc / 35 glyph; kn_05 at 1728 (560-wide cards): 80 / 48.
+- (3) testimonial photo (`90ff0abe`): kn_07 avatar is a 4×5 PNG data URI (123 bytes, 186 chars).
+  `isSafeAvatarUrl` already accepts `data:image/(png|jpeg|gif|webp)`; nothing loosened. **Limit
+  found:** the `avatar` slot is `text` with `maxChars: 200` and `validateDeckSpec` reports
+  `budget/overflow` as an error, so an inline image is capped at ~130 bytes — a real photo needs an
+  https: URL or an asset. The fixture shows a soft-focus cover crop (Chromium smooths the 4×5 image
+  with visible banding); a sharper photo needs that budget decision.
+
+**§2.3 rank 1 knobs (`237ba7ba`).** Defaults unchanged: every existing fixture report is
+byte-identical and the default template HTML is unchanged.
+- `tls.c.stat-spotlight`: `visual: ring | plain` (no ring, value up to 0.42 of the square instead of
+  0.3 — for numbers that are not a share); `statsPlacement: below | side` (stats stacked in a right
+  column, 28% of the width ≤ 440, when the box holds n×150 + gaps and the column is ≥ 240, else
+  below). `geometry()` returns one box per stat for template and poster.
+- `tls.c.big-stat`: `variant: plain | accent | split` (accent: number in the accent colour under a
+  96×8 rule; split: number right-aligned on the centre line, label/context beside it, narrow boxes
+  stack) and `align: start | center`. size.preferred derived with the accent look; size.min 520×246
+  → 520×278.
+- `tls.c.hero`: `align: start | center` (lines, CTA pill and rule centred), `decoration: none | rule`.
+  size.preferred derived with the rule; size.min 1280×490 → 1280×522.
+- `looks` in `library/ai-curation.ts`; recipe `data-big-stat` uses `align: center`, so the
+  `SIDE_OPEN_BY_DESIGN` allowance in `recipes.spec` is removed — all 36 recipes balanced, no exception.
+- `knobs.json` kn_08 (stat-spotlight plain + side), kn_09 (big-stat accent + center), kn_10
+  (big-stat split), kn_11 (hero center + rule).
+- Digest: hero `when`/variant guidance and big-stat value guidance trimmed; top-8 detail
+  **11,928** / 12,000 (was 11,990; budget not raised), tier-1 index **15,165** / 16,000, full index
+  18,774 / 20,000.
+
+**Verification.** `cli.js`: corporate / minimal / gradient (8 slides each) and knobs (11) — 0 errors,
+0 warnings, 0 info findings, `needsVisualCheck` empty. Calibration `run.js --shots kn_01…kn_11
+--decks knobs,corporate,minimal,gradient` (1 Chromium page, 35 slides): 56 rows, 0 missing, 0 box
+deltas > 1; **html parts 33: 0 line-count mismatches** (|top|/|bottom| ≤ 0.9); layout-kind: the same
+known `st_04:b_cards` title over-count and the two known width overflows (st_01 cover +1%, st_08
+closing +3%) as part 1. Contact sheet `sheet4-knobs.png` (session scratchpad) **looked at**, plus the
+full-size shots. tsc prod **0**, spec **329**. Specs (`--maxWorkers=1`): kpi-tile, kpi-row, roadmap,
+feature-grid, stat-spotlight, big-stat, hero, recipes, capability-digest
+(snapshots: knob lines, recipe line, roadmap hint, trimmed guidance), catalog-conformance,
+block-metrics (size cards regenerated), layout-report, layout-calibration, layout-layers (LO2
+snapshot), layout-anchor, styles, slide-composition, slide-compiler, slide-decompiler,
+deck-document, html-poster-geometry, demo-deck-*, block-library-tour, motion-showcase,
+composite-geometry, motion-m3, motion-style — all pass. One existing test changed its subject, not
+its strength: big-stat "size.preferred is set from the poster of defaults" now derives from the
+defaults in the accent look (as feature-grid's preferred is measured with cards). Parity-probe
+chunks (LO8) not run.
+
+**Open / visually weak.**
+- kn_01/kn_02 are better but still centred with ~25% free below and a band under the title; the
+  `kpi-row` `tile` knob (rank 2) would add card weight. 11 titled timeline recipes paint < 50% of
+  their region (agenda-full, content-feature-grid, data-table, comparison-options/-pros-cons/
+  -before-after/-table, process-steps/-chevrons/-timeline, people-team; chevrons 11%, timeline 16%):
+  the same display/roomy-tier treatment per block is the root fix, ratcheted in `recipes.spec`.
+- kn_10 (big-stat split) and kn_09 (accent) are single numbers on an otherwise empty slide (95%
+  free) — by design, but the split pair reads small at `display` 128 (corporate).
+- The hero CTA label keeps the `text` colour on the accent pill (pre-existing, both renderers).
+- Digest top-8 headroom is 72 chars: rank 2 knobs will need the same trimming.
