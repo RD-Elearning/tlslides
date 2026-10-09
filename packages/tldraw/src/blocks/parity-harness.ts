@@ -70,6 +70,10 @@ const TEST_THEME = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const TEST_TOKENS: ResolvedTokens = resolveTokens(TEST_THEME as any)
 
+/** LO8: the probe's tokens — `TEST_TOKENS` painted in Inter, the face the layout measures
+ *  (`tableMetrics` is an Inter table) and the worker loads; only the family differs. */
+const PROBE_TOKENS: ResolvedTokens = { ...TEST_TOKENS, fontFamily: '"Inter", sans-serif' }
+
 /** Default surface context for parity tests. */
 export const TEST_SURFACE: SurfaceContext = {
   behind: { type: 'solid', color: '#ffffff' },
@@ -207,6 +211,62 @@ let worker: ChildProcess | null = null
 let msgId = 0
 const pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>()
 
+/*
+ * LO8 — the worker must never keep jest alive. Before, only `parity.spec.ts` called
+ * `shutdownWorker`; every other probe left a forked node + Chromium whose IPC channel and stdio
+ * pipes held jest's event loop open (jest needed `--forceExit`, and orphaned workers piled up
+ * across files). Now:
+ * - the child, its stdio pipes and its IPC channel are unref'd except while a request is pending;
+ * - the worker is shut down after `IDLE_SHUTDOWN_MS` without requests (a real Node timer, unref'd:
+ *   jsdom's timers die with the test environment), and by an `afterAll` when this module is
+ *   imported at the top level of a spec file;
+ * - the worker exits (closing Chromium) when its parent goes away (`disconnect`).
+ */
+const IDLE_SHUTDOWN_MS = 3000
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const nodeTimers = require('timers') as typeof import('timers')
+let idleTimer: ReturnType<typeof nodeTimers.setTimeout> | null = null
+
+type Unrefable = { ref?: () => void; unref?: () => void } | null | undefined
+
+function setHeld(child: ChildProcess, held: boolean): void {
+  const handles: Unrefable[] = [
+    child as unknown as Unrefable,
+    child.stdout as unknown as Unrefable,
+    child.stderr as unknown as Unrefable,
+    child.stdin as unknown as Unrefable,
+    (child as unknown as { channel?: Unrefable }).channel,
+  ]
+  for (const h of handles) {
+    try {
+      if (held) h?.ref?.()
+      else h?.unref?.()
+    } catch {
+      // a closed handle cannot be (un)ref'd
+    }
+  }
+}
+
+function settled(): void {
+  if (pending.size > 0 || !worker) return
+  setHeld(worker, false)
+  if (idleTimer) nodeTimers.clearTimeout(idleTimer)
+  idleTimer = nodeTimers.setTimeout(() => {
+    idleTimer = null
+    if (pending.size === 0) void shutdownWorker()
+  }, IDLE_SHUTDOWN_MS)
+  idleTimer.unref()
+}
+
+// Imported at the top level of a spec file: shut down with the file. Imported inside a test
+// (a dynamic `import()`), a hook cannot be added (jest-circus fails the test); the idle timer and
+// the unref'd handles cover that case.
+const insideTest =
+  typeof expect === 'function' && !!(expect as unknown as { getState?: () => { currentTestName?: string } }).getState?.().currentTestName
+if (typeof afterAll === 'function' && !insideTest) {
+  afterAll(() => shutdownWorker())
+}
+
 function getWorker(): Promise<ChildProcess> {
   if (worker) return Promise.resolve(worker)
 
@@ -216,6 +276,9 @@ function getWorker(): Promise<ChildProcess> {
       execArgv: ['-r', '@swc-node/register'],
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
     })
+    // Drain the pipes so a chatty worker can never block on a full buffer.
+    child.stdout?.resume()
+    child.stderr?.resume()
 
     child.on('message', (msg: Record<string, unknown>) => {
       if (msg.ready) {
@@ -233,6 +296,7 @@ function getWorker(): Promise<ChildProcess> {
             p.reject(new Error(String(msg.error || 'Worker returned ok:false')))
           }
         }
+        settled()
       }
     })
 
@@ -241,7 +305,11 @@ function getWorker(): Promise<ChildProcess> {
     })
 
     child.on('exit', (code) => {
-      worker = null
+      if (worker === child) worker = null
+      for (const [id, p] of pending) {
+        pending.delete(id)
+        p.reject(new Error(`Worker exited with code ${code}`))
+      }
       if (code !== 0 && code !== null) {
         reject(new Error(`Worker exited with code ${code}`))
       }
@@ -250,7 +318,12 @@ function getWorker(): Promise<ChildProcess> {
 }
 
 async function sendToWorker(msg: Record<string, unknown>): Promise<Record<string, unknown>> {
+  if (idleTimer) {
+    nodeTimers.clearTimeout(idleTimer)
+    idleTimer = null
+  }
   const w = await getWorker()
+  setHeld(w, true)
   const id = ++msgId
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve: resolve as (v: unknown) => void, reject })
@@ -260,29 +333,40 @@ async function sendToWorker(msg: Record<string, unknown>): Promise<Record<string
 
 /** Shut down the worker process. Call in afterAll. */
 export async function shutdownWorker(): Promise<void> {
-  if (worker) {
+  if (idleTimer) {
+    nodeTimers.clearTimeout(idleTimer)
+    idleTimer = null
+  }
+  const w = worker
+  if (w) {
+    worker = null
     try {
-      worker.send({ cmd: 'quit' })
+      w.send({ cmd: 'quit' })
     } catch {
       // worker may already be dead
     }
     // F-Kill: await exit with a 5s timeout, then SIGKILL.
+    let timer: ReturnType<typeof nodeTimers.setTimeout> | undefined
     try {
       await Promise.race([
-        new Promise((resolve) => worker?.once('exit', resolve)),
-        new Promise((resolve) => setTimeout(resolve, 5000)),
+        new Promise((resolve) => (w.exitCode !== null || w.signalCode !== null ? resolve(undefined) : w.once('exit', resolve))),
+        new Promise((resolve) => {
+          timer = nodeTimers.setTimeout(resolve, 5000)
+          timer.unref()
+        }),
       ])
     } catch {
       // ignore
+    } finally {
+      if (timer) nodeTimers.clearTimeout(timer)
     }
-    if (worker?.pid) {
+    if (w.pid && w.exitCode === null && w.signalCode === null) {
       try {
-        process.kill(worker.pid, 'SIGKILL')
+        process.kill(w.pid, 'SIGKILL')
       } catch {
         // already exited
       }
     }
-    worker = null
   }
 }
 
@@ -398,7 +482,7 @@ export async function assertParity(
   //    for those blocks, or the probe compares two empty trees.
   const ctx = createLayoutContext({
     box,
-    tokens: TEST_TOKENS,
+    tokens: PROBE_TOKENS,
     surface: TEST_SURFACE,
     ...(options?.registry ? { registry: options.registry } : {}),
   })

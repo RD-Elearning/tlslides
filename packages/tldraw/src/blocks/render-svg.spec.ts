@@ -152,7 +152,8 @@ describe('renderNodeToSvg — all 8 node kinds', () => {
     const node = makeGroup({ children: [makeRect()] })
     const svg = renderNodeToSvg(node)
     expect(svg).toContain('<svg')
-    expect(svg).toContain('<g>')
+    // BOX sits at (10, 20): the group carries its origin (LO8; children are group-relative).
+    expect(svg).toContain('<g transform="translate(10 20)">')
     expect(svg).toContain('</g>')
   })
 
@@ -333,7 +334,8 @@ describe('gradient defs', () => {
     const svg = renderNodeToSvg(node)
     // defs should appear before the <g>, at root level
     const defsIndex = svg.indexOf('<defs>')
-    const gIndex = svg.indexOf('<g>')
+    const gIndex = svg.indexOf('<g')
+    expect(gIndex).toBeGreaterThan(-1)
     expect(defsIndex).toBeLessThan(gIndex)
     expect(svg).toContain('<linearGradient')
   })
@@ -673,3 +675,28 @@ describe('host node with poster', () => {
 /* 4. Stroke paint (gradient on stroke) support                                     */
 /* 5. Nested <svg> coordinate scaling for icon paths with arbitrary viewBox         */
 /* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('LO8: group origin', () => {
+  it('translates a group at x/y != 0 so its children are relative to it (as in the DOM)', () => {
+    const node = makeGroup({ box: { x: 30, y: 40, width: 100, height: 50 }, clip: true })
+    const svg = renderNodeToSvg(node)
+    expect(svg).toContain('transform="translate(30 40)"')
+    // the clip rect lives in the translated space
+    expect(svg).toMatch(/<clipPath id="[^"]+"><rect x="0" y="0" width="100" height="50"\/>/)
+  })
+
+  it('a group at the origin gets no transform', () => {
+    const svg = renderNodeToSvg(makeGroup({ box: { x: 0, y: 0, width: 100, height: 50 } }))
+    expect(svg).not.toContain('transform=')
+  })
+})
+
+describe('LO8: host poster origin', () => {
+  it('a host at x/y != 0 translates its poster (laid out in the host box)', () => {
+    const poster = makeRect({ box: { x: 0, y: 0, width: 10, height: 10 } })
+    const host = { k: 'host', box: { x: 5, y: 7, width: 10, height: 10 }, render: 'x', poster } as LayoutNode
+    expect(renderNodeToSvg(host)).toContain('<g transform="translate(5 7)"><rect x="0" y="0"')
+    const atOrigin = { ...host, box: { x: 0, y: 0, width: 10, height: 10 } } as LayoutNode
+    expect(renderNodeToSvg(atOrigin)).not.toContain('transform=')
+  })
+})
