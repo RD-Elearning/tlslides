@@ -806,7 +806,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
 | AC2 | ✅ done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba`; part 2b: `d95333f1`, `3c4ea4d4`, `f6523e8d`, `c2151e22`, `591ed78f`, `466c13b7`, `3d546a40`, `c9d46d14` | §2.3 ranks 1–2 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero; agenda, comparison, kpi-row, closing, cards, kinetic-title) + lead-review fixes; see Notes — AC2 (part 1), (part 2a), (part 2b) |
 | AC3 | ✅ done 2026-10-09 | `75348089`, `ea78f120`, `dab26adf` (pre-item: `a563f5d7`, `0f309f96`, `5f3d4bf3`) | heading/body families, 11 measured families + kerning pairs (Inter too), registry replaces name sniffing, sample + harness load the fonts, Vietnamese fixture deck; minimal = Be Vietnam Pro, gradient = Plus Jakarta Sans headings; sparse-recipe ratchet 3 → 0; see Notes — AC3 and AC3 (finish) |
-| AC4 | ⬜ | | |
+| AC4 | ✅ done 2026-10-09 | `75a0a16b`, `eeabb247`, `a12702c8`, `c38b0d48`, `e2cb3af5`, `2d2346c3` | rect.shadow, DeckTokens.surface + cardPaint (8 blocks), 8 motifs + grain/mesh, style master blocks painted on the page, chart look from tokens, Rough.js spike passed (adopt with doodle in AC5); see Notes — AC4 |
 | AC5 | ⬜ | | |
 | AC6 | ⬜ | | |
 | AC7 | ⬜ | | |
@@ -823,7 +823,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC2 part 2a | Lead-review issues (1)–(3): kpi-row display tier, roadmap roomy tier, recipes region-fill gate; feature-grid disc scales with the cell; data-URI photo in `knobs.json`. §2.3 rank 1 knobs: stat-spotlight `visual`/`statsPlacement`, big-stat `variant`/`align`, hero `align`/`decoration`; `data-big-stat` recipe centred (allowance removed) | Next: AC2 part 2b — rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing` big-type, `cards` numeral). Read Notes — AC2 (part 2a) "Open" first: 11 sparse timeline recipes are a named ratchet; digest top-8 has 72 chars of headroom. |
 | 2026-10-09 | AC2 part 2b | Lead review of part 2a: big-stat large tier (number grows with the box), hero CTA on-accent label. §2.3 rank 2: agenda `variant`/`numbering`, comparison `style` (cards, versus), kpi-row `tile`, closing `variant: big-type`, cards `numeral: giant`, kinetic-title `tone`. AC2 ✅ | Next: AC3. Read Notes — AC2 (part 2b) "Open": the titled timeline recipes are still sparse by default (ratchet unchanged); digest top-8 has 49 chars of headroom (budget kept at 12,000). |
 | 2026-10-09 | AC2 lead review + AC3 | Roomy tiers so titled slides fill their region (sparse ratchet 11 → 3); heading/body families, 11 measured families, `font-widths.js`, fonts in sample + harness; minimal/gradient heading faces | Next: AC4. Read Notes — AC2 (lead review) and Notes — AC3 "Open". |
-| 2026-10-09 | AC3 finish + AC4 | Kerning pairs (Inter p95 3.8 → 3.0 %), Vietnamese fixture, ratchet 3 → 0; AC4 below | See Notes — AC3 (finish) and Notes — AC4. |
+| 2026-10-09 | AC3 finish + AC4 | AC3: kerning pairs (Inter p95 3.8 → 3.0 %), Vietnamese fixture, sparse ratchet 3 → 0. AC4: rect.shadow, surface + cardPaint, motifs, grain/mesh, master blocks on the page, chart look, Rough.js spike, two surfaces fixture decks | Next: AC5. Read Notes — AC4 "Open" first (minimal shows no ghost cards because its cards knob is `outline`; doodle adopts Rough.js; SVG poster icon size in feature-grid). |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1467,4 +1467,151 @@ but this is where a future `regionAlign` would help.
 **Open.** Inter **bold** is still regular × 1.05: running bold text is about 2–3 % wide, which is
 the safe side. A measured Inter 700 table would fix it, at the cost of re-laying every bold Inter
 run.
+
+### Notes — AC4 (2026-10-09)
+
+**What landed.**
+- **`rect.shadow?: 0 | 1 | 2 | 'hard'`** (`75a0a16b`, `blocks/shadow.ts`). Levels 1 and 2 are
+  `ELEVATION_SCALE`. The renderers have no tokens, so a `DeckTokens.elevation` override does not
+  reach them, as before. `'hard'` is a solid copy offset 8 units right and down, in the rect's stroke
+  colour (else `#111111`). The DOM draws it as `box-shadow` (renderer and parity harness), the SVG as
+  an `<feDropShadow>` filter in `<defs>`. It is paint only and never a layout leaf.
+  The same commit fixes DOM radial-gradient parity: the DOM drew a `circle` (farthest-corner, ~1.4×
+  the SVG radius) where SVG draws an `objectBoundingBox` r = 50 % ellipse; it is now `ellipse 50% 50%`.
+  No block used radial paint before (`shadow.spec`, 6 tests).
+- **`DeckTokens.surface`** (`eeabb247`). A style's `surface` resolves as `DeckTokens.surface`
+  under `DeckSpec.tokens.surface` (`mergeDeckTokens`, `deckSpecTokens`, `documentDeckTokens`,
+  `cli --metrics --style`). It reaches blocks as `ResolvedTokens.surface`, the resolved form of the
+  approved token (every field filled: `filled` / `none` / 0); it is absent when the deck sets none.
+  `createLayoutContext` copies it.
+- **`cardPaint(ctx, base)`** + `cardNodes` + `cardCssFromPoster` (composite `_kit`). `base` is the
+  block's own neutral card. With no deck surface the result is `base`, so unstyled decks paint
+  exactly as before: the 4 legacy fixture reports are identical to the AC3 baseline. The kinds:
+  - `filled`: the block's fill, with the border from `stroke`.
+  - `outline`: a border only.
+  - `glass`: translucent white (12 % on a dark slide, 55 % on a light one) with a light 2-unit
+    hairline. In html templates it also gets a DOM-only `backdrop-filter: blur(18px)`.
+  - `ghost`: no fill and no border; a `stroke` becomes a **top rule** (the editorial "ghost with top
+    rule" of §3.3).
+  - `raised`: the theme `surface` fill with shadow ≥ 1 (default 2).
+
+  Shadows apply only to filled kinds. Text on an unfilled or translucent card resolves against
+  what is behind the block.
+
+  Html templates paint the poster's card: an inset `box-shadow` stands in for the border, so the
+  live content stays on the poster geometry (LO7). **Adopted by** cards (tones `alt` and `surface`,
+  and the non-accent cards of `accent-first`), feature-grid (poster and template), kpi-row
+  (card and accent-bar tiles), pricing (non-featured cards), team, comparison (`cards`, except the
+  highlighted card), testimonial and `l.card` (without an instance `style.surface`). The
+  testimonial is card-less by default and gets a card only under a deck surface. Explicit knob
+  looks keep their own paint (`tone: outline`, accent or featured cards).
+- **Motifs** (`a12702c8`): `tls.m.decoration.shape` gains `orb`, `squiggle`, `star`, `sparkle`,
+  `zigzag`, `triangle`, `half-circle` and `frame`.
+  - Each motif is one leaf named `shape`, inside the box for any rotation.
+  - `orb` is a round rect with a radial gradient lit from the top left (light tint → colour →
+    darker rim), at opacity ≥ 0.85. It is a rect because a DOM path cannot take a gradient fill.
+  - Star, sparkle and triangle turn freely. Squiggle, zigzag and half-circle snap to quarter turns.
+    Frame is four corner brackets.
+
+  `tls.m.pattern.pattern` gains:
+  - `grain`: one `image` node whose `url` is a ~1 KB inline SVG `feTurbulence` data URI. Both
+    renderers draw the same file; the seed is fixed. The noise sits at ~4–8 % alpha in the text
+    colour, so the grain is light on dark slides.
+  - `mesh`: three radial `accent` / `accent2` glows, 22 % (soft) or 32 % (medium), fading to clear.
+    Their boxes are clamped into the block.
+
+  Both stay `category: decoration`, so both are in `layer: backdrop`. The digest text was trimmed
+  so the top-8 detail stays at 11,951.
+- **Style master blocks on the page** (`c38b0d48`), the route AC1 "Found" asked for, done without
+  touching `DeckViewer.tsx`:
+  - `deckSpecToDocument` adds a style master's blocks to each page it applies to as **locked
+    shapes**. Shape ids are `style:<page>:<n>` and block ids `style:<name>` (the reserved prefix).
+    Their `childIndex` lies in (0, 1), under the content's 1..n.
+  - The decompiler drops them, so the round trip stays byte-identical.
+  - `renderPageToSvg` skips `resolveMaster` when the page already draws the master's shapes.
+  - `analyzeDeck` adds them as free backdrops, which are left out of the pairwise checks and of
+    margins and free space.
+  - Found while doing this: `analyzeSlide` paired compiled shapes with specs **by index**, but a
+    free backdrop is moved under the flow (LO8), so every block after it took the wrong id.
+    Shapes now pair by block id first.
+  - `gradient` gets `mesh` + `grain` on every master (medium on cover and section, soft on content),
+    plus **one `orb` on the section master**, in `image-right`'s free `image` region. The first try
+    put it in the cover's lower-right quarter; the shot showed it over the subtitle, so it moved.
+- **Chart look** (`e2cb3af5`): `_chart/kit` `chartLook(ctx)`. It adds **no token group** (§6 lists
+  none for charts) and reads the approved tokens instead:
+  - single and grouped bars round to `radius.sm` (corporate 4, minimal 6, gradient 12), capped at
+    30 % of the bar; stacked segments stay square;
+  - line weight is 4 / 5 / 7 for a hairline / none / bold `surface.stroke`;
+  - gridline weight is 1 on quiet surfaces (`ghost`, `outline`), 3 with `bold`, else 2.
+
+  With no surface the values are the old constants. Gridline *visibility* stays the block's
+  `gridlines` knob: hiding gridlines from the style would override an authored value.
+- **Fixtures** (`2d2346c3`): `styles/surfaces-glass.json` (gradient + `tokens.surface` glass) and
+  `surfaces-hard.json` (corporate + filled / bold / hard) have the same 10 slides: the eight
+  card-like blocks, a chart, every motif, mesh and grain. They make the two surfaces no pilot style
+  uses visible. The zigzag drew a giant "M" at 3:2 and is now a band of small teeth.
+- **Pilot styles** (§3.3):
+  - `gradient`: Plus Jakarta Sans headings; filled cards with a hairline edge and shadow 1; mesh +
+    grain; an orb.
+  - `corporate`: `surfaceAlt` filled cards with shadow 1; bars with radius 4.
+  - `minimal`: Be Vietnam Pro headings; surface `ghost`. Its own `cards.tone = outline` knob default
+    wins, so the minimal deck's cards stay outlined (see Open).
+
+**Rough.js spike — decision: adopt, together with its first consumer in AC5 (`doodle`).** In a
+scratch directory (no repo dependency), `roughjs@4.6.6` (MIT, 8.9 KB gz) passed all three §4.2
+conditions:
+- `rough.generator()` runs in plain Node;
+- with a fixed `seed` the output is byte-identical across runs, and differs for another seed;
+- `toPaths()` emits only `M` and `C` commands, which `pathBounds` measures exactly. Its paths, put
+  into `path` nodes (rectangle, hachure-filled circle, linear path), **pass the parity probe**
+  (a temporary spec, not committed). Coordinates stay inside the shape's box plus its roughness.
+
+It is not installed now because nothing would use it before `doodle`. Rule 6 asks for a named
+consumer, and AC5 has one. Plan for AC5: a dependency of `packages/tldraw`, pinned `4.6.6`,
+generator only, seed derived from the block id.
+
+**Vocabulary check.** Added only what §6 approves: `DeckTokens.surface`, `rect.shadow`, the eight
+decoration values and `grain` / `mesh`. Also added: `ResolvedTokens.surface` (the resolved form of
+`DeckTokens.surface`), and the internal helpers `cardPaint`, `cardNodes`, `cardCssFromPoster` and
+`chartLook` (§6 names `cardPaint`). `assertParity` gained a test-only `tokens` option. Reserved ids
+reuse the existing `style:` prefix.
+
+**Verification.**
+- `cli.js` on all 7 `styles/*.json` (corporate, minimal, gradient, knobs, vietnamese,
+  surfaces-glass, surfaces-hard): 0 errors, 0 warnings, 0 info; `needsVisualCheck` empty.
+- Legacy fixture findings are identical to the AC3 baseline (`git archive`).
+- Calibration `--shots` on all 7 decks (66 slides): 165 rows, 0 missing, 0 box deltas > 1,
+  **0 line-count mismatches** (html parts 54: 0).
+- Text width |abs| p95: **3.0 %** overall, Inter 3.0 %, Be Vietnam Pro 1.2 %, Plus Jakarta Sans
+  0.7 %, Vietnamese 1.9 %.
+- Shots looked at (DOM): all 66.
+- **SVG export looked at.** A scratch exporter (`renderPageToSvg` + `layoutBlock` posters, one id
+  prefix per shape) rendered the glass, hard and gradient decks, screenshotted in Chromium with the
+  fonts. Glass and hard shadows match the DOM. One exporter caveat, not a product bug: SVG ids
+  collide across blocks without a per-shape prefix.
+- **LO8 parity chunks**, one at a time: data 27 files (29 probes), composite 29 (66), rest 52 (73).
+  All pass, including the new motif, backdrop, card-surface and chart-look probes and the testimonial
+  probe that failed in LO8.
+- tsc prod 0, spec 329.
+- Specs (`--maxWorkers=1`) pass: library (1,040 + 3,102 + 1,204), top-level blocks + layout + styles
+  + motion + icons (1,906), state/render (42), ComponentUtil (24).
+- Digest: top-8 detail 11,951 / 12,000, tier-1 15,461 / 16,000, full 18,790 / 20,000.
+- Sheets (session scratchpad): `sheet6-{knobs,corporate,minimal,gradient,vietnamese,
+  surfaces-glass,surfaces-hard}.png` (DOM) and `sheet6-{surfaces-glass,surfaces-hard,
+  gradient}-svg.png` (SVG export).
+
+**Open / still weak.**
+- `minimal` shows no ghost cards: the style's `cards.tone = outline` knob default is explicit, so it
+  wins over the deck surface. That is a style-data decision for the AC5 review, either drop the
+  default or keep outlined cards.
+- In SVG export the feature-grid poster icons draw small (a glyph about the size of a dot); the DOM
+  is right. This predates AC4 (poster icon scaling) and needs its own fix.
+- The team example's avatar URLs do not load offline (alt text shows; pre-existing).
+- The grain is very faint on light slides; that is by design (4–8 %), but the reviewer may want
+  `medium` as the default.
+- Hard shadows on adjacent cards sit 8 units from the next card (gap `lg` 32); a tighter grid would
+  touch.
+- The orb is pseudo-3D through one radial gradient; it reads as a sphere, not a glossy render.
+- Master blocks reach the page only through `deckSpecToDocument`. The editor's own
+  `Deck.addSlideFromSpec` path does not add them yet.
 

@@ -66,7 +66,9 @@ into the spec (`documentToDeckSpec` returns the authored JSON byte-identical):
    `minimal-white`, `gradient-night`; palette ids are valid `theme` values with or without a
    style). Any other string falls back to the style's first palette and the validator warns
    `style/theme-mismatch`. An inline `DeckTheme` object is kept.
-2. **tokens** — style tokens < `DeckSpec.tokens`.
+2. **tokens** — style tokens < `DeckSpec.tokens`. Since AC4 this includes `tokens.surface`
+   (`{ card: 'filled'|'outline'|'glass'|'ghost'|'raised', stroke: 'none'|'hairline'|'bold', shadow: 0|1|2|'hard' }`,
+   every field optional): how card-like blocks paint their neutral cards; a style supplies it.
 3. **masters** — style masters are added as `style:cover` / `style:section` / `style:content`
    (reserved prefix; do not author `style:` names). A slide with no `masterId` gets one (cover
    or closing role or a cover/hero/kinetic-title/closing block → cover; section role/layout or a
