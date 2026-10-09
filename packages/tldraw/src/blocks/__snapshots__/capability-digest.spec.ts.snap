@@ -325,7 +325,7 @@ Closing slide: thank-you title, call to action, contacts and a presenter. _(fami
 | \`cta\` | no | text (max 40 chars) | Next step, 2-5 words. |
 | \`contacts\` | no | list of text (max 60 chars) (0–4 items) | Email, site, handle. |
 | \`person\` | no | object (image, name, role) | Fields: image, name, role. |
-| \`variant\` | no | enum: centered \\\\| split | split = panel with person and contacts. |
+| \`variant\` | no | enum: centered \\\\| split \\\\| big-type | split: panel with person and contacts; big-type: giant title. |
 | \`ctaStyle\` | no | enum: button \\\\| link |  |
 | \`showCta\` | no | boolean |  |
 | \`showContacts\` | no | boolean |  |

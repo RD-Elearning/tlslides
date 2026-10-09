@@ -29,7 +29,9 @@ export interface ClosingProps extends Record<string, unknown> {
   cta?: string
   contacts?: string[]
   person?: ClosingPerson
-  variant?: 'centered' | 'split'
+  /** AC2 `big-type`: a giant one-line title across the slide, start-aligned, with the text and
+   *  call to action under it and the person and contacts as a footer line. */
+  variant?: 'centered' | 'split' | 'big-type'
   ctaStyle?: 'button' | 'link'
   showCta?: boolean
   showContacts?: boolean
@@ -51,7 +53,7 @@ export const schema: BlockSchema = {
     label: 'Person',
     guidance: 'Fields: image, name, role.',
   },
-  variant: enumSlot(['centered', 'split'], 'Variant', 'split = panel with person and contacts.'),
+  variant: enumSlot(['centered', 'split', 'big-type'], 'Variant', 'split: panel with person and contacts; big-type: giant title.'),
   ctaStyle: enumSlot(['button', 'link'], 'Call to action style'),
   showCta: { type: { kind: 'boolean' }, role: 'option', label: 'Show call to action', toggles: 'cta' },
   showContacts: { type: { kind: 'boolean' }, role: 'option', label: 'Show contacts', toggles: 'contacts' },
@@ -68,7 +70,11 @@ export const defaults: ClosingProps = {
   ctaStyle: 'button',
 }
 
-const VARIANTS = ['centered', 'split'] as const
+const VARIANTS = ['centered', 'split', 'big-type'] as const
+
+/** AC2 `variant: big-type`: the title's largest size (× display), its share of the width and of the
+ *  box height. */
+const BIG_TYPE = { maxGain: 2.5, width: 0.92, height: 0.42 } as const
 
 interface Specs {
   title: BlockSpec
@@ -156,23 +162,85 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
       pieces.push({ id: spec.id, spec, box: { x, y, width: w, height: leftH[i] }, align })
       y += leftH[i] + gap
     })
-    if (wantCta) {
-      y += gap / 2
-      const label = { id: 'cta-label', type: 'tls.t.subtitle', props: { text: ctaText, color: link ? 'accent' : onColor(ctx, accent) } } as BlockSpec
-      const boxW = link ? ctaW : Math.min(w, ctaW + 2 * btnPadX)
-      const bx = align === 'center' ? x + (w - boxW) / 2 : x
-      if (!link) {
-        pieces.push({
-          id: 'cta',
-          raw: [{ k: 'rect', box: { x: bx, y, width: boxW, height: btnH }, fill: { type: 'solid', color: accent }, radius: btnH / 2 } as LayoutNode],
-          box: { x: bx, y, width: boxW, height: btnH },
-        })
-      }
-      // Give the label block room so it never wraps (pre-LO6 the editor's `estimateMetrics` ran wider than the pill's table width).
-      const labelW = Math.max(boxW, Math.ceil(ctx.measureText(ctaText, ctaStyle, 4000).lines[0]?.width ?? 0) + 8)
-      const ly = link ? y : y + (btnH - ctaStyle.size * ctaStyle.lineHeight) / 2
-      pieces.push({ id: 'cta', spec: label, box: { x: link ? bx : bx + btnPadX, y: ly, width: labelW, height: Math.ceil(ctaStyle.size * ctaStyle.lineHeight) } })
+    if (wantCta) emitCta(x, w, y + gap / 2, align)
+  }
+
+  function emitCta(x: number, w: number, y: number, align: 'center' | 'start'): void {
+    const label = { id: 'cta-label', type: 'tls.t.subtitle', props: { text: ctaText, color: link ? 'accent' : onColor(ctx, accent) } } as BlockSpec
+    const boxW = link ? ctaW : Math.min(w, ctaW + 2 * btnPadX)
+    const bx = align === 'center' ? x + (w - boxW) / 2 : x
+    if (!link) {
+      pieces.push({
+        id: 'cta',
+        raw: [{ k: 'rect', box: { x: bx, y, width: boxW, height: btnH }, fill: { type: 'solid', color: accent }, radius: btnH / 2 } as LayoutNode],
+        box: { x: bx, y, width: boxW, height: btnH },
+      })
     }
+    // Give the label block room so it never wraps (pre-LO6 the editor's `estimateMetrics` ran wider than the pill's table width).
+    const labelW = Math.max(boxW, Math.ceil(ctx.measureText(ctaText, ctaStyle, 4000).lines[0]?.width ?? 0) + 8)
+    const ly = link ? y : y + (btnH - ctaStyle.size * ctaStyle.lineHeight) / 2
+    pieces.push({ id: 'cta', spec: label, box: { x: link ? bx : bx + btnPadX, y: ly, width: labelW, height: Math.ceil(ctaStyle.size * ctaStyle.lineHeight) } })
+  }
+
+  if (variant === 'big-type') {
+    // AC2: the title as big as one line across the slide allows (BIG_TYPE), start-aligned; the text
+    // at lead and the call to action under it, the stack centred in the space above a footer line
+    // (person, then contacts) at the bottom. Falls back to two lines / smaller type when narrow.
+    const text = ctx.resolveColor('text').color
+    const muted = ctx.resolveColor('textMuted').color
+    const display = ctx.resolveText('display', { lineHeight: 1.05, letterSpacing: -0.03 })
+    const title = String(props.title ?? '')
+    const w0 = Math.max(1, lineWidth(title, display))
+    const floor = ctx.resolveText('heading').size
+    const p = props.person
+    const personLine = isShown(props, 'showPerson') && p && typeof p === 'object' && p.name ? [p.name, p.role].filter(Boolean).join(' · ') : ''
+    const contactLine = isShown(props, 'showContacts') ? strings(props.contacts, CLOSING_MAX_CONTACTS).join('   ·   ') : ''
+    // Everything but the title, roomy (lead text, body footer, wide gaps) or compact (body text,
+    // caption footer, tight gaps) when the box is short; the title takes the height that is left (at
+    // least the heading size).
+    const restOf = (compact: boolean) => {
+      const bodyStyle = { ...ctx.resolveText(compact ? 'caption' : 'body'), color: muted }
+      const pm = personLine ? ctx.measureText(personLine, { ...bodyStyle, color: text }, W) : undefined
+      const cm = contactLine ? ctx.measureText(contactLine, bodyStyle, W) : undefined
+      const footH = (pm ? pm.height : 0) + (cm ? cm.height : 0) + (pm && cm ? ctx.tokens.space.xs : 0)
+      const leadStyle = { ...ctx.resolveText(compact ? 'body' : 'lead'), color: muted }
+      const tx = props.text ? ctx.measureText(String(props.text), leadStyle, Math.min(W, 1400)) : undefined
+      const ctaGap = compact ? gap : gap * 2
+      const footGap = footH ? ctx.tokens.space[compact ? 'sm' : '2xl'] : 0
+      const rest = (tx ? gap + tx.height : 0) + (wantCta ? ctaGap + ctaBlockH : 0) + footGap + footH
+      return { leadStyle, tx, ctaGap, footGap, rest, bodyStyle, pm, cm, footH }
+    }
+    const roomy = restOf(false)
+    const r = roomy.rest + floor * display.lineHeight <= H ? roomy : restOf(true)
+    const { leadStyle, tx, ctaGap, footGap, bodyStyle, pm, cm, footH } = r
+    let size = Math.max(floor, Math.floor(Math.min(display.size * BIG_TYPE.maxGain, (display.size * W * BIG_TYPE.width) / w0, H * BIG_TYPE.height, (H - r.rest) / display.lineHeight)))
+    let titleStyle = { ...display, size, color: text }
+    let tm = ctx.measureText(title, titleStyle, W)
+    // the measured line box can round up past the estimate: step down until it fits
+    for (let k = 0; k < 12 && size > floor && tm.height > H - r.rest; k++) {
+      size = Math.max(floor, size - 2)
+      titleStyle = { ...display, size, color: text }
+      tm = ctx.measureText(title, titleStyle, W)
+    }
+    const stackH = tm.height + (tx ? gap + tx.height : 0) + (wantCta ? ctaGap + ctaBlockH : 0)
+    const needed2 = stackH + footGap + footH
+    const total2 = Math.max(H, needed2)
+    let y = Math.max(0, (total2 - footGap - footH - stackH) / 2)
+    pieces.push({ id: 'title', raw: [{ k: 'text', box: { x: 0, y, width: W, height: tm.height }, lines: tm.lines, style: titleStyle }], box: { x: 0, y, width: W, height: tm.height } })
+    y += tm.height
+    if (tx) {
+      y += gap
+      pieces.push({ id: 'text', raw: [{ k: 'text', box: { x: 0, y, width: Math.min(W, 1400), height: tx.height }, lines: tx.lines, style: leadStyle }], box: { x: 0, y, width: Math.min(W, 1400), height: tx.height } })
+      y += tx.height
+    }
+    if (wantCta) emitCta(0, W, y + ctaGap, 'start')
+    let fy = total2 - footH
+    if (pm) {
+      pieces.push({ id: 'person', raw: [{ k: 'text', box: { x: 0, y: fy, width: W, height: pm.height }, lines: pm.lines, style: { ...bodyStyle, color: text } }], box: { x: 0, y: fy, width: W, height: pm.height } })
+      fy += pm.height + ctx.tokens.space.xs
+    }
+    if (cm) pieces.push({ id: 'contacts', raw: [{ k: 'text', box: { x: 0, y: fy, width: W, height: cm.height }, lines: cm.lines, style: bodyStyle }], box: { x: 0, y: fy, width: W, height: cm.height } })
+    return composeFlat(ctx, pieces, total2)
   }
 
   if (split) {

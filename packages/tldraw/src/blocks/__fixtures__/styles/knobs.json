@@ -648,6 +648,32 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_16",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k16a",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Thank you",
+              "text": "Approve the partner pilot and a $1.2M budget.",
+              "cta": "Decide by April 15",
+              "contacts": [
+                "strategy@northwind.example",
+                "northwind.example/plan"
+              ],
+              "person": {
+                "name": "Mai Tran",
+                "role": "Head of Strategy"
+              },
+              "variant": "big-type"
+            }
+          }
+        ]
+      }
     }
   ]
 }
