@@ -341,3 +341,74 @@ describe('RV04 — example fits its box (review G04)', () => {
     assertExampleFits(tlsCKpiRow)
   })
 })
+
+describe('AC2 — look knob (tile)', () => {
+  const DEF = tlsCKpiRow
+  const registry = makeCompositeRegistry()
+  const props = { ...(DEF.defaults as any), ...((DEF.describe as any).example.props as any) }
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k === 'group') n.children.forEach((c: any) => leaves(c, x, y, out))
+    else out.push({ ...n, ax: x, ay: y })
+    return out
+  }
+
+  it('declares the knob as an enum', () => {
+    expect((DEF.schema.tile.type as any).values).toEqual(['plain', 'card', 'accent-bar'])
+  })
+
+  for (const tile of ['card', 'accent-bar']) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`tile: ${tile} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = DEF.layout({ ...props, tile }, makeCtx({ width: w, height: h }, registry))
+      assertValidNode(node)
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.ax).toBeGreaterThanOrEqual(-0.5)
+        expect(l.ax + l.box.width).toBeLessThanOrEqual(w + 0.5)
+        expect(l.ay + l.box.height).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('card: one card per tile spanning the row, the tile text inside it; the card is the tile part', () => {
+    const ctx = makeCtx({ width: 1728, height: 600 }, registry)
+    const node = DEF.layout({ ...props, tile: 'card' }, ctx) as any
+    const tiles = node.children.filter((c: any) => /^tile\[\d+\]$/.test(c.part ?? ''))
+    expect(tiles).toHaveLength(props.tiles.length)
+    const cards = tiles.map((t: any) => t.children[0])
+    expect(cards.every((c: any) => c.k === 'rect' && c.fill.color === ctx.resolveColor('surfaceAlt').color)).toBe(true)
+    expect(tiles[0].box.x).toBe(0)
+    expect(tiles[tiles.length - 1].box.x + tiles[tiles.length - 1].box.width).toBeCloseTo(1728, 5)
+    for (const t of tiles) {
+      for (const l of leaves(t).filter((x: any) => x.k === 'text')) {
+        expect(l.ax).toBeGreaterThan(t.box.x)
+        expect(l.ay + l.box.height).toBeLessThanOrEqual(t.box.y + t.box.height + 0.5)
+      }
+    }
+    // content-sized as the plain row: the cards end at the row's bottom
+    expect(tiles[0].box.y + tiles[0].box.height).toBeCloseTo(node.box.height, 5)
+  })
+
+  it('accent-bar: an accent bar down each card\'s left edge, the tile text right of it', () => {
+    const ctx = makeCtx({ width: 1728, height: 600 }, registry)
+    const node = DEF.layout({ ...props, tile: 'accent-bar' }, ctx) as any
+    const t = node.children.find((c: any) => c.part === 'tile[0]')
+    const bar = t.children[1]
+    expect(bar.k).toBe('rect')
+    expect(bar.fill.color).toBe(ctx.resolveColor('accent').color)
+    expect(bar.box.height).toBe(t.children[0].box.height)
+    const minX = Math.min(...leaves(t).filter((x: any) => x.k === 'text').map((x: any) => x.ax))
+    expect(minX).toBeGreaterThan(t.box.x + bar.box.width)
+  })
+
+  // As the defaults above: without a registry (the known nested-tile issue), so this checks the
+  // row's own geometry - the `tile[i]` card groups - in both renderers.
+  it('accent-bar: DOM and SVG agree on the card groups', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(DEF, { ...props, tile: 'accent-bar' } as any, { width: 1200, height: 320 })
+  }, 30000)
+})

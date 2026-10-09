@@ -479,7 +479,7 @@ describe('R7 — capability digest v2', () => {
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
         size: 'h≈180-6/item@840',
         aiTier: 1,
-        looks: ['gap'],
+        looks: ['tile', 'gap'],
         absorbs: ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge'],
       })
       const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))

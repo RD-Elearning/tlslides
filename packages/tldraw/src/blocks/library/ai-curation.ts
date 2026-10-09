@@ -86,7 +86,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.trend-badge': t2(['format', 'polarity', 'size']),
   'tls.d.bullet-chart': t2(['bands', 'format']),
   'tls.c.kpi-tile': t2(['showDelta', 'showLabel', 'showSparkline', 'polarity', 'format']),
-  'tls.c.kpi-row': t1(['gap'], ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge']),
+  'tls.c.kpi-row': t1(['tile', 'gap'], ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge']),
   'tls.c.big-stat': t1(['variant', 'align', 'format', 'showContext', 'showLabel'], ['tls.t.hero-number']),
   'tls.c.stat-card': t2(['showIcon', 'format', 'emphasis', 'padding']),
   'tls.c.dashboard': t2(['layout', 'chartRatio', 'showInsight']),

@@ -46,7 +46,8 @@
                   "polarity": "upGood",
                   "format": "plain"
                 }
-              ]
+              ],
+              "tile": "card"
             }
           },
           {
@@ -589,6 +590,60 @@
               ],
               "highlight": 1,
               "style": "cards"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_15",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k15t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Four numbers for the board"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k15a",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                {
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "label": "Revenue",
+                  "polarity": "upGood",
+                  "format": "compact"
+                },
+                {
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "label": "Churn %",
+                  "polarity": "downGood",
+                  "format": "percent"
+                },
+                {
+                  "value": 64,
+                  "delta": 9,
+                  "label": "NPS",
+                  "polarity": "upGood",
+                  "format": "plain"
+                },
+                {
+                  "value": 1250,
+                  "delta": 180,
+                  "label": "Active teams",
+                  "polarity": "upGood",
+                  "format": "plain"
+                }
+              ],
+              "tile": "accent-bar"
             }
           }
         ]

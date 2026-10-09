@@ -813,6 +813,7 @@ Row of KPI tiles with an equal-width split, each showing value, change and label
 |---|---|---|---|
 | \`tiles\` | yes | list of object (value, delta, label, sparkline, polarity, format) (2–5 items) | 2–5 KPI tiles. Each needs a value and label. Use delta for change indicators and sparkline for trend. |
 | \`gap\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg | Horizontal spacing between tiles. |
+| \`tile\` | no | enum: plain \\\\| card \\\\| accent-bar | \`card\` / \`accent-bar\` give each KPI a card. |
 
 \`\`\`json
 {
@@ -5363,7 +5364,7 @@ content-image-text · blank — content: tls.c.image-text — photo-led story wi
 data-chart-insight · timeline+title — timeline: tls.c.chart-insight(insightSize=lead) — one chart with its takeaway and source
 data-stat-spotlight · timeline+title — timeline: tls.c.stat-spotlight — one rate with three supporting numbers
 data-big-stat · blank — content: tls.c.big-stat(align=center) — one giant number
-data-kpi-row · timeline+title — timeline: tls.c.kpi-row + tls.t.takeaway(size=lead) — 2–5 headline KPIs and what they mean
+data-kpi-row · timeline+title — timeline: tls.c.kpi-row(tile=card) + tls.t.takeaway(size=lead) — 2–5 headline KPIs and what they mean
 data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
 data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway(size=lead) — single-series bars with the so-what beside
 ### comparison
@@ -5416,7 +5417,7 @@ also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈334+50/L@840] knobs: variant, align, format, showContext, showLabel
-tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: gap
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: tile, gap
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
