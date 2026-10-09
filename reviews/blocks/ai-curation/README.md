@@ -804,7 +804,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
-| AC2 | ⬜ | | |
+| AC2 | 🟡 part 1 done 2026-10-09 | `85c841de`, `609cc2d1`, `57ed1409` | AC1.5 leftovers + knobs on feature-grid and testimonial; stat-spotlight, big-stat and the rest of §2.3 ranks 1–2 remain; see Notes — AC2 (part 1) |
 | AC3 | ⬜ | | |
 | AC4 | ⬜ | | |
 | AC5 | ⬜ | | |
@@ -818,6 +818,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | plan | This plan written (survey only, no code) | Start at AC0. Tier assignments in §1.2 are proposals: show the user §2.2 before AC0 commits them. Board `GVkKV9dh…` has no verdicts yet. |
 | 2026-10-09 | AC0 | Tier metadata, tier-1 index, 36 recipes, LLM-ARCHITECTURE §3.1/S2 | **Approved:** the product owner delegated the decisions; the lead approved the §2.2 tier-1 list (45) and the §6 vocabulary as written. Next: AC1. |
 | 2026-10-09 | AC1.5 | Composition polish (lead review of the AC1 sheets) | Next: AC2. Open items in Notes — AC1.5 "Not done" (chart takeaway size, kpi-row/roadmap paint gap, cards caption text). |
+| 2026-10-09 | AC2 part 1 | Takeaway `size`, chart-insight `insightSize`, content-sized kpi-row/roadmap, body text in wide cards; feature-grid `cell`/`align`/`iconStyle`; testimonial `variant: photo`; `knobs.json` | Next: AC2 part 2 — `stat-spotlight`, `big-stat`, then `hero`, `kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing`, `cards` numeral. Read Notes — AC2 (part 1) "Remains" first. |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1006,4 +1007,57 @@ agenda, pros-cons — all pass (`--maxWorkers=1`).
   should hug their content (AC2 hug candidates, like pros-cons).
 - `tls.c.cards` text is caption size in tall cards; a body tier when there is room would help.
 - `data-big-stat` is left-aligned by design (the one recipe allowance).
+
+### Notes — AC2 (part 1)
+
+**What landed.**
+- `85c841de` — AC1.5 leftovers. `tls.t.takeaway.size: body | lead` (lead when the box has the
+  height, else body; default body, so nothing existing moved). `tls.c.chart-insight.insightSize:
+  body | lead`, passed to its takeaway. Recipes `data-chart-insight`, `data-kpi-row`,
+  `data-bar-takeaway`, `process-roadmap` and the three style decks (st_05) use lead.
+  `tls.c.kpi-row` is content-sized (row = tallest tile's painted content, then re-laid at that
+  height), `tls.g.roadmap` bars grow at most 1.5x and its root is the painted height past that —
+  both now sit directly above their takeaway and the pair is centred by `timeline`'s regionAlign.
+  `tls.c.cards` with 4 cards keeps body text when the text column is ≥ 280 wide and the cards fit
+  the box (caption otherwise; 2–3 cards were already body).
+- `609cc2d1` — `tls.c.feature-grid`: `cell: plain | card` (28 padding, surfaceAlt, equal height per
+  row), `align: start | center`, `iconStyle: plain | circle` (28 glyph on a 48 tinted disc). Template
+  and poster share the geometry (LO7 posterGeometry kept). `size.min` 1120×251 → 1120×307 and
+  `preferred` measured with cards, so every value fits its own min box. Absorbs
+  `tls.c.feature-reveal` (now tier 2; its avoid already names feature-grid). Tier-1 count 45 → 44.
+  Schema guidance text trimmed to keep the top-8 digest detail ≤ 12k (budget not raised).
+- `57ed1409` — `tls.c.testimonial.variant: centered | photo`: the avatar URL as a rounded photo
+  (36% of the inner width, full inner height) beside a left-aligned quote/name/role column, centred
+  vertically; no safe URL → a soft accent-tint panel (never an unsafe `src`). `size.min` 840×554 →
+  840×600 (photo at 840 is 598). Absorbs `tls.c.quote-image` (already tier 2, avoid names testimonial).
+- `looks` in `library/ai-curation.ts`: takeaway `tone, size`; chart-insight `+ insightSize`;
+  feature-grid `cell, align, iconStyle` (`columns` is a number slot, not a look); testimonial `variant`.
+- `__fixtures__/styles/knobs.json` (corporate style, 7 slides): kpi-row + lead takeaway, roadmap +
+  lead takeaway, chart-insight lead, 4 cards, feature-grid card/center/circle, feature-grid 2-col
+  cards, testimonial photo.
+
+**Verification.** `cli.js`: corporate / minimal / gradient / knobs — 0 errors, 0 warnings, 0 info
+findings, `needsVisualCheck` empty. Calibration `run.js --decks knobs,corporate,minimal,gradient`
+(1 Chromium page, 31 slides): 51 rows, 0 missing, 0 box deltas > 1; **html parts 17: 0 line-count
+mismatches** (feature-grid ×2, testimonial photo; |top|/|bottom| ≤ 0.6). One layout-kind table
+mismatch `st_04:b_cards` title (table 2 lines, browser 1; over-count, safe) in a style deck — the
+3-card path is unchanged by this phase, so it predates AC2. Shots looked at: sheet
+`sheet3-knobs.png` (session scratchpad). tsc prod **0**, spec **329**. Specs (`--maxWorkers=1`):
+takeaway, chart-insight, kpi-row, roadmap, cards, feature-grid, feature-reveal, testimonial,
+quote-image, recipes, digest (snapshots updated: knob lines, recipe knobs, roadmap size hint),
+catalog-conformance, layout-report, block-metrics (size cards regenerated), styles, slide-compiler,
+layout-calibration, slide-composition, demo-deck-*, block-library-tour, motion-showcase,
+slide-decompiler, deck-document, slide-layouts, layout-layers, layout-anchor — all pass. New spec
+cases: every new knob value at `size.preferred` and `size.min` (fits, nothing escapes).
+Parity-probe chunks (LO8) were not run this session.
+
+**Remains (AC2 part 2).**
+- §2.3 rank 1: `stat-spotlight` (visual, statsPlacement), `big-stat` (variant, align), `hero`
+  (align, decoration); rank 2: `kinetic-title`, `agenda` (variant, numbering), `comparison` (style
+  incl. versus, highlight), `kpi-row` (tile), `closing` (`big-type`), `cards` (`numeral: giant`).
+- Testimonial photo has no real image in the fixture (the harness is offline); a data-URI photo
+  fixture would show the cover crop.
+- The feature-grid disc glyph (28) reads small at 1920; consider 32 when touching it again.
+- The top-8 digest detail sits just under 12k: each new knob on a large html block costs ~50 chars;
+  part 2 will have to trim guidance the same way or record a budget decision.
 
