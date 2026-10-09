@@ -18,7 +18,7 @@ import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
-import { shapeToBlock } from './shape-bridge'
+import { shapePlacement, shapeToBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
 
@@ -37,6 +37,7 @@ export interface DecompileFinding {
     | 'shape/non-block'
     | 'shape/no-region-match'
     | 'aspect/free-block-drift'
+    | 'shape/layered-moved'
   /** The slide/page id. */
   slideId?: string
   /** The shape id that triggered the finding. */
@@ -145,6 +146,18 @@ function matchLayeredToRegion(
   return bestName
 }
 
+/** LO8 — tolerance (slide units) for "the shape is still where the compiler placed it". */
+const PLACED_TOLERANCE = 1
+
+function movedFrom(placed: Box, point: number[], size: number[]): boolean {
+  return (
+    Math.abs(point[0] - placed.x) > PLACED_TOLERANCE ||
+    Math.abs(point[1] - placed.y) > PLACED_TOLERANCE ||
+    Math.abs(size[0] - placed.width) > PLACED_TOLERANCE ||
+    Math.abs(size[1] - placed.height) > PLACED_TOLERANCE
+  )
+}
+
 /**
  * Derive a `DeckSpec.aspect` from a `[width, height]` page size.
  *
@@ -197,7 +210,9 @@ function aspectsEqual(a: DeckSpec['aspect'], b: DeckSpec['aspect']): boolean {
  *    - When a region holds several blocks, sort by `point[1]` (vertical order).
  *
  * Known limitation: a block moved *within* its region's tolerance is snapped back to
- * region order on the round trip — its exact pixel offset is not preserved.
+ * region order on the round trip — its exact pixel offset is not preserved. Layered
+ * (backdrop/overlay) region blocks are the exception (LO8): one whose box differs from the
+ * compiler's `$block.placed.box` was moved by hand and is kept at its box in `free[]`.
  *
  * @param page   The TDPage to decompile.
  * @param tokens Resolved design tokens for the deck.
@@ -272,6 +287,34 @@ export function pageToSlideSpec(
     }
     const shapeForMatch = { point: shapePoint, size: shapeSize }
     const layered = blockSpec.layer === 'backdrop' || blockSpec.layer === 'overlay'
+
+    // LO8: a layered block the user moved or resized in the editor keeps that box. The compiler
+    // records where it placed it (`$block.placed`); a region block no longer there was placed by
+    // hand, so it becomes a free block at its current box (layer kept: z stays under/over the
+    // flow) and its anchor is dropped — re-anchoring it would snap the user's move back. A layered
+    // block compiled from `free[]` stays free (else the next round trip would re-anchor it).
+    const placement = layered ? shapePlacement(shape) : undefined
+    if (placement?.from === 'free') {
+      free.push({ block: blockSpec, box: { x: shapePoint[0], y: shapePoint[1], width: shapeSize[0], height: shapeSize[1] } })
+      continue
+    }
+    const placed = placement?.box
+    if (placed && movedFrom(placed, shapePoint, shapeSize)) {
+      delete blockSpec.anchor
+      delete blockSpec.anchorTo
+      free.push({
+        block: blockSpec,
+        box: { x: shapePoint[0], y: shapePoint[1], width: shapeSize[0], height: shapeSize[1] },
+      })
+      findings.push({
+        level: 'info',
+        rule: 'shape/layered-moved',
+        slideId,
+        blockId: blockSpec.id,
+        message: `Layered block "${blockSpec.id}" was moved or resized off its compiled place; kept at its box in free[] (anchor dropped).`,
+      })
+      continue
+    }
     const matchedRegion =
       matchToRegion(shapeForMatch, regionBoxes, tolerance) ??
       (layered ? matchLayeredToRegion(shapeForMatch, regionBoxes, tolerance) : undefined)

@@ -304,6 +304,7 @@ export function compileSlide(
   }
 
   // 4. Handle spec.free[] — place them directly using their explicit box.
+  const freeShapes = new Set<ComponentShape>()
   if (spec.free) {
     for (const entry of spec.free) {
       const blockDef = registry?.get(entry.block.type)
@@ -312,6 +313,12 @@ export function compileSlide(
         definitionMotion: blockDef?.motion,
       })
       shapes.push(shape)
+      freeShapes.add(shape)
+      // LO8: a layered free block stays free on the round trip (`slide-decompiler.ts`).
+      if (entry.block?.layer === 'backdrop' || entry.block?.layer === 'overlay') {
+        const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+        meta.placed = { box: { ...entry.box }, from: 'free' }
+      }
       if (blockDef && entry.block.motion === undefined) {
         styleCandidates.push({ shape, block: entry.block, def: blockDef, box: entry.box })
       }
@@ -321,6 +328,19 @@ export function compileSlide(
   // 5. P7 — motion style. Only when a style is set; absent = the output above, untouched.
   const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
   if (motionStyle) applyMotionStyle(motionStyle, styleCandidates)
+
+  // LO8: a free block with `layer: 'backdrop'` (e.g. a layered block the user dragged, which the
+  // decompiler keeps in `free[]`) paints under every other shape, as it did in the region.
+  if (spec.free?.some((e) => e.block?.layer === 'backdrop')) {
+    const isFreeBackdrop = (sh: ComponentShape): boolean =>
+      (sh.props[BLOCK_PROP_KEY] as { layer?: string } | undefined)?.layer === 'backdrop' &&
+      freeShapes.has(sh)
+    const reordered = [...shapes.filter(isFreeBackdrop), ...shapes.filter((sh) => !isFreeBackdrop(sh))]
+    reordered.forEach((sh, i) => {
+      sh.childIndex = i + 1
+    })
+    shapes.splice(0, shapes.length, ...reordered)
+  }
 
   return {
     shapes,
@@ -705,7 +725,11 @@ function compileLayered(
     const def = registry?.get(l.block.type)
     const target = targetBox(l)
     const box = anchoredBox(l.block, def, target ?? region, target ? tokens.space.sm : 0, tokens, registry, region)
-    return [blockToShape(l.block, box, { definitionMotion: def?.motion })]
+    const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
+    // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
+    const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+    meta.placed = { box: { ...box }, from: 'region' }
+    return [shape]
   }
 
   const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]

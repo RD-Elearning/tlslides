@@ -46,6 +46,27 @@ interface BlockMetadata {
   styleMotion?: BlockMotionSpec
   /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
   motionStyle?: 'subtle' | 'expressive'
+  /** LO8 — where `compileSlide` placed a layered (backdrop/overlay) block: its box, and whether
+   *  it came from a region (anchored) or from `free[]`. Never authored, never returned by
+   *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
+   *  (keep the move, `free[]`) from "untouched" (re-anchor). */
+  placed?: ShapePlacement
+}
+
+/** LO8 — see `BlockMetadata.placed`. */
+export interface ShapePlacement {
+  box: Box
+  from: 'region' | 'free'
+}
+
+/** LO8 — where the compiler placed a layered block (`$block.placed`), if recorded. */
+export function shapePlacement(shape: unknown): ShapePlacement | undefined {
+  const meta = (shape as { props?: Record<string, unknown> } | null)?.props?.[BLOCK_PROP_KEY] as BlockMetadata | undefined
+  const p = meta?.placed
+  const b = p?.box
+  if (!p || !b || typeof b !== 'object' || (p.from !== 'region' && p.from !== 'free')) return undefined
+  const ok = [b.x, b.y, b.width, b.height].every((n) => typeof n === 'number' && Number.isFinite(n))
+  return ok ? { box: { x: b.x, y: b.y, width: b.width, height: b.height }, from: p.from } : undefined
 }
 
 /**

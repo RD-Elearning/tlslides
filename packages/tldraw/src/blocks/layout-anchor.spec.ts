@@ -252,3 +252,71 @@ describe('LO2.1 — title band and region alignment', () => {
     expect(k.y - q.y).toBeCloseTo((q.height - k.height) / 2, 5)
   })
 })
+
+describe('LO8 — a layered block moved in the editor keeps its place', () => {
+  const deck: DeckSpec = { version: 1, id: 'd', title: 'A', theme: 'mono-grid', aspect: 'widescreen', slides: [ANCHOR_SLIDE] }
+  const shapesById = (doc: ReturnType<typeof deckSpecToDocument>['document']) => {
+    const page = Object.values(doc.pages)[0]
+    return new Map(Object.values(page.shapes).map((s) => [((s as unknown as { props: { $block: { id: string } } }).props.$block.id), s as { point: number[]; size: number[]; childIndex: number }]))
+  }
+
+  it('the compiler records where it placed a layered block, and only those', () => {
+    const shapes = compileSlide(ANCHOR_SLIDE, FRAME, tokens, registry).shapes
+    for (const s of shapes) {
+      const meta = s.props.$block as { id: string; layer?: string; placed?: { box: unknown; from: string } }
+      if (meta.layer) expect(meta.placed).toEqual({ box: { x: s.point[0], y: s.point[1], width: s.size[0], height: s.size[1] }, from: 'region' })
+      else expect(meta.placed).toBeUndefined()
+    }
+    // Never part of the authored spec.
+    expect(shapeToBlock(shapes.find((s) => (s.props.$block as { id: string }).id === 'badge'))).not.toHaveProperty('placed')
+  })
+
+  it('a dragged anchored overlay recompiles where the user put it (free, anchor dropped, layer kept)', () => {
+    const { document } = deckSpecToDocument(deck)
+    const byId = shapesById(document)
+    const dragged = byId.get('badge')!
+    dragged.point = [dragged.point[0] - 300, dragged.point[1] + 120]
+    const { spec, findings } = documentToDeckSpec(document)
+    const back = spec.slides[0]
+    expect(findings.filter((f) => f.rule === 'shape/layered-moved').map((f) => f.blockId)).toEqual(['badge'])
+    expect(back.regions.left.map((b) => b.id)).toEqual(['card'])
+    const free = back.free!.find((f) => f.block.id === 'badge')!
+    expect(free.block.layer).toBe('overlay')
+    expect(free.block).not.toHaveProperty('anchor')
+    expect(free.block).not.toHaveProperty('anchorTo')
+    expect(boxOf(back, 'badge')).toEqual({ x: dragged.point[0], y: dragged.point[1], width: dragged.size[0], height: dragged.size[1] })
+    // The untouched overlay is still anchored (re-derived on recompile), and the flow is unchanged.
+    expect(back.regions.right.find((b) => b.id === 'b2')).toMatchObject({ layer: 'overlay' })
+    for (const id of ['b2', 'card', 'kpi', 't', 'wm']) expect(boxOf(back, id)).toEqual(boxOf(ANCHOR_SLIDE, id))
+    expect(validateDeckSpec(spec).filter((f) => f.rule.startsWith('block/anchor'))).toEqual([])
+    // A second round trip is stable: the free badge stays put.
+    const again = documentToDeckSpec(deckSpecToDocument(spec).document).spec.slides[0]
+    expect(boxOf(again, 'badge')).toEqual(boxOf(back, 'badge'))
+  })
+
+  it('a resized region backdrop stays resized and still paints under the flow', () => {
+    const { document } = deckSpecToDocument(deck)
+    const wm = shapesById(document).get('wm')!
+    wm.size = [wm.size[0] - 200, wm.size[1]]
+    const back = documentToDeckSpec(document).spec.slides[0]
+    expect(back.free!.map((f) => f.block.id)).toEqual(['wm'])
+    const shapes = compileSlide(back, FRAME, tokens, registry).shapes
+    const ids = [...shapes].sort((a, b) => a.childIndex - b.childIndex).map((s) => (s.props.$block as { id: string }).id)
+    expect(ids[0]).toBe('wm')
+    expect(ids[ids.length - 1]).toBe('b2')
+    expect(new Set(shapes.map((s) => s.childIndex)).size).toBe(shapes.length)
+    expect(boxOf(back, 'wm').width).toBe(wm.size[0])
+  })
+
+  it('an untouched layered block is re-anchored (follows its target), not frozen', () => {
+    const { document } = deckSpecToDocument(deck)
+    const back = documentToDeckSpec(document).spec.slides[0]
+    expect(back.free ?? []).toEqual([])
+    // Move the target region's content: the badge follows the card because it was not moved.
+    const moved: SlideSpec = { ...back, regions: { ...back.regions, left: [title('lead', 'A lead line above the card'), ...back.regions.left] } }
+    const card = boxOf(moved, 'card')
+    const b = boxOf(moved, 'badge')
+    expect(b.y).toBeGreaterThanOrEqual(card.y)
+    expect(b.x + b.width).toBeLessThanOrEqual(card.x + card.width)
+  })
+})
