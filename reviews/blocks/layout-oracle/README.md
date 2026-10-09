@@ -155,18 +155,16 @@ Record error stats here; set `confidence` thresholds from data; `needsVisualChec
 letter-spacing / bold in tableMetrics) if found.
 
 ### Next (open, in priority order)
-- **LO6 — editor on tableMetrics.** Switch `compileSlide`/editor text measurement from
-  `estimateMetrics` to the browser-calibrated `tableMetrics` (LO5 data: editor line-count mismatch
-  0.8% → ~0.1%, removes the "editor wraps differently" `needsVisualCheck` reason). Moves every
-  fixture layout/snapshot — re-baseline deliberately, verify visually on all 4 fixture decks.
 - **LO7 — html-kind blocks.** They are measured from their export poster, which wraps differently
   from the live HTML (4/9 differ), so they always need a screenshot. Make poster text layout follow
   the same metrics, or derive the html block's geometry from the layout tree.
 - **LO8 — loose ends.** Anchored overlay dragged in the editor snaps back on recompile; parity
-  probes `tls.c.testimonial` (fails on HEAD too) and `tls.d.progress-bar` (unverified); parity
+  probes `tls.t.statement` (SVG renderer ignores the `emphasis` group offset; fails on HEAD too, see
+  Notes — LO6), `tls.c.testimonial` (fails on HEAD too) and `tls.d.progress-bar` (unverified); parity
   worker keeps jest alive (kill by PID); `dist/index.mjs` not importable in plain node
   (`@tlslides/core` lacks ESM named exports); real Next.js route import untested; size cards cover
-  default theme only, `tls.g.steps`/`tls.c.team` height fit poor.
+  default theme only, `tls.g.steps`/`tls.c.team` height fit poor; 26 shrink-wrapped labels/cells
+  paint ≤ 12 units past their box (kit slack < the +5% table error, LO6).
 - **Machine rule:** WSL has 4 GB RAM + 3 GB swap. Run ONE code-writing agent at a time; jest
   targeted with `--maxWorkers=1`; one tsc at a time; never jest/tsc while the dev server +
   Chromium run. Parallel agents thrashed the disk and froze the machine on 2026-10-08.
@@ -183,9 +181,124 @@ letter-spacing / bold in tableMetrics) if found.
 | LO3 | done | `770808fb` | `block-metrics.ts` `buildBlockMetrics` → committed `__generated__/block-metrics.json` (129 cards, 64 KB, one line per block) + `block-size-hints.ts`; staleness spec; index hint `[h≈0+104/L@840]`, index 18.8k chars (≤ 20k). `block-metrics.spec.ts` 13 tests. See Notes — LO3/LO4. |
 | LO4 | done | `770808fb` | Size-card API exported from `blocks/index.ts` (package root re-exports it); `turbo build:packages` exit 0, dist CJS verified. CLI `tools/layout-report/cli.js` (+ `load.js`, `gen-block-metrics.js`), 0.4-0.8 s per fixture deck. Docs: `LLM-ARCHITECTURE.md` §S4.1, `guides/blocks-authoring.md` §2.10. |
 | LO5 | done | `7e3acc6f` | Browser calibration (289 blocks, 95 slides, 1 Chromium page); `tableMetrics` re-based on browser-measured Inter + letter-spacing + bold; exact Bézier `pathBounds`; `needsVisualCheck: {blockId, reason}[]`; LO5b composition hints. `layout-calibration.spec.ts` 14 tests. See Notes — LO5. |
-| LO6 | todo | | editor on tableMetrics — see §2 Next |
+| LO6 | done | `62c80440` | `createLayoutContext` defaults to `editorMetrics` (= `tableMetrics`); report's editor-disagreement check is a no-op by default; fixtures needsVisualCheck 21/95 → 9/95. See Notes — LO6. |
 | LO7 | todo | | html-kind geometry from live-equivalent layout |
 | LO8 | todo | | loose ends |
+
+### Notes — LO6 (2026-10-09)
+
+**What switched.** `layout/measure.ts` exports `editorMetrics` — one shared `tableMetrics()`
+instance (stable identity, so `ctx.measureText === editorMetrics` is testable) — and
+`createLayoutContext` defaults to it instead of `estimateMetrics`. That one default is the layout of
+record for everything that does not inject a provider: `compileSlide` (both passes, anchors),
+`deck-context`/`useDeckTokens` (editor shapes), DOM + SVG renderers (they paint the layout's lines),
+export, autofit, motion part counts, parity harness, html-block posters and the hero/testimonial/
+feature-grid `derivePreferredSize`. `block-metrics.ts` and `layout-report.ts` default to the same
+instance. `estimateMetrics` stays exported (rich-text specs, `--text-metrics estimate`, the
+calibration's comparison column, `createMetricsProvider('estimate')`).
+
+**Consumers left as they were, and why.** The kits that already measured with their own table
+(`chrome/_kit` `TABLE`, `composite/_kit` `lineWidth`, `tls-t-statement` `runWidth` × 1.08,
+`_chart/kit` `withRealWidths` + `TEXT_SLACK`, `_table/kit` `withNumberMetrics`, `tls-c-closing`
+label room) were compensating for the estimate; with the editor on the same widths they are now
+consistent rather than corrective. They keep their slack factors (removing them would move boxes for
+no visible gain; table vs browser p95 is still +5%), only stale comments were updated.
+`renderPageToSvg.ts`'s `AVG_CHAR_WIDTH_EM` is tldraw's own text shape (Phase 15), not blocks.
+`slide-layouts.ts`' title band `space.3xs` slack stays (`tableMetrics` also reports a line as
+`round(size × lh) + 2`).
+
+**Report.** `needsVisualCheck` reason 2 ("editor disagreement") now re-lays with `editorMetrics` and
+runs only when the report's provider is *not* `editorMetrics` (default: skipped, zero cost). With
+`metrics: 'estimate'` it still fires, worded "the editor wraps `text` to 1 line on screen; the
+report's `estimate` metric needs 2". `measureBlock` confidence is `high` for the default context
+(it was already `medium` only for an injected `estimateMetrics`).
+
+**Fixtures, `cli.js --format json`, before → after (4 decks, 95 slides, 289 blocks):**
+
+| | before | after |
+|---|---|---|
+| error (any) | 0 | 0 |
+| warning `region/overflow` | 3 | 3 |
+| warning `region/displaced` | 1 | 1 |
+| info `text/shrunk` | 6 | **4** (colorful sl_21, motion ms_03 gone: their titles now fit at 100%) |
+| info `layout/unbalanced` / `region/empty` | 13 / 3 | 13 / 3 |
+| needsVisualCheck slides | 21/95 (22%) | **9/95 (9.5%)** — demo 2/8, tour 0/29, colorful 2/46, motion 5/12 |
+| needsVisualCheck blocks | 26 (9 html poster, 10 editor wraps, 6 editor lines past box, 1 leaf count) | **9 (html poster only)** |
+
+Only 8 of 289 compiled boxes moved: `tls.t.statement` tour tl_05 / colorful sl_12 (+115: 3 lines at
+full size instead of 2 lines the DOM painted ~5% past the 544 box — the browser screenshot shows
+3 lines), colorful sl_03 subtitle (−53 box, same 1 line), titles sl_21/ms_02/ms_03 (box ±12-17,
+no longer shrunk), ms_11 takeaway/body (−39/−40: the editor's false 2-line wraps are gone).
+
+**Calibration (re-run `calibrate/run.js`, 289 blocks, 1 Chromium page).** Painted height, layout
+kind, table (= editor now): median 0.0%, p95 0.5% (0.7 units), > 5%: 1 (`tls.m.image` sl_06,
+asset not resolvable in the harness — as at LO5); rigid p95 0.3%. **Rendered lines ≠ table
+(sanity) = 0**: the DOM paints exactly the report's lines. Text line counts ≠ browser wrap: table
+3/1595 (0.2%), estimate 12 (0.8%). The 3: both `tls.t.statement`s (table 3, the harness's plain-text
+browser probe 2 — it ignores the **bold** emphasis runs; the DOM paints 3 lines, painted height 317
+vs 317.6) and `tls.d.pricing` cta label (w 87, browser 2 lines). Line widths DOM ÷ table − 1: median
+−0.3% [p05 −4.2%, p95 +5.1%] (estimate −8.4% [−22.3%, +25.5%]). Note the task framing "estimate
+column equals table" does not hold: `compare.js` still re-lays the estimate column with
+`estimateMetrics` explicitly; it is now the *pre-LO6 editor* column (label updated in `stats.js`).
+html posters unchanged (4/9 wrap differently; LO7). Rendered lines wider than their box: 26 (was 23),
+all ≤ 12 units, all shrink-wrapped labels/cells whose kit box = table width + small slack
+(scorecard/table heads +2-4, team text +6-12, before-after +9, closing +8) — the ±5% table error,
+`white-space: pre`, not clipped in the shots; left open (LO8).
+
+**Screenshots looked at** (`--shots`, raw in the session scratchpad, not committed): tour `tl_05`
+and colorful `sl_12` (statement "Make the / simplest option / the default." on 3 full-size lines,
+attribution below, nothing overlapping the definition/callout columns), motion `ms_11` (Vietnamese
+title one line, takeaway and caption each one line, chart labels clear), colorful `sl_21` (donut
+title one line at full size, legends unclipped), demo `sl_03` (title, chart, callout, bullets,
+source — all inside the frame).
+
+**Regressions the true widths exposed, fixed at the root (not by loosening tests).**
+- `tls.t.title` `size.min` 640 → **680**: its own example ("Revenue **grew 42%**") wraps at 640
+  even at the 0.76 autofit floor (table 664 wide; the estimate said 629).
+- `tls.t.statement` highlight rect clamped to the block box: true widths wrap the marked run to a
+  line start, and the −pad pushed it to x −5 (standard-suite containment failed).
+- `tls.c.kpi-tile` value: below the 0.5 shrink floor it now scales to fit exactly instead of
+  wrapping "1234567890" mid-digits (the estimate kept one line while the DOM overflowed the tile).
+  Size card kpi-row @544 improved (err 53 → 32).
+- `tls.c.hero` `size.preferred` = max(poster, `size.min`): the default poster is 317 tall with true
+  widths (title one line at 1920), below RV10's honest min 472 (catalog-conformance min ≤ preferred).
+  `tls.c.testimonial` preferred 420 → 367 (poster, no min conflict).
+
+**Tests re-baselined, with reasons.** `slide-compiler.spec` — two inputs lengthened (the "tall" body
+now wraps; `long` 12 → 16 repeats so the left column really overflows). `layout-anchor.spec` — the
+`metrics: 'estimate'` runs that stood for "what the compiler saw" now use the default.
+`layout-calibration.spec` — the LO5 ms_11 "editor wraps" test now asserts no screenshot needed by
+default and the reason still fires with `metrics: 'estimate'`; the fixture ratchet tightened
+< 0.3 → < 0.12 plus "no editor reasons". `tls-t-statement.spec` — the ">200 units further right"
+comparison calls `estimateMetrics` explicitly. `tls-c-hero.spec` — preferred = max(poster, min).
+`tls-g-roadmap.spec` — the edge label lengthened so it really exceeds its bar. Snapshots: none
+changed. Size cards: 3 entries (testimonial preferred, kpi-row @544, title min); hints file and
+digest unchanged.
+
+**Gates.** tsc prod 0, spec 329 (= before). Targeted jest, `--maxWorkers=1`, non-parity: all
+`src/blocks/*.spec` (incl. layout-report/-layers/-anchor/-calibration, block-metrics,
+capability-digest, slide-compiler, collision, slide-layouts, slide-composition, demo contract,
+round trips, motion), `layout/`, `motion/`, `icons/`, and `src/blocks/library` in four chunks
+(chrome+text+media+layout 55 suites, composite 33, data+diagram+conformance+list-sizes+motion 56):
+pass. `chrome-sizes` passes. eslint: 0 new errors on touched files (1 pre-existing in
+`tls-c-hero.spec.ts:947`). Parity probes run: `parity.spec`, kpi-tile, title pass;
+**`tls.t.statement` "DOM and SVG agree" fails, and fails on HEAD too** (checked by swapping in
+HEAD's `layout.ts`/`layout-child.ts`: off by 5 in x) — the `emphasis` group's offset is applied by
+the DOM renderer and not by the SVG one (LO0 note 5); with true widths the highlighted run moves to
+line 1, so the offset (and diff) is now 107.8 in y. Not fixed (SVG group translation is renderer
+scope), added to LO8. `tls.c.testimonial` parity not re-run (known failing on HEAD).
+Out of scope, pre-existing: `DeckViewer.spec` (user's uncommitted change), `BlockInserter.spec`
+"hides empty categories" (expects no `timeline` category; unrelated to metrics).
+
+**Scope cuts / open, named.**
+- The full library parity run is too heavy for this box: a chunk with parity probes was reaped for
+  low memory (probes timed out at 60 s while thrashing). Parity was run only for the blocks whose
+  layout changed; the rest ran with `-t '^(?!.*parity)'`. `jest` also needs `--forceExit` (parity
+  worker keeps it alive, LO8).
+- Kit slack factors not retuned (above); 26 shrink-wrapped labels paint ≤ 12 units past their box.
+- `estimateMetrics` itself not recalibrated; it is no longer on any default path.
+- No `tools/visual` scenario in the Next.js app: the calibration harness bundles the same
+  `<DeckViewer>` render path and was the browser check. `build:packages` not run.
 
 ### Notes — LO0 / LO1 (2026-10-08)
 
