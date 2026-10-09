@@ -801,7 +801,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
-| AC0 | ✅ done 2026-10-09 | (see session log) | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
+| AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ⬜ | | |
 | AC2 | ⬜ | | |
 | AC3 | ⬜ | | |
