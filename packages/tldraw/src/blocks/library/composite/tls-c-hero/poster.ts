@@ -7,91 +7,104 @@
  * using existing text measurement primitives (no DOM, pure layout).
  */
 
-import type { LayoutContext, LayoutNode, Paint, RichText } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint, ResolvedTextStyle, RichText } from '../../../types'
 import type { HeroProps } from './schema'
 import { richTextToPlain } from './schema'
 import { isShown } from '../../../schema-helpers'
+import { cssTextHeight } from '../../../html-block'
+import { HERO_LH, splitTitleHalves } from './template'
+
 
 export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
   let y = 0
   const w = ctx.box.width
+  const space = ctx.tokens.space
+  // LO7: the template paints these lines with these metrics (`posterText`), so the stack below
+  // is the live geometry: each text advances by its CSS line boxes (lines × size × line-height),
+  // then the template's margin. Line heights/tracking are the template's (`HERO_LH`).
+  const text = (
+    part: string,
+    value: string | RichText,
+    style: ResolvedTextStyle,
+    x = 0
+  ): { node: LayoutNode; height: number; width: number } => {
+    const m = ctx.measureText(value, style, w)
+    const height = cssTextHeight(m.lines.length, style)
+    return {
+      node: { k: 'text', part, propPath: part, box: { x, y, width: w, height }, lines: m.lines, style },
+      height,
+      width: m.width,
+    }
+  }
 
   // Kicker (optional)
   if (isShown(props, 'showKicker') && props.kicker) {
-    const kickerStyle = ctx.resolveText('caption', { letterSpacing: 0.08 })
-    const kickerColor = ctx.resolveColor('accent').color
-    const kickerResolved = { ...kickerStyle, color: kickerColor }
-    const kickerText = props.kicker.toUpperCase()
-    const m = ctx.measureText(kickerText, kickerResolved, w)
-    children.push({
-      k: 'text',
-      part: 'kicker',
-      box: { x: 0, y, width: w, height: m.height },
-      lines: m.lines,
-      style: kickerResolved,
-    })
-    y += m.height + ctx.tokens.space.sm
+    const style = { ...ctx.resolveText('caption', { letterSpacing: 0.08, lineHeight: HERO_LH.kicker }), color: ctx.resolveColor('accent').color }
+    const t = text('kicker', props.kicker.toUpperCase(), style)
+    children.push(t.node)
+    y += t.height + space.sm
   }
 
-  // Title (required)
-  const titleStyle = ctx.resolveText('display', { letterSpacing: -0.03 })
-  const titleColor = ctx.resolveColor('text').color
-  const titleResolved = { ...titleStyle, color: titleColor }
-  const titleValue = props.title ?? ''
-  const mTitle = ctx.measureText(titleValue as string | RichText, titleResolved, w)
-  children.push({
-    k: 'text',
-    part: 'title',
-    box: { x: 0, y, width: w, height: mTitle.height },
-    lines: mTitle.lines,
-    style: titleResolved,
-  })
-  y += mTitle.height + ctx.tokens.space.md
+  // Title (required). The split variant paints its halves as two blocks: each starts a new line.
+  if (props.title && isShown(props, 'showTitle')) {
+    const style = { ...ctx.resolveText('display', { letterSpacing: -0.03, lineHeight: HERO_LH.title }), color: ctx.resolveColor('text').color }
+    const titleValue = (props.title ?? '') as string | RichText
+    if (props.variant === 'split') {
+      // One `title` part (a group, as the template's title div) holding the two halves.
+      const top = y
+      const halves = splitTitleHalves(titleValue).map((half) => {
+        const t = text('title', half as string | RichText, style)
+        const node = { ...t.node, box: { ...t.node.box, y: y - top } } as Extract<LayoutNode, { k: 'text' }>
+        delete node.part
+        y += t.height
+        return node
+      })
+      children.push({ k: 'group', part: 'title', box: { x: 0, y: top, width: w, height: y - top }, children: halves })
+    } else {
+      const t = text('title', titleValue, style)
+      children.push(t.node)
+      y += t.height
+    }
+    y += space.md
+  }
 
   // Subtitle (optional)
   if (isShown(props, 'showSubtitle') && props.subtitle) {
-    const subStyle = ctx.resolveText('subheading')
-    const subColor = ctx.resolveColor('textMuted').color
-    const subResolved = { ...subStyle, color: subColor }
-    const mSub = ctx.measureText(props.subtitle as string | RichText, subResolved, w)
-    children.push({
-      k: 'text',
-      part: 'subtitle',
-      box: { x: 0, y, width: w, height: mSub.height },
-      lines: mSub.lines,
-      style: subResolved,
-    })
-    y += mSub.height + ctx.tokens.space.lg
+    const style = { ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: HERO_LH.subtitle }), color: ctx.resolveColor('textMuted').color }
+    const t = text('subtitle', props.subtitle as string | RichText, style)
+    children.push(t.node)
+    y += t.height + space.lg
   }
 
-  // CTA (optional)
+  // CTA (optional): a pill as wide as its label plus `lg` either side, at the start edge.
   if (isShown(props, 'showCta') && props.cta) {
-    const ctaStyle = ctx.resolveText('body')
-    const ctaColor = ctx.resolveColor('text').color
-    const ctaResolved = { ...ctaStyle, color: ctaColor }
+    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: HERO_LH.cta }), color: ctx.resolveColor('text').color }
     const ctaText = richTextToPlain(props.cta)
-    const mCta = ctx.measureText(ctaText, ctaResolved, w)
-    // CTA pill: centered, with padding
-    const pillW = mCta.width + ctx.tokens.space.lg * 2
-    const pillH = mCta.height + ctx.tokens.space.sm * 2
-    const pillX = (w - pillW) / 2
+    const m = ctx.measureText(ctaText, style, w)
+    const textH = cssTextHeight(m.lines.length, style)
+    const pillW = Math.min(w, m.width + space.lg * 2)
+    const pillH = textH + space.xs * 2
     children.push({
       k: 'rect',
       part: 'cta-bg',
-      box: { x: pillX, y, width: pillW, height: pillH },
+      box: { x: 0, y, width: pillW, height: pillH },
       fill: { type: 'solid', color: ctx.resolveColor('accent').color },
       radius: pillH / 2,
     })
     children.push({
       k: 'text',
       part: 'cta',
-      box: { x: pillX, y: y + ctx.tokens.space.sm, width: pillW, height: mCta.height },
-      lines: mCta.lines,
-      style: { ...ctaResolved, color: ctx.resolveColor('text').color },
+      propPath: 'cta',
+      box: { x: space.lg, y: y + space.xs, width: Math.max(1, pillW - space.lg * 2), height: textH },
+      lines: m.lines,
+      style,
     })
     y += pillH
   }
+
+  // The root ends after the last part's margin, as the template's flex column does (its content
+  // height includes that margin; with the host box this tall, `justify-content:center` is a no-op).
 
   const totalHeight = y
 

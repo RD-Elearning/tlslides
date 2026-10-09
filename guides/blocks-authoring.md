@@ -240,7 +240,21 @@ export const tlsCFeatureGrid: BlockDefinition = { …, tier: 'B', kind: 'html', 
 
 What stays the same as a layout block: schema with guidance, parts, defaults, the digest entry,
 `validateDeckSpec`. What is different: the parity test compares the **poster** to the SVG
-renderer and a jsdom test checks the template's text equals the poster's text. Three rules:
+renderer and a jsdom test checks the template's text equals the poster's text.
+
+**The poster is the live geometry (LO7).** The layout oracle (§2.10) measures an html block from its
+poster, so the template must paint what the poster laid out. `HostMount` hands the host node's
+poster to the template as `ctx.poster`; the template reads it with `posterText(ctx)` from
+`html-block.ts` and, per text part, uses `pt.css(key, fallbackCss)` (font-size, line-height,
+letter-spacing, `white-space:nowrap`) and `pt.html(key, fallbackHtml)` (the poster's lines joined by
+`<br>`), where `key` is the poster text node's `propPath` (else `part`). The poster in turn uses the
+template's own numbers — one exported constant set per block (`HERO_LH`, `SPOT`, `REVEAL`, …) for
+line-heights, tracking and gaps — and advances by CSS line boxes (`cssTextHeight`, not the
+measured `height`, which carries +2 of slack). Only then pass `{ posterGeometry: true }` to
+`htmlHostNode`: the report then trusts the block (confidence `high`, no screenshot). A block
+without the flag stays `medium` and is always listed in `needsVisualCheck`.
+`html-poster-geometry.spec.tsx` checks every built-in html block line for line; the LO5 browser
+harness (`tools/layout-report/calibrate/run.js`) checks the positions per `data-part`. Three rules:
 
 - The template is code in the registry. The `DeckSpec` never carries markup; everything from
   `props` goes through `ctx.esc()`.

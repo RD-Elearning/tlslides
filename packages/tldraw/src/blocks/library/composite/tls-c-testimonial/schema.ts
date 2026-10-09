@@ -91,3 +91,15 @@ export const defaults: TestimonialProps = {
   role: 'VP of Engineering',
   avatar: '',
 }
+
+/** The template's metrics and gaps - the poster lays out with the same numbers (LO7). */
+export const TESTIMONIAL = {
+  pad: 48,
+  quoteLH: 1.5,
+  quoteGap: 32,
+  avatar: 72,
+  avatarGap: 16,
+  nameLH: 1.4,
+  nameGap: 4,
+  roleLH: 1.4,
+} as const

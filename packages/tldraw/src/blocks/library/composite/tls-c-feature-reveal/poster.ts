@@ -7,7 +7,7 @@ import { tryHexToRgb } from '../../../color-math'
 import { iconLeaf } from '../../text/_engine/icon'
 import { backdrop, color, safe } from '../_showcase'
 import type { FeatureRevealProps } from './schema'
-import { geometry, itemsOf } from './schema'
+import { geometry, itemsOf, REVEAL } from './schema'
 
 function alpha(hex: string, a: number): string {
   const rgb = tryHexToRgb(hex)
@@ -27,8 +27,9 @@ export function poster(props: FeatureRevealProps, ctx: LayoutContext): LayoutNod
   const items = itemsOf(props)
   const g = geometry(W, H, items.length)
   const accent = color(ctx, 'accent')
-  const titleStyle: ResolvedTextStyle = { ...ctx.resolveText(g.compact ? 'body' : 'lead'), lineHeight: 1.25, color: color(ctx, 'text') }
-  const textStyle: ResolvedTextStyle = { ...ctx.resolveText(g.compact ? 'caption' : 'body'), lineHeight: 1.45, color: color(ctx, 'textMuted') }
+  // LO7: the template's metrics (it paints these lines).
+  const titleStyle: ResolvedTextStyle = { ...ctx.resolveText(g.compact ? 'body' : 'lead', { letterSpacing: 0 }), lineHeight: REVEAL.titleLH, color: color(ctx, 'text') }
+  const textStyle: ResolvedTextStyle = { ...ctx.resolveText(g.compact ? 'caption' : 'body', { letterSpacing: 0 }), lineHeight: REVEAL.textLH, color: color(ctx, 'textMuted') }
   const children: LayoutNode[] = [backdrop(W, H)]
 
   items.forEach((m, i) => {
@@ -45,11 +46,11 @@ export function poster(props: FeatureRevealProps, ctx: LayoutContext): LayoutNod
     const inner = Math.max(1, b.w - g.pad * 2)
     const bottom = b.y + b.h - g.pad
     const tm = fitLines(ctx.measureText({ runs: [{ text: m.title, bold: true }] }, titleStyle, inner), titleStyle, bottom - y)
-    if (tm.height > 0) children.push({ k: 'text', part: `title[${i}]`, box: { x: ix, y, width: inner, height: tm.height }, lines: tm.lines, style: titleStyle })
-    y += tm.height + 8
+    if (tm.height > 0) children.push({ k: 'text', part: `title[${i}]`, propPath: `items.${i}.title`, box: { x: ix, y, width: inner, height: tm.height }, lines: tm.lines, style: titleStyle })
+    y += tm.height + REVEAL.textGap
     if (m.text) {
       const xm = fitLines(ctx.measureText(m.text, textStyle, inner), textStyle, bottom - y)
-      if (xm.height > 0) children.push({ k: 'text', part: `text[${i}]`, box: { x: ix, y, width: inner, height: xm.height }, lines: xm.lines, style: textStyle })
+      if (xm.height > 0) children.push({ k: 'text', part: `text[${i}]`, propPath: `items.${i}.text`, box: { x: ix, y, width: inner, height: xm.height }, lines: xm.lines, style: textStyle })
     }
   })
 

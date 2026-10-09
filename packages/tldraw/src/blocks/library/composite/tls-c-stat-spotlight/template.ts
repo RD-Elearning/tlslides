@@ -7,8 +7,9 @@
 import type { HtmlTemplateContext } from '../../../types'
 import { roleVar, str } from '../_showcase'
 import type { StatSpotlightProps } from './schema'
-import { geometry, progressOf, statsOf } from './schema'
+import { geometry, progressOf, statsOf, SPOT } from './schema'
 import { arcPath } from './poster'
+import { posterText } from '../../../html-block'
 
 export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): string {
   const W = ctx.box?.width ?? 1728
@@ -22,6 +23,8 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
   const len = Math.round(2 * Math.PI * r * Math.min(1, Math.max(0, p)) * 100) / 100
   const t = ctx.tokens?.type
   const out: string[] = []
+  // LO7: with a poster (the live host) every text paints the poster's lines and metrics.
+  const pt = posterText(ctx)
 
   out.push(
     `<div data-part="ring" style="position:absolute;left:${g.ringX}px;top:${g.ringY}px;width:${g.d}px;height:${g.d}px;">` +
@@ -39,40 +42,43 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
   )
   out.push(
     `<div data-part="value" data-count="${ctx.esc(str(props.value, 12))}" style="position:absolute;left:${g.ringX}px;top:${g.ringY}px;` +
-      `width:${g.d}px;height:${g.d}px;display:flex;align-items:center;justify-content:center;font-size:${g.valueSize}px;` +
-      `line-height:1;font-weight:800;letter-spacing:-0.04em;color:${ctx.cssVar('on')};font-variant-numeric:tabular-nums;">` +
-      `${ctx.esc(str(props.value, 12))}</div>`
+      `width:${g.d}px;height:${g.d}px;display:flex;align-items:center;justify-content:center;` +
+      pt.css('value', `font-size:${g.valueSize}px;line-height:${SPOT.valueLH};letter-spacing:${SPOT.valueTracking}em;`) +
+      `font-weight:800;color:${ctx.cssVar('on')};font-variant-numeric:tabular-nums;">` +
+      `${pt.html('value', ctx.esc(str(props.value, 12)), false)}</div>`
   )
 
   const col: string[] = []
   col.push(
-    `<div data-part="label" style="font-size:${t?.heading?.size ?? 64}px;line-height:1.15;font-weight:700;color:${ctx.cssVar('on')};">` +
-      `${ctx.esc(str(props.label, 40))}</div>`
+    `<div data-part="label" style="${pt.css('label', `font-size:${t?.heading?.size ?? 64}px;line-height:${SPOT.labelLH};`)}font-weight:700;color:${ctx.cssVar('on')};">` +
+      `${pt.html('label', ctx.esc(str(props.label, 40)), false)}</div>`
   )
   const context = str(props.context, 100)
   if (context) {
     col.push(
-      `<div data-part="context" style="margin-top:20px;font-size:${t?.lead?.size ?? 36}px;line-height:1.35;color:${ctx.cssVar('text-muted')};">` +
-        `${ctx.esc(context)}</div>`
+      `<div data-part="context" style="margin-top:${SPOT.contextGap}px;${pt.css('context', `font-size:${t?.lead?.size ?? 36}px;line-height:${SPOT.contextLH};`)}color:${ctx.cssVar('text-muted')};">` +
+        `${pt.html('context', ctx.esc(context))}</div>`
     )
   }
   out.push(
-    `<div style="position:absolute;left:${g.colX}px;top:0;width:${g.colW}px;height:${g.mainH}px;display:flex;flex-direction:column;justify-content:center;">` +
+    `<div style="position:absolute;left:${g.colX}px;top:0;width:${g.colW}px;height:${g.mainH}px;display:flex;flex-direction:column;justify-content:safe center;">` +
       `${col.join('')}</div>`
   )
 
   const stats = statsOf(props)
   if (stats.length) {
-    const gap = 32
+    const gap = SPOT.statGap
     const w = (W - gap * (stats.length - 1)) / stats.length
     stats.forEach((s, i) => {
       out.push(
         // RVM3: the padding sits on an inner box, so a tween's style rewrite of the part never
         // touches a layout property (J4)
         `<div data-part="stat[${i}]" style="position:absolute;left:${i * (w + gap)}px;top:${g.statsY}px;width:${w}px;height:${g.statsH}px;` +
-          `box-sizing:border-box;border-left:6px solid ${i % 2 ? accent2 : accent};"><div style="padding:18px 0 0 28px;">` +
-          `<div data-stat-value style="font-size:${t?.heading?.size ?? 64}px;line-height:1.05;font-weight:800;color:${ctx.cssVar('on')};">${ctx.esc(s.value)}</div>` +
-          `<div style="margin-top:8px;font-size:${t?.caption?.size ?? 22}px;line-height:1.4;color:${ctx.cssVar('text-muted')};">${ctx.esc(s.label)}</div>` +
+          `box-sizing:border-box;border-left:${SPOT.statBorder}px solid ${i % 2 ? accent2 : accent};"><div style="padding:${SPOT.statPadTop}px 0 0 ${SPOT.statPadLeft}px;">` +
+          `<div data-stat-value style="${pt.css(`stats.${i}.value`, `font-size:${t?.heading?.size ?? 64}px;line-height:${SPOT.statValueLH};`)}font-weight:800;color:${ctx.cssVar('on')};">` +
+          `${pt.html(`stats.${i}.value`, ctx.esc(s.value), false)}</div>` +
+          `<div style="margin-top:${SPOT.statLabelGap}px;${pt.css(`stats.${i}.label`, `font-size:${t?.caption?.size ?? 22}px;line-height:${SPOT.statLabelLH};`)}color:${ctx.cssVar('text-muted')};">` +
+          `${pt.html(`stats.${i}.label`, ctx.esc(s.label))}</div>` +
           `</div></div>`
       )
     })

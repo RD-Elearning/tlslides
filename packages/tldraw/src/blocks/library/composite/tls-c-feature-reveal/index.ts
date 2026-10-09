@@ -18,7 +18,7 @@ export const motion: MotionRecipe = {
 }
 
 function layout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-reveal', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-reveal', props, ctx, { posterGeometry: true })
 }
 
 function capacity(props: FeatureRevealProps, _box: Size, _ctx: LayoutContext): CapacityReport {

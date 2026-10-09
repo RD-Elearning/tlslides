@@ -11,6 +11,13 @@
 import type { HtmlTemplateContext } from '../../../types'
 import { effectiveColumns, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
+import { posterText } from '../../../html-block'
+
+/** The template's text metrics and gaps - the poster measures with the same numbers (LO7). */
+export const FG_LH = { title: 1.3, desc: 1.5 } as const
+export const FG_ICON = 48
+export const FG_ICON_GAP = 12
+export const FG_TITLE_GAP = 8
 
 /**
  * Get icon path by name, with fallback to alert icon for unknown names.
@@ -27,6 +34,9 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const gap = props.gap ?? 24
   const cols = effectiveColumns(ctx.box.width, props.columns, gap, cells.length)
 
+  // LO7: with a poster (the live host) the text parts paint its lines and metrics.
+  const pt = posterText(ctx)
+
   const cellHtml = cells
     .map((cell, i) => {
       const iconPath = getIconPath(cell.icon as string)
@@ -39,30 +49,30 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
         `">` +
           // Icon - render as inline SVG with the correct path
           `<div data-part="cell[${i}].icon" style="` +
-            `width:48px;` +
-            `height:48px;` +
-            `margin-bottom:12px;` +
-            `display:inline-block;` +
+            `width:${FG_ICON}px;` +
+            `height:${FG_ICON}px;` +
+            `margin-bottom:${FG_ICON_GAP}px;` +
+            // LO7: a block, not inline-block - an inline-block icon sat on the line's baseline and
+            // the strut's descent pushed the title ~3 units below where the poster puts it.
+            `display:block;` +
           `">` +
-            `<svg viewBox="0 0 24 24" width="48" height="48" fill="${fillColor}" style="display:block;">` +
+            `<svg viewBox="0 0 24 24" width="${FG_ICON}" height="${FG_ICON}" fill="${fillColor}" style="display:block;">` +
               `<path d="${iconPath}" stroke="none"/>` +
             `</svg>` +
           `</div>` +
           // Title
           `<div data-part="cell[${i}].title" style="` +
             `font-family:var(--tls-font-family);` +
-            `font-size:var(--tls-type-subheading);` +
-            `line-height:1.3;` +
+            pt.css(`cells.${i}.title`, `font-size:var(--tls-type-subheading);line-height:${FG_LH.title};`) +
             `color:${ctx.cssVar('on')};` +
-            `margin-bottom:8px;` +
-          `">${ctx.esc(cell.title)}</div>` +
+            `margin-bottom:${FG_TITLE_GAP}px;` +
+          `">${pt.html(`cells.${i}.title`, ctx.esc(cell.title))}</div>` +
           // Description
           `<div data-part="cell[${i}].desc" style="` +
             `font-family:var(--tls-font-family);` +
-            `font-size:var(--tls-type-body);` +
-            `line-height:1.5;` +
+            pt.css(`cells.${i}.desc`, `font-size:var(--tls-type-body);line-height:${FG_LH.desc};`) +
             `color:${ctx.cssVar('text-muted')};` +
-          `">${ctx.esc(cell.desc)}</div>` +
+          `">${pt.html(`cells.${i}.desc`, ctx.esc(cell.desc))}</div>` +
         `</div>`
       )
     })

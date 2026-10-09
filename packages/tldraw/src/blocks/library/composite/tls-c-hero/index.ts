@@ -41,11 +41,13 @@ const HERO_SUMMARY =
  * export; the host renderer supplies the live DOM.
  */
 function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.hero', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.hero', props, ctx, { posterGeometry: true })
 }
 
-/** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it. */
-const HERO_MIN: [number, number] = [1280, 472]
+/** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it.
+ *  LO7: 472 → 490 — the poster now measures the title at the template's line-height (1.1, was
+ *  the display token's 1.02), i.e. the height the live hero always painted at 1280. */
+const HERO_MIN: [number, number] = [1280, 490]
 
 /**
  * Derive `size.preferred` from the poster of the defaults. Builds a reference

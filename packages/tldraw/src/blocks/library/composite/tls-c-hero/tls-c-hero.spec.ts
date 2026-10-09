@@ -551,18 +551,29 @@ describe('tls.c.hero', () => {
       expect(out).toMatch(/^<div style="display:flex;flex-direction:column;justify-content:center;height:100%;">/)
     })
 
-    it('poster output is unchanged regardless of variant', () => {
+    it('poster output is unchanged by classic/gradient-sweep; split paints its two halves', () => {
       const c = ctx({ width: 1920, height: 1080 })
 
-      // Poster does not read variant — it produces the same LayoutNode tree
+      // classic and gradient-sweep lay the text out identically — same LayoutNode tree
       const pNoVariant = poster(tlsCHero.defaults as any, c)
       const pClassic = poster({ ...tlsCHero.defaults, variant: 'classic' } as any, c)
       const pSplit = poster({ ...tlsCHero.defaults, variant: 'split' } as any, c)
       const pGrad = poster({ ...tlsCHero.defaults, variant: 'gradient-sweep' } as any, c)
 
       expect(pClassic).toEqual(pNoVariant)
-      expect(pSplit).toEqual(pNoVariant)
       expect(pGrad).toEqual(pNoVariant)
+
+      // LO7: the split template paints the title as two blocks (each half starts a line), so the
+      // poster does too — one `title` group with the two halves, nothing else changes.
+      const titleOf = (p: any) => p.children.find((n: any) => n.part === 'title')
+      const split = titleOf(pSplit)
+      expect(split.k).toBe('group')
+      expect(split.children).toHaveLength(2)
+      const halves = split.children.map((n: any) => n.lines.map((l: any) => l.text).join('').trim())
+      expect(halves.join(' ')).toBe(richTextToPlain(tlsCHero.defaults.title as any).trim())
+      const others = (p: any) => p.children.filter((n: any) => n.part && n.part !== 'title').map((n: any) => n.part)
+      expect(others(pSplit)).toEqual(others(pNoVariant))
+      expect(pSplit.box.height).toBeGreaterThanOrEqual(pNoVariant.box.height)
 
       // Deep copy assertion: not.toBe ensures no reference aliasing
       expect(pClassic).not.toBe(pNoVariant)

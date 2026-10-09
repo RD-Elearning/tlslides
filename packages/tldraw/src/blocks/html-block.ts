@@ -13,7 +13,7 @@
  * and theme-switch still works.
  */
 
-import type { LayoutContext, LayoutNode, BlockStyleSpec } from './types'
+import type { LayoutContext, LayoutNode, BlockStyleSpec, HtmlTemplateContext, TextLine, TextRun } from './types'
 import type { ColorRole } from './types'
 
 /**
@@ -28,12 +28,15 @@ import type { ColorRole } from './types'
  * @param type The block's type string (e.g. 'tls.c.hero').
  * @param props The block's own props.
  * @param ctx The layout context.
+ * @param opts `posterGeometry: true` when the block's template paints the poster's text lines
+ *   and metrics (LO7, see `posterText` below): the layout report then trusts the poster.
  */
 export function htmlHostNode(
   posterFn: (props: Record<string, unknown>, ctx: LayoutContext) => LayoutNode,
   type: string,
   props: Record<string, unknown>,
   ctx: LayoutContext,
+  opts: { posterGeometry?: boolean } = {},
 ): LayoutNode {
   const posterNode = posterFn(props, ctx)
 
@@ -54,6 +57,7 @@ export function htmlHostNode(
     render: type,
     poster: posterNode,
     props,
+    ...(opts.posterGeometry ? { posterGeometry: true } : {}),
   }
 
   // H2 rule: emit `vars` only when nested (depth > 0) OR ctx.style sets
@@ -112,4 +116,114 @@ function buildColorVars(
   vars['--tls-text-muted'] = ctx.resolveColor('textMuted' as ColorRole).color
 
   return vars
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* LO7 — the template paints the poster's text                                     */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+type TextNode = Extract<LayoutNode, { k: 'text' }>
+
+/**
+ * The text leaves of a poster tree keyed by `propPath` (else `part`), in paint order. A poster that
+ * splits one text into one node per line (to centre each line, `centerLines`/`alignText`) keeps
+ * the key on every piece, so `lines(key)` is the whole text again.
+ */
+export function posterTextLeaves(poster: LayoutNode | undefined): Map<string, TextNode[]> {
+  const out = new Map<string, TextNode[]>()
+  const walk = (n: LayoutNode): void => {
+    if (n.k === 'group') n.children.forEach(walk)
+    else if (n.k === 'text') {
+      const key = n.propPath ?? n.part
+      if (key === undefined) return
+      const list = out.get(key)
+      if (list) list.push(n)
+      else out.set(key, [n])
+    }
+  }
+  if (poster) walk(poster)
+  return out
+}
+
+/** Text height the browser gives `lines` at `style`: one CSS line box (size × line-height) each. */
+export function cssTextHeight(lines: number, style: { size: number; lineHeight: number; scale?: number }): number {
+  return lines * style.size * (style.scale ?? 1) * style.lineHeight
+}
+
+/** CSS that makes the browser paint a poster text leaf's metrics: size, line-height, tracking, no
+ *  wrapping of its own (the lines come from the poster). */
+export function posterTextCss(style: { size: number; lineHeight: number; letterSpacing: number; scale?: number }): string {
+  const size = Math.round(style.size * (style.scale ?? 1) * 100) / 100
+  return `font-size:${size}px;line-height:${style.lineHeight};letter-spacing:${style.letterSpacing}em;white-space:nowrap;`
+}
+
+/** Escaped markup for one line: its runs as `<strong>`/`<em>` (when `runs`), trailing space trimmed. */
+export function lineHtml(line: TextLine, esc: (s: string) => string, runs = true): string {
+  const end = line.text.replace(/\s+$/, '').length
+  if (!runs || !line.runs || line.runs.length === 0) return esc(line.text.slice(0, end))
+  let at = 0
+  let html = ''
+  for (const r of line.runs as TextRun[]) {
+    const text = r.text.slice(0, Math.max(0, end - at))
+    at += r.text.length
+    if (!text) continue
+    let inner = esc(text)
+    if (r.bold) inner = `<strong>${inner}</strong>`
+    if (r.italic) inner = `<em>${inner}</em>`
+    html += inner
+  }
+  return html
+}
+
+/**
+ * What an html template needs to paint the poster's text (LO7). `active` is false when the template
+ * was called without a poster (`ctx.poster` absent): every helper then returns its fallback and the
+ * browser wraps the template's own text, exactly as before LO7.
+ */
+export interface PosterText {
+  readonly active: boolean
+  /** The poster's lines for `key` (`propPath`, else `part`), all pieces in order; undefined if none. */
+  lines(key: string): TextLine[] | undefined
+  /** The poster leaves for `key`, in paint order (empty without a poster). */
+  leaves(key: string): TextNode[]
+  /** Inner HTML that paints exactly the poster's lines for `key` (one `<br>` between lines; runs
+   *  as `<strong>`/`<em>` unless `runs` is false); `''` when the poster has no such text (nothing
+   *  fit), `fallback` without a poster. */
+  html(key: string, fallback: string, runs?: boolean): string
+  /** `posterTextCss` of the leaf for `key`, or `fallback`. */
+  css(key: string, fallback: string): string
+}
+
+export function posterText(ctx: Pick<HtmlTemplateContext, 'poster' | 'esc'>): PosterText {
+  const leaves = posterTextLeaves(ctx.poster)
+  const lines = (key: string): TextLine[] | undefined => {
+    const list = leaves.get(key)
+    return list ? list.flatMap((n) => n.lines) : undefined
+  }
+  return {
+    active: !!ctx.poster,
+    lines,
+    leaves: (key) => leaves.get(key) ?? [],
+    html(key, fallback, runs = true) {
+      // With a poster, a text it does not paint (no line fits its box) is not painted live either.
+      if (!ctx.poster) return fallback
+      const ls = lines(key)
+      return ls ? ls.map((l) => lineHtml(l, ctx.esc, runs)).join('<br>') : ''
+    },
+    css(key, fallback) {
+      const n = leaves.get(key)?.[0]
+      return n ? posterTextCss(n.style) : fallback
+    },
+  }
+}
+
+/** A short signature of a poster's text (keys, sizes, line texts) — the host re-templates when it
+ *  changes even if props and box did not (e.g. a theme with another type scale). */
+export function posterTextSignature(poster: LayoutNode | undefined): string {
+  if (!poster) return ''
+  let sig = ''
+  for (const [key, list] of posterTextLeaves(poster)) {
+    sig += `${key}:${list[0].style.size}:${list.map((n) => n.lines.map((l) => l.text).join('\n')).join('\n')}|`
+  }
+  return sig
 }

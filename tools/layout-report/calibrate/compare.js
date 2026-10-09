@@ -46,10 +46,11 @@ for (const [deck, file] of Object.entries(DECKS)) {
         painted: { table: b.painted, estimate: e.painted, dom: d.painted },
         textPainted: { dom: d.textPainted },
         text: {
-          table: b.text.map((t) => ({ p: t.propPath || t.part, lines: t.lines, w: t.maxLineWidth, boxW: t.box.width, fs: t.fontSize, y: t.box.y })),
+          table: b.text.map((t) => ({ p: t.propPath || t.part, part: t.part, lines: t.lines, w: t.maxLineWidth, boxW: t.box.width, fs: t.fontSize, y: t.box.y, painted: t.painted })),
           estimate: e.text.map((t) => ({ p: t.propPath || t.part, lines: t.lines, w: t.maxLineWidth })),
           dom: d.textLeaves,
           html: d.htmlText,
+          htmlParts: d.htmlParts || [],
         },
         tLines,
         eLines,

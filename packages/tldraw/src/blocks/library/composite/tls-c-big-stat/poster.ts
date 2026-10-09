@@ -10,61 +10,41 @@
  * template always show the same formatted number — the "same story" rule.
  */
 
-import type { LayoutContext, LayoutNode, Paint } from '../../../types'
+import type { LayoutContext, LayoutNode, Paint, ResolvedTextStyle } from '../../../types'
 import type { BigStatProps } from './schema'
 import { formatValue } from './schema'
 import { isShown } from '../../../schema-helpers'
+import { cssTextHeight } from '../../../html-block'
+import { BIG_STAT as B } from './template'
 
 export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
   let y = 0
   const w = ctx.box.width
+  // LO7: the template's metrics and margins; the template paints these lines, so the stack is
+  // the live geometry (text heights are CSS line boxes; the root ends after the last margin, as
+  // the template's flex column does).
+  const text = (key: string, value: string, style: ResolvedTextStyle): number => {
+    const m = ctx.measureText(value, style, w)
+    const h = cssTextHeight(m.lines.length, style)
+    children.push({ k: 'text', part: key, propPath: key, box: { x: 0, y, width: w, height: h }, lines: m.lines, style })
+    return h
+  }
 
   // Value (the enormous headline number)
-  const valueText = formatValue(props)
-  const valueStyle = ctx.resolveText('display', { letterSpacing: -0.04 })
-  const valueColor = ctx.resolveColor('text').color
-  const valueResolved = { ...valueStyle, color: valueColor }
-  const mValue = ctx.measureText(valueText, valueResolved, w)
-  children.push({
-    k: 'text',
-    part: 'value',
-    box: { x: 0, y, width: w, height: mValue.height },
-    lines: mValue.lines,
-    style: valueResolved,
-  })
-  y += mValue.height + ctx.tokens.space.sm
+  const valueStyle = { ...ctx.resolveText('display', { letterSpacing: B.valueTracking, lineHeight: B.valueLH }), color: ctx.resolveColor('text').color }
+  y += text('value', formatValue(props), valueStyle) + B.valueGap
 
   // Label
   if (isShown(props, 'showLabel')) {
-    const labelStyle = ctx.resolveText('body')
-    const labelColor = ctx.resolveColor('textMuted').color
-    const labelResolved = { ...labelStyle, color: labelColor }
-    const mLabel = ctx.measureText(props.label, labelResolved, w)
-    children.push({
-      k: 'text',
-      part: 'label',
-      box: { x: 0, y, width: w, height: mLabel.height },
-      lines: mLabel.lines,
-      style: labelResolved,
-    })
-    y += mLabel.height + ctx.tokens.space.sm
+    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: B.labelLH }), color: ctx.resolveColor('textMuted').color }
+    y += text('label', props.label, style) + B.labelGap
   }
 
   // Context (optional)
   if (isShown(props, 'showContext') && props.context) {
-    const ctxStyle = ctx.resolveText('caption')
-    const ctxColor = ctx.resolveColor('textMuted').color
-    const ctxResolved = { ...ctxStyle, color: ctxColor }
-    const mCtx = ctx.measureText(props.context, ctxResolved, w)
-    children.push({
-      k: 'text',
-      part: 'context',
-      box: { x: 0, y, width: w, height: mCtx.height },
-      lines: mCtx.lines,
-      style: ctxResolved,
-    })
-    y += mCtx.height
+    const style = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: B.contextLH }), color: ctx.resolveColor('textMuted').color }
+    y += text('context', props.context, style)
   }
 
   const totalHeight = y

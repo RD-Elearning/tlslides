@@ -59,15 +59,29 @@ describe('measureBlock — one block per scope', () => {
     expect(m.natural.height).toBeGreaterThan(0)
   })
 
-  it('html kind (tls.c.hero): measured from its poster, medium confidence', () => {
+  it('html kind (tls.c.hero): measured from its poster, high confidence (LO7: the template paints it)', () => {
     const d = def('tls.c.hero')
     expect(d.kind).toBe('html')
     const m = measureBlock(d, d.defaults, 1728, ctxFor(1728))
     expect(m.kind).toBe('html')
-    expect(m.confidence).toBe('medium')
-    expect(m.reason).toMatch(/poster/)
+    expect(m.confidence).toBe('high')
+    expect(m.reason).toBeUndefined()
     expect(m.text.length).toBeGreaterThan(0)
     expect(m.natural.height).toBeGreaterThan(0)
+  })
+
+  it('html kind whose host does not declare posterGeometry: medium confidence (poster approximates)', () => {
+    const d = def('tls.c.hero')
+    const approx: BlockDefinition = {
+      ...d,
+      layout: (p, c) => {
+        const node = d.layout(p, c) as Extract<LayoutNode, { k: 'host' }>
+        return { ...node, posterGeometry: undefined }
+      },
+    }
+    const m = measureBlock(approx, d.defaults, 1728, ctxFor(1728))
+    expect(m.confidence).toBe('medium')
+    expect(m.reason).toMatch(/poster/)
   })
 
   it('estimateMetrics drops a layout block to medium confidence', () => {

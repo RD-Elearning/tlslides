@@ -9,6 +9,8 @@ import { backdrop, centerLines, color, safe, str } from '../_showcase'
 import { tryHexToRgb } from '../../../color-math'
 import type { KineticTitleProps } from './schema'
 import { orbs, titleSize, titleWords } from './schema'
+import { cssTextHeight } from '../../../html-block'
+import { KT } from './template'
 
 function alpha(hex: string, a: number): string {
   const rgb = tryHexToRgb(hex)
@@ -37,8 +39,8 @@ export function poster(props: KineticTitleProps, ctx: LayoutContext): LayoutNode
   }
 
   // Text column: 84% of the width (70% for the subtitle), centred or left.
-  const colW = Math.max(1, W * 0.84)
-  const subW = Math.max(1, W * 0.7)
+  const colW = Math.max(1, W * KT.titleCol)
+  const subW = Math.max(1, W * KT.subtitleCol)
   const colX = align === 'center' ? (W - colW) / 2 : 0
   const subX = align === 'center' ? (W - subW) / 2 : 0
 
@@ -46,36 +48,40 @@ export function poster(props: KineticTitleProps, ctx: LayoutContext): LayoutNode
 
   const kicker = str(props.kicker, 40)
   if (kicker) {
-    const style = { ...ctx.resolveText('caption', { letterSpacing: 0.16 }), color: accent }
+    // LO7: the template's metrics; heights are CSS line boxes (the template paints these lines).
+    const style = { ...ctx.resolveText('caption', { letterSpacing: KT.kickerTracking, lineHeight: KT.kickerLH }), color: accent }
     const m = ctx.measureText({ runs: [{ text: kicker.toUpperCase(), bold: true }] }, style, colW)
-    pieces.push({ nodes: [{ k: 'text', part: 'kicker', box: { x: colX, y: 0, width: colW, height: m.height }, lines: m.lines, style }], height: m.height, gapAfter: 28 })
+    const h = cssTextHeight(m.lines.length, style)
+    pieces.push({ nodes: [{ k: 'text', part: 'kicker', propPath: 'kicker', box: { x: colX, y: 0, width: colW, height: h }, lines: m.lines, style }], height: h, gapAfter: KT.kickerGap })
   }
 
   const title = str(props.title, 80)
   const size = titleSize(title, ctx.tokens)
-  const tStyle = { ...ctx.resolveText('display', { letterSpacing: -0.03 }), size, lineHeight: 1.08, color: color(ctx, 'text') }
+  const tStyle = { ...ctx.resolveText('display', { letterSpacing: KT.titleTracking }), size, lineHeight: KT.titleLH, color: color(ctx, 'text') }
   const rich: RichText = { runs: titleWords(props).map((w, i, arr) => ({ text: w.text + (i < arr.length - 1 ? ' ' : ''), bold: true })) }
   const mt = ctx.measureText(rich, tStyle, colW)
-  pieces.push({ nodes: [{ k: 'text', part: 'title', box: { x: colX, y: 0, width: colW, height: mt.height }, lines: mt.lines, style: tStyle }], height: mt.height, gapAfter: 36 })
+  const th = cssTextHeight(mt.lines.length, tStyle)
+  pieces.push({ nodes: [{ k: 'text', part: 'title', propPath: 'title', box: { x: colX, y: 0, width: colW, height: th }, lines: mt.lines, style: tStyle }], height: th, gapAfter: KT.ruleGap })
 
-  const ruleW = Math.min(180, W)
+  const ruleW = Math.min(KT.ruleW, W)
   pieces.push({
     nodes: [{
       k: 'rect',
       part: 'rule',
-      box: { x: align === 'center' ? (W - ruleW) / 2 : 0, y: 0, width: ruleW, height: 10 },
+      box: { x: align === 'center' ? (W - ruleW) / 2 : 0, y: 0, width: ruleW, height: KT.ruleH },
       radius: 5,
       fill: { type: 'linearGradient', angle: 90, stops: [{ color: accent, at: 0 }, { color: accent2, at: 1 }] },
     }],
-    height: 10,
-    gapAfter: 32,
+    height: KT.ruleH,
+    gapAfter: KT.subtitleGap,
   })
 
   const subtitle = str(props.subtitle, 120)
   if (subtitle) {
-    const style = { ...ctx.resolveText('lead'), color: color(ctx, 'textMuted') }
+    const style = { ...ctx.resolveText('lead', { letterSpacing: 0, lineHeight: KT.subtitleLH }), color: color(ctx, 'textMuted') }
     const m = ctx.measureText(subtitle, style, subW)
-    pieces.push({ nodes: [{ k: 'text', part: 'subtitle', box: { x: subX, y: 0, width: subW, height: m.height }, lines: m.lines, style }], height: m.height, gapAfter: 0 })
+    const h = cssTextHeight(m.lines.length, style)
+    pieces.push({ nodes: [{ k: 'text', part: 'subtitle', propPath: 'subtitle', box: { x: subX, y: 0, width: subW, height: h }, lines: m.lines, style }], height: h, gapAfter: 0 })
   }
 
   const content = pieces.reduce((s, p, i) => s + p.height + (i < pieces.length - 1 ? p.gapAfter : 0), 0)

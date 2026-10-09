@@ -17,6 +17,11 @@
  * Coordinates follow the DOM renderer (the editor): a group's children are positioned relative
  * to the group's own origin, and a `host` node's poster relative to the host box.
  *
+ * Confidence (LO5/LO7): `high` for layout blocks and for html blocks whose host declares
+ * `posterGeometry` (the template paints the poster's lines and metrics — the poster *is* the live
+ * geometry); `medium` for a poster host without it (the browser wraps the template on its own)
+ * or an injected `estimateMetrics`; `low` for a host without a poster or a layout that threw.
+ *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
@@ -26,6 +31,7 @@ import type {
   Box,
   LayoutContext,
   LayoutNode,
+  Paint,
   Size,
 } from '../types'
 import { createLayoutContext, layoutBlock } from './layout-child'
@@ -124,6 +130,9 @@ export interface CollectedLeaves {
   opaqueHost: boolean
   /** A `host` node with a poster was found (geometry comes from the export poster). */
   posterHost: boolean
+  /** LO7: a poster host whose template does *not* paint the poster's lines (`posterGeometry`
+   *  unset): the live DOM wraps on its own, so the poster is only an approximation. */
+  approxPosterHost: boolean
 }
 
 function offset(b: Box, dx: number, dy: number): Box {
@@ -380,12 +389,19 @@ export function pathBounds(d: string): Box | null {
   return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
 }
 
+/** A solid fill with zero alpha (`rgba(…, 0)`, `transparent`, `#rrggbb00`). */
+function isInvisibleFill(fill: Paint | undefined): boolean {
+  if (!fill || fill.type !== 'solid') return false
+  const c = fill.color.replace(/\s+/g, '').toLowerCase()
+  return c === 'transparent' || /^rgba\(.*,0(\.0+)?\)$/.test(c) || /^#[0-9a-f]{6}00$/.test(c)
+}
+
 /**
  * Walk a laid-out tree and collect its painted leaves in block-local coordinates. `layoutBox`
  * is the box the block was laid out in; a rect/path matching it (98-102% per axis) is a backdrop.
  */
 export function collectPaintedLeaves(root: LayoutNode, layoutBox: Size): CollectedLeaves {
-  const out: CollectedLeaves = { leaves: [], text: [], backdrops: [], opaqueHost: false, posterHost: false }
+  const out: CollectedLeaves = { leaves: [], text: [], backdrops: [], opaqueHost: false, posterHost: false, approxPosterHost: false }
   // ≈ the layout box itself: covers it (≥ 98%) without reaching past it (a rect taller than the
   // box is content that overflows, not a backdrop).
   const fitsAxis = (v: number, ref: number) => v >= ref * BACKDROP_COVER && v <= ref / BACKDROP_COVER + 1
@@ -410,6 +426,7 @@ export function collectPaintedLeaves(root: LayoutNode, layoutBox: Size): Collect
       case 'host': {
         if (n.poster) {
           out.posterHost = true
+          if (!n.posterGeometry) out.approxPosterHost = true
           walk(n.poster, abs.x, abs.y, clip)
         } else {
           out.opaqueHost = true
@@ -435,7 +452,10 @@ export function collectPaintedLeaves(root: LayoutNode, layoutBox: Size): Collect
           geo = local ? intersect(offset(local, abs.x, abs.y), abs) : null
           if (!geo) return
         }
-        if (isBackdrop(geo)) {
+        // A rect that paints nothing (fully transparent fill, no stroke) is structure — e.g. the
+        // showcase/testimonial posters' extent rect that keeps the SVG export as big as the host
+        // box (LO7) — never a painted leaf, whatever its size.
+        if (isBackdrop(geo) || (n.k === 'rect' && !n.stroke && isInvisibleFill(n.fill))) {
           out.backdrops.push({ k: n.k, part: n.part, box: geo })
           return
         }
@@ -576,7 +596,7 @@ export function measureBlock(
   if (ref.collected.opaqueHost) {
     confidence = 'low'
     reason = 'html host without a poster: geometry unknown'
-  } else if (kind === 'html' || ref.collected.posterHost) {
+  } else if (ref.collected.approxPosterHost || (kind === 'html' && !ref.collected.posterHost)) {
     confidence = 'medium'
     reason = 'html block: geometry from its export poster; the live DOM differs by up to ~5% in height and may wrap differently'
   } else if (ctx.measureText === estimateMetrics) {

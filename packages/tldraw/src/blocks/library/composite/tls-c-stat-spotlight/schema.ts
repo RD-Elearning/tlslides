@@ -156,3 +156,19 @@ export function parseCount(text: string): CountParts | undefined {
     format: (v) => prefix + (decimals > 0 ? v.toFixed(decimals).replace('.', dec ?? '.') : Math.round(v).toString()) + suffix,
   }
 }
+
+/** The text metrics and gaps of the template - the poster lays out with the same numbers (LO7). */
+export const SPOT = {
+  valueLH: 1,
+  valueTracking: -0.04,
+  labelLH: 1.15,
+  contextGap: 20,
+  contextLH: 1.35,
+  statGap: 32,
+  statBorder: 6,
+  statPadTop: 18,
+  statPadLeft: 28,
+  statValueLH: 1.05,
+  statLabelGap: 8,
+  statLabelLH: 1.4,
+} as const

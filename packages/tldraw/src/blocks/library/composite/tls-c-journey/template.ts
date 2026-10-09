@@ -8,6 +8,17 @@ import type { HtmlTemplateContext } from '../../../types'
 import { roleVar } from '../_showcase'
 import type { JourneyProps } from './schema'
 import { geometry, labelTokens, milestonesOf } from './schema'
+import { posterText } from '../../../html-block'
+
+/** The label stack's metrics and gaps - the poster lays out with the same numbers (LO7). */
+export const JOURNEY_LABEL = {
+  whenLH: 1.4,
+  whenTracking: 0.06,
+  titleLH: 1.25,
+  titleGap: 4,
+  textLH: 1.4,
+  textGap: 6,
+} as const
 
 export function template(props: JourneyProps, ctx: HtmlTemplateContext): string {
   const W = ctx.box?.width ?? 1728
@@ -20,6 +31,10 @@ export function template(props: JourneyProps, ctx: HtmlTemplateContext): string 
   const tok = labelTokens(items.length)
   const t = ctx.tokens?.type
   const out: string[] = []
+  // LO7: with a poster (the live host) every label paints the poster's lines and metrics, at the
+  // poster's top (the poster also clamps a stack into the box).
+  const pt = posterText(ctx)
+  const L = JOURNEY_LABEL
 
   out.push(
     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="position:absolute;left:0;top:0;overflow:visible" aria-hidden="true">` +
@@ -40,13 +55,22 @@ export function template(props: JourneyProps, ctx: HtmlTemplateContext): string 
         `<div style="position:absolute;inset:0;border-radius:50%;background:${accent};box-shadow:inset 0 0 0 ${Math.max(2, g.r * 0.3)}px color-mix(in srgb, white 35%, transparent);"></div>` +
         `</div>`
     )
-    const pos = n.above ? `bottom:${H - (n.y - g.gap)}px;` : `top:${n.y + g.gap}px;`
+    const key = `milestones.${i}`
+    const posterTop = pt.leaves(`${key}.when`)[0]?.box.y
+    const pos =
+      posterTop !== undefined ? `top:${posterTop}px;` : n.above ? `bottom:${H - (n.y - g.gap)}px;` : `top:${n.y + g.gap}px;`
+    // A column flex box centres each line even when the browser paints it a little wider than
+    // the label (the lines are the poster's, not re-wrapped).
     out.push(
-      `<div data-part="label[${i}]" style="position:absolute;left:${n.x - g.labelW / 2}px;${pos}width:${g.labelW}px;text-align:center;">` +
-        `<div style="font-size:${t?.caption?.size ?? 22}px;line-height:1.4;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${accent};">${ctx.esc(m.when)}</div>` +
-        `<div style="margin-top:4px;font-size:${t?.[tok.title]?.size ?? 36}px;line-height:1.25;font-weight:700;color:${ctx.cssVar('on')};">${ctx.esc(m.title)}</div>` +
+      `<div data-part="label[${i}]" style="position:absolute;left:${n.x - g.labelW / 2}px;${pos}width:${g.labelW}px;text-align:center;` +
+        `display:flex;flex-direction:column;align-items:center;">` +
+        `<div style="${pt.css(`${key}.when`, `font-size:${t?.caption?.size ?? 22}px;line-height:${L.whenLH};letter-spacing:${L.whenTracking}em;`)}` +
+        `font-weight:700;text-transform:uppercase;color:${accent};">${pt.html(`${key}.when`, ctx.esc(m.when), false)}</div>` +
+        `<div style="margin-top:${L.titleGap}px;${pt.css(`${key}.title`, `font-size:${t?.[tok.title]?.size ?? 36}px;line-height:${L.titleLH};`)}` +
+        `font-weight:700;color:${ctx.cssVar('on')};">${pt.html(`${key}.title`, ctx.esc(m.title), false)}</div>` +
         (m.text
-          ? `<div style="margin-top:6px;font-size:${t?.[tok.text]?.size ?? 22}px;line-height:1.4;color:${ctx.cssVar('text-muted')};">${ctx.esc(m.text)}</div>`
+          ? `<div style="margin-top:${L.textGap}px;${pt.css(`${key}.text`, `font-size:${t?.[tok.text]?.size ?? 22}px;line-height:${L.textLH};`)}` +
+            `color:${ctx.cssVar('text-muted')};">${pt.html(`${key}.text`, ctx.esc(m.text))}</div>`
           : '') +
         `</div>`
     )

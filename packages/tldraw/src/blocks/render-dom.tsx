@@ -26,6 +26,7 @@ import type { BlockDefinition } from './types'
 import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
 import { HostRegistryContext } from '../hooks/useHostRegistry'
 import { useBlockRegistry } from '../hooks/useBlockRegistry'
+import { posterTextSignature } from './html-block'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Host layout context — carries tokens/surface/props for host nodes               */
@@ -220,6 +221,7 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
         },
         box: hctx.box,
         tokens: hctx.tokens,
+        ...(hctx.poster ? { poster: hctx.poster } : {}),
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
@@ -260,6 +262,7 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
         },
         box: hctx.box,
         tokens: hctx.tokens,
+        ...(hctx.poster ? { poster: hctx.poster } : {}),
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
@@ -293,6 +296,8 @@ interface HostMountProps {
   props?: Record<string, unknown>
   /** Per-instance CSS custom property overrides. Merged into the inline style after hostCssVarStyle. */
   vars?: Record<string, string>
+  /** LO7: the host node's poster (same layout pass), handed to html templates. */
+  poster?: LayoutNode
 }
 
 /**
@@ -318,6 +323,7 @@ const HostMount = React.memo(function HostMount({
   part,
   props: nodeProps,
   vars: nodeVars,
+  poster,
 }: HostMountProps) {
   const registry = React.useContext(HostRegistryContext)
   const blockRegistry = useBlockRegistry()
@@ -347,7 +353,8 @@ const HostMount = React.memo(function HostMount({
     surface: surface as SurfaceContext,
     props: hostProps,
     headless,
-  }), [box, tokens, surface, hostProps, headless])
+    ...(poster ? { poster } : {}),
+  }), [box, tokens, surface, hostProps, headless, poster])
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
@@ -400,7 +407,9 @@ const HostMount = React.memo(function HostMount({
 
     const propsJson = JSON.stringify(hostProps)
     const varsJson = JSON.stringify(nodeVars ?? {})
-    const boxSize = `${box.width}x${box.height}`
+    // LO7: a template that paints the poster's lines must re-render when they change (e.g. a
+    // theme with another type scale), even if props and box did not.
+    const boxSize = `${box.width}x${box.height}|${posterTextSignature(poster)}`
 
     // Skip if nothing structurally changed
     if (
@@ -425,7 +434,7 @@ const HostMount = React.memo(function HostMount({
     prevBoxSizeRef.current = boxSize
 
     renderer.update(root, ctx)
-  }, [hostProps, nodeVars, box.width, box.height])
+  }, [hostProps, nodeVars, box.width, box.height, poster])
 
   const hasRenderer = (registry?.has(render) ?? false) || (() => {
     if (!blockRegistry) return false
@@ -697,6 +706,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           part={node.part}
           props={node.props}
           vars={node.vars}
+          poster={node.poster}
         />
       )
     }

@@ -11,6 +11,8 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, type FeatureGridProps } from './schema'
 import { getIcon } from '../../../icons'
+import { cssTextHeight } from '../../../html-block'
+import { FG_ICON, FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
 
 export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode {
   const cells = props.cells ?? []
@@ -20,23 +22,23 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
 
   const cellW = (w - (cols - 1) * gap) / cols
   const rows = Math.ceil(cells.length / cols)
-  const iconSize = 48
-  const iconMargin = 12
-  const titleMargin = 8
+  const iconSize = FG_ICON
+  const iconMargin = FG_ICON_GAP
+  const titleMargin = FG_TITLE_GAP
+  // LO7: the template's metrics (its line-heights, no tracking); heights are CSS line boxes, so
+  // the grid below is where the live HTML puts every part.
+  const titleStyleOf = () => ({ ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: FG_LH.title }), color: ctx.resolveColor('text').color })
+  const descStyleOf = () => ({ ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: FG_LH.desc }), color: ctx.resolveColor('textMuted').color })
 
   // Measure each cell to find per-cell heights, then pick the max per row
   const cellData = cells.map((cell) => {
-    // Title measurement
-    const titleStyle = ctx.resolveText('subheading')
-    const titleColor = ctx.resolveColor('text').color
-    const titleResolved = { ...titleStyle, color: titleColor }
-    const mTitle = ctx.measureText(cell.title, titleResolved, cellW)
+    const titleResolved = titleStyleOf()
+    const m1 = ctx.measureText(cell.title, titleResolved, cellW)
+    const mTitle = { lines: m1.lines, height: cssTextHeight(m1.lines.length, titleResolved) }
 
-    // Desc measurement
-    const descStyle = ctx.resolveText('body')
-    const descColor = ctx.resolveColor('textMuted').color
-    const descResolved = { ...descStyle, color: descColor }
-    const mDesc = ctx.measureText(cell.desc, descResolved, cellW)
+    const descResolved = descStyleOf()
+    const m2 = ctx.measureText(cell.desc, descResolved, cellW)
+    const mDesc = { lines: m2.lines, height: cssTextHeight(m2.lines.length, descResolved) }
 
     const cellH = iconSize + iconMargin + mTitle.height + titleMargin + mDesc.height
     return { cell, mTitle, mDesc, cellH }
@@ -100,24 +102,22 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     }
 
     // Title
-    const titleStyle = ctx.resolveText('subheading')
-    const titleColor = ctx.resolveColor('text').color
-    const titleResolved = { ...titleStyle, color: titleColor }
+    const titleResolved = titleStyleOf()
     children.push({
       k: 'text',
       part: `cell[${i}].title`,
+      propPath: `cells.${i}.title`,
       box: { x, y: y + iconSize + iconMargin, width: cellW, height: mTitle.height },
       lines: mTitle.lines,
       style: titleResolved,
     })
 
     // Description
-    const descStyle = ctx.resolveText('body')
-    const descColor = ctx.resolveColor('textMuted').color
-    const descResolved = { ...descStyle, color: descColor }
+    const descResolved = descStyleOf()
     children.push({
       k: 'text',
       part: `cell[${i}].desc`,
+      propPath: `cells.${i}.desc`,
       box: { x, y: y + iconSize + iconMargin + mTitle.height + titleMargin, width: cellW, height: mDesc.height },
       lines: mDesc.lines,
       style: descResolved,

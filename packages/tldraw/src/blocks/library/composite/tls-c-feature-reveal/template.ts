@@ -6,7 +6,8 @@
 import type { HtmlTemplateContext } from '../../../types'
 import { iconSvg, roleVar } from '../_showcase'
 import type { FeatureRevealProps } from './schema'
-import { geometry, itemsOf } from './schema'
+import { geometry, itemsOf, REVEAL } from './schema'
+import { posterText } from '../../../html-block'
 
 export function template(props: FeatureRevealProps, ctx: HtmlTemplateContext): string {
   const W = ctx.box?.width ?? 1728
@@ -18,6 +19,10 @@ export function template(props: FeatureRevealProps, ctx: HtmlTemplateContext): s
   const t = ctx.tokens?.type
   const titleSize = g.compact ? t?.body?.size ?? 28 : t?.lead?.size ?? 36
   const textSize = g.compact ? t?.caption?.size ?? 22 : t?.body?.size ?? 28
+
+  // LO7: with a poster (the live host) every text paints the poster's lines and metrics (and
+  // only the lines that fit the card, as the poster does).
+  const pt = posterText(ctx)
 
   const cards = items
     .map((m, i) => {
@@ -31,9 +36,11 @@ export function template(props: FeatureRevealProps, ctx: HtmlTemplateContext): s
         `box-shadow:0 18px 40px -24px rgba(0,0,0,0.35);backface-visibility:hidden;">` +
         `<div data-part="icon[${i}]" style="width:${px(g.icon)}px;height:${px(g.icon)}px;border-radius:50%;display:flex;align-items:center;justify-content:center;` +
         `background:color-mix(in srgb, ${accent} 16%, transparent);">${iconSvg(m.icon ?? '', g.icon * 0.55, accent)}</div>` +
-        `<div data-part="title[${i}]" style="margin-top:${px(g.pad * 0.6)}px;font-size:${titleSize}px;line-height:1.25;font-weight:700;color:${ctx.cssVar('on')};">${ctx.esc(m.title)}</div>` +
+        `<div data-part="title[${i}]" style="margin-top:${px(g.pad * 0.6)}px;${pt.css(`items.${i}.title`, `font-size:${titleSize}px;line-height:${REVEAL.titleLH};`)}` +
+        `font-weight:700;color:${ctx.cssVar('on')};">${pt.html(`items.${i}.title`, ctx.esc(m.title), false)}</div>` +
         (m.text
-          ? `<div data-part="text[${i}]" style="margin-top:8px;font-size:${textSize}px;line-height:1.45;color:${ctx.cssVar('text-muted')};">${ctx.esc(m.text)}</div>`
+          ? `<div data-part="text[${i}]" style="margin-top:${REVEAL.textGap}px;${pt.css(`items.${i}.text`, `font-size:${textSize}px;line-height:${REVEAL.textLH};`)}` +
+            `color:${ctx.cssVar('text-muted')};">${pt.html(`items.${i}.text`, ctx.esc(m.text))}</div>`
           : '') +
         `</div>`
       )

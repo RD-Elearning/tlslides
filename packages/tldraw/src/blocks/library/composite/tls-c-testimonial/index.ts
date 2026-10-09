@@ -34,7 +34,7 @@ const TESTIMONIAL_SUMMARY =
  * export; the host renderer supplies the live DOM.
  */
 function testimonialLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.testimonial', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.testimonial', props, ctx, { posterGeometry: true })
 }
 
 /**

@@ -270,6 +270,12 @@ export interface HtmlTemplateContext {
   box: Box
   /** Resolved design tokens for this deck. */
   tokens: ResolvedTokens
+  /** LO7: the block's poster, laid out by the same layout pass at `box` (the host node's
+   *  `poster`). A template whose host node sets `posterGeometry` paints its text parts with this
+   *  tree's line breaks and text metrics (`posterText` in `html-block.ts`), so the live HTML has
+   *  the poster's geometry by construction. Absent when the caller has no layout pass (a direct
+   *  `template()` call): the template then lets the browser wrap. */
+  poster?: LayoutNode
 }
 
 /**
@@ -579,7 +585,22 @@ export type LayoutNode =
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
-  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode; props?: Record<string, unknown>; vars?: Record<string, string> }
+  | {
+      k: 'host'
+      box: Box
+      part?: string
+      render: string
+      poster?: LayoutNode
+      props?: Record<string, unknown>
+      vars?: Record<string, string>
+      /** LO7 (layout oracle): the html template paints every text part with this poster's lines
+       *  and text metrics (`posterText` in `html-block.ts`) and places its parts where the poster
+       *  does, so the poster *is* the live geometry and the layout report measures the block with
+       *  confidence `high`. Absent = the browser wraps the template's own text; the poster is an
+       *  approximation (confidence `medium`, the block always needs a screenshot). Set through
+       *  `htmlHostNode(…, { posterGeometry: true })`; pinned by `html-poster-geometry.spec.ts`. */
+      posterGeometry?: boolean
+    }
 
 /**
  * A 2D box: origin at top-left, measured in slide units (1920×1080 frame).

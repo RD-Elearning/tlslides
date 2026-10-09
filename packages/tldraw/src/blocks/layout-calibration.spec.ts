@@ -102,10 +102,12 @@ describe('LO5 — needsVisualCheck', () => {
   it('a minority of fixture slides need a screenshot', () => {
     const all = FIXTURE_FILES.flatMap((f) => analyzeDeck(loadDeck(f)))
     const flagged = all.filter((r) => r.needsVisualCheck.length > 0)
-    // 21 / 95 at LO5, 9 / 95 at LO6 (only html posters left; layout-oracle §3); a ratchet, not an exact pin.
-    expect(flagged.length / all.length).toBeLessThan(0.12)
+    // 21 / 95 at LO5, 9 / 95 at LO6 (only html posters left), 0 / 95 at LO7 (html templates paint
+    // their poster; layout-oracle §3); a ratchet, not an exact pin.
+    expect(flagged.length / all.length).toBeLessThan(0.05)
     const reasons = all.flatMap((r) => r.needsVisualCheck.map((c) => c.reason))
     expect(reasons.filter((x) => /editor/.test(x))).toEqual([])
+    expect(reasons.filter((x) => /poster/.test(x))).toEqual([])
   })
 })
 

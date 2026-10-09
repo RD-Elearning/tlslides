@@ -133,6 +133,52 @@ function measureInPage() {
       }
       htmlText.push({ tag: el.tagName, cls: (el.className || '').toString().slice(0, 40), lines: tops.size, text: el.textContent.trim().slice(0, 40) })
     }
+    // LO7: html-kind text per `data-part` (the poster's text leaves carry the same part names).
+    // A part's lines = distinct line rows per block-level text container among the text nodes whose
+    // nearest [data-part] ancestor is that part (inline runs — <strong>, word spans — on one row
+    // count once; the old per-element count above counted them as extra lines).
+    const htmlParts = []
+    for (const pe of wrap.querySelectorAll('[data-render] [data-part]')) {
+      if (pe.closest('svg')) continue
+      const groups = new Map()
+      const tw = document.createTreeWalker(pe, NodeFilter.SHOW_TEXT)
+      let tn
+      while ((tn = tw.nextNode())) {
+        if (!tn.textContent.trim()) continue
+        const el = tn.parentElement
+        if (!el || el.closest('[data-part]') !== pe) continue
+        const cs = getComputedStyle(el)
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue
+        let blk = el
+        while (blk !== pe && getComputedStyle(blk).display.startsWith('inline')) blk = blk.parentElement
+        const g = groups.get(blk) || { rects: [], lh: lhOf(blk).lh, fs: lhOf(blk).fs }
+        const range = document.createRange()
+        range.selectNodeContents(tn)
+        for (const r of range.getClientRects()) if (r.width > 0.5) g.rects.push(r)
+        groups.set(blk, g)
+      }
+      if (!groups.size) continue
+      let lines = 0
+      const boxes = []
+      let maxW = 0
+      for (const [blk, g] of groups) {
+        const cys = g.rects.map((r) => r.top + r.height / 2).sort((a, b) => a - b)
+        const rows = []
+        for (const cy of cys) if (!rows.length || cy - rows[rows.length - 1] > g.fs * 0.5) rows.push(cy)
+        lines += rows.length
+        for (const cy of rows) boxes.push(rel({ left: Math.min(...g.rects.map((r) => r.left)), top: cy - g.lh / 2, width: 1, height: g.lh }))
+        // widest row
+        for (const cy of rows) {
+          const rr = g.rects.filter((r) => Math.abs(r.top + r.height / 2 - cy) <= g.fs * 0.5)
+          maxW = Math.max(maxW, Math.max(...rr.map((r) => r.right)) - Math.min(...rr.map((r) => r.left)))
+        }
+        const bw = blk.getBoundingClientRect().width
+        maxW = Math.max(0, maxW)
+        g.bw = bw
+      }
+      const u = union(boxes)
+      htmlParts.push({ part: pe.getAttribute('data-part'), lines, y: u.y, bottom: u.y + u.height, maxW: Math.round(maxW * 10) / 10 })
+    }
     // Shapes.
     for (const el of wrap.querySelectorAll('svg path, svg circle, svg ellipse, svg rect, svg line, svg polyline, svg polygon')) {
       const cs = getComputedStyle(el)
@@ -166,6 +212,7 @@ function measureInPage() {
       textPainted: union(leaves.filter((l) => l.k === 'text')),
       textLeaves,
       htmlText,
+      htmlParts,
       crashed: !!wrap.querySelector('[data-testid="crashed-block"]'),
     })
   }

@@ -39,7 +39,7 @@ const BIG_STAT_SUMMARY =
  * export; the host renderer supplies the live DOM.
  */
 function bigStatLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.big-stat', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.big-stat', props, ctx, { posterGeometry: true })
 }
 
 /**
@@ -60,6 +60,11 @@ function derivePreferredSize(): [number, number] {
   const posterNode = poster(defaults, ctx)
   return [REFERENCE_WIDTH, posterNode.box.height]
 }
+
+/** RV04 honest minimum: the default content at 520 wide. LO7: 265 → 246 — the poster now has the
+ *  live template's metrics (CSS line boxes, its 8-unit label gap); 265 was the old poster's
+ *  height (+2 per text, a 16-unit label gap), 19 units more than the live block paints. */
+const BIG_STAT_MIN: [number, number] = [520, 246]
 
 /**
  * Big-stat animation: count-up with easing on the value, label slides in from
@@ -277,7 +282,7 @@ export const tlsCBigStat: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [520, 265] },
+  size: { preferred: derivePreferredSize(), min: BIG_STAT_MIN },
   layout: bigStatLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: bigStatAnimate },

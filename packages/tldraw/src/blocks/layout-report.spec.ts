@@ -4,7 +4,9 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import type { ComponentShape } from '~types'
-import type { BlockSpec, DeckSpec, SlideSpec } from './types'
+import type { BlockSpec, DeckSpec, LayoutNode, SlideSpec } from './types'
+import { BlockRegistry } from './registry'
+import { BUILT_IN_BLOCKS } from './library'
 import { deckSpecToDocument } from './deck-document'
 import { definitionLayer } from './block-layer'
 import { defaultBlockRegistry } from './validate-deck-spec'
@@ -207,12 +209,29 @@ describe('LO1 — findings', () => {
     for (const b of withCapacity) expect(typeof b.capacity!.fits).toBe('boolean')
   })
 
-  it('html blocks are flagged for a visual check', () => {
+  it('html blocks are trusted when their template paints the poster (LO7), flagged otherwise', () => {
     const deck = loadDeck('demo-deck.json')
-    const [report] = analyzeDeck({ ...deck, slides: deck.slides.filter((s) => s.id === 'sl_01') })
-    expect(report.blocks[0].confidence).toBe('medium')
-    expect(report.needsVisualCheck.map((c) => c.blockId)).toEqual([report.blocks[0].id])
-    expect(report.needsVisualCheck[0].reason).toMatch(/confidence medium: .*poster/)
+    const slide = { ...deck, slides: deck.slides.filter((s) => s.id === 'sl_01') }
+    const [report] = analyzeDeck(slide)
+    expect(report.blocks[0].type).toBe('tls.c.hero')
+    expect(report.blocks[0].confidence).toBe('high')
+    expect(report.needsVisualCheck).toEqual([])
+
+    // The same hero with a host that does not declare posterGeometry: the poster is only an
+    // approximation of the live DOM, so the block needs a screenshot.
+    const hero = defaultBlockRegistry().get('tls.c.hero')!
+    const approx = new BlockRegistry()
+    for (const d of BUILT_IN_BLOCKS) {
+      approx.register(
+        d.type !== 'tls.c.hero'
+          ? d
+          : { ...hero, layout: (p, c) => ({ ...(hero.layout(p, c) as Extract<LayoutNode, { k: 'host' }>), posterGeometry: undefined }) }
+      )
+    }
+    const [flagged] = analyzeDeck(slide, { registry: approx })
+    expect(flagged.blocks[0].confidence).toBe('medium')
+    expect(flagged.needsVisualCheck.map((c) => c.blockId)).toEqual([flagged.blocks[0].id])
+    expect(flagged.needsVisualCheck[0].reason).toMatch(/confidence medium: .*poster/)
   })
 })
 

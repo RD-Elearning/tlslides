@@ -101,6 +101,34 @@ for (const r of rows.filter(isHtml)) {
   console.log(`${r.slide}:${r.id} ${r.type} poster ${tl} dom ${domLines} | h table ${Math.round(H(r.painted.table))} dom ${Math.round(H(r.painted.dom))} box ${Math.round(r.box.height)}`)
 }
 
+// LO7: html kind per data-part — poster text leaves (same part names) vs the live DOM.
+console.log('\n== html kind per part: poster vs live DOM (lines, top/bottom in units) ==')
+{
+  let parts = 0, lineMis = 0
+  const dTop = [], dBot = [], misList = []
+  for (const r of rows.filter(isHtml)) {
+    const byPart = new Map()
+    for (const t of r.text.table) {
+      if (!t.part || !t.painted) continue
+      const e = byPart.get(t.part) || { lines: 0, y1: Infinity, y2: -Infinity }
+      e.lines += t.lines
+      e.y1 = Math.min(e.y1, t.painted.y)
+      e.y2 = Math.max(e.y2, t.painted.y + t.painted.height)
+      byPart.set(t.part, e)
+    }
+    for (const d of r.text.htmlParts || []) {
+      const p = byPart.get(d.part)
+      if (!p) { misList.push(`${r.slide}:${r.id} ${d.part} not in poster (dom ${d.lines}L)`); continue }
+      parts++
+      if (p.lines !== d.lines) { lineMis++; misList.push(`${r.slide}:${r.id} ${d.part} poster ${p.lines}L dom ${d.lines}L`) }
+      dTop.push(Math.abs(p.y1 - d.y)); dBot.push(Math.abs(p.y2 - d.bottom))
+      if (Math.abs(p.y1 - d.y) > 4 || Math.abs(p.y2 - d.bottom) > 4) misList.push(`${r.slide}:${r.id} ${d.part} top ${Math.round(p.y1)} vs ${Math.round(d.y)}, bottom ${Math.round(p.y2)} vs ${Math.round(d.bottom)}`)
+    }
+  }
+  console.log(`html parts ${parts}: line-count mismatches ${lineMis}; |top| median ${q(dTop, 0.5)?.toFixed(1)} p95 ${q(dTop, 0.95)?.toFixed(1)} max ${q(dTop, 1)?.toFixed(1)}; |bottom| median ${q(dBot, 0.5)?.toFixed(1)} p95 ${q(dBot, 0.95)?.toFixed(1)} max ${q(dBot, 1)?.toFixed(1)}`)
+  console.log('html part diffs:', misList.slice(0, 40))
+}
+
 // per type summary of worst height error (table)
 const byType = {}
 for (const r of rows) {

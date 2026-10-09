@@ -94,3 +94,6 @@ export function geometry(width: number, height: number, count: number): RevealGe
   const icon = Math.max(16, Math.min(compact ? 64 : 84, h * 0.25))
   return { cards, pad, icon, compact }
 }
+
+/** The card text metrics of the template - the poster lays out with the same numbers (LO7). */
+export const REVEAL = { titleLH: 1.25, textGap: 8, textLH: 1.45 } as const

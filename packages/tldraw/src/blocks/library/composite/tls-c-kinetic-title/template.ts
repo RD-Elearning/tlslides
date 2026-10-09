@@ -8,6 +8,24 @@ import type { HtmlTemplateContext } from '../../../types'
 import { str, roleVar } from '../_showcase'
 import type { KineticTitleProps } from './schema'
 import { orbs, titleSize, titleWords } from './schema'
+import { posterText } from '../../../html-block'
+
+/** The template's text metrics and gaps - the poster lays out with the same numbers (LO7). */
+export const KT = {
+  kickerLH: 1.4,
+  kickerTracking: 0.16,
+  kickerGap: 28,
+  titleLH: 1.08,
+  titleTracking: -0.03,
+  ruleGap: 36,
+  ruleW: 180,
+  ruleH: 10,
+  subtitleGap: 32,
+  subtitleLH: 1.35,
+  /** Title column and subtitle widths, as a fraction of the box width. */
+  titleCol: 0.84,
+  subtitleCol: 0.7,
+} as const
 
 export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): string {
   const center = props.align !== 'start'
@@ -16,6 +34,8 @@ export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): st
   const width = ctx.box?.width ?? 1728
   const height = ctx.box?.height ?? 888
   const out: string[] = []
+  // LO7: with a poster (the live host) every text part paints its lines and metrics.
+  const pt = posterText(ctx)
 
   if (props.decoration !== 'none') {
     const shapes = orbs(width, height)
@@ -36,39 +56,68 @@ export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): st
   const kicker = str(props.kicker, 40)
   if (kicker) {
     out.push(
-      `<div data-part="kicker" style="position:relative;font-size:${ctx.tokens?.type?.caption?.size ?? 22}px;` +
-        `line-height:1.4;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;color:${accent};margin-bottom:28px;">` +
-        `${ctx.esc(kicker)}</div>`
+      `<div data-part="kicker" style="position:relative;` +
+        pt.css('kicker', `font-size:${ctx.tokens?.type?.caption?.size ?? 22}px;line-height:${KT.kickerLH};letter-spacing:${KT.kickerTracking}em;`) +
+        `text-transform:uppercase;font-weight:700;color:${accent};margin-bottom:${KT.kickerGap}px;">` +
+        `${pt.html('kicker', ctx.esc(kicker), false)}</div>`
     )
   }
 
   const words = titleWords(props)
   const size = titleSize(str(props.title, 80), ctx.tokens)
-  const wordHtml = words
-    .map(
-      (w) =>
-        `<span data-word style="display:inline-block;overflow:hidden;vertical-align:top;` +
-        `padding:0.16em 0.06em 0.14em;margin:-0.16em -0.06em -0.14em;">` +
-        `<span data-word-inner style="display:inline-block;transform-origin:0% 100%;` +
-        `${w.accent ? `color:${accent};` : ''}">${ctx.esc(w.text)}</span></span>`
-    )
-    .join(' ')
+  const wordSpan = (text: string, accentWord: boolean): string =>
+    `<span data-word style="display:inline-block;overflow:hidden;vertical-align:top;` +
+    `padding:0.16em 0.06em 0.14em;margin:-0.16em -0.06em -0.14em;">` +
+    `<span data-word-inner style="display:inline-block;transform-origin:0% 100%;` +
+    `${accentWord ? `color:${accent};` : ''}">${ctx.esc(text)}</span></span>`
+  const titleLines = pt.lines('title')
+  let wordHtml: string
+  if (titleLines) {
+    // The poster's lines, word by word (a word the poster broke mid-word keeps its accent on
+    // both pieces); one <br> between lines.
+    let wi = 0
+    let used = 0
+    wordHtml = titleLines
+      .map((line) =>
+        line.text
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((tok) => {
+            const w = words[Math.min(wi, words.length - 1)]
+            const html = wordSpan(tok, !!w?.accent)
+            used += tok.length
+            if (w && used >= w.text.length) {
+              wi++
+              used = 0
+            }
+            return html
+          })
+          .join(' ')
+      )
+      .join('<br>')
+  } else {
+    wordHtml = words.map((w) => wordSpan(w.text, w.accent)).join(' ')
+  }
   out.push(
-    `<div data-part="title" style="position:relative;max-width:${Math.round(width * 0.84)}px;font-size:${size}px;` +
-      `line-height:1.08;letter-spacing:-0.03em;font-weight:800;color:${ctx.cssVar('on')};">${wordHtml}</div>`
+    // With the poster's lines no max-width: a line the browser paints a little wider than the
+    // table measured must stay centred, not overflow a capped box to the right.
+    `<div data-part="title" style="position:relative;${titleLines ? '' : `max-width:${Math.round(width * KT.titleCol)}px;`}` +
+      pt.css('title', `font-size:${size}px;line-height:${KT.titleLH};letter-spacing:${KT.titleTracking}em;`) +
+      `font-weight:800;color:${ctx.cssVar('on')};">${wordHtml}</div>`
   )
 
   out.push(
-    `<div data-part="rule" style="position:relative;width:180px;height:10px;border-radius:5px;margin-top:36px;` +
+    `<div data-part="rule" style="position:relative;width:${KT.ruleW}px;height:${KT.ruleH}px;border-radius:5px;margin-top:${KT.ruleGap}px;flex:none;` +
       `background:linear-gradient(90deg, ${accent}, ${accent2});"></div>`
   )
 
   const subtitle = str(props.subtitle, 120)
   if (subtitle) {
     out.push(
-      `<div data-part="subtitle" style="position:relative;max-width:${Math.round(width * 0.7)}px;margin-top:32px;` +
-        `font-size:${ctx.tokens?.type?.lead?.size ?? 36}px;line-height:1.35;color:${ctx.cssVar('text-muted')};">` +
-        `${ctx.esc(subtitle)}</div>`
+      `<div data-part="subtitle" style="position:relative;${pt.active ? '' : `max-width:${Math.round(width * KT.subtitleCol)}px;`}margin-top:${KT.subtitleGap}px;` +
+        pt.css('subtitle', `font-size:${ctx.tokens?.type?.lead?.size ?? 36}px;line-height:${KT.subtitleLH};`) +
+        `color:${ctx.cssVar('text-muted')};">` +
+        `${pt.html('subtitle', ctx.esc(subtitle))}</div>`
     )
   }
 

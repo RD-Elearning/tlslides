@@ -191,7 +191,8 @@ export const MAP_CELL = 40
 /**
  * LO5 calibration (browser vs report on the 4 fixture decks, 289 blocks; layout-oracle §3 LO5).
  * Painted height error at the 95th percentile: layout kind 0.5% (0.7 units) once the editor and
- * the report wrap text the same way, html kind (export poster vs live DOM) 4.4% (20 units).
+ * the report wrap text the same way, html kind (export poster vs live DOM) 4.4% (20 units) —
+ * since LO7 an html template paints its poster (`posterGeometry`): every part within 1.1 units.
  * The near-threshold margin is a multiple of that error, never less than a few units.
  */
 export const NEAR_MARGIN: Record<MeasureConfidence, { share: number; min: number }> = {

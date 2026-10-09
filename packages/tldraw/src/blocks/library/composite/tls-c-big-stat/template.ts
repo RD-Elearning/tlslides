@@ -15,22 +15,27 @@ import type { HtmlTemplateContext } from '../../../types'
 import type { BigStatProps } from './schema'
 import { formatValue } from './schema'
 import { isShown } from '../../../schema-helpers'
+import { posterText } from '../../../html-block'
+
+/** The template's text metrics and gaps - the poster lays out with the same numbers (LO7). */
+export const BIG_STAT = { valueLH: 1, valueTracking: -0.04, valueGap: 16, labelLH: 1.4, labelGap: 8, contextLH: 1.4 } as const
 
 export function template(props: BigStatProps, ctx: HtmlTemplateContext): string {
   const valueText = formatValue(props)
 
   const parts: string[] = []
+  // LO7: with a poster (the live host) the texts paint its lines and metrics.
+  const pt = posterText(ctx)
+  const B = BIG_STAT
 
   // Value (the enormous headline number)
   parts.push(
     `<div data-part="value" style="` +
       `font-family:var(--tls-font-family);` +
-      `font-size:var(--tls-type-display);` +
-      `line-height:1.0;` +
-      `letter-spacing:-0.04em;` +
+      pt.css('value', `font-size:var(--tls-type-display);line-height:${B.valueLH};letter-spacing:${B.valueTracking}em;`) +
       `color:${ctx.cssVar('on')};` +
-      `margin-bottom:16px;` +
-    `">${ctx.esc(valueText)}</div>`
+      `margin-bottom:${B.valueGap}px;` +
+    `">${pt.html('value', ctx.esc(valueText))}</div>`
   )
 
   // Label
@@ -38,11 +43,10 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
     parts.push(
       `<div data-part="label" style="` +
         `font-family:var(--tls-font-family);` +
-        `font-size:var(--tls-type-body);` +
-        `line-height:1.4;` +
+        pt.css('label', `font-size:var(--tls-type-body);line-height:${B.labelLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
-        `margin-bottom:8px;` +
-      `">${ctx.esc(props.label)}</div>`
+        `margin-bottom:${B.labelGap}px;` +
+      `">${pt.html('label', ctx.esc(props.label))}</div>`
     )
   }
 
@@ -51,10 +55,9 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
     parts.push(
       `<div data-part="context" style="` +
         `font-family:var(--tls-font-family);` +
-        `font-size:var(--tls-type-caption);` +
-        `line-height:1.4;` +
+        pt.css('context', `font-size:var(--tls-type-caption);line-height:${B.contextLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
-      `">${ctx.esc(props.context)}</div>`
+      `">${pt.html('context', ctx.esc(props.context))}</div>`
     )
   }
 

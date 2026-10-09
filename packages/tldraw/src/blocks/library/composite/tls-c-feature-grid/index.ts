@@ -48,7 +48,7 @@ function featureGridLayout(
   props: Record<string, unknown>,
   ctx: LayoutContext,
 ): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-grid', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-grid', props, ctx, { posterGeometry: true })
 }
 
 /**
