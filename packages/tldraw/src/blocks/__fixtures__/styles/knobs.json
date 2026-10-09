@@ -716,6 +716,26 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_18",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k18a",
+            "type": "tls.c.kinetic-title",
+            "props": {
+              "kicker": "Part two",
+              "title": "Where we win next",
+              "highlight": "win next",
+              "subtitle": "Three markets, one product, eighteen months",
+              "align": "start",
+              "tone": "accent"
+            }
+          }
+        ]
+      }
     }
   ]
 }

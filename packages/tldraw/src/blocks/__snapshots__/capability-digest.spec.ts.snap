@@ -789,6 +789,7 @@ Big animated title: words rise in one by one, accent rule draws, subtitle last. 
 | \`subtitle\` | no | text (max 120 chars) |  |
 | \`align\` | no | enum: start \\\\| center |  |
 | \`decoration\` | no | enum: orbs \\\\| none |  |
+| \`tone\` | no | enum: plain \\\\| accent | \`accent\`: on an accent panel. |
 
 \`\`\`json
 {
@@ -5479,7 +5480,7 @@ also: tls.m.logo
 ## Covers
 tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant, decoration, showImage, showLogo
 tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant, align, decoration, showKicker, showSubtitle, showCta
-tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align, decoration
+tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align, decoration, tone
 
 ## Dividers
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant, align

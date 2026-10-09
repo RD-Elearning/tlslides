@@ -12,6 +12,9 @@ export interface KineticTitleProps extends Record<string, unknown> {
   subtitle?: string
   align?: 'start' | 'center'
   decoration?: 'orbs' | 'none'
+  /** AC2: `plain` (default, on the slide) or `accent` (the title on an accent panel, every text,
+   *  the rule and the orbs in the on-accent colour). */
+  tone?: 'plain' | 'accent'
 }
 
 export const schema: BlockSchema = {
@@ -41,6 +44,7 @@ export const schema: BlockSchema = {
   },
   align: { type: { kind: 'enum', values: ['start', 'center'] }, role: 'option', label: 'Align' },
   decoration: { type: { kind: 'enum', values: ['orbs', 'none'] }, role: 'option', label: 'Decoration' },
+  tone: { type: { kind: 'enum', values: ['plain', 'accent'] }, role: 'option', label: 'Tone', guidance: '`accent`: on an accent panel.' },
 }
 
 export const defaults: KineticTitleProps = {
@@ -75,6 +79,16 @@ export function titleWords(props: KineticTitleProps): Array<{ text: string; acce
     }
   }
   return words.map((text, i) => ({ text, accent: flags[i] }))
+}
+
+/** AC2 `tone: accent`: the panel's inner padding (each side of the text column). */
+export const PANEL_PAD = 96
+
+/** The orbs a block paints: on a start-aligned accent panel the bottom-left disc would sit under
+ *  the text, so it is left out (template and poster). */
+export function orbsFor(props: KineticTitleProps, width: number, height: number): ReturnType<typeof orbs> {
+  const all = orbs(width, height)
+  return props.tone === 'accent' && props.align === 'start' ? all.filter((o) => o.kind !== 'disc') : all
 }
 
 /** Decorative orbs, in fractions of the box (kept fully inside it). */

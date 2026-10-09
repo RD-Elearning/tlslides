@@ -167,7 +167,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── cover ──
   'tls.c.hero': t1(['variant', 'align', 'decoration', 'showKicker', 'showSubtitle', 'showCta'], ['tls.t.kicker', 'tls.t.subtitle']),
   'tls.c.cover': t1(['variant', 'decoration', 'showImage', 'showLogo']),
-  'tls.c.kinetic-title': t1(['align', 'decoration']),
+  'tls.c.kinetic-title': t1(['align', 'decoration', 'tone']),
 
   // ── media ──
   'tls.c.image-text': t1(['placement', 'gutter']),
