@@ -7,7 +7,7 @@ import { band, placePx } from './_place'
  * pages, Source Serif 4 action titles (a full sentence at heading size) over Inter, a deep navy
  * accent with teal for the second series, square corners, hairline outlines, no motion. Content
  * pages carry a navy tracker tab at the top left, a hairline under the title band and a footer
- * rule; the cover and closing carry a navy spine with a teal hairline; the section page has a navy side panel.
+ * rule; the cover and closing carry a navy spine with a teal hairline; the section page is navy with a teal edge.
  */
 const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Source Serif 4", "Source Serif 4 Variable", serif', bodyFamily: '"Inter"' }
 
@@ -31,8 +31,9 @@ const MASTERS: MasterSpec[] = [
   },
   {
     name: 'section',
-    blocks: { panel: placePx(band('accent'), 0, 0, 48, 1080), 'teal': placePx(band('accent2'), 48, 0, 12, 1080), ...CONTENT_CHROME },
-    background: { type: 'solid', color: 'theme:background' },
+    // a navy section page with a teal edge; the minimal divider's text solves to white on it
+    blocks: { teal: placePx(band('accent2'), 0, 0, 16, 1080), 'foot-bar': placePx(band('accent2'), 96, 1000, 240, 8) },
+    background: { type: 'solid', color: 'theme:accent1' },
   },
   { name: 'content', blocks: CONTENT_CHROME, background: { type: 'solid', color: 'theme:background' } },
 ]
@@ -42,8 +43,8 @@ export const CONSULTING_STYLE: DeckStyle = {
   family: 'professional',
   name: 'Consulting',
   brief:
-    'Consulting deck: white pages, serif action titles that state the insight, navy accent with teal, ' +
-    'square corners, hairline outlines, dense but structured, a source on every data slide, no motion.',
+    'Consulting deck: white pages, serif action titles that state the insight, navy with teal, square ' +
+    'corners, hairline outlines, dense but structured, no motion.',
   palettes: [
     {
       id: 'consulting-ink',

@@ -32,14 +32,14 @@ const MASTERS: MasterSpec[] = [
     background: { type: 'solid', color: 'theme:background' },
   },
   {
-    // a loud pink section page: teal half circle, pale triangle, dot patch and a zigzag
+    // a loud pink section page: a white half circle, a yellow square, a dot patch and a white
+    // zigzag (opaque shapes: a 70 % teal over the pink reads muddy)
     name: 'section',
     blocks: {
-      'half-big': at('half-circle', 'accent2', 1140, 600, 720, 420),
-      tri: at('triangle', 'alt', 1480, 120, 300, 300, { rotation: -12 }),
-      dots: placePx({ id: 'dots', type: 'tls.m.pattern', props: { pattern: 'dots', tone: 'line', opacity: 'medium', scale: 'sm' } }, 1160, 120, 300, 260),
+      'half-big': at('half-circle', 'alt', 1140, 600, 720, 420),
+      'yellow-sq': placePx(band('warning'), 1580, 150, 200, 200),
+      dots: placePx({ id: 'dots', type: 'tls.m.pattern', props: { pattern: 'dots', tone: 'line', opacity: 'medium', scale: 'sm' } }, 1180, 120, 340, 260),
       zig: at('zigzag', 'alt', 1140, 1000, 720, 56),
-      'yellow-sq': placePx(band('warning'), 1820, 460, 60, 60),
     },
     background: { type: 'solid', color: 'theme:accent1' },
   },

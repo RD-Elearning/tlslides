@@ -52,7 +52,7 @@ export const DOODLE_STYLE: DeckStyle = {
   name: 'Doodle',
   brief:
     'Hand-drawn deck: warm paper, handwritten headlines, round cards with a bold ink outline, sketched ' +
-    'stars, sparkles and squiggles in the margins, bright coral and teal. Friendly and short.',
+    'stars and squiggles in the margins, coral and teal.',
   palettes: [
     {
       id: 'doodle-paper',
