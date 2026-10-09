@@ -5375,10 +5375,10 @@ comparison-pros-cons · timeline+title — timeline: tls.g.pros-cons — argumen
 comparison-before-after · timeline+title — timeline: tls.g.before-after — a change story
 comparison-pricing · timeline+title — timeline: tls.d.pricing — plans and prices
 comparison-matrix · timeline+title — timeline: tls.g.matrix-2x2 — items on two axes
-comparison-table · timeline+title — timeline: tls.d.compare-table — feature matrix
+comparison-table · timeline+title — timeline: tls.d.compare-table + tls.t.takeaway(size=lead) — feature matrix, with the verdict
 ### process
-process-steps · timeline+title — timeline: tls.c.steps — ordered steps, explained
-process-chevrons · timeline+title — timeline: tls.g.chevrons(textPlacement=below) — phases with a current one
+process-steps · timeline+title — timeline: tls.c.steps + tls.t.takeaway(size=lead) — ordered steps, explained, with the point they make
+process-chevrons · timeline+title — timeline: tls.g.chevrons(textPlacement=below) + tls.t.takeaway(size=lead) — phases with a current one, and what it means
 process-timeline · timeline+title — timeline: tls.g.timeline(alternate=true) — dated events
 process-roadmap · timeline+title — timeline: tls.g.roadmap + tls.t.takeaway(size=lead) — plan over periods and lanes, with the key milestone
 ### people
@@ -5418,7 +5418,7 @@ tls.t.takeaway · emphasis · element — Highlighted insight with accent bar an
 also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
-tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈385@840] knobs: variant, align, format, showContext, showLabel
+tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant, align, format, showContext, showLabel
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile, gap
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number

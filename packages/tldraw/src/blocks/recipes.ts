@@ -161,11 +161,11 @@ export const RECIPES: readonly SlideRecipe[] = [
   { id: 'comparison-before-after', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.before-after')] }, when: 'a change story' },
   { id: 'comparison-pricing', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.d.pricing')] }, when: 'plans and prices' },
   { id: 'comparison-matrix', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.matrix-2x2')] }, when: 'items on two axes' },
-  { id: 'comparison-table', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.d.compare-table')] }, when: 'feature matrix' },
+  { id: 'comparison-table', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.d.compare-table'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'feature matrix, with the verdict' },
 
   // ── process ──
-  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps')] }, when: 'ordered steps, explained' },
-  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' })] }, when: 'phases with a current one' },
+  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'ordered steps, explained, with the point they make' },
+  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' }), b('tls.t.takeaway', { size: 'lead' })] }, when: 'phases with a current one, and what it means' },
   { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline', { alternate: true })] }, when: 'dated events' },
   { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan over periods and lanes, with the key milestone' },
 

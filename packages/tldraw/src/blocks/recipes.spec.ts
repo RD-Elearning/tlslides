@@ -103,6 +103,8 @@ describe('AC0 slide recipes', () => {
   const FILLS_ITS_REGION = [
     'data-kpi-row', 'process-roadmap', 'content-cards', 'comparison-pricing', 'data-chart-insight', 'data-stat-spotlight',
     'agenda-full', 'content-feature-grid', 'process-timeline', 'people-team',
+    // AC3: the three former sparse recipes, with their takeaway.
+    'comparison-table', 'process-steps', 'process-chevrons',
   ]
   for (const id of FILLS_ITS_REGION) {
     it(`recipe "${id}" fills at least 55% of its region`, () => {
@@ -111,11 +113,14 @@ describe('AC0 slide recipes', () => {
   }
   it('sparse titled recipes (stack < 50% of its region) do not grow in number', () => {
     // AC3 pre-item: 11 → 3 (roomy tiers in the blocks; chevrons below-notes and alternating timeline
-    // in their recipes). The three left are thin by nature at the example's content.
-    const KNOWN_SPARSE = ['comparison-table', 'process-steps', 'process-chevrons']
+    // in their recipes). AC3: 3 → 0 — comparison-table, process-steps and process-chevrons state
+    // their point in a lead takeaway under the diagram (as process-roadmap does).
+    const KNOWN_SPARSE: string[] = []
     const titled = RECIPES.filter((r) => r.regions.title && r.layout === 'timeline')
     const sparse = titled.filter((r) => regionFill(r.id) < 0.5).map((r) => r.id)
     for (const id of sparse) expect(KNOWN_SPARSE).toContain(id)
+    // A two-way ratchet: a listed recipe that fills its region again must leave the list.
+    expect([...sparse].sort()).toEqual([...KNOWN_SPARSE].sort())
   })
 
   it('recipeLine is compact and names the knobs', () => {
