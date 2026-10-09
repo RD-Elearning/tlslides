@@ -12,6 +12,7 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { DECORATION_SHAPES, type DecorationProps } from './schema'
 import { enumOf, side, tintOf } from '../_kit'
+import { roughOutline, roughPaths } from './rough'
 
 /** Deterministic PRNG: the same seed gives the same sequence. */
 export function mulberry32(seed: number): () => number {
@@ -313,6 +314,13 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
     stroke = Math.max(2, Math.min(W, H) * 0.025)
     d = framePath(W, H, stroke)
   } else d = dotsPath(W, H).d
+  // AC5: the hand-drawn motifs are Rough.js sketches of their paths: the squiggle a wobbly double
+  // pen stroke, the star and sparkle a solid shape with a hand-cut (wobbly) edge
+  if (d && shape === 'squiggle') {
+    const leaves = roughPaths(d, W, H, { seed, stroke: { color, width: stroke! * 0.75 }, margin: stroke! * 0.5 + 2, roughness: 1.1 })
+    return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(tone === 'alt' ? {} : { opacity: OPACITY[op] }), children: leaves }
+  }
+  if (d && (shape === 'star' || shape === 'sparkle')) d = roughOutline(d, W, H, { seed, margin: 1, roughness: shape === 'star' ? 1.3 : 0.9 })
   const node: LayoutNode = {
     k: 'path',
     part: 'shape',

@@ -178,3 +178,20 @@ describe('AC4 decoration motifs', () => {
     await assertParity(tlsMDecoration, { ...(tlsMDecoration.defaults as any), shape, tone: 'accent2', opacity: 'strong', rotation: 30 }, { width: 480, height: 320 })
   }, 30000)
 })
+
+describe('AC5 — hand-drawn motifs through Rough.js', () => {
+  const { starPath, sparklePath, squigglePath } = require('./layout')
+  it.each(['star', 'sparkle', 'squiggle'])('%s is a seeded Rough.js sketch: same seed same path, another seed another', (shape) => {
+    const a = dOf(lay({ shape, seed: 11 }))
+    expect(dOf(lay({ shape, seed: 11 }))).toBe(a)
+    expect(dOf(lay({ shape, seed: 12 }))).not.toBe(a)
+    // only absolute M / L / C / Z commands (what pathBounds and both renderers measure exactly)
+    expect(a.replace(/[-\d.,\s]/g, '')).toMatch(/^[MLCZ]+$/)
+  })
+  it('the sketch is not the smooth path', () => {
+    const W = 480
+    expect(dOf(lay({ shape: 'star', seed: 1 }, W, W))).not.toBe(starPath(W / 2, W / 2, (W / 2) * 0.92, 5, 0.45, 0))
+    expect(dOf(lay({ shape: 'sparkle', seed: 1 }, W, W))).not.toBe(sparklePath(W / 2, W / 2, (W / 2) * 0.92, 0))
+    void squigglePath
+  })
+})
