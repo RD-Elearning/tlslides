@@ -13,6 +13,7 @@ import { renderPageToSvg } from '~state/render/renderPageToSvg'
 import { BLOCK_PROP_KEY } from '../shape-bridge'
 import type { ComponentShape } from '~types'
 import type { DeckSpec } from '../types'
+import { TldrawTestApp } from '~test'
 
 const load = (n: string): DeckSpec => JSON.parse(fs.readFileSync(path.resolve(__dirname, `../__fixtures__/styles/${n}.json`), 'utf8'))
 
@@ -38,6 +39,28 @@ describe('AC4 style master blocks on the page', () => {
     const orbs = (id: string) => (Object.values(doc.pages[id].shapes) as ComponentShape[]).filter((s) => s.componentId === 'tls.m.decoration' && (s.props as any).shape === 'orb')
     expect(orbs('st_03')).toHaveLength(1)
     expect(orbs('st_01')).toHaveLength(0)
+  })
+
+  it('the editor path (Deck.addSlideFromSpec) adds the same master shapes and background', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(doc)
+    const slide = deck.slides[3]
+    const id = app.deck.addSlideFromSpec({ ...slide, id: 'x' }, { id: 'added' })
+    const page = app.document.pages[id]
+    const all = Object.values(page.shapes) as ComponentShape[]
+    const style = all.filter((s) => s.id.startsWith('style:'))
+    const own = all.filter((s) => !s.id.startsWith('style:'))
+    const compiled = doc.pages[slide.id]
+    const want = (Object.values(compiled.shapes) as ComponentShape[]).filter((s) => s.id.startsWith('style:'))
+    expect(style.map((s) => s.componentId + ':' + (s.props as any).pattern)).toEqual(
+      [...want].sort((a, b) => a.childIndex - b.childIndex).map((s) => s.componentId + ':' + (s.props as any).pattern)
+    )
+    expect(own.length).toBeGreaterThan(0)
+    for (const s of style) {
+      expect(s.isLocked).toBe(true)
+      for (const o of own) expect(s.childIndex).toBeLessThan(o.childIndex)
+    }
+    expect(page.background).toEqual(compiled.background)
   })
 
   it('a deck without master blocks gets none (corporate, minimal)', () => {

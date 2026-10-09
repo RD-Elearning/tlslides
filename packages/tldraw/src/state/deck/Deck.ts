@@ -1,5 +1,6 @@
 import { Utils } from '@tlslides/core'
 import { compileSlide } from '~blocks/slide-compiler'
+import { styleMasterPage } from '~blocks/deck-document'
 import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { resolveTokens } from '~blocks/tokens'
 import type { SlideSpec } from '~blocks/types'
@@ -10,7 +11,7 @@ import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
 import { renderPageToSvg, renderSvgToPng, resolvePageSize, toBase64Utf8 } from '~state/render'
 import { TDShapeType } from '~types'
-import type { ComponentShape, DeckTheme, SlideBackground, TDDocument, TDPage, Template } from '~types'
+import type { ComponentShape, DeckTheme, SlideBackground, TDDocument, TDPage, TDShape, Template } from '~types'
 import type { TldrawApp } from '../internal'
 import type {
   AddBlockOptions,
@@ -183,10 +184,18 @@ export class Deck {
       ...(deckStyle ? { blockDefaults: deckStyle.blockDefaults } : {}),
     })
 
+    // AC4: the style master of this slide (as `deckSpecToDocument` adds it): its background when
+    // the spec sets none and its blocks (mesh, grain, motifs) as locked `style:` shapes
+    // under the content.
+    const sm = styleMasterPage(deckStyle, spec, slideId, frame, tokens)
+
     // 5. Apply page-level metadata.
-    if (result.background !== undefined) {
-      this.app.setPageBackground(slideId, result.background as SlideBackground)
+    const background = result.background ?? sm.background
+    if (background !== undefined) {
+      this.app.setPageBackground(slideId, background as SlideBackground)
     }
+    // (`page.masterId` is not set: there is no page command for it, and the page already paints
+    // the master's background and blocks, which is all `masterId` would add.)
     if (result.notes !== undefined) {
       this.app.setPageNotes(slideId, result.notes)
     }
@@ -194,7 +203,11 @@ export class Deck {
       this.app.setPageSkipInPresentation(slideId, result.skipInPresentation)
     }
 
-    // 6. Insert the compiled shapes.
+    // 6. Insert the style master's shapes (ids kept: the decompiler and the SVG export know them
+    // by their `style:` prefix), then the compiled shapes above them.
+    if (sm.shapes.length > 0) {
+      this.app.create(sm.shapes.map((sh) => ({ ...sh, parentId: slideId })) as unknown as TDShape[])
+    }
     if (result.shapes.length > 0) {
       this.app.insertContent(
         { shapes: result.shapes },

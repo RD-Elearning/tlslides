@@ -18,7 +18,7 @@ import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, type CompileFinding } from './slide-compiler'
 import { resolveTokens } from './tokens'
-import type { DeckSpec } from './types'
+import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
@@ -99,6 +99,37 @@ export interface DeckDocumentResult {
 }
 
 /**
+ * AC1/AC4 — what a style master adds to one slide: the master id (`style:cover|section|content`,
+ * by role), its background (used when the slide sets none) and its blocks (mesh, grain, motifs) as
+ * locked `style:<page>:<n>` shapes with `childIndex` in (0, 1), under the content's 1..n. Shared by
+ * `deckSpecToDocument` and the editor's `Deck.addSlideFromSpec`, so both paths paint the same page.
+ * Empty when the deck has no style, the slide authors a `masterId`, or the style has no such master.
+ */
+export function styleMasterPage(
+  style: DeckStyle | undefined,
+  slideSpec: SlideSpec,
+  pageId: string,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens
+): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
+  const masterId = styleMasterFor(style, slideSpec)
+  const master = masterId ? styleMasters(style).find((m) => m.name === masterId) : undefined
+  if (!masterId || !master) return { shapes: [] }
+  const shapes: ComponentShape[] = []
+  // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
+  if (Object.keys(master.blocks).length) {
+    const named = { ...master, blocks: Object.fromEntries(Object.entries(master.blocks).map(([k, b]) => [k, { ...b, id: `${STYLE_MASTER_PREFIX}${k}` }])) }
+    const m = resolveMaster(masterId, { [masterId]: named }, frame, tokens)
+    const n = m?.shapes.length ?? 0
+    m?.shapes.forEach((sh, i) => {
+      const id = `${STYLE_MASTER_PREFIX}${pageId}:${i}`
+      shapes.push({ ...sh, id, childIndex: (i + 1) / (n + 1), isLocked: true })
+    })
+  }
+  return { masterId, ...(master.background ? { background: JSON.parse(JSON.stringify(master.background)) } : {}), shapes }
+}
+
+/**
  * Compile a `DeckSpec` into a `TDDocument` ready to load into `<Tldraw>` or walk headlessly
  * (`<DeckViewer>`, export). Each `SlideSpec` becomes one `TDPage` via `compileSlide` — the same
  * function the editor's own `Deck.addSlideFromSpec` uses, so this and the live editor path are
@@ -133,26 +164,11 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const styleMasterId = styleMasterFor(style, slideSpec)
-    const styleMaster = styleMasterId ? masterList.find((m) => m.name === styleMasterId) : undefined
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens)
     findings.push(...result.findings)
 
     const shapes: Record<string, ComponentShape> = {}
-    // AC4: the style master's blocks (mesh, grain, motifs) are painted on the page itself, under
-    // the slide's own shapes, so every path that draws `page.shapes` (DeckViewer, the editor) shows
-    // them — before, only the SVG export drew master blocks (AC1 "Found"). Ids carry the reserved
-    // `style:` prefix (the decompiler drops them, the SVG export does not draw the master twice),
-    // the z order is below the content's 1..n, and they are locked.
-    if (styleMasterId && styleMaster && Object.keys(styleMaster.blocks).length) {
-      // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
-      const named = { ...styleMaster, blocks: Object.fromEntries(Object.entries(styleMaster.blocks).map(([k, b]) => [k, { ...b, id: `${STYLE_MASTER_PREFIX}${k}` }])) }
-      const m = resolveMaster(styleMasterId, { [styleMasterId]: named }, frame, tokens)
-      const n = m?.shapes.length ?? 0
-      m?.shapes.forEach((sh, i) => {
-        const id = `${STYLE_MASTER_PREFIX}${pageId}:${i}`
-        shapes[id] = { ...sh, id, childIndex: (i + 1) / (n + 1), isLocked: true }
-      })
-    }
+    for (const sh of sm.shapes) shapes[sh.id] = sh
     for (const shape of result.shapes) {
       shapes[shape.id] = shape
     }
@@ -164,12 +180,12 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      background: result.background ?? (styleMaster?.background ? JSON.parse(JSON.stringify(styleMaster.background)) : undefined),
+      background: result.background ?? sm.background,
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,
       slideSpecId: result.slideSpecId,
-      masterId: result.masterId ?? styleMasterId,
+      masterId: result.masterId ?? sm.masterId,
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     pages[pageId] = page
