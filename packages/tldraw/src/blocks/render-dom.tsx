@@ -53,6 +53,11 @@ export const HostLayoutContext = React.createContext<HostLayoutContextValue | un
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /** Convert a `Paint` to inline CSS properties (background / backgroundImage). */
+/** AC4: hides an <img> that failed to load (its alt text would otherwise paint). */
+function hideBrokenImage(e: React.SyntheticEvent<HTMLImageElement>): void {
+  e.currentTarget.style.visibility = 'hidden'
+}
+
 export function paintToCSS(paint: Paint): React.CSSProperties {
   switch (paint.type) {
     case 'solid':
@@ -626,6 +631,10 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             src={node.url}
             alt={node.alt}
             style={imgStyle}
+            // AC4: an image that fails to load (offline, a dead link) is hidden, never drawn as
+            // broken alt text; the block's fallback painted under it (initials disc, tinted
+            // backing) shows instead. The SVG export's <image> draws nothing in that case.
+            onError={hideBrokenImage}
             {...(part ? { 'data-part': part } : {})}
           />
         )

@@ -13,7 +13,7 @@ import { TDAssetType } from '~types'
 import * as fs from 'fs'
 import * as path from 'path'
 import { tryHexToRgb } from './color-math'
-import { deckLayoutContext, contextForBlock } from './deck-context'
+import { deckLayoutContext, contextForBlock, resolveAssetUrl } from './deck-context'
 import { deckSpecToDocument } from './deck-document'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
@@ -129,5 +129,14 @@ describe('deck-context — demo slide 2 gradient reaches the viewer/editor path 
         { color: '#1B4A6B', at: 1 },
       ],
     })
+  })
+})
+
+describe('AC4 — resolveAssetUrl accepts inline raster images only', () => {
+  it('png/jpeg/gif/webp data URIs resolve to themselves; svg and other data types do not', () => {
+    for (const t of ['png', 'jpeg', 'gif', 'webp']) expect(resolveAssetUrl(`data:image/${t};base64,AAAA`, undefined)).toBe(`data:image/${t};base64,AAAA`)
+    expect(resolveAssetUrl('data:image/svg+xml;base64,AAAA', undefined)).toBeUndefined()
+    expect(resolveAssetUrl('data:text/html,<b>x</b>', undefined)).toBeUndefined()
+    expect(resolveAssetUrl('javascript:alert(1)', undefined)).toBeUndefined()
   })
 })

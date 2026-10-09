@@ -11,7 +11,7 @@
 import type { CapacityReport, LayoutContext, LayoutNode, LintFinding, Size } from '../../../types'
 import type { ImageGridProps } from './schema'
 import { GRID_MAX_IMAGES } from './schema'
-import { altFindings, asArr, clamp, enumOf, imageLeaf, lineH, objs, onColor, side, str } from '../_kit'
+import { altFindings, asArr, clamp, enumOf, imageBacking, imageLeaf, lineH, objs, onColor, side, str } from '../_kit'
 import { placeLines } from '../../diagram/_kit'
 import { byPrefix, slotItems } from '../../composite/_slots'
 
@@ -135,6 +135,7 @@ export function layout(props: ImageGridProps, ctx: LayoutContext): LayoutNode {
     const cap = str(it.caption).trim()
     const below = r.hasCaps && r.captions === 'below'
     const imgH = below ? Math.max(1, c.height - capH) : c.height
+    nodes.push(...imageBacking(ctx, it.image, { x: c.x, y: c.y, width: c.width, height: imgH }, `img[${i}].fallback`, r.radius))
     nodes.push(imageLeaf(ctx, it.image, it.alt, { x: c.x, y: c.y, width: c.width, height: imgH }, { part: `img[${i}]`, radius: r.radius }))
     if (!cap || !r.hasCaps) return
     if (below) {

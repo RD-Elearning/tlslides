@@ -83,7 +83,9 @@ describe('tls.m.image', () => {
         { src: 'my-photo', alt: 'A photo' } as any,
         ctxWithResolver,
       )
-      const imgNode = node.children[0] as any
+      // AC4: a tinted backing rect is painted under a resolved image, so find the image node by kind
+      const imgNode = node.children.find((c: any) => c.k === 'image') as any
+      expect((node as any).children[0].k).toBe('rect')
       expect(imgNode.url).toBe('/assets/my-photo.png')
     })
 

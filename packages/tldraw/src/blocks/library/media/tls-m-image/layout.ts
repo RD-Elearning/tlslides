@@ -11,6 +11,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { ImageProps } from './schema'
+import { imageBacking } from '../_kit'
 
 /** Caption height budget in slide units. */
 const CAPTION_HEIGHT = 40
@@ -32,6 +33,9 @@ export function layout(props: ImageProps, ctx: LayoutContext): LayoutNode {
     : ctx.box.height
 
   const children: LayoutNode[] = []
+
+  // AC4: a tinted backing under a resolved cover-fit image — what shows when it does not load.
+  if (url && fit === 'cover') children.push(...imageBacking(ctx, props.src, { x: 0, y: 0, width: ctx.box.width, height: imageHeight }, 'image.fallback', radius))
 
   // Image node (or missing-asset placeholder handled by renderers)
   children.push({

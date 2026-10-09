@@ -29,6 +29,8 @@ import type { ComponentShape } from '~types'
 
 /** An already-absolute URL or root-relative path — used as-is, never looked up. */
 const ABSOLUTE_URL_RE = /^(https?:\/\/|\/)/
+/** An inline raster image: `data:image/png|jpeg|gif|webp[;…],…`. */
+const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpeg|gif|webp)[;,]/
 
 /**
  * Resolve a media block's `src` prop (`tls.m.image`, and any future asset-bearing block) to a
@@ -42,6 +44,9 @@ const ABSOLUTE_URL_RE = /^(https?:\/\/|\/)/
  */
 export function resolveAssetUrl(id: string, assets: TDAssets | undefined): string | undefined {
   if (ABSOLUTE_URL_RE.test(id)) return id
+  // AC4: an inline raster image (png/jpeg/gif/webp) is a URL too, the same set the testimonial
+  // photo accepts (`isSafeAvatarUrl`); never `data:image/svg+xml` or any other data type.
+  if (SAFE_DATA_IMAGE_RE.test(id)) return id
   return assets?.[id]?.src
 }
 
