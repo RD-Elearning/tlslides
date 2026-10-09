@@ -155,19 +155,25 @@ Record error stats here; set `confidence` thresholds from data; `needsVisualChec
 letter-spacing / bold in tableMetrics) if found.
 
 ### Next (open, in priority order)
-- **LO8 — loose ends.** Anchored overlay dragged in the editor snaps back on recompile; parity
-  probes `tls.t.statement` (SVG renderer ignores the `emphasis` group offset; fails on HEAD too, see
-  Notes — LO6), `tls.c.testimonial` (fails on HEAD too) and `tls.d.progress-bar` (unverified); parity
-  worker keeps jest alive (kill by PID); `dist/index.mjs` not importable in plain node
-  (`@tlslides/core` lacks ESM named exports); real Next.js route import untested; size cards cover
-  default theme only, `tls.g.steps`/`tls.c.team` height fit poor; 26 shrink-wrapped labels/cells
-  paint ≤ 12 units past their box (kit slack < the +5% table error, LO6). From LO7: parity probes
-  `tls.c.stat-spotlight` (fails on HEAD: 15 → 50 units, probe font) and `tls.c.kinetic-title`
-  (2.7, unchanged); `tls.c.testimonial` example is 950 tall at its `size.min` width 400 (min
-  300), `tls.c.feature-grid` example 251 at min 1120 (min 242).
-- **Machine rule:** WSL has 4 GB RAM + 3 GB swap. Run ONE code-writing agent at a time; jest
-  targeted with `--maxWorkers=1`; one tsc at a time; never jest/tsc while the dev server +
-  Chromium run. Parallel agents thrashed the disk and froze the machine on 2026-10-08.
+- **Card height vs compiled height for padded blocks.** Size-card models fit the *painted* height
+  (`natural`); a block with invisible padding stacks taller in `compileSlide` (`tls.c.testimonial`
+  @840: model 458 for 4 lines, root 554). `atMin.h` already reports the occupied height; the
+  models do not. Fix: fit `max(painted bottom + painted top, …)` or add an `occupied` model.
+- **Shrink-wrapped labels ≤ 12 units past their box** (26 lines: scorecard/table heads +2-4,
+  team text +6-12, before-after +9, closing +8). Invisible (`white-space: pre`, not clipped);
+  a per-kit slack would move 26 layouts for no visible gain. Leave unless a shot shows it.
+- **ESM dist in plain node** (`import()` of `dist/index.mjs`): every lask-built workspace package
+  ships CJS whose named exports node cannot read; patching core alone cascades to vec, then to
+  `default` re-exports. Build-pipeline change across packages; bundlers and the CJS entry are fine
+  (`tools/layout-report/smoke-dist.js`). The real Next.js API-route import stays untested (needs a
+  `next build` of the sample; Next wiring is deferred).
+- **Committed size cards are default-theme only** — `cli.js --metrics --theme <id>` samples any
+  built-in theme on demand; the digest hints stay default-theme.
+- **Machine rule:** WSL has ~4.9 GB RAM, no swap. Run ONE code-writing agent at a time; jest
+  targeted with `--maxWorkers=1` (since LO8 it exits on its own; `--forceExit` no longer needed);
+  one tsc at a time; never jest/tsc while the dev server + Chromium run. Parallel agents thrashed
+  the disk and froze the machine on 2026-10-08. The whole parity set (102 spec files) now runs in
+  three chunks of `-t 'parity|DOM and SVG|assertParity|agree'` (~25-40 s each).
 
 ## 3. Progress
 
@@ -183,7 +189,97 @@ letter-spacing / bold in tableMetrics) if found.
 | LO5 | done | `7e3acc6f` | Browser calibration (289 blocks, 95 slides, 1 Chromium page); `tableMetrics` re-based on browser-measured Inter + letter-spacing + bold; exact Bézier `pathBounds`; `needsVisualCheck: {blockId, reason}[]`; LO5b composition hints. `layout-calibration.spec.ts` 14 tests. See Notes — LO5. |
 | LO6 | done | `62c80440` | `createLayoutContext` defaults to `editorMetrics` (= `tableMetrics`); report's editor-disagreement check is a no-op by default; fixtures needsVisualCheck 21/95 → 9/95. See Notes — LO6. |
 | LO7 | done | `8c88e4c4` | Templates paint the poster's lines and metrics (`ctx.poster`, `posterText`, host flag `posterGeometry`); all 8 html blocks; html parts vs Chromium: line mismatches 2 → 0, top/bottom p95 9.4/12.6 → 1.0/1.0 units; fixtures needsVisualCheck 9/95 → 0/95. See Notes — LO7. |
-| LO8 | todo | | loose ends |
+| LO8 | done | `53982d76` `46997d80` `32351fec` `eeccebea` `4ac7b5e3` `669e0ed6` | Resize re-wrap pinned (no bug); dragged layered block keeps its place; SVG group/host origins + probe in Inter → every parity probe passes; parity worker no longer keeps jest alive; honest size cards (`samples`, `atMin`, 3 min sizes); `smoke-dist.js`; `--theme` cards. ESM dist, label slack, padded-card heights deferred. See Notes — LO8. |
+
+### Notes — LO8 (2026-10-09)
+
+**1. Resize after LO7 — verified, no bug** (`53982d76`). `ComponentUtil` re-lays the block at the
+shape's live size every render; `htmlHostNode` builds a new poster for that box and `HostMount`'s
+update key is `width×height|posterTextSignature` — so a resize, a region width change, a props edit
+or a theme switch re-templates from the new poster. New `ComponentUtil.html-resize.spec.tsx` (5)
+drives the real editor path (wide → narrow → wide for hero, testimonial, feature-grid; a text edit;
+mono-grid → midnight) and checks the DOM's no-wrap lines equal the *last* poster's and no poster
+line is wider than the box. Mutation check: with `renderer.update` commented out, all 5 fail.
+
+**2. Dragged layered block** (`46997d80`). Decision: a move in the editor is kept, the way other
+blocks keep a move out of their region — it becomes a `free[]` block at its box. `compileSlide`
+records where it placed a layered block in `$block.placed = {box, from: 'region' | 'free'}`
+(compiler-derived, never in the `BlockSpec`, like `styleMotion`). The decompiler: a region-placed
+layered shape whose box differs from `placed.box` by > 1 unit was moved/resized by hand → `free[]`
+at its box, `layer` kept, `anchor`/`anchorTo` dropped (re-anchoring would snap it back), finding
+`shape/layered-moved` (info); an untouched one stays in its region and is re-anchored (so it still
+follows its target when the flow changes); a `from: 'free'` shape stays free on every later round
+trip. A free `backdrop` paints under the flow (`childIndex` renumbered), as it did in the region.
+Fixture boxes byte-identical. 4 tests in `layout-anchor.spec.ts`.
+
+**3. Parity probes** (`32351fec`). `tls.t.statement`: root cause in `render-svg.ts` — a `group` at
+x/y ≠ 0 drew its children at the parent's origin (the DOM nests them in a positioned div). Groups
+now get `transform="translate(x y)"` (clip rect moved into the translated space); a host's poster
+is translated by the host box too (an html block nested in a composite). `render-svg.spec`: 2 new
+tests; "renders a group node" now expects the transform (its fixture group sits at 10,20) and the
+defs-before-`<g` check matches `<g` with attributes. `tls.c.stat-spotlight` (49.8) and
+`tls.c.kinetic-title` (2.7): the probe font, not a renderer. The harness page had no Inter, so the
+SVG poster text painted in Chromium's default sans, 3-5 % wider than the `tableMetrics` (Inter)
+widths the poster was wrapped and sized with, and the host's ink box ran past the host box. The
+worker now loads the repo's committed `examples/nextjs-sample/public/fonts/Inter-Regular.ttf` as a
+data: `@font-face` and the probe lays out with `PROBE_TOKENS` (= `TEST_TOKENS` with the Inter
+family; `TEST_TOKENS` itself, used by ~170 non-probe tests, is unchanged). Proven by removing the
+file: both fail again with the old numbers. `tls.d.progress-bar` passes. **All 102 parity-probe
+spec files pass** (data 26, composite 26, the rest 50; three chunks, ~25-40 s each).
+
+**4. Parity worker vs jest** (same commit). Only `parity.spec.ts` ever called `shutdownWorker`;
+every other probe (the standard suite imports the harness inside a test) left a forked node +
+Chromium whose IPC channel and stdio pipes kept jest's loop alive. Now the child, its pipes and its
+channel are unref'd except while a request is pending; an idle timer (3 s, Node's real `timers`,
+since jsdom timers die with the environment) shuts the worker down; `afterAll` is registered when
+the harness is imported at a spec's top level (not inside a test — jest-circus fails the test);
+the worker closes Chromium and exits on `disconnect`. Result: targeted runs exit by themselves
+(68 suites in 22 s with no `--forceExit`), no `headless_shell` left after any run.
+
+**5. Size cards** (`eeccebea`). The linear model cannot describe step shapes (`tls.g.steps` turns
+vertical when narrow: @840 5 steps 187, 8 steps 333; `tls.c.team` wraps to a second row at 5:
+@1728 4 → 332, 5 → 845), so a poor fit now carries every measured `samples: [x, h][]` — the
+planner reads the table, the hint keeps the range. New `atMin: {h, fits}`: the example laid out in
+exactly its `size.min` box; `h` = what it occupies there (root, or painted bottom). Autofit blocks
+shrink into it (all but 3 of 81 cards). The 3 that did not were wrong mins, fixed at the root:
+`tls.c.testimonial` 400×300 → **840×554** (950 tall at 400: an html poster does not shrink its
+type; 554 = 458 painted + 2×48 padding), preferred → max(poster, min) = 554;
+`tls.c.feature-grid` min height 242 → **251** (a cell title wraps at 1120), preferred max(derived,
+min); `tls.c.problem-solution` 320 → **332**. Spec: every poor fit has exact samples (steps @840
+re-measured), every measurable example fits its own min box; the testimonial min test now asserts
+containment like its RV09 neighbours (it accepted any growth); the two derived-preferred tests
+follow max(poster, min) (as hero in LO6). JSON regenerated; hints file unchanged; fixture reports
+byte-identical (boxes and findings, checked against a `git archive` of 33589a79).
+
+**6. Shrink-wrapped labels** — documented, not changed (§2 Next): 26 lines, ≤ 12 units, invisible.
+
+**7. dist** (`4ac7b5e3`). `turbo run build:packages` (alone, 13 s, exit 0).
+`tools/layout-report/smoke-dist.js`: `require(dist/index.js)` exposes the oracle API, `analyzeDeck`
+on the demo fixture equals the source build's findings, `buildBlockMetrics` from dist reproduces
+four committed cards; it reports (does not fail on) the ESM limitation. ESM investigated on a
+scratch copy: appending node's `0 && (module.exports = {…})` annotation to core's CJS fixes core,
+then `@tlslides/vec` fails, then a `default` re-export — every lask-built package would need it:
+not contained, deferred. Next.js route import not exercised.
+
+**8. Theme** (`669e0ed6`). `cli.js --metrics --theme <id>` samples cards with a built-in theme;
+`LLM-ARCHITECTURE.md` §S4.1 names it, `samples`, `atMin` and `smoke-dist.js`.
+
+**Gates.** tsc prod 0, spec 329 (= before; `tsconfig.tsbuildinfo` restored to the user's copy after
+each run). eslint: 0 errors on touched files. jest `--maxWorkers=1` (no `--forceExit`), non-parity:
+layout-report/-layers/-anchor/-calibration, block-metrics, capability-digest, slide-compiler/
+-decompiler/-layouts/-composition, collision, render-svg, html-poster-geometry, shape-bridge,
+deck-document, demo contract/roundtrip, validate, motion-showcase, tour, catalog-conformance,
+`library/composite`, `ComponentUtil`, `layout/` (68 suites, 3189 tests) and `library/` data,
+diagram, text, chrome, media, layout (106 suites, 2096 tests): pass. Parity: all 102 probe files
+pass. Fixture CLI (4 decks, 95 slides): 0 errors, 3 `region/overflow`, 1 `region/displaced`,
+4 `text/shrunk`, 13 `layout/unbalanced`, 3 `region/empty` (= LO7), needsVisualCheck 0/95.
+Calibration harness re-run: identical stats (html parts 0 line mismatches, top/bottom p95 1.0;
+26 rendered lines past their box). **Shots looked at** (`--shots`): demo `sl_07` feature-grid
+(3 cells, icons, titles, 2-line descriptions, nothing clipped), motion `ms_02` stat-spotlight
+(ring, 92%, label, context line on one line, three stats), tour `tl_05` (statement on 3 lines with
+both highlights, definition, callout, source), demo `sl_05` (quote on 2 lines, attribution,
+caption) — all as at LO7 (no DOM path changed).
+Out of scope, pre-existing: `DeckViewer.spec` (user's uncommitted change), `BlockInserter.spec`.
 
 ### Notes — LO7 (2026-10-09)
 
