@@ -44,6 +44,9 @@ function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutN
   return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.hero', props, ctx)
 }
 
+/** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it. */
+const HERO_MIN: [number, number] = [1280, 472]
+
 /**
  * Derive `size.preferred` from the poster of the defaults. Builds a reference
  * LayoutContext at 1920-wide with the default theme's tokens and calls poster()
@@ -60,7 +63,10 @@ function derivePreferredSize(): [number, number] {
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
   const posterNode = poster(defaults, ctx)
-  return [REFERENCE_WIDTH, posterNode.box.height]
+  // Never below `size.min` (catalog contract min ≤ preferred). With browser-true text widths (LO6)
+  // the default title is one line at 1920 (poster 317 tall); the min height is the 1280-wide case,
+  // where it wraps (RV10).
+  return [REFERENCE_WIDTH, Math.max(HERO_MIN[1], posterNode.box.height)]
 }
 
 /* ── GSAP helper types ────────────────────────────────────────────────────── */
@@ -305,7 +311,7 @@ export const tlsCHero: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [1280, 472] },
+  size: { preferred: derivePreferredSize(), min: HERO_MIN },
   layout: heroLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: heroAnimate },

@@ -32,7 +32,7 @@ const rigid = (r) => !r.elastic
 console.log('blocks', rows.length, 'layout', rows.filter(isLayout).length, 'html', rows.filter(isHtml).length, 'elastic', rows.filter((r) => r.elastic).length)
 console.log('\n== painted height: report vs DOM ==')
 const w1 = heightStats('layout, table (report default)', isLayout, 'table')
-heightStats('layout, estimate (= editor)', isLayout, 'estimate')
+heightStats('layout, estimate (pre-LO6 editor)', isLayout, 'estimate')
 heightStats('layout rigid, table', (r) => isLayout(r) && rigid(r), 'table')
 heightStats('layout elastic, table', (r) => isLayout(r) && !rigid(r), 'table')
 const w2 = heightStats('html, table (poster)', isHtml, 'table')
@@ -73,7 +73,8 @@ for (const r of rows.filter(isLayout)) {
       eMis++
       if (e.lines < d.browser) eUnder++
     }
-    if (d.rendered !== e.lines) renderedMis++
+    // LO6: the editor (what the DOM paints) measures with `table`.
+    if (d.rendered !== t.lines) renderedMis++
     if (d.maxRenderedWidth > d.boxWidth + 2) {
       overflowW++
       ovs.push(`${r.slide}:${r.id} ${t.p} rendered ${d.maxRenderedWidth} > box ${Math.round(d.boxWidth)} (+${(((d.maxRenderedWidth - d.boxWidth) / d.boxWidth) * 100).toFixed(0)}%)`)
@@ -83,8 +84,8 @@ for (const r of rows.filter(isLayout)) {
 console.log(`leaves ${n} (blocks with leaf-count mismatch skipped: ${unmatched})`)
 console.log(`table lines != browser wrap: ${tMis} (${pct(tMis / n)}), table under-counts ${tUnder}`)
 console.log(`estimate lines != browser wrap: ${eMis} (${pct(eMis / n)}), estimate under-counts ${eUnder}`)
-console.log(`rendered lines != estimate (sanity): ${renderedMis}`)
-console.log(`rendered (estimate) line wider than its box: ${overflowW}`)
+console.log(`rendered lines != table = editor (sanity): ${renderedMis}`)
+console.log(`rendered (editor) line wider than its box: ${overflowW}`)
 console.log('table mismatches:', mis.slice(0, 30))
 console.log('width overflows:', ovs.slice(0, 15))
 

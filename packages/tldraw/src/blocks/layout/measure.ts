@@ -1,13 +1,14 @@
 /**
- * Text measurement for the block layout system. The `estimateMetrics` provider is the default
- * (Node + browser) — it adapts Phase 15's `estimateTextSize` heuristic to produce full
- * `TextMetrics` with a `lines` array and optional line-breaking when `maxWidth` is provided.
+ * Text measurement for the block layout system. `editorMetrics` (= the browser-calibrated
+ * `tableMetrics`, LO6) is the default for every `createLayoutContext` (Node + browser): compile,
+ * DOM + SVG renderers, export, autofit. `estimateMetrics` adapts Phase 15's `estimateTextSize`
+ * heuristic (one average glyph width) and stays exported as an opt-in provider.
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  *
- * Three providers will eventually exist behind the `MeasureTextProvider` interface (§4.6):
- * `estimateMetrics` (this file), `canvasMetrics` (browser), and `tableMetrics` (Node).
- * Only `estimateMetrics` is implemented for A1.
+ * Three providers exist behind the `MeasureTextProvider` interface (§4.6): `estimateMetrics`,
+ * `canvasMetrics` (browser only) and `tableMetrics` (Node + browser; `editorMetrics` is its shared
+ * instance).
  */
 
 import type { RichText, ResolvedTextStyle, TextLine, TextMetrics } from '../types'
@@ -972,6 +973,15 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
     }
   }
 }
+
+/**
+ * The layout of record (LO6, `reviews/blocks/layout-oracle/README.md`): the one text metric every
+ * `createLayoutContext` uses unless a caller injects another — compile, editor, DOM + SVG
+ * renderers, export, autofit and the layout-oracle report. One shared instance, so callers can
+ * test `ctx.measureText === editorMetrics`. Browser-calibrated Inter widths (LO5): line widths
+ * within ±5% of Chromium at p95, 0.1% of text leaves wrap differently from the browser.
+ */
+export const editorMetrics: MeasureTextProvider = tableMetrics()
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* createMetricsProvider — factory                                                 */

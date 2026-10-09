@@ -87,6 +87,10 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
     valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
   }
+  // Still wider at the floor: fit exactly rather than wrap a number mid-digits (LO6 — with true
+  // widths the layout wraps what the old estimate kept on one line while the DOM ran past the tile).
+  const rw = realWidth(formattedValue, valueStyle) * 1.03
+  if (rw > inner.width) valueStyle = { ...valueStyle, size: (valueStyle.size * inner.width) / rw }
   const valueMetrics = ctx.measureText(formattedValue, valueStyle, inner.width)
   children.push({
     k: 'text',

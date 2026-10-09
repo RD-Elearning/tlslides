@@ -39,7 +39,7 @@ import { definitionLayer } from './block-layer'
 import { resolveTokens } from './tokens'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext } from './layout/layout-child'
-import { tableMetrics, type MeasureTextProvider } from './layout/measure'
+import { editorMetrics, type MeasureTextProvider } from './layout/measure'
 import { DEFAULT_PROBE_HEIGHT, measureBlock, type BlockMeasure, type TextLeafMeasure } from './layout/measure-block'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -113,7 +113,7 @@ export interface BuildBlockMetricsOptions {
   widths?: readonly number[]
   /** Default: the default deck theme. */
   tokens?: ResolvedTokens
-  /** Default `tableMetrics()`. */
+  /** Default `editorMetrics` (= `tableMetrics`, what the editor paints). */
   measureText?: MeasureTextProvider
   /** Only these types. */
   types?: string[]
@@ -225,7 +225,7 @@ export function buildBlockMetrics(registry?: BlockRegistry, opts: BuildBlockMetr
   const reg = registry ?? defaultBlockRegistry()
   const widths = [...(opts.widths ?? METRICS_WIDTHS)]
   const tokens = opts.tokens ?? resolveTokens(DEFAULT_DECK_THEME)
-  const measureText = opts.measureText ?? tableMetrics()
+  const measureText = opts.measureText ?? editorMetrics
   const blocks: Record<string, BlockMetrics> = {}
   const defs = reg
     .list()

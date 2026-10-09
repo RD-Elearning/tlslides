@@ -30,7 +30,7 @@ import type {
 import type { DeckTheme } from '~types'
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
-import { estimateMetrics } from './measure'
+import { editorMetrics } from './measure'
 import { resolveColor as solveColor, surfaceFromPaint } from '../tokens'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -56,7 +56,7 @@ export interface CreateLayoutContextOptions {
   surface: SurfaceContext
   /** Block registry for `layoutChild` lookups. */
   registry?: BlockRegistry
-  /** Text measurement provider. Defaults to `estimateMetrics`. */
+  /** Text measurement provider. Defaults to `editorMetrics` (browser-calibrated `tableMetrics`, LO6). */
   measureText?: MeasureTextProvider
   /** Colour resolution. Receives the effective surface this context resolves against, so the
    *  default (and any injected solver) can contrast-solve against the block's own background
@@ -171,7 +171,7 @@ export function createLayoutContext(
 
   const surface: SurfaceContext = { ...options.surface }
 
-  const measureText: MeasureTextProvider = options.measureText ?? estimateMetrics
+  const measureText: MeasureTextProvider = options.measureText ?? editorMetrics
 
   // Deep copy the instance style so the context is structurally isolated.
   const instanceStyle: BlockStyleSpec | undefined = options.style

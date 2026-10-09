@@ -168,7 +168,7 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
           box: { x: bx, y, width: boxW, height: btnH },
         })
       }
-      // The label block wraps with `estimateMetrics`, which runs wider than the pill (table widths): give it room so it never wraps.
+      // Give the label block room so it never wraps (pre-LO6 the editor's `estimateMetrics` ran wider than the pill's table width).
       const labelW = Math.max(boxW, Math.ceil(ctx.measureText(ctaText, ctaStyle, 4000).lines[0]?.width ?? 0) + 8)
       const ly = link ? y : y + (btnH - ctaStyle.size * ctaStyle.lineHeight) / 2
       pieces.push({ id: 'cta', spec: label, box: { x: link ? bx : bx + btnPadX, y: ly, width: labelW, height: Math.ceil(ctaStyle.size * ctaStyle.lineHeight) } })

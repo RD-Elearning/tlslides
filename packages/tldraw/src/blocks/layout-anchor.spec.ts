@@ -110,7 +110,7 @@ describe('LO2.1 — compiler places anchored layered blocks', () => {
   })
 
   it("anchorTo puts the badge inside the target card's corner (inset space.sm), clear of its text", () => {
-    const r = analyzeSlide(ANCHOR_SLIDE, { metrics: 'estimate' })
+    const r = analyzeSlide(ANCHOR_SLIDE)
     // The stat card paints a full-box surface, so its visible corner is its box corner.
     const card = boxOf(ANCHOR_SLIDE, 'card')
     const b = boxOf(ANCHOR_SLIDE, 'badge')
@@ -150,7 +150,8 @@ describe('LO2.1 — compiler places anchored layered blocks', () => {
       layout: 'two-column',
       regions: { left: [{ id: 'k', type: 'tls.t.body', props: { text: 'Churn fell this quarter.' } }, badge('b', { anchorTo: 'k' })] },
     }
-    const k = analyzeSlide(slide, { metrics: 'estimate' }).blocks.find((x) => x.id === 'k')!
+    // The report's default metric is the compiler's (LO6), so its painted text is what the anchor saw.
+    const k = analyzeSlide(slide).blocks.find((x) => x.id === 'k')!
     const b = boxOf(slide, 'b')
     const solo = boxOf({ id: 's', layout: 'two-column', regions: { left: [badge('b')] } }, 'b')
     expect([b.width, b.height]).toEqual([solo.width, solo.height])
@@ -238,7 +239,7 @@ describe('LO2.1 — title band and region alignment', () => {
     const r = analyzeSlide({ id: 's', layout: 'two-column', regions: { title: [title('t', 'Quarterly results')] } })
     expect(r.findings.filter((f) => f.code === 'text/shrunk')).toEqual([])
     expect(r.findings.filter((f) => f.code === 'text/shrunk' || f.severity !== 'info')).toEqual([])
-    // with the editor's own metrics too
+    // and with the old average-width estimate (the editor's metric before LO6)
     const e = analyzeSlide({ id: 's', layout: 'two-column', regions: { title: [title('t', 'Quarterly results')] } }, { metrics: 'estimate' })
     expect(e.findings.filter((f) => f.code === 'text/shrunk')).toEqual([])
   })

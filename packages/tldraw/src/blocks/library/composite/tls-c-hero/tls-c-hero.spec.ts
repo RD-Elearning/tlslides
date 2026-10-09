@@ -273,8 +273,9 @@ describe('tls.c.hero', () => {
 
       // The preferred width should match the reference frame width
       expect(tlsCHero.size.preferred[0]).toBe(1920)
-      // The preferred height should equal the poster's measured height
-      expect(tlsCHero.size.preferred[1]).toBe(posterHeight)
+      // The preferred height is the poster's measured height, never below size.min (catalog
+      // contract min ≤ preferred; LO6: with true widths the default poster is 317 < min 472).
+      expect(tlsCHero.size.preferred[1]).toBe(Math.max(posterHeight, tlsCHero.size.min[1]))
       // It should not be the old hardcoded value of 600
       expect(tlsCHero.size.preferred[1]).not.toBe(600)
     })

@@ -150,10 +150,14 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
           const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
           if (emphasis === 'highlight') {
             const padX = Math.round(size * 0.08)
+            // Clamped to the block box: a marked run that starts (or ends) a line would otherwise
+            // push its pad past the box edge (LO6: true widths wrap the example's run to a line start).
+            const hx0 = Math.max(0, cursor - padX)
+            const hx1 = Math.min(width, cursor + sw + padX)
             marks.push({
               k: 'rect',
               part: `emphasis[${li}.${ri}]`,
-              box: { x: cursor - padX, y: g.y + size * 0.06, width: sw + padX * 2, height: g.height - size * 0.12 },
+              box: { x: hx0, y: g.y + size * 0.06, width: Math.max(0, hx1 - hx0), height: g.height - size * 0.12 },
               fill: { type: 'solid', color: tint },
               radius: Math.round(size * 0.12),
             })

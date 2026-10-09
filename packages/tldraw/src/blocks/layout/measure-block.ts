@@ -502,8 +502,8 @@ function probe(def: BlockDefinition, props: Record<string, unknown>, ctx: Layout
 
 /**
  * Measure a block's natural size at `width`. `ctx` supplies tokens, the text-metrics provider
- * (pass `tableMetrics()`: line widths within ±5% of Chromium at p95, LO5; the default
- * `estimateMetrics` is -22%/+25%), the
+ * (the default since LO6 is `editorMetrics` = `tableMetrics`: line widths within ±5% of Chromium
+ * at p95, LO5; an injected `estimateMetrics` is -22%/+25% and lowers confidence), the
  * registry (for containers) and the instance `style` (padding/align are honoured through
  * `layoutBlock`, exactly as `compileSlide` does). Never throws.
  */

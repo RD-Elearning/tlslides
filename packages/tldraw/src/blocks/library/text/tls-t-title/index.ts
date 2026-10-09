@@ -36,7 +36,7 @@ export const tlsTTitle: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1200, 120], min: [640, 100] },
+  size: { preferred: [1200, 120], min: [680, 100] }, // min 640 → 680 (LO6): with true widths the example wraps at 640 even at the 0.76 autofit floor
   layout: layout as BlockDefinition['layout'],
   motion,
 }

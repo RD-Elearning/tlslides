@@ -54,7 +54,8 @@ describe('tls.g.roadmap', () => {
   })
 
   it('a label wider than its bar goes outside on the right; at the right edge it flips to the left', () => {
-    const t = lay({ periods: periods(6), laneLabels: 'none', lanes: [{ name: 'A', items: [{ label: 'A very long label here', start: 0, end: 0 }, { label: 'Edge label long text', start: 5, end: 5 }] }] })
+    // LO6: labels are measured with true widths; the edge label is long enough to really exceed its bar.
+    const t = lay({ periods: periods(6), laneLabels: 'none', lanes: [{ name: 'A', items: [{ label: 'A very long label here', start: 0, end: 0 }, { label: 'Edge label with much longer text', start: 5, end: 5 }] }] })
     const b0 = bar(t, 0, 0)
     const l0 = label(t, 0, 0)
     expect(l0.x).toBeGreaterThanOrEqual(b0.x + b0.width)

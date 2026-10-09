@@ -552,7 +552,8 @@ describe('compileSlide', () => {
     it('three blocks: middle block is 2× the others, all boxes disjoint and ordered', () => {
       // Use tls.t.body blocks (Tier A, always measures via layout()).
       const shortBlock: BlockSpec = { type: 'tls.t.body', id: 'short-a', props: { text: 'Short A' } }
-      const tallBlock: BlockSpec = { type: 'tls.t.body', id: 'tall-b', props: { text: 'Tall B — this text block should measure approximately 2× the height of a short block because it has twice the content and explicit sizing.' } }
+      // LO6: long enough to wrap with true text widths (the old estimate wrapped the first sentence alone).
+      const tallBlock: BlockSpec = { type: 'tls.t.body', id: 'tall-b', props: { text: 'Tall B — this text block should measure approximately 2× the height of a short block because it has twice the content and explicit sizing. It carries a second sentence so that it wraps.' } }
       const shortBlock2: BlockSpec = { type: 'tls.t.body', id: 'short-c', props: { text: 'Short C' } }
 
       const spec: SlideSpec = {
@@ -815,7 +816,9 @@ describe('compileSlide — LO1.5 flow fixes', () => {
   const registry = new BlockRegistry()
   registerBuiltInBlocks(registry)
   const gap = TEST_TOKENS.space.md
-  const long = 'Design systems scale because every decision is made once and reused everywhere. '.repeat(12)
+  // LO6: sized for true (browser-calibrated) text widths — 12 repeats fit the left column since the
+  // editor stopped over-estimating widths.
+  const long = 'Design systems scale because every decision is made once and reused everywhere. '.repeat(16)
   const byId = (r: CompileSlideResult, id: string) => r.shapes.find((s) => (s.props.$block as { id?: string }).id === id)!
   const bottom = (r: CompileSlideResult, id: string) => byId(r, id).point[1] + byId(r, id).size[1]
   const regionsOf = (layout: string) => getSlideLayout(layout as 'blank')!.compile(DEFAULT_FRAME, TEST_TOKENS)

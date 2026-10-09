@@ -28,6 +28,7 @@ export {
   estimateMetrics,
   canvasMetrics,
   tableMetrics,
+  editorMetrics,
   createMetricsProvider,
   isCJK,
   createLayoutContext,

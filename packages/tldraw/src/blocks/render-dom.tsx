@@ -536,7 +536,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
 
     case 'text': {
       // Text container uses position:relative as the positioning context for lines.
-      // Lines use position:absolute with cumulative baselines (from A1's estimateMetrics).
+      // Lines use position:absolute with cumulative baselines (from the layout's text metrics, `editorMetrics` since LO6).
       const textStyle: React.CSSProperties = {
         ...pos,
         position: 'absolute',

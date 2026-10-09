@@ -4,7 +4,8 @@
  * Lets the AI *read* a slide's geometry instead of screenshotting it
  * (`reviews/blocks/layout-oracle/README.md`). The slide is compiled with the same `compileSlide`
  * the editor uses (so every box is the box the editor places), then each block is re-laid at its
- * final box with a chosen text-metrics provider (default `tableMetrics`, line widths ±5% of real Inter at p95 — LO5) and
+ * final box with a chosen text-metrics provider (default `editorMetrics` = `tableMetrics`, line widths ±5% of real Inter at
+ * p95 — LO5; since LO6 the editor itself uses it, so report and screen wrap the same) and
  * its geometry is read straight off the `LayoutNode` tree via `measureBlock` /
  * `collectPaintedLeaves`.
  *
@@ -41,7 +42,7 @@ import { resolveTokens } from './tokens'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
-import { estimateMetrics, tableMetrics, type MeasureTextProvider } from './layout/measure'
+import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
 import {
   collectPaintedLeaves,
   measureBlock,
@@ -169,8 +170,8 @@ export interface AnalyzeSlideOptions {
   tokens?: ResolvedTokens
   /** Block registry. Default: the built-in blocks. */
   registry?: BlockRegistry
-  /** Text metrics: `'table'` (default, ±5% per line at p95), `'estimate'` (what the editor uses today), or a
-   *  provider. */
+  /** Text metrics: `'table'` (default = `editorMetrics`, what the editor paints since LO6; ±5% per line at
+   *  p95), `'estimate'` (the old average-width heuristic), or a provider. */
   metrics?: 'table' | 'estimate' | MeasureTextProvider
 }
 
@@ -310,7 +311,7 @@ function letterFor(i: number): string {
 function providerFor(metrics: AnalyzeSlideOptions['metrics']): { provider: MeasureTextProvider; name: string } {
   if (typeof metrics === 'function') return { provider: metrics, name: 'custom' }
   if (metrics === 'estimate') return { provider: estimateMetrics, name: 'estimate' }
-  return { provider: tableMetrics(), name: 'table' }
+  return { provider: editorMetrics, name: 'table' }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -428,11 +429,12 @@ export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): L
       const local = paintedBounds(collected)
       painted = local ? offset(local, box.x, box.y) : null
       text = collected.text.map((t) => toSlideText(t, box))
-      // LO5: the editor lays text out with `estimateMetrics` and the DOM paints those line breaks
-      // verbatim. Where that differs from what the text really needs, the screen is not what this
-      // report says — a screenshot is the only ground truth.
-      if (metricsName !== 'estimate' && !collected.posterHost && !collected.opaqueHost) {
-        const editor = editorTextCheck(def, props, ctx, box, provider, text, registry)
+      // LO5/LO6: the DOM paints the editor's line breaks (`editorMetrics`) verbatim. When this report
+      // re-lays with another provider and the two disagree, the screen is not what this report says —
+      // a screenshot is the only ground truth. With the default provider (= the editor's) the check
+      // cannot fire and is skipped.
+      if (provider !== editorMetrics && !collected.posterHost && !collected.opaqueHost) {
+        const editor = editorTextCheck(def, props, ctx, box, provider, metricsName, text, registry)
         if (editor) visual.push({ blockId: id, reason: editor })
       }
     } catch (err) {
@@ -883,7 +885,7 @@ function textNodes(n: LayoutNode, out: TextNode[] = []): TextNode[] {
 }
 
 /**
- * Lay the block out the way the editor does (`estimateMetrics`) and compare with the report's
+ * Lay the block out the way the editor does (`editorMetrics`) and compare with the report's
  * text: a different line count, or an editor line whose real width (`provider`) runs past its
  * text box, means the screen differs from the report. Returns the reason, or `undefined`.
  */
@@ -893,6 +895,7 @@ function editorTextCheck(
   ctx: ReturnType<typeof createLayoutContext>,
   box: Box,
   provider: MeasureTextProvider,
+  providerName: string,
   report: TextLeafReport[],
   registry: BlockRegistry
 ): string | undefined {
@@ -902,7 +905,7 @@ function editorTextCheck(
     tokens: ctx.tokens,
     surface: ctx.surface,
     registry,
-    measureText: estimateMetrics,
+    measureText: editorMetrics,
     ...(ctx.style ? { style: ctx.style } : {}),
   })
   const root = layoutBlock(def, props, editorCtx)
@@ -912,7 +915,7 @@ function editorTextCheck(
   }
   for (let i = 0; i < editor.length; i++) {
     if (editor[i].lines !== report[i].lines) {
-      return `the editor wraps \`${textName(report[i])}\` to ${editor[i].lines} line${editor[i].lines === 1 ? '' : 's'} on screen; its real width needs ${report[i].lines}`
+      return `the editor wraps \`${textName(report[i])}\` to ${editor[i].lines} line${editor[i].lines === 1 ? '' : 's'} on screen; the report's \`${providerName}\` metric needs ${report[i].lines}`
     }
   }
   let worst = 0
@@ -928,7 +931,7 @@ function editorTextCheck(
     }
   }
   if (worst > OVERFLOW_TOL + 1) {
-    return `on screen a line of \`${worstName}\` paints ~${Math.ceil(worst)} units past its text box (the editor's width estimate is short)`
+    return `on screen a line of \`${worstName}\` paints ~${Math.ceil(worst)} units past its text box (per the report's \`${providerName}\` metric)`
   }
   return undefined
 }

@@ -70,12 +70,17 @@ describe('LO5 — pathBounds bounds Béziers exactly', () => {
 })
 
 describe('LO5 — needsVisualCheck', () => {
-  it('flags a block the editor wraps differently, with the reason', () => {
+  it('LO6: the editor measures with the report metric, so ms_11 (editor wrapped 2 vs 1 at LO5) needs no screenshot', () => {
     const deck = loadDeck('motion-showcase.json')
-    const [report] = analyzeDeck({ ...deck, slides: deck.slides.filter((s) => s.id === 'ms_11') })
-    const body = report.needsVisualCheck.find((c) => c.blockId === 'b11_body')
-    expect(body?.reason).toMatch(/editor wraps `text` to 2 lines on screen; its real width needs 1/)
-    expect(formatLayoutReport(report)).toMatch(/^screenshot: .*b11_body \(the editor wraps/m)
+    const ms11 = { ...deck, slides: deck.slides.filter((s) => s.id === 'ms_11') }
+    const [report] = analyzeDeck(ms11)
+    expect(report.needsVisualCheck).toEqual([])
+    expect(formatLayoutReport(report)).toMatch(/^screenshot: not needed$/m)
+    // A report re-laid with another metric still flags where it disagrees with the editor.
+    const [estimate] = analyzeDeck(ms11, { metrics: 'estimate' })
+    const body = estimate.needsVisualCheck.find((c) => c.blockId === 'b11_body')
+    expect(body?.reason).toMatch(/editor wraps `text` to 1 line on screen; the report's `estimate` metric needs 2/)
+    expect(formatLayoutReport(estimate)).toMatch(/^screenshot: .*b11_body \(the editor wraps/m)
   })
 
   it('flags content ending within the calibrated margin of the frame bottom', () => {
@@ -97,8 +102,10 @@ describe('LO5 — needsVisualCheck', () => {
   it('a minority of fixture slides need a screenshot', () => {
     const all = FIXTURE_FILES.flatMap((f) => analyzeDeck(loadDeck(f)))
     const flagged = all.filter((r) => r.needsVisualCheck.length > 0)
-    // 21 / 95 at LO5 (layout-oracle §3); a ratchet, not an exact pin.
-    expect(flagged.length / all.length).toBeLessThan(0.3)
+    // 21 / 95 at LO5, 9 / 95 at LO6 (only html posters left; layout-oracle §3); a ratchet, not an exact pin.
+    expect(flagged.length / all.length).toBeLessThan(0.12)
+    const reasons = all.flatMap((r) => r.needsVisualCheck.map((c) => c.reason))
+    expect(reasons.filter((x) => /editor/.test(x))).toEqual([])
   })
 })
 
