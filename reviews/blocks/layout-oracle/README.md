@@ -155,16 +155,16 @@ Record error stats here; set `confidence` thresholds from data; `needsVisualChec
 letter-spacing / bold in tableMetrics) if found.
 
 ### Next (open, in priority order)
-- **LO7 — html-kind blocks.** They are measured from their export poster, which wraps differently
-  from the live HTML (4/9 differ), so they always need a screenshot. Make poster text layout follow
-  the same metrics, or derive the html block's geometry from the layout tree.
 - **LO8 — loose ends.** Anchored overlay dragged in the editor snaps back on recompile; parity
   probes `tls.t.statement` (SVG renderer ignores the `emphasis` group offset; fails on HEAD too, see
   Notes — LO6), `tls.c.testimonial` (fails on HEAD too) and `tls.d.progress-bar` (unverified); parity
   worker keeps jest alive (kill by PID); `dist/index.mjs` not importable in plain node
   (`@tlslides/core` lacks ESM named exports); real Next.js route import untested; size cards cover
   default theme only, `tls.g.steps`/`tls.c.team` height fit poor; 26 shrink-wrapped labels/cells
-  paint ≤ 12 units past their box (kit slack < the +5% table error, LO6).
+  paint ≤ 12 units past their box (kit slack < the +5% table error, LO6). From LO7: parity probes
+  `tls.c.stat-spotlight` (fails on HEAD: 15 → 50 units, probe font) and `tls.c.kinetic-title`
+  (2.7, unchanged); `tls.c.testimonial` example is 950 tall at its `size.min` width 400 (min
+  300), `tls.c.feature-grid` example 251 at min 1120 (min 242).
 - **Machine rule:** WSL has 4 GB RAM + 3 GB swap. Run ONE code-writing agent at a time; jest
   targeted with `--maxWorkers=1`; one tsc at a time; never jest/tsc while the dev server +
   Chromium run. Parallel agents thrashed the disk and froze the machine on 2026-10-08.
@@ -182,8 +182,130 @@ letter-spacing / bold in tableMetrics) if found.
 | LO4 | done | `770808fb` | Size-card API exported from `blocks/index.ts` (package root re-exports it); `turbo build:packages` exit 0, dist CJS verified. CLI `tools/layout-report/cli.js` (+ `load.js`, `gen-block-metrics.js`), 0.4-0.8 s per fixture deck. Docs: `LLM-ARCHITECTURE.md` §S4.1, `guides/blocks-authoring.md` §2.10. |
 | LO5 | done | `7e3acc6f` | Browser calibration (289 blocks, 95 slides, 1 Chromium page); `tableMetrics` re-based on browser-measured Inter + letter-spacing + bold; exact Bézier `pathBounds`; `needsVisualCheck: {blockId, reason}[]`; LO5b composition hints. `layout-calibration.spec.ts` 14 tests. See Notes — LO5. |
 | LO6 | done | `62c80440` | `createLayoutContext` defaults to `editorMetrics` (= `tableMetrics`); report's editor-disagreement check is a no-op by default; fixtures needsVisualCheck 21/95 → 9/95. See Notes — LO6. |
-| LO7 | todo | | html-kind geometry from live-equivalent layout |
+| LO7 | done | `8c88e4c4` | Templates paint the poster's lines and metrics (`ctx.poster`, `posterText`, host flag `posterGeometry`); all 8 html blocks; html parts vs Chromium: line mismatches 2 → 0, top/bottom p95 9.4/12.6 → 1.0/1.0 units; fixtures needsVisualCheck 9/95 → 0/95. See Notes — LO7. |
 | LO8 | todo | | loose ends |
+
+### Notes — LO7 (2026-10-09)
+
+**Survey (HEAD 76941ffc, before).** The 9 fixture html blocks (2 hero, 2 feature-grid, kinetic-title,
+2 stat-spotlight, journey, feature-reveal) are laid out by `htmlHostNode` → host node with the
+block's `poster` (what the compiler, the oracle and SVG export measure), while the live DOM is the
+block's `template()` HTML, wrapped and spaced by the browser. Template vs poster differed in every
+block: line-heights (hero title 1.1 vs the display token 1.02; feature-grid 1.3/1.5 vs 1.2/1.45),
+tracking (the poster's default −0.03 em, templates 0), gaps (big-stat label 8 vs `space.sm` 16;
+testimonial a different stack altogether, its text measured at w−96 but drawn at x 0), the
+`tableMetrics` +2 per text node, layout quirks (feature-grid's `inline-block` icon sat on the line
+baseline, the strut pushed the title 3 units down; hero's CTA pill, a flex item, stretched to the
+full width while the poster drew a centred pill; the split hero title painted two blocks, the
+poster one wrapped title; testimonial `padding:48px` on a `height:100%` content-box root — the
+column was offset 48 down and overflowed the host). The LO5 "4/9 line counts differ" was half a
+harness artefact: it summed lines per element, so `<strong>`/word `<span>`s on one row counted as
+extra lines (hero, kinetic-title). Measured per `data-part` (new in `measure.js`/`stats.js`): **2
+real wrap differences** (feature-grid `cells.1.desc`, feature-reveal `items.3.text`: table said 1
+line at 100%/95% of the box, Chromium 2) and positions off by up to 12 units (top) / 50 (bottom).
+
+**Approach chosen: (c) = (a) + the template paints the poster's lines.** (a) alone — poster
+metrics = template CSS — still lets the browser re-wrap: table vs Chromium line widths are ±5% at
+p95, and both real mismatches above were lines within 5% of their box, so a share of lines would
+keep breaking differently and the block could never be `high`. (b) alone has the same hole. So
+the template gets the poster (`HtmlTemplateContext.poster`, handed over by `HostMount` from the host
+node — the same layout pass, same box) and paints each text part with exactly the poster's lines
+(`<br>` between, `white-space:nowrap`) and its font-size/line-height/letter-spacing
+(`posterText(ctx)` in `html-block.ts`: `pt.css(key, fallback)`, `pt.html(key, fallback)`, keyed by
+the poster text node's `propPath`). That is the layout-kind contract (the DOM renderer paints the
+layout's lines with `white-space: pre`): line counts equal **by construction**. The vertical stack
+is then (a): each poster uses its template's numbers (one exported constant set per block —
+`HERO_LH`, `FG_*`, `KT`, `JOURNEY_LABEL`, `SPOT`, `REVEAL`, `TESTIMONIAL`, `BIG_STAT`) and advances
+by CSS line boxes (`cssTextHeight` = lines × size × line-height, not the +2 `height`). Where a
+template positioned something the poster computed differently, the template now takes the poster's
+value (journey label top, incl. the poster's clamp into the box; stat-spotlight column
+`justify-content: safe center` = the poster's `max(0, …)`). Templates keep their look: the posters
+adopted the templates' values, not the other way round (screenshots below identical except the
+fixes). Without a poster (a direct `template()` call) every helper returns the old markup, so the
+browser wraps as before. The host node says it: `htmlHostNode(…, { posterGeometry: true })` →
+`measureBlock` confidence `high`; a poster host without the flag stays `medium` and is screenshot.
+TS stays the single source of truth: the browser no longer decides any html line break.
+
+**Before → after.** Calibration harness (`calibrate/run.js`, 1 Chromium page, Inter loaded):
+
+| html kind (9 blocks, 50 text parts) | before | after |
+|---|---|---|
+| line-count mismatches, per `data-part` | 2 | **0** |
+| part top \|err\| median / p95 / max (units) | 1.0 / 9.4 / 11.8 | **0.4 / 1.0 / 1.0** |
+| part bottom \|err\| median / p95 / max | 2.2 / 12.6 / 49.6 | **0.4 / 1.0 / 1.1** |
+| painted height poster vs DOM median / p95 | 2.1% / 4.4% (20 units) | 0.0% / 2.5% (4.0 units) |
+| old per-element total-line metric (LO5 "4/9") | 4/9 | 2/9 (hero, kinetic-title: the inline-run artefact) |
+
+The remaining 2.5% is feature-grid's icon: the harness measures the SVG glyph's ink (≈ 4 units
+inside its 48-unit box), the poster the icon box — not text. Layout kind unchanged (median 0.0%,
+p95 0.5%, rendered lines ≠ table 0, table ≠ browser wrap 3/1595). Non-fixture html blocks
+(testimonial ×2, big-stat ×2, hero `split` with CTA; a scratch deck through the same harness):
+every part within 1 unit, line counts equal.
+
+Fixtures, `cli.js` (4 decks, 95 slides): finding counts identical (3 `region/overflow`, 1
+`region/displaced`, 4 `text/shrunk`, 13 `layout/unbalanced`, 3 `region/empty`, 0 errors);
+**needsVisualCheck 9/95 → 0/95**. Boxes moved: hero demo `sl_01` 472 → 490 (its new min), colorful
+`sl_01` 317 → 323 (title line-height 1.1, as the live hero always painted); feature-grid demo
+`sl_07` 206 → 209, colorful `sl_05` 166 → 167.
+
+**Screenshots looked at** (`--shots`, session scratchpad, before and after side by side):
+motion `ms_01` kinetic-title (identical: kicker, 2-line title with the accent words, rule,
+subtitle), `ms_02`/`ms_03` stat-spotlight (identical; ring, value, label, context, three stats),
+`ms_06` journey (identical; five labels above/below the path), `ms_07` feature-reveal (identical;
+"Biến ý tưởng … một / tuần." on 2 lines both times — the poster now says 2 as well), demo `sl_01`
+hero (identical), demo `sl_07` / colorful `sl_05` feature-grid (titles ~4 units higher: the icon
+strut is gone), colorful `sl_01` hero (identical); scratch deck: testimonial (quote centred on 2
+lines with the bold run, avatar, name, role — now inside its box), big-stat, hero `split` + CTA
+(pill at the text's start edge, label width). Reduced motion, build step 999 = the animations'
+final state; no clipped text in any.
+
+**Fixed at the root on the way.** `tls.c.hero` `size.min` 472 → **490** (the example at 1280 is
+490 tall at the template's line-height — the live hero always was); `tls.c.big-stat` `size.min`
+265 → **246** (265 was the old poster: +2 per text and a 16-unit label gap the template never
+had). `tls.c.testimonial` poster gains a transparent extent rect → its **parity probe passes**
+(failed on HEAD); `collectPaintedLeaves` treats an invisible rect (transparent fill, no stroke) as
+structure, never a painted leaf, so the size card is unchanged by it.
+
+**Tests.** New `html-poster-geometry.spec.tsx` (28): all 8 html blocks declare `posterGeometry` and
+measure `high`, a plain poster host stays `medium`; for every block at 1728×732, 840×600 and a
+second theme, every poster text appears once in the template, line for line, with its size,
+line-height and tracking, and nothing else is no-wrap; without a poster no forced lines; through
+the real `HostMount` a narrow hero's title has the poster's line breaks. Changed, with reasons:
+`tls-c-hero.spec` "poster unchanged regardless of variant" → classic/gradient-sweep unchanged,
+split paints its two halves (the old assertion pinned the wrong poster); `measure-block.spec` hero
+`high` + a no-flag host `medium`; `layout-report.spec` sl_01 hero trusted, the same hero without
+the flag flagged; `layout-calibration.spec` ratchet < 0.12 → < 0.05 plus "no poster reasons". Size
+cards regenerated: 8 html cards `high`; hints big-stat `h≈246@840`, feature-grid `h 167–442@1728`,
+hero `h≈437+53/L@1728`, journey `h 360–450@840`, testimonial `h≈194+66/L@840`.
+
+**Gates.** tsc prod 0, spec 329 (= before; `tsconfig.tsbuildinfo` restored to the user's copy).
+jest `--maxWorkers=1 --forceExit`, non-parity: `library/composite` (all), `library/motion*`,
+`motion/`, `layout/`, render-dom, host-registry, layout-report/-layers/-anchor/-calibration,
+block-metrics, capability-digest, slide-compiler/-composition/-layouts/-decompiler, collision,
+catalog-conformance, demo-deck, motion-showcase, block-library-tour, shape-bridge, deck-document/
+-context, validate-deck-spec, render-svg, registry, html-poster-geometry: all pass (final runs: 74 + 9 suites, 4186 tests).
+Parity probes run for the changed blocks, a few at a time: journey, feature-reveal, testimonial
+pass; kinetic-title fails identically on HEAD (width 2.7, checked by swapping HEAD's files in);
+stat-spotlight fails on HEAD (15.3) and now by 49.8 — the probe draws the context line "trong vòng
+6 tháng sau khi" (table right edge 945 of 960 at the 960×540 probe) in its own font past the root;
+tracking 0 (the template's look) made it 3% wider. In LO8. hero, feature-grid and big-stat have no
+probe. eslint: 0 new errors (the one pre-existing in `tls-c-hero.spec.ts`, now line 958).
+
+**Scope cuts / risks, named.**
+- A no-wrap line can paint up to ~5% wider than the table measured (the layout-kind trade): centred
+  texts (kinetic-title, journey, testimonial) overflow both sides via flex centring, start-aligned
+  ones to the right; feature-reveal cards clip at their padding. The report does not see that.
+- Weights the table does not model: kinetic-title title and stat-spotlight values are 800, the
+  testimonial name 600 — measured as bold (700, ×1.05); ~2% narrow for 800.
+- `posterText` keys are the poster nodes' `propPath`s; a template that asks for a missing key
+  paints nothing (by design: a text the poster fit away is not painted live) — the spec catches a
+  typo. Testimonial initials stay browser-laid (fixed 72-unit circle).
+- `HostMount` re-templates when the poster's text changes (`posterTextSignature`), so a theme
+  switch with another type scale re-wraps; colours still come from CSS vars.
+- Not done: `tools/visual` scenario in the Next.js app (the calibration harness renders the real
+  `<DeckViewer>` path and is the browser check, as LO5/LO6); `build:packages` not run.
+- The scratch deck used for testimonial/big-stat/split is not committed (harness takes the 4
+  fixtures); the jsdom spec covers those blocks line for line.
 
 ### Notes — LO6 (2026-10-09)
 
