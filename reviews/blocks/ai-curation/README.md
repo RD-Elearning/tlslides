@@ -804,7 +804,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
-| AC2 | 🟡 part 2a done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba` | §2.3 rank 1 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero) + lead-review fixes; rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing`, `cards`) remains; see Notes — AC2 (part 1), (part 2a) |
+| AC2 | ✅ done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba`; part 2b: `d95333f1`, `3c4ea4d4`, `f6523e8d`, `c2151e22`, `591ed78f`, `466c13b7`, `3d546a40`, `c9d46d14` | §2.3 ranks 1–2 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero; agenda, comparison, kpi-row, closing, cards, kinetic-title) + lead-review fixes; see Notes — AC2 (part 1), (part 2a), (part 2b) |
 | AC3 | ⬜ | | |
 | AC4 | ⬜ | | |
 | AC5 | ⬜ | | |
@@ -821,6 +821,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC2 part 1 | Takeaway `size`, chart-insight `insightSize`, content-sized kpi-row/roadmap, body text in wide cards; feature-grid `cell`/`align`/`iconStyle`; testimonial `variant: photo`; `knobs.json` | Next: AC2 part 2 — `stat-spotlight`, `big-stat`, then `hero`, `kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing`, `cards` numeral. Read Notes — AC2 (part 1) "Remains" first. |
 | 2026-10-09 | lead review | Looked at `sheet3-knobs.png` (AC2 part 1) | Open visual issues for AC2 part 2: (1) `knobs.json` kn_01 kpi-row and kn_02 roadmap slides still sit in the top half with the bottom ~45% empty — the `title-body`-type layout does not centre its region like `blank`/`timeline` (AC1.5); make the recipe/region balanced and let the balance gate catch it; (2) feature-grid `iconStyle: circle` icons read too small (~24 units) — scale icon with cell size; (3) testimonial photo fixture has no image (placeholder only) — add a data-URI image. Then continue §2.3. |
 | 2026-10-09 | AC2 part 2a | Lead-review issues (1)–(3): kpi-row display tier, roadmap roomy tier, recipes region-fill gate; feature-grid disc scales with the cell; data-URI photo in `knobs.json`. §2.3 rank 1 knobs: stat-spotlight `visual`/`statsPlacement`, big-stat `variant`/`align`, hero `align`/`decoration`; `data-big-stat` recipe centred (allowance removed) | Next: AC2 part 2b — rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing` big-type, `cards` numeral). Read Notes — AC2 (part 2a) "Open" first: 11 sparse timeline recipes are a named ratchet; digest top-8 has 72 chars of headroom. |
+| 2026-10-09 | AC2 part 2b | Lead review of part 2a: big-stat large tier (number grows with the box), hero CTA on-accent label. §2.3 rank 2: agenda `variant`/`numbering`, comparison `style` (cards, versus), kpi-row `tile`, closing `variant: big-type`, cards `numeral: giant`, kinetic-title `tone`. AC2 ✅ | Next: AC3. Read Notes — AC2 (part 2b) "Open": the titled timeline recipes are still sparse by default (ratchet unchanged); digest top-8 has 49 chars of headroom (budget kept at 12,000). |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1143,3 +1144,90 @@ chunks (LO8) not run.
   free) — by design, but the split pair reads small at `display` 128 (corporate).
 - The hero CTA label keeps the `text` colour on the accent pill (pre-existing, both renderers).
 - Digest top-8 headroom is 72 chars: rank 2 knobs will need the same trimming.
+
+### Notes — AC2 (part 2b)
+
+**Lead-review fixes.**
+- A. big-stat (`d95333f1`): a large tier shared by template and poster (`BIG_STAT_LARGE`,
+  `largeValueSize` in `schema.ts`). With the room for it the number is the largest size (≤ 2.25×
+  display, ≤ 320) whose stack fits the box height and whose number fits the width (split: 55% of
+  it), label at `lead`, context at `body`, 24 value gap; below 1.25× display the compact tier is kept
+  exactly. Fixed point: laid out again at its own (rounded-up) content height it picks the same size
+  (spec case); the template reads the size off the poster's value leaf. kn_09 number 128 → 288
+  (box 254 → 442), kn_10 split 128 → 288. **Default-variant reports:** no fixture deck other than
+  `knobs.json` contains a big-stat, so every other report is byte-identical; but the default
+  variant *does* grow too (the lead asked for every variant), so `size.preferred` 1920×278 →
+  1920×474 (derived at 1920×1080, rounded up), the size card/digest hint `h≈246@840` →
+  `h≈334+50/L@840`, recipe `data-big-stat` free 0.95 → 0.81. The accent rule stays 96×8 (small next
+  to a 288 number; a scaled rule is a follow-up).
+- B. hero CTA (`3c4ea4d4`): the poster's label is `onColor(ctx, accent)`; the template paints the
+  poster leaf's colour (without a poster `var(--tls-surface-color)` — `--tls-surface` can be a
+  gradient, which is not a valid `color`, the first attempt's bug). `posterTextSignature` now
+  includes each key's colour, so a recolouring theme re-templates. kn_11 shot: white on blue.
+
+**§2.3 rank 2 knobs** (defaults unchanged: every existing fixture report byte-identical except the
+new `knobs.json` slides and kn_01, which the lead asked to change).
+- `tls.c.agenda` (`f6523e8d`): `variant: list | cards` (surfaceAlt card per item, lg padding, a card
+  grid in two columns; the padding drops to sm before the type tier has to, and a box holding no
+  tier as cards keeps the list), `numbering: plain | badge | none` (badge: number centred in a disc
+  2× the index size, accent + on-accent for the current item, 14% tint for the rest; disc + number
+  are one `item[i].index` group). kn_12.
+- `tls.c.comparison` (`c2151e22`): `style: plain | cards | versus`. cards: every column on a card,
+  the `highlight` column tinted with a 3-unit accent outline drawn inside; versus: two columns with an
+  accent "VS" disc in a widened gutter (three columns are drawn as cards). cards/versus take the
+  biggest type tier that fits (heading + lead, then subheading + body); plain keeps its one tier.
+  `highlight` stays the existing number slot (not a look, as feature-grid `columns`). kn_13, kn_14.
+- `tls.c.kpi-row` (`591ed78f`): `tile: plain | card | accent-bar` — a card per tile spanning the
+  row's full width (edges line up with title and takeaway), accent-bar adds an 8-unit left bar; card,
+  bar and tile are one `tile[i]` group. kn_01 uses `card` (lead review: no longer top-light), kn_15
+  accent-bar; recipe `data-kpi-row` uses `card` (region fill 62%).
+- `tls.c.closing` (`466c13b7`): `variant: big-type` — one giant start-aligned title (≤ 2.5× display,
+  92% of the width, 42% of the height), lead text and CTA under it, person and contacts as a footer
+  at the bottom; a short box takes a compact set and the title takes the height left (≥ heading).
+  The CTA code is shared (`emitCta`). kn_16.
+- `tls.c.cards` (`3d546a40`): `numeral: plain | giant` (with `lead: number`): display-step numerals,
+  stepping down to the title step, then plain, when the box is short. kn_17.
+- `tls.c.kinetic-title` (`c9d46d14`): inspected — `align`/`decoration` already existed. Added
+  `tone: plain | accent`: the title on an accent panel (radius lg, 96 padding), all text/rule/orbs in
+  the poster's on-accent ink, highlight words in accent2 nudged to read on the accent; a
+  start-aligned panel drops the bottom-left disc. kn_18.
+- `looks`: agenda `variant, numbering`; comparison `style`; kpi-row `tile, gap`; cards `+ numeral`;
+  kinetic-title `+ tone` (closing already listed `variant`).
+- Every new value has spec cases at `size.preferred` and `size.min` (fits, nothing escapes) plus
+  geometry cases; DOM/SVG parity cases for agenda cards+badge, comparison versus, closing big-type,
+  cards giant; kpi-row's parity case runs without a registry (the known nested-tile probe issue,
+  `it.skip` in its spec), so it checks the card groups only.
+
+**Digest budget decision (lead).** The top-8 detail budget *may* be raised from 12,000 to 13,000 if
+rank 2 could not fit. It was **not needed**: top-8 detail **11,951** / 12,000 (cards entered the
+top 8; was 11,928), so the spec constant stays 12,000. Tier-1 index **15,255** / 16,000, full index
+18,779 / 20,000. One hand-written expectation changed its subject: `capabilityIndexData` kpi-row
+`looks` `['gap']` → `['tile', 'gap']`.
+
+**Verification.** `cli.js`: corporate / minimal / gradient (8 slides each) and knobs (18) — 0 errors,
+0 warnings, 0 info findings, `needsVisualCheck` empty. Other fixture decks (demo-deck,
+block-library-tour, colorful, motion-showcase) byte-identical to HEAD before this part. Calibration
+`run.js --shots kn_01…kn_18 --decks knobs,corporate,minimal,gradient` (42 slides): 68 rows, 0 missing,
+0 box deltas > 1; **html parts 36: 0 line-count mismatches** (|top|/|bottom| ≤ 0.9); layout-kind:
+the known `st_04:b_cards` title over-count and the known width overflows (st_01 +1%, st_08 +3%)
+only; kn_13/kn_14 comparison painted height report 395 vs DOM 400 (lead-size items, within the
+cards/pros-cons spread already seen). Contact sheet `sheet5-knobs.png` (session scratchpad)
+**looked at**, plus full-size shots of every new slide. tsc prod **0**, spec **329**. Specs
+(`--maxWorkers=1`): big-stat, hero, agenda, comparison, kpi-row, kpi-tile, closing, cards,
+kinetic-title, recipes, capability-digest, catalog-conformance, layout-report, block-metrics (size
+cards regenerated with A, no later change), styles, slide-composition, demo-deck-*, layout-layers,
+layout-anchor, layout-calibration, html-poster-geometry, motion-showcase, block-library-tour,
+slide-compiler, slide-decompiler, deck-document, motion-m3, render-dom*, BlockPreview.theme,
+composite-geometry, motion-style, slide-layouts — all pass. Parity-probe chunks (LO8) not run.
+
+**Open / visually weak.**
+- Titled timeline recipes still sit centred with a band under the title when their blocks are
+  small (agenda-full 44%, comparison-options 37%, process-chevrons 11%, process-timeline 16%; the
+  named ratchet in `recipes.spec` is unchanged). The new knobs (agenda cards, comparison
+  cards/versus tiers) help when chosen, but the recipes still use the defaults.
+- big-stat accent rule (96×8) is small next to the large-tier number; kn_09/kn_10 are still a single
+  number on an otherwise empty slide (by design).
+- kpi-row cards use the tile's own 24 padding (tight); kpi-row parity with a registry is still the
+  known skipped issue.
+- kinetic-title orbs can touch a long start-aligned title (the ring is translucent).
+- The CTA pill in closing is wider on the right than the left (pre-existing `ctaW` × 1.05).
