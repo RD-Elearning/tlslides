@@ -47,7 +47,7 @@ describe('tls.c.kpi-row', () => {
   // float in empty space); at the preferred height the compact tier is unchanged. The row stays
   // content-sized and re-laying it at its own height keeps the tier.
   describe('display tier when the row has the height', () => {
-    const props = (tlsCKpiRow.describe.example as any).props
+    const props = (tlsCKpiRow.describe as any).example.props
     const valueSizes = (n: any): number[] => {
       const out: number[] = []
       const walk = (x: any) => {

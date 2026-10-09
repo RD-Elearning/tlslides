@@ -129,8 +129,8 @@ describe('tls.g.roadmap example', () => {
 // height for it the roomy tier (caption labels, body lane names, taller bars) is used; in a box
 // that cannot hold it the compact tier is unchanged. Both paint inside their box.
 describe('tls.g.roadmap roomy tier', () => {
-  const props = tlsGRoadmap.describe.example.props as Record<string, unknown>
-  const nameSize = (t: any) => (absoluteLeaves(t).find((l) => l.part.startsWith('lane[0].name'))!.node as any).style.size
+  const props = (tlsGRoadmap.describe as any).example.props as Record<string, unknown>
+  const nameSize = (t: any) => (absoluteLeaves(t).find((l) => (l.part ?? '').startsWith('lane[0].name'))!.node as any).style.size
   const barH = (t: any) => bar(t, 0, 0).height
   it('a tall box (1728x758) uses bigger lane names and taller bars than a short one (1400x220)', () => {
     const tall = lay(props, { width: 1728, height: 758 })
