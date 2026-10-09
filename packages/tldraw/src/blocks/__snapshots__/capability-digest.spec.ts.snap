@@ -5412,7 +5412,7 @@ tls.t.takeaway · emphasis · element — Highlighted insight with accent bar an
 also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
-tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈246@840] knobs: variant, align, format, showContext, showLabel
+tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈334+50/L@840] knobs: variant, align, format, showContext, showLabel
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: gap
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number

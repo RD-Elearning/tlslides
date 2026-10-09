@@ -12,7 +12,7 @@
 
 import type { LayoutContext, LayoutNode, Paint, ResolvedTextStyle } from '../../../types'
 import type { BigStatProps } from './schema'
-import { BIG_STAT_RULE, formatValue, splitGeometry } from './schema'
+import { BIG_STAT_LARGE, BIG_STAT_RULE, formatValue, largeValueSize, splitGeometry } from './schema'
 import { isShown } from '../../../schema-helpers'
 import { cssTextHeight } from '../../../html-block'
 import { BIG_STAT as B } from './template'
@@ -25,8 +25,38 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
   const w = ctx.box.width
   // AC2 knobs (the template paints the same geometry).
   const valueText = formatValue(props)
-  const split = props.variant === 'split' ? splitGeometry(w, valueText, ctx.tokens.type.display, B.valueTracking, realWidth) : null
   const accent = props.variant === 'accent'
+  const display = ctx.tokens.type.display
+  const showLabel = isShown(props, 'showLabel')
+  const showContext = isShown(props, 'showContext') && !!props.context
+  const muted = ctx.resolveColor('textMuted').color
+  const textStyles = (large: boolean) => ({
+    label: { ...ctx.resolveText(large ? 'lead' : 'body', { letterSpacing: 0, lineHeight: B.labelLH }), color: muted },
+    context: { ...ctx.resolveText(large ? 'body' : 'caption', { letterSpacing: 0, lineHeight: B.contextLH }), color: muted },
+  })
+  const baseValue = { ...ctx.resolveText('display', { letterSpacing: B.valueTracking, lineHeight: B.valueLH }), color: ctx.resolveColor(accent ? 'accent' : 'text').color }
+  const perSize = cssTextHeight(1, { ...baseValue, size: 1 })
+  const width0 = realWidth(valueText, { size: display.size, letterSpacing: B.valueTracking }) * 1.04 + 4
+  const colHeight = (st: ReturnType<typeof textStyles>, colW: number): number =>
+    (showLabel ? cssTextHeight(ctx.measureText(props.label, st.label, colW).lines.length, st.label) + B.labelGap : 0) +
+    (showContext ? cssTextHeight(ctx.measureText(props.context as string, st.context, colW).lines.length, st.context) : 0)
+
+  // AC2 (lead review): the large tier when the box has the room (see BIG_STAT_LARGE).
+  const L = textStyles(true)
+  let split = props.variant === 'split' ? splitGeometry(w, valueText, display, B.valueTracking, realWidth) : null
+  let size: number | null
+  if (split) {
+    size = largeValueSize(display.size, ctx.box.height, 0, perSize, w * 0.55, width0)
+    const big = size !== null ? splitGeometry(w, valueText, { size }, B.valueTracking, realWidth) : null
+    if (big && colHeight(L, big.colW) <= ctx.box.height) split = big
+    else size = null
+  } else {
+    const fixed = (accent ? BIG_STAT_RULE.height + BIG_STAT_RULE.gap : 0) + BIG_STAT_LARGE.valueGap + colHeight(L, w)
+    size = largeValueSize(display.size, ctx.box.height, fixed, perSize, w, width0)
+  }
+  const { label: labelStyle, context: contextStyle } = size !== null ? L : textStyles(false)
+  const valueStyle = size !== null ? { ...baseValue, size } : baseValue
+  const valueGap = size !== null ? BIG_STAT_LARGE.valueGap : B.valueGap
   const align = props.align === 'center' && !split ? 'center' : 'start'
   // LO7: the template's metrics and margins; the template paints these lines, so the stack is
   // the live geometry (text heights are CSS line boxes; the root ends after the last margin, as
@@ -43,13 +73,6 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
     children.push({ k: 'rect', box: { x: rx, y, width: BIG_STAT_RULE.width, height: BIG_STAT_RULE.height }, fill: { type: 'solid', color: ctx.resolveColor('accent').color }, radius: BIG_STAT_RULE.height / 2 })
     y += BIG_STAT_RULE.height + BIG_STAT_RULE.gap
   }
-
-  // Value (the enormous headline number)
-  const valueStyle = { ...ctx.resolveText('display', { letterSpacing: B.valueTracking, lineHeight: B.valueLH }), color: ctx.resolveColor(accent ? 'accent' : 'text').color }
-  const labelStyle = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: B.labelLH }), color: ctx.resolveColor('textMuted').color }
-  const contextStyle = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: B.contextLH }), color: ctx.resolveColor('textMuted').color }
-  const showLabel = isShown(props, 'showLabel')
-  const showContext = isShown(props, 'showContext') && !!props.context
 
   if (split) {
     // Number left, label/context column beside it; both centred on the row (the template's
@@ -72,7 +95,7 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
     if (cm) children.push({ k: 'text', part: 'context', propPath: 'context', box: { x: split.colX, y: cy, width: split.colW, height: cH }, lines: cm.lines, style: contextStyle })
     y = rowH
   } else {
-    y += text('value', valueText, valueStyle) + B.valueGap
+    y += text('value', valueText, valueStyle) + valueGap
 
     // Label
     if (showLabel) y += text('label', props.label, labelStyle) + B.labelGap

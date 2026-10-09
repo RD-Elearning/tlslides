@@ -5,7 +5,7 @@
  */
 export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.agenda': 'h≈-21+156/item@840',
-  'tls.c.big-stat': 'h≈246@840',
+  'tls.c.big-stat': 'h≈334+50/L@840',
   'tls.c.cards': 'h=fill',
   'tls.c.case-study': 'h≈537@840',
   'tls.c.chart-insight': 'h=fill',

@@ -15,7 +15,7 @@
 
 import { tlsCBigStat } from './index'
 import { makeCtx, SIZES, assertValidNode } from '../../text/test-helpers'
-import { formatValue } from './schema'
+import { BIG_STAT_LARGE, formatValue, isLargeTier } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -492,7 +492,7 @@ describe('tls.c.big-stat', () => {
       const posterHeight = p.box.height
 
       expect(tlsCBigStat.size.preferred[0]).toBe(1920)
-      expect(tlsCBigStat.size.preferred[1]).toBe(posterHeight)
+      expect(tlsCBigStat.size.preferred[1]).toBe(Math.ceil(posterHeight))
     })
   })
 
@@ -609,7 +609,8 @@ describe('AC2 — look knobs (variant, align)', () => {
     const valueW = label.x - 48
     expect(valueW).toBeGreaterThanOrEqual((1728 - 48) / 2)
     expect(Math.abs(value.x + value.w - valueW)).toBeLessThan(2)
-    const html = template({ ...props, variant: 'split' }, tplCtx(c) as any)
+    // The live host passes the poster (LO7); the template paints its geometry.
+    const html = template({ ...props, variant: 'split' }, { ...tplCtx(c), poster: node } as any)
     expect(html).toContain(`margin-left:48px;`)
     expect(html).toContain(`width:${valueW}px;`)
     expect(html).toContain('text-align:right;')
@@ -634,5 +635,59 @@ describe('AC2 — look knobs (variant, align)', () => {
     const html = template(props, tplCtx(ctx({ width: 1200, height: 600 })) as any)
     expect(html).not.toContain('text-align:center')
     expect(html).not.toContain('width:96px')
+  })
+})
+
+describe('AC2 lead review — the number grows with the box (large tier)', () => {
+  const DEF = tlsCBigStat
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const textLeaf = (n: LayoutNode, part: string): Extract<LayoutNode, { k: 'text' }> | undefined => {
+    if (n.k === 'text' && n.part === part) return n
+    if (n.k === 'group') for (const c of n.children) { const t = textLeaf(c, part); if (t) return t }
+    return undefined
+  }
+  const LOOKS: Array<[string, Record<string, unknown>]> = [
+    ['plain', {}],
+    ['accent + center', { variant: 'accent', align: 'center' }],
+    ['split', { variant: 'split' }],
+  ]
+
+  for (const [name, knobs] of LOOKS) {
+    it(`${name}: a full-slide region paints a ~2x number with the label at lead; laid out again at its own height it keeps that size`, () => {
+      const c = ctx({ width: 1728, height: 888 })
+      const display = c.tokens.type.display.size
+      const node = poster({ ...props, ...knobs }, c)
+      const value = textLeaf(node, 'value')!
+      expect(value.style.size).toBeGreaterThanOrEqual(Math.min(display * 2, 280))
+      expect(value.style.size).toBeLessThanOrEqual(BIG_STAT_LARGE.maxSize)
+      expect(textLeaf(node, 'label')!.style.size).toBe(c.tokens.type.lead.size)
+      expect(node.box.height).toBeLessThanOrEqual(888)
+      // The live host lays the block out again in a box of its content height (rounded up).
+      const again = poster({ ...props, ...knobs }, ctx({ width: 1728, height: Math.ceil(node.box.height) }))
+      expect(textLeaf(again, 'value')!.style.size).toBe(value.style.size)
+      expect(again.box.height).toBe(node.box.height)
+      // The template paints the poster's size and the large gap.
+      const html = template({ ...props, ...knobs }, { ...tplCtx(c), poster: node } as any)
+      expect(html).toContain(`font-size:${value.style.size}px`)
+      if (name !== 'split') expect(html).toContain(`margin-bottom:${BIG_STAT_LARGE.valueGap}px`)
+    })
+  }
+
+  it('a short box keeps the compact tier (display number, body label) exactly as before', () => {
+    const [w, h] = DEF.size.min
+    const c = ctx({ width: w, height: h })
+    const node = poster(props, c)
+    expect(textLeaf(node, 'value')!.style.size).toBe(c.tokens.type.display.size)
+    expect(textLeaf(node, 'label')!.style.size).toBe(c.tokens.type.body.size)
+    expect(isLargeTier(c.tokens.type.display.size, c.tokens.type.display.size)).toBe(false)
+  })
+
+  it('the large number never wraps: a tall box sizes a long number by the width', () => {
+    const c = ctx({ width: 1400, height: 900 })
+    const node = poster({ ...props, value: 123456789, format: 'plain' }, c)
+    const value = textLeaf(node, 'value')!
+    expect(isLargeTier(value.style.size, c.tokens.type.display.size)).toBe(true)
+    expect(value.lines).toHaveLength(1)
+    expect(value.lines[0].width).toBeLessThanOrEqual(1400)
   })
 })

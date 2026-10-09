@@ -13,7 +13,7 @@
 
 import type { HtmlTemplateContext } from '../../../types'
 import type { BigStatProps } from './schema'
-import { BIG_STAT_RULE, formatValue, splitGeometry } from './schema'
+import { BIG_STAT_LARGE, BIG_STAT_RULE, formatValue, isLargeTier, splitGeometry } from './schema'
 import { isShown } from '../../../schema-helpers'
 import { posterText } from '../../../html-block'
 import { realWidth } from '../../data/_chart/inter-width'
@@ -30,7 +30,11 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
   const B = BIG_STAT
   // AC2 knobs (the poster draws the same geometry).
   const display = ctx.tokens?.type?.display ?? { size: 152 }
-  const split = props.variant === 'split' ? splitGeometry(ctx.box?.width ?? 1920, valueText, display, B.valueTracking, realWidth) : null
+  // AC2 (lead review): the large tier is the poster's choice (it measures the label); its number
+  // size is the poster's value leaf. Without a poster the compact tier, as before.
+  const posterSize = pt.leaves('value')[0]?.style.size
+  const large = isLargeTier(posterSize, display.size)
+  const split = props.variant === 'split' ? splitGeometry(ctx.box?.width ?? 1920, valueText, large ? { size: posterSize as number } : display, B.valueTracking, realWidth) : null
   const accent = props.variant === 'accent'
   const center = props.align === 'center' && !split
 
@@ -47,7 +51,7 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
       `font-family:var(--tls-font-family);` +
       pt.css('value', `font-size:${split ? `${split.valueSize}px` : 'var(--tls-type-display)'};line-height:${B.valueLH};letter-spacing:${B.valueTracking}em;`) +
       `color:${ctx.cssVar(accent ? 'accent' : 'on')};` +
-      (split ? 'text-align:right;' : `margin-bottom:${B.valueGap}px;`) +
+      (split ? 'text-align:right;' : `margin-bottom:${large ? BIG_STAT_LARGE.valueGap : B.valueGap}px;`) +
     `">${pt.html('value', ctx.esc(valueText))}</div>`
   if (!split) parts.push(valueHtml)
 
@@ -57,7 +61,7 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
     col.push(
       `<div data-part="label" style="` +
         `font-family:var(--tls-font-family);` +
-        pt.css('label', `font-size:var(--tls-type-body);line-height:${B.labelLH};`) +
+        pt.css('label', `font-size:var(--tls-type-${large ? 'lead' : 'body'});line-height:${B.labelLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
         `margin-bottom:${B.labelGap}px;` +
       `">${pt.html('label', ctx.esc(props.label))}</div>`
@@ -69,7 +73,7 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
     col.push(
       `<div data-part="context" style="` +
         `font-family:var(--tls-font-family);` +
-        pt.css('context', `font-size:var(--tls-type-caption);line-height:${B.contextLH};`) +
+        pt.css('context', `font-size:var(--tls-type-${large ? 'body' : 'caption'});line-height:${B.contextLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
       `">${pt.html('context', ctx.esc(props.context))}</div>`
     )

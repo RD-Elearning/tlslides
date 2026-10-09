@@ -150,6 +150,30 @@ export const schema: BlockSchema = {
 
 /** AC2 `variant: accent`: the rule above the number (template and poster). */
 export const BIG_STAT_RULE = { width: 96, height: 8, gap: 24 } as const
+/**
+ * AC2 (lead review) — the large tier. A big-stat with the room for it grows its number with the
+ * box: the largest size (at most `maxGain`× the display token and `maxSize`) whose stack fits the
+ * box height and whose number fits the width, with the label at `lead` and the context at `body`. Below
+ * `minGain`× display the block keeps the compact tier (display / body / caption), unchanged.
+ * Fixed point: laid out again at its own content height the block picks the same size (the stack
+ * is linear in the size and the compiler rounds heights up).
+ */
+export const BIG_STAT_LARGE = { minGain: 1.25, maxGain: 2.25, maxSize: 320, valueGap: 24, fitW: 0.95 } as const
+
+/** The large-tier number size for a stack of `fixedH` + `size × perSize` in `boxH` and a number
+ *  `width0` wide at `size0` in `boxW`; `null` when the box only holds the compact tier. */
+export function largeValueSize(size0: number, boxH: number, fixedH: number, perSize: number, boxW: number, width0: number): number | null {
+  const byH = (boxH - fixedH) / perSize
+  const byW = width0 > 0 ? (size0 * boxW * BIG_STAT_LARGE.fitW) / width0 : Infinity
+  const s = Math.floor(Math.min(size0 * BIG_STAT_LARGE.maxGain, BIG_STAT_LARGE.maxSize, byH, byW) + 1e-6)
+  return s >= size0 * BIG_STAT_LARGE.minGain ? s : null
+}
+
+/** True when a value painted at `valueSize` is the large tier (template side: read off the poster). */
+export function isLargeTier(valueSize: number | undefined, displaySize: number): boolean {
+  return valueSize !== undefined && valueSize >= displaySize * BIG_STAT_LARGE.minGain - 0.5
+}
+
 /** AC2 `variant: split`: the number's share of the width (at most), the gap, the narrowest column. */
 const SPLIT = { share: 0.55, gap: 48, minCol: 220 } as const
 

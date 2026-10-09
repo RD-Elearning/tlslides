@@ -58,8 +58,9 @@ function derivePreferredSize(): [number, number] {
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
   // AC2: measured with the accent variant, the tallest look (its rule sits above the number).
+  // AC2 lead review: at 1080 the number is the large tier; rounded up as the compiler rounds a box.
   const posterNode = poster({ ...defaults, variant: 'accent' }, ctx)
-  return [REFERENCE_WIDTH, posterNode.box.height]
+  return [REFERENCE_WIDTH, Math.ceil(posterNode.box.height)]
 }
 
 /** RV04 honest minimum: the default content at 520 wide. LO7: 265 → 246 — the poster now has the
