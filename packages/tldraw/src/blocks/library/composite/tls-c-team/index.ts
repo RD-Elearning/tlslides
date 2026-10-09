@@ -130,6 +130,8 @@ interface Plan {
   avatarH: number[]
   bioH: number[]
   cellH: number
+  /** AC3 pre-item: the roomy tier's cards are 1.25x their content, the content centred in them. */
+  dy: number
   needed: number
 }
 
@@ -150,8 +152,9 @@ function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = f
   const bioH = measureHeights(ctx, people.map((m, i) => bioSpec(m, i, small) ?? { id: `b${i}`, type: 'tls.t.caption', props: { text: ' ' } }), inner)
   const sm = ctx.tokens.space.sm
   const content = Math.max(0, ...people.map((m, i) => avatarH[i] + (showBio && m.bio ? sm + bioH[i] : 0)))
-  const cellH = content + 2 * pad
-  return { people, cols, rows, cw, gap, pad, inner, size, small, showBio, avatarH, bioH, cellH, needed: rows * cellH + gap * (rows - 1) }
+  const cellH = roomy ? Math.round((content + 2 * pad) * 1.25) : content + 2 * pad
+  const dy = (cellH - content - 2 * pad) / 2
+  return { people, cols, rows, cw, gap, pad, inner, size, small, showBio, avatarH, bioH, cellH, dy, needed: rows * cellH + gap * (rows - 1) }
 }
 
 export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
@@ -181,9 +184,9 @@ export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
       })
     }
     const ix = x + p.pad
-    pieces.push({ id: `person[${i}]`, spec: avatarSpec(m, i, p.size), box: { x: ix, y: y + p.pad, width: p.inner, height: p.avatarH[i] } })
+    pieces.push({ id: `person[${i}]`, spec: avatarSpec(m, i, p.size), box: { x: ix, y: y + p.dy + p.pad, width: p.inner, height: p.avatarH[i] } })
     const bio = showBio ? bioSpec(m, i, p.small) : undefined
-    if (bio) pieces.push({ id: `bio[${i}]`, spec: bio, box: { x: ix, y: y + p.pad + p.avatarH[i] + sm, width: p.inner, height: p.bioH[i] }, align: 'center' })
+    if (bio) pieces.push({ id: `bio[${i}]`, spec: bio, box: { x: ix, y: y + p.dy + p.pad + p.avatarH[i] + sm, width: p.inner, height: p.bioH[i] }, align: 'center' })
   })
   return motionSlots(composeFlat(ctx, pieces, total), p.people.length)
 }
