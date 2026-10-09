@@ -866,8 +866,16 @@ export interface ResolvedTokens {
   density: 'compact' | 'default' | 'roomy'
   /** The deck's primary font family for block text, resolved from the theme's
    *  `headingFamily`/`bodyFamily` (or the built-in default when the theme doesn't set one).
-   *  `defaultResolveText` reads this to replace the hardcoded fallback. */
+   *  `defaultResolveText` reads this to replace the hardcoded fallback. Since AC3 it is the
+   *  heading family, kept for old callers; text leaves read `headingFamily` / `bodyFamily`. */
   fontFamily: string
+  /** AC3: the family for `display`, `title`, `heading`, `subheading` text (theme `headingFamily`,
+   *  else `bodyFamily`, else the default). Optional only so hand-built token objects stay valid;
+   *  `resolveTokens` always sets it. */
+  headingFamily?: string
+  /** AC3: the family for `lead`, `body`, `caption`, `footnote` text (theme `bodyFamily`, else
+   *  `headingFamily`, else the default). */
+  bodyFamily?: string
 }
 
 /**

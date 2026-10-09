@@ -152,9 +152,12 @@ export function cssTextHeight(lines: number, style: { size: number; lineHeight: 
 
 /** CSS that makes the browser paint a poster text leaf's metrics: size, line-height, tracking, no
  *  wrapping of its own (the lines come from the poster). */
-export function posterTextCss(style: { size: number; lineHeight: number; letterSpacing: number; scale?: number }): string {
+export function posterTextCss(style: { size: number; lineHeight: number; letterSpacing: number; scale?: number; family?: string }): string {
   const size = Math.round(style.size * (style.scale ?? 1) * 100) / 100
-  return `font-size:${size}px;line-height:${style.lineHeight};letter-spacing:${style.letterSpacing}em;white-space:nowrap;`
+  // AC3: the poster leaf's family too (heading vs body face), quoted with ' so it can sit in a
+  // double-quoted style attribute.
+  const family = style.family ? `font-family:${style.family.replace(/"/g, "'")};` : ''
+  return `${family}font-size:${size}px;line-height:${style.lineHeight};letter-spacing:${style.letterSpacing}em;white-space:nowrap;`
 }
 
 /** Escaped markup for one line: its runs as `<strong>`/`<em>` (when `runs`), trailing space trimmed. */

@@ -72,7 +72,8 @@ export const TEST_TOKENS: ResolvedTokens = resolveTokens(TEST_THEME as any)
 
 /** LO8: the probe's tokens — `TEST_TOKENS` painted in Inter, the face the layout measures
  *  (`tableMetrics` is an Inter table) and the worker loads; only the family differs. */
-const PROBE_TOKENS: ResolvedTokens = { ...TEST_TOKENS, fontFamily: '"Inter", sans-serif' }
+// AC3: text leaves read `headingFamily` / `bodyFamily` first, so the probe sets all three.
+const PROBE_TOKENS: ResolvedTokens = { ...TEST_TOKENS, fontFamily: '"Inter", sans-serif', headingFamily: '"Inter", sans-serif', bodyFamily: '"Inter", sans-serif' }
 
 /** Default surface context for parity tests. */
 export const TEST_SURFACE: SurfaceContext = {

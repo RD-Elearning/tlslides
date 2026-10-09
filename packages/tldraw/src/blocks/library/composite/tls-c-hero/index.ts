@@ -47,7 +47,10 @@ function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutN
 /** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it.
  *  LO7: 472 → 490 — the poster now measures the title at the template's line-height (1.1, was
  *  the display token's 1.02), i.e. the height the live hero always painted at 1280. */
-const HERO_MIN: [number, number] = [1280, 490 + 32] // AC2: + the `decoration: rule` bar (8 + md 24)
+// AC2: + the `decoration: rule` bar (8 + md 24). AC3: 522 → 660 — the default theme (mono-grid)
+// sets its headings in Source Code Pro, now measured with its real widths (it was Inter-wide in the
+// poster's wrap), so the title takes another line at 1280 (the size card's atMin showed 657).
+const HERO_MIN: [number, number] = [1280, 660]
 
 /**
  * Derive `size.preferred` from the poster of the defaults. Builds a reference

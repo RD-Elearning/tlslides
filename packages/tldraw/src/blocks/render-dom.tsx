@@ -131,6 +131,8 @@ export const HOST_CSS_VARS = [
   '--tls-accent',
   '--tls-text-muted',
   '--tls-font-family',
+  '--tls-font-heading',
+  '--tls-font-body',
   '--tls-type-display',
   '--tls-type-title',
   '--tls-type-heading',
@@ -173,6 +175,9 @@ function hostCssVarStyle(
     '--tls-accent': tokens.color.accent,
     '--tls-text-muted': tokens.color.textMuted,
     '--tls-font-family': tokens.fontFamily,
+    // AC3: the heading / body pair for html templates (`--tls-font-family` stays = heading).
+    '--tls-font-heading': tokens.headingFamily ?? tokens.fontFamily,
+    '--tls-font-body': tokens.bodyFamily ?? tokens.fontFamily,
     '--tls-type-display': `${tokens.type.display.size}px`,
     '--tls-type-title': `${tokens.type.title.size}px`,
     '--tls-type-heading': `${tokens.type.heading.size}px`,

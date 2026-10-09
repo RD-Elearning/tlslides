@@ -34,7 +34,9 @@ fs.mkdirSync(path.join(OUT, 'www/media'), { recursive: true })
 if (!fs.existsSync(FONT_CSS)) throw new Error(`${FONT_CSS} missing: run next dev in examples/nextjs-sample once, or pass --font-css`)
 const mediaDir = path.join(path.dirname(FONT_CSS), '../../media')
 for (const f of fs.readdirSync(mediaDir)) if (f.endsWith('.woff2')) fs.copyFileSync(path.join(mediaDir, f), path.join(OUT, 'www/media', f))
-const css = fs.readFileSync(FONT_CSS, 'utf8').replace(/\/_next\/static\/media\//g, 'media/')
+// AC3: + the deck-style fonts as data @font-face (fonts.js, the sample's fontsource files), as LO8
+// did for Inter in the parity probe.
+const css = fs.readFileSync(FONT_CSS, 'utf8').replace(/\/_next\/static\/media\//g, 'media/') + '\n' + require('./fonts').fontFaceCss()
 fs.writeFileSync(
   path.join(OUT, 'www/index.html'),
   `<!doctype html><html><head><meta charset="utf-8"><style>${css}\nbody{margin:0}</style></head><body><div id="root"></div><script src="bundle.js"></script></body></html>`

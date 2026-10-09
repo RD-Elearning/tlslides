@@ -10,17 +10,20 @@
 
 import type { ResolvedTextStyle } from '../../../types'
 import { interCharEm } from '../../../layout/inter-metrics'
+import { faceCharEm, faceForFamily } from '../../../layout/font-metrics'
 
 // The table moved to `layout/inter-metrics.ts` (LO5) so `tableMetrics` uses the same browser-true
 // widths; re-exported here for the chart kit and its specs.
 export { INTER_EM } from '../../../layout/inter-metrics'
 
-/** Width of one line of `text` as the browser draws it (slide units), from the measured table. */
-export function realWidth(text: string, style: Pick<ResolvedTextStyle, 'size' | 'letterSpacing'>): number {
+/** Width of one line of `text` as the browser draws it (slide units), from the measured table.
+ *  AC3: a `family` with a measured table (`layout/font-metrics`) uses it; otherwise Inter. */
+export function realWidth(text: string, style: Pick<ResolvedTextStyle, 'size' | 'letterSpacing'> & { family?: string }): number {
+  const face = style.family ? faceForFamily(style.family) : undefined
   let em = 0
   let n = 0
   for (const ch of text) {
-    em += interCharEm(ch)
+    em += face ? faceCharEm(face, ch) : interCharEm(ch)
     n++
   }
   return (em + (style.letterSpacing || 0) * n) * style.size
@@ -30,7 +33,7 @@ export function realWidth(text: string, style: Pick<ResolvedTextStyle, 'size' | 
  * Greedy word wrap with browser-true widths. Returns the lines, or `null` when a single word is
  * wider than `maxW` (the caller decides: ellipsise, thin out, or let the estimator break it).
  */
-export function wrapReal(text: string, style: Pick<ResolvedTextStyle, 'size' | 'letterSpacing'>, maxW: number): string[] | null {
+export function wrapReal(text: string, style: Pick<ResolvedTextStyle, 'size' | 'letterSpacing'> & { family?: string }, maxW: number): string[] | null {
   const words = text.split(/\s+/).filter(Boolean)
   if (words.length === 0) return ['']
   const lines: string[] = []

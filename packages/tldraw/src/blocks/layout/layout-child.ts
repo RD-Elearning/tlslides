@@ -113,6 +113,9 @@ function defaultResolveColor(
  * font family from the resolved tokens (which comes from the theme, or the built-in
  * default when the theme doesn't set one).
  */
+/** AC3: type tokens set in the heading family; every other token uses the body family. */
+export const HEADING_TOKENS: ReadonlySet<TypeToken> = new Set<TypeToken>(['display', 'title', 'heading', 'subheading'])
+
 function defaultResolveText(
   token: TypeToken,
   over: Partial<TextStyleSpec> | undefined,
@@ -121,7 +124,9 @@ function defaultResolveText(
   const entry = tokens.type[token]
   const size = over?.size ?? entry.size
   const lineHeight = over?.lineHeight ?? entry.lineHeight
-  const family = over?.family ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
+  // AC3: heading tokens take the heading family, the rest the body family (F4).
+  const tokenFamily = HEADING_TOKENS.has(token) ? tokens.headingFamily : tokens.bodyFamily
+  const family = over?.family ?? tokenFamily ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
   const letterSpacing = over?.letterSpacing ?? -0.03
   return {
     family,
@@ -167,6 +172,8 @@ export function createLayoutContext(
     },
     density: options.tokens.density,
     fontFamily: options.tokens.fontFamily,
+    ...(options.tokens.headingFamily !== undefined ? { headingFamily: options.tokens.headingFamily } : {}),
+    ...(options.tokens.bodyFamily !== undefined ? { bodyFamily: options.tokens.bodyFamily } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }

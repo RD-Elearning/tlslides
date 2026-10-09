@@ -805,7 +805,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
 | AC2 | ✅ done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba`; part 2b: `d95333f1`, `3c4ea4d4`, `f6523e8d`, `c2151e22`, `591ed78f`, `466c13b7`, `3d546a40`, `c9d46d14` | §2.3 ranks 1–2 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero; agenda, comparison, kpi-row, closing, cards, kinetic-title) + lead-review fixes; see Notes — AC2 (part 1), (part 2a), (part 2b) |
-| AC3 | ⬜ | | |
+| AC3 | ✅ done 2026-10-09 | see Notes — AC3 | heading/body families, 11 measured families (font-widths.js, registry replaces name sniffing), sample + harness load the fonts; minimal = Be Vietnam Pro, gradient = Plus Jakarta Sans headings |
 | AC4 | ⬜ | | |
 | AC5 | ⬜ | | |
 | AC6 | ⬜ | | |
@@ -822,6 +822,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | lead review | Looked at `sheet3-knobs.png` (AC2 part 1) | Open visual issues for AC2 part 2: (1) `knobs.json` kn_01 kpi-row and kn_02 roadmap slides still sit in the top half with the bottom ~45% empty — the `title-body`-type layout does not centre its region like `blank`/`timeline` (AC1.5); make the recipe/region balanced and let the balance gate catch it; (2) feature-grid `iconStyle: circle` icons read too small (~24 units) — scale icon with cell size; (3) testimonial photo fixture has no image (placeholder only) — add a data-URI image. Then continue §2.3. |
 | 2026-10-09 | AC2 part 2a | Lead-review issues (1)–(3): kpi-row display tier, roadmap roomy tier, recipes region-fill gate; feature-grid disc scales with the cell; data-URI photo in `knobs.json`. §2.3 rank 1 knobs: stat-spotlight `visual`/`statsPlacement`, big-stat `variant`/`align`, hero `align`/`decoration`; `data-big-stat` recipe centred (allowance removed) | Next: AC2 part 2b — rank 2 (`kinetic-title`, `agenda`, `comparison`, `kpi-row` tile, `closing` big-type, `cards` numeral). Read Notes — AC2 (part 2a) "Open" first: 11 sparse timeline recipes are a named ratchet; digest top-8 has 72 chars of headroom. |
 | 2026-10-09 | AC2 part 2b | Lead review of part 2a: big-stat large tier (number grows with the box), hero CTA on-accent label. §2.3 rank 2: agenda `variant`/`numbering`, comparison `style` (cards, versus), kpi-row `tile`, closing `variant: big-type`, cards `numeral: giant`, kinetic-title `tone`. AC2 ✅ | Next: AC3. Read Notes — AC2 (part 2b) "Open": the titled timeline recipes are still sparse by default (ratchet unchanged); digest top-8 has 49 chars of headroom (budget kept at 12,000). |
+| 2026-10-09 | AC2 lead review + AC3 | Roomy tiers so titled slides fill their region (sparse ratchet 11 → 3); heading/body families, 11 measured families, `font-widths.js`, fonts in sample + harness; minimal/gradient heading faces | Next: AC4. Read Notes — AC2 (lead review) and Notes — AC3 "Open". |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1300,4 +1301,91 @@ list-sizes, render-dom — pass. Digest top-8 11,951 / 12,000, tier-1 15,301 / 1
 **Still weak.** chevrons and steps stay < 40% at the example's short content (thin by nature; a
 takeaway under them would help but the fill blocks then centre with a gap); compare-table 41%;
 the team example's avatar URLs do not load offline (alt text shows in the shot, pre-existing).
+
+### Notes — AC3
+
+**What landed.**
+- `ResolvedTokens.headingFamily` / `.bodyFamily` (optional in the type, always set by
+  `resolveTokens`; `fontFamily` kept = heading). `defaultResolveText` gives `display`, `title`,
+  `heading`, `subheading` the heading family and `lead`, `body`, `caption`, `footnote` the body
+  family (`HEADING_TOKENS`, `layout-child.ts`). Text leaves carry the family, so both renderers follow.
+  Html: `--tls-font-heading` / `--tls-font-body` next to `--tls-font-family` (`HOST_CSS_VARS`), and
+  `posterTextCss` now emits the poster leaf's `font-family` (single-quoted), so every LO7 template
+  paints each text part in the poster's face without template edits.
+- `tools/layout-report/calibrate/fonts.js` — the font set (from the sample's fontsource packages)
+  as data `@font-face` (latin, latin-ext, vietnamese; upright), under the canonical family name.
+  `font-widths.js` — one Chromium page, `canvas.measureText` at 1000px, ASCII + the Inter table's
+  extra symbols + the 134 Vietnamese letters at 400 and 700 → `blocks/layout/font-metrics/<key>.ts`
+  (a Vietnamese letter is stored only when it differs from its NFD base by > 0.001 em; 3.4–5.9 KB
+  per family, more than the ~2 KB §4.1 guessed because of the bold table). `--check` re-measures:
+  **every family's table matches `canvas.measureText` to 0.0001 em**, and running text (4 English +
+  4 Vietnamese sentences, 400 and 700) through `tableMetrics` is within **p95 0.0–1.6 %** of the
+  browser (kerning: Be Vietnam Pro 1.6 %, Crimson Pro 1.1 %, others ≤ 0.8 %).
+- `layout/font-metrics/index.ts` — `FONT_FACES` registry (Inter = the LO5 table, unchanged),
+  `faceForFamily` (first measured family of a CSS stack, case-insensitive, canonical or fontsource
+  name), `faceCharEm` (bold reads the 700 table), `textWidthRatio`. `measure.ts`: `tableFaceKey`'s
+  substring sniffing is gone — `tableFaceFor(stack)` = first measured family, else the stack's
+  generic family (`monospace` / `serif` / `cursive` → the old hand tables), else Inter. **F5 fixed:**
+  "Crimson Pro" (ivory-editorial, forest) and "Source Code Pro" (mono-grid) are measured with their
+  own widths. `realWidth` (chart kit, html posters) reads the family too.
+- Sample: 11 fontsource packages in `examples/nextjs-sample` (exact `5.3.0`, released 2026-07-19),
+  imported in `app/layout.tsx`; `pnpm-lock.yaml` +11 packages (`COREPACK_ENABLE_STRICT=0 pnpm
+  install`, nothing else re-resolved). The calibration tool reads them from the sample's
+  `node_modules` (no separate devDependency needed); `run.js` inlines `fontFaceCss()` after the
+  Inter CSS. `widths.js` reports per family.
+- Styles: `minimal` = **Be Vietnam Pro** headings / Inter body, `gradient` = **Plus Jakarta Sans** /
+  Inter, `corporate` = Inter / Inter (§3.3). Style card `Fonts:` line gains `text width vs Inter:
+  heading ×0.97, body ×1.00` (§3.4); cards 896–955 chars (≤ 1.2k). New exports: `FONT_FACES`,
+  `faceForFamily`, `faceByKey`, `textWidthRatio`, `tableFaceFor`, `FaceMetrics`.
+
+**Fonts for the ten styles (all OFL-1.1, all ship a `vietnamese` subset per the package metadata):**
+
+| Style | Heading / body | Package (5.3.0) | Subsets |
+|---|---|---|---|
+| luxury | Playfair Display / Inter | `@fontsource-variable/playfair-display` | cyrillic, latin, latin-ext, vietnamese |
+| minimal | Be Vietnam Pro / Inter | `@fontsource/be-vietnam-pro` (no variable build; 400 + 700) | latin, latin-ext, vietnamese |
+| editorial | Fraunces / Inter | `@fontsource-variable/fraunces` | latin, latin-ext, vietnamese |
+| gradient, glass | Plus Jakarta Sans / Inter | `@fontsource-variable/plus-jakarta-sans` | cyrillic-ext, latin, latin-ext, vietnamese |
+| swiss | Archivo / Archivo | `@fontsource-variable/archivo` | latin, latin-ext, vietnamese |
+| doodle | Patrick Hand / Nunito | `@fontsource/patrick-hand` (400 only; bold is synthetic) + `@fontsource-variable/nunito` | latin, latin-ext, vietnamese (+ cyrillic for Nunito) |
+| memphis | Bricolage Grotesque / Nunito | `@fontsource-variable/bricolage-grotesque` | latin, latin-ext, vietnamese |
+| consulting | Source Serif 4 / Inter | `@fontsource-variable/source-serif-4` | cyrillic, greek, latin, latin-ext, vietnamese |
+| corporate | Inter / Inter | `next/font` (sample) | latin-ext |
+| (themes) | Crimson Pro, Source Code Pro | `@fontsource-variable/crimson-pro`, `…/source-code-pro` | latin, latin-ext, vietnamese |
+
+No fallback swap (Lora/Montserrat/Lexend/Quicksand) was needed.
+
+**Default-theme effect (recorded).** The default theme is `mono-grid` (Source Code Pro headings,
+Inter body). Before AC3 *all* its block text was set in Source Code Pro (`fontFamily = heading ??
+body`) and measured with the hand mono table. Now its body text is Inter and its headings are
+measured as real Source Code Pro. Consequences: size cards regenerated (default theme); `tls.c.hero`
+`size.min` 1280×522 → 1280×660 and `tls.c.kpi-tile` 200×210 → 200×216 (the size card's `atMin`
+showed the mono display title taking another line at 1280 — honest mins, LO8 style); two
+`layout-report.spec` overflow cases use more text (`LONG_BODY.repeat(5)` / `.repeat(2)`: the Inter
+body no longer overflowed with the old amount — same subject); digest and LO2 snapshots updated
+(a few size hints); `PROBE_TOKENS` set heading/body to Inter too (else the parity probe painted
+the new default family — the two LO8 failures came back until it did).
+
+**Verification.** Fixture reports: demo-deck, block-library-tour, colorful, motion-showcase and
+corporate/knobs **byte-identical** to HEAD (all Inter) — the tour later changed only by the
+pros-cons fix (`0f309f96`), same findings. cli.js corporate/minimal/gradient/knobs: 0 errors,
+0 warnings, 0 info, `needsVisualCheck` empty. Calibration `--decks knobs,corporate,minimal,gradient
+--shots` all 42 slides (fonts loaded: Inter, Be Vietnam Pro, Plus Jakarta Sans): 68 rows, 0 missing,
+0 box deltas > 1; html parts 36: 0 line-count mismatches; **text width per family: Be Vietnam Pro
+|abs| p95 2.6 %, Plus Jakarta Sans 2.3 %** (≤ 3 %); Inter 3.8 % (unchanged; short numeric labels).
+Line counts: under the harness's default 3 %-tolerant browser wrap, 6 over-count flags, all in
+`st_04` cards (roomy lead text / heading titles whose lines are 0.3–2.4 % over the box: the
+browser at the true width wraps exactly like the table — `STRICT=1` shows 0 of them); the strict
+under-counts are the 3 known no-wrap overflows (st_01 kicker +1 %, st_08 contact +3 %). Shots
+looked at (`chk-mg.png`): both faces render, Vietnamese-capable, no clipping; the gradient st_06
+pros-cons had ellipsised points with the pre-item's heading tier → fixed (`0f309f96`). tsc prod 0,
+spec 329. Specs: the whole `library/` (text, media, chrome, layout, composite, diagram, data —
+5,251 tests), top-level `blocks/*.spec`, motion, styles, icons, layout, `state/shapes/shared`,
+ComponentUtil, render — pass, plus the new `font-metrics.spec` (9). `DeckViewer.spec` "retreating
+into an auto build step" fails — it exercises navigation in the user's uncommitted
+`DeckViewer.tsx`, not touched here.
+
+**Open.** Vietnamese sample text is measured by `font-widths.js --check` (canvas), not yet by a
+fixture slide in the harness (the style decks' copy is English). The 7 AC5 styles' fonts are
+measured and loaded but not used until AC5.
 

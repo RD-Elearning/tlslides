@@ -48,6 +48,10 @@ export type {
   ListOpts,
   CompositeBlockConfig,
 } from './layout'
+// AC3 — measured font families (the oracle's width tables; the host loads the fonts).
+export { FONT_FACES, faceForFamily, faceByKey, textWidthRatio } from './layout/font-metrics'
+export type { FaceMetrics } from './layout/font-metrics'
+export { tableFaceFor } from './layout/measure'
 export { renderNodeToDom, paintToCSS, BlockRenderer, HOST_CSS_VARS } from './render-dom'
 export type { BlockRendererProps, HostLayoutContextValue } from './render-dom'
 export { HostRegistry } from './host-registry'

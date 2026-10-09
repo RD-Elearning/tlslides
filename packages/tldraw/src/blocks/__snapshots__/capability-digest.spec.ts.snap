@@ -5412,14 +5412,14 @@ tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, da
 also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
 
 ## Emphasis
-tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@840] knobs: markStyle
+tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: markStyle
 tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size, align, emphasis, showMark
 tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone, size
 also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
-tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈334+50/L@840] knobs: variant, align, format, showContext, showLabel
-tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–289@544] knobs: tile, gap
+tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈385@840] knobs: variant, align, format, showContext, showLabel
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile, gap
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
@@ -5438,7 +5438,7 @@ also: tls.d.ranking, tls.d.scorecard
 ## Comparison
 tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style
 tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–298@840] knobs: cellKind, zebra, density
-tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈363+59/item@840] knobs: featuredStyle, align, showCta
+tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈472+13/item@840] knobs: featuredStyle, align, showCta
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow, emphasis
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight, style, showItems
 tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h≈168+73/item@840] knobs: style, balance, showVerdict
@@ -5451,7 +5451,7 @@ also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels
-tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 269–549@840] knobs: axis, alternate, nodeStyle
+tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 245–549@840] knobs: axis, alternate, nodeStyle
 also: tls.c.journey, tls.g.milestones
 
 ## Hierarchy
@@ -5469,7 +5469,7 @@ tls.m.image-grid · media · group · 2–9 items — Grid of images in even cel
 also: tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
 
 ## People
-tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 440–845@1728] knobs: cols, card, showBio
+tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols, card, showBio
 tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840] knobs: variant
 also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
 

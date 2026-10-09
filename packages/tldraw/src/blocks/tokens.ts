@@ -199,8 +199,11 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
   // Resolve the deck's primary font family from the theme's heading/body family fields.
   // Falls back to the built-in default when the theme doesn't set one.
   const fontFamily = theme.fonts?.headingFamily ?? theme.fonts?.bodyFamily ?? DEFAULT_FONT_FAMILY
+  // AC3 (F4): a serif or display heading face with a sans body — each type token picks its family.
+  const headingFamily = fontFamily
+  const bodyFamily = theme.fonts?.bodyFamily ?? theme.fonts?.headingFamily ?? DEFAULT_FONT_FAMILY
 
-  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily }
+  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

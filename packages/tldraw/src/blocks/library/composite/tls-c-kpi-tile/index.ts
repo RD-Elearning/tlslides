@@ -100,7 +100,8 @@ export const tlsCKpiTile: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [400, 320], min: [200, 210] },
+  // AC3: min 210 → 216 — the default theme's Source Code Pro value is measured at its real width.
+  size: { preferred: [400, 320], min: [200, 216] },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity,

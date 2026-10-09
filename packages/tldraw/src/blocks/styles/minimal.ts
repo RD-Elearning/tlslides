@@ -1,7 +1,7 @@
 import { FontStyle } from '~types'
 import type { DeckStyle } from '../types'
 
-/** AC1 pilot — Elegant Minimalism (`reviews/blocks/ai-curation/README.md` §3.3). Inter until AC3. */
+/** AC1 pilot — Elegant Minimalism (`reviews/blocks/ai-curation/README.md` §3.3). AC3: Be Vietnam Pro headings over Inter body. */
 export const MINIMAL_STYLE: DeckStyle = {
   id: 'minimal',
   family: 'premium',
@@ -24,7 +24,7 @@ export const MINIMAL_STYLE: DeckStyle = {
         negative: '#B3261E',
         warning: '#9A6700',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter"' },
       shapeDefaults: { isFilled: false, cornerRadius: 12 },
     },
     {
@@ -41,12 +41,12 @@ export const MINIMAL_STYLE: DeckStyle = {
         negative: '#9F2D2D',
         warning: '#8A6116',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter"' },
       shapeDefaults: { isFilled: false, cornerRadius: 12 },
     },
   ],
   fonts: {
-    heading: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
+    heading: { family: 'Be Vietnam Pro', fallback: FontStyle.Sans, metricsKey: 'be-vietnam-pro' },
     body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
   },
   tokens: {

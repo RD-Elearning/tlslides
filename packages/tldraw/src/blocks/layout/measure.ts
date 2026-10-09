@@ -13,6 +13,7 @@
 
 import type { RichText, ResolvedTextStyle, TextLine, TextMetrics } from '../types'
 import { INTER_BOLD_FACTOR, interCharEm } from './inter-metrics'
+import { faceByKey, faceCharEm, faceForFamily, familyStack, INTER_METRICS, type FaceMetrics } from './font-metrics'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Generated font metrics from Inter Regular font (Phase 3)                       */
@@ -794,10 +795,8 @@ const ADVANCE_WIDTH_TABLES: Record<string, { default: number; chars: Record<stri
 }
 
 /**
- * Look up the advance width of a character in em for a given font face key.
- * Falls back to the face's default width for unlisted characters. The `inter` face reads the
- * browser-measured table (`inter-metrics.ts`, LO5); the `ADVANCE_WIDTH_TABLES.inter` entry above
- * only still feeds `estimateMetrics`' average width.
+ * Look up the advance width of a character in em for a legacy face key (`serif` / `mono` /
+ * `script`, the pre-AC3 hand tables), used only for a family stack with no measured table.
  */
 function tableCharWidth(char: string, faceKey: string): number {
   if (faceKey === 'inter') return interCharEm(char)
@@ -807,35 +806,53 @@ function tableCharWidth(char: string, faceKey: string): number {
 }
 
 /**
- * Map a CSS font-family string to the closest built-in face key for tableMetrics.
- * Returns 'sans' as the neutral fallback.
+ * AC3: the face `tableMetrics` measures a `font-family` stack with. The first family in the stack
+ * that has a browser-measured table (`font-metrics/`, Inter included) wins; a stack with none falls
+ * back by its CSS generic family to the old hand tables (`monospace` → mono, `serif` → serif,
+ * `cursive` → script) and otherwise to Inter, the font the app loads. Before AC3 this sniffed
+ * substrings of the name, so "Crimson Pro" (no "serif" in it) was measured as Inter (F5).
  */
-function tableFaceKey(family: string): string {
-  const lower = family.toLowerCase()
-  if (lower.includes('mono') || lower.includes('source code')) return 'mono'
-  // Inter is the default font for tlslides - use generated metrics
-  if (lower.includes('inter') || lower.includes('source sans') || lower.includes('sans')) return 'inter'
-  if (lower.includes('serif') && !lower.includes('sans')) return 'serif'
-  if (lower.includes('script') || lower.includes('caveat')) return 'script'
-  return 'inter' // Default to Inter since it's loaded
+export type TableFace = FaceMetrics | 'serif' | 'mono' | 'script'
+
+export function tableFaceFor(family: string): TableFace {
+  const face = faceForFamily(family)
+  if (face) return face
+  const generic = familyStack(family).map((n) => n.toLowerCase())
+  if (generic.includes('monospace')) return 'mono'
+  if (generic.includes('serif')) return 'serif'
+  if (generic.includes('cursive')) return 'script'
+  return INTER_METRICS
+}
+
+function faceFromKey(key: string): TableFace {
+  if (key === 'serif' || key === 'mono' || key === 'script') return key
+  return faceByKey(key) ?? INTER_METRICS
+}
+
+/** Advance of `char` in em for a resolved face (bold: the 700 table / Inter's bold factor). */
+function faceEm(face: TableFace, char: string, bold: boolean): number {
+  if (typeof face === 'string') return tableCharWidth(char, face) * (bold ? INTER_BOLD_FACTOR : 1)
+  return faceCharEm(face, char, bold)
 }
 
 /**
- * Per-character width multipliers from rich-text runs: a `bold` run is `INTER_BOLD_FACTOR`
- * wider, a run with `size` scales with it. `undefined` when no run changes a width (or the runs
- * do not line up with the plain text).
+ * Per-character run attributes from rich-text runs: `bold` and the run `size` multiplier.
+ * `undefined` when no run changes a width (or the runs do not line up with the plain text).
  */
-function runWidthFactors(
+function runAttributes(
   runs: Array<{ text: string; bold?: boolean; size?: number }> | undefined,
   length: number
-): number[] | undefined {
+): { bold: boolean[]; size: number[] } | undefined {
   if (!runs || !runs.some((r) => r.bold || (r.size !== undefined && r.size !== 1))) return undefined
-  const out: number[] = []
+  const bold: boolean[] = []
+  const size: number[] = []
   for (const run of runs) {
-    const f = (run.bold ? INTER_BOLD_FACTOR : 1) * (run.size ?? 1)
-    for (let i = 0; i < run.text.length; i++) out.push(f)
+    for (let i = 0; i < run.text.length; i++) {
+      bold.push(!!run.bold)
+      size.push(run.size ?? 1)
+    }
   }
-  return out.length === length ? out : undefined
+  return bold.length === length ? { bold, size } : undefined
 }
 
 /**
@@ -918,13 +935,14 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
 
     const fontSize = style.size || 28
     const lineHeight = (style.lineHeight || DEFAULT_LINE_HEIGHT) * fontSize
-    const resolvedFace = faceKey ?? tableFaceKey(style.family || '')
+    const face = faceKey ? faceFromKey(faceKey) : tableFaceFor(style.family || '')
     const spacing = (style.letterSpacing || 0) * fontSize
-    const factors = runWidthFactors(runs, plain.length)
+    const attrs = runAttributes(runs, plain.length)
     const charW = (i: number): number => {
       const ch = plain[i]
-      const em = isCJK(ch) ? CJK_WIDTH_EM : tableCharWidth(ch, resolvedFace)
-      return em * fontSize * (factors ? factors[i] : 1) + spacing
+      const bold = attrs ? attrs.bold[i] : false
+      const em = isCJK(ch) ? CJK_WIDTH_EM * (bold ? INTER_BOLD_FACTOR : 1) : faceEm(face, ch, bold)
+      return em * fontSize * (attrs ? attrs.size[i] : 1) + spacing
     }
     const rangeW = (s: number, e: number): number => {
       let w = 0

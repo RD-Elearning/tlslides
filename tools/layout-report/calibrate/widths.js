@@ -17,6 +17,8 @@ for (const deck of Object.values(dom)) for (const blocks of Object.values(deck))
   const g = ls > 0.01 ? 'letterSpacing>0' : ls < -0.01 ? 'letterSpacing<0' : L.bold ? 'bold run' : /^[^a-z]*[A-Z]{3}[^a-z]*$/.test(t) ? 'uppercase' : VI.test(t) ? 'vietnamese' : 'plain'
   add(g, r, `${t.slice(0, 30)}|fs${leaf.fontSize} ls${ls.toFixed(1)} dom${L.w.toFixed(0)} table${tw} est${ew}`)
   add('ALL table', r); add('ALL estimate', L.w / ew)
+  // AC3: per font family (the first name in the stack), the style decks' new faces.
+  add(`family ${String(leaf.family).split(',')[0].replace(/["']/g, '').trim()}`, r, `${t.slice(0, 30)}|fs${leaf.fontSize} dom${L.w.toFixed(0)} table${tw}`)
 }
 for (const [g, a] of Object.entries(groups)) {
   const v = a.map((x) => x[0]).map((x) => x - 1)

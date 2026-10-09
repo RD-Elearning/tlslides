@@ -17,6 +17,7 @@ import type { BlockSpec, DeckSpec, DeckStyle, DeckTokens, MasterSpec, SlideSpec 
 import { CORPORATE_STYLE } from './corporate'
 import { MINIMAL_STYLE } from './minimal'
 import { GRADIENT_STYLE } from './gradient'
+import { textWidthRatio } from '../layout/font-metrics'
 
 /** Every built-in deck style. AC5 adds the remaining seven. */
 export const BUILT_IN_STYLES: readonly DeckStyle[] = [CORPORATE_STYLE, MINIMAL_STYLE, GRADIENT_STYLE]
@@ -155,7 +156,11 @@ export function styleCard(style: DeckStyle): string {
   lines.push(`## Style: ${style.id} — ${style.name}`)
   lines.push(style.brief)
   lines.push(`Palettes (write one as \`theme\`): ${style.palettes.map((p) => p.id).join(', ')} (first = default).`)
-  lines.push(`Fonts: ${style.fonts.heading.family} / ${style.fonts.body.family}. Motion: ${style.motionStyle} (deck default).`)
+  // AC3 (§3.4): how wide each face sets text against Inter, so the AI sizes copy for the style.
+  const w = (k: string) => `×${textWidthRatio(k).toFixed(2)}`
+  lines.push(
+    `Fonts: ${style.fonts.heading.family} / ${style.fonts.body.family} (text width vs Inter: heading ${w(style.fonts.heading.metricsKey)}, body ${w(style.fonts.body.metricsKey)}). Motion: ${style.motionStyle} (deck default).`
+  )
   lines.push('Rules: ' + style.rules.join(' '))
   if (style.prefer.length) lines.push('Prefer: ' + style.prefer.join(', '))
   if (style.avoid.length) lines.push('Avoid: ' + style.avoid.join(', '))

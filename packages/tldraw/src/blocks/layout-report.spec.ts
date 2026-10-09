@@ -139,7 +139,7 @@ describe('LO1 — findings', () => {
       layout: 'two-column',
       regions: {
         title: [title('t', 'Why tokens')],
-        left: [{ id: 'body', type: 'tls.t.body', props: { text: LONG_BODY.repeat(3) } }],
+        left: [{ id: 'body', type: 'tls.t.body', props: { text: LONG_BODY.repeat(5) } }], // AC3: Inter body (was mono-measured)
         right: [{ id: 'cap', type: 'tls.t.caption', props: { text: 'Source: internal survey' } }],
       },
     }
@@ -168,7 +168,7 @@ describe('LO1 — findings', () => {
       id: 's_reflow_stack',
       layout: 'quote',
       regions: {
-        quote: [{ id: 'q', type: 'tls.t.body', props: { text: LONG_BODY } }],
+        quote: [{ id: 'q', type: 'tls.t.body', props: { text: LONG_BODY.repeat(2) } }], // AC3: Inter body (was mono-measured)
         attribution: [{ id: 'cap', type: 'tls.t.caption', props: { text: 'Source: internal survey' } }],
       },
     }
