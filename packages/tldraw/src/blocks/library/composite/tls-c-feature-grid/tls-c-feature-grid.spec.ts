@@ -808,3 +808,24 @@ describe('AC2 — look knobs (cell, align, iconStyle)', () => {
     expect(html).toContain('align-items:stretch')
   })
 })
+
+describe('AC4 fix — poster icons fill their box (SVG export)', () => {
+  const { pathBounds } = require('../../../layout/measure-block')
+  const icons = (n: any, out: any[] = []): any[] => {
+    if (n.k === 'icon') out.push(n)
+    for (const c of n.children ?? []) icons(c, out)
+    return out
+  }
+  it.each([['plain', {}], ['circle', { iconStyle: 'circle' }]] as const)('%s: the glyph path spans most of its icon box', (_n, knobs) => {
+    const c = makeCtx({ width: 1728, height: 600 })
+    const found = icons(poster({ ...(tlsCFeatureGrid.describe!.example.props as any), ...knobs }, c))
+    expect(found.length).toBeGreaterThan(0)
+    for (const ic of found) {
+      const b = pathBounds(ic.icon)!
+      // a 24-unit Lucide glyph spans ~18–22 of its 24; unscaled it spanned ≤ 24 units of a 64+ box
+      expect(Math.max(b.width, b.height)).toBeGreaterThan(0.6 * ic.box.width)
+      expect(b.x + b.width).toBeLessThanOrEqual(ic.box.width + 1)
+      expect(ic.strokeWidth).toBeUndefined()
+    }
+  })
+})

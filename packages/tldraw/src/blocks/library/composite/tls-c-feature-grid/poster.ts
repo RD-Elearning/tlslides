@@ -12,6 +12,7 @@ import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
 import { alignText, cardNodes, cardPaint } from '../_kit'
 import { getIcon } from '../../../icons'
+import { scaleIconPath } from '../../../icons/scale-path'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
 
@@ -114,15 +115,17 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
       children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
       const g = tierCircleIcon(cellW, tier).glyph
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
-      if (iconDef) children.push({ k: 'icon', box: gb, icon: iconDef.path, fill: iconColor, strokeWidth: 1.5 })
+      if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor })
     } else if (iconDef) {
       children.push({
         k: 'icon',
         part: `cell[${i}].icon`,
         box: { x: iconX, y: iy, width: iconSize, height: iconSize },
-        icon: iconDef.path,
+        // AC4 fix: the icon node draws its path in a viewBox equal to its box, so the 24-unit path
+        // is scaled to the box (unscaled it drew at 24/size — a dot in the SVG export). Filled, no
+        // stroke, as the template paints it (`fill`, `stroke="none"`).
+        icon: scaleIconPath(iconDef.path, iconSize / 24),
         fill: iconColor,
-        strokeWidth: 1.5,
       })
     } else {
       // Fallback rect for unknown icon names
