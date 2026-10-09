@@ -2,7 +2,7 @@
 /**
  * LO5 — browser calibration of the layout oracle (reviews/blocks/layout-oracle/README.md §3 LO5).
  *
- *   node tools/layout-report/calibrate/run.js [--out DIR] [--shots sl_04,ms_04]
+ *   node tools/layout-report/calibrate/run.js [--out DIR] [--shots sl_04,ms_04] [--decks name=file,…]
  *
  * 1. bundles <DeckViewer> (the viewer's real render path) + the 4 fixture decks into DIR/www with
  *    the Inter woff2 + @font-face the Next.js sample serves (needs a prior `next dev`/`next build`
@@ -25,6 +25,10 @@ const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d)
 const OUT = path.resolve(opt('--out', path.join(os.tmpdir(), 'tls-calibration')))
 const FONT_CSS = opt('--font-css', path.join(ROOT, 'examples/nextjs-sample/.next/static/css/app/layout.css'))
 const FIX = path.join(PKG, 'src/blocks/__fixtures__')
+// AC1: `--decks name=file,…` (paths under src/blocks/__fixtures__) replaces the four default decks,
+// e.g. `--decks corporate=styles/corporate.json,minimal=styles/minimal.json,gradient=styles/gradient.json`.
+const DEFAULT_DECKS = { demo: 'demo-deck.json', tour: 'block-library-tour.json', colorful: 'colorful-blocks-demo.json', motion: 'motion-showcase.json' }
+const DECK_FILES = opt('--decks') ? Object.fromEntries(opt('--decks').split(',').map((kv) => kv.split('='))) : DEFAULT_DECKS
 
 fs.mkdirSync(path.join(OUT, 'www/media'), { recursive: true })
 if (!fs.existsSync(FONT_CSS)) throw new Error(`${FONT_CSS} missing: run next dev in examples/nextjs-sample once, or pass --font-css`)
@@ -41,11 +45,8 @@ fs.writeFileSync(
   `import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { DeckViewer } from '${PKG}/src/components/DeckViewer/DeckViewer'
-import demo from '${FIX}/demo-deck.json'
-import tour from '${FIX}/block-library-tour.json'
-import colorful from '${FIX}/colorful-blocks-demo.json'
-import motion from '${FIX}/motion-showcase.json'
-const DECKS: Record<string, any> = { demo, tour, colorful, motion }
+${Object.entries(DECK_FILES).map(([k, f]) => `import ${k} from '${FIX}/${f}'`).join('\n')}
+const DECKS: Record<string, any> = { ${Object.keys(DECK_FILES).join(', ')} }
 ;(window as any).DECKS = Object.fromEntries(Object.entries(DECKS).map(([k, d]) => [k, d.slides.map((s: any) => s.id)]))
 ;(window as any).show = (deck: string, slide: number) =>
   new Promise<void>((resolve) => {
@@ -70,7 +71,7 @@ esbuild.buildSync({
   loader: { '.json': 'json' },
   logLevel: 'error',
 })
-const env = { ...process.env, CALIB_OUT: OUT, SHOTS: opt('--shots', '') }
+const env = { ...process.env, CALIB_OUT: OUT, SHOTS: opt('--shots', ''), CALIB_DECKS: JSON.stringify(DECK_FILES) }
 for (const step of ['measure.js', 'compare.js', 'stats.js', 'widths.js']) {
   execFileSync(process.execPath, [path.join(__dirname, step)], { env, stdio: 'inherit' })
 }

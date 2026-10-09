@@ -100,7 +100,7 @@ export const GRADIENT_STYLE: DeckStyle = {
   ],
   motionStyle: 'expressive',
   blockDefaults: {
-    'tls.c.cover': { variant: 'centered', decoration: 'arc' },
+    'tls.c.cover': { variant: 'centered', decoration: 'none' },
     'tls.c.hero': { variant: 'gradient-sweep' },
     'tls.c.divider': { variant: 'numeral', align: 'start' },
     'tls.c.cards': { tone: 'surface', lead: 'icon' },
@@ -108,7 +108,6 @@ export const GRADIENT_STYLE: DeckStyle = {
     'tls.t.quote': { markStyle: 'glyph' },
     'tls.t.takeaway': { tone: 'accent' },
     'tls.c.closing': { variant: 'centered' },
-    'tls.g.pros-cons': { style: 'cards' },
     'tls.g.chevrons': { fill: 'gradient' },
   },
   prefer: ['tls.m.device-mock'],

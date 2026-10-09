@@ -52,7 +52,9 @@
                 }
               ],
               "current": 1
-            }
+            },
+            "layer": "backdrop",
+            "anchor": "center"
           }
         ]
       }
@@ -178,13 +180,15 @@
             "type": "tls.g.pros-cons",
             "props": {
               "pros": [
-                "Live in two quarters",
-                "Shared sales channel",
-                "Lower upfront cost"
+                "Live with customers in two quarters, not six",
+                "Their sales team brings 400 mid-market accounts",
+                "Upfront cost under $1.2M",
+                "We keep our engineers on the core product"
               ],
               "cons": [
-                "Less control of the roadmap",
-                "Revenue share of 20%"
+                "Less control over the shared roadmap",
+                "20% of partner revenue goes to them",
+                "Exit terms need legal review"
               ],
               "verdict": "Partner now; revisit building in 2028."
             }
@@ -204,7 +208,9 @@
               "text": "We stopped buying tools for one person and started buying them for the whole team.",
               "attribution": "Linh Pham",
               "role": "COO, Saigon Logistics"
-            }
+            },
+            "layer": "backdrop",
+            "anchor": "center"
           }
         ]
       }

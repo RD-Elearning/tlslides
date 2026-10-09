@@ -5,7 +5,9 @@ const path = require('path')
 const { loadOracle, PKG } = require('../load')
 const oracle = loadOracle()
 const FIX = path.join(PKG, 'src/blocks/__fixtures__')
-const DECKS = { demo: 'demo-deck.json', tour: 'block-library-tour.json', colorful: 'colorful-blocks-demo.json', motion: 'motion-showcase.json' }
+const DECKS = process.env.CALIB_DECKS
+  ? JSON.parse(process.env.CALIB_DECKS)
+  : { demo: 'demo-deck.json', tour: 'block-library-tour.json', colorful: 'colorful-blocks-demo.json', motion: 'motion-showcase.json' }
 const dom = JSON.parse(fs.readFileSync(path.join(OUT, 'dom.json'), 'utf8')).result
 const registry = oracle.defaultBlockRegistry ? oracle.defaultBlockRegistry() : null
 const kindOf = (type) => {

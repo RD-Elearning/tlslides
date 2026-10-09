@@ -12,7 +12,7 @@ import { deckSpecJsonSchema } from '../deck-spec-json-schema'
 import { analyzeDeck } from '../layout-report'
 import { BUILT_IN_BLOCKS } from '../library'
 import { contrastRatio, hexToRgb, relativeLuminance } from '../color-math'
-import { BLOCK_PROP_KEY } from '../shape-bridge'
+import { BLOCK_PROP_KEY, shapeToAuthoredBlock, shapeToBlock } from '../shape-bridge'
 import type { ComponentShape } from '~types'
 import type { DeckSpec } from '../types'
 
@@ -88,8 +88,8 @@ describe('resolution order (§3.2)', () => {
   it('compile: the shape carries the style knobs and $block.styleDefaults; masters, motion and styleId resolve', () => {
     const { document } = deckSpecToDocument(base)
     const cover = Object.values(document.pages.st_01.shapes)[0] as ComponentShape
-    expect(cover.props.variant).toBe('split')
-    expect((cover.props[BLOCK_PROP_KEY] as any).styleDefaults).toEqual({ variant: 'split', decoration: 'none' })
+    expect(cover.props.variant).toBe('centered')
+    expect((cover.props[BLOCK_PROP_KEY] as any).styleDefaults).toEqual({ variant: 'centered', decoration: 'none' })
     expect(document.styleId).toBe('corporate')
     expect(document.pages.st_01.masterId).toBe('style:cover')
     expect(document.pages.st_03.masterId).toBe('style:section')
@@ -99,6 +99,9 @@ describe('resolution order (§3.2)', () => {
     expect(document.motionStyle).toBeUndefined()
     // style motion (subtle) animates blocks with no own motion
     expect(cover.animation).toBeDefined()
+    // renderers read the look through shapeToBlock; the decompiler drops it again
+    expect(shapeToBlock(cover)?.props.decoration).toBe('none')
+    expect(shapeToAuthoredBlock(cover)?.props.decoration).toBeUndefined()
   })
 })
 

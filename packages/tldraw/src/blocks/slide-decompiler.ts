@@ -19,7 +19,7 @@ import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
-import { shapePlacement, shapeToBlock } from './shape-bridge'
+import { shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
 
@@ -203,7 +203,7 @@ function aspectsEqual(a: DeckSpec['aspect'], b: DeckSpec['aspect']): boolean {
  *    finding. Never guess a layout from geometry.
  * 2. Re-compile the region boxes via `getSlideLayout(page.layout).compile(frame, tokens)`.
  * 3. For each shape, in `childIndex` order:
- *    - `shapeToBlock(shape)` → `BlockSpec | undefined`. `undefined` means a non-block
+ *    - `shapeToAuthoredBlock(shape)` (AC1: `shapeToBlock` minus style knob defaults) → `BlockSpec | undefined`. `undefined` means a non-block
  *      shape: emit a `shape/non-block` finding and drop it (cannot be represented as
  *      BlockSpec; carrying it as opaque free[] would corrupt the round-trip).
  *    - Match the shape's `{point, size}` against every region box within `tolerance`.
@@ -262,7 +262,7 @@ export function pageToSlideSpec(
   const free: PlacedBlock[] = []
 
   for (const shape of allShapes) {
-    const blockSpec = shapeToBlock(shape)
+    const blockSpec = shapeToAuthoredBlock(shape)
 
     if (!blockSpec) {
       // Non-block shape (arrow, hand-placed text): emit finding and drop.

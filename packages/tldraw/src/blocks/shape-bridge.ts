@@ -52,8 +52,9 @@ interface BlockMetadata {
    *  (keep the move, `free[]`) from "untouched" (re-anchor). */
   placed?: ShapePlacement
   /** AC1 — the deck style's knob defaults `compileSlide` filled into the top-level props (keys the
-   *  block did not author). Never authored: `shapeToBlock` drops a filled key whose value is still
-   *  the default, so the round trip returns the authored props. */
+   *  block did not author). Never authored: `shapeToBlock` keeps them (renderers need the look),
+   *  `shapeToAuthoredBlock` (the decompiler) drops a filled key whose value is still the default,
+   *  so the round trip returns the authored props. */
   styleDefaults?: Record<string, unknown>
 }
 
@@ -218,11 +219,8 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   // Deep clone props, excluding the metadata key.
   // Uses JSON round-trip for consistency with blockToShape.
   const clonedProps: Record<string, unknown> = {}
-  const styleDefaults = meta.styleDefaults && typeof meta.styleDefaults === 'object' ? meta.styleDefaults : undefined
   for (const [key, value] of Object.entries(props)) {
     if (key !== BLOCK_PROP_KEY) {
-      // AC1: a style-filled knob still at its default was never authored.
-      if (styleDefaults && key in styleDefaults && JSON.stringify(styleDefaults[key]) === JSON.stringify(value)) continue
       clonedProps[key] = JSON.parse(JSON.stringify(value))
     }
   }
@@ -285,6 +283,20 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
     spec.slot = shapeObj.slot as string
   }
 
+  return spec
+}
+
+/**
+ * AC1 — `shapeToBlock` minus the deck style's knob defaults (`$block.styleDefaults`) that are still
+ * at their filled value: what the author wrote. The decompiler's read; renderers use `shapeToBlock`.
+ */
+export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
+  const spec = shapeToBlock(shape)
+  const filled = blockMetaOf(shape)?.styleDefaults
+  if (!spec || !filled || typeof filled !== 'object') return spec
+  for (const [key, value] of Object.entries(filled)) {
+    if (key in spec.props && JSON.stringify(spec.props[key]) === JSON.stringify(value)) delete spec.props[key]
+  }
   return spec
 }
 
