@@ -578,7 +578,12 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const freeSpace = freeRatio(frame, paintedAll)
 
   // 7. LO5b composition hints (info/warning, from the summary numbers).
-  compositionFindings(frame, regions, blocks, margins, freeSpace, spec.role, findings)
+  // AC1.5: with no authored `role`, a slide made only of cover / divider / closing blocks reads as
+  // that role (a left-aligned divider is a design choice, as with `role: 'section'`).
+  const ROLE_BY_CATEGORY: Record<string, SlideSpec['role']> = { cover: 'cover', divider: 'section', closing: 'closing' }
+  const blockRoles = new Set(blocks.filter((b) => b.layer !== 'backdrop').map((b) => ROLE_BY_CATEGORY[registry.get(b.type)?.category ?? ''] ?? 'content'))
+  const inferredRole = blockRoles.size === 1 ? [...blockRoles][0] : undefined
+  compositionFindings(frame, regions, blocks, margins, freeSpace, spec.role ?? (inferredRole === 'content' ? undefined : inferredRole), findings)
 
   // 8. LO5: what still needs a screenshot.
   for (const b of blocks) {

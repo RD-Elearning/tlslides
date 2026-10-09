@@ -123,6 +123,18 @@ describe('LO5b — composition hints', () => {
     expect(unbalanced?.fix).toMatch(/fill ~302 more units of height .*move it down ~151/)
   })
 
+  it('AC1.5: a divider-only slide reads as a section (no side hint); a left-aligned content block still gets one', () => {
+    const divider: SlideSpec = {
+      id: 'd',
+      layout: 'blank',
+      regions: { content: [{ id: 'b_div', type: 'tls.c.divider', props: { number: '01', title: 'Where we are', subtitle: 'A strong core' } }] },
+    }
+    const side = (slide: SlideSpec) => analyzeSlide(slide).findings.filter((f) => f.code === 'layout/unbalanced' && /content ends at x/.test(f.message))
+    expect(side(divider)).toEqual([])
+    // The same slide with an explicit content role keeps the hint: inference only fills a missing role.
+    expect(side({ ...divider, role: 'content' })).toHaveLength(1)
+  })
+
   it('layout/crowded when almost nothing is free', () => {
     const block = (id: string): BlockSpec => ({ id, type: 'tls.m.image', props: { alt: 'full-bleed photo' } })
     const slide: SlideSpec = {
