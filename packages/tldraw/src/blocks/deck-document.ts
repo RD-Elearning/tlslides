@@ -21,7 +21,8 @@ import { resolveTokens } from './tokens'
 import type { DeckSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
-import { deckSpecTokens, getDeckStyle, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
+import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
+import { resolveMaster } from './master-renderer'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -137,6 +138,21 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     findings.push(...result.findings)
 
     const shapes: Record<string, ComponentShape> = {}
+    // AC4: the style master's blocks (mesh, grain, motifs) are painted on the page itself, under
+    // the slide's own shapes, so every path that draws `page.shapes` (DeckViewer, the editor) shows
+    // them — before, only the SVG export drew master blocks (AC1 "Found"). Ids carry the reserved
+    // `style:` prefix (the decompiler drops them, the SVG export does not draw the master twice),
+    // the z order is below the content's 1..n, and they are locked.
+    if (styleMasterId && styleMaster && Object.keys(styleMaster.blocks).length) {
+      // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
+      const named = { ...styleMaster, blocks: Object.fromEntries(Object.entries(styleMaster.blocks).map(([k, b]) => [k, { ...b, id: `${STYLE_MASTER_PREFIX}${k}` }])) }
+      const m = resolveMaster(styleMasterId, { [styleMasterId]: named }, frame, tokens)
+      const n = m?.shapes.length ?? 0
+      m?.shapes.forEach((sh, i) => {
+        const id = `${STYLE_MASTER_PREFIX}${pageId}:${i}`
+        shapes[id] = { ...sh, id, childIndex: (i + 1) / (n + 1), isLocked: true }
+      })
+    }
     for (const shape of result.shapes) {
       shapes[shape.id] = shape
     }

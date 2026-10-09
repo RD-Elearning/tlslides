@@ -20,7 +20,8 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import { applyStyleBlockDefaults, deckSpecTokens, getDeckStyle } from './styles'
+import { applyStyleBlockDefaults, deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters } from './styles'
+import { isEditorOnly, resolveMaster } from './master-renderer'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type {
   BlockLayer,
@@ -380,9 +381,17 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const intrinsicSizeCache = new Map<string, Size>()
   const blocks: BlockReport[] = []
 
+  // AC4: pair by block id first — `compileSlide` moves a free backdrop under the flow (LO8), so
+  // its shape is no longer at the free block's index; by order only when ids are missing/repeated.
+  const byId = new Map<string, Placed[]>()
+  for (const p of placed) if (p.block.id) byId.set(p.block.id, [...(byId.get(p.block.id) ?? []), p])
+  const used = new Set<Placed>()
   compiled.shapes.forEach((shape, i) => {
-    const p = placed[i]
+    const metaId = (shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id
+    const cands = metaId ? byId.get(metaId) : undefined
+    const p = cands && cands.length === 1 && !used.has(cands[0]) ? cands[0] : placed[i]
     if (!p) return
+    used.add(p)
     const meta = shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined
     const id = meta?.id ?? p.block.id
     const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
@@ -558,14 +567,19 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   }
 
   // 5. Pairwise: box overlaps (layer policy) and text collisions.
+  // AC4: a style master's backdrop (`style:` id, from `analyzeDeck`) belongs to the style: it sits
+  // under everything by construction, so it is left out of the pairwise checks and of the slide's
+  // margins / free space (a full-frame mesh is not content).
+  const styleOwned = (b: BlockReport) => b.id.startsWith(STYLE_MASTER_PREFIX) && b.layer === 'backdrop'
   for (let i = 0; i < blocks.length; i++) {
     for (let j = i + 1; j < blocks.length; j++) {
+      if (styleOwned(blocks[i]) || styleOwned(blocks[j])) continue
       pairFindings(blocks[i], blocks[j], findings)
     }
   }
 
   // 6. Slide summary numbers.
-  const paintedAll = blocks.map((b) => b.painted).filter((b): b is Box => b !== null)
+  const paintedAll = blocks.filter((b) => !styleOwned(b)).map((b) => b.painted).filter((b): b is Box => b !== null)
   const all = unionBox(paintedAll)
   const margins = all
     ? {
@@ -616,8 +630,24 @@ export function analyzeDeck(
   const frame = resolveDeckFrame(deck.aspect)
   const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style), deckSpecTokens(deck))
   // AC1: the style's knob defaults are part of what the editor compiles.
-  const blockDefaults = getDeckStyle(deck.style)?.blockDefaults
-  return deck.slides.map((s) => analyzeSlide(s, { ...opts, frame, tokens, ...(blockDefaults ? { blockDefaults } : {}) }))
+  const style = getDeckStyle(deck.style)
+  const blockDefaults = style?.blockDefaults
+  // AC4: a style master's blocks (mesh, grain, motifs) are on every page it applies to
+  // (`deckSpecToDocument`); the report sees them as free backdrop blocks under the slide's flow.
+  const masters = Object.fromEntries(styleMasters(style).map((m) => [m.name, m]))
+  const withMaster = (s: SlideSpec): SlideSpec => {
+    const id = styleMasterFor(style, s)
+    const master = id ? masters[id] : undefined
+    if (!id || !master || !Object.keys(master.blocks).length) return s
+    const shapes = resolveMaster(id, masters, frame, tokens)?.shapes ?? []
+    const names = Object.keys(master.blocks).filter((k) => !isEditorOnly(master.blocks[k].type))
+    const free = names.map((name, i) => ({
+      block: { ...master.blocks[name], id: `${STYLE_MASTER_PREFIX}${name}`, layer: 'backdrop' as const },
+      box: { x: shapes[i].point[0], y: shapes[i].point[1], width: shapes[i].size[0], height: shapes[i].size[1] },
+    }))
+    return { ...s, free: [...(s.free ?? []), ...free] }
+  }
+  return deck.slides.map((s) => analyzeSlide(withMaster(s), { ...opts, frame, tokens, ...(blockDefaults ? { blockDefaults } : {}) }))
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

@@ -262,6 +262,9 @@ export function pageToSlideSpec(
   const free: PlacedBlock[] = []
 
   for (const shape of allShapes) {
+    // AC4: style-master shapes (`style:<page>:<n>`, painted by `deckSpecToDocument`) belong to the
+    // style, not the slide: never written back into the SlideSpec.
+    if (shape.id.startsWith(STYLE_MASTER_PREFIX)) continue
     const blockSpec = shapeToAuthoredBlock(shape)
 
     if (!blockSpec) {

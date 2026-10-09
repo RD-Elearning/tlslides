@@ -4,8 +4,12 @@ import type { DeckStyle } from '../types'
 /**
  * AC1 pilot — Modern & Digital "Linear Gradient" (`reviews/blocks/ai-curation/README.md` §3.3).
  * Backgrounds are linear gradients in the palette's own colours (theme sentinels, so both palettes
- * work) until AC4 adds the mesh glows and grain.
+ * work). AC4: every master adds the `mesh` glows and `grain` (full-frame backdrop blocks, painted on
+ * the page by `deckSpecToDocument`), the section one `orb` in its free right half; cards are
+ * filled with a hairline edge and shadow 1.
  */
+const MESH = (opacity: 'soft' | 'medium') => ({ id: 'style-mesh', type: 'tls.m.pattern', props: { pattern: 'mesh', opacity, scale: 'md' } })
+const GRAIN = { id: 'style-grain', type: 'tls.m.pattern', props: { pattern: 'grain', tone: 'line', opacity: 'soft', scale: 'md' } }
 export const GRADIENT_STYLE: DeckStyle = {
   id: 'gradient',
   family: 'modern',
@@ -61,7 +65,7 @@ export const GRADIENT_STYLE: DeckStyle = {
   masters: [
     {
       name: 'cover',
-      blocks: {},
+      blocks: { mesh: MESH('medium'), grain: GRAIN },
       background: {
         type: 'linearGradient',
         angle: 135,
@@ -74,7 +78,13 @@ export const GRADIENT_STYLE: DeckStyle = {
     },
     {
       name: 'section',
-      blocks: {},
+      // the divider is flush left: the orb fills the free right half (image-right's `image` region)
+      layout: 'image-right',
+      blocks: {
+        mesh: MESH('medium'),
+        grain: GRAIN,
+        image: { id: 'style-orb', type: 'tls.m.decoration', props: { shape: 'orb', tone: 'accent', opacity: 'strong' } },
+      },
       background: {
         type: 'linearGradient',
         angle: 120,
@@ -86,7 +96,7 @@ export const GRADIENT_STYLE: DeckStyle = {
     },
     {
       name: 'content',
-      blocks: {},
+      blocks: { mesh: MESH('soft'), grain: GRAIN },
       background: {
         type: 'linearGradient',
         angle: 160,
