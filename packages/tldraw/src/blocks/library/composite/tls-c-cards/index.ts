@@ -88,7 +88,9 @@ const itemsOf = (props: CardsProps): CardItem[] =>
   objs(props.cards)
     .filter((c) => str(c.title) !== '')
     .slice(0, CARDS_MAX)
-    .map((c) => ({ icon: str(c.icon) || undefined, number: str(c.number) || undefined, image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined }))
+    // AC5: with `lead: number` a card that names no number is numbered by its position ("01", "02", …),
+    // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content.
+    .map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined }))
 
 /** The reference tree (a row of card > stack > leaves): 4 levels at most. Used for depth and measure checks. */
 export function buildCards(props: CardsProps): BlockSpec {
@@ -176,9 +178,13 @@ function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, nume
     const st = numeralStyle(ctx, numeral, '')
     return Math.ceil(Math.max(1, ...items.filter((c) => c.number).map((c) => ctx.measureText(c.number as string, st, inner).height)))
   }
+  // the plain numeral is a `tls.t.title` (heading): its measured height, which a face with a
+  // taller line box than the token's line height (Playfair Display) would otherwise shrink to fit
+  const numberH = (): number =>
+    Math.max(Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight), ...measureHeights(ctx, items.filter((c) => c.number).map((c, i) => ({ id: `n${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading' } })), inner))
   const iconSize = roomy ? 72 : 56
   const titleSize: Plan['titleSize'] = roomy && n <= 3 ? 'heading' : 'subheading'
-  const leadH = !hasLead ? 0 : lead === 'icon' ? iconSize + 16 : lead === 'number' ? (numeral !== 'heading' ? giant() : Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight)) : Math.min(260, Math.round(inner * 0.6))
+  const leadH = !hasLead ? 0 : lead === 'icon' ? iconSize + 16 : lead === 'number' ? (numeral !== 'heading' ? giant() : numberH()) : Math.min(260, Math.round(inner * 0.6))
   const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: titleSize } })), inner)
   const small = !roomy && n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
   const leadStyle = ctx.resolveText('lead')

@@ -54,6 +54,13 @@ describe('tls.c.cards', () => {
     expect(leavesOf(num, 'text')).toHaveLength(3)
   })
 
+  it('AC5: lead number with no numbers numbers the cards by position; an authored number wins', () => {
+    const cards = [{ title: 'A', text: 'a' }, { number: '7', title: 'B', text: 'b' }, { title: 'C', text: 'c' }]
+    const t = layoutAt(tlsCCards, { cards, lead: 'number' }, 1500, 520)
+    expect(leavesOf(t, 'lead').map((l) => (l.node as any).lines[0].text)).toEqual(['01', '7', '03'])
+    expect(hasPart(layoutAt(tlsCCards, { cards, lead: 'icon' }, 1500, 520), 'lead')).toBe(false)
+  })
+
   it('a missing lead field leaves that card without a lead but keeps the layout aligned', () => {
     const t = layoutAt(tlsCCards, { cards: [{ title: 'A', text: 'a' }, { icon: 'target', title: 'B', text: 'b' }], lead: 'icon' }, 1500, 520)
     const [a, b] = [leavesOf(t, 'title[0]')[0], leavesOf(t, 'title[1]')[0]]

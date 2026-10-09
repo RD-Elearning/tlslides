@@ -20,6 +20,7 @@ import type { ProsConsProps } from './schema'
 import { PROS_CONS_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, onColor, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
 import { withRealWidths } from '../../data/_chart/kit'
+import { cardNodes, cardPaint } from '../../composite/_kit'
 
 const COL_GAP = 40
 const ROW_GAP_MAX = 14
@@ -110,7 +111,8 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
     const w = colW[idx]
     const name = kind === 'pro' ? 'pros' : 'cons'
     const out: LayoutNode[] = []
-    if (cards) out.push({ k: 'rect', part: `${name}[card]`, box: { x, y: dy, width: w, height: colH }, fill: { type: 'solid', color: tintOf(c.surface, color, 0.1) }, stroke: { color: tintOf(c.surface, color, 0.5), width: 2 }, radius: 16 })
+    // AC5: under a deck surface the column card takes it (`cardPaint`: glass, hard shadow, …)
+    if (cards) out.push(...cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: tintOf(c.surface, color, 0.1) }, stroke: { color: tintOf(c.surface, color, 0.5), width: 2 } }), { x, y: dy, width: w, height: colH }, 16, `${name}[card]`))
     const ix = x + pad
     const iw = Math.max(10, w - 2 * pad)
     out.push(...placeLines(ctx, title, { ...headS, color: kind === 'pro' ? color : color }, { x: ix, y: dy + pad, width: iw }, 'start', 1, `${name}[title]`).nodes)

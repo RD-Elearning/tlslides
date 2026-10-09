@@ -12,7 +12,7 @@
  */
 
 import { slotItems } from '../_slots'
-import { alignText } from '../_kit'
+import { alignText, cardNodes, cardPaint } from '../_kit'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import type { AgendaItem, AgendaProps } from './schema'
@@ -168,12 +168,8 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     const x0 = Math.floor(i / perCol) * (colW + colGap)
     if (cards) {
       // Structural card (no part): every card in a row is as tall as the row.
-      children.push({
-        k: 'rect',
-        box: { x: x0, y: rowY[i % perCol], width: colW, height: rowH[i % perCol] },
-        fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color },
-        radius: ctx.tokens.radius.md,
-      })
+      // AC5: the deck surface paints the card (`cardPaint`; the old surfaceAlt card without one)
+      children.push(...cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } }), { x: x0, y: rowY[i % perCol], width: colW, height: rowH[i % perCol] }, ctx.tokens.radius.md))
     }
     if (rule) {
       children.push({
