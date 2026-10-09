@@ -1056,3 +1056,28 @@ describe('AC2 — look knobs (align, decoration)', () => {
     expect(html).not.toContain('width:96px')
   })
 })
+
+describe('AC2 lead review — the CTA label reads on the accent pill', () => {
+  const lum = (hex: string) => {
+    const n = parseInt(hex.slice(1, 7), 16)
+    const ch = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
+    return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255)
+  }
+  const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
+
+  it('poster paints the label in the on-accent colour (>= 3:1 on the pill), the template uses the same role', () => {
+    const c = ctx({ width: 1600, height: 900 })
+    const props = { ...(tlsCHero.defaults as any), cta: 'Read the plan' }
+    const node = poster(props, c)
+    const all = (n: LayoutNode): LayoutNode[] => (n.k === 'group' ? [n, ...n.children.flatMap(all)] : [n])
+    const bg = all(node).find((n) => n.part === 'cta-bg') as Extract<LayoutNode, { k: 'rect' }>
+    const label = all(node).find((n) => n.part === 'cta') as Extract<LayoutNode, { k: 'text' }>
+    const fill = (bg.fill as { color: string }).color
+    expect(ratio(label.style.color as string, fill)).toBeGreaterThanOrEqual(3)
+    expect([c.resolveColor('surface').color, c.resolveColor('text').color]).toContain(label.style.color)
+    // The template paints the poster's colour; without a poster the surface colour variable.
+    const live = template(props, { ...tplCtx(c), poster: node } as any)
+    expect(live).toMatch(new RegExp(`data-part="cta" style="[^"]*color:${label.style.color};`))
+    expect(template(props, tplCtx(c) as any)).toMatch(/data-part="cta" style="[^"]*color:var\(--tls-surface-color\);/)
+  })
+})

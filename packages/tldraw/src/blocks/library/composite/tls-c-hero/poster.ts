@@ -14,6 +14,7 @@ import { isShown } from '../../../schema-helpers'
 import { cssTextHeight } from '../../../html-block'
 import { HERO_LH, splitTitleHalves } from './template'
 import { alignText } from '../_kit'
+import { onColor } from '../../text/_engine/color'
 
 
 export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
@@ -89,7 +90,10 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
 
   // CTA (optional): a pill as wide as its label plus `lg` either side, at the start edge.
   if (isShown(props, 'showCta') && props.cta) {
-    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: HERO_LH.cta }), color: ctx.resolveColor('text').color }
+    // AC2 lead review: the label in the on-accent colour (whichever of surface / text reads on the
+    // accent pill), as the template paints it.
+    const accent = ctx.resolveColor('accent').color
+    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: HERO_LH.cta }), color: onColor(ctx, accent) }
     const ctaText = richTextToPlain(props.cta)
     const m = ctx.measureText(ctaText, style, w)
     const textH = cssTextHeight(m.lines.length, style)
@@ -100,7 +104,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
       k: 'rect',
       part: 'cta-bg',
       box: { x: px, y, width: pillW, height: pillH },
-      fill: { type: 'solid', color: ctx.resolveColor('accent').color },
+      fill: { type: 'solid', color: accent },
       radius: pillH / 2,
     })
     children.push({

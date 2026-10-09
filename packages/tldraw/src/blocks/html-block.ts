@@ -217,13 +217,14 @@ export function posterText(ctx: Pick<HtmlTemplateContext, 'poster' | 'esc'>): Po
   }
 }
 
-/** A short signature of a poster's text (keys, sizes, line texts) — the host re-templates when it
- *  changes even if props and box did not (e.g. a theme with another type scale). */
+/** A short signature of a poster's text (keys, sizes, colours, line texts) — the host re-templates
+ *  when it changes even if props and box did not (e.g. a theme with another type scale, or a
+ *  template that paints a poster colour such as the hero CTA's on-accent label). */
 export function posterTextSignature(poster: LayoutNode | undefined): string {
   if (!poster) return ''
   let sig = ''
   for (const [key, list] of posterTextLeaves(poster)) {
-    sig += `${key}:${list[0].style.size}:${list.map((n) => n.lines.map((l) => l.text).join('\n')).join('\n')}|`
+    sig += `${key}:${list[0].style.size}:${list[0].style.color ?? ''}:${list.map((n) => n.lines.map((l) => l.text).join('\n')).join('\n')}|`
   }
   return sig
 }

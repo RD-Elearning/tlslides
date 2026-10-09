@@ -195,7 +195,9 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
         `display:inline-block;align-self:${center ? 'center' : 'flex-start'};` +
         `font-family:var(--tls-font-family);` +
         pt.css('cta', `font-size:var(--tls-type-body);line-height:${HERO_LH.cta};`) +
-        `color:${ctx.cssVar('on')};` +
+        // AC2 lead review: the poster's on-accent colour (surface or text, whichever reads on the
+        // accent pill); without a poster the surface colour.
+        `color:${pt.leaves('cta')[0]?.style.color ?? ctx.cssVar('surface-color')};` +
         `background:${ctx.cssVar('accent')};` +
         `padding:${space?.xs ?? 12}px ${space?.lg ?? 32}px;` +
         `border-radius:9999px;` +
