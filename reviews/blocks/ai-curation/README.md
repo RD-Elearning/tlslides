@@ -1,7 +1,7 @@
 # AI curation — a core block set, deck styles, and the picking pipeline
 
 **Date:** 2026-10-09 · **Branch:** `plan/block-system` · **Against commit:** `a8281fdf` (LO8 done)
-**Status:** AC0 done (2026-10-09); next AC1. Resume from [§7 Progress](#7-progress).
+**Status:** AC0, AC1 done (2026-10-09); next AC2. Resume from [§7 Progress](#7-progress).
 
 **Goal (product owner, 2026-10-09):** the html-kind blocks on the LO7 slides (hero, stat-spotlight
 ring with three KPI columns, testimonial, kinetic-title, feature-grid, feature-reveal, big-stat)
@@ -802,7 +802,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
 | AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
-| AC1 | ⬜ | | |
+| AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
 | AC2 | ⬜ | | |
 | AC3 | ⬜ | | |
 | AC4 | ⬜ | | |
@@ -816,6 +816,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 |---|---|---|---|
 | 2026-10-09 | plan | This plan written (survey only, no code) | Start at AC0. Tier assignments in §1.2 are proposals: show the user §2.2 before AC0 commits them. Board `GVkKV9dh…` has no verdicts yet. |
 | 2026-10-09 | AC0 | Tier metadata, tier-1 index, 36 recipes, LLM-ARCHITECTURE §3.1/S2 | **Approved:** the product owner delegated the decisions; the lead approved the §2.2 tier-1 list (45) and the §6 vocabulary as written. Next: AC1. |
+| 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
 
@@ -880,3 +881,75 @@ motion-style 1,635 pass; the 14 edited blocks' suites 305 pass. Full suite not r
 **Not built in AC0.** `style` option (AC1); per-style card; `describe.avoid` for `feature-reveal`
 and `quote-image` (AC2); hiding `tls.l.grid-guide`/`tls.l.safe-area` from the AI (still listed in
 `also:`; a default `avoid` would hide them — decide in AC1 with style `avoid`).
+
+### Notes — AC1
+
+**What landed** (`3ef50f78` core, `fda58d1b` render fix + tuning).
+- `DeckStyle`, `FontRef`, `StyleSurface` (types.ts), `DeckSpec.style?`, `TDDocument.styleId?`
+  (additive; version stays 16). Data in `blocks/styles/{corporate,minimal,gradient}.ts`,
+  `BUILT_IN_STYLES` + resolution helpers in `blocks/styles/index.ts`, exported from `blocks/index.ts`.
+- Resolution §3.2, all at compile/read time: `resolveDeckTheme(theme, styleId)` (style palette, else
+  `palettes[0]`; palette ids also resolve without a style); `mergeDeckTokens(style.tokens,
+  spec.tokens)` read through `deckSpecTokens`/`documentDeckTokens` by `deckSpecToDocument`,
+  `analyzeDeck`, `deckLayoutContext`, `useDeckTokens`, `Deck.addSlideFromSpec`, the decompiler —
+  `doc.tokens` stays the authored value; style masters appended as `style:*` with a default
+  `masterId` + background per slide (decompiler drops both); `blockDefaults` filled by
+  `compileSlide({ blockDefaults })` into unauthored top-level props and recorded as
+  `$block.styleDefaults`; `style.motionStyle` as the deck default (not written to `doc.motionStyle`).
+- Round trip: `shapeToBlock` keeps the filled knobs (renderers need them — the first cut stripped
+  them there and DeckViewer rendered the unstyled block; caught in the shots), the decompiler uses
+  the new `shapeToAuthoredBlock`, which drops a filled key still equal to its default. Spec: the
+  three decks return `slides` byte-identical, no `tokens`/`masters`/`motionStyle` leaked.
+- Validator `style/unknown` (error + suggestion), `style/theme-mismatch` (warning, suggests
+  `palettes[0]`); palette ids accepted as `theme`. JSON schema: `style` enum, palette ids in the
+  theme enum. SCHEMA.md `style` section.
+- Digest: tier-1 index has a `## Styles` section — one line per style (`id (family) — palettes`),
+  or with `{ style }` that style's line + brief + rules, and its prefer/avoid merged into the profile.
+  Full card on demand: `styleCard(style)` (corporate 929, minimal 868, gradient 863 chars ≤ 1.2k).
+  `tls.l.grid-guide` / `tls.l.safe-area` hidden from the tier-1 index (`AI_HIDDEN_TYPES`; AC0
+  deferred item; the conformance test now asserts their absence instead of an `also:` entry).
+  Tier-1 index **14,982** chars (default), 14,865 / 14,669 / 15,164 with corporate / minimal /
+  gradient (≤ 16k); full index 18,763 unchanged.
+- `cli.js --metrics --style <id> [--theme <palette>]` (style palette, tokens and knob defaults;
+  `buildBlockMetrics({ blockDefaults })`). `calibrate/run.js --decks name=file,…`.
+- Fixtures `__fixtures__/styles/{corporate,minimal,gradient}.json`: identical slides (spec checks),
+  only id/title/theme/style differ. `styles.spec.ts` (22): data validity (palette ids, text ≥ 4.5:1
+  on background and surface, knob values in the slot enums, prefer/avoid types exist, card ≤ 1.2k),
+  resolution order, round trip, validator, schema, `analyzeDeck` clean.
+
+**What each pilot changes.** corporate: `corporate-navy` (white/navy/blue #0B5FFF), radii 4–16,
+smaller display/title (128/72), surface-tinted cover foot + full-surface section master, field
+divider, `alt` cards, source on charts, rule quote, subtle motion. minimal: `minimal-white`
+(black/grey), density `roomy`, title 80, outline numbered cards, minimal divider, chart insight
+below, no quote mark, muted takeaway, subtle motion, no masters. gradient: `gradient-night`
+(#08090D/violet #8B6CFF/cyan), display 160 / title 96 tight, radii 12–40, linear-gradient masters in
+palette sentinels (cover background→surface→accent, section, content), numeral divider, glyph
+quote, expressive motion.
+
+**Verification.** `cli.js` on each deck: 0 errors, 0 warnings, `needsVisualCheck` empty (one
+`layout/unbalanced` info on the section slide: the divider is left-aligned by design). Calibration
+(`run.js --decks …`, 1 Chromium page, Inter loaded, 0 page errors): 33 blocks, 0 missing, 0 box
+deltas > 1; table vs browser wrap 3/185 lines (chart-insight, cards); worst height error 1.5%
+(cards). Width overflows +1% kicker (letter-spaced) and +3% closing contact line, centred, not
+clipped (checked at full size). **All 24 shots looked at** (session scratchpad `calib/`): three
+clearly different decks with the same content; no clipped or overlapping text after the fixes.
+tsc prod **0**, spec **329** (ratchet). Specs: styles, digest, validator, slide-compiler,
+deck-document, demo round trip, layout-report, tokens, recipes, block-metrics, decompiler,
+deck-context, shape-bridge, motion-showcase, clone-spec — 501 pass (`--maxWorkers=1`).
+
+**Found (for AC2+).**
+- Style masters are painted only by `renderPageToSvg`; the DOM path (editor, DeckViewer) paints
+  `page.background` alone. That is why AC1 masters carry only a background (copied onto the page)
+  and corporate's master chrome (header/footer/page number, §3.3) is **not built** — needs master
+  blocks in the DOM path (a DeckViewer change, which is the user's uncommitted file) or an AC4 route.
+- First shots: `tls.c.cover` default `decoration=blob`/`arc` overlaps a two-line centred title (all
+  styles → `decoration=none` for now); `variant=split` without an image leaves half the slide empty
+  (corporate moved to centred). `tls.g.pros-cons` fills its region with caption-size items, so
+  `style=cards` drew mostly empty boxes (default dropped); `tls.c.closing variant=split` puts a tall
+  near-empty person card on the right. Good AC2 knob/hug candidates.
+- `tls.c.agenda` and `tls.t.quote` hug top-left in `blank` (S28); the decks centre them with
+  `layer: 'backdrop', anchor: 'center'` — works and reports clean, but a recipe-level answer
+  (regionAlign on `blank`, or a centred layout) would be cleaner.
+- The decompiler emits `layer`/`anchor` after `props`; fixtures are written in that key order so
+  the byte-identical check is meaningful.
+

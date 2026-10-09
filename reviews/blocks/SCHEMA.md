@@ -35,6 +35,8 @@ interface DeckSpec {
   tokens?: DeckTokens                // brand-kit overrides for the resolved token scale
   masters?: MasterSpec[]             // reusable slide templates
   slides: SlideSpec[]                // ordered slides
+  motionStyle?: 'static' | 'subtle' | 'expressive'   // P7 deck default
+  style?: string                     // AC1: a deck style id ('corporate' | 'minimal' | 'gradient')
 }
 ```
 
@@ -54,6 +56,28 @@ A tuple `[w, h]` in slide units is also valid. Changing `aspect` re-compiles all
 blocks in `free[]` (hard coordinates) will be misplaced — the host must report this.
 
 **`masters`** — an array of `MasterSpec` objects, each with a unique `name`.
+
+**`style`** (AC1, optional) — a deck style preset from `BUILT_IN_STYLES`
+(`packages/tldraw/src/blocks/styles/`, plan: `ai-curation/README.md` §3). The style supplies
+defaults that sit **under** what the spec authors, and nothing it supplies is ever written back
+into the spec (`documentToDeckSpec` returns the authored JSON byte-identical):
+
+1. **theme** — `theme` should be one of the style's palette ids (e.g. `corporate-navy`,
+   `minimal-white`, `gradient-night`; palette ids are valid `theme` values with or without a
+   style). Any other string falls back to the style's first palette and the validator warns
+   `style/theme-mismatch`. An inline `DeckTheme` object is kept.
+2. **tokens** — style tokens < `DeckSpec.tokens`.
+3. **masters** — style masters are added as `style:cover` / `style:section` / `style:content`
+   (reserved prefix; do not author `style:` names). A slide with no `masterId` gets one (cover
+   or closing role or a cover/hero/kinetic-title/closing block → cover; section role/layout or a
+   divider → section; else content), and with no `background` that master's background.
+4. **blockDefaults** — knob values per block type (e.g. corporate `tls.c.cards tone=alt`), filled
+   only where the block does not set that prop. Set a knob to override the style.
+5. **motionStyle** — style < `DeckSpec.motionStyle` < `SlideSpec.motionStyle` < block `motion`.
+
+Unknown ids are an error (`style/unknown`, with a suggestion). The planner reads a style's card
+with `styleCard(style)`; the tier-1 index lists every style in one line
+(`capabilityIndex(reg, { tier: 1, style })` applies its prefer/avoid lists).
 
 ---
 
