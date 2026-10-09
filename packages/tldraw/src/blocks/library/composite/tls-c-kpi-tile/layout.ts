@@ -64,9 +64,27 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
   let y = inner.y
 
+  // AC2: a tile with the height for it shows the value at `display` (label and delta at `body`);
+  // a KPI row in a tall region used to float a heading-size number in empty space. Otherwise the
+  // compact tier (heading value, caption label/delta) as before.
+  const formattedValue = formatValue(props.value, props.format)
+  const showDelta = isShown(props, 'showDelta') && delta != null
+  const tierHeight = (valueToken: 'display' | 'heading', smallToken: 'body' | 'caption'): number => {
+    const small = ctx.resolveText(smallToken)
+    const value = ctx.resolveText(valueToken)
+    const labelH = isShown(props, 'showLabel') ? ctx.measureText(props.label ?? '', small, inner.width).height + ctx.tokens.space.xs : 0
+    const valueH = ctx.measureText(formattedValue, value, inner.width).height + ctx.tokens.space.xs
+    const deltaH = showDelta ? ctx.measureText('\u2191 +0', small, inner.width).height : 0
+    return labelH + valueH + deltaH
+  }
+  const big =
+    inner.height + 0.5 >= tierHeight('display', 'body') &&
+    realWidth(formattedValue, ctx.resolveText('display')) * 1.03 <= inner.width
+  const smallToken = big ? 'body' : 'caption'
+
 // --- label (top, muted) ---
   if (isShown(props, 'showLabel')) {
-    const labelStyle = ctx.resolveText('caption')
+    const labelStyle = ctx.resolveText(smallToken)
     const labelText = props.label ?? ''
     const labelMetrics = ctx.measureText(labelText, labelStyle, inner.width)
     children.push({
@@ -80,10 +98,9 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   }
 
   // --- value (big number) ---
-  const formattedValue = formatValue(props.value, props.format)
   // One line, shrunk (to 0.5) until the browser-true width fits the tile: a long value ("$1,234,567")
   // used to wrap or run out of a narrow tile (RV04).
-  let valueStyle = ctx.resolveText('heading')
+  let valueStyle = ctx.resolveText(big ? 'display' : 'heading')
   for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
     valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
   }
@@ -103,7 +120,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
 
   // --- delta row (optional) ---
   if (isShown(props, 'showDelta') && delta != null) {
-    const deltaStyle = ctx.resolveText('caption')
+    const deltaStyle = ctx.resolveText(smallToken)
     const sign = delta >= 0 ? '+' : ''
     const deltaText = `${sign}${delta}`
 

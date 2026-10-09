@@ -56,10 +56,14 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
   // AC2: content-sized. Tiles paint their content from the top, so a row stretched over a tall
   // region left an empty band between the tiles and the next block (a takeaway). The row is as tall
   // as its tallest tile's painted content; the region then centres the row and its sibling.
-  let children = place(tileHeight)
+  // Tiles run to the row's bottom edge (their own bottom padding is the row's), so the pass at the
+  // final content-sized box gives each tile the same inner height as the measuring pass did.
+  let children = place(tileHeight + ctx.tokens.space.md)
   const painted = Math.max(0, ...children.map((n) => leafBottom(n, 0) - inner.y))
   const rowH = Math.min(H, Math.ceil(inner.y + painted + ctx.tokens.space.md))
-  if (painted > 0 && rowH < H - 1) children = place(Math.max(0, rowH - inner.y - ctx.tokens.space.md))
+  // Each tile keeps its own bottom padding (tile box = painted + md), so a tile that chose its
+  // big tier in the tall first pass still has the height for it in the second.
+  if (painted > 0 && rowH < H - 1) children = place(Math.max(0, rowH - inner.y))
   const rootH = painted > 0 ? rowH : H
 
   return {

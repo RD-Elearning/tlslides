@@ -79,6 +79,44 @@ describe('AC0 slide recipes', () => {
     })
   }
 
+  // AC2 part 2 — the centred `timeline` region (AC1.5) hides a slide whose stack is small for its
+  // region: no band below, but title, empty band, a thin block, empty band. `layout/unbalanced`
+  // cannot see it, so the recipes gate measures how much of its region the stack paints (first
+  // painted top to last painted bottom ÷ region height). Recipes whose blocks size to the room
+  // (kpi-row display tier, roadmap roomy tier, …) must fill ≥ 55%; before AC2 part 2 kpi-row and
+  // roadmap with their takeaways painted ~51% and failed. The rest is a ratchet: the named sparse
+  // recipes may not grow in number and nothing else may drop below 50%.
+  const regionFill = (id: string): number => {
+    const recipe = RECIPES.find((r) => r.id === id)!
+    const report = analyzeSlide(recipeSlide(recipe, registry), { registry })
+    const main = Object.keys(recipe.regions).filter((r) => r !== 'title')
+    let best = 0
+    for (const name of main) {
+      const box = report.regions[name]
+      const painted = report.blocks.filter((b) => b.region === name && b.painted && b.layer !== 'backdrop').map((b) => b.painted!)
+      if (!box || painted.length === 0) continue
+      const top = Math.min(...painted.map((p) => p.y))
+      const bottom = Math.max(...painted.map((p) => p.y + p.height))
+      best = Math.max(best, (bottom - top) / box.height)
+    }
+    return best
+  }
+  const FILLS_ITS_REGION = ['data-kpi-row', 'process-roadmap', 'content-cards', 'comparison-pricing', 'data-chart-insight', 'data-stat-spotlight']
+  for (const id of FILLS_ITS_REGION) {
+    it(`recipe "${id}" fills at least 55% of its region`, () => {
+      expect(regionFill(id)).toBeGreaterThanOrEqual(0.55)
+    })
+  }
+  it('sparse titled recipes (stack < 50% of its region) do not grow in number', () => {
+    const KNOWN_SPARSE = [
+      'agenda-full', 'content-feature-grid', 'data-table', 'comparison-options', 'comparison-pros-cons', 'comparison-before-after',
+      'comparison-table', 'process-steps', 'process-chevrons', 'process-timeline', 'people-team',
+    ]
+    const titled = RECIPES.filter((r) => r.regions.title && r.layout === 'timeline')
+    const sparse = titled.filter((r) => regionFill(r.id) < 0.5).map((r) => r.id)
+    for (const id of sparse) expect(KNOWN_SPARSE).toContain(id)
+  })
+
   it('recipeLine is compact and names the knobs', () => {
     const line = recipeLine(RECIPES.find((r) => r.id === 'cover-split-image')!)
     expect(line).toBe('cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo or product shot')

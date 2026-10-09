@@ -31,6 +31,7 @@ interface Plan {
 }
 
 const BAR_H = 28
+const ROOMY_BAR_H = 40
 const SUB_GAP = 8
 const LANE_PAD = 8
 const LABEL_PAD = 8
@@ -94,28 +95,37 @@ export function layout(props: RoadmapProps, ctx: LayoutContext): LayoutNode {
   const c = chartColors(ctx)
   const colored = props.statusColors !== false
   const laneLabels = enumOf(props.laneLabels, ['left', 'none'] as const, 'left') === 'left'
-  const labelS = style(ctx, 'footnote', c.text)
-  const nameS = style(ctx, 'caption', c.text)
-  const periodS = mutedStyle(ctx, 'footnote')
-
-  // Lane column.
-  const rawNames = objs(props.lanes).slice(0, ROADMAP_MAX_LANES).map((l) => str(l.name))
-  const widest = Math.max(0, ...rawNames.map((n) => ctx.measureText(n, nameS).width * TEXT_SLACK))
-  const laneW = laneLabels ? clamp(widest + 16, 70, Math.max(70, W * 0.22)) : 0
+  // AC2: two text tiers. Compact (footnote labels, caption lane names) as before; roomy (caption
+  // labels, body lane names, taller bars) when the box has the height for the roomy lanes at their
+  // base bar height — a roadmap alone under a title used to paint a thin strip in a tall region.
+  const tier = (roomy: boolean) => {
+    const labelS = style(ctx, roomy ? 'caption' : 'footnote', c.text)
+    const nameS = style(ctx, roomy ? 'body' : 'caption', c.text)
+    const periodS = mutedStyle(ctx, roomy ? 'caption' : 'footnote')
+    const rawNames = objs(props.lanes).slice(0, ROADMAP_MAX_LANES).map((l) => str(l.name))
+    const widest = Math.max(0, ...rawNames.map((n) => ctx.measureText(n, nameS).width * TEXT_SLACK))
+    const laneW = laneLabels ? clamp(widest + 16, 70, Math.max(70, W * 0.22)) : 0
+    const pl = plan(props, ctx, W, laneW, labelS)
+    const headerH = lineH(periodS) + 10
+    const legendH = colored && pl.used.length > 0 ? lineH(labelS) + 12 : 0
+    const base = roomy ? Math.max(ROOMY_BAR_H, Math.ceil(lineH(labelS)) + 12) : BAR_H
+    const sum0 = pl.lanes.reduce((a, l) => a + laneHeight(l.rows, base, SUB_GAP, LANE_PAD), 0)
+    return { labelS, nameS, periodS, laneW, pl, headerH, legendH, base, sum0, need: headerH + legendH + sum0 }
+  }
+  const roomyTier = tier(true)
+  const t = H + 0.5 >= roomyTier.need ? roomyTier : tier(false)
+  const { labelS, nameS, periodS, laneW, pl, headerH, legendH } = t
   const gx0 = laneW
-  const pl = plan(props, ctx, W, gx0, labelS)
   const P = pl.P
   const colW = Math.max(1, (W - gx0) / P)
 
-  const headerH = lineH(periodS) + 10
-  const legendH = colored && pl.used.length > 0 ? lineH(labelS) + 12 : 0
   const avail = Math.max(1, H - headerH - legendH)
-  const sum0 = pl.lanes.reduce((a, l) => a + laneHeight(l.rows, BAR_H, SUB_GAP, LANE_PAD), 0)
-  // AC2: bars grow at most 1.5x; past that the roadmap is content-sized (root = painted height) so a
-  // takeaway below it follows the lanes instead of sitting under an empty band.
-  const f = sum0 > 0 ? clamp(avail / sum0, 0.5, 1.5) : 1
+  const sum0 = t.sum0
+  // AC2: bars grow at most 1.5x (roomy: 1.75x); past that the roadmap is content-sized (root =
+  // painted height) so a takeaway below it follows the lanes instead of sitting under an empty band.
+  const f = sum0 > 0 ? clamp(avail / sum0, 0.5, t === roomyTier ? 1.75 : 1.5) : 1
   const minBar = Math.ceil(lineH(labelS))
-  const barH = Math.max(minBar, BAR_H * f)
+  const barH = Math.max(minBar, t.base * f)
   const gap = SUB_GAP * Math.min(1, f)
   const pad = Math.max(2, LANE_PAD * Math.min(1, f))
   const laneHs = pl.lanes.map((l) => laneHeight(l.rows, barH, gap, pad))

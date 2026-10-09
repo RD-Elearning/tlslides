@@ -43,6 +43,39 @@ describe('tls.c.kpi-row', () => {
     })
   })
 
+  // AC2 part 2: in a tall region the tiles take the display tier (a heading-size number used to
+  // float in empty space); at the preferred height the compact tier is unchanged. The row stays
+  // content-sized and re-laying it at its own height keeps the tier.
+  describe('display tier when the row has the height', () => {
+    const props = (tlsCKpiRow.describe.example as any).props
+    const valueSizes = (n: any): number[] => {
+      const out: number[] = []
+      const walk = (x: any) => {
+        if (x.part === 'value' && x.style) out.push(x.style.size)
+        for (const c of x.children ?? []) walk(c)
+      }
+      walk(n)
+      return out
+    }
+    it('tall box: display values, content-sized root, stable at its own height', () => {
+      const ctx = makeCtx({ width: 1728, height: 758 }, registry)
+      const tall = tlsCKpiRow.layout({ ...(tlsCKpiRow.defaults as any), ...props }, ctx)
+      const display = ctx.resolveText('display').size
+      expect(valueSizes(tall).every((v) => v === display)).toBe(true)
+      expect(tall.box.height).toBeLessThan(758)
+      const again = tlsCKpiRow.layout({ ...(tlsCKpiRow.defaults as any), ...props }, makeCtx({ width: 1728, height: tall.box.height }, registry))
+      expect(valueSizes(again)).toEqual(valueSizes(tall))
+      expect(again.box.height).toBe(tall.box.height)
+    })
+    it('preferred box: heading values as before', () => {
+      const [w, h] = tlsCKpiRow.size.preferred
+      const ctx = makeCtx({ width: w, height: h }, registry)
+      const node = tlsCKpiRow.layout({ ...(tlsCKpiRow.defaults as any), ...props }, ctx)
+      const heading = ctx.resolveText('heading').size
+      expect(Math.max(...valueSizes(node))).toBeLessThanOrEqual(heading)
+    })
+  })
+
   describe('parts match motion.parts (indexed convention)', () => {
     it('emits tile[0], tile[1], tile[2] for 3 default tiles', () => {
       const ctx = makeCtx({ width: 960, height: 300 }, registry)

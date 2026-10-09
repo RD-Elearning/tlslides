@@ -5438,7 +5438,7 @@ tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segme
 also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.steps
 
 ## Timeline
-tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈234@840] knobs: statusColors, laneLabels
+tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels
 tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 221–269@840] knobs: axis, alternate, nodeStyle
 also: tls.c.journey, tls.g.milestones
 

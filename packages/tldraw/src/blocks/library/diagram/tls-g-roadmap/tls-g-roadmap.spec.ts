@@ -124,3 +124,28 @@ describe('tls.g.roadmap example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGRoadmap))
   it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGRoadmap, { staticParts: /^(lane|grid|today)/ }))
 })
+
+// AC2 part 2: a roadmap alone under a title used to paint a thin strip in a tall region. With the
+// height for it the roomy tier (caption labels, body lane names, taller bars) is used; in a box
+// that cannot hold it the compact tier is unchanged. Both paint inside their box.
+describe('tls.g.roadmap roomy tier', () => {
+  const props = tlsGRoadmap.describe.example.props as Record<string, unknown>
+  const nameSize = (t: any) => (absoluteLeaves(t).find((l) => l.part.startsWith('lane[0].name'))!.node as any).style.size
+  const barH = (t: any) => bar(t, 0, 0).height
+  it('a tall box (1728x758) uses bigger lane names and taller bars than a short one (1400x220)', () => {
+    const tall = lay(props, { width: 1728, height: 758 })
+    const short = lay(props, { width: 1400, height: 220 })
+    expect(nameSize(tall)).toBeGreaterThan(nameSize(short))
+    expect(barH(tall)).toBeGreaterThan(barH(short))
+    for (const [t, size] of [[tall, { width: 1728, height: 758 }], [short, { width: 1400, height: 220 }]] as const) {
+      for (const b of allBars(t)) expect(b.y + b.height).toBeLessThanOrEqual(size.height + 1)
+    }
+  })
+  it('is content-sized in the tall box and stable when re-laid at its own painted height', () => {
+    const tall = lay(props, { width: 1728, height: 758 })
+    const h = tall.box.height
+    expect(h).toBeLessThan(758)
+    const again = lay(props, { width: 1728, height: h })
+    expect(nameSize(again)).toBe(nameSize(tall))
+  })
+})
