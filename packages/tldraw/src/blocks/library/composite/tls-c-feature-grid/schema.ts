@@ -117,8 +117,18 @@ export function effectiveColumns(width: number, columns: number | undefined, gap
 /** AC2 card cell: inner padding and corner radius (template and poster). */
 export const FG_CARD_PAD = 28
 export const FG_CARD_RADIUS = 16
-/** AC2 `iconStyle: circle`: the glyph size inside the 48-unit disc. */
+/** AC2 `iconStyle: circle`: the glyph size inside the 48-unit disc (the smallest disc). */
 export const FG_CIRCLE_GLYPH = 28
+
+/**
+ * AC2 `iconStyle: circle`: disc and glyph scale with the cell width (a fixed 28-unit glyph read
+ * small at 1920): disc 15% of the cell, 48..80 units, glyph 60% of the disc. 384-wide cells
+ * (size.preferred, 3 columns) get a 58 disc and a 35 glyph. Template and poster share it.
+ */
+export function circleIcon(cellW: number): { disc: number; glyph: number } {
+  const disc = Math.max(48, Math.min(80, Math.round(cellW * 0.15)))
+  return { disc, glyph: Math.max(FG_CIRCLE_GLYPH, Math.round(disc * 0.6)) }
+}
 
 /** Card background and disc tint, from the resolved tokens (same colours in template and poster). */
 export function featureGridColors(color: Record<string, string> | undefined): { card: string; disc: string } {

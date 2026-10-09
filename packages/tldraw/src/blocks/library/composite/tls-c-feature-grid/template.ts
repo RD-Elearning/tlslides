@@ -9,7 +9,7 @@
  */
 
 import type { HtmlTemplateContext } from '../../../types'
-import { effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, FG_CIRCLE_GLYPH, type FeatureGridProps } from './schema'
+import { circleIcon, effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 import { posterText } from '../../../html-block'
 
@@ -41,7 +41,10 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const center = props.align === 'center'
   const circle = props.iconStyle === 'circle'
   const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
-  const glyph = circle ? FG_CIRCLE_GLYPH : FG_ICON
+  const cellW = (ctx.box.width - (cols - 1) * gap) / cols
+  const disc = circleIcon(cellW)
+  const iconBox = circle ? disc.disc : FG_ICON
+  const glyph = circle ? disc.glyph : FG_ICON
 
   const cellHtml = cells
     .map((cell, i) => {
@@ -57,8 +60,8 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
         `">` +
           // Icon - render as inline SVG with the correct path
           `<div data-part="cell[${i}].icon" style="` +
-            `width:${FG_ICON}px;` +
-            `height:${FG_ICON}px;` +
+            `width:${iconBox}px;` +
+            `height:${iconBox}px;` +
             `margin-bottom:${FG_ICON_GAP}px;` +
             // LO7: a block, not inline-block - an inline-block icon sat on the line's baseline and
             // the strut's descent pushed the title ~3 units below where the poster puts it.

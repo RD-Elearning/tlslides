@@ -771,6 +771,26 @@ describe('AC2 — look knobs (cell, align, iconStyle)', () => {
     })
   }
 
+  it('circle: disc and glyph scale with the cell (>= 56 disc / >= 32 glyph at preferred), template = poster', () => {
+    const props = { ...(DEF.describe!.example.props as any), iconStyle: 'circle' }
+    const sizeAt = (w: number) => {
+      const node = poster(props, ctx({ width: w, height: 900 }))
+      const ls = leaves(node)
+      const disc = ls.find((l) => l.part === 'cell[0].icon' && l.k === 'rect')!
+      const glyph = ls.find((l) => l.k === 'icon')!
+      const html = template(props, { ...makeTemplateCtx(ctx({ width: w, height: 900 })), box: { x: 0, y: 0, width: w, height: 900 } } as any)
+      expect(html).toContain(`width:${disc.w}px;height:${disc.w}px;`)
+      expect(html).toContain(`width="${glyph.w}" height="${glyph.w}"`)
+      return { disc: disc.w, glyph: glyph.w }
+    }
+    const pref = sizeAt(DEF.size.preferred[0])
+    expect(pref.disc).toBeGreaterThanOrEqual(56)
+    expect(pref.glyph).toBeGreaterThanOrEqual(32)
+    const wide = sizeAt(1728)
+    expect(wide.disc).toBeGreaterThan(pref.disc)
+    expect(wide.disc).toBeLessThanOrEqual(80)
+  })
+
   it('card paints one card per cell; center centres the icon; circle paints a disc', () => {
     const props = { ...(DEF.describe!.example.props as any), cell: 'card', align: 'center', iconStyle: 'circle' }
     const node = poster(props, ctx({ width: 1200, height: 600 }))

@@ -9,7 +9,7 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import { effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, FG_CIRCLE_GLYPH, type FeatureGridProps } from './schema'
+import { circleIcon, effectiveColumns, featureGridColors, FG_CARD_PAD, FG_CARD_RADIUS, type FeatureGridProps } from './schema'
 import { alignText } from '../_kit'
 import { getIcon } from '../../../icons'
 import { cssTextHeight } from '../../../html-block'
@@ -30,7 +30,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   const innerW = Math.max(1, cellW - 2 * P)
   const colors = featureGridColors(ctx.tokens.color as unknown as Record<string, string>)
   const rows = Math.ceil(cells.length / cols)
-  const iconSize = FG_ICON
+  const iconSize = circle ? circleIcon(cellW).disc : FG_ICON
   const iconMargin = FG_ICON_GAP
   const titleMargin = FG_TITLE_GAP
   // LO7: the template's metrics (its line-heights, no tracking); heights are CSS line boxes, so
@@ -97,7 +97,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     const iconDef = getIcon(cell.icon as string)
     if (circle) {
       children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
-      const g = FG_CIRCLE_GLYPH
+      const g = circleIcon(cellW).glyph
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
       if (iconDef) children.push({ k: 'icon', box: gb, icon: iconDef.path, fill: iconColor, strokeWidth: 1.5 })
     } else if (iconDef) {
