@@ -7,8 +7,8 @@ export const MINIMAL_STYLE: DeckStyle = {
   family: 'premium',
   name: 'Minimal',
   brief:
-    'Quiet, gallery-like deck: lots of white space, near-black type, grey as the only second colour, outline ' +
-    'cards, no decoration. One idea per slide.',
+    'Quiet, gallery-like deck: lots of white space, near-black type, grey as the only second colour, ' +
+    'open cards under a hairline, no decoration. One idea per slide.',
   palettes: [
     {
       id: 'minimal-white',
@@ -54,13 +54,15 @@ export const MINIMAL_STYLE: DeckStyle = {
     radius: { sm: 6, md: 12, lg: 12, xl: 16 },
     type: { display: { size: 136 }, title: { size: 80, lineHeight: 1.1 }, heading: { size: 56 } },
   },
-  surface: { card: 'ghost', stroke: 'none', shadow: 0 },
+  // ghost cards with a hairline top rule (a ghost with no stroke paints nothing at all)
+  surface: { card: 'ghost', stroke: 'hairline', shadow: 0 },
   masters: [],
   motionStyle: 'subtle',
   blockDefaults: {
     'tls.c.cover': { variant: 'centered', decoration: 'none' },
     'tls.c.divider': { variant: 'minimal', align: 'start' },
-    'tls.c.cards': { tone: 'outline', lead: 'number' },
+    // AC5 lead review: no `tone` default — the deck surface (ghost + hairline top rule) paints the cards.
+    'tls.c.cards': { lead: 'number' },
     'tls.c.chart-insight': { side: 'below' },
     'tls.g.chevrons': { fill: 'single' },
     'tls.t.quote': { markStyle: 'none' },
