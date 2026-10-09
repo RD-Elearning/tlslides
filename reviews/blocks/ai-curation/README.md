@@ -803,6 +803,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 |---|---|---|---|
 | AC0 | ✅ done 2026-10-09 | `6d57b151` | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ✅ done 2026-10-09 | `3ef50f78`, `fda58d1b` | style core + corporate/minimal/gradient; 3×8-slide decks clean, 24 shots looked at; see Notes — AC1 |
+| AC1.5 | ✅ done 2026-10-09 | `49aa2a41`, `055bef27`, `e6ac37d5`, `0d20ca6b` | composition polish at the root: centred blank/timeline regions, content-sized pros-cons at body size, two-column agenda, balanced recipes gate; see Notes — AC1.5 |
 | AC2 | ⬜ | | |
 | AC3 | ⬜ | | |
 | AC4 | ⬜ | | |
@@ -816,6 +817,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 |---|---|---|---|
 | 2026-10-09 | plan | This plan written (survey only, no code) | Start at AC0. Tier assignments in §1.2 are proposals: show the user §2.2 before AC0 commits them. Board `GVkKV9dh…` has no verdicts yet. |
 | 2026-10-09 | AC0 | Tier metadata, tier-1 index, 36 recipes, LLM-ARCHITECTURE §3.1/S2 | **Approved:** the product owner delegated the decisions; the lead approved the §2.2 tier-1 list (45) and the §6 vocabulary as written. Next: AC1. |
+| 2026-10-09 | AC1.5 | Composition polish (lead review of the AC1 sheets) | Next: AC2. Open items in Notes — AC1.5 "Not done" (chart takeaway size, kpi-row/roadmap paint gap, cards caption text). |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -952,4 +954,56 @@ deck-context, shape-bridge, motion-showcase, clone-spec — 501 pass (`--maxWork
   (regionAlign on `blank`, or a centred layout) would be cleaner.
 - The decompiler emits `layer`/`anchor` after `props`; fixtures are written in that key order so
   the byte-identical check is meaningful.
+
+### Notes — AC1.5
+
+**Why.** The lead's review of the AC1 sheets: three distinct styles, but sparse composition —
+pros-cons drew caption-size points in two tall empty columns, cards and other content-sized blocks
+hugged the top of `timeline` with ~40% empty below, the agenda had no heading and leaned on the
+`layer:'backdrop', anchor:'center'` workaround. The recipes would have taught the AI the same, so
+the fixes are at the root (layouts, blocks, recipes, oracle), not in the fixtures.
+
+**What landed.**
+- `slide-layouts.ts` (`49aa2a41`): `blank` → `regionAlign: { content: 'center' }`, `timeline` →
+  `{ timeline: 'center' }` (existing mechanism, no new vocabulary). A content-sized block now sits
+  in the vertical middle of its region; fill blocks and region-claiming blocks are unchanged.
+  Every other fixture deck, snapshot and spec passed unchanged (2,094 tests in 19 suites).
+- `tls.g.pros-cons` (`49aa2a41`, `055bef27`): points at `body` when the pitch allows (caption, then
+  footnote, only when dense); columns as tall as their rows (cards style no longer draws empty
+  boxes), verdict right below at `body` with a 32-unit gap, whole composition centred in the box.
+  Size card: `h=fill` → `h≈168+73/item@840`.
+- `tls.c.agenda` (`e6ac37d5`): ≥ 1200 units wide with 4–8 items → two columns (items run down
+  column 1, then 2; row gap `xl`); `capacity` counts both columns. Narrower boxes unchanged.
+- Recipes: `agenda-full` = `timeline` + title + agenda; `data-kpi-row` and `process-roadmap` pair
+  the block with a `tls.t.takeaway`. `recipes.spec`: **every recipe example now has no
+  `layout/unbalanced` and no `region/empty`** (36 recipes); one named allowance —
+  `data-big-stat` may carry the *side* variant (a single left-aligned number). Before: 16 of 36
+  recipes were unbalanced.
+- Oracle (`0d20ca6b`): with no authored `role`, a slide made only of cover / divider / closing
+  blocks is judged as that role, so a left-aligned divider gets no side hint (same rule as
+  `role: 'section'`; an authored role wins). `SlideSpec.role` is not round-tripped through the
+  document, so the fixtures cannot carry it. Test in `layout-calibration.spec`.
+- Fixtures: st_02 = `timeline` + "Agenda" title + agenda; st_07 quote without layer/anchor.
+
+**Verification.** `cli.js` on the three decks: 0 errors, 0 warnings, **0 info findings** (no
+`layout/unbalanced`, no `region/empty`), `needsVisualCheck` empty. Calibration `run.js --shots`
+all 24 (1 Chromium page): 36 rows, 0 missing, 0 box deltas > 1; worst height error cards 1.5%,
+pros-cons 0.9%; same 2 known width overflows (+1% kicker, +3% closing contact; centred, not clipped).
+Sheets `sheet2-{corporate,minimal,gradient}.png` (session scratchpad) **looked at**: agenda fills
+the width under its heading, cards and pros-cons sit in the vertical middle under the title,
+pros-cons readable, quote centred. tsc prod **0**, spec **329**. Specs: recipes, digest (snapshot:
+3 recipe lines + the pros-cons size hint), block-metrics (cards regenerated), styles, slide-layouts,
+slide-compiler, layout-report, layout-calibration, layout-layers, layout-anchor, slide-composition,
+decompiler, deck-document, demo-deck-*, block-library-tour, motion-showcase, catalog-conformance,
+agenda, pros-cons — all pass (`--maxWorkers=1`).
+
+**Not done (for AC2).**
+- `tls.c.chart-insight` beside a tall chart: the takeaway is 2 body lines in a 1/3 panel and reads
+  small. A bigger takeaway needs a size knob on `tls.t.takeaway` (AC2 knob vocabulary) or the
+  `below` side; not changed here.
+- `data-kpi-row` / `process-roadmap`: the main block claims the region and paints at its top, the
+  takeaway lands at the bottom — balanced by the numbers but with a gap in the middle. Those blocks
+  should hug their content (AC2 hug candidates, like pros-cons).
+- `tls.c.cards` text is caption size in tall cards; a body tier when there is room would help.
+- `data-big-stat` is left-aligned by design (the one recipe allowance).
 
