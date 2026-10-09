@@ -69,4 +69,21 @@ function fontFaceCss(keys) {
   return out
 }
 
-module.exports = { FONT_SET, fontFaceCss, fontMeta }
+/**
+ * AC3 (kerning): Inter as the sample serves it (`next/font`, the woff2 files in the sample's
+ * `.next` build — the same files `run.js` loads), inlined as data @font-face under 'Inter'. Needs a
+ * prior `next dev`/`next build` of examples/nextjs-sample. Used by `font-widths.js` to measure
+ * Inter's kerning pairs (its advance table is the LO5 one in `layout/inter-metrics.ts`).
+ */
+function interFaceCss(cssFile = path.join(ROOT, 'examples/nextjs-sample/.next/static/css/app/layout.css')) {
+  const css = fs.readFileSync(cssFile, 'utf8')
+  const media = path.join(path.dirname(cssFile), '../../media')
+  return (css.match(/@font-face\s*{[^}]*}/g) || [])
+    .filter((b) => /font-family:\s*['"]?Inter['"]?\s*;/.test(b))
+    .map((b) =>
+      b.replace(/url\(\/_next\/static\/media\/([^)]+)\)/g, (_m, name) => `url(data:font/woff2;base64,${fs.readFileSync(path.join(media, name)).toString('base64')})`)
+    )
+    .join('\n')
+}
+
+module.exports = { FONT_SET, fontFaceCss, fontMeta, interFaceCss }

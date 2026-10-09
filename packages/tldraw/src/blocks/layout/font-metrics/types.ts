@@ -15,4 +15,8 @@ export interface FaceMetrics {
   regular: Record<string, number>
   /** Weight 700 advances (em), used for bold runs. */
   bold: Record<string, number>
+  /** Kerning pairs (em, added to the second glyph's advance), grouped by value:
+   *  `{ "-0.075": "TaTeTo…" }` — each two characters of a string are one pair. Measured at 400,
+   *  used for bold too. Absent = no kerning (the face has none, or it was not measured). */
+  kern?: Record<string, string>
 }

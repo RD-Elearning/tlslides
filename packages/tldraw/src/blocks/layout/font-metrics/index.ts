@@ -18,6 +18,7 @@ import { PLAYFAIR_DISPLAY_METRICS } from './playfair-display'
 import { PLUS_JAKARTA_SANS_METRICS } from './plus-jakarta-sans'
 import { SOURCE_CODE_PRO_METRICS } from './source-code-pro'
 import { SOURCE_SERIF_4_METRICS } from './source-serif-4'
+import { INTER_KERN } from './inter-kern'
 
 export type { FaceMetrics } from './types'
 
@@ -29,6 +30,7 @@ export const INTER_METRICS: FaceMetrics = {
   fallback: INTER_FALLBACK_EM,
   regular: INTER_EM,
   bold: {},
+  kern: INTER_KERN,
 }
 
 export const FONT_FACES: readonly FaceMetrics[] = [
@@ -82,6 +84,31 @@ export function faceCharEm(face: FaceMetrics, ch: string, bold = false): number 
   return table[ch] ?? table[ch.normalize('NFD')[0]] ?? face.regular[ch] ?? face.regular[ch.normalize('NFD')[0]] ?? face.fallback
 }
 
+const KERN_MAPS = new WeakMap<FaceMetrics, Map<string, number>>()
+
+function kernMap(face: FaceMetrics): Map<string, number> {
+  let map = KERN_MAPS.get(face)
+  if (!map) {
+    map = new Map()
+    for (const [em, pairs] of Object.entries(face.kern ?? {})) {
+      const v = Number(em)
+      for (let i = 0; i + 1 < pairs.length; i += 2) map.set(pairs.slice(i, i + 2), v)
+    }
+    KERN_MAPS.set(face, map)
+  }
+  return map
+}
+
+/** AC3: kerning between `prev` and `ch` in em (0 when the face has no such pair). Accented
+ *  letters kern as their NFD base letters. The browser applies these pairs (CSS `font-kerning:
+ *  auto`); a sum of advances alone ran up to ~10% wide on figures ("8.1", "3.1%"). */
+export function faceKernEm(face: FaceMetrics, prev: string | undefined, ch: string): number {
+  if (!prev || !face.kern) return 0
+  const map = kernMap(face)
+  if (map.size === 0) return 0
+  return map.get(prev + ch) ?? map.get(prev.normalize('NFD')[0] + ch.normalize('NFD')[0]) ?? 0
+}
+
 /** The sample text `textWidthRatio` compares on: a pangram in sentence case. */
 const WIDTH_SAMPLE = 'The quick brown fox jumps over the lazy dog 2026'
 
@@ -92,9 +119,11 @@ export function textWidthRatio(key: string): number {
   if (!face) return 1
   let a = 0
   let b = 0
+  let prev: string | undefined
   for (const ch of WIDTH_SAMPLE) {
-    a += faceCharEm(face, ch)
-    b += faceCharEm(INTER_METRICS, ch)
+    a += faceCharEm(face, ch) + faceKernEm(face, prev, ch)
+    b += faceCharEm(INTER_METRICS, ch) + faceKernEm(INTER_METRICS, prev, ch)
+    prev = ch
   }
   return Math.round((a / b) * 100) / 100
 }

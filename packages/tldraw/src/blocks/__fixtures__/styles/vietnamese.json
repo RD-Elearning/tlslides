@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "id": "style-vietnamese",
+  "title": "Đánh giá chiến lược — tiếng Việt",
+  "theme": "minimal-white",
+  "style": "minimal",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "vi_01",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "v_cover",
+            "type": "tls.c.cover",
+            "props": {
+              "kicker": "Đánh giá chiến lược 2027",
+              "title": "Phát triển vượt ra ngoài một sản phẩm",
+              "subtitle": "Chúng ta thắng ở đâu tiếp theo, và cần những gì",
+              "meta": "Hội nghị lãnh đạo · Tháng 3 năm 2027"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "vi_02",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "v_t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Ba tín hiệu từ khách hàng"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "v_cards",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "users",
+                  "title": "Nhóm, không phải cá nhân",
+                  "text": "Phần lớn chỗ ngồi mới đến từ các nhóm mời thêm đồng nghiệp."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Báo cáo giữ chân khách hàng",
+                  "text": "Tài khoản chia sẻ báo cáo gia hạn nhiều gấp đôi."
+                },
+                {
+                  "icon": "target",
+                  "title": "Khoảng trống thị trường",
+                  "text": "Doanh nghiệp từ 200 đến 2.000 người chưa có lựa chọn rõ ràng."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "vi_03",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "v_t3",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Hợp tác tốt hơn tự xây dựng"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "v_pc",
+            "type": "tls.g.pros-cons",
+            "props": {
+              "pros": [
+                "Có mặt cùng khách hàng sau hai quý, không phải sáu",
+                "Đội bán hàng của đối tác mang đến 400 khách hàng",
+                "Chi phí ban đầu thấp hơn"
+              ],
+              "cons": [
+                "Chia sẻ doanh thu trong ba năm đầu",
+                "Phụ thuộc vào lộ trình của đối tác"
+              ],
+              "verdict": "Hợp tác ngay, xây dựng song song.",
+              "prosTitle": "Ưu điểm",
+              "consTitle": "Nhược điểm"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "vi_04",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "v_closing",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Cảm ơn",
+              "text": "Phê duyệt thí điểm hợp tác và ngân sách 1,2 triệu đô.",
+              "cta": "Quyết định trước ngày 15/4",
+              "contacts": [
+                "chienluoc@northwind.example"
+              ],
+              "person": {
+                "name": "Trần Thị Mai",
+                "role": "Trưởng phòng Chiến lược"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

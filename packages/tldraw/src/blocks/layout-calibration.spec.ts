@@ -20,9 +20,14 @@ const style = (letterSpacing = 0, size = 100) => ({ family: '"Inter"', size, lin
 describe('LO5 — tableMetrics matches Chromium', () => {
   const tm = tableMetrics()
 
-  it('uses the browser-measured Inter advances (Chromium: "Hello World" = 551 at 100px)', () => {
-    expect(Math.abs(tm('Hello World', style()).width - 551)).toBeLessThanOrEqual(3)
+  it('uses the browser-measured Inter advances and kerning (Chromium at 1000px: "Hello World" = 5471)', () => {
+    // AC3: pinned at 1000px, where the browser's advances are the font's own. At 100px headless
+    // Chromium rounds every advance to a whole pixel ("Hello World" = 551, unkerned 554); the
+    // un-kerned LO5 sum (550.5) matched that within 3 by luck. Kerned (AC3) the table is 547.0.
+    expect(Math.abs(tm('Hello World', style(0, 1000)).width - 5471)).toBeLessThanOrEqual(3)
+    expect(Math.abs(tm('Hello World', style()).width - 547.1)).toBeLessThanOrEqual(1)
     // Digits and "%" were 17-35% narrow in the old table.
+    expect(Math.abs(tm('72%', style(0, 1000)).width - 2158)).toBeLessThanOrEqual(2)
     expect(Math.abs(tm('72%', style()).width - 216)).toBeLessThanOrEqual(2)
   })
 

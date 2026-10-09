@@ -4,13 +4,13 @@ exports[`LO1 — committed text snapshot demo-deck sl_03 1`] = `
 "SLIDE sl_03 layout=two-column frame=1920x1080 metrics=table | 5 blocks | 0 errors, 0 warnings
 regions: title 96,96 1728x108 | left 96,252 840x732 | right 984,252 840x732
 blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
-A b_03_title tls.t.title @title 96,96 1728x76 nat 837x74 | text 1L×74 ~57c/L
+A b_03_title tls.t.title @title 96,96 1728x76 nat 834x74 | text 1L×74 ~58c/L
 B b_03_bar tls.d.bar @left 96,252 840x732 fill | 12 text leaves 12L, longest title 1L×53 ~36c/L
-C b_03_take tls.t.takeaway @right 984,252 840x130 nat 840x130 | label 1L×31 ~77c/L, text 1L×39 ~56c/L
-D b_03_bullets tls.t.bullets @right 984,406 840x161 nat 647x159 | 6 text leaves 6L, longest items.0.text 1L×41 ~59c/L
+C b_03_take tls.t.takeaway @right 984,252 840x130 nat 840x130 | label 1L×31 ~78c/L, text 1L×39 ~56c/L
+D b_03_bullets tls.t.bullets @right 984,406 840x161 nat 645x159 | 6 text leaves 6L, longest items.0.text 1L×41 ~59c/L
 E b_03_cap tls.t.caption @right 984,591 840x33 nat 286x31 | text 1L×31 ~88c/L
 findings: none
-margins t96 r230 b98 l96 | free 58%
+margins t96 r234 b98 l96 | free 58%
 screenshot: not needed
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free
 ................................................
@@ -48,7 +48,7 @@ regions: content 96,96 1728x888
 blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
 A b_08_title tls.t.title @content 96,96 1728x76 nat 511x74 | text 1L×74 ~54c/L
 B b_08_donut tls.d.donut @content 96,196 1728x614 fill | 4 text leaves 4L, longest legend/label-0 1L×24 ~18c/L
-C b_08_steps tls.g.steps @content 96,834 1728x150 nat 1472x125 | 12 text leaves 12L, longest steps.1.description 1L×31 ~39c/L
+C b_08_steps tls.g.steps @content 96,834 1728x150 nat 1471x125 | 12 text leaves 12L, longest steps.1.description 1L×31 ~39c/L
 findings: none
 margins t96 r96 b108 l96 | free 52%
 screenshot: not needed

@@ -3,14 +3,15 @@
  * ships (2026-10-06, RV04). The default `estimateMetrics` runs 20-30% off on figures and the
  * `tableMetrics` Inter table is 17% narrow on digits and 35% narrow on "%" ("72%" is 2.16 em,
  * the table says 1.68), so right-aligned values overshot their bars. Kerning is ignored (a sum
- * is within ~3% of the browser, usually slightly wide). Unknown glyphs use `INTER_FALLBACK_EM`.
+ * is within ~3% of the browser, usually slightly wide; AC3 adds the measured kerning pairs). Unknown
+ * glyphs use `INTER_FALLBACK_EM`.
  *
  * Pure and DOM-free.
  */
 
 import type { ResolvedTextStyle } from '../../../types'
 import { interCharEm } from '../../../layout/inter-metrics'
-import { faceCharEm, faceForFamily } from '../../../layout/font-metrics'
+import { faceCharEm, faceForFamily, faceKernEm, INTER_METRICS } from '../../../layout/font-metrics'
 
 // The table moved to `layout/inter-metrics.ts` (LO5) so `tableMetrics` uses the same browser-true
 // widths; re-exported here for the chart kit and its specs.
@@ -22,8 +23,11 @@ export function realWidth(text: string, style: Pick<ResolvedTextStyle, 'size' | 
   const face = style.family ? faceForFamily(style.family) : undefined
   let em = 0
   let n = 0
+  let prev: string | undefined
   for (const ch of text) {
-    em += face ? faceCharEm(face, ch) : interCharEm(ch)
+    // AC3: with the face's kerning pairs (Inter's too), as the browser sets the line.
+    em += (face ? faceCharEm(face, ch) : interCharEm(ch)) + faceKernEm(face ?? INTER_METRICS, prev, ch)
+    prev = ch
     n++
   }
   return (em + (style.letterSpacing || 0) * n) * style.size

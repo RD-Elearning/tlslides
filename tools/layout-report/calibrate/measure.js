@@ -81,6 +81,16 @@ function measureInPage() {
       const lineInfo = []
       for (const k of kids) {
         range.selectNodeContents(k)
+        // AC3: a wrapped line keeps its trailing space in the DOM (`white-space: pre`); it paints
+        // nothing, so the line's width ends at its last visible character (the table measures the
+        // trimmed text, and an invisible trailing space past the box is no overflow).
+        const tnodes = []
+        const walker = document.createTreeWalker(k, NodeFilter.SHOW_TEXT)
+        while (walker.nextNode()) tnodes.push(walker.currentNode)
+        for (let ti = tnodes.length - 1; ti >= 0; ti--) {
+          const m = /\S\s*$/.exec(tnodes[ti].data)
+          if (m) { range.setEnd(tnodes[ti], m.index + 1); break }
+        }
         const rr = range.getBoundingClientRect()
         maxW = Math.max(maxW, rr.width)
         const spans = Array.from(k.querySelectorAll('span'))

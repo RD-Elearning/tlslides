@@ -5,7 +5,7 @@
  */
 export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.agenda': 'h 169–981@1728',
-  'tls.c.big-stat': 'h≈385@840',
+  'tls.c.big-stat': 'h≈388@840',
   'tls.c.cards': 'h=fill',
   'tls.c.case-study': 'h≈537@840',
   'tls.c.chart-insight': 'h=fill',
@@ -45,7 +45,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.d.grouped-bar': 'h=fill',
   'tls.d.heatmap': 'h=fill',
   'tls.d.line': 'h=fill',
-  'tls.d.pie': 'h≈287@544',
+  'tls.d.pie': 'h≈285@544',
   'tls.d.pricing': 'h≈472+13/item@840',
   'tls.d.progress-bar': 'h≈-16+73/item@840',
   'tls.d.progress-ring': 'h=fill',

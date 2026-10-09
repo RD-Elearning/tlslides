@@ -13,7 +13,7 @@
 
 import type { RichText, ResolvedTextStyle, TextLine, TextMetrics } from '../types'
 import { INTER_BOLD_FACTOR, interCharEm } from './inter-metrics'
-import { faceByKey, faceCharEm, faceForFamily, familyStack, INTER_METRICS, type FaceMetrics } from './font-metrics'
+import { faceByKey, faceCharEm, faceForFamily, faceKernEm, familyStack, INTER_METRICS, type FaceMetrics } from './font-metrics'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Generated font metrics from Inter Regular font (Phase 3)                       */
@@ -938,10 +938,13 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
     const face = faceKey ? faceFromKey(faceKey) : tableFaceFor(style.family || '')
     const spacing = (style.letterSpacing || 0) * fontSize
     const attrs = runAttributes(runs, plain.length)
+    // AC3: measured faces kern (the pair with the previous character, as the browser does).
+    const kernFace = typeof face === 'string' ? undefined : face
     const charW = (i: number): number => {
       const ch = plain[i]
       const bold = attrs ? attrs.bold[i] : false
-      const em = isCJK(ch) ? CJK_WIDTH_EM * (bold ? INTER_BOLD_FACTOR : 1) : faceEm(face, ch, bold)
+      let em = isCJK(ch) ? CJK_WIDTH_EM * (bold ? INTER_BOLD_FACTOR : 1) : faceEm(face, ch, bold)
+      if (kernFace && i > 0) em += faceKernEm(kernFace, plain[i - 1], ch)
       return em * fontSize * (attrs ? attrs.size[i] : 1) + spacing
     }
     const rangeW = (s: number, e: number): number => {

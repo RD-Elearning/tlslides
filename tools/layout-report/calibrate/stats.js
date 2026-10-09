@@ -53,8 +53,16 @@ let n = 0, tMis = 0, eMis = 0, tUnder = 0, eUnder = 0, renderedMis = 0, overflow
 const mis = []
 const ovs = []
 const bySize = {}
+// AC3: a table line count agrees with the browser when it lies between the browser's own wrap at
+// the box width (strict, the most lines) and at the box + 3 % / 2 units (tolerant, the fewest): a
+// line within 3 % of its box is the measurement noise (LO5: shrink-wrapped labels the DOM paints
+// unwrapped; AC3: lines 0-3 % over a card's box that the table correctly breaks). STRICT=1 compares
+// with the strict wrap only, TOL=1 with the tolerant wrap only (the LO5 metric).
+const agrees = (lines, d) =>
+  process.env.STRICT ? lines === d.browserStrict : process.env.TOL ? lines === d.browserTol : lines >= d.browserTol && lines <= d.browserStrict
+const nearest = (lines, d) => (process.env.STRICT ? d.browserStrict : process.env.TOL ? d.browserTol : lines < d.browserTol ? d.browserTol : d.browserStrict)
 for (const r of rows.filter(isLayout)) {
-  const dl = r.text.dom.map((d) => ({ ...d, browser: process.env.STRICT ? d.browser : d.browserTol }))
+  const dl = r.text.dom.map((d) => ({ ...d, browserStrict: d.browser, browser: d.browserTol }))
   if (dl.length !== r.text.table.length) {
     unmatched++
     continue
@@ -64,14 +72,14 @@ for (const r of rows.filter(isLayout)) {
     const t = r.text.table[i]
     const e = r.text.estimate[i]
     n++
-    if (t.lines !== d.browser) {
+    if (!agrees(t.lines, d)) {
       tMis++
-      if (t.lines < d.browser) tUnder++
-      mis.push(`${r.slide}:${r.id} ${t.p} table ${t.lines} est ${e.lines} browser ${d.browser} (w ${Math.round(d.boxWidth)}, fs ${d.fontSize})`)
+      if (t.lines < nearest(t.lines, d)) tUnder++
+      mis.push(`${r.slide}:${r.id} ${t.p} table ${t.lines} est ${e.lines} browser ${d.browserTol}-${d.browserStrict} (w ${Math.round(d.boxWidth)}, fs ${d.fontSize})`)
     }
-    if (e.lines !== d.browser) {
+    if (!agrees(e.lines, d)) {
       eMis++
-      if (e.lines < d.browser) eUnder++
+      if (e.lines < nearest(e.lines, d)) eUnder++
     }
     // LO6: the editor (what the DOM paints) measures with `table`.
     if (d.rendered !== t.lines) renderedMis++
@@ -90,7 +98,7 @@ console.log('table mismatches:', mis.slice(0, 30))
 console.log('width overflows:', ovs.slice(0, 15))
 
 // block-level line mismatch (any leaf)
-const blk = rows.filter(isLayout).filter((r) => r.text.dom.length === r.text.table.length && r.text.dom.some((d, i) => d.nonEmpty && (process.env.STRICT ? d.browser : d.browserTol) !== r.text.table[i].lines))
+const blk = rows.filter(isLayout).filter((r) => r.text.dom.length === r.text.table.length && r.text.dom.some((d, i) => d.nonEmpty && !agrees(r.text.table[i].lines, { ...d, browserStrict: d.browser })))
 console.log('layout blocks with any table-vs-browser line mismatch:', blk.length, '/', rows.filter(isLayout).filter((r) => r.text.table.length).length, 'types', [...new Set(blk.map((r) => r.type))].join(' '))
 
 // html line totals

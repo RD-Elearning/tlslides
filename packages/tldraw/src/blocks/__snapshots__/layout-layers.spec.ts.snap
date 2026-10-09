@@ -7,11 +7,11 @@ blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to it
 A blob tls.m.decoration @left [backdrop] 96,252 840x732 fill
 B t tls.t.title @title 96,96 1728x106 nat 930x104 | text 1L×104 ~31c/L
 C card tls.c.stat-card @left 96,252 840x732 fill | value 1L×155 ~8c/L, unit 1L×53 ~29c/L, caption 1L×31 ~70c/L
-D kpi tls.c.kpi-tile @right 984,252 840x260 fill | label 1L×41 ~51c/L, value 1L×104 ~14c/L | cap label 72/792 value 109/792
-E badge tls.d.trend-badge @right [overlay] 1710,252 114x50 nat 113x43 | badge.text 1L×31 ~5c/L
+D kpi tls.c.kpi-tile @right 984,252 840x260 fill | label 1L×41 ~52c/L, value 1L×104 ~14c/L | cap label 71/792 value 109/792
+E badge tls.d.trend-badge @right [overlay] 1711,252 113x50 nat 112x43 | badge.text 1L×31 ~5c/L
 findings:
 I layout/overlap blob × card boxes overlap 838x730 at 97,253: backdrop blob sits behind card (intended).
-I layout/overlap kpi × badge boxes overlap 112x48 at 1711,253: overlay badge over kpi covers no text (intended).
+I layout/overlap kpi × badge boxes overlap 111x48 at 1712,253: overlay badge over kpi covers no text (intended).
 margins t96 r97 b142 l96 | free 75%
 screenshot: not needed
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free

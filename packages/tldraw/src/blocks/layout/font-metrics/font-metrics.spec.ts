@@ -4,7 +4,7 @@
  * on the tokens and in text leaves, and the style fonts' consistency.
  */
 
-import { FONT_FACES, faceByKey, faceCharEm, faceForFamily, INTER_METRICS, textWidthRatio } from './index'
+import { FONT_FACES, faceByKey, faceCharEm, faceForFamily, faceKernEm, INTER_METRICS, textWidthRatio } from './index'
 import { tableFaceFor, tableMetrics } from '../measure'
 import { resolveTokens } from '../../tokens'
 import { createLayoutContext } from '../layout-child'
@@ -58,6 +58,20 @@ describe('AC3 font-metrics registry', () => {
     // bold runs read the 700 table
     const boldW = m({ runs: [{ text: 'Where we win next', bold: true }] } as any, style('"Fraunces"')).width
     expect(boldW).toBeGreaterThan(m('Where we win next', style('"Fraunces"')).width)
+  })
+
+  it('kerning: measured pairs narrow the line as the browser does (Inter "Wo" -0.05 em, "8." / ".1")', () => {
+    expect(faceKernEm(INTER_METRICS, 'W', 'o')).toBeCloseTo(-0.05, 3)
+    expect(faceKernEm(INTER_METRICS, undefined, 'o')).toBe(0)
+    expect(faceKernEm(INTER_METRICS, ' ', 'W')).toBe(0)
+    // accented letters kern as their base letters
+    expect(faceKernEm(INTER_METRICS, 'W', 'ố')).toBe(faceKernEm(INTER_METRICS, 'W', 'o'))
+    const m = tableMetrics()
+    const st = { family: '"Inter"', size: 100, lineHeight: 1.2, letterSpacing: 0, color: '#000' }
+    const sum = [...'8.1'].reduce((a, ch) => a + faceCharEm(INTER_METRICS, ch) * 100, 0)
+    expect(m('8.1', st).width).toBeLessThan(sum - 5)
+    // every measured face except the monospace one has kerning pairs
+    for (const face of FONT_FACES) if (face.key !== 'source-code-pro') expect(Object.keys(face.kern ?? {}).length).toBeGreaterThan(0)
   })
 
   it('textWidthRatio: Inter is 1, a mono face is wider, Patrick Hand narrower', () => {
