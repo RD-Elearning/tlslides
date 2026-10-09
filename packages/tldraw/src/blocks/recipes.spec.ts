@@ -63,6 +63,22 @@ describe('AC0 slide recipes', () => {
     })
   }
 
+  // AC1.5 — a recipe is the AI's starting point, so it must also be balanced: no big empty band
+  // below the content (`layout/unbalanced`) and no large declared region left empty
+  // (`region/empty`). A left-aligned text column (agenda list, one big number) may leave the right
+  // side open by design; those recipes are named here and may only carry the side variant.
+  const SIDE_OPEN_BY_DESIGN = new Set(['agenda-full', 'data-big-stat'])
+  for (const recipe of RECIPES) {
+    it(`recipe "${recipe.id}" is balanced with the examples (no layout/unbalanced, no region/empty)`, () => {
+      const report = analyzeSlide(recipeSlide(recipe, registry), { registry })
+      const bad = report.findings
+        .filter((f) => f.code === 'region/empty' || f.code === 'layout/unbalanced')
+        .filter((f) => !(SIDE_OPEN_BY_DESIGN.has(recipe.id) && f.code === 'layout/unbalanced' && f.message.startsWith('content ends at x')))
+        .map((f) => `${f.code}: ${f.message}`)
+      expect(bad).toEqual([])
+    })
+  }
+
   it('recipeLine is compact and names the knobs', () => {
     const line = recipeLine(RECIPES.find((r) => r.id === 'cover-split-image')!)
     expect(line).toBe('cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo or product shot')

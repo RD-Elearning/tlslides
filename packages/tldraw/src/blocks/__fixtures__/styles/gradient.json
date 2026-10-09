@@ -26,9 +26,18 @@
     },
     {
       "id": "st_02",
-      "layout": "blank",
+      "layout": "timeline",
       "regions": {
-        "content": [
+        "title": [
+          {
+            "id": "b_t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Agenda"
+            }
+          }
+        ],
+        "timeline": [
           {
             "id": "b_agenda",
             "type": "tls.c.agenda",
@@ -52,9 +61,7 @@
                 }
               ],
               "current": 1
-            },
-            "layer": "backdrop",
-            "anchor": "center"
+            }
           }
         ]
       }
@@ -208,9 +215,7 @@
               "text": "We stopped buying tools for one person and started buying them for the whole team.",
               "attribution": "Linh Pham",
               "role": "COO, Saigon Logistics"
-            },
-            "layer": "backdrop",
-            "anchor": "center"
+            }
           }
         ]
       }

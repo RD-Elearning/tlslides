@@ -488,10 +488,10 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'grid-3x2', name: 'Grid 3×2', compile: layoutGrid3x2 },
   { id: 'grid-2x3', name: 'Grid 2×3', compile: layoutGrid2x3 },
   { id: 'comparison', name: 'Comparison', compile: layoutComparison },
-  { id: 'timeline', name: 'Timeline', compile: layoutTimeline },
+  { id: 'timeline', name: 'Timeline', compile: layoutTimeline, regionAlign: { timeline: 'center' } },
   { id: 'quote', name: 'Quote', compile: layoutQuote, regionAlign: { quote: 'center', attribution: 'start' } },
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
-  { id: 'blank', name: 'Blank', compile: layoutBlank },
+  { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

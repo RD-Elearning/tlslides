@@ -5332,7 +5332,7 @@ cover-hero · blank — content: tls.c.hero — type-led opener
 cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo or product shot
 cover-kinetic · blank — content: tls.c.kinetic-title — motion-led opener for expressive decks
 ### agenda
-agenda-full · blank — content: tls.c.agenda — numbered agenda, full slide
+agenda-full · timeline+title — timeline: tls.c.agenda — numbered agenda under a heading, full slide
 agenda-image · two-column+title — left: tls.t.bullets(marker=number); right: tls.m.image — short agenda beside a photo
 ### section
 section-divider · blank — content: tls.c.divider — section opener
@@ -5348,7 +5348,7 @@ content-image-text · blank — content: tls.c.image-text — photo-led story wi
 data-chart-insight · timeline+title — timeline: tls.c.chart-insight — one chart with its takeaway and source
 data-stat-spotlight · timeline+title — timeline: tls.c.stat-spotlight — one rate with three supporting numbers
 data-big-stat · blank — content: tls.c.big-stat — one giant number
-data-kpi-row · timeline+title — timeline: tls.c.kpi-row — 2–5 headline KPIs
+data-kpi-row · timeline+title — timeline: tls.c.kpi-row + tls.t.takeaway — 2–5 headline KPIs and what they mean
 data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
 data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway — single-series bars with the so-what beside
 ### comparison
@@ -5362,7 +5362,7 @@ comparison-table · timeline+title — timeline: tls.d.compare-table — feature
 process-steps · timeline+title — timeline: tls.c.steps — ordered steps, explained
 process-chevrons · timeline+title — timeline: tls.g.chevrons — phases with a current one
 process-timeline · timeline+title — timeline: tls.g.timeline — dated events
-process-roadmap · timeline+title — timeline: tls.g.roadmap — plan over periods and lanes
+process-roadmap · timeline+title — timeline: tls.g.roadmap + tls.t.takeaway — plan over periods and lanes, with the key milestone
 ### people
 people-team · timeline+title — timeline: tls.c.team — team members
 people-testimonial · blank — content: tls.c.testimonial — one customer quote as social proof
