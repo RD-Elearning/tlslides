@@ -14,6 +14,7 @@
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no `Math.random()`.
  */
 
+import { STYLE_MASTER_PREFIX, documentDeckTokens, getDeckStyle, styleMasters } from './styles'
 import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
@@ -407,7 +408,7 @@ export function documentToDeckSpec(
 
   // 1. Resolve tokens from the document's theme + token overrides.
   const theme: DeckTheme = activeDeckTheme(doc.theme)
-  const tokens: ResolvedTokens = resolveTokens(theme, doc.tokens)
+  const tokens: ResolvedTokens = resolveTokens(theme, documentDeckTokens(doc))
 
   // 2. Derive aspect from defaultPageSize.
   const pageSize = doc.defaultPageSize ?? [...DEFAULT_SLIDE_SIZE]
@@ -419,9 +420,16 @@ export function documentToDeckSpec(
   )
 
   const slides: SlideSpec[] = []
+  const style = getDeckStyle(doc.styleId)
 
   for (const page of pages) {
     const { spec, findings: pageFindings } = pageToSlideSpec(page, tokens, opts)
+    // AC1: a `style:*` master and its background were filled in by `deckSpecToDocument`, not authored.
+    if (style && spec.masterId?.startsWith(STYLE_MASTER_PREFIX)) {
+      const master = styleMasters(style).find((m) => m.name === spec.masterId)
+      if (master?.background && JSON.stringify(master.background) === JSON.stringify(spec.background)) delete spec.background
+      delete spec.masterId
+    }
     slides.push(spec)
     findings.push(...pageFindings)
 
@@ -450,9 +458,11 @@ export function documentToDeckSpec(
     theme: (doc.theme ?? theme) as unknown as DeckSpec['theme'],
     aspect,
     tokens: doc.tokens as Record<string, unknown> | undefined,
-    masters: doc.masters ? Object.values(doc.masters) : undefined,
+    masters: doc.masters ? Object.values(doc.masters).filter((m) => !m.name.startsWith(STYLE_MASTER_PREFIX)) : undefined,
     slides,
   }
+  if (deckSpec.masters && !deckSpec.masters.length) delete deckSpec.masters
   if (doc.motionStyle !== undefined) deckSpec.motionStyle = doc.motionStyle
+  if (doc.styleId !== undefined) deckSpec.style = doc.styleId
   return { spec: deckSpec, findings }
 }

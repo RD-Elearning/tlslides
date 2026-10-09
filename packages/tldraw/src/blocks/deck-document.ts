@@ -21,6 +21,7 @@ import { resolveTokens } from './tokens'
 import type { DeckSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
+import { deckSpecTokens, getDeckStyle, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -76,9 +77,12 @@ export function resolveDeckFrame(aspect: DeckSpec['aspect']): { width: number; h
  *   undefined` that the type doesn't allow but a non-TS caller (FastAPI, a hand-built payload)
  *   could still send.
  */
-export function resolveDeckTheme(theme: DeckSpec['theme']): DeckTheme {
+export function resolveDeckTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme {
+  // AC1: a styled deck uses one of its style's palettes (the default when `theme` names none).
+  const styled = styleTheme(getDeckStyle(styleId), theme)
+  if (styled) return styled
   if (typeof theme === 'string') {
-    return BUILT_IN_DECK_THEMES.find((t) => t.id === theme) ?? DEFAULT_DECK_THEME
+    return BUILT_IN_DECK_THEMES.find((t) => t.id === theme) ?? stylePaletteById(theme) ?? DEFAULT_DECK_THEME
   }
   return activeDeckTheme(theme)
 }
@@ -105,8 +109,12 @@ export interface DeckDocumentResult {
  */
 export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   const frame = resolveDeckFrame(spec.aspect)
-  const theme = resolveDeckTheme(spec.theme)
-  const tokens = resolveTokens(theme, spec.tokens)
+  const theme = resolveDeckTheme(spec.theme, spec.style)
+  // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
+  const style = getDeckStyle(spec.style)
+  const tokens = resolveTokens(theme, deckSpecTokens(spec))
+  const masterList = styleMasters(style)
+  const motionStyle = spec.motionStyle ?? style?.motionStyle
   const findings: CompileFinding[] = []
 
   // Shared registry for intrinsic-height measurement during compileSlide.
@@ -118,7 +126,14 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
 
   spec.slides.forEach((slideSpec, index) => {
     const pageId = slideSpec.id
-    const result = compileSlide(slideSpec, frame, tokens, registry, { motionStyle: spec.motionStyle })
+    const result = compileSlide(slideSpec, frame, tokens, registry, {
+      motionStyle,
+      ...(style ? { blockDefaults: style.blockDefaults } : {}),
+    })
+    // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
+    // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
+    const styleMasterId = styleMasterFor(style, slideSpec)
+    const styleMaster = styleMasterId ? masterList.find((m) => m.name === styleMasterId) : undefined
     findings.push(...result.findings)
 
     const shapes: Record<string, ComponentShape> = {}
@@ -133,12 +148,12 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      background: result.background,
+      background: result.background ?? (styleMaster?.background ? JSON.parse(JSON.stringify(styleMaster.background)) : undefined),
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,
       slideSpecId: result.slideSpecId,
-      masterId: result.masterId,
+      masterId: result.masterId ?? styleMasterId,
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     pages[pageId] = page
@@ -160,12 +175,14 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     defaultPageSize: [frame.width, frame.height],
     theme,
     tokens: spec.tokens,
-    masters: spec.masters
-      ? Object.fromEntries(spec.masters.map((m) => [m.name, m]))
-      : undefined,
+    masters:
+      spec.masters || masterList.length
+        ? Object.fromEntries([...(spec.masters ?? []), ...masterList].map((m) => [m.name, m]))
+        : undefined,
   }
 
   if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
+  if (style) document.styleId = style.id
 
   return { document, findings }
 }

@@ -4,6 +4,7 @@ import { useBlockRegistry } from './useBlockRegistry'
 import { resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
 import { resolveAssetUrl } from '~blocks/deck-context'
+import { documentDeckTokens } from '~blocks/styles'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
@@ -21,8 +22,8 @@ export function useDeckTokens(): ResolvedTokens {
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
   return React.useMemo(
-    () => resolveTokens(activeDeckTheme(doc.theme), doc.tokens),
-    [doc.theme, doc.tokens],
+    () => resolveTokens(activeDeckTheme(doc.theme), documentDeckTokens(doc)),
+    [doc.theme, doc.tokens, doc.styleId],
   )
 }
 

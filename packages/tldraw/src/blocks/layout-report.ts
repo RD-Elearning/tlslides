@@ -20,6 +20,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { applyStyleBlockDefaults, deckSpecTokens, getDeckStyle } from './styles'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type {
   BlockLayer,
@@ -27,6 +28,7 @@ import type {
   Box,
   CapacityReport,
   DeckSpec,
+  DeckStyle,
   LayoutNode,
   ResolvedTokens,
   Size,
@@ -173,6 +175,8 @@ export interface AnalyzeSlideOptions {
   /** Text metrics: `'table'` (default = `editorMetrics`, what the editor paints since LO6; ±5% per line at
    *  p95), `'estimate'` (the old average-width heuristic), or a provider. */
   metrics?: 'table' | 'estimate' | MeasureTextProvider
+  /** AC1 — a deck style's knob defaults, filled under authored props as `compileSlide` does. */
+  blockDefaults?: DeckStyle['blockDefaults']
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -330,7 +334,15 @@ interface Placed {
  * Analyze one slide's geometry. Never throws on a well-formed `SlideSpec`: a block whose layout
  * throws is reported (`block/layout-failed`, confidence `low`) instead.
  */
-export function analyzeSlide(spec: SlideSpec, opts: AnalyzeSlideOptions = {}): LayoutReport {
+export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}): LayoutReport {
+  const fill = (b: BlockSpec): BlockSpec => applyStyleBlockDefaults(b, opts.blockDefaults).block
+  const spec: SlideSpec = opts.blockDefaults
+    ? {
+        ...authored,
+        regions: Object.fromEntries(Object.entries(authored.regions ?? {}).map(([r, bs]) => [r, (bs ?? []).map(fill)])),
+        ...(authored.free ? { free: authored.free.map((e) => ({ ...e, block: fill(e.block) })) } : {}),
+      }
+    : authored
   const frame = opts.frame ?? { width: 1920, height: 1080 }
   const tokens = opts.tokens ?? resolveTokens(DEFAULT_DECK_THEME)
   const registry = opts.registry ?? defaultBlockRegistry()
@@ -597,8 +609,10 @@ export function analyzeDeck(
   opts: Omit<AnalyzeSlideOptions, 'frame' | 'tokens'> = {}
 ): LayoutReport[] {
   const frame = resolveDeckFrame(deck.aspect)
-  const tokens = resolveTokens(resolveDeckTheme(deck.theme), deck.tokens)
-  return deck.slides.map((s) => analyzeSlide(s, { ...opts, frame, tokens }))
+  const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style), deckSpecTokens(deck))
+  // AC1: the style's knob defaults are part of what the editor compiles.
+  const blockDefaults = getDeckStyle(deck.style)?.blockDefaults
+  return deck.slides.map((s) => analyzeSlide(s, { ...opts, frame, tokens, ...(blockDefaults ? { blockDefaults } : {}) }))
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

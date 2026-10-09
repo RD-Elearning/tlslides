@@ -247,3 +247,23 @@ export type { LayeredSplit, LayeredRegionBlock } from './slide-compiler'
 export { levenshtein, nearestName } from './nearest-name'
 
 export type { DeckSpec } from './types'
+
+// AC1 — deck styles (`reviews/blocks/ai-curation/README.md` §3).
+export {
+  BUILT_IN_STYLES,
+  STYLE_MASTER_PREFIX,
+  getDeckStyle,
+  stylePaletteById,
+  stylePaletteIds,
+  styleTheme,
+  mergeDeckTokens,
+  deckSpecTokens,
+  documentDeckTokens,
+  styleMasters,
+  styleMasterFor,
+  applyStyleBlockDefaults,
+  styleLine,
+  styleCard,
+  stylePreference,
+} from './styles'
+export type { DeckStyle, FontRef, StyleSurface } from './types'

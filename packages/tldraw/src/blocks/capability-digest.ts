@@ -12,6 +12,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`, no network.
  */
 
+import { BUILT_IN_STYLES, getDeckStyle, styleLine } from './styles'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type { BlockRegistry } from './registry'
 import { SLIDE_LAYOUTS } from './slide-layouts'
@@ -106,7 +107,13 @@ export interface CapabilityIndexOptions {
   profile?: CapabilityPreference
   /** AC0: recipes for these roles only (only read with `tier: 1`; default all). */
   roles?: RecipeRole[]
+  /** AC1: a deck style id (only read with `tier: 1`): its prefer/avoid lists are merged into
+   *  `profile`, and its compact line heads the Styles section. Full card: `styleCard`. */
+  style?: string
 }
+
+/** AC1 — editor-only guides the AI never places (AC0 deferred item). */
+export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area']
 
 export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
@@ -626,9 +633,19 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
  * and the tier-2 blocks as one `also:` line of bare type names (the planner can still ask for
  * their detail). Budget: ≤ 16k chars (spec).
  */
-function tierOneIndex(registry: BlockRegistry | undefined, opts: CapabilityIndexOptions): string {
+function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityIndexOptions): string {
+  const style = getDeckStyle(given.style)
+  const opts: CapabilityIndexOptions = style
+    ? {
+        ...given,
+        profile: {
+          prefer: [...(given.profile?.prefer ?? []), ...style.prefer],
+          avoid: [...(given.profile?.avoid ?? []), ...style.avoid],
+        },
+      }
+    : given
   const all = capabilityIndexData(registry, { categories: opts.categories, scopes: opts.scopes })
-  const dropped = new Set(opts.profile?.avoid ?? [])
+  const dropped = new Set([...(opts.profile?.avoid ?? []), ...AI_HIDDEN_TYPES])
   const lines: string[] = []
   lines.push('# Slide block index — core set')
   lines.push('')
@@ -655,6 +672,15 @@ function tierOneIndex(registry: BlockRegistry | undefined, opts: CapabilityIndex
   lines.push(LAYER_LINE)
   lines.push('')
   lines.push(MOTION_STYLE_LINE)
+  lines.push('')
+  // AC1: deck styles — one compact line each (or the chosen style's), full card on demand.
+  lines.push('## Styles')
+  if (style) {
+    lines.push(`Deck style: ${styleLine(style)}. ${style.brief} Rules: ${style.rules.join(' ')} Knob defaults are set by the style; do not repeat them.`)
+  } else {
+    lines.push('Set `style` on the deck and `theme` to one of its palettes; ask for the style card before filling.')
+    for (const st of BUILT_IN_STYLES) lines.push(styleLine(st))
+  }
   lines.push('')
   // A recipe that uses a dropped type is dropped with it (a style that avoids `tls.t.footnote`
   // loses `data-table`).

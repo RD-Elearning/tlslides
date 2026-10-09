@@ -4,7 +4,7 @@
  *
  *   node tools/layout-report/cli.js deck.json [--slide <id|index>] [--format text|json]
  *                                             [--no-map] [--text-metrics table|estimate] [--dist]
- *   node tools/layout-report/cli.js --metrics [--types tls.t.title,tls.d.bar] [--theme midnight] [--dist]
+ *   node tools/layout-report/cli.js --metrics [--types tls.t.title,tls.d.bar] [--theme midnight] [--style corporate] [--dist]
  *   cat deck.json | node tools/layout-report/cli.js - --format json
  *
  * deck.json is a DeckSpec (`reviews/blocks/SCHEMA.md`). `--slide` takes a slide id, or a 0-based
@@ -13,6 +13,8 @@
  * (`buildBlockMetrics`, the same data as `packages/tldraw/src/blocks/__generated__/block-metrics.json`).
  * `--theme <id>` (LO8) samples the cards with a built-in deck theme's tokens instead of the default
  * theme the committed JSON uses (a theme with another type scale changes heights).
+ * `--style <id>` (AC1) samples them with a deck style: its default palette (or `--theme`, one of its
+ * palettes), its token overrides and its knob defaults per block type.
  * `--dist` loads the built package instead of bundling the source (see `load.js`).
  *
  * Exit status: 0 = report printed (findings do not change it), 2 = usage / input error.
@@ -26,7 +28,7 @@ function usage(msg) {
   process.stderr.write(
     'usage: node tools/layout-report/cli.js <deck.json|-> [--slide <id|index>] [--format text|json] [--no-map]\n' +
       '                                       [--text-metrics table|estimate] [--dist]\n' +
-      '       node tools/layout-report/cli.js --metrics [--types a,b] [--theme <id>] [--dist]\n'
+      '       node tools/layout-report/cli.js --metrics [--types a,b] [--theme <id>] [--style <id>] [--dist]\n'
   )
   process.exit(2)
 }
@@ -47,6 +49,7 @@ function parseArgs(argv) {
     else if (a === '--metrics') opts.metrics = true
     else if (a === '--types') opts.types = val().split(',').filter(Boolean)
     else if (a === '--theme') opts.theme = val()
+    else if (a === '--style') opts.style = val()
     else if (a === '-h' || a === '--help') usage()
     else if (a.startsWith('--')) usage(`unknown option ${a}`)
     else if (opts.deck === undefined) opts.deck = a
@@ -71,7 +74,17 @@ function main() {
 
   if (opts.metrics) {
     const bopts = opts.types ? { types: opts.types } : {}
-    if (opts.theme !== undefined) {
+    if (opts.style !== undefined) {
+      // AC1: the style's palette (its default, or --theme naming one of its palettes), its tokens
+      // and its knob defaults — what a deck with this `style` compiles with.
+      const style = oracle.getDeckStyle(opts.style)
+      if (!style) usage(`unknown style ${opts.style} (styles: ${oracle.BUILT_IN_STYLES.map((s) => s.id).join(', ')})`)
+      const theme = oracle.resolveDeckTheme(opts.theme ?? style.palettes[0].id, style.id)
+      if (opts.theme !== undefined && theme.id !== opts.theme) usage(`theme ${opts.theme} is not a palette of style ${style.id}`)
+      bopts.tokens = oracle.resolveTokens(theme, style.tokens)
+      bopts.blockDefaults = style.blockDefaults
+      bopts.themeName = `${style.id}/${theme.id}`
+    } else if (opts.theme !== undefined) {
       const theme = oracle.resolveDeckTheme(opts.theme)
       if (theme.id !== opts.theme) usage(`unknown theme ${opts.theme}`)
       bopts.tokens = oracle.resolveTokens(theme)

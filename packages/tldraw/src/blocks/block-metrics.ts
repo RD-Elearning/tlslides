@@ -127,6 +127,8 @@ export interface BuildBlockMetricsOptions {
   types?: string[]
   /** Label for `theme` in the output. Default `'default'`. */
   themeName?: string
+  /** AC1 — a deck style's knob defaults per type, filled under each example's props. */
+  blockDefaults?: Record<string, Record<string, unknown>>
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -158,9 +160,10 @@ function slotKey(t: TextLeafMeasure): string | undefined {
   return key?.replace(/\.\d+(?=\.|$)/g, '[]').replace(/\[\d+\]/g, '[]')
 }
 
-function exampleProps(def: BlockDefinition): Record<string, unknown> {
+function exampleProps(def: BlockDefinition, styleDefaults?: Record<string, unknown>): Record<string, unknown> {
   const ex = def.describe?.example?.props as Record<string, unknown> | undefined
-  return { ...(def.defaults as Record<string, unknown>), ...(ex ?? {}) }
+  // AC1: a style's knob defaults sit under the example (authored) props, as at compile time.
+  return { ...(def.defaults as Record<string, unknown>), ...(styleDefaults ?? {}), ...(ex ?? {}) }
 }
 
 /** The first required content list/series slot (same rule as the digest's item range). */
@@ -242,7 +245,7 @@ export function buildBlockMetrics(registry?: BlockRegistry, opts: BuildBlockMetr
     .list()
     .filter((d) => !opts.types || opts.types.includes(d.type))
     .sort((a, b) => (a.type < b.type ? -1 : a.type > b.type ? 1 : 0))
-  for (const def of defs) blocks[def.type] = blockMetrics(def, reg, widths, tokens, measureText)
+  for (const def of defs) blocks[def.type] = blockMetrics(def, reg, widths, tokens, measureText, opts.blockDefaults?.[def.type])
   return { version: 1, theme: opts.themeName ?? 'default', metrics: 'table', widths, blocks }
 }
 
@@ -251,7 +254,8 @@ function blockMetrics(
   registry: BlockRegistry,
   widths: number[],
   tokens: ResolvedTokens,
-  measureText: MeasureTextProvider
+  measureText: MeasureTextProvider,
+  styleDefaults?: Record<string, unknown>
 ): BlockMetrics {
   const intrinsicSizeCache = new Map()
   const ctxAt = (width: number) =>
@@ -263,7 +267,7 @@ function blockMetrics(
       measureText,
       intrinsicSizeCache,
     })
-  const props = exampleProps(def)
+  const props = exampleProps(def, styleDefaults)
   const usable = widths.map((w) => w >= def.size.min[0])
   // The example at each usable width (natural height + elastic check at the preferred height).
   const example: Array<BlockMeasure | null> = widths.map((w, i) =>

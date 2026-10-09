@@ -1,0 +1,117 @@
+import { FontStyle } from '~types'
+import type { DeckStyle } from '../types'
+
+/**
+ * AC1 pilot — Modern & Digital "Linear Gradient" (`reviews/blocks/ai-curation/README.md` §3.3).
+ * Backgrounds are linear gradients in the palette's own colours (theme sentinels, so both palettes
+ * work) until AC4 adds the mesh glows and grain.
+ */
+export const GRADIENT_STYLE: DeckStyle = {
+  id: 'gradient',
+  family: 'modern',
+  name: 'Gradient',
+  brief:
+    'Modern product deck: dark slides washed with a violet-to-cyan gradient, big tight headlines, rounded ' +
+    'cards, expressive motion. Dark first; one glow per slide.',
+  palettes: [
+    {
+      id: 'gradient-night',
+      name: 'Gradient Night',
+      colors: {
+        background: '#08090D',
+        surface: '#1A1733',
+        text: '#EDEEF3',
+        textMuted: '#A3A7BA',
+        accent1: '#8B6CFF',
+        accent2: '#22D3EE',
+        positive: '#34D399',
+        negative: '#F87171',
+        warning: '#FBBF24',
+      },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+      shapeDefaults: { isFilled: true, cornerRadius: 24 },
+    },
+    {
+      id: 'gradient-dawn',
+      name: 'Gradient Dawn',
+      colors: {
+        background: '#FAFAFC',
+        surface: '#ECE9FE',
+        text: '#0B0B12',
+        textMuted: '#555770',
+        accent1: '#6D5DF6',
+        accent2: '#DB2777',
+        positive: '#0E9F6E',
+        negative: '#DC2626',
+        warning: '#B45309',
+      },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+      shapeDefaults: { isFilled: true, cornerRadius: 24 },
+    },
+  ],
+  fonts: {
+    heading: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
+    body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' },
+  },
+  tokens: {
+    radius: { sm: 12, md: 24, lg: 32, xl: 40 },
+    type: { display: { size: 160, lineHeight: 1.0 }, title: { size: 96, lineHeight: 1.04 } },
+  },
+  surface: { card: 'filled', stroke: 'hairline', shadow: 1 },
+  masters: [
+    {
+      name: 'cover',
+      blocks: {},
+      background: {
+        type: 'linearGradient',
+        angle: 135,
+        stops: [
+          { color: 'theme:background', at: 0 },
+          { color: 'theme:surface', at: 0.55 },
+          { color: 'theme:accent1', at: 1 },
+        ],
+      },
+    },
+    {
+      name: 'section',
+      blocks: {},
+      background: {
+        type: 'linearGradient',
+        angle: 120,
+        stops: [
+          { color: 'theme:surface', at: 0 },
+          { color: 'theme:background', at: 1 },
+        ],
+      },
+    },
+    {
+      name: 'content',
+      blocks: {},
+      background: {
+        type: 'linearGradient',
+        angle: 160,
+        stops: [
+          { color: 'theme:background', at: 0 },
+          { color: 'theme:background', at: 0.45 },
+          { color: 'theme:surface', at: 1 },
+        ],
+      },
+    },
+  ],
+  motionStyle: 'expressive',
+  blockDefaults: {
+    'tls.c.cover': { variant: 'centered', decoration: 'arc' },
+    'tls.c.hero': { variant: 'gradient-sweep' },
+    'tls.c.divider': { variant: 'numeral', align: 'start' },
+    'tls.c.cards': { tone: 'surface', lead: 'icon' },
+    'tls.c.chart-insight': { side: 'right' },
+    'tls.t.quote': { markStyle: 'glyph' },
+    'tls.t.takeaway': { tone: 'accent' },
+    'tls.c.closing': { variant: 'centered' },
+    'tls.g.pros-cons': { style: 'cards' },
+    'tls.g.chevrons': { fill: 'gradient' },
+  },
+  prefer: ['tls.m.device-mock'],
+  avoid: ['tls.d.scatter', 'tls.d.heatmap'],
+  rules: ['Dark first; one glow per slide.', 'Short, big headlines.', 'Cards over bare text for lists.'],
+}

@@ -11,6 +11,7 @@ import type { BlockRegistry } from './registry'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
+import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
 import type { SlotSpec, SlotType } from './types'
 import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
 
@@ -42,7 +43,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
     })
   }
 
-  const themeIds = BUILT_IN_DECK_THEMES.map((t) => t.id)
+  const themeIds = [...BUILT_IN_DECK_THEMES.map((t) => t.id), ...stylePaletteIds().filter((id) => !BUILT_IN_DECK_THEMES.some((t) => t.id === id))]
   const layoutIds = SLIDE_LAYOUTS.map((l) => l.id)
 
   const schema: Record<string, unknown> = {
@@ -58,7 +59,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
       title: { type: 'string', description: 'Deck title.' },
       theme: {
         oneOf: [
-          { type: 'string', enum: themeIds, description: 'A built-in theme id.' },
+          { type: 'string', enum: themeIds, description: 'A built-in theme id or a deck-style palette id.' },
           { type: 'object', description: 'A full DeckTheme object (brand kit).' },
         ],
       },
@@ -79,6 +80,11 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         items: slideSchema(reg, blockTypeSchemas, layoutIds),
       },
       motionStyle: MOTION_STYLE_SCHEMA,
+      style: {
+        type: 'string',
+        enum: BUILT_IN_STYLES.map((st) => st.id),
+        description: 'AC1 — a deck style id; `theme` should then be one of its palettes.',
+      },
     },
     additionalProperties: false,
   }

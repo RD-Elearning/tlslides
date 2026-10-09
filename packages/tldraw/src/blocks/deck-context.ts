@@ -16,6 +16,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now`, `Math.random`.
  */
 
+import { documentDeckTokens } from './styles'
 import type { TDAssets, TDDocument, SlideBackground } from '~types'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
@@ -74,7 +75,7 @@ export function deckLayoutContext(
   }
 ): LayoutContext {
   const theme = activeDeckTheme(doc.theme)
-  const tokens = resolveTokens(theme, doc.tokens)
+  const tokens = resolveTokens(theme, documentDeckTokens(doc))
   const pageSize: [number, number] = [
     doc.defaultPageSize?.[0] ?? DEFAULT_SLIDE_SIZE[0],
     doc.defaultPageSize?.[1] ?? DEFAULT_SLIDE_SIZE[1],

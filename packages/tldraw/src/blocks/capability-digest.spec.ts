@@ -10,7 +10,8 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+import { AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+import { BUILT_IN_STYLES, styleCard, styleLine } from './styles'
 import { deckSpecJsonSchema } from './deck-spec-json-schema'
 import { validateDeckSpec } from './validate-deck-spec'
 import { BlockRegistry } from './registry'
@@ -545,6 +546,9 @@ describe('R7 — capability digest v2', () => {
             expect(lines[0]).toContain(`— ${def.shortDescription}`)
             if (def.looks?.length) expect(lines[0]).toContain(` knobs: ${def.looks.join(', ')}`)
             expect(also).not.toContain(def.type)
+          } else if (AI_HIDDEN_TYPES.includes(def.type)) {
+            // AC1: editor-only guides are never offered to the AI.
+            expect(tier1).not.toContain(def.type)
           } else {
             expect(fullLine(tier1, def.type)).toHaveLength(0)
             expect(also.filter((t) => t === def.type)).toHaveLength(1)
@@ -582,6 +586,23 @@ describe('R7 — capability digest v2', () => {
         expect(md).not.toContain(' knobs: ')
         expect(md).not.toContain('also: ')
         expect(capabilityIndexData(reg)).toHaveLength(BUILT_IN_BLOCKS.length)
+      })
+
+      it('AC1: lists every style in one line each, within 16k', () => {
+        expect(tier1).toContain('## Styles')
+        for (const st of BUILT_IN_STYLES) expect(tier1).toContain(styleLine(st))
+      })
+
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 16k', () => {
+        for (const st of BUILT_IN_STYLES) {
+          const md = capabilityIndex(reg, { tier: 1, style: st.id })
+          expect(md.length).toBeLessThanOrEqual(16000)
+          expect(md).toContain(`Deck style: ${styleLine(st)}`)
+          for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
+          for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)
+          for (const t of st.prefer) expect(fullLine(md, t)).toHaveLength(1)
+          expect(styleCard(st).length).toBeLessThanOrEqual(1200)
+        }
       })
 
       it('the structured detail names what a tier-1 block absorbs', () => {

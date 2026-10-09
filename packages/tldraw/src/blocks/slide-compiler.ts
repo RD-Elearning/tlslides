@@ -34,6 +34,7 @@ import type {
   BlockAnchor,
   BlockDefinition,
   BlockSpec,
+  DeckStyle,
   Box,
   LayoutContext,
   MotionStyle,
@@ -53,6 +54,7 @@ import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './l
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
 import { blockAnchor } from './block-layer'
+import { applyStyleBlockDefaults } from './styles'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -121,6 +123,39 @@ const FALLBACK_LAYOUT = 'blank' as const
  * @returns Compiled shapes and pass-through metadata.
  */
 export function compileSlide(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry?: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  if (!opts?.blockDefaults) return compileSlideUnstyled(spec, frame, tokens, registry, opts)
+  // AC1: fill the style's knob defaults under each top-level block's authored props (measure and
+  // render see them), then record what was filled as `$block.styleDefaults` so `shapeToBlock`
+  // returns the authored props only.
+  const filledById = new Map<string, Record<string, unknown>>()
+  const style = (b: BlockSpec): BlockSpec => {
+    const { block, filled } = applyStyleBlockDefaults(b, opts.blockDefaults)
+    if (filled && typeof b.id === 'string') filledById.set(b.id, filled)
+    return block
+  }
+  const styled: SlideSpec = {
+    ...spec,
+    regions: Object.fromEntries(Object.entries(spec.regions ?? {}).map(([r, blocks]) => [r, (blocks ?? []).map(style)])),
+    ...(spec.free ? { free: spec.free.map((e) => ({ ...e, block: style(e.block) })) } : {}),
+  }
+  const result = compileSlideUnstyled(styled, frame, tokens, registry, opts)
+  if (filledById.size) {
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const filled = meta && typeof meta.id === 'string' ? filledById.get(meta.id) : undefined
+      if (meta && filled) meta.styleDefaults = JSON.parse(JSON.stringify(filled))
+    }
+  }
+  return result
+}
+
+function compileSlideUnstyled(
   spec: SlideSpec,
   frame: { width: number; height: number },
   tokens: ResolvedTokens,
@@ -362,6 +397,8 @@ export function compileSlide(
 export interface CompileSlideOptions {
   /** The deck's `motionStyle`; the slide's own `motionStyle` wins over it. */
   motionStyle?: MotionStyle
+  /** AC1 — the deck style's `blockDefaults`, filled under authored props (`$block.styleDefaults`). */
+  blockDefaults?: DeckStyle['blockDefaults']
 }
 
 interface StyleCandidate {

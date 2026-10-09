@@ -51,6 +51,10 @@ interface BlockMetadata {
    *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
    *  (keep the move, `free[]`) from "untouched" (re-anchor). */
   placed?: ShapePlacement
+  /** AC1 — the deck style's knob defaults `compileSlide` filled into the top-level props (keys the
+   *  block did not author). Never authored: `shapeToBlock` drops a filled key whose value is still
+   *  the default, so the round trip returns the authored props. */
+  styleDefaults?: Record<string, unknown>
 }
 
 /** LO8 — see `BlockMetadata.placed`. */
@@ -214,8 +218,11 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   // Deep clone props, excluding the metadata key.
   // Uses JSON round-trip for consistency with blockToShape.
   const clonedProps: Record<string, unknown> = {}
+  const styleDefaults = meta.styleDefaults && typeof meta.styleDefaults === 'object' ? meta.styleDefaults : undefined
   for (const [key, value] of Object.entries(props)) {
     if (key !== BLOCK_PROP_KEY) {
+      // AC1: a style-filled knob still at its default was never authored.
+      if (styleDefaults && key in styleDefaults && JSON.stringify(styleDefaults[key]) === JSON.stringify(value)) continue
       clonedProps[key] = JSON.parse(JSON.stringify(value))
     }
   }

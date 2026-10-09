@@ -14,6 +14,7 @@
 
 import { SLIDE_ASPECT_PRESETS } from '~constants'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
+import { BUILT_IN_STYLES, getDeckStyle, stylePaletteIds } from './styles'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
@@ -134,8 +135,8 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
     }
   }
 
-  // theme
-  const themeIds = BUILT_IN_DECK_THEMES.map((t) => t.id)
+  // theme (AC1: a style palette id is a theme id too)
+  const themeIds = [...BUILT_IN_DECK_THEMES.map((t) => t.id), ...stylePaletteIds().filter((id) => !BUILT_IN_DECK_THEMES.some((t) => t.id === id))]
   if (typeof s.theme === 'string') {
     if (!themeIds.includes(s.theme)) {
       const suggestion = nearestName(s.theme, themeIds)
@@ -159,6 +160,36 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
         s.theme
       )}.`,
     })
+  }
+
+  // AC1: style
+  if (s.style !== undefined) {
+    const styleIds = BUILT_IN_STYLES.map((st) => st.id)
+    const style = getDeckStyle(s.style as string)
+    if (!style) {
+      const suggestion = typeof s.style === 'string' ? nearestName(s.style, styleIds) : undefined
+      findings.push({
+        level: 'error',
+        rule: 'style/unknown',
+        path: 'style',
+        message:
+          `Style ${stringifyForMessage(s.style)} is not a known deck style.` +
+          (suggestion ? ` Did you mean "${suggestion}"?` : '') +
+          ` Available styles: ${styleIds.join(', ')}.`,
+        suggestion,
+      })
+    } else if (typeof s.theme === 'string' && !style.palettes.some((p) => p.id === s.theme)) {
+      const palettes = style.palettes.map((p) => p.id)
+      findings.push({
+        level: 'warning',
+        rule: 'style/theme-mismatch',
+        path: 'theme',
+        message:
+          `Theme "${s.theme}" is not a palette of style "${style.id}"; the style's default ` +
+          `"${palettes[0]}" is used instead. Write one of: ${palettes.join(', ')}.`,
+        suggestion: palettes[0],
+      })
+    }
   }
 
   // aspect

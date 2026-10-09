@@ -5,7 +5,7 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme } from '~types'
+import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme, FontStyle } from '~types'
 // Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
 // itself imports type-only from this file — both directions are `import type`, so this is a
 // type-only circular reference, erased entirely at compile time. No runtime cycle exists.
@@ -1099,4 +1099,57 @@ export interface DeckSpec {
   slides: SlideSpec[]
   /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
   motionStyle?: MotionStyle
+  /** AC1 — a deck style id (one of `BUILT_IN_STYLES`, e.g. `'corporate'`). The style supplies the
+   *  default palette, token overrides, masters (`style:*`), knob defaults per block type and the
+   *  motion style, each under what this spec authors (`reviews/blocks/ai-curation/README.md`
+   *  §3.2). `theme` should name one of the style's palettes (`style/theme-mismatch`). */
+  style?: string
+}
+
+/** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */
+export interface FontRef {
+  /** CSS family name, e.g. `'Inter'`. */
+  family: string
+  /** The bundled face to fall back to when the family is not loaded. */
+  fallback: FontStyle
+  /** Width-table key the layout oracle measures with (`'inter'` until AC3 adds tables). */
+  metricsKey: string
+}
+
+/** AC4 — card surface treatment a style asks card-like blocks for (data only until AC4). */
+export interface StyleSurface {
+  card: 'filled' | 'outline' | 'glass' | 'ghost' | 'raised'
+  stroke: 'none' | 'hairline' | 'bold'
+  shadow: 0 | 1 | 2 | 'hard'
+}
+
+/**
+ * AC1 — a deck style preset (`reviews/blocks/ai-curation/README.md` §3.2): data, not code. Lives
+ * in `blocks/styles/<id>.ts`, registered in `BUILT_IN_STYLES`. Every part resolves *under* what
+ * the `DeckSpec` authors and is never written back into it.
+ */
+export interface DeckStyle {
+  id: string
+  family: 'premium' | 'modern' | 'playful' | 'professional'
+  name: string
+  /** ≤ 240 chars, given to the LLM verbatim (style card). */
+  brief: string
+  /** 1–3 palettes; `[0]` is the default. Ids are `<style>-<name>` or an existing built-in theme. */
+  palettes: DeckTheme[]
+  fonts: { heading: FontRef; body: FontRef }
+  /** Token overrides under `DeckSpec.tokens`. */
+  tokens: DeckTokens
+  /** AC4 — surface treatment (data until AC4 reads it). */
+  surface?: StyleSurface
+  /** Masters appended as `style:<name>` (`cover` | `content` | `section`). */
+  masters: MasterSpec[]
+  /** Deck default motion style, under `DeckSpec.motionStyle`. */
+  motionStyle: MotionStyle
+  /** Knob defaults per block type, filled under authored props at compile time. */
+  blockDefaults: Record<string, Record<string, unknown>>
+  /** Tier-2 types promoted to full index lines / types dropped from the index. */
+  prefer: string[]
+  avoid: string[]
+  /** ≤ 4 short composition rules for the LLM and the critic. */
+  rules: string[]
 }

@@ -183,6 +183,10 @@ export interface TDDocument {
   masters?: Record<string, MasterSpec>
   // P7 — the deck's authored `DeckSpec.motionStyle`, carried for the round trip only.
   motionStyle?: 'static' | 'subtle' | 'expressive'
+  // AC1 — the deck's `DeckSpec.style` (a `BUILT_IN_STYLES` id), stored so a re-compile and every
+  // token reader (`documentDeckTokens`) find the style; the style's tokens/masters are NOT copied
+  // into `tokens`/`masters`' authored part, so `documentToDeckSpec` returns what was authored.
+  styleId?: string
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —

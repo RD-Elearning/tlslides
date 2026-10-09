@@ -5317,6 +5317,12 @@ Layers: to stack blocks, put them in the same region and set \`layer\` on the bl
 
 Motion style: set \`motionStyle\` on the deck or a slide (slide wins) instead of per-block \`motion\`: \`expressive\` for covers, key numbers and section openers; \`subtle\` for dense content; \`static\` for print/handouts.
 
+## Styles
+Set \`style\` on the deck and \`theme\` to one of its palettes; ask for the style card before filling.
+corporate (professional) — palettes: corporate-navy, midnight, mono-grid
+minimal (premium) — palettes: minimal-white, minimal-stone
+gradient (modern) — palettes: gradient-night, gradient-dawn
+
 ## Recipes
 
 Known-good slides per role (\`id · layout — region: blocks — when\`), each clean with example content. \`+title\` = \`tls.t.title\` in the layout's \`title\` region. Keep layout and regions, swap content, turn knobs.
@@ -5369,7 +5375,7 @@ closing-centered · blank — content: tls.c.closing — thanks and call to acti
 closing-split · blank — content: tls.c.closing(variant=split) — closing with contacts beside the call to action
 
 ## Structure
-also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.grid-guide, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.safe-area, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
+also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
 
 ## Headings
 tls.t.title · heading · element — Slide title, auto-fitted, with optional rule [h≈0+104/L@840] knobs: size, align, rule

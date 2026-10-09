@@ -1,5 +1,6 @@
 import { Utils } from '@tlslides/core'
 import { compileSlide } from '~blocks/slide-compiler'
+import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { resolveTokens } from '~blocks/tokens'
 import type { SlideSpec } from '~blocks/types'
 import { BlockRegistry } from '~blocks/registry'
@@ -170,13 +171,17 @@ export class Deck {
     // 3. Resolve tokens from the document's theme + token overrides.
     const tokens = resolveTokens(
       activeDeckTheme(this.app.document.theme),
-      this.app.document.tokens
+      documentDeckTokens(this.app.document)
     )
+    const deckStyle = getDeckStyle(this.app.document.styleId)
 
     // 4. Compile the spec into shapes + metadata.
     const registry = new BlockRegistry()
     registerBuiltInBlocks(registry)
-    const result = compileSlide(spec, frame, tokens, registry, { motionStyle: this.app.document.motionStyle })
+    const result = compileSlide(spec, frame, tokens, registry, {
+      motionStyle: this.app.document.motionStyle ?? deckStyle?.motionStyle,
+      ...(deckStyle ? { blockDefaults: deckStyle.blockDefaults } : {}),
+    })
 
     // 5. Apply page-level metadata.
     if (result.background !== undefined) {
