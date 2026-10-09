@@ -5424,7 +5424,7 @@ tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of 
 tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈363+59/item@840] knobs: featuredStyle, align, showCta
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow, emphasis
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight, style, showItems
-tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h=fill] knobs: style, balance, showVerdict
+tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h≈168+73/item@840] knobs: style, balance, showVerdict
 also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.swot
 
 ## Process

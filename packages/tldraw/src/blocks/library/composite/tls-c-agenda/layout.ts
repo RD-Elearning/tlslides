@@ -50,10 +50,19 @@ const TIERS: ReadonlyArray<{ title: TypeToken; note: TypeToken; index: TypeToken
   { title: 'body', note: 'caption', index: 'caption', gap: 'sm' },
 ]
 
+/** AC1.5: a wide box with 4–8 items lays the agenda out in two columns (items run down the first
+ *  column, then the second), so a full-width agenda slide is not a narrow list with the right half
+ *  empty. Below this width, or with fewer items, it stays one column. */
+const TWO_COLUMN_MIN_WIDTH = 1200
+const TWO_COLUMN_MIN_ITEMS = 4
+const TWO_COLUMN_MAX_ITEMS = 8
+
 export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
-  let node = place(props, ctx, TIERS[TIERS.length - 1])
+  const n = (props.items ?? []).length
+  const cols = ctx.box.width >= TWO_COLUMN_MIN_WIDTH && n >= TWO_COLUMN_MIN_ITEMS && n <= TWO_COLUMN_MAX_ITEMS ? 2 : 1
+  let node = place(props, ctx, TIERS[TIERS.length - 1], cols)
   for (const tier of TIERS) {
-    const candidate = place(props, ctx, tier)
+    const candidate = place(props, ctx, tier, cols)
     if (candidate.box.height <= ctx.box.height + 0.5 || tier === TIERS[TIERS.length - 1]) {
       node = candidate
       break
@@ -62,7 +71,7 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   return node
 }
 
-function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number]): LayoutNode {
+function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[number], cols: 1 | 2 = 1): LayoutNode {
   const items = props.items ?? []
   const currentIdx = props.current != null ? props.current : null
 
@@ -75,13 +84,17 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     }
   }
 
-  const gap = ctx.tokens.space[tier.gap]
+  // Two columns hold half the rows, so the rows get more air (AC1.5).
+  const gap = ctx.tokens.space[cols === 2 ? 'xl' : tier.gap]
   const indexStyle0 = ctx.resolveText(tier.index)
   // two digits at the index size, never narrower than the old fixed column
   const indexWidth = Math.max(ctx.tokens.space.xl, Math.ceil(ctx.measureText('88', indexStyle0, 1000).width) + ctx.tokens.space.xs)
 
   const inner: Size = { width: ctx.box.width, height: ctx.box.height }
-  const contentWidth = Math.max(0, inner.width - indexWidth - ctx.tokens.space.sm)
+  const colGap = ctx.tokens.space['2xl']
+  const colW = cols === 2 ? Math.max(0, (inner.width - colGap) / 2) : inner.width
+  const perCol = Math.ceil(items.length / cols)
+  const contentWidth = Math.max(0, colW - indexWidth - ctx.tokens.space.sm)
 
   // Resolve text styles
   const baseTitleStyle = ctx.resolveText(tier.title)
@@ -104,16 +117,23 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
   })
 
   // Compute total content height
-  const totalContentHeight = rows.reduce(
-    (sum, r, i) => sum + r.rowHeight + (i < rows.length - 1 ? gap : 0), 0,
-  )
+  // Row r holds item r of every column; it is as tall as its tallest item.
+  const rowH = Array.from({ length: perCol }, (_, r) => Math.max(...rows.filter((_, i) => i % perCol === r).map((x) => x.rowHeight)))
+  const rowY: number[] = []
+  let acc = 0
+  for (let r = 0; r < perCol; r++) {
+    rowY.push(acc)
+    acc += rowH[r] + (r < perCol - 1 ? gap : 0)
+  }
+  const totalContentHeight = acc
 
   // Place nodes
   const children: LayoutNode[] = []
-  let y = 0
 
   for (const row of rows) {
-    const { item, i, isCurrent, titleStyle, titleHeight, noteHeight, rowHeight } = row
+    const { item, i, isCurrent, titleStyle, titleHeight, noteHeight } = row
+    const y = rowY[i % perCol]
+    const x0 = Math.floor(i / perCol) * (colW + colGap)
 
     // Resolve colors based on current state
     const indexColor = isCurrent
@@ -134,7 +154,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     children.push({
       k: 'text',
       part: `item[${i}].index`,
-      box: { x: 0, y, width: indexWidth, height: indexM.height },
+      box: { x: x0, y, width: indexWidth, height: indexM.height },
       lines: indexM.lines,
       style: { ...indexStyle, color: indexColor },
     })
@@ -144,7 +164,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     children.push({
       k: 'text',
       part: `item[${i}].title`,
-      box: { x: indexWidth + ctx.tokens.space.sm, y, width: contentWidth, height: titleHeight },
+      box: { x: x0 + indexWidth + ctx.tokens.space.sm, y, width: contentWidth, height: titleHeight },
       lines: titleM.lines,
       style: { ...titleStyle, color: titleColor },
     })
@@ -156,7 +176,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
         k: 'text',
         part: `item[${i}].note`,
         box: {
-          x: indexWidth + ctx.tokens.space.sm,
+          x: x0 + indexWidth + ctx.tokens.space.sm,
           y: y + titleHeight + ctx.tokens.space.xs,
           width: contentWidth,
           height: noteHeight,
@@ -165,8 +185,6 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
         style: { ...noteStyle, color: noteColor },
       })
     }
-
-    y += rowHeight + gap
   }
 
   // RVM5: each note sits in a slot `note[i]` emitted for every item (empty without a note), so
@@ -193,7 +211,8 @@ export function estimateItemCount(
   box: Size,
 ): number {
   const indexWidth = ctx.tokens.space.xl
-  const contentWidth = Math.max(0, box.width - indexWidth - ctx.tokens.space.sm)
+  const colWidth = box.width >= TWO_COLUMN_MIN_WIDTH ? (box.width - ctx.tokens.space['2xl']) / 2 : box.width
+  const contentWidth = Math.max(0, colWidth - indexWidth - ctx.tokens.space.sm)
   const gap = ctx.tokens.space.sm
 
   const titleStyle = ctx.resolveText('body')
@@ -209,5 +228,7 @@ export function estimateItemCount(
   )
 
   const rowPitch = rowHeight + gap
-  return Math.max(1, Math.floor(box.height / rowPitch))
+  const rowsFit = Math.max(1, Math.floor(box.height / rowPitch))
+  // AC1.5: a wide box holds two columns of rows (see TWO_COLUMN_MIN_WIDTH).
+  return box.width >= TWO_COLUMN_MIN_WIDTH ? rowsFit * 2 : rowsFit
 }
