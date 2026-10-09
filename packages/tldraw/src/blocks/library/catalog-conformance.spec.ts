@@ -68,6 +68,28 @@ export function metadataViolations(def: BlockDefinition, reg: BlockRegistry): st
   return out
 }
 
+/** AC0 — rules for the AI curation fields (`aiTier`, `absorbs`, `looks`). */
+export function aiCurationViolations(def: BlockDefinition, reg: BlockRegistry): string[] {
+  const out: string[] = []
+  if (def.aiTier !== 1 && def.aiTier !== 2) out.push(`aiTier ${String(def.aiTier)} is not 1 or 2`)
+  if (def.absorbs && def.aiTier !== 1) out.push('absorbs set on a tier-2 block')
+  for (const a of def.absorbs ?? []) {
+    const target = reg.get(a)
+    if (!target) out.push(`absorbs "${a}" does not resolve in the registry`)
+    else if (target.aiTier !== 2) out.push(`absorbs "${a}", which is not tier 2`)
+  }
+  const seen = new Set<string>()
+  for (const name of def.looks ?? []) {
+    if (seen.has(name)) out.push(`looks lists "${name}" twice`)
+    seen.add(name)
+    const slot = def.schema?.[name]
+    if (!slot) out.push(`looks "${name}" is not a schema slot`)
+    else if (slot.role !== 'option' || (slot.type.kind !== 'enum' && slot.type.kind !== 'boolean'))
+      out.push(`looks "${name}" is not an enum/boolean option slot (${slot.role}/${slot.type.kind})`)
+  }
+  return out
+}
+
 /** Collect {type, depth} for every block in a deck fixture, walking both child channels. */
 function collectNested(deck: any): Array<{ type: string; depth: number }> {
   const out: Array<{ type: string; depth: number }> = []
@@ -137,6 +159,44 @@ describe('block catalog conformance', () => {
           if (depth > 0) expect([type, registry.get(type)?.scope]).not.toEqual([type, 'slide'])
         }
       }
+    })
+  })
+
+  describe('AC0 AI curation gates', () => {
+    const reg = freshBuiltInRegistry()
+    for (const def of BUILT_IN_BLOCKS) {
+      it(`"${def.type}" has a valid aiTier/absorbs/looks`, () => {
+        expect(aiCurationViolations(def, reg)).toEqual([])
+      })
+    }
+
+    it('the tier-1 set stays curated: 35–48 blocks', () => {
+      const n = BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).length
+      expect(n).toBeGreaterThanOrEqual(35)
+      expect(n).toBeLessThanOrEqual(48)
+    })
+
+    it('every absorbed block names one of its tier-1 absorbers in describe.avoid', () => {
+      const bad: string[] = []
+      for (const absorber of BUILT_IN_BLOCKS) {
+        for (const a of absorber.absorbs ?? []) {
+          const absorbers = BUILT_IN_BLOCKS.filter((d) => d.absorbs?.includes(a)).map((d) => d.type)
+          const avoid = reg.get(a)?.describe?.avoid ?? ''
+          if (!absorbers.some((t) => avoid.includes(t))) bad.push(`${a} (absorbed by ${absorbers.join(', ')})`)
+        }
+      }
+      expect([...new Set(bad)]).toEqual([])
+    })
+
+    it('aiCurationViolations rejects bad curation (the gate itself works)', () => {
+      const title = reg.get('tls.t.title')!
+      const bad = { ...title, aiTier: 3, absorbs: ['tls.t.body', 'nope.x'], looks: ['text', 'nope'] } as any
+      const v = aiCurationViolations(bad, reg)
+      expect(v.some((m) => m.includes('aiTier'))).toBe(true)
+      expect(v.some((m) => m.includes('"tls.t.body", which is not tier 2'))).toBe(true)
+      expect(v.some((m) => m.includes('"nope.x" does not resolve'))).toBe(true)
+      expect(v.some((m) => m.includes('looks "text" is not an enum/boolean'))).toBe(true)
+      expect(v.some((m) => m.includes('looks "nope" is not a schema slot'))).toBe(true)
     })
   })
 

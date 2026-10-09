@@ -20,7 +20,7 @@ export const tlsDProgressBar: BlockDefinition = {
   related: ['tls.d.bar', 'tls.d.progress-ring', 'tls.d.bullet-chart'],
   describe: {
     when: 'Completion of goals, budgets spent, survey agreement levels.',
-    avoid: 'Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring).',
+    avoid: 'Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring). By default prefer tls.c.stat-spotlight.',
     example: {
       id: 'b_progress',
       type: 'tls.d.progress-bar',

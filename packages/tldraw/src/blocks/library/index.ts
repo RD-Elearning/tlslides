@@ -27,8 +27,11 @@ import { mediaBlocks } from './media'
 // Chrome blocks — page chrome elements (R14).
 import { chromeBlocks } from './chrome'
 
+// AC0 — aiTier / absorbs / looks for every block (one curated table).
+import { applyAiCuration } from './ai-curation'
+
 /** All built-in block definitions. */
-export const BUILT_IN_BLOCKS: BlockDefinition[] = [
+export const BUILT_IN_BLOCKS: BlockDefinition[] = applyAiCuration([
   ...layoutBlocks,
   ...textBlocks,
   ...dataBlocks,
@@ -36,7 +39,7 @@ export const BUILT_IN_BLOCKS: BlockDefinition[] = [
   ...compositeBlocks,
   ...mediaBlocks,
   ...chromeBlocks,
-]
+])
 
 /**
  * Register every built-in block in the given registry.

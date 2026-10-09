@@ -20,7 +20,7 @@ export const tlsDGauge: BlockDefinition = {
   related: ['tls.d.progress-ring', 'tls.d.progress-bar'],
   describe: {
     when: 'A score against thresholds (NPS, health, risk level).',
-    avoid: 'Plain completion with no thresholds (use tls.d.progress-ring).',
+    avoid: 'Plain completion with no thresholds (use tls.d.progress-ring). By default prefer tls.c.stat-spotlight.',
     example: {
       id: 'b_gauge',
       type: 'tls.d.gauge',

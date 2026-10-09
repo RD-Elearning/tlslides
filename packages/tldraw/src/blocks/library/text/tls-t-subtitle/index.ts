@@ -23,7 +23,7 @@ export const tlsTSubtitle: BlockDefinition = {
   related: ['tls.t.title'],
   describe: {
     when: 'Use to add context, date, or audience below the title.',
-    avoid: 'Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title).',
+    avoid: 'Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title). On an opening slide prefer the subtitle slot of tls.c.hero.',
     example: {
       id: 'b_sub',
       type: 'tls.t.subtitle',

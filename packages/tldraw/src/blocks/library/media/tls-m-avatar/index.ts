@@ -20,7 +20,7 @@ export const tlsMAvatar: BlockDefinition = {
   related: ['tls.m.avatar-group', 'tls.m.image', 'tls.t.quote'],
   describe: {
     when: 'Naming one speaker, author or contact person with a portrait.',
-    avoid: 'Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image).',
+    avoid: 'Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image). By default prefer tls.c.team for a team slide.',
     example: {
       id: 'b_avatar',
       type: 'tls.m.avatar',

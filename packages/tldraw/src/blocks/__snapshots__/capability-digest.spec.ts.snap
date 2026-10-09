@@ -228,7 +228,7 @@ Row of 2-4 equal cards, each led by an icon, number or image, then title and tex
 Success story: challenge, solution and result, with one headline result number. _(family: composite; keywords: case study, success story, reference, project showcase, before after result, customer story)_
 
 **When:** Success stories, project showcases and references.
-**Avoid:** A generic 3-point list: tls.c.cards.
+**Avoid:** A generic 3-point list: tls.c.cards. By default prefer tls.c.comparison for 2–3 options.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -939,7 +939,7 @@ A problem statement and its solution side by side, joined by an arrow. _(family:
 Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
 
 **When:** Introducing one person in detail: speaker bio, lecturer, team lead.
-**Avoid:** A row of people (use tls.m.avatar-group or a grid of tls.m.avatar); only a name and role (use tls.m.avatar).
+**Avoid:** A row of people (use tls.c.team, or tls.m.avatar-group for faces only); only a name and role (use tls.m.avatar).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1561,7 +1561,7 @@ Funnel or bar stages sized by value, with the percentage lost between stages. _(
 Half-circle dial: threshold bands, a needle or marker at the value, tick labels. _(family: data; keywords: gauge, dial, score, nps, threshold, health, risk)_
 
 **When:** A score against thresholds (NPS, health, risk level).
-**Avoid:** Plain completion with no thresholds (use tls.d.progress-ring).
+**Avoid:** Plain completion with no thresholds (use tls.d.progress-ring). By default prefer tls.c.stat-spotlight.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1845,7 +1845,7 @@ Side-by-side plan cards: name, price, features and a button, one plan featured. 
 Labelled bars filled to value / target, with percent or value text. _(family: data; keywords: progress, completion, target, goal, bar, percent)_
 
 **When:** Completion of goals, budgets spent, survey agreement levels.
-**Avoid:** Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring).
+**Avoid:** Categories with no target (use tls.d.bar, horizontal); one big rate (use tls.d.progress-ring). By default prefer tls.c.stat-spotlight.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -1883,7 +1883,7 @@ Labelled bars filled to value / target, with percent or value text. _(family: da
 Ring filled to value / max with the figure in the centre, plus label and caption. _(family: data; keywords: progress, ring, dial, percent, completion, score)_
 
 **When:** One completion rate or score shown as a dial.
-**Avoid:** Shares of several parts (use tls.d.donut); several bars (use tls.d.progress-bar).
+**Avoid:** Shares of several parts (use tls.d.donut); several bars (use tls.d.progress-bar). By default prefer tls.c.stat-spotlight (ring with supporting stats).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2305,7 +2305,7 @@ Table with header, aligned numbers, status dots, ratings and a totals row. _(fam
 Pill with a triangle arrow and a signed change, coloured by direction and polarity. _(family: data; keywords: trend, badge, delta, change, arrow, up, down)_
 
 **When:** Annotating a number elsewhere on the slide with its trend.
-**Avoid:** A standalone metric (use tls.c.kpi-tile).
+**Avoid:** A standalone metric (use tls.c.kpi-tile). By default prefer the delta of tls.c.kpi-row.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2467,7 +2467,7 @@ A curly or square bracket grouping 2-6 items under one label, label at the right
 One whole box split into 2-6 parts with values, joined by a curly brace; can show each share. _(family: diagram; keywords: breakdown, split, components, cost, composition, parts of a whole)_
 
 **When:** Parent/child, one level: a cost breakdown or the components of one metric.
-**Avoid:** Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie).
+**Avoid:** Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie). By default prefer tls.g.pyramid for levels.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2551,7 +2551,7 @@ Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(
 Steps arranged on a ring with arrows that loop back to the first step. _(family: diagram; keywords: cycle, loop, pdca, lifecycle, feedback, circular)_
 
 **When:** Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.
-**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps).
+**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps). By default prefer tls.c.steps for ordered steps.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2596,7 +2596,7 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
 Flowchart: steps, decisions, start and end joined by labelled arrows; unknown ids are reported. _(family: diagram; keywords: flowchart, flow, decision, branch, algorithm, approval)_
 
 **When:** Order with branches: decision logic, algorithms, approval paths.
-**Avoid:** A straight sequence (use tls.g.steps or tls.g.chevrons).
+**Avoid:** A straight sequence (use tls.g.steps or tls.g.chevrons). By default prefer tls.c.steps.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -2729,7 +2729,7 @@ A central hub with 3-8 satellite cards on connecting lines, full circle or fanne
 An iceberg split at the waterline: a few visible items on the tip, more hidden items underneath. _(family: diagram; keywords: iceberg, hidden, visible, symptoms, root causes, waterline)_
 
 **When:** Contrast of the visible (symptoms, results) against the hidden (causes, effort).
-**Avoid:** Two equal sides (use tls.g.pros-cons).
+**Avoid:** Two equal sides (use tls.g.pros-cons). By default prefer tls.g.before-after for a surface-vs-depth contrast.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -3827,7 +3827,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 Portrait in a circle, rounded or square frame with name and role; initials when there is no photo. _(family: media; keywords: avatar, portrait, person, speaker, author, profile, headshot)_
 
 **When:** Naming one speaker, author or contact person with a portrait.
-**Avoid:** Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image).
+**Avoid:** Several people (use tls.m.avatar-group); a full bio card (use tls.c.profile-card); a landscape photo (use tls.m.image). By default prefer tls.c.team for a team slide.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -3861,7 +3861,7 @@ Portrait in a circle, rounded or square frame with name and role; initials when 
 Overlapping row of small portraits (initials when no photo) with a +N overflow bubble. _(family: media; keywords: avatars, people, team, contributors, attendees, faces, stack)_
 
 **When:** Who is involved at a glance: contributors, attendees, a project team.
-**Avoid:** Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card).
+**Avoid:** Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card). By default prefer tls.c.team.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -4443,7 +4443,7 @@ Checklist with a done, open or blocked state per item. _(family: text; keywords:
 A term with its definition, optional pronunciation, part of speech and example. _(family: text; keywords: definition, term, glossary, vocabulary, concept)_
 
 **When:** Introducing a concept, glossary terms, vocabulary (lectures).
-**Avoid:** Several term and value pairs (use tls.t.kv-list).
+**Avoid:** Several term and value pairs (use tls.t.kv-list). By default prefer tls.t.body for running text.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -4722,7 +4722,7 @@ One large claim that fills the slide, key words emphasised. _(family: text; keyw
 Secondary heading below the title with RichText support. _(family: text; keywords: subtitle, subheading, secondary)_
 
 **When:** Use to add context, date, or audience below the title.
-**Avoid:** Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title).
+**Avoid:** Do not use for long paragraphs (use tls.t.body) or as the slide title itself (use tls.t.title). On an opening slide prefer the subtitle slot of tls.c.hero.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -5297,4 +5297,191 @@ Object {
     "closing-in",
   ],
 }
+`;
+
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 16k chars and matches its snapshot 1`] = `
+"# Slide block index — core set
+
+Choose the category from the relationship in the content, then the block. Dated → \`timeline\`; ordered but undated → \`process\`; options against each other → \`comparison\`; numbers that need axes → \`chart\`; one to four headline numbers → \`metric\`. Start from a recipe for the slide's role.
+
+Scope rules:
+- \`element\`: one atom. Combine several on a slide or inside a container.
+- \`group\`: a self-contained unit. One per region.
+- \`slide\`: fills the whole content area. One per slide, alone in the main region. Never nest it.
+
+Line format: \`type · category · scope · item range · layer — what the viewer sees [height] knobs: …\` (layer only when not content). \`knobs\` are the enum/boolean slots that change the look, not the content — try them in order before picking another block. \`also:\` lists more blocks by name; ask for the detail digest of any shortlisted type before filling props.
+
+Height hints (slide units, 1920×1080 frame, default theme, at the width after \`@\`): \`h≈B+P/L\` = B + P per line of the main text, \`h≈B+P/item\` = per list item, \`h≈B\` = fixed, \`h X–Y\` = varies (sampled range), \`h=fill\` = takes the height it is given. Plan regions so content fits; the layout report checks it.
+
+Layers: to stack blocks, put them in the same region and set \`layer\` on the block: \`\\"backdrop\\"\` takes the whole region box behind the region's other blocks (a field, pattern or decoration under a card), \`\\"overlay\\"\` takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. \`anchor\` (\`fill\` or \`top-left\`…\`bottom-right\`, \`center\`) puts it at natural size on that corner/edge; \`anchorTo: \\"<id>\\"\` anchors to a stacked block of the region (a badge on a card corner). Blocks marked \`backdrop\`/\`overlay\` below default to that layer only for overlap checks; \`layer\` still has to be set to stack.
+
+Motion style: set \`motionStyle\` on the deck or a slide (slide wins) instead of per-block \`motion\`: \`expressive\` for covers, key numbers and section openers; \`subtle\` for dense content; \`static\` for print/handouts.
+
+## Recipes
+
+Known-good slides per role (\`id · layout — region: blocks — when\`), each clean with example content. \`+title\` = \`tls.t.title\` in the layout's \`title\` region. Keep layout and regions, swap content, turn knobs.
+
+### cover
+cover-hero · blank — content: tls.c.hero — type-led opener
+cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo or product shot
+cover-kinetic · blank — content: tls.c.kinetic-title — motion-led opener for expressive decks
+### agenda
+agenda-full · blank — content: tls.c.agenda — numbered agenda, full slide
+agenda-image · two-column+title — left: tls.t.bullets(marker=number); right: tls.m.image — short agenda beside a photo
+### section
+section-divider · blank — content: tls.c.divider — section opener
+section-title · section+title — title only — quiet section break
+### content
+content-statement · blank — content: tls.t.statement — one message, key words in accent
+content-bullets-image · two-column+title — left: tls.t.bullets; right: tls.m.image — a few points beside a picture
+content-cards · timeline+title — timeline: tls.c.cards — 2–4 parallel points
+content-feature-grid · timeline+title — timeline: tls.c.feature-grid — features or benefits with icons
+content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list — vertical icon points beside a photo
+content-image-text · blank — content: tls.c.image-text — photo-led story with a heading and text
+### data
+data-chart-insight · timeline+title — timeline: tls.c.chart-insight — one chart with its takeaway and source
+data-stat-spotlight · timeline+title — timeline: tls.c.stat-spotlight — one rate with three supporting numbers
+data-big-stat · blank — content: tls.c.big-stat — one giant number
+data-kpi-row · timeline+title — timeline: tls.c.kpi-row — 2–5 headline KPIs
+data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
+data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway — single-series bars with the so-what beside
+### comparison
+comparison-options · timeline+title — timeline: tls.c.comparison — 2–3 options side by side
+comparison-pros-cons · timeline+title — timeline: tls.g.pros-cons — arguments for and against
+comparison-before-after · timeline+title — timeline: tls.g.before-after — a change story
+comparison-pricing · timeline+title — timeline: tls.d.pricing — plans and prices
+comparison-matrix · timeline+title — timeline: tls.g.matrix-2x2 — items on two axes
+comparison-table · timeline+title — timeline: tls.d.compare-table — feature matrix
+### process
+process-steps · timeline+title — timeline: tls.c.steps — ordered steps, explained
+process-chevrons · timeline+title — timeline: tls.g.chevrons — phases with a current one
+process-timeline · timeline+title — timeline: tls.g.timeline — dated events
+process-roadmap · timeline+title — timeline: tls.g.roadmap — plan over periods and lanes
+### people
+people-team · timeline+title — timeline: tls.c.team — team members
+people-testimonial · blank — content: tls.c.testimonial — one customer quote as social proof
+people-logo-wall · timeline+title — timeline: tls.m.logo-wall — clients or partners
+### quote
+quote-pull · blank — content: tls.t.quote — a pull quote alone on the slide
+quote-statement · blank — content: tls.t.statement(showAttribution=true) — a short quotable line in display type
+### closing
+closing-centered · blank — content: tls.c.closing — thanks and call to action
+closing-split · blank — content: tls.c.closing(variant=split) — closing with contacts beside the call to action
+
+## Structure
+also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.grid-guide, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.safe-area, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
+
+## Headings
+tls.t.title · heading · element — Slide title, auto-fitted, with optional rule [h≈0+104/L@840] knobs: size, align, rule
+also: tls.t.kicker, tls.t.subtitle
+
+## Text
+tls.t.body · text · element — Paragraph text, auto-fitted, optionally in columns [h≈0+41/L@840] knobs: align, autoFit
+tls.t.footnote · text · element · ≤4 items — Small-print source, reference or footnote line with optional marker [h≈-6+30/item@840] knobs: marker, align
+also: tls.t.caption, tls.t.definition
+
+## Lists
+tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by an icon, number or image, then title and text [h=fill] knobs: lead, tone, align
+tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 167–442@1728]
+tls.c.feature-reveal · list · group · 3–6 items — Icon cards in a grid that flip up one after another with a 3D tilt [h 333–682@840]
+tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle, iconTone, spacing
+tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker, spacing
+also: tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
+
+## Emphasis
+tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@840] knobs: markStyle
+tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size, align, emphasis, showMark
+tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone
+also: tls.c.quote-image, tls.t.callout
+
+## Metrics
+tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈246@840] knobs: format, showContext, showLabel
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: gap
+tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill]
+also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
+
+## Charts
+tls.c.chart-insight · chart · group — Chart with a highlighted takeaway beside it and a source line [h=fill] knobs: side, ratio, showSource
+tls.d.bar · chart · group · ≤20 items — Column or horizontal bar chart of one series [h=fill] knobs: orientation, valueLabels
+tls.d.donut · chart · group · ≤6 items — Ring of slices showing shares of a whole, with a centre value [h≈364+0/item@544] knobs: labels, showPercent
+tls.d.grouped-bar · chart · group · 2–12 items — Side-by-side bars per category, one colour per series [h=fill] knobs: orientation, valueLabels, legend
+tls.d.line · chart · group · 2–24 items — Lines over ordered categories, one per series, labelled at the line ends [h=fill] knobs: curve, markers, endLabels, legend
+also: tls.d.area, tls.d.bubble, tls.d.funnel-chart, tls.d.heatmap, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.waterfall
+
+## Tables
+tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h≈222@840] knobs: zebra, rules, header, density
+also: tls.d.ranking, tls.d.scorecard
+
+## Comparison
+tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈121+50/item@1728]
+tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h≈232@840] knobs: cellKind, zebra, density
+tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h≈363+59/item@840] knobs: featuredStyle, align, showCta
+tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow, emphasis
+tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight, style, showItems
+tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h=fill] knobs: style, balance, showVerdict
+also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.swot
+
+## Process
+tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 160–613@840] knobs: orientation
+tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h≈63+7/item@840] knobs: fill, textPlacement
+also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.steps
+
+## Timeline
+tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈259@840] knobs: statusColors, laneLabels
+tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 221–269@840] knobs: axis, alternate, nodeStyle
+also: tls.c.journey, tls.g.milestones
+
+## Hierarchy
+tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction, notes, fill
+tls.g.tree · hierarchy · group — Org chart or hierarchy of boxes linked from one root, top-down or left-right [h=fill] knobs: direction, nodeStyle, compact
+also: tls.g.breakdown, tls.g.layers, tls.g.mindmap
+
+## Relationships
+also: tls.g.bracket, tls.g.hub-spoke, tls.g.venn
+
+## Media
+tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement, gutter
+tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit
+tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern, cols, gap, radius, captions
+also: tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
+
+## People
+tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 332–845@1728] knobs: cols, card, showBio
+tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840]
+also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
+
+## Brand
+tls.m.logo-wall · brand · group · 3–16 items — Even grid of logos at equal visual weight, with an optional heading [h 104–280@544] knobs: cols, plates, dividers
+also: tls.m.logo
+
+## Covers
+tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant, decoration, showImage, showLogo
+tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant, showKicker, showSubtitle, showCta
+tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align, decoration
+
+## Dividers
+tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant, align
+
+## Agenda
+tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h≈-21+156/item@840]
+also: tls.c.objectives
+
+## Closing
+tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h=fill] knobs: variant, ctaStyle
+also: tls.c.contact, tls.c.recap
+
+## Learning
+also: tls.c.quiz, tls.t.qa
+
+## Chrome
+also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark
+
+## Decoration
+tls.m.decoration · decoration · element · backdrop — Decorative blob, arc, ring, dot grid or wave in a theme colour [h=fill] knobs: shape, tone, opacity
+also: tls.g.arrow, tls.l.field, tls.m.pattern, tls.x.rule
+
+## Icons
+
+Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic
+"
 `;

@@ -477,6 +477,9 @@ describe('R7 — capability digest v2', () => {
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
         size: 'h≈180-6/item@840',
+        aiTier: 1,
+        looks: ['gap'],
+        absorbs: ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge'],
       })
       const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
@@ -519,6 +522,71 @@ describe('R7 — capability digest v2', () => {
       const md = capabilityDigest(reg, { categories: ['chart'] })
       expect(md).toContain('### `tls.d.bar`')
       expect(md).not.toContain('### `tls.t.title`')
+    })
+
+    // AC0 — the curated core-set index (reviews/blocks/ai-curation/README.md §2.1, §5.2).
+    describe('tier-1 index (AC0)', () => {
+      const tier1 = capabilityIndex(reg, { tier: 1 })
+      const fullLine = (md: string, type: string) => md.split('\n').filter((l) => l.startsWith(`${type} · `))
+      const alsoNames = (md: string) =>
+        md.split('\n').filter((l) => l.startsWith('also: ')).flatMap((l) => l.slice(6).split(', '))
+
+      it('stays within 16k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(16000)
+        expect(tier1).toMatchSnapshot()
+      })
+
+      it('gives every tier-1 block one full line with its knobs, every tier-2 block one `also:` name', () => {
+        const also = alsoNames(tier1)
+        for (const def of BUILT_IN_BLOCKS) {
+          if (def.aiTier === 1) {
+            const lines = fullLine(tier1, def.type)
+            expect(lines).toHaveLength(1)
+            expect(lines[0]).toContain(`— ${def.shortDescription}`)
+            if (def.looks?.length) expect(lines[0]).toContain(` knobs: ${def.looks.join(', ')}`)
+            expect(also).not.toContain(def.type)
+          } else {
+            expect(fullLine(tier1, def.type)).toHaveLength(0)
+            expect(also.filter((t) => t === def.type)).toHaveLength(1)
+          }
+        }
+      })
+
+      it('carries the recipes and the shared header', () => {
+        expect(tier1).toContain('## Recipes')
+        expect(tier1).toContain('cover-hero · blank — content: tls.c.hero — ')
+        expect(tier1).toContain('Dated → `timeline`')
+        expect(tier1).toContain('## Icons')
+        expect(capabilityIndex(reg, { tier: 1, roles: ['cover'] })).not.toContain('data-big-stat ·')
+      })
+
+      it('a profile promotes tier-2 types to full lines and drops avoided ones', () => {
+        const md = capabilityIndex(reg, { tier: 1, profile: { prefer: ['tls.d.pie'], avoid: ['tls.t.footnote', 'tls.l.grid-guide'] } })
+        expect(fullLine(md, 'tls.d.pie')).toHaveLength(1)
+        expect(alsoNames(md)).not.toContain('tls.d.pie')
+        expect(md).not.toContain('tls.t.footnote')
+        expect(md).not.toContain('tls.l.grid-guide')
+      })
+
+      it('capabilityIndexData({ tier: 1 }) returns the core set with aiTier/looks/absorbs', () => {
+        const data = capabilityIndexData(reg, { tier: 1 })
+        expect(data.map((e) => e.type).sort()).toEqual(BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).map((d) => d.type).sort())
+        expect(data.every((e) => e.aiTier === 1)).toBe(true)
+        expect(data.find((e) => e.type === 'tls.d.line')?.absorbs).toEqual(['tls.d.area', 'tls.d.sparkline', 'tls.d.slope'])
+      })
+
+      it('the default call is unchanged: every block a full line, no recipes, within 20k', () => {
+        const md = capabilityIndex(reg)
+        expect(md.length).toBeLessThanOrEqual(20000)
+        expect(md).not.toContain('## Recipes')
+        expect(md).not.toContain(' knobs: ')
+        expect(md).not.toContain('also: ')
+        expect(capabilityIndexData(reg)).toHaveLength(BUILT_IN_BLOCKS.length)
+      })
+
+      it('the structured detail names what a tier-1 block absorbs', () => {
+        expect(capabilityDigestData(reg, { types: ['tls.d.donut'] }).blocks[0].absorbs).toEqual(['tls.d.pie'])
+      })
     })
 
     it('no-argument calls keep the full vocabulary sections', () => {

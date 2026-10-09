@@ -20,7 +20,7 @@ export const tlsGBreakdown: BlockDefinition = {
   related: ['tls.g.tree', 'tls.d.pie', 'tls.g.bracket'],
   describe: {
     when: 'Parent/child, one level: a cost breakdown or the components of one metric.',
-    avoid: 'Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie).',
+    avoid: 'Several levels (use tls.g.tree) or exact proportions to read off (use tls.d.pie). By default prefer tls.g.pyramid for levels.',
     example: {
       id: 'b_breakdown',
       type: 'tls.g.breakdown',

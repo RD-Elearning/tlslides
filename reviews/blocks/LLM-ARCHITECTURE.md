@@ -104,16 +104,21 @@ interface DeckProfile {
 
 ### 3.1 The initial set
 
+"Layout & block mix" names **recipe ids** from `packages/tldraw/src/blocks/recipes.ts` (AC0): each
+recipe is a real `SLIDE_LAYOUTS` id plus tier-1 blocks per region, proven clean by
+`recipes.spec.ts`. Before AC0 this column named `title-body`, `hero`, `big-stat`, `image-full`,
+`bullets` and `steps` as layouts; none of them is a layout id (`ai-curation/README.md` F9).
+
 | Profile | Who asks for it | Density (words/slide) | Layout & block mix | Motion | Distinguishing rules |
 |---|---|---|---|---|---|
-| **teach-lecture** | teachers, trainers; students follow along | 60–120 | `title-body`, `two-column`, `bullets`, `steps`, `image-text`, definitions as `takeaway`; a `section` every 4–6 slides, a **recap** every section | `stepwise` — bullets reveal one by one, 2–5 build steps | numbered structure, a learning objective on slide 2, worked example before exercise, "check your understanding" slide per section, speaker notes as a script, evidence required for facts |
-| **keynote-pitch** | founders, speakers; a visual talk | 5–25 | `title`, `hero`, `big-stat`, `quote`, `image-full`, `kpi-row`; one idea per slide | `expressive` — hero reveals, count-ups, 1–2 steps | title never a full sentence, no bullets over 3 items, at least 40% slides with a visual block, a "one-liner" closing slide |
-| **business-report** | managers; QBR, status, board | 30–70 | `two-column` chart + takeaway, `kpi-row`, `comparison`, `agenda`, `timeline` | `minimal` — chart bars grow, else none | every chart has a takeaway block, numbers carry units and period, agenda + summary mandatory, consistent number formatting, evidence required |
-| **workshop-training** | facilitators; interactive sessions | 20–60 | `agenda`, `steps`, `two-column`, exercise slides (`takeaway` + `bullets`), timeboxes | `stepwise` | timing per section in the notes, an exercise every 3–5 slides, instructions as imperative steps |
-| **academic-seminar** | lecturers, researchers | 50–110 | `title-body`, `two-column`, `comparison`, `image-text` for figures, `quote` for definitions | `minimal` | citations block on each evidence slide, references slide, figure captions with source |
-| **sales-product** | sales, product marketing | 15–45 | `hero`, `feature-grid`, `comparison`, `pricing`, `testimonial`, `kpi-row`, CTA | `expressive` | problem → solution → proof → ask order enforced, one CTA slide, social proof present |
-| **status-update** | team leads; weekly/monthly | 30–60 | `agenda`, `kpi-row`, `timeline`, `bullets` with owner tags, `comparison` for plan vs actual | `none` | RAG status per item, dates absolute not relative, next-steps slide mandatory |
-| **story-portfolio** | designers, creators | 5–30 | `image-full`, `image-text`, `quote`, `hero` | `expressive` | image-led, text is captions, theme from the person's brand kit if given |
+| **teach-lecture** | teachers, trainers; students follow along | 60–120 | `content-bullets-image`, `content-cards`, `process-steps`, `content-image-text`, definitions as `tls.t.takeaway`; `section-divider` every 4–6 slides, a **recap** every section (`tls.c.recap`, tier 2, promoted) | `stepwise` — bullets reveal one by one, 2–5 build steps | numbered structure, a learning objective on slide 2, worked example before exercise, "check your understanding" slide per section, speaker notes as a script, evidence required for facts |
+| **keynote-pitch** | founders, speakers; a visual talk | 5–25 | `cover-hero`, `cover-kinetic`, `data-big-stat`, `content-statement`, `quote-pull`, `data-kpi-row`; photo slides via `tls.c.cover` `variant=bleed` until AC6 ships `tls.c.image-full`; one idea per slide | `expressive` — hero reveals, count-ups, 1–2 steps | title never a full sentence, no bullets over 3 items, at least 40% slides with a visual block, a "one-liner" closing slide |
+| **business-report** | managers; QBR, status, board | 30–70 | `data-chart-insight`, `data-bar-takeaway`, `data-kpi-row`, `comparison-options`, `agenda-full`, `process-timeline`, `data-table` | `minimal` — chart bars grow, else none | every chart has a takeaway block, numbers carry units and period, agenda + summary mandatory, consistent number formatting, evidence required |
+| **workshop-training** | facilitators; interactive sessions | 20–60 | `agenda-full`, `process-steps`, `content-bullets-image`, exercise slides (`two-column`: `tls.t.takeaway` + `tls.t.bullets`), timeboxes | `stepwise` | timing per section in the notes, an exercise every 3–5 slides, instructions as imperative steps |
+| **academic-seminar** | lecturers, researchers | 50–110 | `content-bullets-image`, `comparison-options`, `content-image-text` for figures, `quote-pull` for definitions, `data-table` (table + footnote source) | `minimal` | citations block on each evidence slide, references slide, figure captions with source |
+| **sales-product** | sales, product marketing | 15–45 | `cover-hero`, `content-feature-grid`, `comparison-options`, `comparison-pricing`, `people-testimonial`, `data-kpi-row`, `closing-centered` (CTA) | `expressive` | problem → solution → proof → ask order enforced, one CTA slide, social proof present |
+| **status-update** | team leads; weekly/monthly | 30–60 | `agenda-full`, `data-kpi-row`, `process-timeline`, `tls.t.bullets` with owner tags, `comparison-options` for plan vs actual | `none` | RAG status per item, dates absolute not relative, next-steps slide mandatory |
+| **story-portfolio** | designers, creators | 5–30 | `content-image-text`, `cover-split-image`, `quote-pull`, `cover-hero` (`tls.c.image-full` after AC6) | `expressive` | image-led, text is captions, theme from the person's brand kit if given |
 
 Two axes summarise the table and are what the intake step actually classifies:
 
@@ -202,6 +207,19 @@ two-tier digest. Both tiers are generated from the live registry
   `capabilityDigest(reg)`, which is still available but is no longer size-capped by a test.
   If the detail shows that a pick does not fit (the item count is outside the range, or `avoid`
   names a better sibling listed in `related`), the model may swap the type once before fill.
+- **Tier 1 + recipes (AC0).** S2a's default input is now the curated index
+  `capabilityIndex(reg, { tier: 1, roles?, profile? })` (≤ 16k chars, snapshot in
+  `capability-digest.spec.ts`): the same header, then the **recipes** for the slide's role(s)
+  (`RECIPES` in `blocks/recipes.ts`: `id · layout — region: blocks — when`, each a known-good
+  slide that `analyzeSlide` reports clean with example content), then per category the ~45
+  tier-1 blocks as full lines with a `knobs:` hint (`BlockDefinition.looks`, the enum/boolean
+  slots that change the look) and the tier-2 blocks as one `also:` line of bare names the model
+  may still shortlist. `profile.prefer` promotes tier-2 types to full lines, `profile.avoid`
+  drops types and the recipes that use them (AC1's deck style feeds the same shape). The model
+  picks a recipe first, keeps its layout and regions, then swaps a block only when the content's
+  relationship demands it. `capabilityIndexData(reg, { tier: 1 })` returns the same set as JSON
+  with `aiTier`, `looks`, `absorbs`; `RECIPES` / `recipeSlide()` are exported for the backend.
+  The unfiltered `capabilityIndex(reg)` (all 129 blocks, ≤ 20k) is unchanged.
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix

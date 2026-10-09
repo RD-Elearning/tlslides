@@ -25,6 +25,8 @@ import { BLOCK_SIZE_HINTS } from './__generated__/block-size-hints'
 import { ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
+import { RECIPES, recipeLine } from './recipes'
+import type { RecipeRole } from './recipes'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -59,6 +61,8 @@ export interface CapabilityBlockDigest {
   example?: unknown
   /** LO2: paint layer, only when not `content`. */
   layer?: BlockLayer
+  /** AC0: tier-2 types this block replaces by default. */
+  absorbs?: string[]
 }
 
 /** One entry of the compact catalog index (tier 1 of the two-tier digest). */
@@ -75,11 +79,33 @@ export interface CapabilityIndexEntry {
   /** LO3: height hint from the size cards (`block-metrics.json`), e.g. `h≈0+104/L@840`. Absent
    *  for blocks without a card (a host block) or without an honest number. */
   size?: string
+  /** AC0: AI tier (1 = default index, 2 = by name, detail on request). */
+  aiTier?: 1 | 2
+  /** AC0: look knobs (enum/boolean option slots), in the order to try them. */
+  looks?: string[]
+  /** AC0: tier-2 types this block replaces by default. */
+  absorbs?: string[]
+}
+
+/** AC0 — a promote/drop list, as a deck style (AC1) or a planner profile (LLM-ARCHITECTURE §3) carries. */
+export interface CapabilityPreference {
+  /** Tier-2 types promoted to full index lines. */
+  prefer?: string[]
+  /** Types dropped from the index entirely. */
+  avoid?: string[]
 }
 
 export interface CapabilityIndexOptions {
   categories?: BlockCategory[]
   scopes?: BlockScope[]
+  /** AC0: `1` = the curated tier-1 index — tier-1 blocks as full lines (with a `knobs:` hint),
+   *  tier-2 blocks as one `also:` line of bare names per category, plus the slide recipes.
+   *  Absent = every block as a full line (the pre-AC0 index, unchanged). */
+  tier?: 1
+  /** AC0: promote/drop lists (only read with `tier: 1`). AC1's deck style feeds the same shape. */
+  profile?: CapabilityPreference
+  /** AC0: recipes for these roles only (only read with `tier: 1`; default all). */
+  roles?: RecipeRole[]
 }
 
 export interface CapabilityDetailOptions {
@@ -242,6 +268,7 @@ export function capabilityDigestData(registry?: BlockRegistry, opts?: Capability
       ...(def.kind === 'html' && def.motion?.parts ? { parts: [...def.motion.parts] } : {}),
       ...(def.describe ? { when: def.describe.when, avoid: def.describe.avoid, example: def.describe.example } : {}),
       ...layerField(def),
+      ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
     }))
 
   const layouts: CapabilityLayoutDigest[] = SLIDE_LAYOUTS.map((layout) => {
@@ -396,6 +423,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
     if (b.when) lines.push(`**When:** ${b.when}`)
     if (b.avoid) lines.push(`**Avoid:** ${b.avoid}`)
+    // AC0: `absorbs` stays in the structured detail only — the 8-type detail budget (12k) has no room
+    // for it in markdown, and the absorbed blocks' own `avoid` already points back here.
     if (b.when || b.avoid) lines.push('')
     if (b.parts && b.parts.length) {
       lines.push(`**Parts:** ${b.parts.map((p) => `\`${p}\``).join(', ')}`)
@@ -503,8 +532,18 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         ...(def.related && def.related.length ? { related: [...def.related] } : {}),
         ...layerField(def),
         ...(BLOCK_SIZE_HINTS[def.type] ? { size: BLOCK_SIZE_HINTS[def.type] } : {}),
+        ...(def.aiTier ? { aiTier: def.aiTier } : {}),
+        ...(def.looks && def.looks.length ? { looks: [...def.looks] } : {}),
+        ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
       }
     })
+    .filter((e) => !opts?.tier || inTierOne(e, opts.profile))
+}
+
+/** AC0 — does an entry get a full line in the tier-1 index? Tier 1 or promoted, and not dropped. */
+function inTierOne(e: { type: string; aiTier?: 1 | 2 }, profile?: CapabilityPreference): boolean {
+  if (profile?.avoid?.includes(e.type)) return false
+  return e.aiTier === 1 || !!profile?.prefer?.includes(e.type)
 }
 
 /** LO2 — `{ layer }` for a non-content block, `{}` otherwise (keeps the digest compact). */
@@ -540,6 +579,7 @@ const MOTION_STYLE_LINE =
  * `capabilityDigest(registry, { types })` for the shortlist only.
  */
 export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndexOptions): string {
+  if (opts?.tier === 1) return tierOneIndex(registry, opts)
   const entries = capabilityIndexData(registry, opts)
   const lines: string[] = []
   lines.push('# Slide block index')
@@ -571,6 +611,87 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
     for (const e of inCat) {
       lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}`)
     }
+    lines.push('')
+  }
+  lines.push('## Icons')
+  lines.push('')
+  lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+  lines.push('')
+  return lines.join('\n')
+}
+
+/**
+ * AC0 — the curated index (`reviews/blocks/ai-curation/README.md` §2.1, §5.2): the same header,
+ * then the slide recipes, then per category the tier-1 blocks as full lines with a `knobs:` hint
+ * and the tier-2 blocks as one `also:` line of bare type names (the planner can still ask for
+ * their detail). Budget: ≤ 16k chars (spec).
+ */
+function tierOneIndex(registry: BlockRegistry | undefined, opts: CapabilityIndexOptions): string {
+  const all = capabilityIndexData(registry, { categories: opts.categories, scopes: opts.scopes })
+  const dropped = new Set(opts.profile?.avoid ?? [])
+  const lines: string[] = []
+  lines.push('# Slide block index — core set')
+  lines.push('')
+  lines.push(
+    'Choose the category from the relationship in the content, then the block. Dated → `timeline`; ' +
+      'ordered but undated → `process`; options against each other → `comparison`; numbers that need ' +
+      'axes → `chart`; one to four headline numbers → `metric`. Start from a recipe for the slide\'s role.'
+  )
+  lines.push('')
+  lines.push('Scope rules:')
+  lines.push('- `element`: one atom. Combine several on a slide or inside a container.')
+  lines.push('- `group`: a self-contained unit. One per region.')
+  lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
+  lines.push('')
+  lines.push(
+    'Line format: `type · category · scope · item range · layer — what the viewer sees [height] knobs: …` ' +
+      '(layer only when not content). `knobs` are the enum/boolean slots that change the look, not the ' +
+      'content — try them in order before picking another block. `also:` lists more blocks by name; ask ' +
+      'for the detail digest of any shortlisted type before filling props.'
+  )
+  lines.push('')
+  lines.push(SIZE_LINE)
+  lines.push('')
+  lines.push(LAYER_LINE)
+  lines.push('')
+  lines.push(MOTION_STYLE_LINE)
+  lines.push('')
+  // A recipe that uses a dropped type is dropped with it (a style that avoids `tls.t.footnote`
+  // loses `data-table`).
+  const recipes = RECIPES.filter(
+    (r) =>
+      (!opts.roles || opts.roles.includes(r.role)) &&
+      !Object.values(r.regions).some((blocks) => blocks.some((blk) => dropped.has(blk.type)))
+  )
+  if (recipes.length) {
+    lines.push('## Recipes')
+    lines.push('')
+    lines.push(
+      'Known-good slides per role (`id · layout — region: blocks — when`), each clean with example content. ' +
+        '`+title` = `tls.t.title` in the layout\'s `title` region. Keep layout and regions, swap content, turn knobs.'
+    )
+    lines.push('')
+    let role: string | undefined
+    for (const r of recipes) {
+      if (r.role !== role) {
+        role = r.role
+        lines.push(`### ${role}`)
+      }
+      lines.push(recipeLine(r))
+    }
+    lines.push('')
+  }
+  for (const cat of BLOCK_CATEGORIES) {
+    const inCat = all.filter((e) => e.category === cat && !dropped.has(e.type))
+    const full = inCat.filter((e) => inTierOne(e, opts.profile))
+    const also = inCat.filter((e) => !inTierOne(e, opts.profile))
+    if (!full.length && !also.length) continue
+    lines.push(`## ${CATEGORY_INFO[cat].label}`)
+    for (const e of full) {
+      const knobs = e.looks ? ` knobs: ${e.looks.join(', ')}` : ''
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}${knobs}`)
+    }
+    if (also.length) lines.push(`also: ${also.map((e) => e.type).join(', ')}`)
     lines.push('')
   }
   lines.push('## Icons')

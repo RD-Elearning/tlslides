@@ -20,7 +20,7 @@ export const tlsTDefinition: BlockDefinition = {
   related: ['tls.t.body', 'tls.t.takeaway', 'tls.t.kv-list'],
   describe: {
     when: 'Introducing a concept, glossary terms, vocabulary (lectures).',
-    avoid: 'Several term and value pairs (use tls.t.kv-list).',
+    avoid: 'Several term and value pairs (use tls.t.kv-list). By default prefer tls.t.body for running text.',
     example: {
       id: 'b_definition',
       type: 'tls.t.definition',

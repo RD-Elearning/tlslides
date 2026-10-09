@@ -1,7 +1,7 @@
 # AI curation — a core block set, deck styles, and the picking pipeline
 
 **Date:** 2026-10-09 · **Branch:** `plan/block-system` · **Against commit:** `a8281fdf` (LO8 done)
-**Status:** plan only — no phase started. Resume from [§7 Progress](#7-progress).
+**Status:** AC0 done (2026-10-09); next AC1. Resume from [§7 Progress](#7-progress).
 
 **Goal (product owner, 2026-10-09):** the html-kind blocks on the LO7 slides (hero, stat-spotlight
 ring with three KPI columns, testimonial, kinetic-title, feature-grid, feature-reveal, big-stat)
@@ -801,7 +801,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
-| AC0 | ⬜ not started | | |
+| AC0 | ✅ done 2026-10-09 | (see session log) | 45 tier-1; tier-1 index 14,715 chars; 36 recipes clean; see Notes — AC0 |
 | AC1 | ⬜ | | |
 | AC2 | ⬜ | | |
 | AC3 | ⬜ | | |
@@ -815,3 +815,68 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-09 | plan | This plan written (survey only, no code) | Start at AC0. Tier assignments in §1.2 are proposals: show the user §2.2 before AC0 commits them. Board `GVkKV9dh…` has no verdicts yet. |
+| 2026-10-09 | AC0 | Tier metadata, tier-1 index, 36 recipes, LLM-ARCHITECTURE §3.1/S2 | **Approved:** the product owner delegated the decisions; the lead approved the §2.2 tier-1 list (45) and the §6 vocabulary as written. Next: AC1. |
+
+### Notes — AC0
+
+**Approval.** The 45-block tier-1 list (§2.2) and the vocabulary list (§6) were approved as written
+on 2026-10-09 (product owner delegated all decisions; the lead approved). AC0 committed them
+unchanged: tier-1 count **45** (gate 35–48).
+
+**What landed.**
+- `BlockDefinition.aiTier / absorbs / looks` (types.ts, optional). Filled for all 129 from **one
+  curated table**, `blocks/library/ai-curation.ts` (`AI_CURATION`), applied in place by
+  `applyAiCuration()` when `library/index.ts` builds `BUILT_IN_BLOCKS` (identity kept). One table,
+  not 129 file edits, because the tier-1 set is reviewed as a list. `looks` for tier 1 = the
+  non-italic knobs of §2.2 (AC2 knobs are not added before they exist); for tier 2 = the §1.2
+  knob column in order. Every name is an existing `option` slot of kind enum/boolean.
+- `absorbs` = §2.2's column plus every §1.2 "Absorbed by" entry that names a single tier-1 block
+  (`tags`/`kv-list`/`definition`/`iceberg`/`flow`/`avatar-group`). Left out on purpose: entries
+  waiting for AC2 (`feature-reveal` → feature-grid, `quote-image` → testimonial; both blocks are
+  tier 1/tier 2 today but cannot be absorbed yet), and "specialist / style masters / layout regions
+  / promoted by profile" entries (no tier-1 sibling). 14 absorbed blocks got one sentence appended
+  to `describe.avoid` naming the absorber; `tls.c.profile-card`'s avoid was rewritten shorter
+  (names `tls.c.team`) to keep the detail budget.
+- Gates in `catalog-conformance.spec.ts` (`aiCurationViolations`, exported): every block has
+  `aiTier`; `absorbs` resolve and are tier 2; `looks` are enum/boolean option slots, no
+  duplicates; tier-1 count 35–48; every absorbed block's `avoid` names an absorber; the gate is
+  proven by a deliberately bad definition.
+- `capabilityIndex(reg, { tier: 1, roles?, profile? })` — header, **Recipes**, then per category
+  tier-1 full lines with ` knobs: …` and one `also:` line of tier-2 names. `profile: { prefer,
+  avoid }` (type `CapabilityPreference`) promotes / drops types; a recipe that uses a dropped type
+  is dropped too. **`style` is not an option yet**: `DeckStyle` does not exist until AC1, which
+  should resolve a style id to the same `CapabilityPreference` plus the style card.
+  `capabilityIndexData` entries gain `aiTier`, `looks`, `absorbs` (additive; the kpi-row
+  `toEqual` case was extended, not loosened); `{ tier: 1 }` filters the data the same way.
+  `CapabilityBlockDigest.absorbs` is in the structured detail only (see budgets).
+- `blocks/recipes.ts`: `RECIPES` (36, all 10 roles), `recipesFor`, `recipeLine`, `recipeSlide`
+  (fills from `describe.example`, knobs on top), exported from `blocks/index.ts` with
+  `AI_CURATION`. `recipes.spec.ts` (146 tests): real layout + regions, tier-1 blocks, knob slots
+  enum/boolean, `validateDeckSpec` 0 errors, **`analyzeSlide` 0 errors / 0 warnings for all 36**.
+- LLM-ARCHITECTURE §3.1 now names recipe ids (F9 fixed), §S2 has the "Tier 1 + recipes" bullet.
+
+**Recipe deviations from §5.1 (found by the oracle, not guessed).**
+- `quote` layout: its `quote` region is 140 units tall; `tls.t.quote`'s example needs 237 →
+  `quote-pull` uses `blank`. (The `quote` layout is effectively unusable for a quote with
+  attribution — worth a fix in AC6 alongside `full-bleed`.) Added `quote-statement`
+  (`tls.t.statement showAttribution`).
+- `section` layout: the `subtitle` region is 52 units; a `tls.t.body` example needs 83 →
+  `section-title` is title only.
+- `agenda-image` uses `tls.t.bullets marker=number` beside an image instead of `tls.c.agenda`
+  (slide scope must sit alone in the main region). `closing / contact` two-column became
+  `closing-split` (`tls.c.closing variant=split`). `kpi-row` layout → kpi-row + chart became
+  `data-kpi-row` (`timeline` + `tls.c.kpi-row`) plus `data-bar-takeaway`; the `kpi-row` layout's
+  4 cells take tier-2 `kpi-tile`s, so no recipe uses it. Bento / image-full wait for AC6.
+
+**Numbers.** Tier-1 index **14,715 chars** (≤ 16k; recipes section 3,611 — over the §5.2 ~3k
+target, compressed by `+title` = implied `tls.t.title`); default index **18,763** (unchanged, ≤ 20k);
+8-largest detail **11,999 / 12,000** — it was already ~11,994 before AC0. **AC1/AC2 warning:**
+the 12k detail budget has no headroom (the AC0 "Use instead of" markdown line was dropped for it),
+and the tier-1 index has ~1.3k left for AC1's ≤ 1.2k style card — AC1 should pass `roles` or trim
+the recipe lines. tsc prod **0**, spec **329** (ratchet 329). eslint on new files 0 errors.
+Specs: digest + conformance + recipes + layout-layers + layout-anchor + block-metrics +
+motion-style 1,635 pass; the 14 edited blocks' suites 305 pass. Full suite not run (machine rule).
+
+**Not built in AC0.** `style` option (AC1); per-style card; `describe.avoid` for `feature-reveal`
+and `quote-image` (AC2); hiding `tls.l.grid-guide`/`tls.l.safe-area` from the AI (still listed in
+`also:`; a default `avoid` would hide them — decide in AC1 with style `avoid`).

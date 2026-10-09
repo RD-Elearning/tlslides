@@ -20,7 +20,7 @@ export const tlsGFlow: BlockDefinition = {
   related: ['tls.g.steps', 'tls.g.chevrons', 'tls.g.cycle', 'tls.g.tree', 'tls.g.arrow'],
   describe: {
     when: 'Order with branches: decision logic, algorithms, approval paths.',
-    avoid: 'A straight sequence (use tls.g.steps or tls.g.chevrons).',
+    avoid: 'A straight sequence (use tls.g.steps or tls.g.chevrons). By default prefer tls.c.steps.',
     example: {
       id: 'b_flow',
       type: 'tls.g.flow',

@@ -171,7 +171,12 @@ export type {
   CapabilityIndexEntry,
   CapabilityIndexOptions,
   CapabilityDetailOptions,
+  CapabilityPreference,
 } from './capability-digest'
+// AC0 — slide recipes per planner role (`reviews/blocks/ai-curation/README.md` §5.1).
+export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide } from './recipes'
+export type { SlideRecipe, RecipeBlock, RecipeRole } from './recipes'
+export { AI_CURATION } from './library/ai-curation'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
 // geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact

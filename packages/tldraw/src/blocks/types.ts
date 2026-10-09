@@ -359,6 +359,15 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   /** LO2.1 — default `BlockSpec.anchor` when an instance is layered out of the stack. Absent =
    *  `'fill'`. Set it for a block with a natural size of its own (a badge → `'top-right'`). */
   anchor?: BlockAnchor
+  /** AC0 — AI curation. 1 = in the default (tier-1) AI index; 2 = listed by name only, detail on
+   *  request. Filled for every built-in from `library/ai-curation.ts`. */
+  aiTier?: 1 | 2
+  /** AC0 — tier-2 types this block replaces by default (each absorbed block's `describe.avoid`
+   *  names this block). */
+  absorbs?: string[]
+  /** AC0 — the look knobs: `enum`/`boolean` option slot names whose values change the look, not
+   *  the content, in the order an LLM should try them. */
+  looks?: string[]
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide

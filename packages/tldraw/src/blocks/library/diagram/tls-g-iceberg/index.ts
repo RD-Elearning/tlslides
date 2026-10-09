@@ -20,7 +20,7 @@ export const tlsGIceberg: BlockDefinition = {
   related: ['tls.g.pros-cons', 'tls.g.before-after'],
   describe: {
     when: 'Contrast of the visible (symptoms, results) against the hidden (causes, effort).',
-    avoid: 'Two equal sides (use tls.g.pros-cons).',
+    avoid: 'Two equal sides (use tls.g.pros-cons). By default prefer tls.g.before-after for a surface-vs-depth contrast.',
     example: {
       id: 'b_iceberg',
       type: 'tls.g.iceberg',
