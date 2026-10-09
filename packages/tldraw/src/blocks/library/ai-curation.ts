@@ -171,6 +171,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
 
   // ── media ──
   'tls.c.image-text': t1(['placement', 'gutter']),
+  // AC6: full-bleed photo with a headline panel
+  'tls.c.image-full': t1(['panel', 'scrim']),
   'tls.m.image': t1(['fit'], ['tls.m.device-mock']),
   'tls.m.icon': t2(['size']),
   'tls.m.icon-label': t2(['size']),
@@ -179,6 +181,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.device-mock': t2(['device', 'tone', 'shadow']),
 
   // ── agenda ──
+  // AC6: asymmetric tile grid (list category)
+  'tls.c.bento': t1(['pattern']),
+
   'tls.c.agenda': t1(['variant', 'numbering'], ['tls.c.objectives', 'tls.t.numbered', 'tls.t.checklist']),
   'tls.c.objectives': t2(['marker', 'cols', 'showIntro']),
 

@@ -353,6 +353,15 @@ function layoutKpiRow(frame: { width: number; height: number }, tokens: Resolved
 /* 16. blank — just the safe margin, one content region                           */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * AC6 — `full-bleed`: one `content` region over the whole frame, no safe margin (closes S13: a
+ * full-bleed photo slide in `blank` stopped at the margins). For blocks that paint edge to edge
+ * (`tls.c.image-full`, `tls.c.quote-image`) and keep their own text inset.
+ */
+function layoutFullBleed(frame: { width: number; height: number }): Record<string, Box> {
+  return { content: { x: 0, y: 0, width: frame.width, height: frame.height } }
+}
+
 function layoutBlank(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
   return {
     content: contentArea(frame, tokens),
@@ -454,6 +463,7 @@ export type SlideLayoutId =
   | 'quote'
   | 'kpi-row'
   | 'blank'
+  | 'full-bleed'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -473,7 +483,7 @@ export interface SlideLayout {
 }
 
 /**
- * All 16 shipped slide layouts. Each is a pure `compile(frame, tokens) → Record<string, Box>`.
+ * All 17 shipped slide layouts (AC6 added `full-bleed`). Each is a pure `compile(frame, tokens) → Record<string, Box>`.
  */
 export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'title', name: 'Title', compile: layoutTitle },
@@ -492,6 +502,7 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'quote', name: 'Quote', compile: layoutQuote, regionAlign: { quote: 'center', attribution: 'start' } },
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
   { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
+  { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

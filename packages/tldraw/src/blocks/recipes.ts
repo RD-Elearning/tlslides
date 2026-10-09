@@ -67,12 +67,12 @@ export const RECIPES: readonly SlideRecipe[] = [
     role: 'cover',
     layout: 'blank',
     regions: { content: [b('tls.c.cover', { variant: 'split', showImage: true })] },
-    when: 'opener with a photo or product shot',
+    when: 'opener with a photo',
   },
   { id: 'cover-kinetic', role: 'cover', layout: 'blank', regions: { content: [b('tls.c.kinetic-title')] }, when: 'motion-led opener for expressive decks' },
 
   // ── agenda ──
-  { id: 'agenda-full', role: 'agenda', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.agenda')] }, when: 'numbered agenda under a heading, full slide' },
+  { id: 'agenda-full', role: 'agenda', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.agenda')] }, when: 'numbered agenda, full slide' },
   {
     id: 'agenda-image',
     role: 'agenda',
@@ -92,6 +92,8 @@ export const RECIPES: readonly SlideRecipe[] = [
   },
 
   // ── content ──
+  // AC6: the asymmetric tile grid (one big stat, points, a photo, a quote) under a title
+  { id: 'content-bento', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.bento')] }, when: 'overview: a number, points, a photo' },
   { id: 'content-statement', role: 'content', layout: 'blank', regions: { content: [b('tls.t.statement')] }, when: 'one message, key words in accent' },
   {
     id: 'content-bullets-image',
@@ -113,7 +115,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     role: 'content',
     layout: 'image-left',
     regions: { title: [TITLE], image: [b('tls.m.image')], text: [b('tls.m.icon-list')] },
-    when: 'vertical icon points beside a photo',
+    when: 'icon points beside a photo',
   },
   {
     id: 'content-image-text',
@@ -129,7 +131,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     role: 'data',
     layout: 'timeline',
     regions: { title: [TITLE], timeline: [b('tls.c.chart-insight', { insightSize: 'lead' })] },
-    when: 'one chart with its takeaway and source',
+    when: 'one chart, takeaway and source',
   },
   {
     id: 'data-stat-spotlight',
@@ -152,7 +154,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     role: 'data',
     layout: 'two-column',
     regions: { title: [TITLE], left: [b('tls.d.bar')], right: [b('tls.t.takeaway', { size: 'lead' })] },
-    when: 'single-series bars with the so-what beside',
+    when: 'one-series bars, so-what beside',
   },
 
   // ── comparison ──
@@ -164,10 +166,10 @@ export const RECIPES: readonly SlideRecipe[] = [
   { id: 'comparison-table', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.d.compare-table'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'feature matrix, with the verdict' },
 
   // ── process ──
-  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'ordered steps, explained, with the point they make' },
-  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' }), b('tls.t.takeaway', { size: 'lead' })] }, when: 'phases with a current one, and what it means' },
+  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'ordered steps and their point' },
+  { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' }), b('tls.t.takeaway', { size: 'lead' })] }, when: 'phases, the current one, its meaning' },
   { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline', { alternate: true })] }, when: 'dated events' },
-  { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan over periods and lanes, with the key milestone' },
+  { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan by period and lane, key milestone' },
 
   // ── people ──
   { id: 'people-team', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.team')] }, when: 'team members' },
@@ -177,7 +179,9 @@ export const RECIPES: readonly SlideRecipe[] = [
   // ── quote ──
   // `blank`, not the `quote` layout: its 140-unit quote region is shorter than a quote with attribution.
   { id: 'quote-pull', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.quote')] }, when: 'a pull quote alone on the slide' },
-  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true })] }, when: 'a short quotable line in display type' },
+  // AC6: a photo moment edge to edge (`full-bleed`, S13) with a headline panel
+  { id: 'quote-image-full', role: 'quote', layout: 'full-bleed', regions: { content: [b('tls.c.image-full')] }, when: 'a place or moment, photo edge to edge' },
+  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true })] }, when: 'a quotable line in display type' },
 
   // ── closing ──
   { id: 'closing-centered', role: 'closing', layout: 'blank', regions: { content: [b('tls.c.closing')] }, when: 'thanks and call to action' },
@@ -186,7 +190,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     role: 'closing',
     layout: 'blank',
     regions: { content: [b('tls.c.closing', { variant: 'split' })] },
-    when: 'closing with contacts beside the call to action',
+    when: 'contacts beside the call to action',
   },
 ]
 

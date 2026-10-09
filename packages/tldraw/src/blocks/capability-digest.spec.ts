@@ -588,9 +588,13 @@ describe('R7 — capability digest v2', () => {
         expect(capabilityIndexData(reg)).toHaveLength(BUILT_IN_BLOCKS.length)
       })
 
-      it('AC1: lists every style in one line each, within 16k', () => {
+      it('AC1: lists every style with its palettes (AC5: one line per family), within 16k', () => {
         expect(tier1).toContain('## Styles')
-        for (const st of BUILT_IN_STYLES) expect(tier1).toContain(styleLine(st))
+        for (const st of BUILT_IN_STYLES) {
+          const line = tier1.split('\n').find((l) => l.startsWith(`${st.family}: `))
+          expect(line).toBeDefined()
+          expect(line).toContain(`${st.id} (${st.palettes.map((p) => p.id).join(', ')})`)
+        }
       })
 
       it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 16k', () => {

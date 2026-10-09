@@ -33,7 +33,8 @@ function collectSpecTypes(spec: BlockSpec): string[] {
   return types
 }
 
-const EXPECTED_BLOCK_COUNT = 129
+// AC6: + tls.c.bento, tls.c.image-full
+const EXPECTED_BLOCK_COUNT = 131
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()

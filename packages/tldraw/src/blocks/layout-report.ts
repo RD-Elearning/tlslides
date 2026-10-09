@@ -597,7 +597,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const ROLE_BY_CATEGORY: Record<string, SlideSpec['role']> = { cover: 'cover', divider: 'section', closing: 'closing' }
   const blockRoles = new Set(blocks.filter((b) => b.layer !== 'backdrop').map((b) => ROLE_BY_CATEGORY[registry.get(b.type)?.category ?? ''] ?? 'content'))
   const inferredRole = blockRoles.size === 1 ? [...blockRoles][0] : undefined
-  compositionFindings(frame, regions, blocks, margins, freeSpace, spec.role ?? (inferredRole === 'content' ? undefined : inferredRole), findings)
+  compositionFindings(frame, regions, blocks, margins, freeSpace, spec.role ?? (inferredRole === 'content' ? undefined : inferredRole), findings, spec.layout === 'full-bleed')
 
   // 8. LO5: what still needs a screenshot.
   for (const b of blocks) {
@@ -1057,7 +1057,8 @@ function compositionFindings(
   margins: LayoutReport['margins'],
   freeSpace: number,
   role: SlideSpec['role'],
-  out: LayoutFinding[]
+  out: LayoutFinding[],
+  fullBleed = false
 ): void {
   const painting = blocks.filter((b) => b.painted && b.layer !== 'backdrop')
   if (painting.length === 0) return
@@ -1107,7 +1108,9 @@ function compositionFindings(
     }
   }
 
-  if (freeSpace < CROWDED_FREE) {
+  // AC6: the `full-bleed` layout exists to paint edge to edge (a photo slide): no free space is
+  // its design, not a crowded slide.
+  if (freeSpace < CROWDED_FREE && !fullBleed) {
     out.push({
       code: 'layout/crowded',
       severity: 'warning',

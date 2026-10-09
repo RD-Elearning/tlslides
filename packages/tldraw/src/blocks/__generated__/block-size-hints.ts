@@ -5,6 +5,7 @@
  */
 export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.agenda': 'h 169–981@1728',
+  'tls.c.bento': 'h=fill',
   'tls.c.big-stat': 'h≈388@840',
   'tls.c.cards': 'h=fill',
   'tls.c.case-study': 'h≈537@840',
@@ -18,6 +19,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.feature-grid': 'h 221–574@1728',
   'tls.c.feature-reveal': 'h 333–682@840',
   'tls.c.hero': 'h≈437+53/L@1728',
+  'tls.c.image-full': 'h=fill',
   'tls.c.image-text': 'h=fill',
   'tls.c.journey': 'h≈341+11/item@840',
   'tls.c.kinetic-title': 'h=fill',

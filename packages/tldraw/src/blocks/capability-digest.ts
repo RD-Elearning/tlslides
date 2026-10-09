@@ -572,7 +572,7 @@ const LAYER_LINE =
 const SIZE_LINE =
   'Height hints (slide units, 1920×1080 frame, default theme, at the width after `@`): `h≈B+P/L` = B + P per ' +
   'line of the main text, `h≈B+P/item` = per list item, `h≈B` = fixed, `h X–Y` = varies (sampled range), ' +
-  '`h=fill` = takes the height it is given. Plan regions so content fits; the layout report checks it.'
+  '`h=fill` = takes the height it is given; the layout report checks the fit.'
 
 /** P7 — one line telling the planner how to use deck/slide motion styles. */
 const MOTION_STYLE_LINE =
@@ -679,7 +679,11 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     lines.push(`Deck style: ${styleLine(style)}. ${style.brief} Rules: ${style.rules.join(' ')} Knob defaults are set by the style; do not repeat them.`)
   } else {
     lines.push('Set `style` on the deck and `theme` to one of its palettes; ask for the style card before filling.')
-    for (const st of BUILT_IN_STYLES) lines.push(styleLine(st))
+    // AC5: ten styles — one line per family, `style (palettes)` (the per-style line cost the budget)
+    const families: string[] = []
+    for (const st of BUILT_IN_STYLES) if (!families.includes(st.family)) families.push(st.family)
+    for (const fam of families)
+      lines.push(`${fam}: ${BUILT_IN_STYLES.filter((st) => st.family === fam).map((st) => `${st.id} (${st.palettes.map((p) => p.id).join(', ')})`).join('; ')}`)
   }
   lines.push('')
   // A recipe that uses a dropped type is dropped with it (a style that avoids `tls.t.footnote`

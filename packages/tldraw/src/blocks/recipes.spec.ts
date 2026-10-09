@@ -129,7 +129,7 @@ describe('AC0 slide recipes', () => {
 
   it('recipeLine is compact and names the knobs', () => {
     const line = recipeLine(RECIPES.find((r) => r.id === 'cover-split-image')!)
-    expect(line).toBe('cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo or product shot')
+    expect(line).toBe('cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo')
     expect(recipeLine(RECIPES.find((r) => r.id === 'data-table')!)).toBe(
       'data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source'
     )

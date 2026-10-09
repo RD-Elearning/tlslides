@@ -65,8 +65,8 @@ function allRegionsPositiveSize(regions: Record<string, Box>): void {
 /* ── SLIDE_LAYOUTS module-level object ─────────────────────────────────────── */
 
 describe('SLIDE_LAYOUTS module-level', () => {
-  it('contains exactly 16 layouts', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(16)
+  it('contains exactly 17 layouts (AC6: + full-bleed)', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(17)
   })
 
   it('is not aliased by reference — copy with not.toBe + toEqual', () => {
@@ -111,8 +111,11 @@ describe.each(ASPECTS)('layouts at $label (%dx%d)', ({ label, width, height }) =
         expect(Object.keys(regions).length).toBeGreaterThan(0)
       })
 
-      it('all regions are inside the safe margin', () => {
-        allRegionsInsideSafeMargin(regions, frame, TEST_TOKENS)
+      // AC6: `full-bleed` is the one layout that ignores the safe margin by design (S13): its single
+      // region is exactly the frame; every other layout keeps its regions inside the margin.
+      it(layout.id === 'full-bleed' ? 'its one region is exactly the frame' : 'all regions are inside the safe margin', () => {
+        if (layout.id === 'full-bleed') expect(regions).toEqual({ content: { x: 0, y: 0, width: frame.width, height: frame.height } })
+        else allRegionsInsideSafeMargin(regions, frame, TEST_TOKENS)
       })
 
       it('no two regions overlap', () => {
