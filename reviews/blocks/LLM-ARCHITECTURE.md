@@ -272,10 +272,14 @@ screenshot only slides whose report.needsVisualCheck is non-empty (S5 critic)
 
 **1. Planning — size cards.** `buildBlockMetrics()` is sampled from `measureBlock`, never
 authored. The committed copy is `packages/tldraw/src/blocks/__generated__/block-metrics.json`
-(also `node tools/layout-report/cli.js --metrics [--types a,b]`). The capability index carries a
-terse hint per block: `[h≈0+104/L@840]` (base + per line of the main text, at width 840),
-`[h≈-18+59/item@840]` (per list item), `[h≈43@840]` (fixed), `[h 164–222@840]` (poor linear fit:
-the sampled range), `[h=fill]` (takes whatever height it is given). The planner turns text into
+(also `node tools/layout-report/cli.js --metrics [--types a,b] [--theme <id>]`; the committed
+cards use the default theme, `--theme` samples them with a deck theme's type scale). The capability
+index carries a terse hint per block: `[h≈0+104/L@840]` (base + per line of the main text, at width
+840), `[h≈-18+59/item@840]` (per list item), `[h≈43@840]` (fixed), `[h 164–222@840]` (poor linear
+fit: the sampled range — the card's `samples` then lists every measured `[x, height]`), `[h=fill]`
+(takes whatever height it is given). `atMin: {h, fits}` is the example in exactly its `size.min`
+box (LO8). Smoke test of the built package as a plain-node consumer:
+`node tools/layout-report/smoke-dist.js` (after `build:packages`). The planner turns text into
 lines with `lines ≈ ceil(chars / (0.85 · cpl))` (cpl from the card; the 0.85 absorbs word-wrap
 loss and errs on the long side). One card (one JSON line per block):
 
