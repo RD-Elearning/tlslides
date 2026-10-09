@@ -555,3 +555,51 @@ function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[]
   walk(node)
   return result
 }
+
+describe('AC2 — variant knob (photo absorbs tls.c.quote-image)', () => {
+  const DEF = tlsCTestimonial
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: n.part, k: n.k })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+  const PHOTO = { ...(DEF.describe!.example.props as any), variant: 'photo', avatar: 'https://example.com/face.jpg' }
+
+  it('declares variant centered | photo', () => {
+    expect((DEF.schema.variant.type as any).values).toEqual(['centered', 'photo'])
+  })
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('variant: photo fits size.%s with nothing escaping it', (_l, [w, h]) => {
+    const node = poster(PHOTO, ctx({ width: w, height: h }))
+    expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+    for (const l of leaves(node)) {
+      expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+      expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+    }
+  })
+
+  it('photo: an image on the left, text left-aligned to its right; template draws the same row', () => {
+    const node = poster(PHOTO, ctx({ width: 1600, height: 700 }))
+    const ls = leaves(node)
+    const photo = ls.find((l) => l.part === 'avatar')!
+    expect(photo.k).toBe('image')
+    const quote = ls.find((l) => l.part === 'quote')!
+    expect(quote.x).toBeGreaterThan(photo.x + photo.w)
+    const html = template(PHOTO, { ...tplCtx(ctx({ width: 1600, height: 700 })), box: { x: 0, y: 0, width: 1600, height: 700 } } as any)
+    expect(html).toContain('flex-direction:row')
+    expect(html).toContain('text-align:left')
+    expect(html).toContain('<img src="https://example.com/face.jpg"')
+  })
+
+  it('photo without a safe URL paints an accent panel, never an unsafe src', () => {
+    const node = poster({ ...PHOTO, avatar: 'javascript:alert(1)' }, ctx({ width: 1600, height: 700 }))
+    expect(leaves(node).find((l) => l.part === 'avatar')!.k).toBe('rect')
+    const html = template({ ...PHOTO, avatar: 'javascript:alert(1)' }, tplCtx(ctx({ width: 1600, height: 700 })) as any)
+    expect(html).not.toContain('<img')
+  })
+})

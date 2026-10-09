@@ -60,7 +60,8 @@ function derivePreferredSize(): [number, number] {
  *  4 lines and the block is 554 tall (458 painted + the 48-unit padding top and bottom). The old
  *  min (400 × 300) was a guess: the example was 950 tall there (an html poster does not shrink its
  *  type), so the size card's min lied by 650. `preferred` is raised to it (min ≤ preferred). */
-const MIN_SIZE: [number, number] = [840, 554]
+// AC2: 600 — the `photo` variant at 840 (quote in a 428-wide column beside the photo) is 598 tall.
+const MIN_SIZE: [number, number] = [840, 600]
 
 export const tlsCTestimonial: BlockDefinition = {
   type: 'tls.c.testimonial',

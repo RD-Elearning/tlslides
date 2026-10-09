@@ -1242,6 +1242,7 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 | \`name\` | yes | text (max 60 chars) | Speaker's full name. 2–4 words. |
 | \`role\` | yes | text (max 80 chars) | Speaker's title or position. 2–8 words. |
 | \`avatar\` | no | text (max 200 chars) | Avatar image URL (https:) or asset id. Optional; shows initials when absent. |
+| \`variant\` | no | enum: centered \\\\| photo | \`photo\`: the avatar as a large photo beside the quote. |
 
 \`\`\`json
 {
@@ -5457,7 +5458,7 @@ also: tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 332–845@1728] knobs: cols, card, showBio
-tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840]
+tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840] knobs: variant
 also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
 
 ## Brand

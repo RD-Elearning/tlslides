@@ -311,6 +311,37 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_07",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k7a",
+            "type": "tls.c.testimonial",
+            "props": {
+              "quote": {
+                "runs": [
+                  {
+                    "text": "We moved every board review to this deck format and "
+                  },
+                  {
+                    "text": "cut prep time in half",
+                    "bold": true
+                  },
+                  {
+                    "text": "."
+                  }
+                ]
+              },
+              "name": "Linh Tran",
+              "role": "COO, Northwind",
+              "variant": "photo"
+            }
+          }
+        ]
+      }
     }
   ]
 }

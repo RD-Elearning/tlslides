@@ -11,7 +11,7 @@
 
 import type { HtmlTemplateContext } from '../../../types'
 import type { TestimonialProps } from './schema'
-import { getInitials, isSafeAvatarUrl, TESTIMONIAL } from './schema'
+import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, TESTIMONIAL } from './schema'
 import { posterText } from '../../../html-block'
 import type { TextLine } from '../../../types'
 
@@ -79,6 +79,9 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
   const pt = posterText(ctx)
   const T = TESTIMONIAL
   const quoteLines = pt.lines('quote')
+  // AC2 `variant: 'photo'`: photo left, text column left-aligned (the poster draws the same row).
+  const photo = props.variant === 'photo'
+  const ta = photo ? 'left' : 'center'
 
   // Quote (required)
   if (props.quote) {
@@ -88,8 +91,8 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
         pt.css('quote', `font-size:var(--tls-type-subheading);line-height:${T.quoteLH};`) +
         `color:${ctx.cssVar('on')};` +
         `font-style:italic;` +
-        `margin-bottom:${T.quoteGap}px;` +
-        `text-align:center;` +
+        `margin-bottom:${photo && !props.name && !props.role ? 0 : T.quoteGap}px;` +
+        `text-align:${ta};` +
       // RVM5: the quotation marks are words of their own, so they enter with the first and the
       // last word instead of showing with the (fading) container before the words.
       `">${
@@ -102,7 +105,14 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
 
   // Avatar (optional — fallback to initials frame)
   const avatarUrl = typeof props.avatar === 'string' ? props.avatar : ''
-  if (isSafeAvatarUrl(avatarUrl)) {
+  let photoHtml = ''
+  if (photo) {
+    const { photoW } = photoGeometry(ctx.box.width)
+    photoHtml =
+      `<div data-part="avatar" style="width:${photoW}px;flex:none;align-self:stretch;border-radius:${T.photoRadius}px;overflow:hidden;background:${photoPlaceholder(ctx.tokens?.color as unknown as Record<string, string>)};">` +
+      (isSafeAvatarUrl(avatarUrl) ? `<img src="${ctx.esc(avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />` : '') +
+      `</div>`
+  } else if (isSafeAvatarUrl(avatarUrl)) {
     parts.push(
       `<div data-part="avatar" style="` +
         `width:${T.avatar}px;height:${T.avatar}px;border-radius:50%;overflow:hidden;flex:none;` +
@@ -135,8 +145,8 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
         pt.css('name', `font-size:var(--tls-type-body);line-height:${T.nameLH};`) +
         `color:${ctx.cssVar('on')};` +
         `font-weight:600;` +
-        `margin-bottom:${T.nameGap}px;` +
-        `text-align:center;` +
+        `margin-bottom:${photo && !props.role ? 0 : T.nameGap}px;` +
+        `text-align:${ta};` +
       `">${pt.html('name', ctx.esc(props.name), false)}</div>`
     )
   }
@@ -148,10 +158,18 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
         `font-family:var(--tls-font-family);` +
         pt.css('role', `font-size:var(--tls-type-caption);line-height:${T.roleLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
-        `text-align:center;` +
+        `text-align:${ta};` +
       `">${pt.html('role', ctx.esc(props.role))}</div>`
     )
   }
 
+  if (photo) {
+    return (
+      `<div style="display:flex;flex-direction:row;align-items:stretch;gap:${T.pad}px;height:100%;box-sizing:border-box;padding:${T.pad}px;">` +
+      photoHtml +
+      `<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;">${parts.join('')}</div>` +
+      `</div>`
+    )
+  }
   return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;padding:${T.pad}px;">${parts.join('')}</div>`
 }

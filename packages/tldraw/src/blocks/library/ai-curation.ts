@@ -183,7 +183,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.objectives': t2(['marker', 'cols', 'showIntro']),
 
   // ── people ──
-  'tls.c.testimonial': t1(),
+  'tls.c.testimonial': t1(['variant'], ['tls.c.quote-image']),
   'tls.c.profile-card': t2(['layout', 'tone', 'showBio', 'showContact']),
   'tls.c.team': t1(['cols', 'card', 'showBio'], ['tls.c.profile-card', 'tls.m.avatar', 'tls.m.avatar-group']),
   'tls.m.avatar': t2(['shape', 'size', 'layout', 'align', 'ring', 'showName', 'showRole']),

@@ -8,6 +8,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { tintOf } from '../../text/_engine/color'
 
 export interface TestimonialProps extends Record<string, unknown> {
   /** The testimonial quote. Accepts rich text (runs) or a plain string. */
@@ -18,6 +19,8 @@ export interface TestimonialProps extends Record<string, unknown> {
   role: string
   /** Avatar: asset id or URL (https: or data:image/*). Falls back to initials when absent/unresolvable. */
   avatar?: string
+  /** AC2: `centered` (default) or `photo` — the avatar as a large photo beside a left-aligned quote. */
+  variant?: 'centered' | 'photo'
 }
 
 export const schema: BlockSchema = {
@@ -47,6 +50,12 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Avatar',
     guidance: 'Avatar image URL (https:) or asset id. Optional; shows initials when absent.',
+  },
+  variant: {
+    type: { kind: 'enum', values: ['centered', 'photo'] },
+    role: 'option',
+    label: 'Variant',
+    help: '`photo`: the avatar as a large photo beside the quote.',
   },
 }
 
@@ -102,4 +111,21 @@ export const TESTIMONIAL = {
   nameLH: 1.4,
   nameGap: 4,
   roleLH: 1.4,
+  /** AC2 `photo` variant: photo share of the inner width, corner radius, minimum block height. */
+  photoShare: 0.36,
+  photoRadius: 16,
+  photoMinH: 480,
 } as const
+
+/** AC2 `photo` variant with no safe image URL: a soft accent tint, not a solid accent block. */
+export function photoPlaceholder(color: Record<string, string> | undefined): string {
+  return tintOf(color?.surface ?? '#ffffff', color?.accent ?? '#2563eb', 0.18)
+}
+
+/** AC2 `photo` variant geometry (template and poster): photo width and the text column's x / width. */
+export function photoGeometry(width: number): { photoW: number; colX: number; colW: number } {
+  const T = TESTIMONIAL
+  const inner = Math.max(1, width - 2 * T.pad)
+  const photoW = Math.round(inner * T.photoShare)
+  return { photoW, colX: T.pad + photoW + T.pad, colW: Math.max(1, inner - photoW - T.pad) }
+}
