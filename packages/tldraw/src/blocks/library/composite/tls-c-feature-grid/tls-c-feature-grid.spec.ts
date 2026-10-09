@@ -564,7 +564,8 @@ describe('tls.c.feature-grid', () => {
 
       // RV03: 1200 wide (was 1920: a drop spanned the whole slide), the height of the example
       expect(tlsCFeatureGrid.size.preferred[0]).toBe(1200)
-      expect(tlsCFeatureGrid.size.preferred[1]).toBe(Math.ceil(posterHeight + 36))
+      // LO8: never below the min height (min ≤ preferred; min = the example's height at 1120).
+      expect(tlsCFeatureGrid.size.preferred[1]).toBe(Math.max(tlsCFeatureGrid.size.min[1], Math.ceil(posterHeight + 36)))
     })
 
     it('changing defaults changes the derived height', () => {

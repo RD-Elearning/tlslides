@@ -31,13 +31,12 @@ describe('people / media composites: example at size.preferred and size.min', ()
     }
   }
 
-  it('tls.c.testimonial: the poster of the example is as wide as size.min and its height is the honest content height', () => {
-    const [w] = tlsCTestimonial.size.min
-    const tree = tlsCTestimonial.layout({ ...(tlsCTestimonial.defaults as any), ...(tlsCTestimonial.describe!.example.props as any) } as any, ctx(w, 300))
+  it('tls.c.testimonial: the poster of the example fits size.min (LO8: an html poster does not shrink, so min is its real height there)', () => {
+    const [w, h] = tlsCTestimonial.size.min
+    const tree = tlsCTestimonial.layout({ ...(tlsCTestimonial.defaults as any), ...(tlsCTestimonial.describe!.example.props as any) } as any, ctx(w, h))
     assertWellFormed(tree)
     expect(tree.box.width).toBeLessThanOrEqual(w)
-    // at the minimum width the quote wraps further, so the block grows taller than the minimum height rather than clipping
-    expect(tree.box.height).toBeGreaterThan(0)
+    expect(tree.box.height).toBeLessThanOrEqual(h)
   })
 
   it('profile card: auto is side by side in a landscape box, stacked in a portrait one, and never wider than its cap', () => {

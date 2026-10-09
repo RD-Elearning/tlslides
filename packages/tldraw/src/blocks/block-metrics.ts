@@ -71,6 +71,9 @@ export interface HeightFit {
   h: [number, number]
   /** `err` > max(8, 5% of the tallest sample): read `h` as a range, not the line as a rule. */
   poor?: true
+  /** LO8: with `poor`, every measured `[x, height]` sample — a step-shaped block (a row of 4 cards
+   *  wraps to two rows at 5; steps turn vertical when narrow) is read off this table exactly. */
+  samples?: Array<[number, number]>
 }
 
 export type HeightModelVar = 'lines' | 'items' | 'fixed'
@@ -97,6 +100,11 @@ export interface BlockMetrics {
   model: HeightModel | null
   confidence: 'high' | 'medium' | 'low'
   note?: string
+  /** LO8: the example laid out in exactly the `size.min` box — the height it then occupies (what
+   *  the compiler stacks: its root, or what it paints past it) and whether that is within
+   *  `size.min[1]`. `fits: false` = at its min width this content is taller than the min height
+   *  (it does not shrink to fit): plan `h`, not `size.min[1]`. Absent for fill blocks. */
+  atMin?: { h: number; fits: boolean }
 }
 
 export interface BlockMetricsFile {
@@ -212,7 +220,10 @@ function fit(samples: Array<{ x: number; h: number }>): HeightFit {
     x: [Math.min(...xs), Math.max(...xs)],
     h: [Math.round(Math.min(...hs)), hMax],
   }
-  if (err > Math.max(8, hMax * 0.05)) out.poor = true
+  if (err > Math.max(8, hMax * 0.05)) {
+    out.poor = true
+    out.samples = samples.map((p) => [p.x, Math.round(p.h)] as [number, number])
+  }
   return out
 }
 
@@ -314,6 +325,17 @@ function blockMetrics(
     card.note = 'fills its box: give it a region height, it has no natural height'
     return card
   }
+  // LO8: the example in exactly its min box. Autofit/scaling blocks shrink into it; a block that
+  // does not (an html poster, a fixed type size) reports how tall it really is there.
+  try {
+    const [minW, minH] = def.size.min
+    const atMin = measureBlock(def, props, minW, ctxAt(minW), { height: minH, probeHeight: minH })
+    const occupied = Math.round(Math.max(atMin.rootHeight, atMin.bounds ? atMin.bounds.y + atMin.bounds.height : 0))
+    card.atMin = { h: occupied, fits: occupied <= minH + 1 }
+  } catch {
+    // a layout that throws at its own min box has no honest number; the example measures above stand
+  }
+
   const elasticAt = widths.filter((_, i) => example[i]?.elastic)
   if (elasticAt.length) card.note = `fills its box at width ${elasticAt.join(', ')}: no model there`
 

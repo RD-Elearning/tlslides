@@ -53,8 +53,14 @@ function derivePreferredSize(): [number, number] {
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
   const posterNode = poster(defaults, ctx)
-  return [REFERENCE_WIDTH, posterNode.box.height]
+  return [REFERENCE_WIDTH, Math.max(MIN_SIZE[1], posterNode.box.height)]
 }
+
+/** LO8: the smallest box the example fits without growing: at 840 (a half column) its quote takes
+ *  4 lines and the block is 554 tall (458 painted + the 48-unit padding top and bottom). The old
+ *  min (400 × 300) was a guess: the example was 950 tall there (an html poster does not shrink its
+ *  type), so the size card's min lied by 650. `preferred` is raised to it (min ≤ preferred). */
+const MIN_SIZE: [number, number] = [840, 554]
 
 export const tlsCTestimonial: BlockDefinition = {
   type: 'tls.c.testimonial',
@@ -84,7 +90,7 @@ export const tlsCTestimonial: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [400, 300] },
+  size: { preferred: derivePreferredSize(), min: MIN_SIZE },
   layout: testimonialLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate },

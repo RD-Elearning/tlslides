@@ -56,6 +56,10 @@ function featureGridLayout(
  * LayoutContext at 1920-wide with the default theme's tokens and calls poster()
  * to get the real intrinsic height.
  */
+/** LO8: the example at 1120 wraps a cell title to 2 lines and is 251 tall (min was 242: the size
+ *  card's `atMin` showed it overflowing its own min box). */
+const MIN_SIZE: [number, number] = [1120, 251]
+
 function derivePreferredSize(): [number, number] {
   const REFERENCE_WIDTH = 1200
   const REFERENCE_HEIGHT = 1080
@@ -68,7 +72,8 @@ function derivePreferredSize(): [number, number] {
   })
   const posterNode = poster(EXAMPLE_PROPS as FeatureGridProps, ctx)
   // + one description line: the real theme's body type runs larger than the test measure.
-  return [REFERENCE_WIDTH, Math.ceil(posterNode.box.height + 36)]
+  // Never below the min height (catalog conformance: min ≤ preferred).
+  return [REFERENCE_WIDTH, Math.max(MIN_SIZE[1], Math.ceil(posterNode.box.height + 36))]
 }
 
 /**
@@ -210,7 +215,7 @@ export const tlsCFeatureGrid: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [1120, 242] },
+  size: { preferred: derivePreferredSize(), min: MIN_SIZE },
   layout: featureGridLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: featureGridAnimate },

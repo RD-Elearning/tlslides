@@ -104,6 +104,39 @@ describe('LO3 size cards', () => {
     expect(type).toBeTruthy()
   })
 
+  it('LO8: a poor fit carries its measured samples, and they are exact', () => {
+    for (const [type, card] of Object.entries(file.blocks)) {
+      for (const f of Object.values(card.model?.at ?? {})) {
+        if (!f) continue
+        if (f.poor) {
+          expect({ type, samples: (f.samples ?? []).length > 0 }).toEqual({ type, samples: true })
+          expect(Math.min(...f.samples!.map((s) => s[1]))).toBe(f.h[0])
+          expect(Math.max(...f.samples!.map((s) => s[1]))).toBe(f.h[1])
+        } else {
+          expect(f.samples).toBeUndefined()
+        }
+      }
+    }
+    // tls.g.steps at 840: 5 steps keep one row (187), 8 turn vertical (333) — no line fits that.
+    const steps = file.blocks['tls.g.steps'].model!.at['840']!
+    const s = new Map(steps.samples)
+    const ex = exampleProps('tls.g.steps')
+    const src = ex.steps as unknown[]
+    for (const n of [5, 8]) {
+      const h = measured('tls.g.steps', { ...ex, steps: Array.from({ length: n }, (_, k) => src[k % src.length]) }, 840)
+      expect(Math.round(h)).toBe(s.get(n))
+    }
+    expect(s.get(8)! - s.get(5)!).toBeGreaterThan(100)
+  })
+
+  it('LO8: every measurable example fits its own size.min box (atMin.fits)', () => {
+    const misfits = Object.entries(file.blocks)
+      .filter(([, c]) => c.atMin && !c.atMin.fits)
+      .map(([t, c]) => `${t} min ${c.size.min.join('×')} occupies ${c.atMin!.h}`)
+    expect(misfits).toEqual([])
+    expect(Object.values(file.blocks).filter((c) => !c.fill && c.model).every((c) => c.atMin)).toBe(true)
+  })
+
   // The model is a planning hint: predicted from the card, checked against measureBlock on
   // content the generator never sampled.
   describe('model vs measureBlock on new content', () => {

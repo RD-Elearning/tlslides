@@ -246,8 +246,9 @@ describe('tls.c.testimonial', () => {
 
       // The preferred width should match the reference frame width
       expect(tlsCTestimonial.size.preferred[0]).toBe(1920)
-      // The preferred height should equal the poster's measured height
-      expect(tlsCTestimonial.size.preferred[1]).toBe(posterHeight)
+      // The preferred height is the poster's measured height, never below the min height
+      // (LO8: min = the example's real height at its min width; catalog conformance min ≤ preferred).
+      expect(tlsCTestimonial.size.preferred[1]).toBe(Math.max(tlsCTestimonial.size.min[1], posterHeight))
     })
 
     it('changing defaults changes the derived height', () => {
