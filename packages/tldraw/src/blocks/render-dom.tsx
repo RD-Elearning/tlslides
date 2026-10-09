@@ -9,6 +9,7 @@
  */
 
 import * as React from 'react'
+import { rectShadowSpec, shadowCss } from './shadow'
 import type {
   LayoutNode,
   Paint,
@@ -66,8 +67,10 @@ export function paintToCSS(paint: Paint): React.CSSProperties {
       const stops = paint.stops
         .map((s) => `${s.color} ${s.at * 100}%`)
         .join(', ')
+      // AC4: the SVG renderer's `<radialGradient>` (objectBoundingBox, r = 50%) is an ellipse with
+      // radii half the box's width and height; CSS `circle` (farthest-corner) was ~1.4x larger.
       return {
-        background: `radial-gradient(circle at ${paint.cx * 100}% ${paint.cy * 100}%, ${stops})`,
+        background: `radial-gradient(ellipse 50% 50% at ${paint.cx * 100}% ${paint.cy * 100}%, ${stops})`,
       }
     }
   }
@@ -162,7 +165,7 @@ function hostCssVarStyle(
     surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
   } else if (behind.type === 'radialGradient') {
     const stops = behind.stops.map((s) => `${s.color} ${s.at * 100}%`).join(', ')
-    surfaceCss = `radial-gradient(circle at ${behind.cx * 100}% ${behind.cy * 100}%, ${stops})`
+    surfaceCss = `radial-gradient(ellipse 50% 50% at ${behind.cx * 100}% ${behind.cy * 100}%, ${stops})`
     surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
   } else {
     surfaceCss = tokens.color.surface
@@ -503,11 +506,13 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
     }
 
     case 'rect': {
+      const shadow = rectShadowSpec(node.shadow, node.stroke?.color)
       const rectStyle: React.CSSProperties = {
         ...pos,
         ...(node.fill ? paintToCSS(node.fill) : {}),
         ...(node.stroke ? strokeToCSS(node.stroke) : {}),
         borderRadius: radiusToCSS(node.radius),
+        ...(shadow ? { boxShadow: shadowCss(shadow) } : {}),
       }
       return (
         <div

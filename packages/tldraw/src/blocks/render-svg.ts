@@ -8,6 +8,7 @@
  */
 
 import type { LayoutNode, Paint, MarkerSpec } from './types'
+import { rectShadowSpec, shadowFilterSvg } from './shadow'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Gradient-def collection state                                                  */
@@ -208,6 +209,13 @@ function renderNodeInner(
       }
       if (styles.length > 0) {
         elAttrs.push(styleAttr(styles.join(';')))
+      }
+      // AC4: drop shadow as an feDropShadow filter (DOM: box-shadow).
+      const shadow = rectShadowSpec(node.shadow, node.stroke?.color)
+      if (shadow) {
+        const fid = makeId(collector, `${prefix}sh`)
+        collector.defs.push(shadowFilterSvg(fid, shadow))
+        elAttrs.push(`filter="url(#${fid})"`)
       }
       return `<rect ${elAttrs.join(' ')}/>`
     }

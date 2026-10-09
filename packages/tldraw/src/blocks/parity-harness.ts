@@ -38,6 +38,7 @@ import type {
   SurfaceContext,
 } from './types'
 import { renderNodeToSvg } from './render-svg'
+import { rectShadowSpec, shadowCss } from './shadow'
 import { createLayoutContext } from './layout'
 import { layoutBlock } from './layout/layout-child'
 import { resolveTokens } from './tokens'
@@ -100,7 +101,7 @@ function paintToBg(paint: Paint): string {
     }
     case 'radialGradient': {
       const stops = paint.stops.map((s) => `${s.color} ${s.at * 100}%`).join(', ')
-      return `background:radial-gradient(circle at ${paint.cx * 100}% ${paint.cy * 100}%,${stops})`
+      return `background:radial-gradient(ellipse 50% 50% at ${paint.cx * 100}% ${paint.cy * 100}%,${stops})`
     }
   }
 }
@@ -136,7 +137,9 @@ function nodeToHtml(node: LayoutNode): string {
       const bg = node.fill ? `;${paintToBg(node.fill)}` : ''
       const border = node.stroke ? `;${strokeCss(node.stroke)}` : ''
       const rad = node.radius ? `;${radiusCss(node.radius)}` : ''
-      return `<div style="${posStyle(node.box)}${bg}${border}${rad}"${part}></div>`
+      const sh = rectShadowSpec(node.shadow, node.stroke?.color)
+      const shadow = sh ? `;box-shadow:${shadowCss(sh)}` : ''
+      return `<div style="${posStyle(node.box)}${bg}${border}${rad}${shadow}"${part}></div>`
     }
 
     case 'path': {

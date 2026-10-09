@@ -588,7 +588,17 @@ export interface LintContext {
  */
 export type LayoutNode =
   | { k: 'group'; box: Box; name?: string; part?: string; clip?: boolean; opacity?: number; children: LayoutNode[] }
-  | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
+  | {
+      k: 'rect'
+      box: Box
+      part?: string
+      fill?: Paint
+      stroke?: Stroke
+      radius?: number | number[]
+      /** AC4: drop shadow under the rect — elevation 1 / 2, or `'hard'` (solid offset in the stroke
+       *  colour). Paint only: outside the box, never a layout leaf (`blocks/shadow.ts`). */
+      shadow?: 0 | 1 | 2 | 'hard'
+    }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
   | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle; propPath?: string }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
