@@ -33,6 +33,8 @@ export interface CardsProps extends Record<string, unknown> {
   lead?: 'icon' | 'number' | 'image' | 'none'
   tone?: 'surface' | 'alt' | 'outline' | 'accent-first'
   align?: 'start' | 'center'
+  /** AC2: with `lead: number`, `plain` (default, heading size) or `giant` (display size). */
+  numeral?: 'plain' | 'giant'
 }
 
 export const schema: BlockSchema = {
@@ -60,6 +62,7 @@ export const schema: BlockSchema = {
   lead: enumSlot(['icon', 'number', 'image', 'none'], 'Lead', 'What tops each card.'),
   tone: enumSlot(['surface', 'alt', 'outline', 'accent-first'], 'Tone', 'accent-first fills only the first card.'),
   align: enumSlot(['start', 'center'], 'Alignment'),
+  numeral: enumSlot(['plain', 'giant'], 'Numeral', 'giant: display-size numbers (lead number).'),
 }
 
 export const defaults: CardsProps = {
@@ -74,6 +77,11 @@ export const defaults: CardsProps = {
 }
 
 const LEADS = ['icon', 'number', 'image', 'none'] as const
+
+/** AC2 `numeral: giant`: the numeral's type steps, biggest first; a box too short for either keeps
+ *  the plain heading numeral. */
+const GIANT_STEPS = ['display', 'title'] as const
+type NumeralStep = (typeof GIANT_STEPS)[number] | 'heading'
 const TONES = ['surface', 'alt', 'outline', 'accent-first'] as const
 
 const itemsOf = (props: CardsProps): CardItem[] =>
@@ -88,7 +96,7 @@ export function buildCards(props: CardsProps): BlockSpec {
   const cards: BlockSpec[] = itemsOf(props).map((c, i) => {
     const kids: BlockSpec[] = []
     if (lead === 'icon' && c.icon) kids.push({ id: `icon-${i}`, type: 'tls.m.icon', props: { icon: c.icon, color: 'accent' } })
-    if (lead === 'number' && c.number) kids.push({ id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: 'accent' } })
+    if (lead === 'number' && c.number) kids.push({ id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: props.numeral === 'giant' ? 'display' : 'heading', color: 'accent' } })
     if (lead === 'image' && c.image) kids.push({ id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } })
     kids.push({ id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })
     if (c.text) kids.push({ id: `text-${i}`, type: 'tls.t.body', props: { text: c.text } })
@@ -109,20 +117,36 @@ interface Plan {
   needed: number
   /** Card text at caption size (4+ cards with a narrow measure); body otherwise. */
   small: boolean
+  /** AC2: the `lead: number` numeral's type step. */
+  numeral: NumeralStep
 }
 
 /** AC2: four or more cards keep body-size text when each card's text column is at least this wide. */
 const BODY_MIN_INNER = 280
 
 function plan(props: CardsProps, ctx: LayoutContext): Plan {
+  // AC2 `numeral: giant`: the biggest numeral step whose cards fit the box.
+  if (props.numeral === 'giant' && pick(props.lead, LEADS, 'icon') === 'number') {
+    for (const step of GIANT_STEPS) {
+      const p = planText(props, ctx, step)
+      if (!(ctx.box.height > 0) || p.needed <= ctx.box.height) return p
+    }
+  }
+  return planText(props, ctx, 'heading')
+}
+
+function planText(props: CardsProps, ctx: LayoutContext, numeral: NumeralStep): Plan {
   // AC2: four or more cards read at body size when the measure is wide enough and the taller cards
   // still fit the box; otherwise caption, as before.
-  const roomy = planAt(props, ctx, false)
-  if (!roomy.small && roomy.items.length >= 4 && ctx.box.height > 0 && roomy.needed > ctx.box.height) return planAt(props, ctx, true)
+  const roomy = planAt(props, ctx, false, numeral)
+  if (!roomy.small && roomy.items.length >= 4 && ctx.box.height > 0 && roomy.needed > ctx.box.height) return planAt(props, ctx, true, numeral)
   return roomy
 }
 
-function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean): Plan {
+/** The numeral's text style (AC2 giant steps; accent unless the card is filled). */
+const numeralStyle = (ctx: LayoutContext, step: NumeralStep, color: string) => ({ ...ctx.resolveText(step, { lineHeight: 1.05, letterSpacing: -0.02 }), color })
+
+function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, numeral: NumeralStep = 'heading'): Plan {
   const items = itemsOf(props)
   const n = Math.max(1, items.length)
   const lead = pick(props.lead, LEADS, 'icon')
@@ -133,14 +157,19 @@ function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean): Pla
   const pad = Math.max(ctx.tokens.space.md, Math.min(n >= 4 ? ctx.tokens.space.lg : ctx.tokens.space.xl, Math.round(cw * 0.09)))
   const inner = Math.max(0, cw - 2 * pad)
   const hasLead = lead !== 'none' && items.some((c) => (lead === 'icon' ? c.icon : lead === 'number' ? c.number : c.image))
-  const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight) : Math.min(260, Math.round(inner * 0.6))
+  // AC2 `numeral: giant`: the giant numerals' measured line box.
+  const giant = (): number => {
+    const st = numeralStyle(ctx, numeral, '')
+    return Math.ceil(Math.max(1, ...items.filter((c) => c.number).map((c) => ctx.measureText(c.number as string, st, inner).height)))
+  }
+  const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? (numeral !== 'heading' ? giant() : Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight)) : Math.min(260, Math.round(inner * 0.6))
   const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })), inner)
   const small = n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
   const textH = measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
   const sm = ctx.tokens.space.sm
   const body = Math.max(0, ...items.map((c, i) => titleH[i] + (c.text ? sm + textH[i] : 0)))
   const needed = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
-  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small }
+  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small, numeral }
 }
 
 /** Place the cards. Exported for tests. */
@@ -189,7 +218,13 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
         const size = 56
         pieces.push({ id: `lead[${i}]`, raw: [iconLeaf(c.icon, { x: center ? ix + (p.inner - size) / 2 : ix, y: y + (p.leadH - size) / 2, width: size, height: size }, fg ?? accent)], box: lbox })
       } else if (lead === 'number' && c.number) {
-        pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? 'accent', ...on } }, box: lbox, align: al })
+        if (p.numeral !== 'heading') {
+          const st = numeralStyle(ctx, p.numeral, fg ?? accent)
+          const m = ctx.measureText(c.number, st, p.inner)
+          pieces.push({ id: `lead[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: lbox, align: al })
+        } else {
+          pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? 'accent', ...on } }, box: lbox, align: al })
+        }
       } else if (lead === 'image' && c.image) {
         pieces.push({ id: `lead[${i}]`, spec: { id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } }, box: lbox })
       }

@@ -199,6 +199,7 @@ Row of 2-4 equal cards, each led by an icon, number or image, then title and tex
 | \`lead\` | no | enum: icon \\\\| number \\\\| image \\\\| none | What tops each card. |
 | \`tone\` | no | enum: surface \\\\| alt \\\\| outline \\\\| accent-first | accent-first fills only the first card. |
 | \`align\` | no | enum: start \\\\| center |  |
+| \`numeral\` | no | enum: plain \\\\| giant | giant: display-size numbers (lead number). |
 
 \`\`\`json
 {
@@ -5403,7 +5404,7 @@ tls.t.footnote · text · element · ≤4 items — Small-print source, referenc
 also: tls.t.caption, tls.t.definition
 
 ## Lists
-tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by an icon, number or image, then title and text [h=fill] knobs: lead, tone, align
+tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by an icon, number or image, then title and text [h=fill] knobs: lead, tone, align, numeral
 tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 167–442@1728] knobs: cell, align, iconStyle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle, iconTone, spacing
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker, spacing

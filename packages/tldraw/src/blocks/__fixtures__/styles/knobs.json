@@ -674,6 +674,48 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_17",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k17t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three steps to a pilot"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k17a",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "number": "01",
+                  "title": "Pick one team",
+                  "text": "A team of 20 to 50 people with a weekly report."
+                },
+                {
+                  "number": "02",
+                  "title": "Run six weeks",
+                  "text": "Shared dashboards replace the spreadsheet."
+                },
+                {
+                  "number": "03",
+                  "title": "Decide together",
+                  "text": "Keep, change or stop, with the numbers in hand."
+                }
+              ],
+              "lead": "number",
+              "numeral": "giant"
+            }
+          }
+        ]
+      }
     }
   ]
 }
