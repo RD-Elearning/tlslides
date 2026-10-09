@@ -15,12 +15,26 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode } from '../../../types'
+import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { ComparisonProps } from './schema'
-import { withRealWidths, tintOf } from '../../data/_chart/kit'
+import { withRealWidths, tintOf, onColor, readableOn } from '../../data/_chart/kit'
+import { alignText } from '../_kit'
 
 const MAX_COLUMNS = 3
 const MIN_COLUMNS = 2
+/** AC2 `style: versus`: the VS disc's diameter as a multiple of the subheading size, its label. */
+const VS_DISC = 2.2
+const VS_LABEL = 'VS'
+
+/** Type tiers, biggest first. `plain` keeps the last (the original look); `cards` / `versus` take
+ *  the biggest whose columns fit the box height (AC2: a comparison alone under a title should not
+ *  be a small band of body text in a tall region). */
+type Tier = { title: TypeToken; item: TypeToken; titleGap: 'sm' | 'md' | 'lg'; itemGap: 'xs' | 'sm' | 'md'; pad: 'lg' | 'xl' }
+const TIERS: readonly Tier[] = [
+  { title: 'heading', item: 'lead', titleGap: 'lg', itemGap: 'md', pad: 'xl' },
+  { title: 'heading', item: 'lead', titleGap: 'md', itemGap: 'sm', pad: 'lg' },
+  { title: 'subheading', item: 'body', titleGap: 'sm', itemGap: 'xs', pad: 'lg' },
+]
 
 /**
  * RV06 (review G06): the column title was a `tls.t.title` child laid out with the WHOLE box as its
@@ -40,6 +54,7 @@ function layoutColumn(
   isHighlighted: boolean,
   pad: number,
   titleH: number,
+  tier: Tier = TIERS[TIERS.length - 1],
 ): { children: LayoutNode[]; contentHeight: number } {
   const children: LayoutNode[] = []
   const inner = Math.max(10, w - 2 * pad)
@@ -47,7 +62,7 @@ function layoutColumn(
   const sp = ctx.tokens.space
 
   const titleStyle = {
-    ...ctx.resolveText('subheading'),
+    ...ctx.resolveText(tier.title),
     color: isHighlighted ? ctx.resolveColor('accent').color : ctx.resolveColor('text').color,
   }
   const tm = ctx.measureText(title, titleStyle, inner)
@@ -60,11 +75,11 @@ function layoutColumn(
   })
 
   // Items start at the same y in every column (the tallest title decides), so the rows line up.
-  let itemY = pad + titleH + sp.sm
-  const itemStyle = { ...ctx.resolveText('body'), color: ctx.resolveColor('text').color }
+  let itemY = pad + titleH + sp[tier.titleGap]
+  const itemStyle = { ...ctx.resolveText(tier.item), color: ctx.resolveColor('text').color }
   const dot = Math.max(6, Math.round(itemStyle.size * 0.28))
   const indent = dot + sp.xs + 4
-  const gap = sp.xs
+  const gap = sp[tier.itemGap]
   const bulletColor = isHighlighted ? ctx.resolveColor('accent').color : ctx.resolveColor('textMuted').color
   const lineH = itemStyle.size * itemStyle.lineHeight
 
@@ -112,28 +127,59 @@ export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode 
     }
   }
 
-  const gap = ctx.tokens.space.md
-  const pad = ctx.tokens.space.md
+  // AC2 `style`: `cards` / `versus` put every column on a card with more padding; `versus` widens
+  // each gutter to hold its disc.
+  // `versus` is for two rivals: three columns are drawn as `cards`.
+  const look = props.style === 'versus' ? (n === 2 ? 'versus' : 'cards') : props.style === 'cards' ? 'cards' : 'plain'
+  const sp = ctx.tokens.space
+  const vsD = look === 'versus' ? Math.round(ctx.resolveText('subheading').size * VS_DISC) : 0
+  const gap = look === 'versus' ? vsD + 2 * sp.md : sp.md
   const totalGap = (n - 1) * gap
   const colWidth = Math.max(10, (W - totalGap) / n)
 
   // First pass: measure all columns to find the tallest content height
-  const titleStyle = ctx.resolveText('subheading')
-  const titleH = Math.max(
-    0,
-    ...columns.slice(0, n).map((col) => ctx.measureText(col.title, titleStyle, Math.max(10, colWidth - 2 * pad)).height)
-  )
-  const measured = columns.slice(0, n).map((col, ci) => {
-    const colX = ci * (colWidth + gap)
-    const { children, contentHeight } = layoutColumn(ci, col.title, col.items ?? [], colX, colWidth, ctx, highlightIdx === ci, pad, titleH)
-    return { children, contentHeight, colX }
-  })
+  const measureAt = (tier: Tier) => {
+    const pad = look === 'plain' ? sp.md : sp[tier.pad]
+    const titleStyle = ctx.resolveText(tier.title)
+    const titleH = Math.max(
+      0,
+      ...columns.slice(0, n).map((col) => ctx.measureText(col.title, titleStyle, Math.max(10, colWidth - 2 * pad)).height)
+    )
+    return columns.slice(0, n).map((col, ci) => {
+      const colX = ci * (colWidth + gap)
+      const { children, contentHeight } = layoutColumn(ci, col.title, col.items ?? [], colX, colWidth, ctx, highlightIdx === ci, pad, titleH, tier)
+      return { children, contentHeight, colX }
+    })
+  }
+  const tiers = look === 'plain' ? TIERS.slice(-1) : TIERS
+  let measured = measureAt(tiers[tiers.length - 1])
+  for (const tier of tiers.slice(0, -1)) {
+    const m = measureAt(tier)
+    if (Math.max(0, ...m.map((x) => x.contentHeight)) <= ctx.box.height + 0.5) {
+      measured = m
+      break
+    }
+  }
 
   const maxContentH = Math.max(0, ...measured.map((m) => m.contentHeight))
   const allChildren: LayoutNode[] = []
   const surface = ctx.resolveColor('surface').color
   const accent = ctx.resolveColor('accent').color
   measured.forEach((m, ci) => {
+    if (look !== 'plain') {
+      // AC2: every column on a card as tall as the tallest; the highlighted card is the accent tint
+      // with an accent outline.
+      const hi = highlightIdx === ci
+      allChildren.push({
+        k: 'rect',
+        // the outline is drawn inside the card (a stroke straddles the box edge)
+        box: hi ? { x: m.colX + 1.5, y: 1.5, width: colWidth - 3, height: maxContentH - 3 } : { x: m.colX, y: 0, width: colWidth, height: maxContentH },
+        fill: { type: 'solid', color: hi ? tintOf(surface, accent, 0.14) : ctx.resolveColor('surfaceAlt').color },
+        ...(hi ? { stroke: { color: accent, width: 3 } } : {}),
+        radius: ctx.tokens.radius.md,
+      } as LayoutNode)
+      return
+    }
     // The highlighted column sits on a tinted panel as tall as the tallest column.
     if (highlightIdx === ci) {
       allChildren.push({
@@ -153,6 +199,18 @@ export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode 
   }
   const rows = Math.max(0, ...measured.flatMap((m) => m.children.map(rowOf)))
   for (let r = 0; r <= rows; r++) for (const m of measured) allChildren.push(...m.children.filter((n) => rowOf(n) === r))
+
+  if (look === 'versus') {
+    // A structural accent disc with "VS" centred in each gutter, at the cards' mid-height.
+    const label = { ...ctx.resolveText('body', { letterSpacing: 0.04 }), color: readableOn(onColor(ctx, accent), accent) }
+    for (let ci = 0; ci < measured.length - 1; ci++) {
+      const cx = measured[ci].colX + colWidth + gap / 2
+      const dy = Math.max(0, (maxContentH - vsD) / 2)
+      const lm = ctx.measureText(VS_LABEL, label, vsD)
+      allChildren.push({ k: 'rect', box: { x: cx - vsD / 2, y: dy, width: vsD, height: vsD }, fill: { type: 'solid', color: accent }, radius: vsD / 2 } as LayoutNode)
+      allChildren.push(...alignText([{ k: 'text', box: { x: cx - vsD / 2, y: dy + (vsD - lm.height) / 2, width: vsD, height: lm.height }, lines: lm.lines, style: label }], 'center'))
+    }
+  }
 
   return {
     k: 'group',

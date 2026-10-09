@@ -134,7 +134,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),
   'tls.g.before-after': t1(['arrow', 'emphasis'], ['tls.c.problem-solution', 'tls.m.image-compare', 'tls.g.iceberg']),
   'tls.g.iceberg': t2(['waterline']),
-  'tls.c.comparison': t1([], ['tls.c.case-study']),
+  'tls.c.comparison': t1(['style'], ['tls.c.case-study']),
   'tls.c.case-study': t2(['layout', 'emphasis', 'showMetric', 'showClient']),
   'tls.c.problem-solution': t2(['showIcons', 'style']),
 

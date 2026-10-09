@@ -577,3 +577,79 @@ describe('RV06 — example fits its box (review G06)', () => {
     assertExampleFits(tlsCComparison)
   })
 })
+
+describe('AC2 — look knobs (style)', () => {
+  const DEF = tlsCComparison
+  const example = DEF.describe!.example.props as any
+  const two = { ...(DEF.defaults as any), highlight: 1 }
+  const leaves = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {
+    if (n.k === 'group') n.children.forEach((c) => leaves(c, out))
+    else out.push(n)
+    return out
+  }
+  const LOOKS: Array<[string, Record<string, unknown>]> = [
+    ['style: cards (3 columns)', { ...example, style: 'cards' }],
+    ['style: versus (2 columns)', { ...two, style: 'versus' }],
+    ['style: versus (3 columns)', { ...example, style: 'versus' }],
+  ]
+
+  it('declares the knob as an enum', () => {
+    expect((DEF.schema.style.type as any).values).toEqual(['plain', 'cards', 'versus'])
+  })
+
+  for (const [name, props] of LOOKS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = layout(props as ComparisonProps, ctx({ width: w, height: h }))
+      assertValidNode(node)
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.box.x).toBeGreaterThanOrEqual(-0.5)
+        expect(l.box.x + l.box.width).toBeLessThanOrEqual(w + 0.5)
+        expect(l.box.y + l.box.height).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('cards: a card per column, as tall as the tallest; the highlighted card is outlined in the accent', () => {
+    const c = ctx({ width: 1728, height: 758 })
+    const node = layout({ ...example, style: 'cards' }, c)
+    const cards = leaves(node).filter((l) => l.k === 'rect' && !(l.part ?? '').includes('bullet')) as any[]
+    expect(cards).toHaveLength(3)
+    expect(cards[2].stroke?.color).toBe(c.resolveColor('accent').color)
+    expect(cards[0].stroke).toBeUndefined()
+    expect(Math.abs(cards[0].box.height - node.box.height)).toBeLessThan(0.5)
+  })
+
+  it('cards / versus grow the type with a tall box (heading titles, lead items); plain keeps its type', () => {
+    const c = ctx({ width: 1728, height: 758 })
+    const titleSize = (p: any) => (leaves(layout(p, c)).find((l) => l.part === 'col[0].title') as any).style.size
+    expect(titleSize({ ...example, style: 'cards' })).toBe(c.resolveText('heading').size)
+    expect(titleSize(example)).toBe(c.resolveText('subheading').size)
+    const short = leaves(layout({ ...example, style: 'cards' }, ctx({ width: 1200, height: 200 }))).find((l) => l.part === 'col[0].title') as any
+    expect(short.style.size).toBe(c.resolveText('subheading').size)
+  })
+
+  it('versus: a disc centred in each gutter, between the cards', () => {
+    const node = layout({ ...two, style: 'versus' }, ctx({ width: 1728, height: 758 }))
+    const ls = leaves(node)
+    const discs = ls.filter((l) => l.k === 'rect' && l.box.width === l.box.height && !(l.part ?? '').includes('bullet'))
+    expect(discs).toHaveLength(1)
+    const cards = ls.filter((l) => l.k === 'rect' && l.box.width > 300)
+    expect(discs[0].box.x).toBeGreaterThan(cards[0].box.x + cards[0].box.width)
+    expect(discs[0].box.x + discs[0].box.width).toBeLessThan(cards[1].box.x)
+    expect(ls.some((l) => l.k === 'text' && (l as any).lines[0]?.text === 'VS')).toBe(true)
+  })
+
+  it('versus with three columns is drawn as cards (no disc)', () => {
+    const vs = layout({ ...example, style: 'versus' }, ctx({ width: 1728, height: 758 }))
+    const cards = layout({ ...example, style: 'cards' }, ctx({ width: 1728, height: 758 }))
+    expect(vs).toEqual(cards)
+  })
+
+  it('versus: DOM and SVG agree', async () => {
+    await assertParity(DEF, { ...two, style: 'versus' } as any, { width: 1200, height: 460 }, undefined, { registry })
+  }, 30000)
+})

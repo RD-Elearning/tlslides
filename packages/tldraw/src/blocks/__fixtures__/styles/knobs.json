@@ -499,6 +499,100 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_13",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k13t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Build or buy the analytics layer"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k13a",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Build in-house",
+                  "items": [
+                    "Full control of the roadmap",
+                    "Nine months to first release",
+                    "Two extra engineers a year"
+                  ]
+                },
+                {
+                  "title": "Buy a platform",
+                  "items": [
+                    "Live with customers in one quarter",
+                    "$180K a year in licences",
+                    "Vendor owns the data model"
+                  ]
+                }
+              ],
+              "highlight": 1,
+              "style": "versus"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_14",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k14t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three ways to reach mid-market teams"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k14a",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Direct sales",
+                  "items": [
+                    "Highest win rate",
+                    "Slow to hire for",
+                    "Costly per account"
+                  ]
+                },
+                {
+                  "title": "Partners",
+                  "items": [
+                    "400 accounts on day one",
+                    "Shared margin",
+                    "Less control"
+                  ]
+                },
+                {
+                  "title": "Self-serve",
+                  "items": [
+                    "Cheapest to run",
+                    "Needs product polish",
+                    "Small first deals"
+                  ]
+                }
+              ],
+              "highlight": 1,
+              "style": "cards"
+            }
+          }
+        ]
+      }
     }
   ]
 }
