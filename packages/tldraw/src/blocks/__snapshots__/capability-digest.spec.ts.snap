@@ -3917,14 +3917,14 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
 
 ### \`tls.m.decoration\` — Decoration [backdrop]
 
-Decorative blob, arc, ring, dot grid, wave or corner in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent)_
+Decorative shape or motif in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent, orb, sphere, star, sparkle, squiggle, memphis, doodle)_
 
 **When:** Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.
 **Avoid:** Anything that carries meaning (use a real block, e.g. tls.t.statement); texture over dense text.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner | Rotation turns blob and arc freely; wave and corner snap to quarter turns; ring and dots ignore it. |
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame | orb = pseudo-3D sphere, frame = corner brackets. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
 | \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
 | \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
 | \`rotation\` | no | number (min 0, max 359) | Degrees. |
@@ -4260,14 +4260,14 @@ Even grid of logos at equal height or equal area, with an optional heading, plat
 
 ### \`tls.m.pattern\` — Pattern [backdrop]
 
-Repeating dots, grid, lines or diagonal stripes as a subtle backdrop, drawn as one path. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background)_
+Subtle backdrop texture: repeating dots, grid, lines or diagonal stripes (one path), film grain, or a mesh of soft accent glows. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background, grain, noise, mesh, glow)_
 
 **When:** Texture behind a cover, divider or quote (put it in its own region, content on top). Tone accent shows clearly; line is very faint.
 **Avoid:** Content slides with dense text; one accent shape (use tls.m.decoration).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`pattern\` | no | enum: dots \\\\| grid \\\\| lines \\\\| diagonal |  |
+| \`pattern\` | no | enum: dots \\\\| grid \\\\| lines \\\\| diagonal \\\\| grain \\\\| mesh | grain = film-grain noise; mesh = 2-3 soft radial glows in accent and accent2 (scale = glow size). |
 | \`scale\` | no | enum: md \\\\| sm \\\\| lg | Spacing of the marks. |
 | \`tone\` | no | enum: line \\\\| accent \\\\| alt |  |
 | \`opacity\` | no | enum: soft \\\\| medium | Ignored for tone alt. |
@@ -5500,7 +5500,7 @@ also: tls.c.quiz, tls.t.qa
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark
 
 ## Decoration
-tls.m.decoration · decoration · element · backdrop — Decorative blob, arc, ring, dot grid or wave in a theme colour [h=fill] knobs: shape, tone, opacity
+tls.m.decoration · decoration · element · backdrop — Decorative shape or motif (blob, orb, star, squiggle, frame…) in a theme colour [h=fill] knobs: shape, tone, opacity
 also: tls.g.arrow, tls.l.field, tls.m.pattern, tls.x.rule
 
 ## Icons

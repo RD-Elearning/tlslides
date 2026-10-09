@@ -129,7 +129,7 @@ describe.each(ADOPTERS)('AC4 %s adopts the deck surface', (type, extra, size) =>
     // tls.c.kpi-row: probed without a registry, like its own spec (the known nested-tile issue,
     // tls-c-kpi-row.spec "with a registry (known issue)"): the row geometry and its card groups.
     const reg = type === 'tls.c.kpi-row' ? {} : { registry }
-    await assertParity(registry.get(type)!, props(type, extra), { width: w, height: h }, undefined, { ...reg, tokens: { ...PROBE_TOKENS, surface: { stroke: 'none', shadow: 0, ...surface } as StyleSurface } })
+    await assertParity(registry.get(type)!, props(type, extra), { width: w, height: h }, undefined, { ...reg, tokens: { ...PROBE_TOKENS, surface: { stroke: 'none', ...surface } as StyleSurface } })
   }, 30000)
 })
 

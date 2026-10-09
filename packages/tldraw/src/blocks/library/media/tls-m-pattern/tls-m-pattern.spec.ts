@@ -98,3 +98,66 @@ describe('tls.m.pattern', () => {
     }
   })
 })
+
+describe('AC4 grain and mesh backdrops', () => {
+  it('the schema lists grain and mesh; the definition stays a backdrop', () => {
+    const values = (tlsMPattern.schema.pattern.type as any).values as string[]
+    expect(values).toEqual(expect.arrayContaining(['grain', 'mesh']))
+    expect(tlsMPattern.category).toBe('decoration')
+  })
+
+  it('grain: one full-box image node, an inline SVG feTurbulence data URI (no asset), deterministic', () => {
+    const leaves = absoluteLeaves(lay({ pattern: 'grain' }, 1920, 1080))
+    expect(leaves).toHaveLength(1)
+    const n = leaves[0].node as any
+    expect(n.k).toBe('image')
+    expect(n.box).toEqual({ x: 0, y: 0, width: 1920, height: 1080 })
+    expect(n.url.startsWith('data:image/svg+xml')).toBe(true)
+    const svg = decodeURIComponent(n.url.split(',')[1])
+    expect(svg).toContain('feTurbulence')
+    expect(svg).toContain("seed='7'")
+    expect(n.url.length).toBeLessThan(1500)
+    expect(JSON.stringify(lay({ pattern: 'grain' }))).toBe(JSON.stringify(lay({ pattern: 'grain' })))
+    // scale sets the grain size; medium is stronger than soft
+    const freq = (scale: string) => /baseFrequency='([\d.]+)'/.exec(decodeURIComponent((absoluteLeaves(lay({ pattern: 'grain', scale }))[0].node as any).url))![1]
+    expect(Number(freq('sm'))).toBeGreaterThan(Number(freq('lg')))
+  })
+
+  it('mesh: three radial glows in accent / accent2 fading to clear, every box inside the block', () => {
+    const c = ctxNoAssets(1920, 1080)
+    for (const [w, h] of [[1920, 1080], [600, 900], [40, 40]]) {
+      for (const scale of ['sm', 'md', 'lg']) {
+        const leaves = absoluteLeaves(lay({ pattern: 'mesh', scale }, w, h))
+        expect(leaves.map((l) => l.part)).toEqual(['glow[0]', 'glow[1]', 'glow[2]'])
+        for (const l of leaves) {
+          expect(l.x).toBeGreaterThanOrEqual(0)
+          expect(l.y).toBeGreaterThanOrEqual(0)
+          expect(l.x + l.width).toBeLessThanOrEqual(w + 1e-6)
+          expect(l.y + l.height).toBeLessThanOrEqual(h + 1e-6)
+          const f = (l.node as any).fill
+          expect(f.type).toBe('radialGradient')
+          expect(f.stops[f.stops.length - 1].color).toMatch(/,0\)$/)
+        }
+      }
+    }
+    const fills = absoluteLeaves(lay({ pattern: 'mesh' })).map((l) => (l.node as any).fill.stops[0].color as string)
+    const hexRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(',')
+    expect(fills[0]).toContain(hexRgb(c.resolveColor('accent').color))
+    expect(fills[1]).toContain(hexRgb(c.resolveColor('accent2').color))
+    // 18-30 % (soft) / stronger (medium)
+    const a = (opacity: string) => Number(/,([\d.]+)\)$/.exec((absoluteLeaves(lay({ pattern: 'mesh', opacity }))[0].node as any).fill.stops[0].color)![1])
+    expect(a('soft')).toBeGreaterThanOrEqual(0.18)
+    expect(a('soft')).toBeLessThanOrEqual(0.3)
+    expect(a('medium')).toBeGreaterThan(a('soft'))
+  })
+
+  it.each(['grain', 'mesh'])('%s: a tiny or zero box gives a valid tree', (pattern) => {
+    expect(() => lay({ pattern }, 0, 0)).not.toThrow()
+    expect(() => lay({ pattern }, 3, 3)).not.toThrow()
+  })
+
+  it.each(['grain', 'mesh'])('%s: DOM and SVG agree (parity probe)', async (pattern) => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsMPattern, { ...(tlsMPattern.defaults as any), pattern, opacity: 'medium' }, { width: 960, height: 540 })
+  }, 30000)
+})

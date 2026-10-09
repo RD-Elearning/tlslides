@@ -117,3 +117,64 @@ describe('tls.m.decoration', () => {
     }
   })
 })
+
+describe('AC4 decoration motifs', () => {
+  const MOTIFS = ['orb', 'squiggle', 'star', 'sparkle', 'zigzag', 'triangle', 'half-circle', 'frame'] as const
+  const leafOf = (tree: any) => absoluteLeaves(tree)[0]
+
+  it('the schema lists every motif; the definition stays a backdrop decoration', () => {
+    const values = (tlsMDecoration.schema.shape.type as any).values as string[]
+    for (const m of MOTIFS) expect(values).toContain(m)
+    expect(tlsMDecoration.category).toBe('decoration')
+  })
+
+  it.each(MOTIFS)('%s: one leaf named shape, deterministic, inside the box for any rotation and box', (shape) => {
+    expect(JSON.stringify(lay({ shape, seed: 4 }))).toBe(JSON.stringify(lay({ shape, seed: 4 })))
+    for (const [w, h] of [[480, 480], [900, 300], [300, 900], [61, 60]]) {
+      for (const rotation of [0, 37, 90, 180, 271]) {
+        const leaves = absoluteLeaves(lay({ shape, rotation }, w, h))
+        expect(leaves).toHaveLength(1)
+        const l = leaves[0]
+        expect(l.part).toBe('shape')
+        const b = l.k === 'path' ? pathBounds((l.node as any).d) : { x: l.x, y: l.y, width: l.width, height: l.height }
+        const sw = l.k === 'path' && (l.node as any).stroke ? (l.node as any).stroke.width / 2 : 0
+        expect(b.x - sw).toBeGreaterThanOrEqual(-1)
+        expect(b.y - sw).toBeGreaterThanOrEqual(-1)
+        expect(b.x + b.width + sw).toBeLessThanOrEqual(w + 1)
+        expect(b.y + b.height + sw).toBeLessThanOrEqual(h + 1)
+      }
+    }
+  })
+
+  it('orb is a round rect with a top-left-lit radial gradient (pseudo-3D), at least 0.85 opaque', () => {
+    const t: any = lay({ shape: 'orb', tone: 'accent', opacity: 'soft' }, 400, 300)
+    const n = leafOf(t).node as any
+    expect(n.k).toBe('rect')
+    expect(n.box.width).toBe(n.box.height)
+    expect(n.radius).toBe(n.box.width / 2)
+    expect(n.fill.type).toBe('radialGradient')
+    expect(n.fill.cx).toBeLessThan(0.5)
+    expect(n.fill.stops).toHaveLength(3)
+    expect(t.opacity).toBeGreaterThanOrEqual(0.85)
+  })
+
+  it('squiggle, zigzag and frame are strokes; star, sparkle, triangle and half-circle fills', () => {
+    for (const shape of ['squiggle', 'zigzag', 'frame']) expect((leafOf(lay({ shape })).node as any).stroke.width).toBeGreaterThan(0)
+    for (const shape of ['star', 'sparkle', 'triangle', 'half-circle']) expect((leafOf(lay({ shape })).node as any).fill).toBeDefined()
+  })
+
+  it('rotation: star/sparkle/triangle turn freely; squiggle/zigzag/half-circle snap; orb/frame ignore it', () => {
+    for (const shape of ['star', 'sparkle', 'triangle']) expect(dOf(lay({ shape, rotation: 20 }))).not.toBe(dOf(lay({ shape, rotation: 0 })))
+    for (const shape of ['squiggle', 'zigzag', 'half-circle']) {
+      expect(dOf(lay({ shape, rotation: 10 }))).toBe(dOf(lay({ shape, rotation: 0 })))
+      expect(dOf(lay({ shape, rotation: 90 }))).not.toBe(dOf(lay({ shape, rotation: 0 })))
+    }
+    expect(dOf(lay({ shape: 'frame', rotation: 90 }))).toBe(dOf(lay({ shape: 'frame', rotation: 0 })))
+    expect(JSON.stringify(lay({ shape: 'orb', rotation: 90 }))).toBe(JSON.stringify(lay({ shape: 'orb', rotation: 0 })))
+  })
+
+  it.each(MOTIFS)('%s: DOM and SVG agree (parity probe)', async (shape) => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsMDecoration, { ...(tlsMDecoration.defaults as any), shape, tone: 'accent2', opacity: 'strong', rotation: 30 }, { width: 480, height: 320 })
+  }, 30000)
+})

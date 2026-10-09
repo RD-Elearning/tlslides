@@ -10,7 +10,7 @@
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
-import type { DecorationProps } from './schema'
+import { DECORATION_SHAPES, type DecorationProps } from './schema'
 import { enumOf, side, tintOf } from '../_kit'
 
 /** Deterministic PRNG: the same seed gives the same sequence. */
@@ -127,12 +127,155 @@ export function dotsPath(W: number, H: number): { d: string; count: number } {
   return { d, count }
 }
 
+/* ── AC4 motifs (ai-curation §2.3 rank 4) ─────────────────────────────────────────────── */
+
+/** Closed polygon through `pts`. */
+const poly = (pts: Pt[]): string => `M${pts.map((p) => `${f(p[0])} ${f(p[1])}`).join('L')}Z`
+
+/** A `points`-pointed star of outer radius R, inner radius r·R, turned by `rotation`. */
+export function starPath(cx: number, cy: number, R: number, points: number, inner: number, rotation: number): string {
+  const pts: Pt[] = []
+  for (let i = 0; i < points * 2; i++) {
+    const th = -Math.PI / 2 + (Math.PI * i) / points
+    const r = i % 2 === 0 ? R : R * inner
+    pts.push(rot([cx + r * Math.cos(th), cy + r * Math.sin(th)], [cx, cy], rotation))
+  }
+  return poly(pts)
+}
+
+/** A four-point sparkle: concave curves between the tips (a twinkle). */
+export function sparklePath(cx: number, cy: number, R: number, rotation: number): string {
+  const tips: Pt[] = [0, 1, 2, 3].map((i) => rot([cx + R * Math.cos((Math.PI / 2) * i - Math.PI / 2), cy + R * Math.sin((Math.PI / 2) * i - Math.PI / 2)], [cx, cy], rotation))
+  const c: Pt = [cx, cy]
+  const k = 0.18
+  let d = `M${f(tips[0][0])} ${f(tips[0][1])}`
+  for (let i = 0; i < 4; i++) {
+    const a = tips[i]
+    const b = tips[(i + 1) % 4]
+    // both control points pulled toward the centre: a pinched, concave edge
+    const c1: Pt = [c[0] + (a[0] - c[0]) * k, c[1] + (a[1] - c[1]) * k]
+    const c2: Pt = [c[0] + (b[0] - c[0]) * k, c[1] + (b[1] - c[1]) * k]
+    d += `C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(b[0])} ${f(b[1])}`
+  }
+  return d + 'Z'
+}
+
+/** Map (u along the long axis, v across) to the box for a quarter turn (0/2 horizontal, 1/3 vertical). */
+const axisMap = (W: number, H: number, quarter: number) => {
+  const horizontal = quarter % 2 === 0
+  const L = horizontal ? W : H
+  const D = horizontal ? H : W
+  const map = (u: number, v: number): Pt => (quarter === 0 ? [u, v] : quarter === 1 ? [D - v, u] : quarter === 2 ? [L - u, D - v] : [v, L - u])
+  return { L, D, map }
+}
+
+/** An open hand-drawn-looking wavy stroke along the long axis (sine through cubic segments). */
+export function squigglePath(W: number, H: number, quarter: number, stroke: number): string {
+  const { L, D, map } = axisMap(W, H, quarter)
+  const m = stroke / 2 + 1
+  const periods = Math.max(2, Math.round(L / Math.max(1, D) / 1.2))
+  const amp = Math.max(0, Math.min(D / 2 - m, (L - 2 * m) / periods / 3))
+  const step = (L - 2 * m) / (periods * 2)
+  const mid = D / 2
+  let d = ''
+  for (let i = 0; i <= periods * 2; i++) {
+    const u = m + i * step
+    const v = mid + (i % 2 === 0 ? -amp : amp)
+    const p = map(u, v)
+    if (i === 0) d += `M${f(p[0])} ${f(p[1])}`
+    else {
+      const pu = m + (i - 1) * step
+      const pv = mid + ((i - 1) % 2 === 0 ? -amp : amp)
+      const c1 = map(pu + step / 2, pv)
+      const c2 = map(u - step / 2, v)
+      d += `C${f(c1[0])} ${f(c1[1])} ${f(c2[0])} ${f(c2[1])} ${f(p[0])} ${f(p[1])}`
+    }
+  }
+  return d
+}
+
+/** An open zigzag stroke along the long axis. */
+export function zigzagPath(W: number, H: number, quarter: number, stroke: number): string {
+  const { L, D, map } = axisMap(W, H, quarter)
+  const m = stroke + 1
+  const teeth = Math.max(3, Math.round(L / Math.max(1, D) * 1.5))
+  const amp = Math.max(0, D / 2 - m)
+  const pts: Pt[] = []
+  for (let i = 0; i <= teeth * 2; i++) pts.push(map(m + ((L - 2 * m) * i) / (teeth * 2), D / 2 + (i % 2 === 0 ? amp : -amp)))
+  return `M${pts.map((p) => `${f(p[0])} ${f(p[1])}`).join('L')}`
+}
+
+/** A filled half disc, flat side down for quarter 0 (1 left, 2 top, 3 right), centred in the box. */
+export function halfCirclePath(W: number, H: number, quarter: number): string {
+  // R: half the edge it sits on, and no taller than the box across it
+  const R = Math.min(quarter % 2 === 0 ? W / 2 : H / 2, quarter % 2 === 0 ? H : W) * 0.96
+  const k = 0.5523 * R
+  const cx = W / 2
+  const cy = H / 2
+  // x in [-R, R] along the flat side, y in [0, R] from the flat side toward the apex; centred
+  const pt = (x: number, y: number): Pt => {
+    if (quarter === 0) return [cx + x, (H + R) / 2 - y]
+    if (quarter === 1) return [(W - R) / 2 + y, cy + x]
+    if (quarter === 2) return [cx - x, (H - R) / 2 + y]
+    return [(W + R) / 2 - y, cy - x]
+  }
+  const A = pt(-R, 0)
+  const B = pt(R, 0)
+  const C1 = pt(-R, k)
+  const C2 = pt(-k, R)
+  const T = pt(0, R)
+  const C3 = pt(k, R)
+  const C4 = pt(R, k)
+  return `M${f(A[0])} ${f(A[1])}C${f(C1[0])} ${f(C1[1])} ${f(C2[0])} ${f(C2[1])} ${f(T[0])} ${f(T[1])}C${f(C3[0])} ${f(C3[1])} ${f(C4[0])} ${f(C4[1])} ${f(B[0])} ${f(B[1])}Z`
+}
+
+/** Four corner brackets (an L in each corner), inset by half the stroke. */
+export function framePath(W: number, H: number, stroke: number): string {
+  const m = stroke / 2
+  const a = Math.min(W, H) * 0.28
+  const c: Array<[Pt, Pt, Pt]> = [
+    [[m, m + a], [m, m], [m + a, m]],
+    [[W - m - a, m], [W - m, m], [W - m, m + a]],
+    [[W - m, H - m - a], [W - m, H - m], [W - m - a, H - m]],
+    [[m + a, H - m], [m, H - m], [m, H - m - a]],
+  ]
+  return c.map(([p, q, r]) => `M${f(p[0])} ${f(p[1])}L${f(q[0])} ${f(q[1])}L${f(r[0])} ${f(r[1])}`).join('')
+}
+
+/** An equilateral triangle in the circle of radius 0.9 R, point up at rotation 0. */
+export function trianglePath(c: Pt, R: number, rotation: number): string {
+  const r = R * 0.9
+  const pts: Pt[] = [0, 1, 2].map((i) => rot([c[0] + r * Math.cos(-Math.PI / 2 + (2 * Math.PI * i) / 3), c[1] + r * Math.sin(-Math.PI / 2 + (2 * Math.PI * i) / 3)], c, rotation))
+  return poly(pts)
+}
+
+/**
+ * The `orb` motif: a pseudo-3D sphere (ai-curation §3.1, "3D" merged into `gradient`) — one square
+ * rect, fully rounded, filled with a radial gradient lit from the top left (light tint → the colour
+ * → a darker rim). A rect, not a path: both renderers draw gradient rects (a DOM path cannot take a
+ * gradient fill). The opacity is at least 0.85: an orb at 20 % reads as a stain, not a sphere.
+ */
+function orbNode(W: number, H: number, color: string, alpha: number | undefined): LayoutNode {
+  const S = Math.min(W, H) * 0.96
+  const box = { x: (W - S) / 2, y: (H - S) / 2, width: S, height: S }
+  const light = tintOf(color, '#ffffff', 0.55)
+  const dark = tintOf(color, '#000000', 0.35)
+  const node: LayoutNode = {
+    k: 'rect',
+    part: 'shape',
+    box,
+    radius: S / 2,
+    fill: { type: 'radialGradient', cx: 0.36, cy: 0.3, stops: [{ color: light, at: 0 }, { color, at: 0.55 }, { color: dark, at: 1 }] },
+  }
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
+}
+
 const OPACITY = { soft: 0.2, medium: 0.4, strong: 0.7 } as const
 
 export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
   const W = side(ctx.box.width)
   const H = side(ctx.box.height)
-  const shape = enumOf(props.shape, ['blob', 'arc', 'ring', 'dots', 'wave', 'corner'] as const, 'blob')
+  const shape = enumOf(props.shape, DECORATION_SHAPES, 'blob')
   const tone = enumOf(props.tone, ['accent', 'accent2', 'alt', 'line'] as const, 'accent')
   const op = enumOf(props.opacity, ['soft', 'medium', 'strong'] as const, 'soft')
   const rotation = typeof props.rotation === 'number' && Number.isFinite(props.rotation) ? ((props.rotation % 360) + 360) % 360 : 0
@@ -154,7 +297,21 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
     d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.04), 0, 360) + 'Z'
   } else if (shape === 'wave') d = wavePath(W, H, quarter, seed)
   else if (shape === 'corner') d = cornerPath(W, H, quarter)
-  else d = dotsPath(W, H).d
+  else if (shape === 'orb') return orbNode(W, H, color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
+  else if (shape === 'star') d = starPath(c[0], c[1], R * 0.92, 5, 0.45, rotation)
+  else if (shape === 'sparkle') d = sparklePath(c[0], c[1], R * 0.92, rotation)
+  else if (shape === 'triangle') d = trianglePath(c, R, rotation)
+  else if (shape === 'half-circle') d = halfCirclePath(W, H, quarter)
+  else if (shape === 'squiggle') {
+    stroke = Math.max(2, Math.min(W, H) * 0.14)
+    d = squigglePath(W, H, quarter, stroke)
+  } else if (shape === 'zigzag') {
+    stroke = Math.max(2, Math.min(W, H) * 0.12)
+    d = zigzagPath(W, H, quarter, stroke)
+  } else if (shape === 'frame') {
+    stroke = Math.max(2, Math.min(W, H) * 0.025)
+    d = framePath(W, H, stroke)
+  } else d = dotsPath(W, H).d
   const node: LayoutNode = {
     k: 'path',
     part: 'shape',
