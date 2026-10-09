@@ -17,7 +17,7 @@ import { bandScale, multiSeriesDomain } from '../_engine/multi-series'
 import { layoutLegend } from '../_engine/legend'
 import type { LegendPlacement } from '../_engine/legend'
 import {
-  AXIS_W, GRID_W, categoryLabels, chartColors, clamp, clipLines, dimmed, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData,
+  AXIS_W, categoryLabels, chartLook, chartColors, clamp, clipLines, dimmed, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData,
   onColor, readCategories, readSeries, root, seriesColors, solidRect, textAligned, TEXT_SLACK, valueAxisLeft,
 withRealWidths, } from './kit'
 import type { Series } from './kit'
@@ -120,6 +120,7 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
   const showTotals = kind === 'stacked' && (props.totals === true || props.valueLabels === 'end') && mode !== 'grouped'
   const vlMode = enumOf(props.valueLabels, ['none', 'end', 'inside'] as const, 'none')
   const gridlines = props.gridlines !== 'none'
+  const look = chartLook(ctx)
   const labelOf = (seg: Seg) => (mode === 'percent' ? `${Math.round(seg.shown)}%` : fmtNum(seg.shown, fmt))
   const labelW = (txt: string) => ctx.measureText(txt, ls).width * TEXT_SLACK
 
@@ -155,6 +156,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
         box: { x, y, width: barW, height: h },
         fill: { type: 'solid', color: colorOf(sg.s, sg.c) },
         ...(mode !== 'grouped' ? { stroke: { color: c.surface, width: 1 } } : {}),
+        // AC4 chart look: rounded single / grouped bars (stacked segments share edges)
+        ...(mode === 'grouped' && look.barRadius > 0 ? { radius: Math.min(look.barRadius, barW * 0.3) } : {}),
       })
       const txt = labelOf(sg)
       const tw = labelW(txt)
@@ -195,7 +198,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
     axis.ticks.forEach((t, i) => {
       const x = xv(t)
       const isBase = Math.abs(t - Math.max(axis.min, Math.min(0, axis.max))) < 1e-9
-      if (gridlines || isBase) nodes.push(solidRect({ x: x - (isBase ? AXIS_W : GRID_W) / 2, y: plot.y, width: isBase ? AXIS_W : GRID_W, height: plot.height }, isBase ? c.line : c.grid, `grid[${i}]`))
+      const gw = isBase ? AXIS_W : look.gridWidth
+      if (gridlines || isBase) nodes.push(solidRect({ x: x - gw / 2, y: plot.y, width: gw, height: plot.height }, isBase ? c.line : c.grid, `grid[${i}]`))
       const txt = fmtNum(t, fmt)
       const tw = labelW(txt)
       const tx = clamp(x - tw / 2, 0, Math.max(0, W - tw))
@@ -227,6 +231,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
         box: { x, y, width: w, height: barH },
         fill: { type: 'solid', color: colorOf(sg.s, sg.c) },
         ...(mode !== 'grouped' ? { stroke: { color: c.surface, width: 1 } } : {}),
+        // AC4 chart look: rounded single / grouped bars (stacked segments share edges)
+        ...(mode === 'grouped' && look.barRadius > 0 ? { radius: Math.min(look.barRadius, barH * 0.3) } : {}),
       })
       const txt = labelOf(sg)
       const tw = labelW(txt)

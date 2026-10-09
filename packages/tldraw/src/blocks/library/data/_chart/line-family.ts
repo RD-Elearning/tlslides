@@ -16,7 +16,7 @@ import { directLabel } from '../_engine/direct-label'
 import { layoutLegend } from '../_engine/legend'
 import type { LegendPlacement } from '../_engine/legend'
 import {
-  categoryLabels, chartColors, clipLines, dimmed, dot, emptyState, enumOf, faded, fmtNum, isNum, lineH, mutedStyle,
+  categoryLabels, chartColors, chartLook, clipLines, dimmed, dot, emptyState, enumOf, faded, fmtNum, isNum, lineH, mutedStyle,
   niceAxis, noData, pathNode, readCategories, readSeries, readableOn, root, seriesColors, TEXT_SLACK, valueAxisLeft,
 withRealWidths, } from './kit'
 import type { Series } from './kit'
@@ -43,7 +43,6 @@ export interface LineFamilyProps extends Record<string, unknown> {
 
 export const LINE_MAX_CATEGORIES = 24
 export const LINE_MAX_SERIES = 6
-const LINE_W = 5
 const DOT_R = 7
 
 export function lineFamilyLayout(kind: LineKind, props: LineFamilyProps, ctx0: LayoutContext): LayoutNode {
@@ -133,7 +132,7 @@ export function lineFamilyLayout(kind: LineKind, props: LineFamilyProps, ctx0: L
       const segs = segmentsOf(sr.values, centers, ax.y)
       segs.forEach((pts, k) => {
         const part = k === 0 ? `series[${s}]` : `series[${s}].seg[${k}]`
-        if (pts.length >= 2) nodes.push(pathNode(ctx, linePath(pts, curve), part, { stroke: colorOf(s), strokeWidth: LINE_W }))
+        if (pts.length >= 2) nodes.push(pathNode(ctx, linePath(pts, curve), part, { stroke: colorOf(s), strokeWidth: chartLook(ctx).lineWidth }))
         else nodes.push(dot(pts[0].x, pts[0].y, DOT_R, colorOf(s), part, c.surface))
       })
       const markers = enumOf(props.markers, ['none', 'last', 'all'] as const, 'none')

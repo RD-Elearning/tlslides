@@ -101,3 +101,50 @@ describe('clipToWidth', () => {
     expect(ctx.measureText(out, s, 80).lines.length).toBeLessThanOrEqual(2)
   })
 })
+
+describe('AC4 chart look (chartLook)', () => {
+  const { chartLook } = require('./kit') as typeof import('./kit')
+  const { createLayoutContext } = require('../../../layout') as typeof import('../../../layout')
+  const { layoutBlock } = require('../../../layout/layout-child') as typeof import('../../../layout/layout-child')
+  const { resolveTokens } = require('../../../tokens') as typeof import('../../../tokens')
+  const { DEFAULT_DECK_THEME } = require('~state/shapes/shared/deck-theme')
+  const { PROBE_TOKENS, TEST_SURFACE, assertParity } = require('../../../parity-harness') as typeof import('../../../parity-harness')
+  const { tlsDBar } = require('../tls-d-bar') as any
+  const { tlsDLine } = require('../tls-d-line') as any
+  const tok = (surface?: any) => resolveTokens(DEFAULT_DECK_THEME, surface ? { surface, radius: { sm: 12 } } : undefined)
+  const ctx = (surface?: any) => createLayoutContext({ box: { width: 900, height: 500 }, tokens: tok(surface), surface: TEST_SURFACE })
+  const rects = (n: any, out: any[] = []): any[] => {
+    if (n.k === 'group') n.children.forEach((c: any) => rects(c, out))
+    else out.push(n)
+    return out
+  }
+
+  it('no deck surface: the pre-AC4 constants', () => {
+    expect(chartLook(ctx())).toEqual({ barRadius: 0, lineWidth: 5, gridWidth: 2 })
+  })
+
+  it('reads the surface and the radius scale', () => {
+    expect(chartLook(ctx({ card: 'filled', stroke: 'hairline' }))).toEqual({ barRadius: 12, lineWidth: 4, gridWidth: 2 })
+    expect(chartLook(ctx({ card: 'filled', stroke: 'bold' }))).toMatchObject({ lineWidth: 7, gridWidth: 3 })
+    expect(chartLook(ctx({ card: 'ghost' })).gridWidth).toBe(1)
+  })
+
+  it('bars round, lines and gridlines follow, and the geometry is unchanged', () => {
+    const def = tlsDBar.def ?? tlsDBar
+    const props = { ...def.defaults, ...def.describe.example.props }
+    const plain = rects(layoutBlock(def, props, ctx()))
+    const styled = rects(layoutBlock(def, props, ctx({ card: 'filled', stroke: 'bold' })))
+    const bars = styled.filter((n) => n.k === 'rect' && /^bar\[[^.]*$/.test(n.part ?? ''))
+    expect(bars.length).toBeGreaterThan(0)
+    expect(bars.filter((b) => !(b.radius > 0)).map((b) => JSON.stringify(b))).toEqual([])
+    expect(plain.filter((n) => n.k === 'rect' && /^bar\[[^.]*$/.test(n.part ?? '')).map((n) => n.box)).toEqual(bars.map((n) => n.box))
+    expect(styled.find((n) => n.part === 'grid[1]').box.height).toBe(3)
+  })
+
+  it.each([['bar'], ['line']])('%s: DOM and SVG agree under a styled surface', async (kind) => {
+    const def = kind === 'bar' ? tlsDBar : tlsDLine
+    await assertParity(def, { ...def.defaults, ...def.describe.example.props }, { width: 900, height: 500 }, undefined, {
+      tokens: { ...PROBE_TOKENS, radius: { ...PROBE_TOKENS.radius, sm: 12 }, surface: { card: 'filled', stroke: 'bold', shadow: 0 } },
+    })
+  }, 30000)
+})

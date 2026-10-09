@@ -369,6 +369,31 @@ export const GRID_W = 2
 export const AXIS_W = 3
 export const PLOT_PAD = 8
 
+/**
+ * AC4 chart look (ai-curation §2.3 rank 7), read from the deck tokens — no new token group: the
+ * deck card surface (`DeckTokens.surface`) and the radius scale already say how heavy and how round
+ * a style is. With no surface every value is the pre-AC4 constant, so an unstyled deck is unchanged.
+ * - `barRadius`: `radius.sm` (corporate 4, minimal 6, gradient 12), capped by the bar (single and
+ *   grouped bars; stacked segments stay square, they share edges);
+ * - `lineWidth`: 5; a `bold` stroke style 7, a `hairline` one 4;
+ * - `gridWidth`: 2; quiet surfaces (`ghost`, `outline`) 1, a `bold` stroke 3.
+ */
+export interface ChartLook {
+  barRadius: number
+  lineWidth: number
+  gridWidth: number
+}
+
+export function chartLook(ctx: LayoutContext): ChartLook {
+  const s = ctx.tokens.surface
+  if (!s) return { barRadius: 0, lineWidth: 5, gridWidth: GRID_W }
+  return {
+    barRadius: ctx.tokens.radius.sm,
+    lineWidth: s.stroke === 'bold' ? 7 : s.stroke === 'hairline' ? 4 : 5,
+    gridWidth: s.stroke === 'bold' ? 3 : s.card === 'ghost' || s.card === 'outline' ? 1 : GRID_W,
+  }
+}
+
 export interface YAxis {
   /** Plot box (after the label column on the left). */
   plot: Box
@@ -406,7 +431,8 @@ export function valueAxisLeft(
     const zeroInRange = axis.min < -1e-9 && axis.max > 1e-9
     const isBase = zeroInRange ? Math.abs(t) < 1e-9 : i === 0
     if (o.gridlines || isBase) {
-      nodes.push(solidRect({ x: plot.x, y: ty - (isBase ? AXIS_W : GRID_W) / 2, width: plot.width, height: isBase ? AXIS_W : GRID_W }, isBase ? o.c.line : o.c.grid, `grid[${i}]`))
+      const gw = isBase ? AXIS_W : chartLook(ctx).gridWidth
+      nodes.push(solidRect({ x: plot.x, y: ty - gw / 2, width: plot.width, height: gw }, isBase ? o.c.line : o.c.grid, `grid[${i}]`))
     }
     const lab = textAligned(ctx, labels[i], s, { x: area.x, y: ty - lh / 2, width: colW }, 'end', `ytick[${i}]`)
     nodes.push(...lab.nodes)
