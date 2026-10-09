@@ -15,7 +15,7 @@
 
 import type { HtmlTemplateContext } from '../../../types'
 import type { HeroProps } from './schema'
-import { richTextToPlain } from './schema'
+import { HERO_RULE, richTextToPlain } from './schema'
 import { isShown } from '../../../schema-helpers'
 import { lineHtml, posterText } from '../../../html-block'
 
@@ -116,6 +116,15 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
   // the live hero has the poster's geometry; without one the browser wraps (direct calls).
   const pt = posterText(ctx)
   const space = ctx.tokens?.space
+  // AC2 knobs (the poster draws the same geometry).
+  const center = props.align === 'center'
+
+  if (props.decoration === 'rule') {
+    parts.push(
+      `<div style="flex:none;width:${HERO_RULE.width}px;height:${HERO_RULE.height}px;border-radius:${HERO_RULE.height / 2}px;` +
+        `background:${ctx.cssVar('accent')};margin-bottom:${space?.md ?? 24}px;${center ? 'align-self:center;' : ''}"></div>`
+    )
+  }
 
   // Kicker (optional) — same for all variants
   if (isShown(props, 'showKicker') && props.kicker) {
@@ -183,7 +192,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
     const ctaText = richTextToPlain(props.cta)
     parts.push(
       `<div data-part="cta" style="` +
-        `display:inline-block;align-self:flex-start;` +
+        `display:inline-block;align-self:${center ? 'center' : 'flex-start'};` +
         `font-family:var(--tls-font-family);` +
         pt.css('cta', `font-size:var(--tls-type-body);line-height:${HERO_LH.cta};`) +
         `color:${ctx.cssVar('on')};` +
@@ -201,6 +210,7 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
         `position:relative;` +
         `display:flex;flex-direction:column;justify-content:center;` +
         `height:100%;` +
+        (center ? `text-align:center;` : '') +
       `">` +
         `<div data-gradient-bg style="` +
           `position:absolute;top:0;left:0;width:100%;height:100%;` +
@@ -217,10 +227,11 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
       `<div data-variant="split" style="` +
         `display:flex;flex-direction:column;justify-content:center;` +
         `height:100%;` +
+        (center ? `text-align:center;` : '') +
       `">${parts.join('')}</div>`
     )
   }
 
   // classic (default) — byte-identical to the original
-  return `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;">${parts.join('')}</div>`
+  return `<div style="display:flex;flex-direction:column;justify-content:center;height:100%;${center ? 'text-align:center;' : ''}">${parts.join('')}</div>`
 }

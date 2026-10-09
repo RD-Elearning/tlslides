@@ -57,14 +57,15 @@ function derivePreferredSize(): [number, number] {
     tokens,
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
-  const posterNode = poster(defaults, ctx)
+  // AC2: measured with the accent variant, the tallest look (its rule sits above the number).
+  const posterNode = poster({ ...defaults, variant: 'accent' }, ctx)
   return [REFERENCE_WIDTH, posterNode.box.height]
 }
 
 /** RV04 honest minimum: the default content at 520 wide. LO7: 265 → 246 — the poster now has the
  *  live template's metrics (CSS line boxes, its 8-unit label gap); 265 was the old poster's
  *  height (+2 per text, a 16-unit label gap), 19 units more than the live block paints. */
-const BIG_STAT_MIN: [number, number] = [520, 246]
+const BIG_STAT_MIN: [number, number] = [520, 246 + 32] // AC2: + the `variant: accent` rule (8 + 24)
 
 /**
  * Big-stat animation: count-up with easing on the value, label slides in from

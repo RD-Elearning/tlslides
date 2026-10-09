@@ -487,7 +487,8 @@ describe('tls.c.big-stat', () => {
   describe('size derived from defaults', () => {
     it('size.preferred is set from the poster of defaults, not by hand', () => {
       const c = ctx({ width: 1920, height: 1080 })
-      const p = poster(tlsCBigStat.defaults as BigStatProps, c)
+      // AC2: in its tallest look (the accent variant's rule sits above the number).
+      const p = poster({ ...(tlsCBigStat.defaults as BigStatProps), variant: 'accent' }, c)
       const posterHeight = p.box.height
 
       expect(tlsCBigStat.size.preferred[0]).toBe(1920)
@@ -558,5 +559,80 @@ describe('RV04 — example fits its box (review G04)', () => {
     tlsCBigStat.html!.animate!(root, { driver: driver as any, gsap: { timeline: () => { throw new Error('no timeline in subtle') } }, timing, reducedMotion: false, style: 'subtle', onComplete: done })
     expect(played).toHaveLength(3)
     expect(root.querySelector('[data-part=value]')!.textContent).toBe('$4.2M')
+  })
+})
+
+describe('AC2 — look knobs (variant, align)', () => {
+  const DEF = tlsCBigStat
+  const leaves = (n: LayoutNode, ox = 0, oy = 0, out: Array<{ x: number; y: number; w: number; h: number; part?: string; k: string }> = []) => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: (n as any).part, k: n.k })
+    if (n.k === 'group') for (const c of n.children) leaves(c, x, y, out)
+    return out
+  }
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['variant: accent', { variant: 'accent' }],
+    ['variant: split', { variant: 'split' }],
+    ['align: center', { align: 'center' }],
+    ['accent + center', { variant: 'accent', align: 'center' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.variant.type as any).values).toEqual(['plain', 'accent', 'split'])
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...props, ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('split puts the label beside the number (same column in template and poster); narrow boxes stack', () => {
+    const c = ctx({ width: 1728, height: 600 })
+    const node = poster({ ...props, variant: 'split' }, c)
+    const ls = leaves(node)
+    const value = ls.find((l) => l.part === 'value')!
+    const label = ls.find((l) => l.part === 'label')!
+    expect(label.x).toBeGreaterThan(value.x + value.w)
+    // The number is right-aligned against the centre line; the label column starts past the gap.
+    const valueW = label.x - 48
+    expect(valueW).toBeGreaterThanOrEqual((1728 - 48) / 2)
+    expect(Math.abs(value.x + value.w - valueW)).toBeLessThan(2)
+    const html = template({ ...props, variant: 'split' }, tplCtx(c) as any)
+    expect(html).toContain(`margin-left:48px;`)
+    expect(html).toContain(`width:${valueW}px;`)
+    expect(html).toContain('text-align:right;')
+    const narrow = leaves(poster({ ...props, variant: 'split' }, ctx({ width: 520, height: 400 })))
+    expect(narrow.find((l) => l.part === 'label')!.x).toBe(0)
+  })
+
+  it('center centres every line and the accent rule; accent paints the number in the accent colour', () => {
+    const c = ctx({ width: 1200, height: 600 })
+    const node = poster({ ...props, variant: 'accent', align: 'center' }, c)
+    const ls = leaves(node)
+    const value = ls.find((l) => l.part === 'value')!
+    expect(Math.abs(value.x + value.w / 2 - 600)).toBeLessThan(2)
+    const rule = ls.find((l) => l.k === 'rect' && l.w === 96)!
+    expect(rule.x).toBeCloseTo(552, 0)
+    const html = template({ ...props, variant: 'accent', align: 'center' }, tplCtx(c) as any)
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('color:var(--tls-accent)')
+  })
+
+  it('defaults keep the plain start look (no rule, no centring)', () => {
+    const html = template(props, tplCtx(ctx({ width: 1200, height: 600 })) as any)
+    expect(html).not.toContain('text-align:center')
+    expect(html).not.toContain('width:96px')
   })
 })

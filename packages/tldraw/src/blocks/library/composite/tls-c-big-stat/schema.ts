@@ -26,6 +26,11 @@ export interface BigStatProps extends Record<string, unknown> {
   prefix?: string
   /** Optional suffix after the formatted number (e.g. "%", "M", "B"). */
   suffix?: string
+  /** AC2: `plain` (default), `accent` (accent number under a short accent rule) or `split`
+   *  (number left, label and context beside it). */
+  variant?: 'plain' | 'accent' | 'split'
+  /** AC2: `start` (default) or `center` (stacked variants). */
+  align?: 'start' | 'center'
 }
 
 /**
@@ -82,7 +87,7 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Value',
     required: true,
-    guidance: 'The headline number to display. Any numeric value.',
+    guidance: 'The headline number.',
   },
   label: {
     type: { kind: 'text', maxChars: 40 },
@@ -129,6 +134,45 @@ export const schema: BlockSchema = {
     label: 'Suffix',
     guidance: 'Optional suffix after the number (e.g. "%", "M"). Max 4 chars.',
   },
+  variant: {
+    type: { kind: 'enum', values: ['plain', 'accent', 'split'] },
+    role: 'option',
+    label: 'Variant',
+    guidance: '`accent`: accent number under a rule; `split`: label beside the number.',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Align',
+    guidance: '`center` for a stat alone on the slide.',
+  },
+}
+
+/** AC2 `variant: accent`: the rule above the number (template and poster). */
+export const BIG_STAT_RULE = { width: 96, height: 8, gap: 24 } as const
+/** AC2 `variant: split`: the number's share of the width (at most), the gap, the narrowest column. */
+const SPLIT = { share: 0.55, gap: 48, minCol: 220 } as const
+
+/**
+ * AC2 `variant: split` geometry, shared by template and poster: the number right-aligned in the
+ * left half (wider when the number needs it, shrunk to fit `share` of the width), then the
+ * label/context column from the centre line, so the pair sits across the middle of the box. `null`
+ * when the box is too narrow for the column: the block then stacks as `plain`.
+ */
+export function splitGeometry(
+  width: number,
+  valueText: string,
+  display: { size: number },
+  tracking: number,
+  measure: (text: string, style: { size: number; letterSpacing: number }) => number
+): { valueW: number; valueSize: number; colX: number; colW: number; gap: number } | null {
+  const rw = measure(valueText, { size: display.size, letterSpacing: tracking }) * 1.04 + 4
+  const max = width * SPLIT.share
+  const valueSize = rw > max ? (display.size * max) / rw : display.size
+  const valueW = Math.ceil(Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
+  const colX = valueW + SPLIT.gap
+  const colW = width - colX
+  return colW >= SPLIT.minCol ? { valueW, valueSize, colX, colW, gap: SPLIT.gap } : null
 }
 
 export const defaults: BigStatProps = {

@@ -9,10 +9,11 @@
 
 import type { LayoutContext, LayoutNode, Paint, ResolvedTextStyle, RichText } from '../../../types'
 import type { HeroProps } from './schema'
-import { richTextToPlain } from './schema'
+import { HERO_RULE, richTextToPlain } from './schema'
 import { isShown } from '../../../schema-helpers'
 import { cssTextHeight } from '../../../html-block'
 import { HERO_LH, splitTitleHalves } from './template'
+import { alignText } from '../_kit'
 
 
 export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
@@ -20,6 +21,9 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   let y = 0
   const w = ctx.box.width
   const space = ctx.tokens.space
+  // AC2 knobs (the template paints the same geometry).
+  const align = props.align === 'center' ? 'center' : 'start'
+  const aligned = (n: LayoutNode): LayoutNode[] => alignText([n], align)
   // LO7: the template paints these lines with these metrics (`posterText`), so the stack below
   // is the live geometry: each text advances by its CSS line boxes (lines × size × line-height),
   // then the template's margin. Line heights/tracking are the template's (`HERO_LH`).
@@ -38,11 +42,17 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
     }
   }
 
+  if (props.decoration === 'rule') {
+    const rx = align === 'center' ? (w - HERO_RULE.width) / 2 : 0
+    children.push({ k: 'rect', box: { x: rx, y, width: HERO_RULE.width, height: HERO_RULE.height }, fill: { type: 'solid', color: ctx.resolveColor('accent').color }, radius: HERO_RULE.height / 2 })
+    y += HERO_RULE.height + space.md
+  }
+
   // Kicker (optional)
   if (isShown(props, 'showKicker') && props.kicker) {
     const style = { ...ctx.resolveText('caption', { letterSpacing: 0.08, lineHeight: HERO_LH.kicker }), color: ctx.resolveColor('accent').color }
     const t = text('kicker', props.kicker.toUpperCase(), style)
-    children.push(t.node)
+    children.push(...aligned(t.node))
     y += t.height + space.sm
   }
 
@@ -58,12 +68,12 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
         const node = { ...t.node, box: { ...t.node.box, y: y - top } } as Extract<LayoutNode, { k: 'text' }>
         delete node.part
         y += t.height
-        return node
-      })
+        return aligned(node)
+      }).flat()
       children.push({ k: 'group', part: 'title', box: { x: 0, y: top, width: w, height: y - top }, children: halves })
     } else {
       const t = text('title', titleValue, style)
-      children.push(t.node)
+      children.push(...aligned(t.node))
       y += t.height
     }
     y += space.md
@@ -73,7 +83,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
   if (isShown(props, 'showSubtitle') && props.subtitle) {
     const style = { ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: HERO_LH.subtitle }), color: ctx.resolveColor('textMuted').color }
     const t = text('subtitle', props.subtitle as string | RichText, style)
-    children.push(t.node)
+    children.push(...aligned(t.node))
     y += t.height + space.lg
   }
 
@@ -85,10 +95,11 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
     const textH = cssTextHeight(m.lines.length, style)
     const pillW = Math.min(w, m.width + space.lg * 2)
     const pillH = textH + space.xs * 2
+    const px = align === 'center' ? (w - pillW) / 2 : 0
     children.push({
       k: 'rect',
       part: 'cta-bg',
-      box: { x: 0, y, width: pillW, height: pillH },
+      box: { x: px, y, width: pillW, height: pillH },
       fill: { type: 'solid', color: ctx.resolveColor('accent').color },
       radius: pillH / 2,
     })
@@ -96,7 +107,7 @@ export function poster(props: HeroProps, ctx: LayoutContext): LayoutNode {
       k: 'text',
       part: 'cta',
       propPath: 'cta',
-      box: { x: space.lg, y: y + space.xs, width: Math.max(1, pillW - space.lg * 2), height: textH },
+      box: { x: px + space.lg, y: y + space.xs, width: Math.max(1, pillW - space.lg * 2), height: textH },
       lines: m.lines,
       style,
     })

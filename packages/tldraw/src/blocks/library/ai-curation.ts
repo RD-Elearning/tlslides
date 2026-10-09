@@ -87,10 +87,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.bullet-chart': t2(['bands', 'format']),
   'tls.c.kpi-tile': t2(['showDelta', 'showLabel', 'showSparkline', 'polarity', 'format']),
   'tls.c.kpi-row': t1(['gap'], ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge']),
-  'tls.c.big-stat': t1(['format', 'showContext', 'showLabel'], ['tls.t.hero-number']),
+  'tls.c.big-stat': t1(['variant', 'align', 'format', 'showContext', 'showLabel'], ['tls.t.hero-number']),
   'tls.c.stat-card': t2(['showIcon', 'format', 'emphasis', 'padding']),
   'tls.c.dashboard': t2(['layout', 'chartRatio', 'showInsight']),
-  'tls.c.stat-spotlight': t1([], ['tls.d.progress-ring', 'tls.d.gauge', 'tls.d.progress-bar']),
+  'tls.c.stat-spotlight': t1(['visual', 'statsPlacement'], ['tls.d.progress-ring', 'tls.d.gauge', 'tls.d.progress-bar']),
 
   // ── emphasis ──
   'tls.t.quote': t1(['markStyle']),
@@ -165,7 +165,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.bracket': t2(['side', 'style']),
 
   // ── cover ──
-  'tls.c.hero': t1(['variant', 'showKicker', 'showSubtitle', 'showCta'], ['tls.t.kicker', 'tls.t.subtitle']),
+  'tls.c.hero': t1(['variant', 'align', 'decoration', 'showKicker', 'showSubtitle', 'showCta'], ['tls.t.kicker', 'tls.t.subtitle']),
   'tls.c.cover': t1(['variant', 'decoration', 'showImage', 'showLogo']),
   'tls.c.kinetic-title': t1(['align', 'decoration']),
 

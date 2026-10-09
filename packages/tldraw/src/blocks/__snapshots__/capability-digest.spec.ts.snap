@@ -159,7 +159,7 @@ Big number slide. One enormous headline metric with a short label and optional c
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`value\` | yes | number | The headline number to display. Any numeric value. |
+| \`value\` | yes | number | The headline number. |
 | \`label\` | yes | text (max 40 chars) | Short label describing the number. 1–4 words, e.g. \\"Total Revenue\\". |
 | \`showLabel\` | no | boolean | Toggle the label below the value on/off. |
 | \`context\` | no | text (max 60 chars) | Optional supporting line below the label (e.g. \\"vs last quarter\\"). |
@@ -167,6 +167,8 @@ Big number slide. One enormous headline metric with a short label and optional c
 | \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234). |
 | \`prefix\` | no | text (max 4 chars) | Optional prefix before the number (e.g. \\"$\\", \\"€\\"). Max 4 chars. |
 | \`suffix\` | no | text (max 4 chars) | Optional suffix after the number (e.g. \\"%\\", \\"M\\"). Max 4 chars. |
+| \`variant\` | no | enum: plain \\\\| accent \\\\| split | \`accent\`: accent number under a rule; \`split\`: label beside the number. |
+| \`align\` | no | enum: start \\\\| center | \`center\` for a stat alone on the slide. |
 
 \`\`\`json
 {
@@ -647,7 +649,7 @@ Grid of 3-6 icon cards (title + one line) that flip in one after another. _(fami
 
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
 
-**When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle. Pick variant \\"classic\\" for a standard hero, \\"split\\" when you want the title to reveal from two halves sliding in from opposite sides, or \\"gradient-sweep\\" for a decorative background gradient that sweeps in behind the title on reveal.
+**When:** Use as a title/cover slide — one idea in the title, date/audience in the subtitle.
 **Avoid:** Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.
 
 **Parts:** \`kicker\`, \`title\`, \`subtitle\`, \`cta\`
@@ -661,7 +663,9 @@ Opening slide. One idea in the title, no full sentence; subtitle gives date/audi
 | \`showSubtitle\` | no | boolean | Toggle the subtitle on/off. |
 | \`cta\` | no | text (max 40 chars) | Optional button text. Short imperative, 2–4 words. |
 | \`showCta\` | no | boolean | Toggle the call-to-action button on/off. |
-| \`variant\` | no | enum: classic \\\\| split \\\\| gradient-sweep | Visual style: \\"classic\\" (default) standard hero with staggered part reveal; \\"split\\" split-title reveal where halves slide in from opposite sides; \\"gradient-sweep\\" a decorative gradient sweeps in behind the title on reveal. |
+| \`variant\` | no | enum: classic \\\\| split \\\\| gradient-sweep | Reveal: classic (default), split (title halves slide in), gradient-sweep (gradient behind). |
+| \`align\` | no | enum: start \\\\| center |  |
+| \`decoration\` | no | enum: none \\\\| rule | \`rule\`: accent bar above the text. |
 
 \`\`\`json
 {
@@ -1119,6 +1123,8 @@ One key number in a progress ring that counts up, label beside it, up to 3 suppo
 | \`context\` | no | text (max 100 chars) |  |
 | \`progress\` | no | number (min 0, max 100) | How much of the ring fills, 0-100; for a percentage use the same number. Default 100. |
 | \`stats\` | no | list of object (value, label) (0–3 items) | 0-3 smaller numbers, each { value, label }. |
+| \`visual\` | no | enum: ring \\\\| plain | \`plain\`: no ring, a bigger number (not a share). |
+| \`statsPlacement\` | no | enum: below \\\\| side | \`side\`: stats in a right column. |
 
 \`\`\`json
 {
@@ -5353,7 +5359,7 @@ content-image-text · blank — content: tls.c.image-text — photo-led story wi
 ### data
 data-chart-insight · timeline+title — timeline: tls.c.chart-insight(insightSize=lead) — one chart with its takeaway and source
 data-stat-spotlight · timeline+title — timeline: tls.c.stat-spotlight — one rate with three supporting numbers
-data-big-stat · blank — content: tls.c.big-stat — one giant number
+data-big-stat · blank — content: tls.c.big-stat(align=center) — one giant number
 data-kpi-row · timeline+title — timeline: tls.c.kpi-row + tls.t.takeaway(size=lead) — 2–5 headline KPIs and what they mean
 data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
 data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway(size=lead) — single-series bars with the so-what beside
@@ -5406,9 +5412,9 @@ tls.t.takeaway · emphasis · element — Highlighted insight with accent bar an
 also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
-tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈246@840] knobs: format, showContext, showLabel
+tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈246@840] knobs: variant, align, format, showContext, showLabel
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈180-6/item@840] knobs: gap
-tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill]
+tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual, statsPlacement
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
 ## Charts
@@ -5467,7 +5473,7 @@ also: tls.m.logo
 
 ## Covers
 tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant, decoration, showImage, showLogo
-tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant, showKicker, showSubtitle, showCta
+tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant, align, decoration, showKicker, showSubtitle, showCta
 tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align, decoration
 
 ## Dividers

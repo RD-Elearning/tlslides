@@ -33,7 +33,7 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
   const cy = g.ringY + g.d / 2
   const r = Math.max(0, g.d / 2 - g.sw / 2)
 
-  children.push({
+  if (g.ring) children.push({
     k: 'group',
     part: 'ring',
     box: full,
@@ -73,29 +73,28 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
 
   const stats = statsOf(props)
   if (stats.length) {
-    const gap = SPOT.statGap
-    const w = Math.max(1, (W - gap * (stats.length - 1)) / stats.length)
     const svStyle = { ...ctx.resolveText('heading', { letterSpacing: 0, lineHeight: SPOT.statValueLH }), color: color(ctx, 'text') }
     const slStyle = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: SPOT.statLabelLH }), color: color(ctx, 'textMuted') }
     const inset = SPOT.statBorder + SPOT.statPadLeft
     stats.forEach((s, i) => {
-      const x = i * (w + gap)
-      const inner = Math.max(1, w - inset)
+      const box = g.stats[i]
+      const x = box.x
+      const inner = Math.max(1, box.width - inset)
       const sv = ctx.measureText({ runs: [{ text: s.value, bold: true }] }, svStyle, inner)
       const sl = ctx.measureText(s.label, slStyle, inner)
       const part = `stat[${i}]`
-      children.push({ k: 'rect', part, box: { x, y: g.statsY, width: 6, height: g.statsH }, fill: { type: 'solid', color: color(ctx, i % 2 ? 'accent2' : 'accent') } })
-      const svH = Math.min(cssTextHeight(1, svStyle), g.statsH)
-      children.push({ k: 'text', part, propPath: `stats.${i}.value`, box: { x: x + inset, y: g.statsY + SPOT.statPadTop, width: inner, height: svH }, lines: sv.lines.slice(0, 1), style: svStyle })
-      const slY = g.statsY + SPOT.statPadTop + svH + SPOT.statLabelGap
+      children.push({ k: 'rect', part, box: { x, y: box.y, width: 6, height: box.height }, fill: { type: 'solid', color: color(ctx, i % 2 ? 'accent2' : 'accent') } })
+      const svH = Math.min(cssTextHeight(1, svStyle), box.height)
+      children.push({ k: 'text', part, propPath: `stats.${i}.value`, box: { x: x + inset, y: box.y + SPOT.statPadTop, width: inner, height: svH }, lines: sv.lines.slice(0, 1), style: svStyle })
+      const slY = box.y + SPOT.statPadTop + svH + SPOT.statLabelGap
       // Only whole lines that fit above the band's bottom edge (SVG glyphs would spill past it).
       const lineH = slStyle.size * slStyle.lineHeight
-      const fit = Math.min(2, sl.lines.length, Math.floor((g.statsY + g.statsH - slY) / lineH))
+      const fit = Math.min(2, sl.lines.length, Math.floor((box.y + box.height - slY) / lineH))
       if (fit > 0) children.push({ k: 'text', part, propPath: `stats.${i}.label`, box: { x: x + inset, y: slY, width: inner, height: fit * lineH }, lines: sl.lines.slice(0, fit), style: slStyle })
     })
   }
 
-  const height = Math.max(H, colH, g.statsY + g.statsH)
+  const height = Math.max(H, colH, g.statsY + g.statsH, ...g.stats.map((b) => b.y + b.height))
   children[0] = backdrop(W, height)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height }, children }
 }

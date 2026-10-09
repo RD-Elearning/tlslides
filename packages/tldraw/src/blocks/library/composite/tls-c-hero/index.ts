@@ -47,7 +47,7 @@ function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutN
 /** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it.
  *  LO7: 472 → 490 — the poster now measures the title at the template's line-height (1.1, was
  *  the display token's 1.02), i.e. the height the live hero always painted at 1280. */
-const HERO_MIN: [number, number] = [1280, 490]
+const HERO_MIN: [number, number] = [1280, 490 + 32] // AC2: + the `decoration: rule` bar (8 + md 24)
 
 /**
  * Derive `size.preferred` from the poster of the defaults. Builds a reference
@@ -64,7 +64,8 @@ function derivePreferredSize(): [number, number] {
     tokens,
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
-  const posterNode = poster(defaults, ctx)
+  // AC2: measured with the rule decoration, the tallest look.
+  const posterNode = poster({ ...defaults, decoration: 'rule' }, ctx)
   // Never below `size.min` (catalog contract min ≤ preferred). With browser-true text widths (LO6)
   // the default title is one line at 1920 (poster 317 tall); the min height is the 1280-wide case,
   // where it wraps (RV10).
@@ -294,11 +295,7 @@ export const tlsCHero: BlockDefinition = {
   shortDescription: 'Opening title with kicker, subtitle and optional call to action',
   related: ['tls.t.title', 'tls.c.cover', 'tls.c.kinetic-title'],
   describe: {
-    when:
-      'Use as a title/cover slide — one idea in the title, date/audience in the subtitle. ' +
-      'Pick variant "classic" for a standard hero, "split" when you want the title to ' +
-      'reveal from two halves sliding in from opposite sides, or "gradient-sweep" for a ' +
-      'decorative background gradient that sweeps in behind the title on reveal.',
+    when: 'Use as a title/cover slide — one idea in the title, date/audience in the subtitle.',
     avoid: 'Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.',
     example: {
       id: 'b_hero',

@@ -138,7 +138,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     regions: { title: [TITLE], timeline: [b('tls.c.stat-spotlight')] },
     when: 'one rate with three supporting numbers',
   },
-  { id: 'data-big-stat', role: 'data', layout: 'blank', regions: { content: [b('tls.c.big-stat')] }, when: 'one giant number' },
+  { id: 'data-big-stat', role: 'data', layout: 'blank', regions: { content: [b('tls.c.big-stat', { align: 'center' })] }, when: 'one giant number' },
   { id: 'data-kpi-row', role: 'data', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.kpi-row'), b('tls.t.takeaway', { size: 'lead' })] }, when: '2–5 headline KPIs and what they mean' },
   {
     id: 'data-table',

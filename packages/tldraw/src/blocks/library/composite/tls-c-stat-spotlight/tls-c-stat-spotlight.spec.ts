@@ -71,3 +71,60 @@ describe('RV04 — example fits its box (review G04)', () => {
     }
   })
 })
+
+describe('AC2 — look knobs (visual, statsPlacement)', () => {
+  const { makeCtx } = require('../../text/test-helpers')
+  const { absoluteLeaves } = require('../../text/standard-suite')
+  const DEF = tlsCStatSpotlight
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const full = { ...(DEF.defaults as any) } // three stats
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['visual: plain', { visual: 'plain' }],
+    ['statsPlacement: side', { statsPlacement: 'side' }],
+    ['plain + side', { visual: 'plain', statsPlacement: 'side' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.visual.type as any).values).toEqual(['ring', 'plain'])
+    expect((DEF.schema.statsPlacement.type as any).values).toEqual(['below', 'side'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    for (const base of [props, full]) {
+      it.each([
+        ['preferred', DEF.size.preferred],
+        ['min', DEF.size.min],
+      ])(`${name} (${base.stats.length} stats) fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+        const tree = DEF.poster!({ ...base, ...knobs }, makeCtx({ width: w, height: h }))
+        expect(tree.box.height).toBeLessThanOrEqual(h + 0.5)
+        for (const l of absoluteLeaves(tree)) {
+          const where = `${l.part ?? l.k} @${Math.round(l.x)},${Math.round(l.y)} ${Math.round(l.width)}x${Math.round(l.height)} in ${w}x${h}`
+          expect([where, l.x + l.width <= w + 1 && l.y + l.height <= h + 1]).toEqual([where, true])
+        }
+      })
+    }
+  }
+
+  it('plain paints no ring and a bigger number; template and poster agree', () => {
+    const ring = geometry(1728, 752, full)
+    const plain = geometry(1728, 752, { ...full, visual: 'plain' })
+    expect(plain.ring).toBe(false)
+    expect(plain.valueSize).toBeGreaterThan(ring.valueSize)
+    const { makeCtx } = require('../../text/test-helpers')
+    const parts = absoluteLeaves(DEF.poster!({ ...full, visual: 'plain' }, makeCtx({ width: 1728, height: 752 }))).map((l: any) => l.part)
+    expect(parts).not.toContain('ring')
+    expect(DEF.html!.template({ ...full, visual: 'plain' } as any, tplCtx())).not.toContain('data-part="ring"')
+  })
+
+  it('side stacks the stats in a right column at preferred; a box too short for it keeps them below', () => {
+    const side = geometry(1728, 752, { ...full, statsPlacement: 'side' })
+    expect(side.statsH).toBe(0)
+    expect(new Set(side.stats.map((s) => s.x)).size).toBe(1)
+    expect(side.stats[0].x).toBeGreaterThan(side.colX)
+    expect(side.colX + side.colW).toBeLessThanOrEqual(side.stats[0].x)
+    const html = DEF.html!.template({ ...full, statsPlacement: 'side' } as any, tplCtx(1728, 752))
+    expect(html).toContain(`left:${side.stats[0].x}px;top:${side.stats[1].y}px;`)
+    const short = geometry(640, 360, { ...full, statsPlacement: 'side' })
+    expect(short.statsH).toBeGreaterThan(0)
+  })
+})

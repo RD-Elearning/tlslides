@@ -343,6 +343,118 @@
           }
         ]
       }
+    },
+    {
+      "id": "kn_08",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k8t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Alumni survey (plain number, stats beside)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k8a",
+            "type": "tls.c.stat-spotlight",
+            "props": {
+              "value": "1.250",
+              "label": "Alumni surveyed",
+              "context": "class of 2025, six months after graduation",
+              "stats": [
+                {
+                  "value": "92%",
+                  "label": "Employed"
+                },
+                {
+                  "value": "4,6/5",
+                  "label": "Programme rating"
+                },
+                {
+                  "value": "+18%",
+                  "label": "Versus class of 2020"
+                }
+              ],
+              "visual": "plain",
+              "statsPlacement": "side"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_09",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k9a",
+            "type": "tls.c.big-stat",
+            "props": {
+              "value": 4200000,
+              "label": "Total revenue",
+              "context": "up 12% on last year",
+              "format": "compact",
+              "prefix": "$",
+              "variant": "accent",
+              "align": "center"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_10",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k10a",
+            "type": "tls.c.big-stat",
+            "props": {
+              "value": 0.94,
+              "label": "Enrolment rate",
+              "context": "of admitted students enrolled in September",
+              "format": "percent",
+              "variant": "split"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_11",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k11a",
+            "type": "tls.c.hero",
+            "props": {
+              "kicker": "Annual review",
+              "title": {
+                "runs": [
+                  {
+                    "text": "A year of "
+                  },
+                  {
+                    "text": "steady growth",
+                    "bold": true
+                  }
+                ]
+              },
+              "subtitle": "Board meeting, October 2026",
+              "cta": "Read the plan",
+              "align": "center",
+              "decoration": "rule"
+            }
+          }
+        ]
+      }
     }
   ]
 }

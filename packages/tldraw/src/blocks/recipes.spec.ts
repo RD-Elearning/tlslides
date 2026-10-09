@@ -65,15 +65,13 @@ describe('AC0 slide recipes', () => {
 
   // AC1.5 — a recipe is the AI's starting point, so it must also be balanced: no big empty band
   // below the content (`layout/unbalanced`) and no large declared region left empty
-  // (`region/empty`). A left-aligned single number may leave the right side open by design; that
-  // recipe is named here and may only carry the side variant.
-  const SIDE_OPEN_BY_DESIGN = new Set(['data-big-stat'])
+  // (`region/empty`). AC2 part 2: `data-big-stat` uses `align: center`, so the one allowance it
+  // had (a left-aligned number leaving the right side open) is gone; every recipe is held to it.
   for (const recipe of RECIPES) {
     it(`recipe "${recipe.id}" is balanced with the examples (no layout/unbalanced, no region/empty)`, () => {
       const report = analyzeSlide(recipeSlide(recipe, registry), { registry })
       const bad = report.findings
         .filter((f) => f.code === 'region/empty' || f.code === 'layout/unbalanced')
-        .filter((f) => !(SIDE_OPEN_BY_DESIGN.has(recipe.id) && f.code === 'layout/unbalanced' && f.message.startsWith('content ends at x')))
         .map((f) => `${f.code}: ${f.message}`)
       expect(bad).toEqual([])
     })

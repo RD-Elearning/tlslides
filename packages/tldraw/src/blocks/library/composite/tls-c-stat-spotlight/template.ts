@@ -26,7 +26,7 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
   // LO7: with a poster (the live host) every text paints the poster's lines and metrics.
   const pt = posterText(ctx)
 
-  out.push(
+  if (g.ring) out.push(
     `<div data-part="ring" style="position:absolute;left:${g.ringX}px;top:${g.ringY}px;width:${g.d}px;height:${g.d}px;">` +
       `<svg width="${g.d}" height="${g.d}" viewBox="0 0 ${g.d} ${g.d}" style="display:block;overflow:visible">` +
       `<defs><linearGradient id="tls-spot-grad" x1="0" y1="0" x2="1" y2="1">` +
@@ -67,13 +67,12 @@ export function template(props: StatSpotlightProps, ctx: HtmlTemplateContext): s
 
   const stats = statsOf(props)
   if (stats.length) {
-    const gap = SPOT.statGap
-    const w = (W - gap * (stats.length - 1)) / stats.length
     stats.forEach((s, i) => {
+      const b = g.stats[i]
       out.push(
         // RVM3: the padding sits on an inner box, so a tween's style rewrite of the part never
         // touches a layout property (J4)
-        `<div data-part="stat[${i}]" style="position:absolute;left:${i * (w + gap)}px;top:${g.statsY}px;width:${w}px;height:${g.statsH}px;` +
+        `<div data-part="stat[${i}]" style="position:absolute;left:${b.x}px;top:${b.y}px;width:${b.width}px;height:${b.height}px;` +
           `box-sizing:border-box;border-left:${SPOT.statBorder}px solid ${i % 2 ? accent2 : accent};"><div style="padding:${SPOT.statPadTop}px 0 0 ${SPOT.statPadLeft}px;">` +
           `<div data-stat-value style="${pt.css(`stats.${i}.value`, `font-size:${t?.heading?.size ?? 64}px;line-height:${SPOT.statValueLH};`)}font-weight:800;color:${ctx.cssVar('on')};">` +
           `${pt.html(`stats.${i}.value`, ctx.esc(s.value), false)}</div>` +

@@ -998,3 +998,61 @@ function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[]
   walk(node)
   return result
 }
+
+describe('AC2 — look knobs (align, decoration)', () => {
+  const DEF = tlsCHero
+  const leaves = (n: LayoutNode, ox = 0, oy = 0, out: Array<{ x: number; y: number; w: number; h: number; part?: string; k: string }> = []) => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: (n as any).part, k: n.k })
+    if (n.k === 'group') for (const c of n.children) leaves(c, x, y, out)
+    return out
+  }
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any), cta: 'Read the plan' }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['align: center', { align: 'center' }],
+    ['decoration: rule', { decoration: 'rule' }],
+    ['center + rule + split', { align: 'center', decoration: 'rule', variant: 'split' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+    expect((DEF.schema.decoration.type as any).values).toEqual(['none', 'rule'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...(DEF.defaults as any), ...(DEF.describe!.example.props as any), ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('center centres the lines, the CTA pill and the rule, in template and poster', () => {
+    const c = ctx({ width: 1600, height: 900 })
+    const ls = leaves(poster({ ...props, align: 'center', decoration: 'rule' }, c))
+    const mid = (l: { x: number; w: number }) => l.x + l.w / 2
+    for (const part of ['kicker', 'title', 'subtitle', 'cta-bg']) {
+      const l = ls.find((x) => x.part === part)!
+      expect([part, Math.abs(mid(l) - 800) < 2]).toEqual([part, true])
+    }
+    const rule = ls.find((l) => l.k === 'rect' && l.w === 96)!
+    expect(mid(rule)).toBeCloseTo(800, 0)
+    const html = template({ ...props, align: 'center', decoration: 'rule' }, tplCtx(c) as any)
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('align-self:center')
+    expect(html).toContain('width:96px;height:8px;')
+  })
+
+  it('defaults keep the start look with no rule', () => {
+    const html = template(props, tplCtx(ctx({ width: 1600, height: 900 })) as any)
+    expect(html).not.toContain('text-align:center')
+    expect(html).not.toContain('width:96px')
+  })
+})
