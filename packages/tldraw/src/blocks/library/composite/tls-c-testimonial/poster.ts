@@ -11,7 +11,7 @@ import type { LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../
 import type { TestimonialProps } from './schema'
 import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, TESTIMONIAL as T } from './schema'
 import { cssTextHeight } from '../../../html-block'
-import { alignText } from '../_kit'
+import { alignText, cardNodes, cardPaint } from '../_kit'
 import { backdrop } from '../_showcase'
 
 /**
@@ -86,8 +86,14 @@ export function poster(props: TestimonialProps, ctx: LayoutContext): LayoutNode 
     part: 'root',
     // A transparent full-box rect first: the SVG export's extent is the host box (the parity
     // probe compares the two), and nothing paints under the parts.
-    children: [backdrop(w, totalHeight), ...children],
+    children: [backdrop(w, totalHeight), ...deckCard(ctx, w, totalHeight), ...children],
   }
+}
+
+/** AC4: with a deck surface the testimonial sits on a card (`cardPaint`); without one, as before. */
+function deckCard(ctx: LayoutContext, w: number, h: number): LayoutNode[] {
+  const cp = cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
+  return cp.styled ? cardNodes(cp, { x: 0, y: 0, width: w, height: h }, ctx.tokens.radius.lg, 'card') : []
 }
 
 /**
@@ -133,6 +139,6 @@ function photoPoster(props: TestimonialProps, ctx: LayoutContext): LayoutNode {
     k: 'group',
     box: { x: 0, y: 0, width: w, height: total },
     part: 'root',
-    children: [backdrop(w, total), photo, ...shifted],
+    children: [backdrop(w, total), ...deckCard(ctx, w, total), photo, ...shifted],
   }
 }

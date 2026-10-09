@@ -18,7 +18,7 @@
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { ComparisonProps } from './schema'
 import { withRealWidths, tintOf, onColor, readableOn } from '../../data/_chart/kit'
-import { alignText } from '../_kit'
+import { alignText, cardNodes, cardPaint } from '../_kit'
 
 const MAX_COLUMNS = 3
 const MIN_COLUMNS = 2
@@ -174,6 +174,12 @@ export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode 
       // AC2: every column on a card as tall as the tallest; the highlighted card is the accent tint
       // with an accent outline.
       const hi = highlightIdx === ci
+      if (!hi) {
+        // AC4: a neutral card takes the deck surface (`cardPaint`); the highlighted one keeps its tint.
+        const cp = cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
+        allChildren.push(...cardNodes(cp, { x: m.colX, y: 0, width: colWidth, height: maxContentH }, ctx.tokens.radius.md))
+        return
+      }
       allChildren.push({
         k: 'rect',
         // the outline is drawn inside the card (a stroke straddles the box edge)

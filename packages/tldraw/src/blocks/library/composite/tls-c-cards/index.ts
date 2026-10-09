@@ -15,7 +15,7 @@ import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
 import { onColor, readableOn } from '../../text/_engine/color'
 import { objs, str } from '../../media/_kit'
-import { composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
+import { cardNodes, cardPaint, composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
 
 export const CARDS_MIN = 2
 export const CARDS_MAX = 4
@@ -216,20 +216,29 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     const fillRole = tone === 'surface' ? 'surface' : 'surfaceAlt'
     const fillColor = filled ? accent : ctx.resolveColor(fillRole).color
     const fg = filled ? onColor(ctx, accent) : undefined
-    const surf: Paint = { type: 'solid', color: tone === 'outline' ? ctx.resolveColor('surface').color : fillColor }
+    const cardBox = { x, y: 0, width: p.cw, height: total }
+    // AC4: a neutral card (tone alt / surface, the non-accent cards of accent-first) takes the deck
+    // surface (`cardPaint`); `outline` and the accent card keep the look their knob asks for.
+    const cp =
+      tone === 'outline'
+        ? undefined
+        : filled
+          ? undefined
+          : cardPaint(ctx, { fill: { type: 'solid', color: fillColor }, ...(tone === 'surface' ? { stroke: { color: ctx.resolveColor('line').color, width: 2 } } : {}) })
+    const surf: Paint = cp ? cp.surface : { type: 'solid', color: tone === 'outline' ? ctx.resolveColor('surface').color : fillColor }
     const on = onSurface(surf)
     const col = fg ? { color: fg } : {}
-    const bg: LayoutNode = {
-      k: 'rect',
-      box: { x, y: 0, width: p.cw, height: total },
-      radius: ctx.tokens.radius.lg,
-      ...(tone === 'outline'
-        ? { stroke: { color: accent, width: 3 } }
-        : tone === 'surface'
-          ? { fill: surf, stroke: { color: ctx.resolveColor('line').color, width: 2 } }
-          : { fill: surf }),
-    } as LayoutNode
-    pieces.push({ id: `card[${i}]`, raw: [bg], box: { x, y: 0, width: p.cw, height: total } })
+    const bg: LayoutNode[] = cp
+      ? cardNodes(cp, cardBox, ctx.tokens.radius.lg)
+      : [
+          {
+            k: 'rect',
+            box: cardBox,
+            radius: ctx.tokens.radius.lg,
+            ...(tone === 'outline' ? { stroke: { color: accent, width: 3 } } : { fill: surf }),
+          } as LayoutNode,
+        ]
+    pieces.push({ id: `card[${i}]`, raw: bg, box: cardBox })
 
     const ix = x + p.pad
     let y = p.pad
@@ -256,7 +265,7 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     y += p.titleH[i] + sm
     if (c.text && p.roomy) {
       // Roomy tier: lead-size text as a leaf (no body block takes the lead step).
-      const surfHex = tone === 'outline' ? ctx.resolveColor('surface').color : fillColor
+      const surfHex = surf.type === 'solid' ? surf.color : ctx.resolveColor('surface').color
       const st = { ...ctx.resolveText('lead'), color: fg ?? readableOn(ctx.resolveColor('text').color, surfHex) }
       const m = ctx.measureText(c.text, st, p.inner)
       pieces.push({ id: `text[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: { x: ix, y, width: p.inner, height: p.textH[i] }, align: al })

@@ -81,7 +81,7 @@ function main() {
       if (!style) usage(`unknown style ${opts.style} (styles: ${oracle.BUILT_IN_STYLES.map((s) => s.id).join(', ')})`)
       const theme = oracle.resolveDeckTheme(opts.theme ?? style.palettes[0].id, style.id)
       if (opts.theme !== undefined && theme.id !== opts.theme) usage(`theme ${opts.theme} is not a palette of style ${style.id}`)
-      bopts.tokens = oracle.resolveTokens(theme, style.tokens)
+      bopts.tokens = oracle.resolveTokens(theme, oracle.deckSpecTokens({ style: style.id }))
       bopts.blockDefaults = style.blockDefaults
       bopts.themeName = `${style.id}/${theme.id}`
     } else if (opts.theme !== undefined) {

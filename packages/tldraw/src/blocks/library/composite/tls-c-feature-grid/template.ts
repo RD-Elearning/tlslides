@@ -12,6 +12,7 @@ import type { HtmlTemplateContext } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 import { posterText } from '../../../html-block'
+import { cardCssFromPoster } from '../_kit'
 
 /** The template's text metrics and gaps - the poster measures with the same numbers (LO7). */
 export const FG_LH = { title: 1.3, desc: 1.5 } as const
@@ -70,7 +71,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
         `<div style="` +
           `min-width:0;` +
           `box-sizing:border-box;` +
-          (card ? `padding:${tier.pad}px;background:${colors.card};border-radius:${FG_CARD_RADIUS}px;` : '') +
+          (card ? `padding:${tier.pad}px;${cardCssFromPoster(ctx.poster, `cell[${i}].card`) ?? `background:${colors.card};`}border-radius:${FG_CARD_RADIUS}px;` : '') +
           (center ? `text-align:center;` : '') +
         `">` +
           // Icon - render as inline SVG with the correct path

@@ -10,7 +10,7 @@
 
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
-import { alignText } from '../_kit'
+import { alignText, cardNodes, cardPaint } from '../_kit'
 import { getIcon } from '../../../icons'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
@@ -101,7 +101,8 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
     const cell = cellData[i].cell
     const iconColor = ctx.resolveColor('accent').color
     if (card) {
-      children.push({ k: 'rect', part: `cell[${i}].card`, box: { x, y, width: cellW, height: rowHeights[r] }, fill: { type: 'solid', color: colors.card }, radius: FG_CARD_RADIUS })
+      // AC4: the deck surface (`cardPaint`); the template reads the card's look back from here.
+      children.push(...cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: colors.card } }), { x, y, width: cellW, height: rowHeights[r] }, FG_CARD_RADIUS, `cell[${i}].card`))
     }
     const ix = x + P
     const iy = y + P

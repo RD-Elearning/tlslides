@@ -40,6 +40,7 @@ import type {
   ResolvedColor,
   ResolvedTokens,
   SpaceToken,
+  StyleSurface,
   SurfaceContext,
   TypeScaleValue,
   TypeToken,
@@ -91,6 +92,10 @@ export interface DeckTokens {
   /** Shifts every internal spacing gap one step (`applyDensity` in `scales.ts`). Defaults to
    *  `'default'` (no shift) when absent. */
   density?: 'compact' | 'default' | 'roomy'
+  /** AC4 — the deck's card surface (ai-curation §3.2): how card-like blocks paint their cards
+   *  (`cardPaint` in `library/composite/_kit.ts`). A style supplies it (`DeckStyle.surface`);
+   *  absent = every block keeps its own card look. Missing fields default to `filled`, `none`, 0. */
+  surface?: Partial<StyleSurface>
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -203,7 +208,11 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
   const headingFamily = fontFamily
   const bodyFamily = theme.fonts?.bodyFamily ?? theme.fonts?.headingFamily ?? DEFAULT_FONT_FAMILY
 
-  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily }
+  const surface: StyleSurface | undefined = tokens?.surface
+    ? { card: tokens.surface.card ?? 'filled', stroke: tokens.surface.stroke ?? 'none', shadow: tokens.surface.shadow ?? 0 }
+    : undefined
+
+  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily, ...(surface ? { surface } : {}) }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

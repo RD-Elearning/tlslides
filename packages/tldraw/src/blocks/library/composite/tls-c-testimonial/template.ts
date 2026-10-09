@@ -14,6 +14,7 @@ import type { TestimonialProps } from './schema'
 import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, TESTIMONIAL } from './schema'
 import { posterText } from '../../../html-block'
 import type { TextLine } from '../../../types'
+import { cardCssFromPoster } from '../_kit'
 
 /** LO7: the poster's quote lines as word spans (same structure as `escQuoteRichText`: the
  *  quotation marks are runs of their own, so they become words of their own), `<br>` between. */
@@ -165,11 +166,11 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
 
   if (photo) {
     return (
-      `<div style="display:flex;flex-direction:row;align-items:stretch;gap:${T.pad}px;height:100%;box-sizing:border-box;padding:${T.pad}px;">` +
+      `<div style="display:flex;flex-direction:row;align-items:stretch;gap:${T.pad}px;height:100%;box-sizing:border-box;padding:${T.pad}px;${cardCssFromPoster(ctx.poster, 'card') ?? ''}">` +
       photoHtml +
       `<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:stretch;">${parts.join('')}</div>` +
       `</div>`
     )
   }
-  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;padding:${T.pad}px;">${parts.join('')}</div>`
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;box-sizing:border-box;padding:${T.pad}px;${cardCssFromPoster(ctx.poster, 'card') ?? ''}">${parts.join('')}</div>`
 }

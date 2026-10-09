@@ -13,6 +13,7 @@
 
 import type { BlockSpec, LayoutContext, LayoutNode, Box, ResolvedTextStyle } from '../../types'
 import { tableMetrics } from '../../layout/measure'
+import { rectShadowSpec, shadowCss } from '../../shadow'
 
 /* ── path translation ─────────────────────────────────────────────────────────────────── */
 
@@ -226,4 +227,128 @@ export const onSurface = (surface: Paint): Record<string, unknown> => ({ $block:
 
 export function pick<T extends string>(v: unknown, allowed: readonly T[], fallback: T): T {
   return (allowed as readonly string[]).includes(v as string) ? (v as T) : fallback
+}
+
+/* ── AC4: the deck card surface ─────────────────────────────────────────────────────────── */
+
+/** What a card-like block paints for one neutral card (`cardPaint`). */
+export interface CardPaint {
+  /** Card fill (absent = none: outline / ghost). */
+  fill?: Paint
+  /** Card border (absent = none). */
+  stroke?: { color: string; width: number }
+  /** `rect.shadow` for the card. */
+  shadow?: 0 | 1 | 2 | 'hard'
+  /** `ghost` with a stroke: a rule along the card's top edge instead of a border. */
+  topRule?: { color: string; width: number }
+  /** What the card's text sits on: its fill when opaque, else what is behind the block. */
+  surface: Paint
+  /** True when the deck surface changed the block's own look (a block may adjust spacing). */
+  styled: boolean
+}
+
+const GLASS_DARK = 'rgba(255,255,255,0.12)'
+const GLASS_LIGHT = 'rgba(255,255,255,0.55)'
+const GLASS_EDGE_DARK = 'rgba(255,255,255,0.35)'
+const GLASS_EDGE_LIGHT = 'rgba(255,255,255,0.9)'
+
+/**
+ * AC4 — the one helper every card-like block paints its neutral cards with (ai-curation §2.3 rank 3).
+ * `base` is the block's own look for a neutral card (its default tone); accent cards, featured
+ * tiers and explicit tones a block knob sets (`tone: outline`, …) do not call this. With no deck
+ * surface (`ctx.tokens.surface` absent) the result is `base`, so a deck without a style paints
+ * exactly as before.
+ *
+ * - `filled`: `base.fill`; border per `stroke` (`none` keeps `base.stroke`).
+ * - `outline`: no fill; a border (`hairline` 2 in `line`, `bold` 3 in `text`; `none` = hairline).
+ * - `glass`: translucent white (12 % on a dark slide, 55 % on a light one) + a light hairline; the
+ *   blur is a DOM-only enhancement of html templates (§4.2), never drawn here.
+ * - `ghost`: no fill, no border; a `stroke` becomes a top rule.
+ * - `raised`: the theme `surface` fill, no border unless `stroke`, shadow ≥ 1 (default 2).
+ * `shadow` applies to filled / glass / raised cards (an unfilled card casts none).
+ */
+export function cardPaint(
+  ctx: LayoutContext,
+  base: { fill?: Paint; stroke?: { color: string; width: number } } = {}
+): CardPaint {
+  const s = ctx.tokens.surface
+  const behind: Paint = ctx.surface?.behind ?? { type: 'solid', color: ctx.resolveColor('surface').color }
+  const opaque = (p: Paint | undefined): Paint => (p && p.type === 'solid' && !/^rgba|transparent/i.test(p.color) ? p : behind)
+  if (!s) return { fill: base.fill, stroke: base.stroke, surface: opaque(base.fill), styled: false }
+  const line = ctx.resolveColor('line').color
+  const text = ctx.resolveColor('text').color
+  const border = s.stroke === 'bold' ? { color: text, width: 3 } : s.stroke === 'hairline' ? { color: line, width: 2 } : undefined
+  const dark = (ctx.surface?.luminance ?? 1) < 0.35
+  const shadow = s.shadow || undefined
+  switch (s.card) {
+    case 'outline':
+      return { stroke: border ?? { color: line, width: 2 }, surface: behind, styled: true }
+    case 'ghost':
+      return { ...(border ? { topRule: border } : {}), surface: behind, styled: true }
+    case 'glass':
+      return {
+        fill: { type: 'solid', color: dark ? GLASS_DARK : GLASS_LIGHT },
+        stroke: s.stroke === 'bold' ? border : { color: dark ? GLASS_EDGE_DARK : GLASS_EDGE_LIGHT, width: 2 },
+        ...(shadow ? { shadow } : {}),
+        surface: behind,
+        styled: true,
+      }
+    case 'raised': {
+      const fill: Paint = { type: 'solid', color: ctx.resolveColor('surface').color }
+      return { fill, ...(border ? { stroke: border } : {}), shadow: shadow ?? 2, surface: fill, styled: true }
+    }
+    default:
+      return { fill: base.fill, stroke: border ?? base.stroke, ...(shadow ? { shadow } : {}), surface: opaque(base.fill), styled: true }
+  }
+}
+
+/** The card's paint nodes for `box`: the rect (fill, border, shadow) and a ghost card's top rule. */
+export function cardNodes(cp: CardPaint, box: Box, radius?: number | number[], part?: string): LayoutNode[] {
+  const out: LayoutNode[] = []
+  if (cp.fill || cp.stroke || cp.shadow) {
+    out.push({
+      k: 'rect',
+      box: { ...box },
+      ...(part ? { part } : {}),
+      ...(cp.fill ? { fill: cp.fill } : {}),
+      ...(cp.stroke ? { stroke: cp.stroke } : {}),
+      ...(radius !== undefined ? { radius } : {}),
+      ...(cp.shadow ? { shadow: cp.shadow } : {}),
+    } as LayoutNode)
+  }
+  if (cp.topRule) out.push({ k: 'rect', box: { x: box.x, y: box.y, width: box.width, height: cp.topRule.width }, ...(part ? { part: `${part}.rule` } : {}), fill: { type: 'solid', color: cp.topRule.color } })
+  return out
+}
+
+/**
+ * AC4 — the CSS an html template paints a card with, read from its poster (the poster's `cardNodes`
+ * for `part`): background, the border as an *inset* box-shadow (a CSS border would move the
+ * template's content off the poster's geometry), the drop shadow, a ghost card's top rule, and for a
+ * translucent (glass) fill the DOM-only `backdrop-filter` blur (§4.2). `undefined` when there is no
+ * poster (the template's own default applies); `''` when the poster paints no card (ghost).
+ */
+export function cardCssFromPoster(poster: LayoutNode | undefined, part: string): string | undefined {
+  if (!poster) return undefined
+  let rect: (LayoutNode & { k: 'rect' }) | undefined
+  let rule: (LayoutNode & { k: 'rect' }) | undefined
+  const walk = (n: LayoutNode): void => {
+    if (n.k === 'group') n.children.forEach(walk)
+    else if (n.k === 'rect' && n.part === part) rect = n
+    else if (n.k === 'rect' && n.part === `${part}.rule`) rule = n
+  }
+  walk(poster)
+  if (!rect && !rule) return ''
+  const shadows: string[] = []
+  let css = ''
+  if (rect?.fill?.type === 'solid') {
+    css += `background:${rect.fill.color};`
+    if (/^rgba/i.test(rect.fill.color)) css += 'backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);'
+  }
+  if (rect?.stroke) shadows.push(`inset 0 0 0 ${rect.stroke.width}px ${rect.stroke.color}`)
+  if (rule?.fill?.type === 'solid') shadows.push(`inset 0 ${rule.box.height}px 0 0 ${rule.fill.color}`)
+  const drop = rectShadowSpec(rect?.shadow, rect?.stroke?.color)
+  if (drop) shadows.push(shadowCss(drop))
+  if (shadows.length) css += `box-shadow:${shadows.join(',')};`
+  if (typeof rect?.radius === 'number') css += `border-radius:${rect.radius}px;`
+  return css
 }

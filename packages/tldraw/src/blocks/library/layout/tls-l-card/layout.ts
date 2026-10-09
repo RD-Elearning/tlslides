@@ -10,6 +10,7 @@ import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../type
 import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
+import { cardNodes, cardPaint } from '../../composite/_kit'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
@@ -24,12 +25,20 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   // Determine the surface fill: use the instance's Paint directly when it's a gradient,
   // otherwise resolve the surface role to a solid color.
   let surfaceFill: Paint
-  if (ctx.style?.surface && typeof ctx.style.surface !== 'string') {
-    surfaceFill = ctx.style.surface
+  const explicit = !!(ctx.style?.surface && typeof ctx.style.surface !== 'string')
+  if (explicit) {
+    surfaceFill = ctx.style!.surface as Paint
   } else {
     const surfaceColor = ctx.resolveColor('surface').color
     surfaceFill = { type: 'solid', color: surfaceColor }
   }
+  // AC4: a card with no instance surface takes the deck surface (`cardPaint`); an explicit
+  // `style.surface` (a host's or a parent block's paint) wins.
+  const cp = explicit ? undefined : cardPaint(ctx, { fill: surfaceFill })
+  const background: LayoutNode[] =
+    cp && cp.styled
+      ? cardNodes(cp, outerBox, ctx.tokens.radius.md, 'background')
+      : [{ k: 'rect', box: outerBox, part: 'background', fill: surfaceFill }]
 
   let childNodes: LayoutNode[]
   if (children.length > 1) {
@@ -44,12 +53,7 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
     box: outerBox,
     part: 'root',
     children: [
-      {
-        k: 'rect',
-        box: outerBox,
-        part: 'background',
-        fill: surfaceFill,
-      },
+      ...background,
       ...childNodes,
     ],
   }

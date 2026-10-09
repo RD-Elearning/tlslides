@@ -886,6 +886,9 @@ export interface ResolvedTokens {
   /** AC3: the family for `lead`, `body`, `caption`, `footnote` text (theme `bodyFamily`, else
    *  `headingFamily`, else the default). */
   bodyFamily?: string
+  /** AC4: the deck card surface (`DeckTokens.surface` resolved, every field set). Absent when the
+   *  deck sets none: card-like blocks then keep their own look (`cardPaint`). */
+  surface?: StyleSurface
 }
 
 /**
@@ -1134,7 +1137,10 @@ export interface FontRef {
   metricsKey: string
 }
 
-/** AC4 — card surface treatment a style asks card-like blocks for (data only until AC4). */
+/** AC4 — card surface treatment a style asks card-like blocks for (`DeckTokens.surface`, read by
+ *  `cardPaint`): `filled` (the block's own fill), `outline` (no fill, a stroke), `glass`
+ *  (translucent white + a light hairline), `ghost` (no fill or border; a stroke becomes a top rule),
+ *  `raised` (surface fill, lifted). `stroke` and `shadow` refine it. */
 export interface StyleSurface {
   card: 'filled' | 'outline' | 'glass' | 'ghost' | 'raised'
   stroke: 'none' | 'hairline' | 'bold'
@@ -1157,7 +1163,7 @@ export interface DeckStyle {
   fonts: { heading: FontRef; body: FontRef }
   /** Token overrides under `DeckSpec.tokens`. */
   tokens: DeckTokens
-  /** AC4 — surface treatment (data until AC4 reads it). */
+  /** AC4 — surface treatment, resolved as `DeckTokens.surface` under `DeckSpec.tokens.surface`. */
   surface?: StyleSurface
   /** Masters appended as `style:<name>` (`cover` | `content` | `section`). */
   masters: MasterSpec[]

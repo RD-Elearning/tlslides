@@ -16,6 +16,7 @@
 import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { KpiRowProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
+import { cardNodes, cardPaint } from '../_kit'
 
 /** AC2 `tile: accent-bar`: the bar's width down the card's left edge. */
 const TILE_BAR = 8
@@ -74,12 +75,14 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
       : nodes.map((n, i) => {
           const card = { x: rowX + i * (tileWidth + gap), y: inner.y, width: tileWidth, height: h }
           const r = ctx.tokens.radius.md
+          // AC4: the tile card takes the deck surface (`cardPaint`); the accent bar stays.
+          const cp = cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
           return {
             k: 'group',
             part: `tile[${i}]`,
             box: card,
             children: [
-              { k: 'rect', box: { x: 0, y: 0, width: card.width, height: card.height }, fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color }, radius: r },
+              ...cardNodes(cp, { x: 0, y: 0, width: card.width, height: card.height }, r),
               ...(bar ? [{ k: 'rect', box: { x: 0, y: 0, width: bar, height: card.height }, fill: { type: 'solid', color: ctx.resolveColor('accent').color }, radius: [r, 0, 0, r] } as LayoutNode] : []),
               { ...n, part: undefined, box: { ...n.box, x: n.box.x - card.x, y: n.box.y - card.y + dy } },
             ],

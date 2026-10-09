@@ -87,17 +87,24 @@ export function mergeDeckTokens(base: DeckTokens | undefined, over: DeckTokens |
   }
   const density = over.density ?? base.density
   if (density) out.density = density
+  if (base.surface || over.surface) out.surface = { ...base.surface, ...over.surface }
   return out
+}
+
+/** AC4: a style's tokens with its `surface` as `DeckTokens.surface`. */
+function styleTokens(style: DeckStyle | undefined): DeckTokens | undefined {
+  if (!style) return undefined
+  return style.surface ? { ...style.tokens, surface: { ...style.surface } } : style.tokens
 }
 
 /** The effective token overrides of a deck spec: style tokens under `spec.tokens`. */
 export function deckSpecTokens(spec: Pick<DeckSpec, 'style' | 'tokens'>): DeckTokens | undefined {
-  return mergeDeckTokens(getDeckStyle(spec.style)?.tokens, spec.tokens)
+  return mergeDeckTokens(styleTokens(getDeckStyle(spec.style)), spec.tokens)
 }
 
 /** The effective token overrides of a document: its style's tokens under `doc.tokens`. */
 export function documentDeckTokens(doc: Pick<TDDocument, 'styleId' | 'tokens'>): DeckTokens | undefined {
-  return mergeDeckTokens(getDeckStyle(doc.styleId)?.tokens, doc.tokens as DeckTokens | undefined)
+  return mergeDeckTokens(styleTokens(getDeckStyle(doc.styleId)), doc.tokens as DeckTokens | undefined)
 }
 
 /** Style masters under their reserved names (`style:cover`, …). */

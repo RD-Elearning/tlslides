@@ -15,7 +15,7 @@ import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { objs, str } from '../../media/_kit'
 import { slotItems } from '../_slots'
-import { composeFlat, measureHeights, pick, type Piece } from '../_kit'
+import { cardNodes, cardPaint, composeFlat, measureHeights, pick, type Piece } from '../_kit'
 
 export const TEAM_MIN = 2
 export const TEAM_MAX = 8
@@ -179,7 +179,8 @@ export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
     if (frame) {
       pieces.push({
         id: `card[${i}]`,
-        raw: [{ k: 'rect', box: { x, y, width: p.cw, height: p.cellH }, fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color }, radius: ctx.tokens.radius.lg } as LayoutNode],
+        // AC4: the deck surface (`cardPaint`).
+        raw: cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } }), { x, y, width: p.cw, height: p.cellH }, ctx.tokens.radius.lg),
         box: { x, y, width: p.cw, height: p.cellH },
       })
     }

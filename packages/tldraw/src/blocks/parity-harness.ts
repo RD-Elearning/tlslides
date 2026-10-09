@@ -74,7 +74,7 @@ export const TEST_TOKENS: ResolvedTokens = resolveTokens(TEST_THEME as any)
 /** LO8: the probe's tokens — `TEST_TOKENS` painted in Inter, the face the layout measures
  *  (`tableMetrics` is an Inter table) and the worker loads; only the family differs. */
 // AC3: text leaves read `headingFamily` / `bodyFamily` first, so the probe sets all three.
-const PROBE_TOKENS: ResolvedTokens = { ...TEST_TOKENS, fontFamily: '"Inter", sans-serif', headingFamily: '"Inter", sans-serif', bodyFamily: '"Inter", sans-serif' }
+export const PROBE_TOKENS: ResolvedTokens = { ...TEST_TOKENS, fontFamily: '"Inter", sans-serif', headingFamily: '"Inter", sans-serif', bodyFamily: '"Inter", sans-serif' }
 
 /** Default surface context for parity tests. */
 export const TEST_SURFACE: SurfaceContext = {
@@ -479,14 +479,15 @@ export async function assertParity(
   props: Record<string, unknown>,
   box: { width: number; height: number },
   _pageOrWorker?: unknown,
-  options?: { svgOverride?: string; registry?: BlockRegistry },
+  options?: { svgOverride?: string; registry?: BlockRegistry; tokens?: ResolvedTokens },
 ): Promise<void> {
   // 1. Create layout context and call layout. A composite lays its children out through
   //    `ctx.layoutChild`, which is an empty placeholder without a registry: pass `options.registry`
   //    for those blocks, or the probe compares two empty trees.
   const ctx = createLayoutContext({
     box,
-    tokens: PROBE_TOKENS,
+    // AC4: `options.tokens` probes a block under other tokens (e.g. a deck card surface).
+    tokens: options?.tokens ?? PROBE_TOKENS,
     surface: TEST_SURFACE,
     ...(options?.registry ? { registry: options.registry } : {}),
   })

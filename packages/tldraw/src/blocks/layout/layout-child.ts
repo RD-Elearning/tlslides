@@ -174,6 +174,7 @@ export function createLayoutContext(
     fontFamily: options.tokens.fontFamily,
     ...(options.tokens.headingFamily !== undefined ? { headingFamily: options.tokens.headingFamily } : {}),
     ...(options.tokens.bodyFamily !== undefined ? { bodyFamily: options.tokens.bodyFamily } : {}),
+    ...(options.tokens.surface !== undefined ? { surface: { ...options.tokens.surface } } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }

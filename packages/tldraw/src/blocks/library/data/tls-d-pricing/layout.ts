@@ -20,6 +20,7 @@ import type { PricingProps } from './schema'
 import { PRICING_MAX_FEATURES, PRICING_MAX_PLANS } from './schema'
 import { asArr, capacityOf, emptyState, enumOf, lineH, onColor, readableOn, str, tintOf } from '../_chart/kit'
 import { flattenChild } from '../_table/kit'
+import { cardNodes, cardPaint } from '../../composite/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
 import { placeText } from '../../text/_engine/text-place'
 
@@ -189,16 +190,18 @@ export function layout(props: PricingProps, ctx: LayoutContext): LayoutNode {
     const dy = lifted ? r.raise : 0
     const filled = r.style === 'filled' && p.featured
     const surface = filled ? accent : altFill
-    const cardNodes = flattenChild(
+    const lcardNodes = flattenChild(
       ctx.layoutChild({ id: `plan-${i}`, type: 'tls.l.card', props: { padding: 'lg', children: [], $block: { style: { surface: { type: 'solid', color: surface } } } } }, { x, y, width: r.cardW, height: h }),
       0,
       0
     )
-    const bg = cardNodes.find((n) => n.k === 'rect') as LayoutNode | undefined
+    const bg = lcardNodes.find((n) => n.k === 'rect') as LayoutNode | undefined
     const card: LayoutNode = bg
       ? { ...bg, part: `card[${i}]`, box: { x, y, width: r.cardW, height: h } }
       : { k: 'rect', part: `card[${i}]`, box: { x, y, width: r.cardW, height: h }, fill: { type: 'solid', color: surface } }
-    const nodes: LayoutNode[] = [card]
+    // AC4: a neutral (not featured-filled) card takes the deck surface (`cardPaint`).
+    const cp = filled ? undefined : cardPaint(ctx, { fill: { type: 'solid', color: surface } })
+    const nodes: LayoutNode[] = cp && cp.styled ? cardNodes(cp, { x, y, width: r.cardW, height: h }, card.k === 'rect' ? card.radius : undefined, `card[${i}]`) : [card]
     if (p.featured && r.style === 'outline') {
       nodes.push({ k: 'rect', part: `featured[${i}]`, box: { x, y, width: r.cardW, height: h }, stroke: { color: accent, width: 4 } })
     }
