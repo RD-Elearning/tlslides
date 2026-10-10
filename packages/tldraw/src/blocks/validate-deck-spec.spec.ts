@@ -681,14 +681,16 @@ describe('validateDeckSpec — icon/unknown warning (P0.5)', () => {
 })
 
 describe('validateDeckSpec: diagram blocks nested in containers', () => {
+  // CMP1 (deliberate change): this case used `BlockSpec.children`, which no layout reads — the
+  // card rendered empty while the validator said clean. Child blocks go in `props.children`.
   it('a tls.g.timeline inside a tls.l.card validates clean (no errors, no warnings)', () => {
     const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
     deck.slides[0].regions.left = [
       {
         id: 'card1',
         type: 'tls.l.card',
-        props: {},
-        children: [
+        props: {
+         children: [
           {
             id: 'tl1',
             type: 'tls.g.timeline',
@@ -700,9 +702,68 @@ describe('validateDeckSpec: diagram blocks nested in containers', () => {
               ],
             },
           },
-        ],
+         ],
+        },
       } as BlockSpec,
     ]
     expect(findingsOf(deck).filter((f) => f.level === 'error' || f.level === 'warning')).toEqual([])
+  })
+
+  it('CMP1: BlockSpec.children (not read by any layout) is an error naming props.children', () => {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = [
+      { id: 'card1', type: 'tls.l.card', props: {}, children: [{ id: 'b1', type: 'tls.t.body', props: { text: 'x' } }] } as BlockSpec,
+    ]
+    const hits = findingsOf(deck).filter((f) => f.rule === 'block/malformed' && f.path.endsWith('.children'))
+    expect(hits).toHaveLength(1)
+    expect(hits[0].level).toBe('error')
+    expect(hits[0].message).toContain('props.children')
+  })
+
+  it('CMP1: $block (composite channel) is not an unknown prop; layer/anchor in tls.l.overlay are honoured', () => {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = [
+      {
+        id: 'ov',
+        type: 'tls.l.overlay',
+        props: {
+          children: [
+            { id: 'img', type: 'tls.m.image', props: { src: 'https://example.com/a.jpg', alt: 'a' }, layer: 'backdrop' },
+            { id: 't', type: 'tls.t.body', props: { text: 'x', $block: { style: { on: 'text' } } }, anchor: 'bottom-left' },
+          ],
+        },
+      } as BlockSpec,
+    ]
+    const f = findingsOf(deck)
+    expect(f.filter((x) => ['slot/unknown', 'block/layer-nested', 'block/anchor-unused'].includes(x.rule))).toEqual([])
+  })
+
+  it('CMP1: anchor inside a non-overlay container still warns', () => {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = [
+      { id: 'st', type: 'tls.l.stack', props: { children: [{ id: 't', type: 'tls.t.body', props: { text: 'x' }, anchor: 'top' }] } } as BlockSpec,
+    ]
+    expect(findingsOf(deck).filter((x) => x.rule === 'block/anchor-unused')).toHaveLength(1)
+  })
+
+  it('CMP1: anchorTo may target a block nested in a stacked region block', () => {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = [
+      { id: 'g', type: 'tls.l.grid', props: { columns: 2, children: [{ id: 'c1', type: 'tls.t.body', props: { text: 'a' } }, { id: 'c2', type: 'tls.t.body', props: { text: 'b' } }] } } as BlockSpec,
+      { id: 'badge', type: 'tls.d.trend-badge', props: { delta: 5, format: 'percent' }, layer: 'overlay', anchor: 'top-right', anchorTo: 'c2' } as BlockSpec,
+    ]
+    expect(findingsOf(deck).filter((x) => x.rule === 'block/anchor-target')).toEqual([])
+  })
+
+  it('CMP1: a props.children cycle terminates', () => {
+    const cyclic: any = { id: 'c1', type: 'tls.l.stack', props: { children: [] } }
+    cyclic.props.children.push(cyclic)
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    ;(deck.slides[0].regions.left as any[]) = [cyclic]
+    let findings: DeckFinding[] = []
+    expect(() => {
+      findings = findingsOf(deck)
+    }).not.toThrow()
+    expect(findings.some((f) => f.rule === 'block/cyclic')).toBe(true)
   })
 })

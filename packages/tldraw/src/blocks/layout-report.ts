@@ -41,7 +41,8 @@ import { BLOCK_PROP_KEY } from './shape-bridge'
 import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
 import { blockLayer } from './block-layer'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
-import { resolveTokens } from './tokens'
+import { imageSurface, resolveTokens } from './tokens'
+import { MAX_NESTING_DEPTH } from './types'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
@@ -70,6 +71,8 @@ export type LayoutFindingCode =
   | 'region/displaced'
   | 'block/unregistered'
   | 'block/layout-failed'
+  // CMP1: a nested block the engine did not draw (nested deeper than `MAX_NESTING_DEPTH`).
+  | 'block/dropped'
   | 'layout/overlap'
   | 'text/collision'
   | 'text/occluded'
@@ -124,6 +127,9 @@ export interface BlockReport {
   outOfFlow?: true
   /** Paint order: higher paints on top (the compiled `childIndex`). */
   z: number
+  /** CMP1: a backdrop with `bleed: true` — may leave the frame (no `slide/overflow`, and it does
+   *  not count toward the slide's margins). */
+  bleed?: true
   /** The box the editor gives the block (slide coordinates). */
   box: Box
   /** What the content needs at `box.width` (painted union; see `measureBlock`). */
@@ -218,6 +224,23 @@ const MINIMAL_SURFACE: SurfaceContext = {
   behind: { type: 'solid', color: '#ffffff' },
   luminance: 1,
   overImage: false,
+}
+
+/** CMP1: what a block over a layered image backdrop sits on (as `surfaceFromBackground` for an
+ *  image background: luminance unknowable, `overImage: true`). */
+const IMAGE_SURFACE: SurfaceContext = imageSurface()
+
+/** CMP1: the nested blocks the engine dropped (`lint/depth-overflow` groups), by id and type. */
+function droppedBlocks(root: LayoutNode): Array<{ id?: string; type?: string }> {
+  const out: Array<{ id?: string; type?: string }> = []
+  const walk = (n: LayoutNode): void => {
+    if (n.k === 'host' && n.poster) walk(n.poster)
+    if (n.k !== 'group') return
+    if (n.part === 'lint/depth-overflow') out.push({ ...(n.blockId ? { id: n.blockId } : {}), ...(n.type ? { type: n.type } : {}) })
+    n.children.forEach(walk)
+  }
+  walk(root)
+  return out
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -404,6 +427,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       region: p.region,
       layer: blockLayer(p.block, def),
       ...(p.outOfFlow ? { outOfFlow: p.outOfFlow } : {}),
+      ...(p.block.bleed === true && blockLayer(p.block, def) === 'backdrop' ? { bleed: true as const } : {}),
       z: shape.childIndex,
       box,
     }
@@ -429,14 +453,17 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       return
     }
 
+    // CMP1: a block over a layered image backdrop (`$block.overImage`) sits on a photo.
+    const overImage = (shape.props[BLOCK_PROP_KEY] as { overImage?: boolean } | undefined)?.overImage === true
     const ctx = createLayoutContext({
       box: { width: box.width, height: box.height },
       tokens,
-      surface: MINIMAL_SURFACE,
+      surface: overImage ? IMAGE_SURFACE : MINIMAL_SURFACE,
       registry,
       measureText: provider,
       intrinsicSizeCache,
       ...(p.block.style ? { style: p.block.style } : {}),
+      ...(opts.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
     })
     const props = p.block.props as Record<string, unknown>
     const measure = measureBlock(def, props, box.width, ctx, { height: box.height })
@@ -445,8 +472,10 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     let painted: Box | null = null
     let text: TextLeafReport[] = []
     let failed: string | undefined
+    let dropped: Array<{ id?: string; type?: string }> = []
     try {
       const root = layoutBlock(def, props, ctx)
+      dropped = droppedBlocks(root)
       const collected = collectPaintedLeaves(root, { width: box.width, height: box.height })
       const local = paintedBounds(collected)
       painted = local ? offset(local, box.x, box.y) : null
@@ -456,7 +485,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       // a screenshot is the only ground truth. With the default provider (= the editor's) the check
       // cannot fire and is skipped.
       if (provider !== editorMetrics && !collected.posterHost && !collected.opaqueHost) {
-        const editor = editorTextCheck(def, props, ctx, box, provider, metricsName, text, registry)
+        const editor = editorTextCheck(def, props, ctx, box, provider, metricsName, text, registry, opts.blockDefaults)
         if (editor) visual.push({ blockId: id, reason: editor })
       }
     } catch (err) {
@@ -492,6 +521,16 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       confidence,
       ...(reason ? { reason } : {}),
     })
+    if (dropped.length) {
+      const names = dropped.map((d) => `${d.id ?? '?'} (${d.type ?? 'unknown type'})`)
+      findings.push({
+        code: 'block/dropped',
+        severity: 'error',
+        blockIds: [id],
+        message: `${id}: ${names.join(', ')} ${dropped.length === 1 ? 'is' : 'are'} nested deeper than ${MAX_NESTING_DEPTH} levels and not drawn.`,
+        fix: `flatten ${id}: move the deepest blocks up a level or into a region of their own`,
+      })
+    }
     if (failed) {
       findings.push({
         code: 'block/layout-failed',
@@ -571,6 +610,8 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   // under everything by construction, so it is left out of the pairwise checks and of the slide's
   // margins / free space (a full-frame mesh is not content).
   const styleOwned = (b: BlockReport) => b.id.startsWith(STYLE_MASTER_PREFIX) && b.layer === 'backdrop'
+  // CMP1: a bleeding backdrop is decoration cut by the frame — not content for the margins.
+  const marginless = (b: BlockReport) => styleOwned(b) || b.bleed === true
   for (let i = 0; i < blocks.length; i++) {
     for (let j = i + 1; j < blocks.length; j++) {
       if (styleOwned(blocks[i]) || styleOwned(blocks[j])) continue
@@ -579,7 +620,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   }
 
   // 6. Slide summary numbers.
-  const paintedAll = blocks.filter((b) => !styleOwned(b)).map((b) => b.painted).filter((b): b is Box => b !== null)
+  const paintedAll = blocks.filter((b) => !marginless(b)).map((b) => b.painted).filter((b): b is Box => b !== null)
   const all = unionBox(paintedAll)
   const margins = all
     ? {
@@ -745,6 +786,7 @@ function blockFindings(
   out: LayoutFinding[]
 ): void {
   // Frame overflow (F5.3): the box or its painted content leaves the 1920×1080 frame.
+  // CMP1: a bleeding backdrop (`bleed: true`) may.
   const extent = (b.painted && unionBox([b.box, b.painted])) || b.box
   const past = {
     left: r(-extent.x),
@@ -753,7 +795,7 @@ function blockFindings(
     bottom: r(extent.y + extent.height - frame.height),
   }
   const edges = (Object.entries(past) as Array<[string, number]>).filter(([, v]) => v > TOL)
-  if (edges.length > 0) {
+  if (edges.length > 0 && !b.bleed) {
     out.push({
       code: 'slide/overflow',
       severity: 'error',
@@ -947,7 +989,8 @@ function editorTextCheck(
   provider: MeasureTextProvider,
   providerName: string,
   report: TextLeafReport[],
-  registry: BlockRegistry
+  registry: BlockRegistry,
+  blockDefaults?: DeckStyle['blockDefaults']
 ): string | undefined {
   if (report.length === 0) return undefined
   const editorCtx = createLayoutContext({
@@ -957,6 +1000,7 @@ function editorTextCheck(
     registry,
     measureText: editorMetrics,
     ...(ctx.style ? { style: ctx.style } : {}),
+    ...(blockDefaults ? { blockDefaults } : {}),
   })
   const root = layoutBlock(def, props, editorCtx)
   const editor = collectPaintedLeaves(root, { width: box.width, height: box.height }).text

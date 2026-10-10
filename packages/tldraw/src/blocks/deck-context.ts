@@ -16,11 +16,11 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now`, `Math.random`.
  */
 
-import { documentDeckTokens } from './styles'
+import { documentDeckTokens, getDeckStyle } from './styles'
 import type { TDAssets, TDDocument, SlideBackground } from '~types'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
-import { resolveTokens, surfaceFromBackground } from './tokens'
+import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { createLayoutContext } from './layout'
 import { BLOCK_PROP_KEY } from './shape-bridge'
 import type { BlockStyleSpec, Box, LayoutContext, Size } from './types'
@@ -77,6 +77,8 @@ export function deckLayoutContext(
     style?: BlockStyleSpec
     /** Block registry, so container blocks' `layoutChild` can resolve their children. */
     registry?: BlockRegistry
+    /** CMP1: the block sits on a layered image backdrop (`$block.overImage`). */
+    overImage?: boolean
   }
 ): LayoutContext {
   const theme = activeDeckTheme(doc.theme)
@@ -85,12 +87,11 @@ export function deckLayoutContext(
     doc.defaultPageSize?.[0] ?? DEFAULT_SLIDE_SIZE[0],
     doc.defaultPageSize?.[1] ?? DEFAULT_SLIDE_SIZE[1],
   ]
-  const surface = surfaceFromBackground(
-    opts.slideBackground,
-    { x: 0, y: 0, ...box },
-    pageSize,
-    theme
-  )
+  const surface = opts.overImage
+    ? imageSurface()
+    : surfaceFromBackground(opts.slideBackground, { x: 0, y: 0, ...box }, pageSize, theme)
+  // CMP1: the deck style's knob defaults reach nested children (`layoutChild` fills them).
+  const blockDefaults = getDeckStyle(doc.styleId)?.blockDefaults
 
   return createLayoutContext({
     box: { width: box.width, height: box.height },
@@ -116,6 +117,7 @@ export function deckLayoutContext(
     },
     // Container blocks (card/section/overlay/…) resolve their `props.children` through this.
     registry: opts.registry,
+    ...(blockDefaults ? { blockDefaults } : {}),
   })
 }
 
@@ -150,5 +152,6 @@ export function contextForBlock(
     | Record<string, unknown>
     | undefined
   const style = meta?.style as BlockStyleSpec | undefined
-  return deckLayoutContext(doc, box, { ...opts, style })
+  const overImage = meta?.overImage === true
+  return deckLayoutContext(doc, box, { ...opts, style, ...(overImage ? { overImage } : {}) })
 }

@@ -10,7 +10,7 @@ import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../type
 import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
-import { cardNodes, cardPaint } from '../../composite/_kit'
+import { containerSurface } from '../_style'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
@@ -37,19 +37,20 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   // AC8: a non-neutral colour-role surface (`'scrim'`, `'accent'`) is an explicit choice too —
   // before AC8 a cover's photo scrim took the deck's glass paint (a light wash under light text on
   // glass-pastel). `surface` / `surfaceAlt` stay the card's base under the deck surface.
+  // CMP1: `style.tone` / `radius` / `elevation` restyle the card (`containerSurface`), and the
+  // paint the card leaves under its content is passed to the children, so their text solves
+  // against the card (a dark or accent card gets light ink), not against the slide.
   const roleSurface = typeof ctx.style?.surface === 'string' && !['surface', 'surfaceAlt'].includes(ctx.style.surface)
-  const cp = explicit || roleSurface ? undefined : cardPaint(ctx, { fill: surfaceFill })
-  const background: LayoutNode[] =
-    cp && cp.styled
-      ? cardNodes(cp, outerBox, ctx.tokens.radius.md, 'background')
-      : [{ k: 'rect', box: outerBox, part: 'background', fill: surfaceFill }]
+  const { nodes: background, surface: under } = containerSurface(ctx, outerBox, surfaceFill, 'background', !(explicit || roleSurface))
 
   let childNodes: LayoutNode[]
   if (children.length > 1) {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
-    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' } }, contentBox)]
+    // CMP1: `style.gap` spaces the card's children (default `sm`).
+    const gapStyle = ctx.style?.gap !== undefined ? { style: { gap: ctx.style.gap } } : {}
+    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' }, ...gapStyle }, contentBox, { surface: under })]
   } else {
-    childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox)))
+    childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox, { surface: under })))
   }
 
   return {

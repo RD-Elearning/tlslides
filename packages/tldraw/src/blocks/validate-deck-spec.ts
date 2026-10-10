@@ -20,7 +20,7 @@ import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
-import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES } from './types'
 import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
@@ -440,11 +440,14 @@ function checkMotionStyle(value: unknown, path: string, owner: string, findings:
 /* Block-tree validation                                                            */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-/** Findings beyond this depth stop being restated at every deeper level. */
-const MAX_NESTING_DEPTH = 6
+// CMP1: `MAX_NESTING_DEPTH` (types.ts) is the one limit — the layout engine stops drawing at the
+// same level (`lint/depth-overflow`, reported as `block/dropped`). Findings beyond it stop being
+// restated at every deeper level.
 /** Absolute recursion cutoff — a safety net independent of the depth finding above, so a
  *  pathological (but acyclic) chain can never grow the call stack without bound. */
 const HARD_DEPTH_CAP = 200
+/** CMP1: the container whose children may set `layer` / `anchor`. */
+const OVERLAY_TYPE = 'tls.l.overlay'
 
 function validateBlockTree(
   blockRaw: unknown,
@@ -455,7 +458,8 @@ function validateBlockTree(
   ancestorIds: string[],
   ancestorRefs: unknown[],
   depth: number,
-  tokens: ResolvedTokens
+  tokens: ResolvedTokens,
+  parentType?: string
 ): void {
   if (!isRecord(blockRaw)) {
     findings.push({
@@ -571,7 +575,9 @@ function validateBlockTree(
   }
 
   if (def) {
-    validateProps(block.props, def, path, reg, seenBlockIds, findings, ancestorIds, ancestorRefs, depth, tokens)
+    // CMP1: the props recursion carries this block as an ancestor (cycle guard) and stops past
+    // the nesting limit, like the `children` recursion below.
+    validateProps(block.props, def, path, reg, seenBlockIds, findings, id ? [...ancestorIds, id] : ancestorIds, [...ancestorRefs, blockRaw], depth, tokens)
     validateStyle(block.style, def.type, `${path}.style`, tokens, findings)
   } else if (block.props !== undefined && !isRecord(block.props)) {
     findings.push({
@@ -594,12 +600,12 @@ function validateBlockTree(
           `Block ${label}'s "layer" is ${stringifyForMessage(block.layer)}; it must be one of ${BLOCK_LAYERS.map((l) => `"${l}"`).join(', ')}.` +
           ` Use "backdrop" to put a block behind the other blocks of its region, "overlay" to put it on top.`,
       })
-    } else if (depth > 1 && block.layer !== 'content') {
+    } else if (depth > 1 && block.layer !== 'content' && parentType !== OVERLAY_TYPE) {
       findings.push({
         level: 'warning',
         rule: 'block/layer-nested',
         path: `${path}.layer`,
-        message: `Block ${label} sets layer "${block.layer}" inside a container; only a block placed directly in a slide region is taken out of the stack. Move it to the region, or use tls.l.overlay.`,
+        message: `Block ${label} sets layer "${block.layer}" inside a container; only a block placed directly in a slide region, or a child of tls.l.overlay, is layered. Move it to the region, or into a tls.l.overlay.`,
       })
     }
   }
@@ -622,16 +628,37 @@ function validateBlockTree(
       path: `${path}.anchorTo`,
       message: `Block ${label}'s "anchorTo" must be the id of another block in the same region; got ${describeType(block.anchorTo)}.`,
     })
-  } else if (depth > 1 && (block.anchor !== undefined || block.anchorTo !== undefined)) {
+  } else if (depth > 1 && (block.anchorTo !== undefined || (block.anchor !== undefined && parentType !== OVERLAY_TYPE))) {
     findings.push({
       level: 'warning',
       rule: 'block/anchor-unused',
       path: `${path}.${block.anchorTo !== undefined ? 'anchorTo' : 'anchor'}`,
-      message: `Block ${label} sets an anchor inside a container; anchors only place a layered block directly in a slide region. It is ignored here.`,
+      message:
+        block.anchorTo !== undefined
+          ? `Block ${label} sets "anchorTo" inside a container; only a layered block directly in a slide region is anchored to another block (its target may be nested). It is ignored here.`
+          : `Block ${label} sets an anchor inside a container that is not tls.l.overlay; anchors place a layered region block or a child of tls.l.overlay. It is ignored here.`,
+    })
+  }
+
+  // CMP1: `bleed` lets a backdrop leave the frame on purpose (no `slide/overflow`).
+  if (block.bleed !== undefined && typeof block.bleed !== 'boolean') {
+    findings.push({
+      level: 'error',
+      rule: 'block/malformed',
+      path: `${path}.bleed`,
+      message: `Block ${label}'s "bleed" must be true or false; got ${describeType(block.bleed)}.`,
     })
   }
 
   if (block.children !== undefined) {
+    // CMP1: one children slot. No layout reads `BlockSpec.children`; a block that sets it renders
+    // without those children. Say so (the children are still validated below).
+    findings.push({
+      level: 'error',
+      rule: 'block/malformed',
+      path: `${path}.children`,
+      message: `Block ${label} puts child blocks in "children" at the block level, which no layout reads (they would not render). Move them to "props.children"${def && def.schema?.children ? '' : ` — and use a container type (tls.l.stack, tls.l.row, tls.l.card, …): "${type ?? '?'}" takes no children`}.`,
+    })
     if (!Array.isArray(block.children)) {
       findings.push({
         level: 'error',
@@ -652,7 +679,8 @@ function validateBlockTree(
           nextAncestorIds,
           nextAncestorRefs,
           depth + 1,
-          tokens
+          tokens,
+          type
         )
       })
     }
@@ -714,8 +742,8 @@ function validateProps(
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
       // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
-      if (slotSpec.type.kind === 'blocks' && Array.isArray(value)) {
-        const nextAncestorIds = typeof props.id === 'string' && props.id.length > 0 ? [...ancestorIds, props.id] : ancestorIds
+      if (slotSpec.type.kind === 'blocks' && Array.isArray(value) && depth <= MAX_NESTING_DEPTH && depth < HARD_DEPTH_CAP) {
+        const nextAncestorIds = ancestorIds
         const nextAncestorRefs = [...ancestorRefs, propsRaw]
         value.forEach((childRaw, ci) => {
           validateBlockTree(
@@ -727,7 +755,8 @@ function validateProps(
             nextAncestorIds,
             nextAncestorRefs,
             depth + 1,
-            tokens
+            tokens,
+            def.type
           )
         })
       }
@@ -735,6 +764,9 @@ function validateProps(
   }
 
   for (const propName of Object.keys(props)) {
+    // `$block` is the composites' private per-child channel (`onSurface`); `BlockSpec.style` is
+    // the public one (CMP1) — not an unknown prop.
+    if (propName === '$block') continue
     if (!slotNames.includes(propName)) {
       findings.push({
         level: 'warning',
@@ -1196,9 +1228,23 @@ function errorMessage(err: unknown): string {
  */
 function validateRegionAnchors(blocks: unknown[], regionName: string, regionPath: string, findings: DeckFinding[]): void {
   const layered = (b: Record<string, unknown>) => b.layer === 'backdrop' || b.layer === 'overlay'
-  const stackedIds = blocks
-    .filter((b): b is Record<string, unknown> => isRecord(b) && !layered(b) && typeof b.id === 'string')
-    .map((b) => b.id as string)
+  const stacked = blocks.filter((b): b is Record<string, unknown> => isRecord(b) && !layered(b))
+  const stackedIds = stacked.filter((b) => typeof b.id === 'string').map((b) => b.id as string)
+  // CMP1: `anchorTo` may name a block nested inside a stacked block (a badge on card 2 of a grid).
+  const nestedIds: string[] = []
+  const walk = (b: unknown, depth: number): void => {
+    if (!isRecord(b) || depth > MAX_NESTING_DEPTH || !isRecord(b.props)) return
+    for (const v of Object.values(b.props)) {
+      if (!Array.isArray(v)) continue
+      for (const c of v) {
+        if (!isRecord(c) || typeof c.type !== 'string') continue
+        if (typeof c.id === 'string') nestedIds.push(c.id)
+        walk(c, depth + 1)
+      }
+    }
+  }
+  stacked.forEach((b) => walk(b, 1))
+  const targetIds = [...stackedIds, ...nestedIds]
   blocks.forEach((b, bi) => {
     if (!isRecord(b) || (b.anchor === undefined && b.anchorTo === undefined)) return
     const path = `${regionPath}[${bi}]`
@@ -1213,14 +1259,14 @@ function validateRegionAnchors(blocks: unknown[], regionName: string, regionPath
       return
     }
     if (typeof b.anchorTo !== 'string' || b.anchorTo === '') return
-    if (!stackedIds.includes(b.anchorTo)) {
-      const suggestion = nearestName(b.anchorTo, stackedIds)
+    if (!targetIds.includes(b.anchorTo)) {
+      const suggestion = nearestName(b.anchorTo, targetIds)
       findings.push({
         level: 'error',
         rule: 'block/anchor-target',
         path: `${path}.anchorTo`,
         message:
-          `Block ${label}'s "anchorTo" is "${b.anchorTo}", which is not a stacked block of region "${regionName}"; it falls back to the region box.` +
+          `Block ${label}'s "anchorTo" is "${b.anchorTo}", which is not a stacked block of region "${regionName}" (or a block nested in one); it falls back to the region box.` +
           (stackedIds.length ? ` Stacked blocks here: ${stackedIds.join(', ')}.` : ' This region has no stacked block.'),
         ...(suggestion ? { suggestion } : {}),
       })

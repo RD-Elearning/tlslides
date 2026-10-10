@@ -10,11 +10,12 @@
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RowProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 import { distributeSpace } from '../../../layout/layout-child'
 
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const sizingMode: 'equal' | 'content' = (props as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
   const children: BlockSpec[] = (props as { children?: BlockSpec[] }).children ?? []
 

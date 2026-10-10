@@ -1,10 +1,10 @@
 import * as React from 'react'
 import { useTldrawApp } from './useTldrawApp'
 import { useBlockRegistry } from './useBlockRegistry'
-import { resolveTokens, surfaceFromBackground } from '~blocks/tokens'
+import { imageSurface, resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
 import { resolveAssetUrl } from '~blocks/deck-context'
-import { documentDeckTokens } from '~blocks/styles'
+import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
@@ -76,15 +76,19 @@ export function useBlockSurface(box: Box): SurfaceContext {
  */
 export function useBlockLayoutContext(
   box: Box,
-  opts: { headless?: boolean; depth?: number; style?: BlockStyleSpec } = {},
+  opts: { headless?: boolean; depth?: number; style?: BlockStyleSpec; overImage?: boolean } = {},
 ): LayoutContext {
   const tokens = useDeckTokens()
-  const surface = useBlockSurface(box)
+  const pageSurface = useBlockSurface(box)
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
   const assets = doc.assets
   const blockRegistry = useBlockRegistry()
-  const { headless = false, depth, style } = opts
+  const { headless = false, depth, style, overImage = false } = opts
+  // CMP1: a block over a layered image backdrop (`$block.overImage`) sits on a photo.
+  const surface = React.useMemo(() => (overImage ? imageSurface() : pageSurface), [overImage, pageSurface])
+  // CMP1: the deck style's knob defaults reach nested children (`layoutChild` fills them).
+  const blockDefaults = React.useMemo(() => getDeckStyle(doc.styleId)?.blockDefaults, [doc.styleId])
 
   return React.useMemo(
     () =>
@@ -102,7 +106,8 @@ export function useBlockLayoutContext(
         resolveAsset: (id: string) => resolveAssetUrl(id, assets),
         // Container blocks resolve `props.children` through the registry.
         registry: blockRegistry,
+        ...(blockDefaults ? { blockDefaults } : {}),
       }),
-    [box.width, box.height, tokens, surface, headless, depth, style, assets, blockRegistry],
+    [box.width, box.height, tokens, surface, headless, depth, style, assets, blockRegistry, blockDefaults],
   )
 }

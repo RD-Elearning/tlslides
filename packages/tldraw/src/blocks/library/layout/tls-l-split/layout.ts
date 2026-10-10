@@ -8,12 +8,13 @@
 import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { SplitProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 import { splitBox } from '../../../layout/box-model'
 
 export function layout(props: SplitProps, ctx: LayoutContext): LayoutNode {
   const ratio = props.ratio ?? 0.5
   const gutterToken = (props.gutter ?? 'md') as SpaceToken
-  const gutter = ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md
+  const gutter = styleGap(ctx, ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const axis = (props.axis ?? 'x') as 'x' | 'y'
   const children = props.children ?? []
 

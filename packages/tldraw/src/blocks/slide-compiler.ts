@@ -37,6 +37,7 @@ import type {
   DeckStyle,
   Box,
   LayoutContext,
+  LayoutNode,
   MotionStyle,
   Paint,
   ResolvedTokens,
@@ -55,6 +56,7 @@ import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/m
 import { deriveShapeAnimation } from './motion/resolve-motion'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
+import { MAX_NESTING_DEPTH } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -202,7 +204,7 @@ function compileSlideUnstyled(
       const blocks = spec.regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache)
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults)
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -466,15 +468,19 @@ function measureRegionBlocks(
   gap: number,
   tokens: ResolvedTokens,
   registry: BlockRegistry,
-  intrinsicSizeCache: Map<string, Size>
+  intrinsicSizeCache: Map<string, Size>,
+  blockDefaults?: Record<string, Record<string, unknown>>
 ): number[] {
   const regionSize = { width: regionBox.width, height: regionBox.height }
+  // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
+  const bd = blockDefaults ? { blockDefaults } : {}
   const sharedCtx = createLayoutContext({
     box: regionSize,
     tokens,
     surface: MINIMAL_SURFACE,
     registry,
     intrinsicSizeCache, // F3.1: scoped memo cache
+    ...bd,
   })
   // B3-H1: a per-block ctx when instance style overrides (padding/align) are present. `style` is
   // a top-level BlockSpec field in deck JSON (not `props.$block.style` — that reserved key only
@@ -491,6 +497,7 @@ function measureRegionBlocks(
           registry,
           intrinsicSizeCache,
           style: blockStyle,
+          ...bd,
         })
       : sharedCtx
   }
@@ -742,18 +749,28 @@ function compileLayered(
     return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
   }
 
+  const blockDefaults = opts?.blockDefaults
   // LO2.1: the painted box of a stacked block in the same region, for `anchorTo`.
+  // CMP1: or of a block nested inside one (a badge on card 2 of a grid) — found by the `blockId`
+  // the engine stamps on every child wrapper group.
   const targetBox = (l: LayeredRegionBlock): Box | undefined => {
     const targetId = l.block.anchorTo
     if (typeof targetId !== 'string') return undefined
-    const target = (split.flow.regions[l.region] ?? []).find((b) => b.id === targetId)
+    const stacked = split.flow.regions[l.region] ?? []
+    const target = stacked.find((b) => b.id === targetId) ?? stacked.find((b) => containsBlockId(b, targetId))
     if (!target) return undefined
-    const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === targetId)
+    const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === target.id)
     if (!shape) return undefined
     const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
-    const painted = registry ? paintedBoxOf(target, box, tokens, registry) : null
-    return painted ?? box
+    const nested = target.id === targetId ? undefined : targetId
+    const painted = registry ? paintedBoxOf(target, box, tokens, registry, blockDefaults, nested) : null
+    return painted ?? (nested ? undefined : box)
   }
+
+  // CMP1: a region whose layered backdrop is an image (`tls.m.image`) puts its stacked and overlay
+  // blocks over a photo: their shapes carry `$block.overImage`, so the editor and the layout report
+  // solve their text against an image surface (and CMP2's contrast check asks for a scrim).
+  const imageRegions = new Set(split.backdrops.filter((l) => l.block.type === IMAGE_TYPE).map((l) => l.region))
 
   const place = (l: LayeredRegionBlock): ComponentShape[] => {
     const region = regionExtent(l.region)
@@ -761,12 +778,23 @@ function compileLayered(
     if (!region) return []
     const def = registry?.get(l.block.type)
     const target = targetBox(l)
-    const box = anchoredBox(l.block, def, target ?? region, target ? tokens.space.sm : 0, tokens, registry, region)
+    const box = anchoredBox(l.block, def, target ?? region, target ? tokens.space.sm : 0, tokens, registry, region, blockDefaults)
     const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
     // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
     const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
     meta.placed = { box: { ...box }, from: 'region' }
+    if (l.layer === 'overlay' && imageRegions.has(l.region)) meta.overImage = true
     return [shape]
+  }
+
+  if (imageRegions.size) {
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const id = typeof meta?.id === 'string' ? meta.id : undefined
+      if (!meta || id === undefined) continue
+      const inImageRegion = [...imageRegions].some((r) => (split.flow.regions[r] ?? []).some((b) => b.id === id))
+      if (inImageRegion) meta.overImage = true
+    }
   }
 
   const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
@@ -778,14 +806,46 @@ function compileLayered(
 
 /** Visible extent of a placed block — painted leaves *and* full-box backdrops (a card's surface
  *  is its corner), slide coordinates; `null` when it paints nothing or throws. */
-function paintedBoxOf(block: BlockSpec, box: Box, tokens: ResolvedTokens, registry: BlockRegistry): Box | null {
+function paintedBoxOf(
+  block: BlockSpec,
+  box: Box,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  blockDefaults?: Record<string, Record<string, unknown>>,
+  nestedId?: string
+): Box | null {
   const def = registry.get(block.type)
   if (!def) return null
   const size = { width: box.width, height: box.height }
   try {
-    const ctx = createLayoutContext({ box: size, tokens, surface: MINIMAL_SURFACE, registry, ...(block.style ? { style: block.style } : {}) })
-    const c = collectPaintedLeaves(layoutBlock(def, block.props as Record<string, unknown>, ctx), size)
-    const local = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+    const ctx = createLayoutContext({
+      box: size,
+      tokens,
+      surface: MINIMAL_SURFACE,
+      registry,
+      ...(block.style ? { style: block.style } : {}),
+      ...(blockDefaults ? { blockDefaults } : {}),
+    })
+    const root = layoutBlock(def, block.props as Record<string, unknown>, ctx)
+    let local: Box | null
+    if (nestedId) {
+      // CMP1: the nested block's wrapper group, in the block's own coordinates.
+      const found = findBlockGroup(root, nestedId)
+      if (!found) return null
+      const inner = { width: found.box.width, height: found.box.height }
+      const c = collectPaintedLeaves({ ...found.group, box: { x: 0, y: 0, ...inner } }, inner)
+      const painted = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+      if (!painted) return null
+      const cx1 = Math.max(0, painted.x)
+      const cy1 = Math.max(0, painted.y)
+      const cx2 = Math.min(inner.width, painted.x + painted.width)
+      const cy2 = Math.min(inner.height, painted.y + painted.height)
+      if (cx2 <= cx1 || cy2 <= cy1) return null
+      local = { x: found.box.x + cx1, y: found.box.y + cy1, width: cx2 - cx1, height: cy2 - cy1 }
+    } else {
+      const c = collectPaintedLeaves(root, size)
+      local = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+    }
     if (!local) return null
     // Clip to the block's own box: an anchor never follows content that overflows it.
     const x1 = Math.max(box.x, box.x + local.x)
@@ -814,7 +874,8 @@ export function anchoredBox(
   inset: number,
   tokens: ResolvedTokens,
   registry: BlockRegistry | undefined,
-  bounds: Box = container
+  bounds: Box = container,
+  blockDefaults?: Record<string, Record<string, unknown>>
 ): Box {
   const anchor: BlockAnchor = blockAnchor(block, def)
   if (anchor === 'fill' || !def || !registry) return container
@@ -822,7 +883,7 @@ export function anchoredBox(
     container.width > 2 * inset && container.height > 2 * inset
       ? { x: container.x + inset, y: container.y + inset, width: container.width - 2 * inset, height: container.height - 2 * inset }
       : container
-  const { width: w, height: h } = anchoredSize(block, def, bounds, tokens, registry)
+  const { width: w, height: h } = anchoredSize(block, def, bounds, tokens, registry, blockDefaults)
   const [col, row] = ANCHOR_GRID[anchor]
   return {
     x: inner.x + ((inner.width - w) * col) / 2,
@@ -851,10 +912,24 @@ const ANCHOR_GRID: Record<Exclude<BlockAnchor, 'fill'>, [number, number]> = {
  * its pill). Elastic blocks (no natural size) and blocks whose layout throws get
  * `size.preferred`. Always clamped to `inner`.
  */
-function anchoredSize(block: BlockSpec, def: BlockDefinition, inner: Box, tokens: ResolvedTokens, registry: BlockRegistry): Size {
+function anchoredSize(
+  block: BlockSpec,
+  def: BlockDefinition,
+  inner: Box,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  blockDefaults?: Record<string, Record<string, unknown>>
+): Size {
   const props = block.props as Record<string, unknown>
   const ctxAt = (size: Size) =>
-    createLayoutContext({ box: size, tokens, surface: MINIMAL_SURFACE, registry, ...(block.style ? { style: block.style } : {}) })
+    createLayoutContext({
+      box: size,
+      tokens,
+      surface: MINIMAL_SURFACE,
+      registry,
+      ...(block.style ? { style: block.style } : {}),
+      ...(blockDefaults ? { blockDefaults } : {}),
+    })
   const clampW = (v: number) => Math.max(1, Math.min(inner.width, Math.ceil(v)))
   const clampH = (v: number) => Math.max(1, Math.min(inner.height, Math.ceil(v)))
   const m = measureBlock(def, props, inner.width, ctxAt({ width: inner.width, height: inner.height }), { height: inner.height })
@@ -882,4 +957,50 @@ function anchoredSize(block: BlockSpec, def: BlockDefinition, inner: Box, tokens
     else break
   }
   return { width: w, height: h }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CMP1 — nested block lookup                                                       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const IMAGE_TYPE = 'tls.m.image'
+
+/** Does `block` hold a block with this id anywhere in its `blocks`-kind props (`props.children`, …)? */
+export function containsBlockId(block: BlockSpec, id: string, depth = 0): boolean {
+  if (!block || typeof block !== 'object' || depth > MAX_NESTING_DEPTH) return false
+  const props = block.props
+  if (!props || typeof props !== 'object') return false
+  for (const v of Object.values(props)) {
+    if (!Array.isArray(v)) continue
+    for (const c of v) {
+      if (!c || typeof c !== 'object' || typeof (c as BlockSpec).type !== 'string') continue
+      if ((c as BlockSpec).id === id || containsBlockId(c as BlockSpec, id, depth + 1)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * The wrapper group `layoutChild` drew for block `id` (its `blockId`), and its box in `root`'s
+ * coordinates (group offsets summed). `undefined` when the tree does not hold it.
+ */
+export function findBlockGroup(root: LayoutNode, id: string): { group: Extract<LayoutNode, { k: 'group' }>; box: Box } | undefined {
+  const walk = (n: LayoutNode, ox: number, oy: number): { group: Extract<LayoutNode, { k: 'group' }>; box: Box } | undefined => {
+    if (n.k !== 'group') return undefined
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.blockId === id) return { group: n, box: { x, y, width: n.box.width, height: n.box.height } }
+    for (const c of n.children) {
+      const hit = walk(c, x, y)
+      if (hit) return hit
+    }
+    return undefined
+  }
+  // The root's own box is the block's origin (0,0); its children are relative to it.
+  if (root.k !== 'group') return undefined
+  for (const c of root.children) {
+    const hit = walk(c, root.box.x, root.box.y)
+    if (hit) return hit
+  }
+  return undefined
 }

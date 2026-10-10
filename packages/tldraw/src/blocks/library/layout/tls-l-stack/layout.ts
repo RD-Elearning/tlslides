@@ -10,10 +10,13 @@
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { StackProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  // A container that delegates to an inner stack (tls.l.section) passes its gap in units.
+  const propGap = typeof props.gap === 'number' ? (props.gap as number) : ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  const gap = styleGap(ctx, propGap) // CMP1: style.gap wins
   const sizingMode: 'equal' | 'content' = (props as unknown as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
   const children: BlockSpec[] = (props as unknown as { children?: BlockSpec[] }).children ?? []
 

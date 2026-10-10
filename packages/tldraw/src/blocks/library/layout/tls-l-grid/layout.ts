@@ -11,12 +11,13 @@
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { GridProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
   const rows = Math.max(1, Math.floor(props.rows ?? 2))
   const gapToken = (props.gap ?? 'md') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const sizingMode = props.sizing ?? 'equal'
   const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
 

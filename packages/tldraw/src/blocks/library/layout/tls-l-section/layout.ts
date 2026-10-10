@@ -8,6 +8,7 @@
 import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
 import type { SectionProps } from './schema'
 import { tagChildren } from '../_motion'
+import { containerSurface, styleGap } from '../_style'
 import { isShown } from '../../../schema-helpers'
 
 export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
@@ -15,7 +16,7 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   const showTitle = isShown(props, 'showTitle')
   const showDivider = isShown(props, 'showDivider')
   const gapToken = (props.gap ?? 'sm') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm) // CMP1: style.gap wins
   const children = props.children ?? []
 
   const W = ctx.box.width
@@ -40,9 +41,10 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   const contentH = Math.max(0, H - contentY)
 
   // Build the body children: surface rect, optional title, optional divider.
-  const bodyChildren: LayoutNode[] = [
-    { k: 'rect', part: 'surface', box: { x: 0, y: 0, width: W, height: H }, fill: surfacePaint },
-  ]
+  // CMP1: `style.tone` / `radius` / `elevation` restyle the surface; its paint is passed to the
+  // children so their text solves against it.
+  const { nodes: surfaceNodes, surface: under } = containerSurface(ctx, { x: 0, y: 0, width: W, height: H }, surfacePaint, 'surface', false)
+  const bodyChildren: LayoutNode[] = [...surfaceNodes]
 
   // A hairline rule drawn as a thin rect, matching `tls.t.title`'s own `rule` part — a `line`
   // node's SVG geometry is only its endpoints, so a horizontal line's box height (the gap band)
@@ -70,9 +72,9 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   let childNodes: LayoutNode[]
   if (children.length > 1) {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
-    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap, children, sizing: 'content' } }, contentBox)]
+    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap, children, sizing: 'content' } }, contentBox, { surface: under })]
   } else {
-    childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox)))
+    childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox, { surface: under })))
   }
 
   return {

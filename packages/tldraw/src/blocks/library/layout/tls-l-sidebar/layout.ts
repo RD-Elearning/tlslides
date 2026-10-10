@@ -9,12 +9,13 @@
 import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { SidebarProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 import { splitBox } from '../../../layout/box-model'
 
 export function layout(props: SidebarProps, ctx: LayoutContext): LayoutNode {
   const sidebarWidth = props.sidebarWidth ?? 320
   const gutterToken = (props.gutter ?? 'md') as SpaceToken
-  const gutter = ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md
+  const gutter = styleGap(ctx, ctx.tokens.space[gutterToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const side = props.sidebarSide ?? 'start'
   const children = props.children ?? []
 

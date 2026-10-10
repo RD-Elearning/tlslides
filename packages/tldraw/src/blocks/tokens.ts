@@ -435,6 +435,19 @@ function paintLuminanceAt(paint: Paint, t: number): number {
 }
 
 /**
+ * The surface of a block that sits on a photo (an image slide background, or — CMP1 — a region
+ * whose layered backdrop is an image): luminance is unknowable, so a neutral mid value and
+ * `overImage: true` (a contrast check then asks for a scrim rather than trusting the ink).
+ */
+export function imageSurface(): SurfaceContext {
+  return {
+    behind: { type: 'solid', color: NEUTRAL_SURFACE_COLOR },
+    luminance: NEUTRAL_IMAGE_LUMINANCE,
+    overImage: true,
+  }
+}
+
+/**
  * Build a `SurfaceContext` from a `TDPage.background`, sampled at `box` (the block's own box, in
  * slide units) within a page of size `pageSize`. For a gradient this samples luminance **at
  * `box`**, not the slide centre — the fix for the mono-grid/teal-gradient bug. For an image
@@ -457,13 +470,7 @@ export function surfaceFromBackground(
   const resolved: SlideBackground =
     typeof background === 'string' ? { type: 'solid', color: background } : background
 
-  if (resolved.type === 'image') {
-    return {
-      behind: { type: 'solid', color: NEUTRAL_SURFACE_COLOR },
-      luminance: NEUTRAL_IMAGE_LUMINANCE,
-      overImage: true,
-    }
-  }
+  if (resolved.type === 'image') return imageSurface()
 
   const paint = paintFromBackground(resolved, theme)
   if (paint.type === 'solid') return solidSurface(paint.color)

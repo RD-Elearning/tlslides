@@ -142,7 +142,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       const blockStyle = blockMeta?.style as import('~blocks/types').BlockStyleSpec | undefined
       const layoutCtx = useBlockLayoutContext(
         { x: shape.point[0], y: shape.point[1], width: size[0], height: size[1] },
-        { headless: false, style: blockStyle },
+        { headless: false, style: blockStyle, overImage: blockMeta?.overImage === true },
       )
 
       // When a BlockDefinition exists in the BlockRegistry for this componentId, render

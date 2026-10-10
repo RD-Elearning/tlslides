@@ -41,6 +41,12 @@ interface BlockMetadata {
   /** LO2.1 — `BlockSpec.anchor` / `BlockSpec.anchorTo`. */
   anchor?: BlockAnchor
   anchorTo?: string
+  /** CMP1 — `BlockSpec.bleed` (a backdrop that may leave the frame). */
+  bleed?: boolean
+  /** CMP1 — set by `compileSlide` on a block whose region has a layered image backdrop: it sits on
+   *  a photo, so its context surface is an image surface (`overImage: true`). Never authored,
+   *  never returned by `shapeToBlock`. */
+  overImage?: boolean
   /** P7 — motion derived from the slide's `motionStyle` by `compileSlide`. Never authored, never
    *  returned by `shapeToBlock`; playback reads it through `shapeToRevealBlock`. */
   styleMotion?: BlockMotionSpec
@@ -129,6 +135,7 @@ export function blockToShape(
   }
   if (spec.anchor !== undefined) metadata.anchor = spec.anchor
   if (spec.anchorTo !== undefined) metadata.anchorTo = spec.anchorTo
+  if (spec.bleed !== undefined) metadata.bleed = spec.bleed
 
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
@@ -279,6 +286,7 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   }
   if (meta.anchor !== undefined) spec.anchor = meta.anchor
   if (meta.anchorTo !== undefined) spec.anchorTo = meta.anchorTo
+  if (meta.bleed !== undefined) spec.bleed = meta.bleed
   if (shapeObj.slot !== undefined) {
     spec.slot = shapeObj.slot as string
   }

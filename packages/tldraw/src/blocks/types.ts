@@ -38,7 +38,10 @@ export interface BlockSpec {
   style?: BlockStyleSpec
   /** Motion overrides. Absent = the definition's default recipe, which may itself be "none". */
   motion?: BlockMotionSpec
-  /** Only meaningful for container blocks (`family: 'layout'`). */
+  /** Not read by any layout: child blocks go in **`props.children`**, the one canonical slot
+   *  (every container's schema declares it, `kind: 'blocks'`). The validator rejects a block that
+   *  sets this field (`block/malformed`, CMP1); kept in the type only so older documents still
+   *  parse and round-trip through the shape bridge. */
   children?: BlockSpec[]
   /** Bridges to the Phase 13 template slot system. */
   slot?: string
@@ -65,7 +68,22 @@ export interface BlockSpec {
    * `layer`; an unknown or non-stacked target falls back to the region box.
    */
   anchorTo?: string
+  /**
+   * CMP1 — a backdrop that may leave the slide frame on purpose (an orb or band cut by the edge).
+   * The layout report then does not call its off-frame part `slide/overflow`. Only meaningful with
+   * `layer: 'backdrop'` (or a block whose definition layer is `backdrop`); ignored otherwise.
+   */
+  bleed?: boolean
 }
+
+/**
+ * CMP1 — the one nesting limit: a block tree may be at most this many levels deep (a region
+ * block is level 1, its `props.children` level 2, …). The validator reports deeper blocks
+ * (`block/nesting-depth`), the layout engine does not draw them (an empty `lint/depth-overflow`
+ * group) and the layout report calls that `block/dropped`. Levels a block builds internally (a
+ * composite's own spec tree, a card's inner stack) do not count — only authored nesting does.
+ */
+export const MAX_NESTING_DEPTH = 6
 
 /**
  * LO2.1 — anchor of a layered block inside its anchor box (region, or `anchorTo` block).
@@ -128,7 +146,7 @@ export interface BlockStyleSpec {
   elevation?: 0 | 1 | 2
   /** Content alignment. */
   align?: 'start' | 'center' | 'end'
-  /** Density: visual compactness. */
+  /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
 
@@ -587,7 +605,26 @@ export interface LintContext {
  * Both DOM and SVG renderers consume the same tree, which is why they cannot disagree.
  */
 export type LayoutNode =
-  | { k: 'group'; box: Box; name?: string; part?: string; clip?: boolean; opacity?: number; children: LayoutNode[] }
+  | {
+      k: 'group'
+      box: Box
+      name?: string
+      part?: string
+      /**
+       * Clip policy (CMP1, export-ready X6): `clip: true` clips the group's children to its own
+       * box, a plain rectangle — never a rounded or path clip. Containers set it only where content
+       * may spill on purpose (`tls.l.overlay`, image crops). An exporter without group clips
+       * (PPTX) pre-clips: an image is cropped to the intersection (`srcRect`), a rect is
+       * intersected with the box, any other leaf that crosses the edge is baked.
+       */
+      clip?: boolean
+      opacity?: number
+      /** CMP1 (X2): on the wrapper group `layoutChild` puts around a child block — that block's
+       *  `id` and `type`. Lets an exporter, connectors and the report find a nested block. */
+      blockId?: string
+      type?: string
+      children: LayoutNode[]
+    }
   | {
       k: 'rect'
       box: Box
@@ -600,7 +637,21 @@ export type LayoutNode =
       shadow?: 0 | 1 | 2 | 'hard'
     }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
-  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle; propPath?: string }
+  | {
+      k: 'text'
+      box: Box
+      part?: string
+      lines: TextLine[]
+      style: ResolvedTextStyle
+      propPath?: string
+      /** CMP1 (X3): the paragraph's horizontal alignment. Geometry is already aligned (a centred
+       *  paragraph is still emitted as one node per line); this only tells an exporter that the
+       *  lines belong to one centred / end-aligned paragraph. Absent = start. Renderers ignore it. */
+      align?: 'start' | 'center' | 'end'
+      /** CMP1 (X3): the paragraph's font weight (400 regular, 700 when every run is bold), set by
+       *  `layoutSlide`. Renderers draw weight per run (`TextRun.bold`) and ignore this field. */
+      weight?: number
+    }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
@@ -778,8 +829,11 @@ export interface LayoutContext {
   resolveText(token: TypeToken, over?: Partial<TextStyleSpec>): ResolvedTextStyle
   /** The ONLY text measurement primitive. Deterministic, available in Node. */
   measureText(text: string | RichText, style: ResolvedTextStyle, maxWidth?: number): TextMetrics
-  /** Lay a child block out inside `box`, returning its node. Containers only. */
-  layoutChild(spec: BlockSpec, box: Box): LayoutNode
+  /** Lay a child block out inside `box`, returning its node (wrapped in a group carrying the
+   *  child's `blockId`/`type`). Containers only. `opts.surface` (CMP1): the paint the container
+   *  drew under the child — the child's text solves its ink against it (a dark card on a light
+   *  slide gets light text). Absent = what is behind the container. */
+  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint }): LayoutNode
   /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
    *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
    *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
@@ -801,7 +855,8 @@ export interface LayoutContext {
   resolveAsset?(id: string): string | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
-  /** Current nesting depth. Capped at 4; deeper trees are an error. */
+  /** Layout hops from the slide-level block (every `layoutChild` call, internal ones included).
+   *  The authored nesting limit is `MAX_NESTING_DEPTH`; hops are only a recursion safety net. */
   depth: number
   /** True when laying out for export/thumbnail; false for live editor. */
   headless: boolean

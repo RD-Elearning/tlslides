@@ -20,6 +20,10 @@ function toneToColorRole(tone: TakeawayProps['tone']): ColorRole {
       return 'warning'
     case 'muted':
       return 'textMuted'
+    default:
+      // CMP1 (F4): no / unknown tone = the schema default. Before, an absent tone returned
+      // undefined, painted `undefined12` in the editor and threw in the layout report.
+      return 'accent'
   }
 }
 
