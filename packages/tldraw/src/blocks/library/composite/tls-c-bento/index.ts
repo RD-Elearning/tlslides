@@ -187,7 +187,7 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
     let top = inner.y
     let room = inner.height
     if (t.kind === 'point' && str(t.icon)) {
-      const disc = Math.round(Math.max(48, Math.min(88, Math.min(c.width, c.height) * 0.2)))
+      const disc = Math.round(Math.max(56, Math.min(112, Math.min(c.width, c.height) * 0.26)))
       const glyph = Math.round(disc * 0.56)
       const bg = tintOf(ctx.resolveColor('surfaceAlt').color, accent, 0.18)
       pieces.push({
@@ -221,15 +221,19 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       const lh = label ? measureHeights(ctx, [label], inner.width)[0] : 0
       const base = ctx.resolveText('display')
       const lead = base.lineHeight
-      let size = Math.min(base.size * (big ? 2 : 1), (room - lh - (label ? gap : 0)) / lead)
+      // the label keeps a gap of 10 % of the number's size: a serif with old-style figures (Playfair's
+      // descending 4) otherwise touches it
+      const GAP_EM = label ? 0.1 : 0
+      let size = Math.min(base.size * (big ? 2 : 1), (room - lh - (label ? gap : 0)) / (lead + GAP_EM))
       const fits = (sz: number) => ctx.measureText(str(t.value), { ...base, size: sz }, 1e6).width <= inner.width
       while (size > ctx.resolveText('subheading').size && !fits(size)) size *= 0.94
       size = Math.max(ctx.resolveText('subheading').size, Math.floor(size))
       const style = { ...base, size, color: ink ?? accent }
       const m = ctx.measureText(str(t.value), style, inner.width)
-      let y = Math.max(top, inner.y + inner.height - (m.height + (label ? gap + lh : 0)))
+      const under = gap + Math.round(size * GAP_EM)
+      let y = Math.max(top, inner.y + inner.height - (m.height + (label ? under + lh : 0)))
       pieces.push({ id: `value[${i}]`, raw: [{ k: 'text', box: { x: inner.x, y, width: inner.width, height: m.height }, lines: m.lines, style } as LayoutNode], box: { x: inner.x, y, width: inner.width, height: m.height } })
-      y += m.height + gap
+      y += m.height + under
       if (label) pieces.push({ id: `label[${i}]`, spec: label, box: { x: inner.x, y, width: inner.width, height: lh } })
       return
     }
