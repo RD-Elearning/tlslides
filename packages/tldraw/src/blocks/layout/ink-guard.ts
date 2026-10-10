@@ -25,10 +25,12 @@
 
 import type { LayoutNode, Pt, SurfaceContext } from '../types'
 import { parseColorAlpha, relativeLuminance, solveForContrast } from '../color-math'
-import { CONTRAST_FLOOR, collectPaint, floorOf, greyOfLuminance, inkContrast, paintAt, parseInk, type Background } from './paint-model'
+import { collectPaint, floorOf, greyOfLuminance, inkContrast, paintAt, parseInk, type Background } from './paint-model'
 
 /** Below this ratio an ink has vanished on its background (same colour family). */
 const VANISHED = 1.5
+/** What vanished ink is solved to. */
+const VANISHED_FLOOR = 7
 
 /** Contrast margin over translucent fills and slide gradients (see `guardInk`). */
 export const GLASS_MARGIN = 1.5
@@ -93,9 +95,9 @@ export function guardInk(root: LayoutNode, surface: SurfaceContext, literalInks:
       // scrimmed photo's other extreme), solve again against that — a few rounds, keep the best.
       let best = { color: hex, ratio: own.ratio }
       let against = own.bg
-      // ink that vanished outright (an accent icon on an accent card, ~1:1) is set clearly, at the
-      // text floor, not barely at the 3:1 graphics floor
-      const target = own.ratio < VANISHED ? Math.max(floor, CONTRAST_FLOOR.text) : floor
+      // ink that vanished outright (an accent icon on an accent card, ~1:1) is set clearly — at
+      // 7:1, as a flipped text role is (`TEXT_FLIP_FLOORS`) — not barely at its floor
+      const target = own.ratio < VANISHED ? Math.max(floor, VANISHED_FLOOR) : floor
       for (let round = 0; round < 3; round++) {
         const solved = solveForContrast(hex, relativeLuminance(against), target)
         const check = inkContrast({ ...ink, colors: [solved.color] }, ops, base)
