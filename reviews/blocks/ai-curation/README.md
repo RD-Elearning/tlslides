@@ -1943,3 +1943,121 @@ index preamble + its one-line `## Styles` section; recipes = all 10 roles):
 - AC5 stays "awaiting user review" (the style board); not closed by this phase.
 - No browser pass: the dry-run decks were not rendered (Chromium was out of scope). To look at one, copy
   it under `__fixtures__/styles/` and use `run.js --decks`.
+
+---
+
+## 8. AC8 — Variety
+
+**Date:** 2026-10-10 · **Against commit:** `3aece1ec` (AC7 done).
+
+**Goal (product owner, translated).** "Many styles so the AI picks blocks on its own, but users must
+not see slides that look too much like the old ones: many more block variants, or make it easy for
+the AI to customise by itself." Concretely:
+1. two decks with the same style and similar content must not look like clones;
+2. inside one deck, slides of the same role must not repeat a look;
+3. the LLM gets a cheap, safe way to vary a block: knobs, variants and layout options set by name,
+   checked by the oracle, never free-form CSS.
+
+The lead's board review of the ten styles (two `fix`, eight `ok`) is folded in: `image-full` panel
+variants, quote-family variants, consulting action titles without weakening `styles.spec`, fewer
+glass orbs, and showcases for the palettes never shown (`doodle-kids`, `luxury-ivory`,
+`swiss-blue`, `glass-pastel`).
+
+### 8.1 Definitions
+
+- **Look signature** of a slide: its layout id, then per region (in order) each block's type with
+  the *resolved* value of every look knob (`BlockDefinition.looks`): authored prop, else the style's
+  `blockDefaults`, else the block's `defaults`. Example:
+  `timeline|title:tls.t.title{size=title,align=start,rule=false};timeline:tls.c.cards{lead=icon,tone=alt,align=start,numeral=plain}`.
+  Content never enters the signature, so two slides with the same signature are the same design
+  with other words.
+- **Reachable looks** of a role: the sum over its recipes of the product of the option counts of the
+  look knobs the recipe leaves open (an upper bound on what an LLM could set by hand).
+- **Used looks**: distinct signatures the dry-run picker actually emits.
+
+### 8.2 Audit — before (HEAD `3aece1ec`, numbers from the AC7 dry run, 10 styles × 12 slides)
+
+Script: session scratchpad `audit.js` (loads the oracle with `tools/layout-report/load.js`).
+
+**A. Per role.** The picker uses one look per recipe; thousands are reachable but never reached.
+
+| Role | Recipes | Block types | Reachable looks | Used looks (10 decks) |
+|---|---|---|---|---|
+| cover | 3 | 3 | 112 | 3 |
+| agenda | 2 | 4 | 336 | 4 |
+| section | 2 | 2 | 30 | 2 |
+| content | 7 | 9 | 4,035 | 8 |
+| data | 6 | 9 | 8,256 | 8 |
+| comparison | 6 | 8 | 2,328 | 7 |
+| process | 4 | 6 | 1,008 | 5 |
+| people | 3 | 4 | 866 | 3 |
+| quote | 3 | 3 | 45 | 3 |
+| closing | 2 | 1 | 8 | 1 |
+
+**B. Repetition in the dry run.**
+
+| Measure | Before |
+|---|---|
+| Seeds | none: the picker is a pure function of (style, outline), so a second deck of the same style and outline is a **clone (0 % of slides differ)** |
+| Same recipe at the same slide position, over the 45 style pairs (540 positions) | 130 (24.1 %) |
+| Same resolved signature at the same position, over the 45 style pairs | 138 (25.6 %) — style knob defaults barely separate decks |
+| Repeated signature inside one deck | 0 (rotation by role, but only because each role has ≤ 2 slides in the outline) |
+| Closing slides | 1 look across all ten styles (`tls.c.closing`, centred in 8 styles) |
+
+**C. Tier-1 blocks: look options against use** (combos = product of look-knob options; picks = in
+the ten dry-run decks; sorted by picks).
+
+| Block | Look knobs | Combos | In recipes | Dry-run picks | Note |
+|---|---|---|---|---|---|
+| `tls.t.title` | 3 | 24 | 25 | 73 | on every titled slide; one treatment per style |
+| `tls.t.takeaway` | 2 | 8 | 6 | 15 | |
+| `tls.m.image` | 1 | 2 | 3 | 11 | |
+| `tls.c.closing` | 2 | 6 | 2 | 10 | pinned to one variant by 9 styles |
+| `tls.t.bullets` | 2 | 20 | 2 | 9 | |
+| `tls.t.statement` | 4 | 36 | 2 | 7 | |
+| `tls.c.kpi-row` / `agenda` / `divider` | 2 | 12 / 6 / 6 | 1 | 5 | divider pinned by every style |
+| `tls.t.quote` | 1 | **3** | 1 | 4 | knob-poor; the sparse quote slides of the review |
+| `tls.c.cover` | 4 | 48 | 1 | 4 | pinned to `centered` by 9 styles |
+| `tls.c.stat-spotlight` | 2 | 4 | 1 | 4 | |
+| `tls.c.comparison` | 1 | **3** | 1 | 3 | |
+| `tls.c.steps` | 1 | **2** | 1 | 3 | |
+| `tls.c.testimonial` | 1 | **2** | 1 | 3 | |
+| `tls.c.bento` | 1 | 4 | 1 | 3 | |
+| `tls.c.image-full` | 2 | **6** | 1 | 3 | the same panel in every style (review) |
+| 8 tier-1 blocks (`body`, `donut`, `line`, `grouped-bar`, `tree`, `pyramid`, `image-grid`, `decoration`) | | | 0 | 0 | no recipe reaches them |
+
+**Reading.** The library is not short of looks; the *pipeline* collapses them. Three causes, in order
+of weight: (1) the picker has no seed, so equal inputs give equal decks; (2) a recipe is one fixed
+knob set, so a role with three recipes has three looks; (3) style `blockDefaults` pin the knobs that
+would vary most (cover, divider, closing, quote) to one value per style. Knob-poor blocks (quote,
+image-full, comparison, testimonial) matter on the slides where the review saw sameness.
+
+### 8.3 Plan (ranked by repetition removed per unit of work)
+
+| Rank | What | Why |
+|---|---|---|
+| 1 | **Variety picker**: per-deck `seed`, look signature, no repeated signature in a deck where an alternative exists, rotation over the role's recipe looks deterministic from the seed, `avoidSignatures` input for the backend | cause (1); turns reachable looks into used ones; no pixel risk |
+| 2 | **Recipe looks**: each recipe gets named `looks` (knob sets, a mirrored layout or swapped regions), every one clean and balanced under `recipes.spec` | cause (2); one recipe, several designs, all oracle-checked |
+| 3 | **Style `variety`**: per style, the knob values it accepts beyond its pinned defaults; the picker only rotates inside them | cause (3) without losing a style's identity |
+| 4 | **Quote family**: `tls.t.quote` variants (big type, card, side rule, with image) | review item; quote was 3 combos |
+| 5 | **`image-full` panels**: more positions, gradient scrim, framed, split | review item |
+| 6 | **Deck-level title treatment** chosen once per deck from the seed (inside the style's allowance) | title is on 60 % of slides; consistent inside a deck, different across decks |
+| 7 | **Digest**: knob *values* in the tier-1 lines, recipe looks in recipe lines, a style `Vary:` line; header trimmed to pay for it | the LLM customises by name |
+| 8 | **Validator**: an unknown knob value is an error with the nearest valid value | safe customisation |
+| 9 | Glass orbs, palette showcases, consulting action-title showcase | review items |
+
+New blocks: none planned; every gap above closes with knobs (decision revisited in §8.6 if a gap
+remains).
+
+### 8.4 Done when
+
+- The dry run runs N = 3 seeds × 10 styles; every deck has 0 errors and 0 warnings.
+- Inside each deck no look signature repeats for a role that has an alternative.
+- Across the 3 seeds of one style ≥ 70 % of slides differ in signature (before/after reported).
+- `cli.js` is clean on every `__fixtures__/styles/*.json` and the new showcase decks.
+- Calibration `--shots` on new or changed decks: 0 line-count mismatches; LO8 parity chunks pass
+  for renderer changes; every shot looked at.
+- tsc prod 0, spec ≤ 329; targeted jest passes (touched blocks, recipes, digest,
+  catalog-conformance, layout-report, block-metrics with regenerated size cards, styles,
+  slide-composition, dry-run, demo-deck-*, block-library-tour).
+- Digest budgets held, or the decision recorded.
