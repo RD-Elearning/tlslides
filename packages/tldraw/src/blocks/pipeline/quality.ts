@@ -15,6 +15,10 @@
  *   deck's title size reads as unfinished (a `size: lg` statement alone on a slide). A type-led
  *   slide whose lead reaches 1.5 × the title size may cover less of the safe area (15 %).
  *
+ * CMP2: the gate also runs the oracle's design checks (`design-checks.ts`: contrast, alignment,
+ * equal peers, narrow children, nesting, type sizes, accent, motion) — every one of their warnings
+ * and errors on the report is a gate finding, one line each, peers grouped ("3 of 3 card in g1: …").
+ *
  * Pure and DOM-free. `dryRun.ts` runs it on every slide (S4.1 treats a failed gate like a warning:
  * the next design is tried), `dry-run.spec.ts` requires 0 findings on the dry-run decks.
  */
@@ -25,8 +29,9 @@ import { deckSpecTokens, getDeckStyle } from '../styles'
 import { resolveTokens } from '../tokens'
 import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec } from '../types'
+import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type'
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | DesignCode
 
 export interface QualityFinding {
   code: QualityCode
@@ -128,6 +133,11 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number } 
   }
   if (opts.titleSize && lead > 0 && lead < opts.titleSize * QUALITY_GATE.leadOfTitle) {
     findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}` })
+  }
+  // CMP2: the design checks the oracle ran (info, e.g. `text/long-measure`, stays advice)
+  for (const f of report.findings) {
+    if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
+    findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
   return { fill, regionFill, thinRegion, lead, findings }
 }

@@ -3,7 +3,7 @@
  * LO4 — the layout oracle on the command line (plain Node, no browser).
  *
  *   node tools/layout-report/cli.js deck.json [--slide <id|index>] [--format text|json]
- *                                             [--no-map] [--text-metrics table|estimate] [--dist]
+ *                                             [--no-map] [--text-metrics table|estimate] [--llm] [--dist]
  *   node tools/layout-report/cli.js --metrics [--types tls.t.title,tls.d.bar] [--theme midnight] [--style corporate] [--dist]
  *   cat deck.json | node tools/layout-report/cli.js - --format json
  *   node tools/layout-report/cli.js deck.json --tree [--slide <id|index>]
@@ -16,6 +16,7 @@
  * theme the committed JSON uses (a theme with another type scale changes heights).
  * `--style <id>` (AC1) samples them with a deck style: its default palette (or `--theme`, one of its
  * palettes), its token overrides and its knob defaults per block type.
+ * `--llm` (CMP2) analyses the deck as LLM-authored: `nesting/too-deep` holds containers to 3 levels.
  * `--dist` loads the built package instead of bundling the source (see `load.js`).
  * `--tree` (CMP1) prints the laid-out node tree of every slide as JSON (`layoutDeck`: the editor's
  * path at rest — one group per block at its absolute box with `blockId`/`type`, text nodes with
@@ -32,7 +33,7 @@ function usage(msg) {
   if (msg) process.stderr.write(`layout-report: ${msg}\n`)
   process.stderr.write(
     'usage: node tools/layout-report/cli.js <deck.json|-> [--slide <id|index>] [--format text|json] [--no-map]\n' +
-      '                                       [--text-metrics table|estimate] [--dist]\n' +
+      '                                       [--text-metrics table|estimate] [--llm] [--dist]\n' +
       '       node tools/layout-report/cli.js --metrics [--types a,b] [--theme <id>] [--style <id>] [--dist]\n' +
       '       node tools/layout-report/cli.js <deck.json|-> --tree [--slide <id|index>] [--dist]\n'
   )
@@ -52,6 +53,7 @@ function parseArgs(argv) {
     else if (a === '--no-map') opts.map = false
     else if (a === '--text-metrics') opts.textMetrics = val()
     else if (a === '--dist') opts.dist = true
+    else if (a === '--llm') opts.llm = true
     else if (a === '--metrics') opts.metrics = true
     else if (a === '--tree') opts.tree = true
     else if (a === '--types') opts.types = val().split(',').filter(Boolean)
@@ -121,7 +123,7 @@ function main() {
     process.stdout.write(JSON.stringify({ deck: deck.id ?? null, slides: laid }) + '\n')
     return
   }
-  const reports = oracle.analyzeDeck({ ...deck, slides }, { metrics: opts.textMetrics })
+  const reports = oracle.analyzeDeck({ ...deck, slides }, { metrics: opts.textMetrics, ...(opts.llm ? { llmAuthored: true } : {}) })
 
   if (opts.format === 'json') {
     const count = (sev) => reports.reduce((n, r) => n + r.findings.filter((f) => f.severity === sev).length, 0)

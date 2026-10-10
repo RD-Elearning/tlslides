@@ -14,6 +14,7 @@ import type { LayoutReport } from '../layout-report'
 import { RECIPE_ROLES, assetsAllow, recipeSlide, recipesFor } from '../recipes'
 import type { RecipeRole, SlideAssets, SlideRecipe } from '../recipes'
 import { deckTitleSize, slideQuality } from './quality'
+import { DESIGN_CODES } from '../design-checks'
 import type { SlideQuality } from './quality'
 import { applyDeckLook, deckLook, lookCandidates, lookSignature, pickOrder } from './variety'
 import type { DeckLook, LookCandidate } from './variety'
@@ -235,8 +236,11 @@ function deckOf(style: DeckStyle, slides: SlideSpec[], seed = 0, theme?: string)
   }
 }
 
+/** The oracle's geometry findings (the design checks are the quality gate's, CMP2). */
 function bad(report: LayoutReport): string[] {
-  return report.findings.filter((f) => f.severity !== 'info').map((f) => `${f.severity} ${f.code}: ${f.message}`)
+  return report.findings
+    .filter((f) => f.severity !== 'info' && !(DESIGN_CODES as readonly string[]).includes(f.code))
+    .map((f) => `${f.severity} ${f.code}: ${f.message}`)
 }
 
 /** Measure the S2a prompt for one style against §5.2: the tier-1 index split into its sections plus the style card. */
@@ -299,7 +303,8 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   const seen: Partial<Record<RecipeRole, number>> = {}
   let exampleKept = 0
   let avoidableRepeats = 0
-  const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide], seed, opts.theme), { registry })[0]
+  // CMP2: the dry run stands in for the LLM — its slides are LLM-authored (`nesting/too-deep`).
+  const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide], seed, opts.theme), { registry, llmAuthored: true })[0]
   // AC8.5: the quality gate is part of S4.1 — a design that looks unfinished is repaired like a warning.
   const titleSize = deckTitleSize(deckOf(style, [], seed, opts.theme))
   const problems = (report: LayoutReport) => [...bad(report), ...slideQuality(report, { titleSize }).findings.map((f) => `quality ${f.code}: ${f.message}`)]
@@ -359,7 +364,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   })
 
   const deck = deckOf(style, slides, seed, opts.theme)
-  const reports = analyzeDeck(deck, { registry })
+  const reports = analyzeDeck(deck, { registry, llmAuthored: true })
   const findings: string[] = []
   let errors = 0
   let warnings = 0

@@ -31,17 +31,24 @@ import type {
   DeckSpec,
   DeckStyle,
   LayoutNode,
+  MotionStyle,
+  Paint,
   ResolvedTokens,
   Size,
   SlideSpec,
   SurfaceContext,
 } from './types'
+import type { DeckTheme } from '~types'
+import { resolveThemeColor } from '~state/shapes/shared'
+import { designFindings, inspectBlock, type BlockInspection, type DesignBlock, type DesignCode } from './design-checks'
+import { paintAt, parseInk, type Background } from './layout/paint-model'
+import { shapeToBlock } from './shape-bridge'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
 import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
 import { blockLayer } from './block-layer'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
-import { imageSurface, resolveTokens } from './tokens'
+import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { MAX_NESTING_DEPTH } from './types'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
 import { defaultBlockRegistry } from './validate-deck-spec'
@@ -84,6 +91,8 @@ export type LayoutFindingCode =
   | 'layout/unbalanced'
   | 'layout/crowded'
   | 'region/empty'
+  // CMP2 design checks (`design-checks.ts`): inside compositions, contrast, type, motion.
+  | DesignCode
 
 export interface LayoutFinding {
   code: LayoutFindingCode
@@ -109,6 +118,24 @@ export interface TextLeafReport {
   box: Box
   /** First line top → last line bottom, widest line; slide coordinates. */
   painted: Box
+  /** CMP2: the nested authored block that owns this text (`g1/c2/b1`); absent = the block itself. */
+  block?: string
+}
+
+/** CMP2 — an authored nested child of a block (a container's child), slide coordinates. */
+export interface SubBlockReport {
+  id: string
+  /** Id path from the slide-level block: `g1/c2/b1`. */
+  path: string
+  type: string
+  /** The parent's path (the slide-level block's id for a direct child). */
+  parent: string
+  /** Authored nesting level: the slide-level block is 1, its children 2, … */
+  level: number
+  layer: BlockLayer
+  box: Box
+  /** Painted extent (surfaces included); `null` = paints nothing. */
+  painted: Box | null
 }
 
 export interface BlockReport {
@@ -145,6 +172,8 @@ export interface BlockReport {
   capacity?: CapacityReport
   confidence: MeasureConfidence
   reason?: string
+  /** CMP2: the block's authored nested children, depth first (absent = none). */
+  children?: SubBlockReport[]
 }
 
 export interface LayoutReport {
@@ -184,6 +213,20 @@ export interface AnalyzeSlideOptions {
   metrics?: 'table' | 'estimate' | MeasureTextProvider
   /** AC1 — a deck style's knob defaults, filled under authored props as `compileSlide` does. */
   blockDefaults?: DeckStyle['blockDefaults']
+  /** CMP2 — the slide's background (the slide's own, else its style master's). With `theme`, the
+   *  blocks are laid out on it as the editor lays them out (their ink solves against it) and
+   *  `contrast/low` composites down to it. Absent (and no theme): white. */
+  background?: Paint
+  /** CMP2 — the deck theme (`analyzeDeck` passes it): its background when the slide has none, and
+   *  `theme:` colour tokens. */
+  theme?: DeckTheme
+  /** CMP2 — the deck's motion style (the slide's own wins), for the motion lints. */
+  motionStyle?: MotionStyle
+  /** CMP2 — the deck style's family (`accent/overuse` budget). */
+  family?: DeckStyle['family']
+  /** CMP2 — the slide was written by the LLM (the AI pipeline's S4.1 sets it; the CLI flag is
+   *  `--llm`): `nesting/too-deep` holds it to 3 authored levels. */
+  llmAuthored?: boolean
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -196,6 +239,8 @@ const TOL = 1
 const OVERFLOW_TOL = 2
 /** Minimum text ∩ text area (units²) that counts as a collision. */
 const MIN_TEXT_COLLISION = 4
+/** CMP2: nested-child lines printed per block in the text report. */
+const MAX_CHILD_LINES = 12
 /** ASCII map cell size in slide units (48×27 on a 1920×1080 frame). */
 export const MAP_CELL = 40
 
@@ -374,7 +419,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const gap = tokens.space.md
 
   // 1. Compile exactly as the editor does — the boxes below are the editor's boxes.
-  const compiled = compileSlide(spec, frame, tokens, registry)
+  const compiled = compileSlide(spec, frame, tokens, registry, opts.motionStyle ? { motionStyle: opts.motionStyle } : undefined)
   const layoutDef =
     getSlideLayout(spec.layout as Parameters<typeof getSlideLayout>[0]) ?? SLIDE_LAYOUTS.find((l) => l.id === 'blank')
   const regions = layoutDef ? layoutDef.compile(frame, tokens) : {}
@@ -403,6 +448,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const visual: VisualCheck[] = []
   const intrinsicSizeCache = new Map<string, Size>()
   const blocks: BlockReport[] = []
+  const design: DesignBlock[] = []
 
   // AC4: pair by block id first — `compileSlide` moves a free backdrop under the flow (LO8), so
   // its shape is no longer at the free block's index; by order only when ids are missing/repeated.
@@ -455,10 +501,16 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
 
     // CMP1: a block over a layered image backdrop (`$block.overImage`) sits on a photo.
     const overImage = (shape.props[BLOCK_PROP_KEY] as { overImage?: boolean } | undefined)?.overImage === true
+    // CMP2: on the slide's real background (as the editor lays it out), when the deck is known.
+    const pageSurface =
+      opts.theme || opts.background
+        ? surfaceFromBackground(opts.background, box, [frame.width, frame.height], opts.theme)
+        : MINIMAL_SURFACE
     const ctx = createLayoutContext({
       box: { width: box.width, height: box.height },
       tokens,
-      surface: overImage ? IMAGE_SURFACE : MINIMAL_SURFACE,
+      surface: overImage ? IMAGE_SURFACE : pageSurface,
+      ...(opts.theme ? { theme: opts.theme } : {}),
       registry,
       measureText: provider,
       intrinsicSizeCache,
@@ -473,13 +525,20 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     let text: TextLeafReport[] = []
     let failed: string | undefined
     let dropped: Array<{ id?: string; type?: string }> = []
+    let inspection: BlockInspection | undefined
+    let root: LayoutNode | undefined
     try {
-      const root = layoutBlock(def, props, ctx)
+      root = layoutBlock(def, props, ctx)
       dropped = droppedBlocks(root)
       const collected = collectPaintedLeaves(root, { width: box.width, height: box.height })
       const local = paintedBounds(collected)
       painted = local ? offset(local, box.x, box.y) : null
       text = collected.text.map((t) => toSlideText(t, box))
+      // CMP2: the authored nested children, and who owns each text leaf.
+      inspection = inspectBlock(root, box, p.block, registry)
+      if (inspection.textOwners.length === text.length) {
+        text = text.map((t, k) => (inspection!.textOwners[k] !== p.block.id ? { ...t, block: inspection!.textOwners[k] } : t))
+      }
       // LO5/LO6: the DOM paints the editor's line breaks (`editorMetrics`) verbatim. When this report
       // re-lays with another provider and the two disagree, the screen is not what this report says —
       // a screenshot is the only ground truth. With the default provider (= the editor's) the check
@@ -520,6 +579,20 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       ...(capacity ? { capacity } : {}),
       confidence,
       ...(reason ? { reason } : {}),
+      ...(inspection && inspection.subs.length ? { children: subReports(inspection, root as LayoutNode) } : {}),
+    })
+    design.push({
+      id,
+      type: p.block.type,
+      layer: base.layer,
+      z: base.z,
+      styleOwned: id.startsWith(STYLE_MASTER_PREFIX) && base.layer === 'backdrop',
+      box,
+      spec: p.block,
+      motion: shapeToBlock(shape)?.motion,
+      ...(root ? { root } : {}),
+      ...(inspection ? { inspection } : {}),
+      text,
     })
     if (dropped.length) {
       const names = dropped.map((d) => `${d.id ?? '?'} (${d.type ?? 'unknown type'})`)
@@ -619,6 +692,12 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     }
   }
 
+  // 5b. CMP2: inside compositions — sibling pairs among a container's children (overlap, text
+  // collision, occlusion by layer), a child's own text overflow, then the design checks.
+  for (const b of blocks) if (b.children) childFindings(b, findings)
+  const background = (pt: { x: number; y: number }): Background => slideBackgroundAt(pt, frame, opts)
+  for (const f of designFindings(design, { frame, tokens, registry, background, ...(opts.family ? { family: opts.family } : {}), ...(opts.llmAuthored ? { llmAuthored: true } : {}) })) findings.push(f)
+
   // 6. Slide summary numbers.
   const paintedAll = blocks.filter((b) => !marginless(b)).map((b) => b.painted).filter((b): b is Box => b !== null)
   const all = unionBox(paintedAll)
@@ -688,7 +767,116 @@ export function analyzeDeck(
     }))
     return { ...s, free: [...(s.free ?? []), ...free] }
   }
-  return deck.slides.map((s) => analyzeSlide(withMaster(s), { ...opts, frame, tokens, ...(blockDefaults ? { blockDefaults } : {}) }))
+  // CMP2: the page background (the slide's own, else its style master's) and the deck theme, so the
+  // report lays blocks out on the real page and `contrast/low` composites down to it.
+  const theme = resolveDeckTheme(deck.theme, deck.style)
+  const motionStyle = deck.motionStyle ?? style?.motionStyle
+  const backgroundOf = (s: SlideSpec): Paint | undefined => {
+    if (s.background) return s.background
+    const id = styleMasterFor(style, s)
+    return id ? masters[id]?.background : undefined
+  }
+  return deck.slides.map((s) => {
+    const background = backgroundOf(s)
+    return analyzeSlide(withMaster(s), {
+      ...opts,
+      frame,
+      tokens,
+      theme,
+      ...(background ? { background } : {}),
+      ...(motionStyle ? { motionStyle } : {}),
+      ...(style ? { family: style.family } : {}),
+      ...(blockDefaults ? { blockDefaults } : {}),
+    })
+  })
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CMP2 — inside compositions                                                       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** The slide background at a point (`null` over a photo): the slide's own paint, else the theme's. */
+function slideBackgroundAt(pt: { x: number; y: number }, frame: Size, opts: AnalyzeSlideOptions): Background {
+  const raw = opts.background
+  if (raw) {
+    if ((raw as { type: string }).type === 'image') return null
+    // `theme:accent1`-style colours resolve against the deck theme (a style master's section page)
+    const col = (c: string) => resolveThemeColor(c, opts.theme) ?? c
+    const bg: Paint = raw.type === 'solid' ? { type: 'solid', color: col(raw.color) } : { ...raw, stops: raw.stops.map((st) => ({ ...st, color: col(st.color) })) }
+    const c = paintAt(bg, { x: 0, y: 0, width: frame.width, height: frame.height }, pt)
+    if (c) return { rgb: c.rgb }
+  }
+  const themeBg = parseInk(opts.theme?.colors.background)
+  if (opts.theme && themeBg) return { rgb: themeBg.rgb }
+  return { rgb: { r: 255, g: 255, b: 255 } }
+}
+
+/** Sub-block reports of an inspection: painted extent per child (surfaces included). */
+function subReports(ins: BlockInspection, _root: LayoutNode): SubBlockReport[] {
+  return ins.subs.map((s) => {
+    const mine = new Set<number>()
+    ins.owners.forEach((o, i) => {
+      if (o === s.path || o.startsWith(s.path + '/')) mine.add(i)
+    })
+    const boxes = [
+      ...ins.ops.filter((op) => op.owner !== undefined && mine.has(op.owner)).map((op) => op.box),
+      ...ins.inks.filter((ink) => ink.owner !== undefined && mine.has(ink.owner)).map((ink) => ink.box),
+    ]
+    return { id: s.id, path: s.path, type: s.type, parent: s.parent, level: s.level, layer: s.layer, box: s.box, painted: unionBox(boxes) }
+  })
+}
+
+/**
+ * CMP2 — findings among a block's nested children: every pair of siblings (overlap by layer
+ * policy, text collision, occlusion — the same rules as slide-level blocks, child z = paint order),
+ * and a child whose own text runs out of its box (when the block as a whole does not already).
+ */
+function childFindings(b: BlockReport, out: LayoutFinding[]): void {
+  const kids = b.children ?? []
+  const textOf = (path: string) => b.text.filter((t) => t.block === path || (t.block ?? '').startsWith(path + '/'))
+  const asReport = (c: SubBlockReport, z: number): BlockReport => ({
+    letter: b.letter,
+    id: c.path,
+    path: c.path,
+    type: c.type,
+    region: b.region,
+    layer: c.layer,
+    z,
+    box: c.box,
+    natural: { width: c.box.width, height: c.box.height },
+    elastic: false,
+    painted: c.painted,
+    contentOverflow: c.painted
+      ? {
+          dx: Math.max(0, c.painted.x + c.painted.width - (c.box.x + c.box.width), c.box.x - c.painted.x),
+          dy: Math.max(0, c.painted.y + c.painted.height - (c.box.y + c.box.height), c.box.y - c.painted.y),
+        }
+      : { dx: 0, dy: 0 },
+    text: textOf(c.path),
+    confidence: b.confidence,
+  })
+  const byParent = new Map<string, SubBlockReport[]>()
+  for (const c of kids) byParent.set(c.parent, [...(byParent.get(c.parent) ?? []), c])
+  const blockSpills = b.contentOverflow.dx > OVERFLOW_TOL || b.contentOverflow.dy > OVERFLOW_TOL
+  for (const sibs of byParent.values()) {
+    const reps = sibs.map((c, i) => asReport(c, i))
+    for (let i = 0; i < reps.length; i++) for (let j = i + 1; j < reps.length; j++) pairFindings(reps[i], reps[j], out)
+    if (blockSpills) continue
+    for (const c of reps) {
+      const bottom = c.box.y + c.box.height
+      const spill = c.text.filter((t) => t.painted.y + t.painted.height > bottom + OVERFLOW_TOL).sort((p, q) => q.painted.y + q.painted.height - (p.painted.y + p.painted.height))
+      if (!spill.length) continue
+      const t = spill[0]
+      const need = Math.ceil(t.painted.y + t.painted.height - bottom)
+      out.push({
+        code: 'text/overflow',
+        severity: 'error',
+        blockIds: [b.id],
+        message: `${c.id} \`${textName(t)}\` needs +${need} units: ${t.lines} lines × ${r(t.lineHeight)} in a ${r(c.box.height)}-tall box.`,
+        fix: cutLeafFix(t, need) ?? `give ${c.id} +${need} height`,
+      })
+    }
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -823,7 +1011,7 @@ function blockFindings(
         code: 'text/overflow',
         severity: 'error',
         blockIds: [b.id],
-        message: `${b.id} \`${textName(t)}\` needs +${need} units: ${t.lines} lines × ${r(t.lineHeight)} in a ${r(b.box.height)}-tall box.`,
+        message: `${t.block ?? b.id} \`${textName(t)}\` needs +${need} units: ${t.lines} lines × ${r(t.lineHeight)} in a ${r(b.box.height)}-tall box.`,
         fix:
           [cutLeafFix(t, need) ?? `give ${b.id} +${need} height`, move ? `move ${b.id} to region \`${move[0]}\` (free ${move[1]})` : undefined]
             .filter(Boolean)
@@ -1283,7 +1471,13 @@ export function formatLayoutReport(report: LayoutReport, opts: { map?: boolean }
     .join(' | ')
   if (regionText) lines.push(`regions: ${regionText}`)
   lines.push('blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):')
-  for (const b of report.blocks) lines.push(blockLine(b))
+  for (const b of report.blocks) {
+    lines.push(blockLine(b))
+    // CMP2: a container's authored children, one short line each (id path, type, box)
+    const kids = b.children ?? []
+    for (const c of kids.slice(0, MAX_CHILD_LINES)) lines.push(`  ${'  '.repeat(Math.max(0, c.level - 2))}${c.path} ${c.type} ${fmtBox(c.box)}`)
+    if (kids.length > MAX_CHILD_LINES) lines.push(`  … ${kids.length - MAX_CHILD_LINES} more nested blocks`)
+  }
   if (report.findings.length === 0) {
     lines.push('findings: none')
   } else {

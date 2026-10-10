@@ -263,6 +263,12 @@ the paint actually under them (open item a); `CreateLayoutContextOptions.literal
 (set by card/section on their `$stack`, not in the schema); `SurfaceContext.place` (where a block
 sits on a slide gradient); `LayoutNode` text/icon `solved?: true` and `PosterText.color` (an html
 template paints the guard's colour); `isColorRole` exported from `tokens.ts`.
+Oracle side: `design-checks.ts` (`inspectBlock`, `designFindings`, `DESIGN_CODES`,
+`DESIGN_THRESHOLDS`, `ACCENT_BUDGET`, `SHOWY_PRESETS`, `accentUses`); `SubBlockReport`,
+`BlockReport.children`, `TextLeafReport.block`; `AnalyzeSlideOptions.background` / `theme` /
+`motionStyle` / `family` / `llmAuthored` (how "LLM-authored" is signalled: the AI pipeline's S4.1 —
+`dryRun.ts` — passes it; CLI flag `cli.js --llm`); quality gate `QualityFinding.code` widened to the
+design codes.
 
 ---
 
