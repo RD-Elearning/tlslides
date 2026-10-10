@@ -84,7 +84,6 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.g.timeline': 'h 245–549@840',
   'tls.g.tree': 'h=fill',
   'tls.g.venn': 'h≈26+258/item@840',
-  'tls.l.card': 'h=fill',
   'tls.l.field': 'h=fill',
   'tls.l.footer': 'h=fill',
   'tls.l.grid': 'h=fill',
