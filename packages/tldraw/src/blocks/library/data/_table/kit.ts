@@ -197,6 +197,14 @@ export function roomyCtx(ctx: LayoutContext): LayoutContext {
   return { ...ctx, resolveText: (token, over) => ctx.resolveText((step as Record<string, any>)[token] ?? token, over) }
 }
 
+/** AC8.5: two tokens larger (the grand tier: a short table alone under a title, which at the
+ *  roomy tier still filled under half of its region). Like roomy it is taken when the table fits
+ *  `fitHeight` at it: a fixed point, laid out again at its own height it picks the same tier. */
+export function grandCtx(ctx: LayoutContext): LayoutContext {
+  const step = { body: 'subheading', caption: 'lead' } as const
+  return { ...ctx, resolveText: (token, over) => ctx.resolveText((step as Record<string, any>)[token] ?? token, over) }
+}
+
 /* ───────────────────────────── build ───────────────────────────── */
 
 export interface TableInput {
@@ -209,7 +217,7 @@ export interface TableInput {
   weights?: ReadonlyArray<number | undefined>
   width: number
   /** `roomy` is internal (never a prop value): `buildTable` takes it when the table fits `fitHeight`. */
-  density?: 'default' | 'compact' | 'roomy'
+  density?: 'default' | 'compact' | 'roomy' | 'grand'
   /** AC3 pre-item: the box height; a default-density table that fits it one type step larger (and
    *  as wide) is laid out roomy. A ladder of fixed-height candidates, so it is a fixed point. */
   fitHeight?: number
@@ -269,6 +277,8 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
  */
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
   if ((o.density ?? 'default') === 'default' && (o.fitHeight ?? 0) > 0) {
+    const grand = buildCore(ctx0, { ...o, density: 'grand' })
+    if (grand.natural <= Math.max(1, o.width) + 0.5 && grand.tree.box.height <= (o.fitHeight as number) + 0.5) return grand
     const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
     if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return roomy
   }
@@ -280,11 +290,12 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
 function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
+  const grand = o.density === 'grand'
   const roomy = o.density === 'roomy'
-  const ctx = withNumberMetrics(compact ? compactCtx(ctx0) : roomy ? roomyCtx(ctx0) : ctx0)
+  const ctx = withNumberMetrics(compact ? compactCtx(ctx0) : grand ? grandCtx(ctx0) : roomy ? roomyCtx(ctx0) : ctx0)
   const sp = ctx.tokens.space
   const cols = Math.max(1, o.kinds.length)
-  const cellPad = compact ? sp.xs : roomy ? sp.md : sp.sm
+  const cellPad = compact ? sp.xs : grand ? sp.lg : roomy ? sp.md : sp.sm
   const rowGap = 2
   const header = o.header === 'bold' || o.header === 'none' ? o.header : 'filled'
   const W = Math.max(1, o.width)

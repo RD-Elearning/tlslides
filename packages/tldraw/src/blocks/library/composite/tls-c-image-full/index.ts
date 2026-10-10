@@ -179,11 +179,13 @@ function layoutImageFullV2(props: ImageFullProps, ctx: LayoutContext): LayoutNod
   const align = panel === 'center' ? 'center' : 'start'
   const sizes: Array<'title' | 'heading' | 'subheading'> = ['title', 'heading', 'subheading']
   // band: headline column (58 %) and text column side by side
-  const headW = band ? Math.round((pw - 2 * pad) * 0.58) : pw - 2 * pad
+  // AC8.5: 0.66 (was 0.58) and 4 lines in a full-height column (was 3): a band or split headline
+  // fell to heading size under a large title token (gradient, swiss, memphis) and read small.
+  const headW = band ? Math.round((pw - 2 * pad) * 0.66) : pw - 2 * pad
   const textW = band ? pw - 2 * pad - headW - sp.xl : headW
   const fullTall = side || split
   const avail = (fullTall ? H - 2 * F : (H - 2 * F) * (band ? 0.5 : 1) - 2 * inset) - 2 * pad
-  let k = sizes.indexOf(pickToken(ctx, props.title, Math.max(120, headW), sizes, 3) as (typeof sizes)[number])
+  let k = sizes.indexOf(pickToken(ctx, props.title, Math.max(120, headW), sizes, side || split ? 4 : 3) as (typeof sizes)[number])
   const specsAt = (i: number) => textSpecs(props, sizes[i], on)
   let specs = specsAt(k)
   const headSpecs = () => (band ? specs.filter((s) => s.id !== 'text') : specs)

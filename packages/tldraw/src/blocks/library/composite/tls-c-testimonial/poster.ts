@@ -9,7 +9,7 @@
 
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../../../types'
 import type { TestimonialProps } from './schema'
-import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, TESTIMONIAL as T } from './schema'
+import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, testimonialScale, initialsInk, LG_SCALES, TESTIMONIAL as T, type TestimonialScale } from './schema'
 import { cssTextHeight } from '../../../html-block'
 import { alignText, cardNodes, cardPaint } from '../_kit'
 import { backdrop } from '../_showcase'
@@ -21,6 +21,18 @@ import { backdrop } from '../_showcase'
  */
 export function poster(props: TestimonialProps, ctx: LayoutContext): LayoutNode {
   if (props.variant === 'photo') return photoPoster(props, ctx)
+  // AC8.5 `size: lg`: the largest rung whose column fits the box height (the template paints the
+  // poster's lines and sizes, so it follows)
+  if (props.size === 'lg') {
+    for (let rung = 0; rung < LG_SCALES.length; rung++) {
+      const tree = centredPoster(props, ctx, testimonialScale(props, rung))
+      if (rung === LG_SCALES.length - 1 || !(ctx.box.height > 0) || tree.box.height <= ctx.box.height + 0.5) return tree
+    }
+  }
+  return centredPoster(props, ctx, testimonialScale(props))
+}
+
+function centredPoster(props: TestimonialProps, ctx: LayoutContext, sc: TestimonialScale): LayoutNode {
   const children: LayoutNode[] = []
   const w = ctx.box.width
   const inner = Math.max(1, w - T.pad * 2)
@@ -36,45 +48,46 @@ export function poster(props: TestimonialProps, ctx: LayoutContext): LayoutNode 
 
   // Quote (required): the quotation marks are runs of their own, as in the template.
   if (props.quote) {
-    const style = { ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: T.quoteLH }), color: ctx.resolveColor('text').color }
+    const style = { ...ctx.resolveText(sc.quote, { letterSpacing: 0, lineHeight: T.quoteLH }), color: ctx.resolveColor('text').color }
     const runs = typeof props.quote === 'string' ? [{ text: props.quote }] : (props.quote as RichText).runs
     y += text('quote', { runs: [{ text: '"' }, ...runs, { text: '"' }] }, style) + T.quoteGap
   }
 
   // Avatar: a circle (the poster loads no image), initials on it when there is no safe URL.
   const avatarUrl = typeof props.avatar === 'string' ? props.avatar : ''
-  const ax = (w - T.avatar) / 2
+  const av = sc.avatar
+  const ax = (w - av) / 2
   children.push({
     k: 'rect',
     part: 'avatar',
-    box: { x: ax, y, width: T.avatar, height: T.avatar },
+    box: { x: ax, y, width: av, height: av },
     fill: { type: 'solid', color: ctx.resolveColor('accent').color },
-    radius: T.avatar / 2,
+    radius: av / 2,
   })
   if (!isSafeAvatarUrl(avatarUrl)) {
     const initials = getInitials(props.name || '')
     if (initials) {
-      const initStyle = { ...ctx.resolveText('body'), color: ctx.resolveColor('text').color }
-      const mInit = ctx.measureText(initials, initStyle, T.avatar)
+      const initStyle = { ...ctx.resolveText(sc.name), color: initialsInk(ctx.tokens.color as unknown as Record<string, string>) ?? ctx.resolveColor('text').color }
+      const mInit = ctx.measureText(initials, initStyle, av)
       children.push({
         k: 'text',
-        box: { x: ax, y: y + (T.avatar - mInit.height) / 2, width: T.avatar, height: mInit.height },
+        box: { x: ax, y: y + (av - mInit.height) / 2, width: av, height: mInit.height },
         lines: mInit.lines,
         style: initStyle,
       })
     }
   }
-  y += T.avatar + T.avatarGap
+  y += av + T.avatarGap
 
   // Name (required; weight 600, measured bold)
   if (props.name) {
-    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: T.nameLH }), color: ctx.resolveColor('text').color }
+    const style = { ...ctx.resolveText(sc.name, { letterSpacing: 0, lineHeight: T.nameLH }), color: ctx.resolveColor('text').color }
     y += text('name', { runs: [{ text: props.name, bold: true }] }, style) + T.nameGap
   }
 
   // Role (required)
   if (props.role) {
-    const style = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: T.roleLH }), color: ctx.resolveColor('textMuted').color }
+    const style = { ...ctx.resolveText(sc.role, { letterSpacing: 0, lineHeight: T.roleLH }), color: ctx.resolveColor('textMuted').color }
     y += text('role', props.role, style)
   }
 

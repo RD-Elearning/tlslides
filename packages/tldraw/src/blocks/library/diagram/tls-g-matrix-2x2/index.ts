@@ -28,7 +28,7 @@ export const tlsGMatrix2x2: BlockDefinition = {
         xAxis: { low: 'Low', high: 'High', title: 'Effort' },
         yAxis: { low: 'Low', high: 'High', title: 'Impact' },
         quadrants: [{ label: 'Quick wins' }, { label: 'Big bets' }, { label: 'Fill-ins' }, { label: 'Avoid' }],
-        items: [{ label: 'Onboarding', x: 0.2, y: 0.8 }],
+        items: [{ label: 'Onboarding', x: 0.2, y: 0.8 }, { label: 'SSO', x: 0.7, y: 0.8 }, { label: 'Themes', x: 0.2, y: 0.2 }],
       },
     },
   },

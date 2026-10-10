@@ -9,6 +9,7 @@
 
 import type { BlockSchema } from '../../../types'
 import { tintOf } from '../../text/_engine/color'
+import { contrastRatio, relativeLuminance, tryHexToRgb } from '../../../color-math'
 
 export interface TestimonialProps extends Record<string, unknown> {
   /** The testimonial quote. Accepts rich text (runs) or a plain string. */
@@ -21,6 +22,8 @@ export interface TestimonialProps extends Record<string, unknown> {
   avatar?: string
   /** AC2: `centered` (default) or `photo` — the avatar as a large photo beside a left-aligned quote. */
   variant?: 'centered' | 'photo'
+  /** AC8.5 */
+  size?: 'md' | 'lg'
 }
 
 export const schema: BlockSchema = {
@@ -49,13 +52,18 @@ export const schema: BlockSchema = {
     type: { kind: 'text', maxChars: 200 },
     role: 'content',
     label: 'Avatar',
-    guidance: 'Avatar image URL (https:) or asset id. Optional; shows initials when absent.',
+    guidance: 'Image URL (https:) or asset id; initials when absent.',
   },
   variant: {
     type: { kind: 'enum', values: ['centered', 'photo'] },
     role: 'option',
     label: 'Variant',
-    help: '`photo`: the avatar as a large photo beside the quote.',
+    help: '`photo`: big photo beside.',
+  },
+  size: {
+    type: { kind: 'enum', values: ['md', 'lg'] },
+    role: 'option',
+    label: 'Size',
   },
 }
 
@@ -116,6 +124,32 @@ export const TESTIMONIAL = {
   photoRadius: 16,
   photoMinH: 480,
 } as const
+
+/** AC8.5 — type tokens and avatar of the centred testimonial, per `size` (template and poster). */
+export type TestimonialScale = { quote: 'subheading' | 'heading' | 'title'; name: 'body' | 'lead'; role: 'caption' | 'body'; avatar: number }
+const MD_SCALE: TestimonialScale = { quote: 'subheading', name: 'body', role: 'caption', avatar: TESTIMONIAL.avatar }
+/** `size: lg` rungs, largest first; the poster takes the first whose column fits the box height. */
+export const LG_SCALES: TestimonialScale[] = [
+  { quote: 'title', name: 'lead', role: 'body', avatar: 112 },
+  { quote: 'heading', name: 'lead', role: 'body', avatar: 96 },
+]
+export function testimonialScale(props: TestimonialProps, rung = 0): TestimonialScale {
+  return props.size === 'lg' && props.variant !== 'photo' ? LG_SCALES[Math.min(rung, LG_SCALES.length - 1)] : MD_SCALE
+}
+
+/** AC8.5 — the initials' ink on the accent disc: the theme's surface or text colour, whichever
+ *  contrasts more with the accent (template and poster). Was the text colour: navy on navy. */
+export function initialsInk(color: Record<string, string> | undefined): string | undefined {
+  const lum = (h: string | undefined) => {
+    const rgb = h ? tryHexToRgb(h) : undefined
+    return rgb ? relativeLuminance(rgb) : undefined
+  }
+  const a = lum(color?.accent)
+  const s = lum(color?.surface)
+  const t = lum(color?.text)
+  if (a === undefined || s === undefined || t === undefined) return undefined
+  return contrastRatio(s, a) >= contrastRatio(t, a) ? color!.surface : color!.text
+}
 
 /** AC2 `photo` variant with no safe image URL: a soft accent tint, not a solid accent block. */
 export function photoPlaceholder(color: Record<string, string> | undefined): string {

@@ -12,7 +12,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
+import type { LayoutContext, LayoutNode, SpaceToken, TypeToken } from '../../../types'
 import type { BulletsProps } from './schema'
 import { renderList } from '../../../layout/lists'
 
@@ -45,13 +45,39 @@ function formatMarker(marker: string, index: number, startNumber?: number): stri
   }
 }
 
+/** AC8.5 `size: fit`: the rungs tried, largest first; the list may take this share of the box. */
+export const FIT_LADDER: TypeToken[] = ['heading', 'subheading', 'lead', 'body']
+export const FIT_SHARE = 0.6
+/** At a rung above body an item may wrap to at most this many lines. */
+export const FIT_MAX_LINES = 2
+
 export function layout(props: BulletsProps, ctx: LayoutContext): LayoutNode {
-  const marker = props.marker ?? 'dot'
+  if (props.size === 'fit') {
+    const H = ctx.box.height
+    for (let i = 0; i < FIT_LADDER.length; i++) {
+      const token = FIT_LADDER[i]
+      const last = i === FIT_LADDER.length - 1
+      const tree = layoutAt(props, ctx, token, Math.round(ctx.resolveText(token).size * 0.55))
+      const kids = tree.k === 'group' ? tree.children : []
+      const wraps = kids.some((c) => c.k === 'text' && !!c.part?.endsWith('.text') && c.lines.length > FIT_MAX_LINES)
+      if (last || (tree.box.height <= H * FIT_SHARE && !wraps)) {
+        // centred in the box: a short list beside a full-height photo sits at its middle
+        const dy = Math.max(0, (H - tree.box.height) / 2)
+        const children = (tree.k === 'group' ? tree.children : []).map((c) => ({ ...c, box: { ...c.box, y: c.box.y + dy } }) as LayoutNode)
+        return { k: 'group', part: 'root', box: { ...tree.box, height: Math.max(H, tree.box.height) }, children }
+      }
+    }
+  }
+  const token: TypeToken = props.size === 'lead' ? 'lead' : 'body'
   const spacingToken = (props.spacing ?? 'sm') as SpaceToken
-  const gap = ctx.tokens.space[spacingToken] ?? ctx.tokens.space.sm
+  return layoutAt(props, ctx, token, ctx.tokens.space[spacingToken] ?? ctx.tokens.space.sm)
+}
+
+function layoutAt(props: BulletsProps, ctx: LayoutContext, token: TypeToken, gap: number): LayoutNode {
+  const marker = props.marker ?? 'dot'
   const textColor = props.color ?? 'text'
 
-  const style = ctx.resolveText('body')
+  const style = ctx.resolveText(token)
   const resolvedStyle = {
     ...style,
     color: ctx.resolveColor(textColor).color,

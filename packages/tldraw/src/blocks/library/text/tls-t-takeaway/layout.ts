@@ -6,7 +6,7 @@
  * to pick the right colour role.
  */
 
-import type { LayoutContext, LayoutNode, ColorRole, Paint } from '../../../types'
+import type { LayoutContext, LayoutNode, ColorRole, Paint, TypeToken } from '../../../types'
 import type { TakeawayProps } from './schema'
 
 /** Map tone to a colour role for the accent bar. */
@@ -23,8 +23,27 @@ function toneToColorRole(tone: TakeawayProps['tone']): ColorRole {
   }
 }
 
+/** AC8.5 `size: column`: the rungs tried, largest first; the card may take this share of the box. */
+export const COLUMN_RUNGS: TypeToken[] = ['heading', 'subheading', 'lead']
+export const COLUMN_SHARE = 0.7
+
 export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
-  const pad = ctx.tokens.space.md
+  if (props.size === 'column') {
+    const H = ctx.box.height
+    for (let i = 0; i < COLUMN_RUNGS.length; i++) {
+      const card = layoutCard(props, ctx, COLUMN_RUNGS[i])
+      if (i < COLUMN_RUNGS.length - 1 && H > 0 && card.box.height > H * COLUMN_SHARE) continue
+      // centred in a tall column (beside a chart): the card sits at its middle
+      const dy = H > card.box.height ? (H - card.box.height) / 2 : 0
+      const kids = card.k === 'group' ? card.children : []
+      return { k: 'group', part: 'root', box: { x: 0, y: 0, width: ctx.box.width, height: Math.max(H, card.box.height) }, children: kids.map((c) => ({ ...c, box: { ...c.box, y: c.box.y + dy } }) as LayoutNode) }
+    }
+  }
+  return layoutCard(props, ctx)
+}
+
+function layoutCard(props: TakeawayProps, ctx: LayoutContext, column?: TypeToken): LayoutNode {
+  const pad = column ? ctx.tokens.space.xl : ctx.tokens.space.md
   const gap = ctx.tokens.space.sm
   const barWidth = ctx.tokens.space.xs
   const radius = ctx.tokens.radius.md
@@ -42,7 +61,7 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
 
   // ── Label ────────────────────────────────────────────────────────────
   if (props.label) {
-    const labelStyle = ctx.resolveText('caption')
+    const labelStyle = ctx.resolveText(column ? 'body' : 'caption')
     const labelColor = ctx.resolveColor(role)
     const labelMetrics = ctx.measureText(props.label, labelStyle, contentW)
     const labelHeight = labelMetrics.height
@@ -76,10 +95,10 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
 
   // ── Text ─────────────────────────────────────────────────────────────
   // AC2 `size: 'lead'`: the bigger tier when it fits the box height; a short box keeps `body`.
-  const bodyStyle = ctx.resolveText('body', { lineHeight: 1.4 })
+  const bodyStyle = column ? ctx.resolveText(column, { lineHeight: 1.2 }) : ctx.resolveText('body', { lineHeight: 1.4 })
   let textStyle = bodyStyle
   let textMetrics = ctx.measureText(props.text, bodyStyle, contentW)
-  if (props.size === 'lead') {
+  if (!column && props.size === 'lead') {
     const leadStyle = ctx.resolveText('lead', { lineHeight: 1.3 })
     const leadMetrics = ctx.measureText(props.text, leadStyle, contentW)
     if (!(ctx.box.height > 0) || y + leadMetrics.height + pad <= ctx.box.height + 0.5) {

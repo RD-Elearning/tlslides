@@ -38,7 +38,7 @@ export const tlsCStatSpotlight: BlockDefinition = {
     example: {
       id: 'b_spot',
       type: 'tls.c.stat-spotlight',
-      props: { value: '87%', progress: 87, label: 'Tỉ lệ hoàn thành', stats: [{ value: '312', label: 'Sinh viên' }] },
+      props: { value: '87%', progress: 87, label: 'Pilots converted', stats: [{ value: '312', label: 'Active teams' }, { value: '4.6', label: 'Seats' }] },
     },
   },
   schema,

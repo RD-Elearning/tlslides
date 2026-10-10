@@ -19,7 +19,7 @@ export const schema: BlockSchema = {
     guidance: 'Optional source line, e.g. "Q3 board review".',
   },
   size: {
-    type: { kind: 'enum', values: ['xl', 'lg', 'md'] },
+    type: { kind: 'enum', values: ['display', 'xl', 'lg', 'md'] },
     role: 'option',
     label: 'Size',
     help: 'Shrinks to fit, never below md.',
@@ -52,7 +52,7 @@ export const schema: BlockSchema = {
 export interface StatementProps extends Record<string, unknown> {
   text: string
   attribution?: string
-  size?: 'xl' | 'lg' | 'md'
+  size?: 'display' | 'xl' | 'lg' | 'md'
   align?: 'start' | 'center'
   emphasis?: 'accent' | 'underline' | 'highlight'
   showAttribution?: boolean

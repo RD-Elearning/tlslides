@@ -30,8 +30,10 @@ type Metrics = ReturnType<LayoutContext['measureText']>
 type Step = readonly [token: 'display' | 'title' | 'heading' | 'subheading' | 'lead', maxLines: number]
 const STEPS: Record<Variant, readonly Step[]> = {
   big: [['display', 3], ['title', 4], ['heading', 7], ['subheading', 99]],
-  card: [['title', 3], ['heading', 5], ['subheading', 99], ['lead', 99]],
-  side: [['title', 4], ['heading', 6], ['subheading', 99], ['lead', 99]],
+  // AC8.5: display first for a short quote (a title-size two-liner left the card slide thin)
+  card: [['display', 2], ['title', 3], ['heading', 5], ['subheading', 99], ['lead', 99]],
+  // AC8.5: display first — a title-size quote beside the bar left ~75 % of a quote slide empty
+  side: [['display', 3], ['title', 4], ['heading', 6], ['subheading', 99], ['lead', 99]],
   image: [['title', 3], ['heading', 5], ['subheading', 99], ['lead', 99]],
 }
 const FLOOR = 0.6

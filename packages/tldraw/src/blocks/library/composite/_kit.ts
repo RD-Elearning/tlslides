@@ -225,6 +225,29 @@ export function pickToken(ctx: LayoutContext, text: unknown, width: number, toke
   return tokens[tokens.length - 1]
 }
 
+/**
+ * AC8.5 — does `text` at `token` wrap well at `width` for a display headline: at most `maxLines`,
+ * stable (the same line count at 98.5 % and at 104 % of the width — the browser's wrap, within
+ * the width table's few per cent, then agrees with the report's; the table over-counts more often
+ * than it under-counts) and no one-word first or last line
+ * when it wraps ("Why / mid-market, / why now"; `noOrphan: false` skips that rule)?
+ */
+export function stableWrap(ctx: LayoutContext, text: unknown, width: number, token: TypeToken, maxLines: number, noOrphan = true): boolean {
+  const t = toMeasurable(text)
+  const w = Math.max(1, width)
+  try {
+    const style = ctx.resolveText(token)
+    const lines = ctx.measureText(t, style, w).lines
+    if (lines.length > maxLines) return false
+    if (ctx.measureText(t, style, w * 0.985).lines.length !== lines.length) return false
+    if (ctx.measureText(t, style, w * 1.04).lines.length !== lines.length) return false
+    const words = (i: number) => lines[i].text.trim().split(/\s+/).filter(Boolean).length
+    return !(noOrphan && lines.length > 1 && (words(0) < 2 || words(lines.length - 1) < 2))
+  } catch {
+    return false
+  }
+}
+
 /** Solid black wash: the surface a scrim leaves behind, so `text` roles resolve light on it. */
 export const SCRIM_SURFACE: Paint = { type: 'solid', color: '#000000' }
 

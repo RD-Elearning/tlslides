@@ -14,7 +14,7 @@ export interface TakeawayProps extends Record<string, unknown> {
   /** Short label above the text, e.g. "Key Insight". */
   label: string
   /** Text tier: `body` (default) or `lead` — bigger, for a takeaway beside a chart or under a KPI row. */
-  size?: 'body' | 'lead'
+  size?: 'body' | 'lead' | 'column'
 }
 
 export const schema: BlockSchema = {
@@ -43,10 +43,10 @@ export const schema: BlockSchema = {
     guidance: 'Short label, 1–3 words. e.g. "Key Insight", "Remember".',
   },
   size: {
-    type: { kind: 'enum', values: ['body', 'lead'] },
+    type: { kind: 'enum', values: ['body', 'lead', 'column'] },
     role: 'option',
     label: 'Text size',
-    help: '`lead` reads at a glance beside a chart or under a KPI row; `body` for a long sentence.',
+    help: '`lead` beside a chart or under a KPI row; `column`: big, centred in a tall column.',
   },
 }
 

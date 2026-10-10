@@ -113,11 +113,21 @@ describe('tls.m.logo-wall', () => {
     expect(leavesOf(lay({ logos: logos(6, () => 2), cols: '3' }), 'plate')).toHaveLength(0)
   })
 
-  it('missing and empty logos render the placeholder with their alt text (no crash)', () => {
-    const svg = renderNodeToSvg(lay({ logos: [{ image: '', alt: 'Empty one' }, { image: 'gone', alt: 'Gone two' }, { image: 'x', alt: 'Three' }] }, 900, 300, false))
-    expect(svg).toContain('stroke-dasharray')
+  // AC8.5: a logo with no image is set as a wordmark (its alt, subheading size) instead of a dashed
+  // placeholder or a blank cell — a wall of offline logos drew empty grey plates.
+  it('missing and empty logos render as wordmarks of their alt text (no crash, no blank cell)', () => {
+    const tree = lay({ logos: [{ image: '', alt: 'Empty one' }, { image: 'gone', alt: 'Gone two' }, { image: 'x', alt: 'Three' }] }, 900, 300, false)
+    const svg = renderNodeToSvg(tree)
+    expect(svg).not.toContain('stroke-dasharray')
     expect(svg).toContain('Empty one')
     expect(svg).toContain('Gone two')
+    expect(svg).toContain('Three')
+    const texts: Array<{ part?: string; size: number }> = []
+    const walk = (n: any): void => (n.k === 'group' ? n.children.forEach(walk) : n.k === 'text' ? void texts.push({ part: n.part, size: n.style.size }) : undefined)
+    walk(tree)
+    const marks = texts.filter((t) => /^logo\[\d\]/.test(t.part ?? ''))
+    expect(marks).toHaveLength(3)
+    for (const m of marks) expect(m.size).toBeGreaterThanOrEqual(36)
     expect(() => lay({ logos: [null, {}, { ratio: 'x' }] as any })).not.toThrow()
   })
 

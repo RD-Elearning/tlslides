@@ -83,7 +83,7 @@ interface Specs {
   person?: BlockSpec
 }
 
-function specsOf(props: ClosingProps, centered: boolean, titleSize: 'title' | 'heading'): Specs {
+function specsOf(props: ClosingProps, centered: boolean, titleSize: 'display' | 'title' | 'heading'): Specs {
   const s: Specs = { title: { id: 'title', type: 'tls.t.title', props: { text: toMeasurable(props.title), size: titleSize } }, contacts: [] }
   if (props.text) s.text = { id: 'text', type: 'tls.t.body', props: { text: props.text } }
   if (isShown(props, 'showContacts')) {
@@ -131,8 +131,10 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
   const btnH = Math.round(ctaStyle.size * ctaStyle.lineHeight + ctx.tokens.space.md * 2)
   const ctaBlockH = wantCta ? (link ? Math.round(ctaStyle.size * ctaStyle.lineHeight) : btnH) : 0
 
-  const sizes: Array<'title' | 'heading'> = ['title', 'heading']
-  const start = Math.max(0, sizes.indexOf(pickToken(ctx, props.title, lw, sizes, 2) as 'title' | 'heading'))
+  // AC8.5: a centred closing leads with display type when its title fits one line (a title-size
+  // "Thank you" over a small stack left ~85 % of the slide empty); the split keeps title size.
+  const sizes: Array<'display' | 'title' | 'heading'> = centered ? ['display', 'title', 'heading'] : ['title', 'heading']
+  const start = Math.max(0, sizes.indexOf(pickToken(ctx, props.title, lw, sizes, centered ? 1 : 2) as 'display' | 'title' | 'heading'))
   let s = specsOf(props, centered, sizes[start])
   let leftSpecs: BlockSpec[] = []
   let leftH: number[] = []

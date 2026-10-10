@@ -13,7 +13,7 @@ import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { onColor } from '../../text/_engine/color'
-import { composeFlat, measureHeights, onSurface, pick, pickToken, toMeasurable, type Piece } from '../_kit'
+import { composeFlat, measureHeights, onSurface, pick, stableWrap, toMeasurable, type Piece } from '../_kit'
 
 export interface DividerProps extends Record<string, unknown> {
   number?: string
@@ -45,7 +45,7 @@ export const defaults: DividerProps = {
 
 const VARIANTS = ['numeral', 'field', 'minimal'] as const
 
-function specsOf(props: DividerProps, titleSize: 'title' | 'heading', fg?: string, on?: Record<string, unknown>) {
+function specsOf(props: DividerProps, titleSize: 'display' | 'title' | 'heading', fg?: string, on?: Record<string, unknown>) {
   const col = fg ? { color: fg } : {}
   const dark = on ?? {}
   const variant = pick(props.variant, VARIANTS, 'numeral')
@@ -77,13 +77,29 @@ export function layoutDivider(props: DividerProps, ctx: LayoutContext): LayoutNo
   const align = props.align === 'center' ? 'center' : 'start'
   const gap = ctx.tokens.space.md
   const inset = field ? ctx.tokens.space['2xl'] : 0
-  const tw = Math.min(W - 2 * inset, 1300)
+  // AC8.5: at most 1200 wide (was 1300): the style motifs of the section page sit right of x 1380
+  // (luxury ring, gradient and glass orbs, doodle star, memphis half circle).
+  // the first (size, width) with a stable wrap: display at 1200, 1100 or 1000 wide, then title, …
+  const sizes: Array<'display' | 'title' | 'heading'> = ['display', 'title', 'heading']
+  const widths = [1200, 1100, 1000].map((w) => Math.min(W - 2 * inset, w))
+  let start = sizes.length - 1
+  let tw = widths[0]
+  search: for (let k = 0; k < sizes.length; k++) {
+    for (const w of widths) {
+      if (stableWrap(ctx, props.title, w, sizes[k], 3)) {
+        start = k
+        tw = w
+        break search
+      }
+    }
+  }
   const tx = align === 'center' ? (W - tw) / 2 : inset
   const accent = ctx.resolveColor('accent').color
   const fg = field ? onColor(ctx, accent) : undefined
   const on = field ? onSurface({ type: 'solid', color: accent }) : undefined
-  const sizes: Array<'title' | 'heading'> = ['title', 'heading']
-  const start = Math.max(0, sizes.indexOf(pickToken(ctx, props.title, tw, sizes, 2) as 'title' | 'heading'))
+  // AC8.5: display type first (a title-size section title on an empty page read unfinished);
+  // the ladder steps down while the title takes more than three lines, wraps near a break (the
+  // browser could wrap it otherwise), leaves a one-word line, or the stack overflows the box.
 
   let s = specsOf(props, sizes[start], fg, on)
   let specs: BlockSpec[] = []

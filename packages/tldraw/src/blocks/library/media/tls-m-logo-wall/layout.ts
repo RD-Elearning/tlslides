@@ -13,7 +13,7 @@
 import type { CapacityReport, LayoutContext, LayoutNode, LintFinding, Size } from '../../../types'
 import type { LogoWallProps } from './schema'
 import { WALL_MAX_LOGOS } from './schema'
-import { altFindings, asArr, enumOf, imageLeaf, logoRatio, objs, side, str } from '../_kit'
+import { altFindings, asArr, enumOf, hasImage, imageLeaf, logoRatio, objs, side, str } from '../_kit'
 import { placeLines } from '../../diagram/_kit'
 
 /** Column count for `auto`: at most 5 per row, rows balanced. */
@@ -73,9 +73,9 @@ export function layout(props: LogoWallProps, ctx: LayoutContext): LayoutNode {
   const cw = Math.max(1, (W - gap * (r.cols - 1)) / r.cols)
   // cells stay wide-ish: a tall region does not stretch them into tall plates
   const ch = Math.max(1, Math.min((areaH - gap * (r.rows - 1)) / r.rows, cw * 0.7))
-  const p = Math.round(Math.min(cw, ch) * 0.14)
-  const iw = Math.max(1, cw - 2 * p)
-  const ih = Math.max(1, Math.min(ch - 2 * p, iw * 0.5, 160))
+  const p0 = Math.round(Math.min(cw, ch) * 0.14)
+  const iw = Math.max(1, cw - 2 * p0)
+  const ih = Math.max(1, Math.min(ch - 2 * p0, iw * 0.5, 160))
   const sizes = sizeLogos(
     r.uniform,
     r.items.map((it) => logoRatio(ctx, it.image, it.ratio)),
@@ -109,6 +109,33 @@ export function layout(props: LogoWallProps, ctx: LayoutContext): LayoutNode {
       })
     }
     const sz = sizes[i]
+    // AC8.5: a logo with no image (an empty slot, or an asset that does not resolve) is set as a
+    // wordmark — its brand name in the heading face, muted, centred in its cell — never as a blank
+    // cell (a wall of empty slots painted nothing at all).
+    if (!hasImage(ctx, it.image) && str(it.alt).trim()) {
+      // the largest of subheading, lead, body, caption whose wordmark (≤ 2 lines) fits the cell
+      const name = str(it.alt).trim()
+      const place = (tk: 'subheading' | 'lead' | 'body' | 'caption') =>
+        placeLines(ctx, name, { ...ctx.resolveText(tk), color: ctx.resolveColor('textMuted').color }, { x: x0 + 8, y: 0, width: Math.max(1, cw - 16) }, 'center', 2, `logo[${i}]`)
+      let p: ReturnType<typeof place> | undefined
+      for (const tk of ['subheading', 'lead', 'body', 'caption'] as const) {
+        const q = place(tk)
+        const cut = q.nodes.some((n) => n.k === 'text' && n.lines.some((l) => l.text.endsWith('…')))
+        const room = tk === 'caption' ? ch : ch - 2 * p0
+        if (!cut && q.height <= room + 0.5 && q.width <= cw - 16 + 0.5) {
+          p = q
+          break
+        }
+      }
+      // a cell too small for even a caption wordmark keeps the image leaf (the renderers' placeholder)
+      if (!p) {
+        out.push(imageLeaf(ctx, it.image, it.alt, { x: x0 + (cw - sz.width) / 2, y: y0 + (ch - sz.height) / 2, width: sz.width, height: sz.height }, { part: `logo[${i}]`, fit: 'contain' }))
+        return
+      }
+      const dy = y0 + (ch - p.height) / 2
+      out.push(...p.nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode))
+      return
+    }
     out.push(
       imageLeaf(ctx, it.image, it.alt, { x: x0 + (cw - sz.width) / 2, y: y0 + (ch - sz.height) / 2, width: sz.width, height: sz.height }, { part: `logo[${i}]`, fit: 'contain' })
     )

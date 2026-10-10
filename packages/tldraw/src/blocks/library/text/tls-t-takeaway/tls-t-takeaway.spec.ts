@@ -169,8 +169,18 @@ describe('AC2 — size knob', () => {
   const DEF = tlsTTakeaway
   const textOf = (n: any): any => (n.children ?? []).find((c: any) => c.part === 'text')
 
-  it('lists the size knob with body and lead', () => {
-    expect((DEF.schema.size.type as any).values).toEqual(['body', 'lead'])
+  it('lists the size knob with body, lead and (AC8.5) column', () => {
+    expect((DEF.schema.size.type as any).values).toEqual(['body', 'lead', 'column'])
+  })
+
+  it('AC8.5 size column: alone in a tall column it takes a big rung, centred, and fits the box', () => {
+    const props = { ...(DEF.describe!.example.props as any), size: 'column' }
+    const tree = DEF.layout(props, makeCtx({ width: 840, height: 758 }, makeRegistry())) as any
+    const text = tree.children.find((c: any) => c.part === 'text')
+    expect(text.style.size).toBeGreaterThanOrEqual(44)
+    expect(tree.box.height).toBeLessThanOrEqual(758.5)
+    const surface = tree.children.find((c: any) => c.part === 'surface')
+    expect(surface.box.y).toBeGreaterThan(100)
   })
 
   it.each([

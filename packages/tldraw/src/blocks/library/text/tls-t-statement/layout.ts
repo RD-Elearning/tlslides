@@ -38,7 +38,10 @@ export function runWidth(text: string, style: ResolvedTextStyle, bold = false): 
   }
 }
 
-export const LADDER: Array<{ id: 'xl' | 'lg' | 'md'; token: TypeToken }> = [
+export const LADDER: Array<{ id: 'display' | 'xl' | 'lg' | 'md'; token: TypeToken }> = [
+  // AC8.5: the display rung, for a statement alone on a slide (`content-statement`): title-size
+  // type on an empty slide reads unfinished. Taken only while the text keeps to 3 lines.
+  { id: 'display', token: 'display' },
   { id: 'xl', token: 'title' },
   { id: 'lg', token: 'heading' },
   { id: 'md', token: 'subheading' },
@@ -47,9 +50,12 @@ export const LADDER: Array<{ id: 'xl' | 'lg' | 'md'; token: TypeToken }> = [
 /** Hint reported to the planner when the text cannot fit even at md. */
 export const SHORTEN_HINT_CHARS = 100
 
+/** Most lines the display rung may take before the ladder steps down to xl. */
+export const DISPLAY_MAX_LINES = 3
+
 function rung(size: unknown): number {
   const i = LADDER.findIndex((l) => l.id === size)
-  return i >= 0 ? i : 1
+  return i >= 0 ? i : LADDER.findIndex((l) => l.id === 'lg')
 }
 
 function alignOf(props: StatementProps): HAlign {
@@ -96,7 +102,8 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     const placed = placeText(ctx, measurable, style, { x: 0, y: markBlock, width }, align, { part: 'text', propPath: 'text' })
     result = { placed, style }
     chosen = r
-    if (markBlock + placed.height + attrBlock <= height + 0.5) break
+    const tooLong = LADDER[r].id === 'display' && placed.lineCount > DISPLAY_MAX_LINES && r < LADDER.length - 1
+    if (!tooLong && markBlock + placed.height + attrBlock <= height + 0.5) break
   }
   const { placed, style } = result!
   const total = markBlock + placed.height + attrBlock

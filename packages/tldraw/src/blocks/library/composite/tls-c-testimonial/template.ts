@@ -11,7 +11,8 @@
 
 import type { HtmlTemplateContext } from '../../../types'
 import type { TestimonialProps } from './schema'
-import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, TESTIMONIAL } from './schema'
+import type { LayoutNode } from '../../../types'
+import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, testimonialScale, initialsInk, TESTIMONIAL } from './schema'
 import { posterText } from '../../../html-block'
 import type { TextLine } from '../../../types'
 import { cardCssFromPoster } from '../_kit'
@@ -83,13 +84,25 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
   // AC2 `variant: 'photo'`: photo left, text column left-aligned (the poster draws the same row).
   const photo = props.variant === 'photo'
   const ta = photo ? 'left' : 'center'
+  // AC8.5: with a poster, the avatar is the poster's (the `size: lg` rung the poster chose)
+  const posterAvatar = (() => {
+    let w: number | undefined
+    const walk = (n: LayoutNode): void => {
+      if (n.k === 'group') n.children.forEach(walk)
+      else if (n.k === 'rect' && n.part === 'avatar') w = n.box.width
+    }
+    if (ctx.poster) walk(ctx.poster)
+    return w
+  })()
+  const sc0 = testimonialScale(props)
+  const sc = { ...sc0, avatar: !photo && posterAvatar ? posterAvatar : sc0.avatar }
 
   // Quote (required)
   if (props.quote) {
     parts.push(
       `<div data-part="quote" style="` +
         `font-family:var(--tls-font-family);` +
-        pt.css('quote', `font-size:var(--tls-type-subheading);line-height:${T.quoteLH};`) +
+        pt.css('quote', `font-size:var(--tls-type-${sc.quote});line-height:${T.quoteLH};`) +
         `color:${ctx.cssVar('on')};` +
         `font-style:italic;` +
         `margin-bottom:${photo && !props.name && !props.role ? 0 : T.quoteGap}px;` +
@@ -116,7 +129,7 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
   } else if (isSafeAvatarUrl(avatarUrl)) {
     parts.push(
       `<div data-part="avatar" style="` +
-        `width:${T.avatar}px;height:${T.avatar}px;border-radius:50%;overflow:hidden;flex:none;` +
+        `width:${sc.avatar}px;height:${sc.avatar}px;border-radius:50%;overflow:hidden;flex:none;` +
         `margin-bottom:${T.avatarGap}px;` +
       `">` +
         `<img src="${ctx.esc(avatarUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;" />` +
@@ -126,13 +139,13 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
     const initials = getInitials(props.name || '')
     parts.push(
       `<div data-part="avatar" style="` +
-        `width:${T.avatar}px;height:${T.avatar}px;border-radius:50%;flex:none;` +
+        `width:${sc.avatar}px;height:${sc.avatar}px;border-radius:50%;flex:none;` +
         `background:${ctx.cssVar('accent')};` +
         `display:flex;align-items:center;justify-content:center;` +
         `margin-bottom:${T.avatarGap}px;` +
         `font-family:var(--tls-font-family);` +
-        `font-size:var(--tls-type-body);` +
-        `color:${ctx.cssVar('on')};` +
+        `font-size:var(--tls-type-${sc.name});` +
+        `color:${initialsInk(ctx.tokens?.color as unknown as Record<string, string>) ?? ctx.cssVar('on')};` +
         `font-weight:600;` +
       `">${ctx.esc(initials)}</div>`
     )
@@ -143,7 +156,7 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
     parts.push(
       `<div data-part="name" style="` +
         `font-family:var(--tls-font-family);` +
-        pt.css('name', `font-size:var(--tls-type-body);line-height:${T.nameLH};`) +
+        pt.css('name', `font-size:var(--tls-type-${sc.name});line-height:${T.nameLH};`) +
         `color:${ctx.cssVar('on')};` +
         `font-weight:600;` +
         `margin-bottom:${photo && !props.role ? 0 : T.nameGap}px;` +
@@ -157,7 +170,7 @@ export function template(props: TestimonialProps, ctx: HtmlTemplateContext): str
     parts.push(
       `<div data-part="role" style="` +
         `font-family:var(--tls-font-family);` +
-        pt.css('role', `font-size:var(--tls-type-caption);line-height:${T.roleLH};`) +
+        pt.css('role', `font-size:var(--tls-type-${sc.role});line-height:${T.roleLH};`) +
         `color:${ctx.cssVar('text-muted')};` +
         `text-align:${ta};` +
       `">${pt.html('role', ctx.esc(props.role))}</div>`
