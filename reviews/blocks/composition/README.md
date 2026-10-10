@@ -289,6 +289,10 @@ motion, Present and export handle it with no new node kind; AI-hidden) with comp
 `polylineHitsBox`, …), `resolveConnectorEnd` (compiler), compile rule `connector/unresolved`;
 validator rules `connector/malformed`, `connector/duplicate-id`, `connector/unresolved`;
 `LayoutReport.connectors` / `ConnectorReport`; digest `CONNECTORS_LINE`; motion `dashedDraw`.
+**Nested motion:** DOM attributes `data-nested-id` / `data-nested-type` on a nested block's wrapper
+(`data-block-id` is taken by DeckViewer's shape wrapper); `play-reveal.ts` `STAGGER_CAP_MS`,
+`cappedStagger`, `NESTED_PART_PRESETS`, `authoredChildIds`, `rememberBlockDefinition` (called by
+`BlockRegistry.register`).
 
 ---
 

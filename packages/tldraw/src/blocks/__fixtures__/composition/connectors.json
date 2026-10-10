@@ -41,18 +41,20 @@
                         }
                       },
                       {
-                        "id": "c1h",
-                        "type": "tls.t.body",
-                        "props": {
-                          "text": "Collect",
-                          "size": "subheading"
-                        }
-                      },
-                      {
                         "id": "c1b",
                         "type": "tls.t.body",
                         "props": {
-                          "text": "Events stream in from every product surface."
+                          "text": {
+                            "runs": [
+                              {
+                                "text": "Collect. ",
+                                "bold": true
+                              },
+                              {
+                                "text": "Events stream in from every product surface."
+                              }
+                            ]
+                          }
                         }
                       }
                     ]
@@ -72,18 +74,20 @@
                         }
                       },
                       {
-                        "id": "c2h",
-                        "type": "tls.t.body",
-                        "props": {
-                          "text": "Model",
-                          "size": "subheading"
-                        }
-                      },
-                      {
                         "id": "c2b",
                         "type": "tls.t.body",
                         "props": {
-                          "text": "A nightly job turns events into features."
+                          "text": {
+                            "runs": [
+                              {
+                                "text": "Model. ",
+                                "bold": true
+                              },
+                              {
+                                "text": "A nightly job turns events into features."
+                              }
+                            ]
+                          }
                         }
                       }
                     ]
@@ -103,18 +107,20 @@
                         }
                       },
                       {
-                        "id": "c3h",
-                        "type": "tls.t.body",
-                        "props": {
-                          "text": "Decide",
-                          "size": "subheading"
-                        }
-                      },
-                      {
                         "id": "c3b",
                         "type": "tls.t.body",
                         "props": {
-                          "text": "Teams act on one shared score."
+                          "text": {
+                            "runs": [
+                              {
+                                "text": "Decide. ",
+                                "bold": true
+                              },
+                              {
+                                "text": "Teams act on one shared score."
+                              }
+                            ]
+                          }
                         }
                       }
                     ]
@@ -486,18 +492,20 @@
                         }
                       },
                       {
-                        "id": "d1h",
-                        "type": "tls.t.body",
-                        "props": {
-                          "text": "Today",
-                          "size": "subheading"
-                        }
-                      },
-                      {
                         "id": "d1b",
                         "type": "tls.t.body",
                         "props": {
-                          "text": "Three tools, three logins."
+                          "text": {
+                            "runs": [
+                              {
+                                "text": "Today. ",
+                                "bold": true
+                              },
+                              {
+                                "text": "Three tools, three logins."
+                              }
+                            ]
+                          }
                         }
                       }
                     ]
@@ -537,18 +545,20 @@
                         }
                       },
                       {
-                        "id": "d2h",
-                        "type": "tls.t.body",
-                        "props": {
-                          "text": "Next quarter",
-                          "size": "subheading"
-                        }
-                      },
-                      {
                         "id": "d2b",
                         "type": "tls.t.body",
                         "props": {
-                          "text": "One workspace for every team."
+                          "text": {
+                            "runs": [
+                              {
+                                "text": "Next quarter. ",
+                                "bold": true
+                              },
+                              {
+                                "text": "One workspace for every team."
+                              }
+                            ]
+                          }
                         }
                       }
                     ]

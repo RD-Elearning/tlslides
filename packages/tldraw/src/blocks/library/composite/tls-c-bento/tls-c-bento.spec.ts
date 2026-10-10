@@ -95,3 +95,23 @@ describe('tls.c.bento', () => {
     slideScopeCompiles(tlsCBento, 'timeline', 'timeline')
   })
 })
+
+describe('tls.c.bento — CMP3 lead tile', () => {
+  const tiles = [
+    { kind: 'stat', value: '42%', label: 'revenue growth, led by team plans' },
+    { kind: 'point', icon: 'users', title: 'Teams, not users', text: 'Most new seats come from teams adding colleagues.' },
+    { kind: 'image', image: '/demo/photo-1.svg', alt: 'Team' },
+    { kind: 'quote', quote: 'We buy tools for teams now, not seats.', name: 'Linh Pham, COO' },
+  ]
+  const texts = () => absoluteLeaves(layoutAt(tlsCBento, { tiles, pattern: 'hero+3' }, 1728, 740)).filter((l) => l.k === 'text').map((l) => l.node as any)
+  const sizeOf = (start: string) => texts().find((t) => t.lines.map((x: any) => x.text).join(' ').startsWith(start))!.style.size
+
+  it('the big point tile takes its own, bigger headline step than the quote tile', () => {
+    expect(sizeOf('Teams')).toBeGreaterThan(sizeOf('We buy'))
+  })
+
+  it('the small texts share one size, and the bento keeps ≤ 4 sizes (≤ 5 with a slide title)', () => {
+    expect(sizeOf('Most new')).toBe(sizeOf('Linh'))
+    expect(new Set(texts().map((t) => Math.round(t.style.size))).size).toBeLessThanOrEqual(4)
+  })
+})

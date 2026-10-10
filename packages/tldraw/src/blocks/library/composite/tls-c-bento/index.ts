@@ -138,7 +138,7 @@ export function bentoCells(pattern: BentoPattern, W: number, H: number, g: numbe
 type Step = 'display' | 'title' | 'heading' | 'subheading' | 'body'
 
 /** The specs of a tile's text, at headline step `s`. */
-function tileSpecs(t: Tile, s: Step, on: Record<string, unknown>, ink?: string): BlockSpec[] {
+function tileSpecs(t: Tile, s: Step, on: Record<string, unknown>, ink?: string, smallBody = false): BlockSpec[] {
   const col = ink ? { color: ink } : {}
   // the last step sets the headline as body text (a long quote in a small tile)
   const title = (id: string, text: string, color?: string): BlockSpec =>
@@ -146,7 +146,9 @@ function tileSpecs(t: Tile, s: Step, on: Record<string, unknown>, ink?: string):
       ? { id, type: 'tls.t.body', props: { text: plainOf(text), ...(color ? { color } : col), ...on } }
       : { id, type: 'tls.t.title', props: { text: toMeasurable(text), size: s, ...(color ? { color } : col), ...on } }
   // the small text: body beside a big headline, caption once the headline is at subheading or below
-  const small = (id: string, text: string): BlockSpec => ({ id, type: s === 'subheading' || s === 'body' ? 'tls.t.caption' : 'tls.t.body', props: { text, ...(ink ? { color: ink } : {}), ...on } })
+  // CMP3: with a lead tile on its own step, the other tiles keep body-size small text, so the slide
+  // still has one small size (≤ 5 sizes with the slide title and the stat)
+  const small = (id: string, text: string): BlockSpec => ({ id, type: s === 'body' || (s === 'subheading' && !smallBody) ? 'tls.t.caption' : 'tls.t.body', props: { text, ...(ink ? { color: ink } : {}), ...on } })
   if (t.kind === 'stat') return [title('value', str(t.value), ink ?? 'accent'), ...(str(t.label) ? [small('label', str(t.label))] : [])]
   if (t.kind === 'quote') return [title('quote', str(t.quote)), ...(str(t.name) ? [small('name', str(t.name))] : [])]
   return [...(str(t.title) ? [title('title', str(t.title))] : []), ...(str(t.text) ? [small('text', str(t.text))] : [])]
@@ -172,7 +174,7 @@ function tileRoom(t: Tile, c: Box, ctx: LayoutContext): { inner: Box; room: numb
 }
 
 /** The ladder step a text tile's own text fits at (biggest first). */
-function tileStep(t: Tile, c: Box, ctx: LayoutContext): number {
+function tileStep(t: Tile, c: Box, ctx: LayoutContext, smallBody = false): number {
   const { inner, room } = tileRoom(t, c, ctx)
   const ladder = START[t.kind as 'point' | 'quote']
   const headline = t.kind === 'quote' ? str(t.quote) : str(t.title)
@@ -183,7 +185,7 @@ function tileStep(t: Tile, c: Box, ctx: LayoutContext): number {
     return hs.reduce((a, b) => a + b, 0) + gap * Math.max(0, hs.length - 1)
   }
   // the tile's on-surface style does not change text height
-  while (total(tileSpecs(t, ladder[k], {})) > room && k < ladder.length - 1) k++
+  while (total(tileSpecs(t, ladder[k], {}, undefined, smallBody)) > room && k < ladder.length - 1) k++
   return k
 }
 
@@ -199,7 +201,25 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
   const radius = ctx.tokens.radius.lg
   const firstStat = used.findIndex((t) => t.kind === 'stat')
   // the biggest step whose text fits each text tile's room, then the smallest of those for all
-  const sharedStep = used.reduce((most, t, i) => (t.kind === 'point' || t.kind === 'quote' ? Math.max(most, tileStep(t, cells[i], ctx)) : most), 0)
+  const isText = (t: Tile) => t.kind === 'point' || t.kind === 'quote'
+  let sharedStep = used.reduce((most, t, i) => (isText(t) ? Math.max(most, tileStep(t, cells[i], ctx)) : most), 0)
+  // CMP3: the lead text tile — the largest point tile, clearly larger than every other text tile —
+  // takes its own (bigger) step, so a big tile does not read sparse at its small peers' size; the
+  // others share theirs, and keep body-size small text (one small size on the slide).
+  const area = (b: Box) => b.width * b.height
+  const textIdx = used.map((t, i) => (isText(t) ? i : -1)).filter((i) => i >= 0)
+  const points = textIdx.filter((i) => used[i].kind === 'point').sort((a, b) => area(cells[b]) - area(cells[a]))
+  const lead = points.length && textIdx.length > 1 && textIdx.every((i) => i === points[0] || area(cells[i]) * 1.5 <= area(cells[points[0]])) ? points[0] : -1
+  let leadStep = -1
+  if (lead >= 0) {
+    const rest = textIdx.filter((i) => i !== lead).reduce((most, i) => Math.max(most, tileStep(used[i], cells[i], ctx, true)), 0)
+    const own = tileStep(used[lead], cells[lead], ctx, true)
+    if (own < rest) {
+      leadStep = own
+      sharedStep = rest
+    }
+  }
+  const smallBody = leadStep >= 0
   const pieces: Piece[] = []
   used.forEach((t, i) => {
     const c = cells[i]
@@ -269,10 +289,11 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       return
     }
     // CMP2 (P4/P5): every text tile takes the same step — the smallest any of them needs — so peer
-    // tiles share one headline size and one small size (a slide carried 6 text sizes)
+    // tiles share one headline size and one small size (a slide carried 6 text sizes); CMP3: except
+    // a lead tile on its own bigger step (above)
     const ladder = START[t.kind as 'point' | 'quote']
-    const k = sharedStep
-    const specs = tileSpecs(t, ladder[k], on, ink)
+    const k = i === lead && leadStep >= 0 ? leadStep : sharedStep
+    const specs = tileSpecs(t, ladder[k], on, ink, smallBody)
     const gap = ctx.tokens.space.sm
     const hs = measureHeights(ctx, specs, inner.width)
     const total = () => hs.reduce((a, b) => a + b, 0) + gap * Math.max(0, hs.length - 1)

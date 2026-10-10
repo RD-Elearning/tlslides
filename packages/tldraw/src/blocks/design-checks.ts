@@ -21,7 +21,7 @@
  * | `accent/overuse` | warning | more accent-coloured uses (text, icon or fill leaves; one per part family per block) than the deck style's family allows |
  * | `text/long-measure` | info | a wrapping body paragraph (≤ 40 units) over 75 characters per line |
  * | `motion/stagger-total` | warning | one part's stagger (step × (items − 1)) over 400 ms |
- * | `motion/too-many-heroes` | warning | more than 2 blocks with a showy reveal (`count-up`, `words-in`, `sweep`) on a slide |
+ * | `motion/too-many-heroes` | warning | more than 2 blocks with a showy reveal (`count-up`, `words-in`, `sweep`) on a slide; CMP3: nested children a container plays count |
  *
  * Findings about peers are grouped into one line ("3 of 3 tls.l.card in g1 (c1, c2, c3): …"), so a
  * repair prompt (S4.1) gets one line per problem, not one per card. Pure and DOM-free.
@@ -735,6 +735,17 @@ function motionChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): 
     const parts = resolvePartMotion(b.motion, def.motion).filter((p) => !p.isAmbient)
     const presetId = b.motion?.preset ?? def.motion.preset ?? 'fade'
     if (SHOWY_PRESETS.has(presetId) || parts.some((p) => p.presetId && SHOWY_PRESETS.has(p.presetId))) heroes.push(b.id)
+    // CMP3 (F11): a container playing its showy preset plays its authored children's own data
+    // reveals too (a hero number counting inside a card): each such child is a hero of the slide.
+    const showy = def.motion.expressive ?? def.motion.preset
+    if (showy && showy !== 'none' && presetId === showy && b.motion?.preset !== 'fade') {
+      for (const sub of b.inspection?.subs ?? []) {
+        const cd = ctx.registry.get(sub.type)
+        const cs = cd?.motion ? cd.motion.expressive ?? cd.motion.preset : undefined
+        if (!cd || cd.kind === 'html' || !cs || cs === 'none') continue
+        if (resolvePartMotion({ preset: cs }, cd.motion).some((p) => p.presetId && SHOWY_PRESETS.has(p.presetId))) heroes.push(sub.path)
+      }
+    }
     const names = partNames(b.root)
     let worst: { part: string; items: number; step: number; total: number } | undefined
     for (const p of parts) {

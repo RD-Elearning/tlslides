@@ -495,6 +495,9 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           key={part ?? undefined}
           style={groupStyle}
           {...(part ? { 'data-part': part } : {})}
+          // CMP3: a nested block's wrapper (CMP1 X2) — nested motion finds the child's recipe by it.
+          {...(node.blockId !== undefined ? { 'data-nested-id': node.blockId } : {})}
+          {...(node.type !== undefined ? { 'data-nested-type': node.type } : {})}
         >
           {node.children.map((child, i) => (
             // The key must include the index. `part` alone is not unique: a block is free to
