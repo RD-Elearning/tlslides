@@ -1,7 +1,7 @@
 # AI curation — a core block set, deck styles, and the picking pipeline
 
 **Date:** 2026-10-09 · **Branch:** `plan/block-system` · **Against commit:** `a8281fdf` (LO8 done)
-**Status:** AC0, AC1 done (2026-10-09); next AC2. Resume from [§7 Progress](#7-progress).
+**Status:** AC0–AC8 done (AC8 Variety, 2026-10-10: [§8](#8-ac8--variety)); AC5 awaits the user's board review. Resume from [§7 Progress](#7-progress).
 
 **Goal (product owner, 2026-10-09):** the html-kind blocks on the LO7 slides (hero, stat-spotlight
 ring with three KPI columns, testimonial, kinetic-title, feature-grid, feature-reveal, big-stat)
@@ -810,6 +810,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC5 | 🟡 built, awaiting user review | `54894e92`, `2b3213cf`, `ae190106`, `cd7d9ef5`; review fixes `85a4f6e5`, `b98ec121`, `f1fc702b`, `c7bc8e7a` | seven styles (luxury, editorial, glass, swiss, doodle + doodle-kids, memphis, consulting), Rough.js motifs, contrast + per-style size-card specs; 10 decks clean, 100 shots looked at, `sheet7-<style>.png`; user review on the style board https://claude.ai/artifact/5nruezsKGMj4AFcLNxoevX (verdicts in db collection `styles`, one doc per style id + `ac6`); see Notes — AC5 |
 | AC6 | ✅ done 2026-10-10 | `9af1766f`, `fd6e0116` | `tls.c.bento`, `tls.c.image-full` (tier 1), `full-bleed` layout, recipes `content-bento` + `quote-image-full`; 131 blocks; in all ten style decks; see Notes — AC6 |
 | AC7 | ✅ done 2026-10-10 | `4151b1c3`, `f1b8d241`, `d70c0627`, + the README/CLAUDE.md commit | `tools/layout-report/dry-run.js` + `blocks/pipeline/dryRun.ts` + `dry-run.spec.ts`: 10 styles x 12 slides, 0 errors, 0 warnings, 0 repairs needed; docs updated; prompt budget measured (all-roles total over 16k by 219-1,100, per-role within); see Notes — AC7 |
+| AC8 | ✅ done 2026-10-10 | `8fba06a4`, `7b86ec1c`, `ef132333`, `2b7e1337`, `c85121df`, + the docs commit | Variety: seeded picker with look signatures, 70 recipe variants, style `variety`, quote and image-full variants, knob values in the digest, strict knob validation, five showcase decks; 3 seeds × 10 styles clean, 92–100 % of slides differ between seeds (was 0 %); see §8 and Notes — AC8 |
 
 ### Session log
 
@@ -829,6 +830,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 | 2026-10-10 | lead review | Looked at all 10 `sheet7-<style>.png` + `sheet7-ac6.png`; every style reads as its family, no blocking defect. Published the style board https://claude.ai/artifact/5nruezsKGMj4AFcLNxoevX | Next: read `styles` verdicts (ArtifactData list), fix every `fix`, then AC7 (Sonnet subagent, lead brief). Open items in Notes — AC5 "Open". |
 | 2026-10-10 | AC7 | Dry run (script, pure module, spec), LLM-ARCHITECTURE S0/S2a/S2b/S3/S4.1/S5.2/§9, `guides/blocks-authoring.md` §2.11 "Adding a deck style" | Plan closed except AC5 (awaiting the user's board review). Read Notes — AC7 "Open" first: the all-roles S2a prompt is over 16k; `capabilityIndexData` has no `styles`/`recipes` arrays. |
+| 2026-10-10 | AC8 | Audit (§8.2), variety picker, recipe variants, style `variety`, quote/image-full variants, digest knob values, validator, showcases, sheets `sheet8-*` | AC8 closed. Read Notes — AC8 "Open" first: consulting `section-title` reads pale on navy, the gradient cover-bleed title has one borderline line over-count in a dry-run deck, logo walls are empty offline. |
 
 ### Notes — AC0
 
@@ -1944,6 +1946,27 @@ index preamble + its one-line `## Styles` section; recipes = all 10 roles):
 - No browser pass: the dry-run decks were not rendered (Chromium was out of scope). To look at one, copy
   it under `__fixtures__/styles/` and use `run.js --decks`.
 
+### Notes — AC8 (2026-10-10)
+
+The phase is written up in [§8](#8-ac8--variety): audit before/after (§8.2, §8.5), what was built
+(§8.5), vocabulary (§8.6), decisions (§8.7) and the done-when check (§8.8). Open items for the next
+session:
+- consulting `section-title` (tls.t.title on the navy section page) solves its ink to a pale blue
+  and reads weak; the `field` divider recipe is the good consulting section. A style-level
+  exclusion of a recipe, or a title ink rule on a dark master, would fix it. Pre-existing (AC7 dry
+  run), more visible now that the picker rotates.
+- gradient seed-1 dry-run deck: the `cover-split-image/bleed` title has one line-count over-count
+  (table 3 lines, browser 2; "Expanding Pulse analytics" sits 0.5 % over the 1,100 box). Safe side,
+  not in a fixture; fixtures and showcases have 0 mismatches.
+- logo walls show empty plates in the harness (logo URLs do not load offline); the showcases steer
+  the people slide away from the logo wall through `avoidSignatures`.
+- `content-bento` has no variants: its patterns need a tile count the example does not have
+  (`1+2`, `2+1` drop tiles → `capacity/exceeded`); the LLM picks the pattern by tile count.
+- testimonial `photo`, `people-team` card variants and `process-timeline` straight were removed as
+  recipe variants (placeholder photo, or < 50 % region fill); the knobs stay for the LLM.
+- `agenda-image` (numbered bullets beside a big photo) reads thin with the example's three short
+  items; it now appears more often (its `mirror` variant).
+
 ---
 
 ## 8. AC8 — Variety
@@ -2061,3 +2084,151 @@ remains).
   catalog-conformance, layout-report, block-metrics with regenerated size cards, styles,
   slide-composition, dry-run, demo-deck-*, block-library-tour).
 - Digest budgets held, or the decision recorded.
+
+### 8.5 What was built, and the numbers after
+
+**Variety picker** (`packages/tldraw/src/blocks/pipeline/variety.ts`, exported from `blocks/index.ts`):
+`lookSignature`, `blockLook`, `lookCandidates`, `pickOrder`, `deckLook`, `applyDeckLook`,
+`knobAllowed`, `styleAllows`, `seedStride`, `hashString`. The dry run (`pipeline/dryRun.ts`) uses it:
+`runStyle(style, i, { seed, avoidSignatures, theme, outline })`, `runVariety(styles, { seeds,
+chainAvoid })`, `signatureDiffer`. CLI: `node tools/layout-report/dry-run.js [--seeds 1,2,3]
+[--chain]` prints a variety table and writes `<style>-s<seed>.json`; exit 1 on any error or warning.
+Documented in LLM-ARCHITECTURE S2a "Variety (AC8)".
+
+**Recipe variants** (`SlideRecipe.variants`, `recipeSlide(recipe, reg, variant?, style?)`,
+`findVariant`, `variantIds`, `BASE_VARIANT`): 70 named designs over 32 of 38 recipes.
+
+| Role | Designs (recipe/look) |
+|---|---|
+| cover | hero: base, center, split · cover-split-image: base, bleed · kinetic: base, accent, start |
+| agenda | agenda-full: base, cards, badge, cards-badge · agenda-image: base, mirror |
+| section | divider: base, numeral, field, minimal, center · section-title |
+| content | bento · statement (xl): base, center, underline, accent, lg · bullets-image: base, mirror, chevron · cards: base, numbers, giant, accent, outline, center · feature-grid: base, circle, center · icon-list-image: base, mirror (image-right) · image-text: base, right, top |
+| data | chart-insight: base, left, below, wide · stat-spotlight: base, side, plain · big-stat: base, accent, split · kpi-row: base, bar, plain · table: base, head · bar-takeaway: base, mirror, horizontal |
+| comparison | options: base, cards · pros-cons: base, cards, columns · before-after: base, chevron, even · pricing: base, outline, filled · matrix: base, lines · compare-table |
+| process | steps · chevrons: base, single, series, inside · timeline: base, numbers · roadmap: base, plain |
+| people | team · testimonial · logo-wall: base, plates, dividers |
+| quote | quote-pull (big): base, card, side, image · image-full: base, split, band, fade, fade-left, framed, framed-split · statement (xl): base, center, underline |
+| closing | closing-centered: base, link, big-type · closing-split: base, link |
+
+`recipes.spec`: every variant names a real layout and real knob values, validates, reports 0 errors /
+0 warnings, is balanced (no `region/empty`, no `layout/unbalanced`), has a signature of its own
+(differs from the base under at least one style), and the region-filling recipes' variants fill
+≥ 50 % of their region (three variants that did not were removed).
+
+**Block variants** (new knob values; each at `size.preferred` and `size.min`, plus a parity probe):
+
+| Block | New | Look |
+|---|---|---|
+| `tls.t.quote` | `variant: classic \| big \| card \| side \| image`, `image`, `alt` | big: display/title type under a large mark, name bold + role; card: deck-surface card, mark, hairline, initials disc + name/role; side: full-height accent bar, title-size quote; image: photo panel (40 %) beside the quote (narrower than 720 → side). Type ladders with line caps and a balanced wrap (no orphan word). `classic` is the old layout, byte-identical. |
+| `tls.c.image-full` | `panel: … \| right \| split \| band`, `scrim: … \| gradient`, `frame` | split: photo 56 % + solid panel beside; band: strip across the foot, headline left, text right; gradient: no card, dark fade from the text side, white ink; frame: photo inset with rounded corners. AC6 looks unchanged. |
+
+**Style `variety`** (`DeckStyle.variety`, all ten styles): the alternatives each style accepts for
+knobs it pins (cover, divider, cards, chart-insight, closing, big-stat, kpi-row, pros-cons) and the
+deck-level title treatment (`tls.t.title` align/rule). Checked against the masters in the shots:
+swiss keeps flush-left heroes and feature grids, doodle drops `big-type` closings (the cover star),
+glass/gradient `bleed` covers now read (see fixes).
+
+**Digest**: tier-1 lines carry knob values (`knobs: variant=classic|split|gradient-sweep,
+align=start|center, decoration=none|rule`; a bare name is a toggle) from
+`CapabilityIndexEntry.lookValues` (`knobHint`); recipe lines end `· looks: a|b` and imply the main
+region's name; the header is compact (2.43–2.50k → 1.15–1.18k); with `{ style }` the Styles line
+points to the style card; the card's knob line merges defaults and alternatives
+(`c.closing(variant=centered|split)`: first = the style's). `looks` lost content toggles (`show*`,
+big-stat `format`, image-grid `gap`/`radius`) and gained quote `variant`, image-full `frame`.
+
+**Validator**: a look knob outside its enum (any type) is `slot/invalid-enum` **error** with the
+nearest value as `suggestion`; a non-boolean on a look toggle is `slot/invalid-boolean` error.
+Non-look enums keep the old string-only warning (structural slots take raw numbers, e.g. `gap: 12`).
+
+**Fixes found in the sheets**: the dry-run filler copied each example's look knobs over the style
+(`markStyle: glyph` on corporate, the split closing example in `closing-centered`) — `recipeSlide`
+with a style now drops an example knob the style sets, and `closing-centered` spells out `centered`;
+`tls.l.card` treats a non-neutral role surface (`scrim`, `accent`) as explicit (a cover-bleed scrim
+took glass's light paint, white text on a light wash on glass-pastel); `tls.c.closing` split panel
+hugs its person and contacts (was a tall empty card); `alignText` keeps 6 % slack on centred labels
+≤ 24 px (headless pixel rounding wrapped `lan.tran@example.edu`); the gradient and glass section orbs
+moved to x ≥ 1290 (long section titles ran into them); glass content master one orb, soft mesh; the
+ten style decks' quote slide uses `variant: big` (same content in all ten, `styles.spec` holds).
+
+**Showcases** (`__fixtures__/styles/showcase-*.json`, generated by the picker, seed 4/5, photos
+inlined): `doodle-kids`, `luxury-ivory`, `swiss-blue`, `glass-pastel`, and `showcase-consulting` with
+twelve action titles ("Mid-market pipeline tripled in two quarters without new spend") — a separate
+deck, so `styles.spec`'s shared-content rule is untouched. `styles.spec` checks each reports clean
+and the consulting titles are sentences.
+
+**Audit after** (dry run, 3 seeds × 10 styles):
+
+| Role | Designs | Used looks, seed 1 (10 decks) — before | Used looks, 30 decks |
+|---|---|---|---|
+| cover | 8 | 6 — 3 | 8 |
+| agenda | 6 | 6 — 4 | 15 |
+| section | 6 | 5 — 2 | 8 |
+| content | 23 | 19 — 8 | 37 |
+| data | 18 | 14 — 8 | 38 |
+| comparison | 14 | 7 — 7 | 20 |
+| process | 9 | 9 — 5 | 23 |
+| people | 5 | 6 — 3 | 14 |
+| quote | 14 | 10 — 3 | 15 |
+| closing | 5 | 4 — 1 | 5 |
+
+| Measure | Before | After |
+|---|---|---|
+| Slides that differ between seeds of a style (min over pairs) | 0 % (no seed) | **92 %** (7 styles 100 %; swiss, memphis, consulting 92 % on one pair) |
+| Same, without the title (deck-look) part of the signature | 0 % | 92 % |
+| Same recipe between seeds (min) | 100 % same | 50–58 % differ in recipe; the rest differ in look |
+| Chained `avoidSignatures` (seed n avoids seeds < n) | — | 92 % min, 0 errors |
+| Same signature at the same position across the 45 style pairs | 25.6 % | 9.1 % |
+| Avoidable repeated signature inside a deck | 0 (luck of a 12-slide outline) | 0 (enforced) |
+| Errors / warnings / repairs, 30 decks | 0/0/0 (10 decks) | 0/0/0 |
+
+### 8.6 Vocabulary added (approved for this phase)
+
+`SlideRecipe.variants`, `RecipeVariant { id, layout?, swap?, knobs? }`, `BASE_VARIANT`
+(`'base'`), `findVariant`, `variantIds`, `recipeSlide(…, variant?, style?)`; `DeckStyle.variety`;
+`CapabilityIndexEntry.lookValues`, `knobHint`; module `pipeline/variety.ts` (`lookSignature`,
+`blockLook`, `lookCandidates`, `pickOrder`, `deckLook`, `applyDeckLook`, `knobAllowed`,
+`styleAllows`, `seedStride`, `hashString`, `DECK_LOOK_TYPES`, types `LookCandidate`, `DeckLook`,
+`PickContext`); dry run `runVariety`, `signatureDiffer`, `VarietyReport`, `VarietyOptions`,
+`DryRunOptions.seed/avoidSignatures/theme`, `StyleRunResult.seed/designs/signatures/candidates/
+avoidableRepeats/deckLook`; CLI `--seeds`, `--chain`; validator rule `slot/invalid-boolean`
+(and `slot/invalid-enum` as an error on look knobs); `tls.t.quote` slots `variant` (`classic`,
+`big`, `card`, `side`, `image`), `image`, `alt`; `tls.c.image-full` values `panel: right | split |
+band`, `scrim: gradient`, slot `frame`; recipe variant ids listed in §8.5. No new block type
+(`EXPECTED_BLOCK_COUNT` stays 131), no dependency, `TldrawApp.version` stays 16.
+
+### 8.7 Decisions
+
+- **No new blocks.** Every gap closed with knobs and recipe variants. "Quote with image" is the
+  quote's `image` variant (an optional photo slot) rather than a new block; `tls.c.quote-image`
+  stays tier 2.
+- **The picker owns the look, the LLM owns the content.** The backend rotates designs
+  deterministically (seed, signature, avoid list); the LLM may still name `recipe/look` or turn a
+  knob, inside the listed values. Style identity is protected by `variety`, not by the picker.
+- **Title treatment per deck, not per slide**: consistent inside a deck, different across decks.
+- **Seed stride**: nearby seeds give maximally different decks; a per-user deck counter is the
+  recommended seed.
+- **Budget**: tier-1 index ceiling **16k → 17k** (the brief's allowance; measured 16.0–17.0k across
+  styles, default 16,964); S2a own-role total stays ≤ 16k (13.8–14.8k, spec). Top-8 detail held at
+  ≤ 12k (11,993) by trimming image-full's text. Style card ≤ 1.2k held (1,030–1,194; doodle and swiss
+  briefs lost a few words).
+
+### 8.8 Done-when check
+
+| Check | Result |
+|---|---|
+| Dry run 3 seeds × 10 styles, 0 errors / 0 warnings | ✅ 30 decks, 0 / 0, 0 repairs (`dry-run.spec`) |
+| No repeated signature in a deck where the role has an alternative | ✅ 0 avoidable repeats (spec) |
+| ≥ 70 % of slides differ across the 3 seeds of a style | ✅ min 92 % (before 0 %) (spec) |
+| `cli.js` clean on every `__fixtures__/styles/*.json` + showcases | ✅ 19 decks 0/0, `needsVisualCheck` empty; one `text/shrunk` info on showcase-consulting |
+| Calibration `--shots`, 0 line-count mismatches on new/changed decks | ✅ ten style decks + five showcases + variant decks: 0 (html parts 0 too); one borderline over-count in a dry-run seed deck (Notes — AC8) |
+| LO8 parity | ✅ composite chunk (68 probes) and text/layout/media/diagram/chrome chunk (64) pass, incl. new quote and image-full probes; no renderer was changed |
+| Every shot looked at | ✅ sheets below, each read; fixes above came from them |
+| tsc prod 0, spec ≤ 329 | ✅ 0 / 329 |
+| Targeted jest | ✅ recipes, capability-digest, catalog-conformance, layout-report, block-metrics (size cards regenerated), styles (+ masters), slide-composition, dry-run, demo-deck-*, block-library-tour, validate-deck-spec, quote, image-full, closing, cover, quote-image, l.card, card-paint, layout-layers/anchor/calibration, slide-compiler/decompiler, deck-document, motion-showcase, html-poster-geometry, slide-composites, composite-geometry — 2,493 tests pass |
+| Digest budgets | ✅ held or recorded (§8.7) |
+
+Sheets (session scratchpad): `sheet8-variants.png` (quote and image-full variants × luxury,
+corporate, memphis, glass-pastel), `sheet8-seeds-{corporate,luxury,doodle,gradient}.png` (the three
+seeds side by side), `sheet8-showcase.png` (four palettes + consulting action titles).
+

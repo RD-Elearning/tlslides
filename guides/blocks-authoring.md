@@ -424,6 +424,7 @@ templates; copy the closest one. Design background: [reviews/blocks/ai-curation/
 | `masters` | `cover` / `content` / `section` masters (background paint, backdrop blocks such as mesh, grain, motifs). A slide with no `masterId` gets one by role. |
 | `motionStyle` | The deck's default motion style. |
 | `blockDefaults` | Knob values per block type, filled under the authored props at compile time (never written into the authored spec). |
+| `variety` (AC8) | Per block type and look knob, the values the style also accepts beyond its `blockDefaults`. The variety picker (`pipeline/variety.ts`) rotates slides and decks only inside them; a knob the style sets and does not list stays fixed. List an alternative only after looking at it against the style's masters (a split hero ran into swiss's cover block). |
 | `prefer` / `avoid` | Tier-2 types promoted to index lines / types dropped from the index and from every recipe that uses them. |
 | `brief`, `rules` | Shown verbatim on the style card (`styleCard`), and the critic's rubric. Keep `brief` at 240 characters or fewer and at most 4 short rules. |
 
@@ -464,7 +465,7 @@ reports clean in `analyzeDeck`, and round-trips through `deckSpecToDocument` /
 - *size cards*: for every palette, each tier-1 block's `describe.example` still fits its
   `size.min` under the style's tokens and `blockDefaults` (a style whose type scale or font breaks
   a block is the wrong style);
-- *data*: 1-3 palettes with unique ids, `brief` at most 240 characters, at most 4 rules, `prefer` / `avoid` / `blockDefaults` name real blocks and valid enum or boolean knobs, the style card at most 1,200 characters;
+- *data*: 1-3 palettes with unique ids, `brief` at most 240 characters, at most 4 rules, `prefer` / `avoid` / `blockDefaults` / `variety` name real blocks and valid enum or boolean knobs (`variety` only look knobs), the style card at most 1,200 characters;
 - `capability-digest.spec.ts`: the tier-1 index per style stays within its 16k ceiling.
 
 **6. Verify** (no browser unless noted):

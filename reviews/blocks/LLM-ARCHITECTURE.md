@@ -297,6 +297,40 @@ two-tier digest. Both tiers are generated from the live registry
   (2.9-3.1k) is larger than the overshoot. The full index with all roles is for the one-shot
   planner. `dry-run.spec.ts` asserts the per-role total.
 
+- **Variety (AC8).** Two decks with one style and similar content must not be clones, and slides
+  of one role inside a deck must not repeat a design. The backend runs the deterministic
+  **variety pick** before S3 (reference: `blocks/pipeline/variety.ts`, called by
+  `pipeline/dryRun.ts`; mirror it or call the package):
+  - **Look signature** of a slide = layout + per region each block's type and the resolved value of
+    every look knob (authored, else the style's `blockDefaults`, else the block default).
+    Content never enters it. `lookSignature(slide, style, registry)`.
+  - **Candidates** for a role = the role's eligible recipes × their `variants` (named designs:
+    other knob values, a mirrored layout, swapped regions; `recipeLine` shows them as
+    `looks: a|b`), filtered by the style's `variety` (a knob the style sets stays at its value
+    unless `variety[type][knob]` lists the alternative), de-duplicated by signature.
+    `lookCandidates(recipes, style, registry, deckLook)`.
+  - **Pick**: `pickOrder(candidates, styleId, role, seed, nth, { used, avoid, previousRecipe })`
+    rotates from `hash(style, role) + seed × stride + nth` (stride coprime with the candidate
+    count, so seeds 1, 2, 3 start on different recipes) and orders: fresh signature, not in
+    `avoid`, another recipe than the previous slide; then fresh; then anything. The first
+    candidate the S4.1 oracle accepts wins.
+  - **Deck look**: knobs that must stay consistent inside one deck (the title treatment, from the
+    style's `variety['tls.t.title']`) are fixed once per deck from the seed: `deckLook(style, seed)`.
+  - **Inputs from the backend**: `seed` (a per-user deck counter works best: nearby seeds give
+    maximally different decks) and `avoidSignatures` (the signatures of the user's recent decks;
+    honoured while an alternative exists). Same seed + outline + style = the same deck.
+  - **The LLM's part**: S2a may name `recipe/look` instead of a bare recipe; S3 may turn any look
+    knob to a value listed in the tier-1 line (`knobs: variant=a|b, align=start|center, toggle`) or
+    the style card's `Knobs` line. Any other value is a `slot/invalid-enum` /
+    `slot/invalid-boolean` **error** with the nearest valid value (`suggestion`), so a repair round
+    fixes it in one step.
+  - Measured (dry run, 3 seeds × 10 styles, 12 slides): 0 errors, 0 warnings, 0 repeated signature
+    inside a deck, 92–100 % of slides differ between any two seeds of a style (before AC8: 0 %, the
+    picker had no seed). ai-curation README §8 has the numbers.
+  - **Budget after AC8** (chars): header 1.15–1.18k (was 2.43–2.50k), style card 1.03–1.19k,
+    tier-1 index 16.0–17.0k (ceiling raised 16k → 17k, recorded), S2a with the slide's own role
+    13.8–14.8k (≤ 16k, spec). All-roles S2a 16.9–18.0k: send per-role recipes.
+
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix
