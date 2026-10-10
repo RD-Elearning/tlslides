@@ -6,6 +6,7 @@ import { resolveTokens } from '~blocks/tokens'
 import type { SlideSpec } from '~blocks/types'
 import { BlockRegistry } from '~blocks/registry'
 import { registerBuiltInBlocks } from '~blocks/library'
+import { defaultBlockSvg } from '~blocks/layout-slide'
 import { activeDeckTheme, BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
@@ -75,6 +76,17 @@ export class Deck {
    *  `opts.blocks` takes precedence). Set by `<Tldraw blocks>` so a host can supply one callback
    *  for the entire editor lifetime without passing it on every thumbnail/export call. */
   blocks?: (shape: ComponentShape) => string | undefined
+
+  /** CMP1 (Q9 step 3) — the registry the *default* `blocks` callback lays blocks out with (set by
+   *  `<Tldraw blockRegistry>`); absent = the built-in blocks. */
+  blockRegistry?: BlockRegistry
+
+  /** CMP1 (Q9 step 3): with no host callback, blocks export as real blocks (`defaultBlockSvg`):
+   *  laid out headlessly with the document's tokens and the page background. A type the registry
+   *  does not know still falls through to the placeholder. */
+  private blocksFor(page: TDPage): (shape: ComponentShape) => string | undefined {
+    return this.blocks ?? defaultBlockSvg(this.app.document, page, this.blockRegistry)
+  }
 
   constructor(app: TldrawApp) {
     this.app = app
@@ -318,7 +330,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
-      blocks: opts.blocks ?? this.blocks,
+      blocks: opts.blocks ?? this.blocksFor(page),
       masters: this.app.document.masters,
     })
     if (opts.format === 'svg') return svg
@@ -343,7 +355,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
-      blocks: opts.blocks ?? this.blocks,
+      blocks: opts.blocks ?? this.blocksFor(page),
       masters: this.app.document.masters,
     })
     return renderSvgToPng(svg, width, height, opts)

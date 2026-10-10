@@ -313,6 +313,12 @@ export function Tldraw({
     app.deck.blocks = blocks
   }, [app, blocks])
 
+  // CMP1 (Q9 step 3) — with no `blocks` callback, thumbnails / PNG export lay blocks out through
+  // this registry (the built-ins when absent) instead of drawing placeholders.
+  React.useEffect(() => {
+    app.deck.blockRegistry = blockRegistry
+  }, [app, blockRegistry])
+
   // Keep presentation mode in sync with the browser's actual fullscreen state. The user can
   // leave fullscreen without going through `togglePresentationMode` at all — Esc (handled
   // natively by the browser, independent of our own Escape shortcut), F11, a mobile gesture, or

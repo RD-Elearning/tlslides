@@ -233,6 +233,17 @@ describe('Deck facade — thumbnails', () => {
     // Cleanup: clear the stored blocks callback.
     app.deck.blocks = undefined
   })
+
+  // CMP1 (Q9 step 3) — with no host callback, a built-in block exports as the real block.
+  it('with no blocks callback, a built-in block renders as itself, an unknown one as the placeholder', () => {
+    const app = freshApp()
+    app.deck.addBlock('page1', { componentId: 'tls.t.title', props: { text: 'Hello export' } }, { size: [900, 200] })
+    app.deck.addBlock('page1', { componentId: 'host-only-block' })
+    const svg = app.deck.getThumbnail('page1', { format: 'svg' })!
+    expect(svg).toContain('Hello export')
+    expect(svg).not.toContain('Component: tls.t.title')
+    expect(svg).toContain('Component: host-only-block')
+  })
 })
 
 describe('Deck facade — content', () => {

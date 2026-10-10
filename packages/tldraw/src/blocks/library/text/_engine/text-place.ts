@@ -83,6 +83,8 @@ export function placeText(
       lines: [{ ...line, top: 0, baseline: line.baseline - top }],
       style,
       ...(opts.propPath ? { propPath: opts.propPath } : {}),
+      // CMP1 (X3): the lines are one centred / end-aligned paragraph (renderers ignore it).
+      align,
     } as LayoutNode
   })
   return { nodes, height: m.height, lineCount: m.lines.length, lines }

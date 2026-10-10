@@ -59,6 +59,29 @@ export function tryHexToRgb(value: string): RGB | undefined {
   }
 }
 
+/**
+ * CMP1 (export-ready X5) — a colour string with its alpha split out: `#rgb`, `#rrggbb`,
+ * `#rrggbbaa` (the takeaway's `accent + '12'` tint), `rgb(r,g,b)` and `rgba(r,g,b,a)` (glass
+ * cards, scrims) → `{ hex: '#RRGGBB', alpha: 0..1 }`. `transparent` → black at alpha 0.
+ * `undefined` for anything else (a role name, a theme token): resolve it first. An exporter maps
+ * this to a solid fill plus transparency (DrawingML `a:alpha`).
+ */
+export function parseColorAlpha(value: string): { hex: string; alpha: number } | undefined {
+  if (typeof value !== 'string') return undefined
+  const v = value.trim()
+  if (/^transparent$/i.test(v)) return { hex: '#000000', alpha: 0 }
+  const hex8 = /^#?([0-9a-fA-F]{6})([0-9a-fA-F]{2})$/.exec(v)
+  if (hex8) return { hex: `#${hex8[1].toUpperCase()}`, alpha: Math.round((parseInt(hex8[2], 16) / 255) * 1000) / 1000 }
+  const rgb = tryHexToRgb(v)
+  if (rgb && /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(v)) return { hex: rgbToHex(rgb), alpha: 1 }
+  const fn = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+%?)\s*)?\)$/i.exec(v)
+  if (fn) {
+    const a = fn[4] === undefined ? 1 : fn[4].endsWith('%') ? parseFloat(fn[4]) / 100 : parseFloat(fn[4])
+    return { hex: rgbToHex({ r: +fn[1], g: +fn[2], b: +fn[3] }), alpha: clamp(Number.isFinite(a) ? a : 1, 0, 1) }
+  }
+  return undefined
+}
+
 export function rgbToHex(rgb: RGB): string {
   const toHex = (n: number) => Math.round(clamp(n, 0, 255)).toString(16).padStart(2, '0')
   return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`.toUpperCase()

@@ -123,6 +123,8 @@ export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'
         ...n,
         box: { x, y: n.box.y + top, width: Math.max(1, lw + 1 + Math.max(0, slack)), height: lh },
         lines: [{ ...line, top: 0, baseline: line.baseline - top }],
+        // CMP1 (X3): one centred / end-aligned paragraph, emitted per line (renderers ignore it).
+        align,
       } as LayoutNode)
     })
   }
