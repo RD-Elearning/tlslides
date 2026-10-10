@@ -111,6 +111,13 @@ export const SWISS_STYLE: DeckStyle = {
     'tls.c.closing': { variant: 'big-type' },
     'tls.g.pros-cons': { style: 'columns' },
   },
+  variety: {
+    'tls.t.title': { rule: [false, true] },
+    'tls.c.divider': { variant: ['minimal'] },
+    'tls.c.cards': { numeral: ['giant'] },
+    'tls.c.chart-insight': { side: ['left'] },
+    'tls.c.closing': { variant: ['split'] },
+  },
   prefer: ['tls.t.statement'],
   avoid: ['tls.m.decoration', 'tls.t.tags', 'tls.c.kinetic-title'],
   rules: ['Flush left everywhere; asymmetric grid.', 'Big type, few words.', 'Red for one thing per slide.', 'No blobs, orbs, gradients or centred text.'],

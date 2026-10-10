@@ -348,6 +348,27 @@ describe('validateDeckSpec — block-level rules', () => {
     expect(hasRule(findings, 'slot/invalid-enum')).toBe(true)
   })
 
+  it('AC8 — an unknown look-knob value is an error with the nearest valid value', () => {
+    const deck = clone(validDeck())
+    ;(deck.slides[0].regions.title[0].props as any).size = 'titel'
+    const f = findingsOf(deck).find((x) => x.rule === 'slot/invalid-enum')
+    expect(f).toEqual(expect.objectContaining({ level: 'error', suggestion: 'title' }))
+    expect(f!.message).toContain('Did you mean "title"?')
+  })
+
+  it('AC8 — a look knob given a number or a string boolean is an error', () => {
+    const deck = clone(validDeck())
+    ;(deck.slides[0].regions.title[0].props as any).size = 3
+    ;(deck.slides[0].regions.title[0].props as any).rule = 'true'
+    const findings = findingsOf(deck)
+    expect(findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ level: 'error', rule: 'slot/invalid-enum' }),
+        expect.objectContaining({ level: 'error', rule: 'slot/invalid-boolean', suggestion: 'true' }),
+      ])
+    )
+  })
+
   it('Adversarial 26 — a non-object block entry inside a region array', () => {
     const deck = clone(validDeck())
     ;(deck.slides[0].regions.title as any[]).push(null)

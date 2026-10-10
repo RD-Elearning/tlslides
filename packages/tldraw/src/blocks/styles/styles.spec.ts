@@ -25,6 +25,24 @@ const lum = (hex: string) => relativeLuminance(hexToRgb(hex))
 const byType = new Map(BUILT_IN_BLOCKS.map((d) => [d.type, d]))
 
 describe('BUILT_IN_STYLES data', () => {
+  // AC8: `variety` names real look knobs and valid values, and offers at least one alternative
+  it.each(BUILT_IN_STYLES.map((s) => [s.id, s] as const))('%s variety is valid', (_id, style) => {
+    expect(style.variety).toBeDefined()
+    for (const [type, knobs] of Object.entries(style.variety ?? {})) {
+      const def = byType.get(type)
+      expect(def).toBeDefined()
+      for (const [slot, values] of Object.entries(knobs)) {
+        expect(def!.looks ?? []).toContain(slot)
+        const t = def!.schema[slot].type
+        expect(values.length).toBeGreaterThan(0)
+        for (const v of values) {
+          if (t.kind === 'enum') expect(t.values).toContain(v)
+          else expect(typeof v).toBe('boolean')
+        }
+      }
+    }
+  })
+
   it.each(BUILT_IN_STYLES.map((s) => [s.id, s] as const))('%s is well-formed', (_id, style) => {
     expect(style.palettes.length).toBeGreaterThanOrEqual(1)
     expect(style.palettes.length).toBeLessThanOrEqual(3)

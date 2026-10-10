@@ -116,6 +116,15 @@ export const LUXURY_STYLE: DeckStyle = {
     'tls.c.closing': { variant: 'centered' },
     'tls.g.pros-cons': { style: 'columns' },
   },
+  variety: {
+    'tls.t.title': { align: ['start', 'center'] },
+    'tls.c.cover': { variant: ['bleed'] },
+    'tls.c.divider': { variant: ['minimal'] },
+    'tls.c.cards': { numeral: ['giant'], lead: ['icon'] },
+    'tls.c.chart-insight': { side: ['left'] },
+    'tls.c.big-stat': { variant: ['plain', 'split'] },
+    'tls.c.closing': { variant: ['big-type'] },
+  },
   prefer: [],
   avoid: ['tls.d.heatmap', 'tls.d.bubble', 'tls.d.scatter', 'tls.t.tags', 'tls.c.kinetic-title'],
   rules: [

@@ -189,9 +189,19 @@ export function styleCard(style: DeckStyle): string {
   lines.push('Rules: ' + style.rules.join(' '))
   if (style.prefer.length) lines.push('Prefer: ' + style.prefer.join(', '))
   if (style.avoid.length) lines.push('Avoid: ' + style.avoid.join(', '))
-  const defs = Object.entries(style.blockDefaults).map(
-    ([t, kv]) => `${t}(${Object.entries(kv).map(([k, v]) => `${k}=${String(v)}`).join(',')})`
-  )
-  if (defs.length) lines.push('Already set by the style (do not repeat): ' + defs.join(' '))
+  // AC8: one list for the knob defaults and the `variety` alternatives — `type(knob=default|alt…)`:
+  // the first value is what the style sets (do not repeat it), the rest are accepted for variety.
+  const types = [...new Set([...Object.keys(style.blockDefaults), ...Object.keys(style.variety ?? {})])]
+  const knobs = types.map((t) => {
+    const set = style.blockDefaults[t] ?? {}
+    const alt = style.variety?.[t] ?? {}
+    const names = [...new Set([...Object.keys(set), ...Object.keys(alt)])]
+    const vals = names.map((k) => {
+      const all = [...(k in set ? [set[k]] : []), ...(alt[k] ?? []).filter((v) => v !== set[k])]
+      return `${k}=${all.map(String).join('|')}`
+    })
+    return `${t.replace(/^tls\./, '')}(${vals.join(',')})`
+  })
+  if (knobs.length) lines.push("Knobs (types without `tls.`; first value = the style's, don't repeat it; others allowed, vary them): " + knobs.join(' '))
   return lines.join('\n')
 }

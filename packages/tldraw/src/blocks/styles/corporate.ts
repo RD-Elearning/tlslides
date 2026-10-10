@@ -62,6 +62,15 @@ export const CORPORATE_STYLE: DeckStyle = {
     'tls.t.takeaway': { tone: 'accent' },
     'tls.c.closing': { variant: 'centered' },
   },
+  variety: {
+    // AC8: alternatives the style accepts (the variety picker rotates inside them)
+    'tls.t.title': { rule: [false, true] },
+    'tls.c.cover': { variant: ['split'] },
+    'tls.c.divider': { variant: ['minimal'], align: ['center'] },
+    'tls.c.cards': { lead: ['number'], tone: ['outline', 'accent-first'] },
+    'tls.c.chart-insight': { side: ['left', 'below'] },
+    'tls.c.closing': { variant: ['split'] },
+  },
   prefer: ['tls.g.roadmap', 'tls.c.dashboard'],
   avoid: ['tls.c.kinetic-title', 'tls.m.decoration', 'tls.m.pattern'],
   rules: [

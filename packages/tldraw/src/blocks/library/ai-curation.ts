@@ -87,13 +87,13 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.bullet-chart': t2(['bands', 'format']),
   'tls.c.kpi-tile': t2(['showDelta', 'showLabel', 'showSparkline', 'polarity', 'format']),
   'tls.c.kpi-row': t1(['tile', 'gap'], ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge']),
-  'tls.c.big-stat': t1(['variant', 'align', 'format', 'showContext', 'showLabel'], ['tls.t.hero-number']),
+  'tls.c.big-stat': t1(['variant', 'align'], ['tls.t.hero-number']),
   'tls.c.stat-card': t2(['showIcon', 'format', 'emphasis', 'padding']),
   'tls.c.dashboard': t2(['layout', 'chartRatio', 'showInsight']),
   'tls.c.stat-spotlight': t1(['visual', 'statsPlacement'], ['tls.d.progress-ring', 'tls.d.gauge', 'tls.d.progress-bar']),
 
   // ── emphasis ──
-  'tls.t.quote': t1(['markStyle']),
+  'tls.t.quote': t1(['variant', 'markStyle']),
   'tls.t.takeaway': t1(['tone', 'size'], ['tls.t.callout']),
   'tls.t.statement': t1(['size', 'align', 'emphasis', 'showMark'], ['tls.t.callout']),
   'tls.t.callout': t2(['variant', 'fill', 'showIcon', 'showTitle']),
@@ -119,7 +119,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.slope': t2(['highlight', 'format']),
   'tls.d.bubble': t2(['sizeLegend', 'gridlines', 'format']),
   'tls.d.heatmap': t2(['ramp', 'showValues', 'format']),
-  'tls.c.chart-insight': t1(['side', 'ratio', 'showSource', 'insightSize'], ['tls.c.dashboard']),
+  'tls.c.chart-insight': t1(['side', 'ratio', 'insightSize'], ['tls.c.dashboard']),
 
   // ── table ──
   'tls.d.table': t1(['zebra', 'rules', 'header', 'density'], ['tls.d.scorecard', 'tls.d.ranking', 'tls.t.kv-list']),
@@ -128,7 +128,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
 
   // ── comparison ──
   'tls.d.compare-table': t1(['cellKind', 'zebra', 'density']),
-  'tls.d.pricing': t1(['featuredStyle', 'align', 'showCta']),
+  'tls.d.pricing': t1(['featuredStyle', 'align']),
   'tls.g.matrix-2x2': t1(['highlight', 'style', 'showItems'], ['tls.g.swot']),
   'tls.g.swot': t2(['style', 'letters']),
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),
@@ -165,18 +165,20 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.bracket': t2(['side', 'style']),
 
   // ── cover ──
-  'tls.c.hero': t1(['variant', 'align', 'decoration', 'showKicker', 'showSubtitle', 'showCta'], ['tls.t.kicker', 'tls.t.subtitle']),
-  'tls.c.cover': t1(['variant', 'decoration', 'showImage', 'showLogo']),
+  'tls.c.hero': t1(['variant', 'align', 'decoration'], ['tls.t.kicker', 'tls.t.subtitle']),
+  'tls.c.cover': t1(['variant', 'decoration']),
   'tls.c.kinetic-title': t1(['align', 'decoration', 'tone']),
 
   // ── media ──
   'tls.c.image-text': t1(['placement', 'gutter']),
+  // AC8: `looks` are design knobs only; content toggles (`show*`, number `format`, image-grid gap
+  // and radius) left the list so the tier-1 knob hints with values fit the index budget
   // AC6: full-bleed photo with a headline panel
-  'tls.c.image-full': t1(['panel', 'scrim']),
+  'tls.c.image-full': t1(['panel', 'scrim', 'frame']),
   'tls.m.image': t1(['fit'], ['tls.m.device-mock']),
   'tls.m.icon': t2(['size']),
   'tls.m.icon-label': t2(['size']),
-  'tls.m.image-grid': t1(['pattern', 'cols', 'gap', 'radius', 'captions']),
+  'tls.m.image-grid': t1(['pattern', 'cols', 'captions']),
   'tls.m.image-compare': t2(['mode', 'divider']),
   'tls.m.device-mock': t2(['device', 'tone', 'shadow']),
 

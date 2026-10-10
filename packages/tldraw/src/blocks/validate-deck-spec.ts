@@ -709,7 +709,7 @@ function validateProps(
       continue
     }
     if (value !== undefined && value !== null) {
-      checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings)
+      checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings, (def.looks ?? []).includes(slotName))
       checkIcons(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
@@ -883,7 +883,9 @@ function checkBudget(
   path: string,
   blockType: string,
   slotName: string,
-  findings: DeckFinding[]
+  findings: DeckFinding[],
+  /** AC8: the slot is one of the block's look knobs (`BlockDefinition.looks`). */
+  look = false
 ): void {
   const slotType = slotSpec.type
 
@@ -979,14 +981,35 @@ function checkBudget(
       break
     }
     case 'enum': {
-      if (typeof value === 'string' && !slotType.values.includes(value)) {
+      // AC8: on a look knob — the planner's customisation surface — any value outside the enum is an
+      // error with the nearest valid value. Elsewhere a string outside the enum stays a warning (some
+      // structural slots take raw numbers, e.g. a stack's `gap`).
+      const bad = look
+        ? value !== undefined && value !== null && !(typeof value === 'string' && slotType.values.includes(value))
+        : typeof value === 'string' && !slotType.values.includes(value)
+      if (bad) {
+        const suggestion = typeof value === 'string' ? nearestName(value, slotType.values) : undefined
         findings.push({
-          level: 'warning',
+          level: look ? 'error' : 'warning',
           rule: 'slot/invalid-enum',
           path,
-          message: `Block "${blockType}"'s "${slotName}" is "${value}", which is not one of: ${slotType.values.join(
-            ', '
-          )}.`,
+          message:
+            `Block "${blockType}"'s "${slotName}" is ${JSON.stringify(value)}, which is not one of: ${slotType.values.join(', ')}.` +
+            (suggestion ? ` Did you mean "${suggestion}"?` : ''),
+          ...(suggestion ? { suggestion } : {}),
+        })
+      }
+      break
+    }
+    case 'boolean': {
+      // AC8: an on/off look knob takes true or false, never "true" or "yes".
+      if (look && value !== undefined && value !== null && typeof value !== 'boolean') {
+        findings.push({
+          level: 'error',
+          rule: 'slot/invalid-boolean',
+          path,
+          message: `Block "${blockType}"'s "${slotName}" is ${JSON.stringify(value)}; it takes true or false.`,
+          ...(value === 'true' || value === 'false' ? { suggestion: value } : {}),
         })
       }
       break

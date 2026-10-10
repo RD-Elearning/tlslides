@@ -13,6 +13,8 @@ import { analyzeDeck } from '../layout-report'
 import type { LayoutReport } from '../layout-report'
 import { RECIPE_ROLES, recipeSlide, recipesFor } from '../recipes'
 import type { RecipeRole, SlideRecipe } from '../recipes'
+import { applyDeckLook, deckLook, lookCandidates, lookSignature, pickOrder } from './variety'
+import type { DeckLook, LookCandidate } from './variety'
 import type { BlockRegistry } from '../registry'
 import { BUILT_IN_STYLES, getDeckStyle, styleCard } from '../styles'
 import type { BlockSpec, DeckSpec, DeckStyle, SlideSpec } from '../types'
@@ -65,9 +67,21 @@ export interface Repair {
 
 export interface StyleRunResult {
   style: string
+  /** AC8: the variety seed this deck was picked with. */
+  seed: number
   deck: DeckSpec
   slides: number
   recipes: string[]
+  /** AC8: `recipe/variant` per slide. */
+  designs: string[]
+  /** AC8: the look signature per slide (`pipeline/variety.ts`). */
+  signatures: string[]
+  /** AC8: candidates per slide (the role's designs the style allows). */
+  candidates: number[]
+  /** AC8: slides whose signature repeats an earlier slide's although the role had another unused design. */
+  avoidableRepeats: number
+  /** AC8: the deck-level look (title treatment) the seed chose. */
+  deckLook: DeckLook
   repairs: Repair[]
   errors: number
   warnings: number
@@ -85,6 +99,12 @@ export interface StyleRunResult {
 export interface DryRunOptions {
   registry?: BlockRegistry
   outline?: readonly OutlineEntry[]
+  /** AC8: the variety seed (default 0). Same seed, same deck; nearby seeds, different decks. */
+  seed?: number
+  /** AC8: signatures to avoid while another design exists (e.g. the user's recent decks). */
+  avoidSignatures?: Iterable<string>
+  /** AC8: palette id (default the style's first). */
+  theme?: string
 }
 
 /** Where a block type takes a headline: its prop, and whether that prop is rich text. */
@@ -116,8 +136,17 @@ export function shortenHeadline(headline: string): string {
 }
 
 /** S3 stand-in: the recipe filled from examples, the headline put in every title slot. */
-export function fillSlide(recipe: SlideRecipe, headline: string, registry: BlockRegistry, id: string): { slide: SlideSpec; titled: boolean } {
-  const base = recipeSlide(recipe, registry)
+export function fillSlide(
+  recipe: SlideRecipe,
+  headline: string,
+  registry: BlockRegistry,
+  id: string,
+  variant?: string,
+  style?: DeckStyle,
+  look?: DeckLook
+): { slide: SlideSpec; titled: boolean } {
+  const raw = recipeSlide(recipe, registry, variant, style)
+  const base = look ? applyDeckLook(raw, look, recipe, variant) : raw
   // block ids are unique across the whole deck (validator rule block/duplicate-id)
   const slide: SlideSpec = {
     ...base,
@@ -139,12 +168,12 @@ export function fillSlide(recipe: SlideRecipe, headline: string, registry: Block
   return { slide: { ...slide, regions }, titled }
 }
 
-function deckOf(style: DeckStyle, slides: SlideSpec[]): DeckSpec {
+function deckOf(style: DeckStyle, slides: SlideSpec[], seed = 0, theme?: string): DeckSpec {
   return {
     version: 1,
-    id: `dryrun-${style.id}`,
-    title: `Dry run — ${style.id}`,
-    theme: style.palettes[0].id,
+    id: `dryrun-${style.id}${seed ? `-s${seed}` : ''}`,
+    title: `Dry run — ${style.id}${seed ? ` (seed ${seed})` : ''}`,
+    theme: theme ?? style.palettes[0].id,
     style: style.id,
     aspect: 'widescreen',
     slides,
@@ -198,55 +227,72 @@ function perRolePrompt(style: DeckStyle, registry: BlockRegistry): PromptSection
   return worst as PromptSections & { role: RecipeRole }
 }
 
-/** Run the whole pick, fill and repair loop for one style. */
-export function runStyle(style: DeckStyle, styleIndex: number, opts: DryRunOptions = {}): StyleRunResult {
+/** Run the whole pick, fill and repair loop for one style. `_styleIndex` is kept for AC7 callers
+ *  (AC8: the start of each role's rotation is a hash of the style id and the seed instead). */
+export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOptions = {}): StyleRunResult {
   const registry = opts.registry ?? defaultBlockRegistry()
   const outline = opts.outline ?? DRY_RUN_OUTLINE
+  const seed = opts.seed ?? 0
+  const avoid = new Set(opts.avoidSignatures ?? [])
+  const look = deckLook(style, seed)
   const repairs: Repair[] = []
   const used: string[] = []
+  const designs: string[] = []
+  const signatures: string[] = []
+  const candidateCounts: number[] = []
+  const usedSigs = new Set<string>()
   const seen: Partial<Record<RecipeRole, number>> = {}
   let exampleKept = 0
-  const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide]), { registry })[0]
+  let avoidableRepeats = 0
+  const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide], seed, opts.theme), { registry })[0]
 
   const slides = outline.map((entry, i) => {
     const eligible = eligibleRecipes(entry.role, style, registry)
     if (!eligible.length) throw new Error(`style ${style.id}: no eligible recipe for role ${entry.role}`)
-    // S2a stand-in: rotate through the role's eligible recipes, never the previous slide's recipe if another exists.
+    const candidates = lookCandidates(eligible, style, registry, look)
+    candidateCounts.push(candidates.length)
+    // S2a stand-in (AC8 variety): rotate from a seeded start, fresh signatures first.
     const nth = seen[entry.role] ?? 0
     seen[entry.role] = nth + 1
-    let pick = (nth + styleIndex) % eligible.length
-    if (eligible.length > 1 && eligible[pick].id === used[i - 1]) pick = (pick + 1) % eligible.length
+    const order = pickOrder(candidates, style.id, entry.role, seed, nth, { used: usedSigs, avoid, previousRecipe: used[i - 1] })
     const id = `s${String(i + 1).padStart(2, '0')}`
-    let recipe = eligible[pick]
+    let at = 0
+    let cand: LookCandidate = order[0]
     let headline = entry.headline
-    let filled = fillSlide(recipe, headline, registry, id)
+    const fill = () => fillSlide(cand.recipe, headline, registry, id, cand.variant, style, look)
+    let filled = fill()
     let report = analyze(filled.slide)
-    // S4.1 stand-in: at most 3 repair rounds — next eligible recipe, then a shorter headline.
-    let best = { filled, recipe, headline, count: bad(report).length, report }
+    // S4.1 stand-in: at most 3 repair rounds — next design in the order, then a shorter headline.
+    let best = { filled, cand, headline, count: bad(report).length, report }
     for (let round = 1; round <= 3 && bad(report).length; round++) {
       let action: Repair['action']
-      const from = recipe.id
-      if (round !== 2 && eligible.length > 1) {
+      const from = `${cand.recipe.id}/${cand.variant}`
+      if (round !== 2 && order.length > 1) {
         action = 'next-recipe'
-        pick = (pick + 1) % eligible.length
-        recipe = eligible[pick]
+        at = (at + 1) % order.length
+        cand = order[at]
       } else {
         action = 'shorten-headline'
         headline = shortenHeadline(headline)
       }
-      filled = fillSlide(recipe, headline, registry, id)
+      filled = fill()
       report = analyze(filled.slide)
-      repairs.push({ slide: i + 1, round, action, from, to: recipe.id, detail: action === 'next-recipe' ? bad(best.report)[0] ?? '' : `"${headline}"` })
-      if (bad(report).length < best.count || !best.count) best = { filled, recipe, headline, count: bad(report).length, report }
+      repairs.push({ slide: i + 1, round, action, from, to: `${cand.recipe.id}/${cand.variant}`, detail: action === 'next-recipe' ? bad(best.report)[0] ?? '' : `"${headline}"` })
+      if (bad(report).length < best.count || !best.count) best = { filled, cand, headline, count: bad(report).length, report }
     }
     // Keep the cleanest variant seen (the last when it is clean).
-    if (!bad(report).length) best = { filled, recipe, headline, count: 0, report }
+    if (!bad(report).length) best = { filled, cand, headline, count: 0, report }
     if (!best.filled.titled) exampleKept++
-    used.push(best.recipe.id)
+    const sig = lookSignature(best.filled.slide, style, registry)
+    if (usedSigs.has(sig) && candidates.some((c) => !usedSigs.has(c.signature))) avoidableRepeats++
+    usedSigs.add(sig)
+    used.push(best.cand.recipe.id)
+    designs.push(`${best.cand.recipe.id}/${best.cand.variant}`)
+    signatures.push(sig)
     return best.filled.slide
   })
 
-  const deck = deckOf(style, slides)
+  const deck = deckOf(style, slides, seed, opts.theme)
   const reports = analyzeDeck(deck, { registry })
   const findings: string[] = []
   let errors = 0
@@ -265,9 +311,15 @@ export function runStyle(style: DeckStyle, styleIndex: number, opts: DryRunOptio
   }
   return {
     style: style.id,
+    seed,
     deck,
     slides: slides.length,
     recipes: used,
+    designs,
+    signatures,
+    candidates: candidateCounts,
+    avoidableRepeats,
+    deckLook: look,
     repairs,
     errors,
     warnings,
@@ -284,6 +336,62 @@ export function runDryRun(styleIds?: readonly string[], opts: DryRunOptions = {}
   const out: StyleRunResult[] = []
   BUILT_IN_STYLES.forEach((style, i) => {
     if (!styleIds || styleIds.includes(style.id)) out.push(runStyle(getDeckStyle(style.id) ?? style, i, opts))
+  })
+  return out
+}
+
+/** AC8 — the share of slide positions (0..1) whose look signatures differ between two decks. */
+export function signatureDiffer(a: readonly string[], b: readonly string[]): number {
+  const n = Math.max(a.length, b.length)
+  if (!n) return 0
+  let d = 0
+  for (let i = 0; i < n; i++) if (a[i] !== b[i]) d++
+  return d / n
+}
+
+/** AC8 — one style run with several seeds, and how different the decks came out. */
+export interface VarietyReport {
+  style: string
+  seeds: number[]
+  runs: StyleRunResult[]
+  /** `signatureDiffer` for every pair of seeds, in order (1-2, 1-3, 2-3, …). */
+  pairDiffer: number[]
+  minDiffer: number
+  /** Avoidable repeated signatures inside the decks, summed over the seeds. */
+  avoidableRepeats: number
+}
+
+export interface VarietyOptions extends DryRunOptions {
+  /** Seeds per style (default 1, 2, 3). */
+  seeds?: readonly number[]
+  /** Pass each seed's signatures on to the next as `avoidSignatures` (the "recent decks" use). */
+  chainAvoid?: boolean
+}
+
+/** AC8 — the dry run for each style with N seeds (default all ten styles × seeds 1, 2, 3). */
+export function runVariety(styleIds?: readonly string[], opts: VarietyOptions = {}): VarietyReport[] {
+  const seeds = [...(opts.seeds ?? [1, 2, 3])]
+  const out: VarietyReport[] = []
+  BUILT_IN_STYLES.forEach((s, i) => {
+    if (styleIds && !styleIds.includes(s.id)) return
+    const style = getDeckStyle(s.id) ?? s
+    const runs: StyleRunResult[] = []
+    const recent: string[] = [...(opts.avoidSignatures ?? [])]
+    for (const seed of seeds) {
+      const r = runStyle(style, i, { ...opts, seed, avoidSignatures: opts.chainAvoid ? recent : opts.avoidSignatures })
+      runs.push(r)
+      recent.push(...r.signatures)
+    }
+    const pairDiffer: number[] = []
+    for (let a = 0; a < runs.length; a++) for (let b = a + 1; b < runs.length; b++) pairDiffer.push(signatureDiffer(runs[a].signatures, runs[b].signatures))
+    out.push({
+      style: style.id,
+      seeds,
+      runs,
+      pairDiffer,
+      minDiffer: pairDiffer.length ? Math.min(...pairDiffer) : 1,
+      avoidableRepeats: runs.reduce((a, r) => a + r.avoidableRepeats, 0),
+    })
   })
   return out
 }

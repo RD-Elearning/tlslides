@@ -1176,4 +1176,9 @@ export interface DeckStyle {
   avoid: string[]
   /** ≤ 4 short composition rules for the LLM and the critic. */
   rules: string[]
+  /** AC8 — the knob values this style accepts and encourages beyond its `blockDefaults`, per
+   *  block type and look knob (the default value is always accepted). The variety picker rotates
+   *  slides only inside them; a knob the style sets and does not list here stays fixed. Shown to
+   *  the LLM as the style card's `Vary:` line. */
+  variety?: Record<string, Record<string, Array<string | boolean>>>
 }

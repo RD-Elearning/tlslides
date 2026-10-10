@@ -10,7 +10,7 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+import { knobHint, AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
 import { BUILT_IN_STYLES, styleCard, styleLine } from './styles'
 import { deckSpecJsonSchema } from './deck-spec-json-schema'
 import { validateDeckSpec } from './validate-deck-spec'
@@ -480,6 +480,7 @@ describe('R7 — capability digest v2', () => {
         size: 'h 150–260@544', // AC3: card rows stretch with the box (a range); default theme body in Inter
         aiTier: 1,
         looks: ['tile', 'gap'],
+        lookValues: { tile: ['plain', 'card', 'accent-bar'], gap: ['xs', 'sm', 'md', 'lg'] }, // AC8
         absorbs: ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge'],
       })
       const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))
@@ -532,8 +533,11 @@ describe('R7 — capability digest v2', () => {
       const alsoNames = (md: string) =>
         md.split('\n').filter((l) => l.startsWith('also: ')).flatMap((l) => l.slice(6).split(', '))
 
-      it('stays within 16k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(16000)
+      // AC8 budget decision (ai-curation README §8): the knob values and recipe looks raised the
+      // tier-1 index ceiling from 16k to 17k (the brief's allowance); the S2a prompt with the
+      // slide's own role stays <= 16k (dry-run.spec).
+      it('stays within 17k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(17000)
         expect(tier1).toMatchSnapshot()
       })
 
@@ -544,7 +548,8 @@ describe('R7 — capability digest v2', () => {
             const lines = fullLine(tier1, def.type)
             expect(lines).toHaveLength(1)
             expect(lines[0]).toContain(`— ${def.shortDescription}`)
-            if (def.looks?.length) expect(lines[0]).toContain(` knobs: ${def.looks.join(', ')}`)
+            // AC8: knobs carry their values (`k=a|b`, a bare name is a toggle)
+            if (def.looks?.length) expect(lines[0]).toContain(` knobs: ${knobHint({ looks: def.looks, lookValues: lookValuesOf(def) })}`)
             expect(also).not.toContain(def.type)
           } else if (AI_HIDDEN_TYPES.includes(def.type)) {
             // AC1: editor-only guides are never offered to the AI.
@@ -558,7 +563,8 @@ describe('R7 — capability digest v2', () => {
 
       it('carries the recipes and the shared header', () => {
         expect(tier1).toContain('## Recipes')
-        expect(tier1).toContain('cover-hero · blank — content: tls.c.hero — ')
+        expect(tier1).toContain('cover-hero · blank — tls.c.hero — ')
+        expect(tier1).toContain('looks: big|card|side|image')
         expect(tier1).toContain('Dated → `timeline`')
         expect(tier1).toContain('## Icons')
         expect(capabilityIndex(reg, { tier: 1, roles: ['cover'] })).not.toContain('data-big-stat ·')
@@ -597,10 +603,10 @@ describe('R7 — capability digest v2', () => {
         }
       })
 
-      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 16k', () => {
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17k (AC8)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(16000)
+          expect(md.length).toBeLessThanOrEqual(17000)
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)
@@ -762,5 +768,26 @@ describe('R7 — no hand-written catalog text', () => {
       expect(b.avoid).toBe(def!.describe?.avoid)
       expect(b.example).toEqual(def!.describe?.example)
     }
+  })
+})
+
+/** AC8 — the look values of a definition, as `capabilityIndexData` reports them. */
+function lookValuesOf(def: { looks?: string[]; schema: Record<string, { type: { kind: string; values?: string[] } }> }): Record<string, string[] | 'boolean'> {
+  const out: Record<string, string[] | 'boolean'> = {}
+  for (const k of def.looks ?? []) out[k] = def.schema[k].type.kind === 'enum' ? [...def.schema[k].type.values!] : 'boolean'
+  return out
+}
+
+describe('AC8 — knob values in the tier-1 index', () => {
+  it('a hero line names its knob values', () => {
+    const md = capabilityIndex(freshBuiltInRegistry(), { tier: 1 })
+    expect(md).toContain('knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule')
+    expect(md).toContain('tls.t.title · heading · element')
+    expect(md).toMatch(/tls\.t\.title .* knobs: size=display\|title\|heading\|subheading, align=start\|center\|end, rule/)
+  })
+  it('the style card lists its knob defaults first and the accepted alternatives after them', () => {
+    const card = styleCard(BUILT_IN_STYLES.find((s) => s.id === 'corporate')!)
+    expect(card).toContain('c.closing(variant=centered|split)')
+    expect(card).toContain('t.title(rule=false|true)')
   })
 })

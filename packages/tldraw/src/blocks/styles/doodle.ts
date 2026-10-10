@@ -52,7 +52,7 @@ export const DOODLE_STYLE: DeckStyle = {
   name: 'Doodle',
   brief:
     'Hand-drawn deck: warm paper, handwritten headlines, round cards with a bold ink outline, sketched ' +
-    'stars and squiggles in the margins, coral and teal.',
+    'stars and squiggles, coral and teal.',
   palettes: [
     {
       id: 'doodle-paper',
@@ -115,6 +115,14 @@ export const DOODLE_STYLE: DeckStyle = {
     'tls.g.chevrons': { fill: 'series' },
     'tls.c.closing': { variant: 'centered' },
     'tls.g.pros-cons': { style: 'cards' },
+  },
+  variety: {
+    'tls.t.title': { align: ['start', 'center'] },
+    'tls.c.cover': { variant: ['split'] },
+    'tls.c.divider': { variant: ['minimal'] },
+    'tls.c.cards': { tone: ['accent-first'], lead: ['number'] },
+    'tls.c.chart-insight': { side: ['below'] },
+    'tls.c.closing': { variant: ['split', 'big-type'] },
   },
   prefer: ['tls.g.cycle', 'tls.c.quiz', 'tls.t.checklist'],
   avoid: ['tls.d.table', 'tls.d.scatter', 'tls.d.bubble', 'tls.d.heatmap'],

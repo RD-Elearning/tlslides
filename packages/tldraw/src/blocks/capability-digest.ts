@@ -84,6 +84,9 @@ export interface CapabilityIndexEntry {
   aiTier?: 1 | 2
   /** AC0: look knobs (enum/boolean option slots), in the order to try them. */
   looks?: string[]
+  /** AC8: the values of each look knob (enum values; `boolean` for a toggle), so the planner can
+   *  set a knob by name without the detail digest. */
+  lookValues?: Record<string, string[] | 'boolean'>
   /** AC0: tier-2 types this block replaces by default. */
   absorbs?: string[]
 }
@@ -540,11 +543,35 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         ...layerField(def),
         ...(BLOCK_SIZE_HINTS[def.type] ? { size: BLOCK_SIZE_HINTS[def.type] } : {}),
         ...(def.aiTier ? { aiTier: def.aiTier } : {}),
-        ...(def.looks && def.looks.length ? { looks: [...def.looks] } : {}),
+        ...(def.looks && def.looks.length ? { looks: [...def.looks], lookValues: lookValues(def) } : {}),
         ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
       }
     })
     .filter((e) => !opts?.tier || inTierOne(e, opts.profile))
+}
+
+/** AC8 — each look knob's values (enum values, or `boolean`). */
+function lookValues(def: BlockDefinition): Record<string, string[] | 'boolean'> {
+  const out: Record<string, string[] | 'boolean'> = {}
+  for (const k of def.looks ?? []) {
+    const t = def.schema[k]?.type
+    if (t?.kind === 'enum') out[k] = [...t.values]
+    else if (t?.kind === 'boolean') out[k] = 'boolean'
+  }
+  return out
+}
+
+/**
+ * AC8 — the compact knob hint of a tier-1 line: `variant=classic|split, align=start|center, showCta`
+ * (a bare name is an on/off toggle). Values come from the schema, so the hint cannot drift.
+ */
+export function knobHint(e: Pick<CapabilityIndexEntry, 'looks' | 'lookValues'>): string {
+  return (e.looks ?? [])
+    .map((k) => {
+      const v = e.lookValues?.[k]
+      return Array.isArray(v) ? `${k}=${v.join('|')}` : k
+    })
+    .join(', ')
 }
 
 /** AC0 — does an entry get a full line in the tier-1 index? Tier 1 or promoted, and not dropped. */
@@ -649,36 +676,34 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
   const lines: string[] = []
   lines.push('# Slide block index — core set')
   lines.push('')
+  // AC8: the header is the compact form of the full index's rules (the AC7 header was 2.45k against
+  // a 1.2k target; the room pays for the knob values and the recipe looks).
   lines.push(
-    'Choose the category from the relationship in the content, then the block. Dated → `timeline`; ' +
-      'ordered but undated → `process`; options against each other → `comparison`; numbers that need ' +
-      'axes → `chart`; one to four headline numbers → `metric`. Start from a recipe for the slide\'s role.'
+    "Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → " +
+      '`timeline`, ordered → `process`, options → `comparison`, numbers on axes → `chart`, 1–4 headline numbers → `metric`.'
   )
-  lines.push('')
-  lines.push('Scope rules:')
-  lines.push('- `element`: one atom. Combine several on a slide or inside a container.')
-  lines.push('- `group`: a self-contained unit. One per region.')
-  lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
-  lines.push('')
+  lines.push('Scope: `element` combines with others; `group` is one per region; `slide` sits alone in the main region, never nested.')
   lines.push(
-    'Line format: `type · category · scope · item range · layer — what the viewer sees [height] knobs: …` ' +
-      '(layer only when not content). `knobs` are the enum/boolean slots that change the look, not the ' +
-      'content — try them in order before picking another block. `also:` lists more blocks by name; ask ' +
-      'for the detail digest of any shortlisted type before filling props.'
+    'Lines: `type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle`. Knobs change the ' +
+      'look, not the content: turn them before switching block; any other value is rejected. `also:` = more blocks by ' +
+      'name. Get the detail digest of a type before filling its props.'
   )
-  lines.push('')
-  lines.push(SIZE_LINE)
-  lines.push('')
-  lines.push(LAYER_LINE)
-  lines.push('')
-  lines.push(MOTION_STYLE_LINE)
+  lines.push(
+    'Height `[h…]` (1920×1080 units, at the width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` takes ' +
+      'the given height, `X–Y` varies.'
+  )
+  lines.push(
+    'Layers: in one region, `layer: "backdrop"` paints behind, `"overlay"` on top (never over text); `anchor` fill, a ' +
+      'corner/edge or center; `anchorTo: "<id>"`. Motion: `motionStyle` on deck/slide — expressive, subtle, static.'
+  )
   lines.push('')
   // AC1: deck styles — one compact line each (or the chosen style's), full card on demand.
   lines.push('## Styles')
   if (style) {
-    lines.push(`Deck style: ${styleLine(style)}. ${style.brief} Rules: ${style.rules.join(' ')} Knob defaults are set by the style; do not repeat them.`)
+    // AC8: the brief, rules, knob defaults and `Vary:` live in the style card sent with this index
+    lines.push(`Deck style: ${styleLine(style)}. Follow its style card (brief, rules, knob defaults, Vary).`)
   } else {
-    lines.push('Set `style` on the deck and `theme` to one of its palettes; ask for the style card before filling.')
+    lines.push('Set `style` and one of its palettes as `theme`; get its style card first.')
     // AC5: ten styles — one line per family, `style (palettes)` (the per-style line cost the budget)
     const families: string[] = []
     for (const st of BUILT_IN_STYLES) if (!families.includes(st.family)) families.push(st.family)
@@ -697,8 +722,9 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     lines.push('## Recipes')
     lines.push('')
     lines.push(
-      'Known-good slides per role (`id · layout — region: blocks — when`), each clean with example content. ' +
-        '`+title` = `tls.t.title` in the layout\'s `title` region. Keep layout and regions, swap content, turn knobs.'
+      'Known-good slides per role (`id · layout — region: blocks — when · looks`), clean with example content. ' +
+        '`+title` = `tls.t.title` in the `title` region; no region name = the main one (`content`, `timeline`). ' +
+        '`looks:` other designs, named `id/look`. Swap content, keep the rest; never repeat a recipe/look in a deck.'
     )
     lines.push('')
     let role: string | undefined
@@ -718,7 +744,7 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     if (!full.length && !also.length) continue
     lines.push(`## ${CATEGORY_INFO[cat].label}`)
     for (const e of full) {
-      const knobs = e.looks ? ` knobs: ${e.looks.join(', ')}` : ''
+      const knobs = e.looks ? ` knobs: ${knobHint(e)}` : ''
       lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}${knobs}`)
     }
     if (also.length) lines.push(`also: ${also.map((e) => e.type).join(', ')}`)

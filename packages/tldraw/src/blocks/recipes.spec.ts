@@ -6,7 +6,9 @@
 
 import { registerBuiltInBlocks } from './library'
 import { BlockRegistry } from './registry'
-import { RECIPES, RECIPE_ROLES, recipeLine, recipeSlide, recipesFor } from './recipes'
+import { RECIPES, RECIPE_ROLES, recipeLine, recipeSlide, recipesFor, variantIds } from './recipes'
+import { lookSignature } from './pipeline/variety'
+import { BUILT_IN_STYLES } from './styles'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { resolveTokens } from './tokens'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
@@ -128,11 +130,91 @@ describe('AC0 slide recipes', () => {
   })
 
   it('recipeLine is compact and names the knobs', () => {
+    // AC8: the main region's name is implied, the recipe's other designs follow as `looks:`
     const line = recipeLine(RECIPES.find((r) => r.id === 'cover-split-image')!)
-    expect(line).toBe('cover-split-image · blank — content: tls.c.cover(variant=split,showImage=true) — opener with a photo')
+    expect(line).toBe('cover-split-image · blank — tls.c.cover(variant=split,showImage=true) — opener with a photo · looks: bleed')
     expect(recipeLine(RECIPES.find((r) => r.id === 'data-table')!)).toBe(
-      'data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source'
+      'data-table · timeline+title — tls.d.table + tls.t.footnote(marker=source) — exact values, with a source · looks: head'
     )
+    expect(recipeLine(RECIPES.find((r) => r.id === 'content-bullets-image')!)).toContain('left: tls.t.bullets; right: tls.m.image')
     expect(recipeLine(RECIPES.find((r) => r.id === 'section-title')!)).toBe('section-title · section+title — title only — quiet section break')
+  })
+
+  // AC8 — every recipe variant is held to its recipe's bar, and is a design of its own.
+  describe('AC8 recipe variants', () => {
+    const designs = RECIPES.flatMap((r) => variantIds(r).slice(1).map((v) => [r, v] as const))
+
+    it('there are variants on most recipes (a role has several designs)', () => {
+      expect(designs.length).toBeGreaterThanOrEqual(60)
+      for (const role of RECIPE_ROLES) expect(recipesFor(role).reduce((n, r) => n + variantIds(r).length, 0)).toBeGreaterThanOrEqual(3)
+    })
+
+    it.each(designs.map(([r, v]) => [`${r.id}/${v}`, r, v] as const))('%s: real layout, valid knob values, tier-1 blocks', (_n, r, v) => {
+      const variant = r.variants!.find((x) => x.id === v)!
+      expect(variant.id).toMatch(/^[a-z][a-z0-9-]*$/)
+      const layout = SLIDE_LAYOUTS.find((l) => l.id === (variant.layout ?? r.layout))
+      expect(layout).toBeDefined()
+      const regions = Object.keys(layout!.compile({ width: 1920, height: 1080 }, tokens))
+      for (const name of Object.keys(r.regions)) expect(regions).toContain(name)
+      if (variant.swap) for (const name of variant.swap) expect(Object.keys(r.regions)).toContain(name)
+      const types = Object.values(r.regions).flat().map((b) => b.type)
+      for (const [type, knobs] of Object.entries(variant.knobs ?? {})) {
+        expect(types).toContain(type)
+        const def = registry.get(type)!
+        for (const [k, value] of Object.entries(knobs)) {
+          const t = def.schema[k]?.type
+          expect(['enum', 'boolean']).toContain(t?.kind)
+          if (t?.kind === 'enum') expect(t.values).toContain(value)
+          if (t?.kind === 'boolean') expect(typeof value).toBe('boolean')
+        }
+      }
+    })
+
+    it.each(designs.map(([r, v]) => [`${r.id}/${v}`, r, v] as const))('%s: validates, reports clean and balanced', (_n, r, v) => {
+      const slide = recipeSlide(r, registry, v)
+      const deck: DeckSpec = { version: 1, id: 'recipe-variant', title: 'v', theme: 'mono-grid', aspect: 'widescreen', slides: [slide] }
+      expect(validateDeckSpec(deck, registry).filter((f) => f.level === 'error')).toEqual([])
+      const report = analyzeSlide(slide, { registry })
+      const bad = report.findings
+        .filter((f) => f.severity !== 'info' || f.code === 'region/empty' || f.code === 'layout/unbalanced')
+        .map((f) => `${f.severity} ${f.code}: ${f.message}`)
+      expect(bad).toEqual([])
+    })
+
+    it('every design of a recipe has a look signature of its own', () => {
+      // variants differ from each other; a variant may equal the base only where the base is the
+      // example's own value — then it must differ from the base under some deck style (the style's
+      // knob default replaces the example's, e.g. section-divider/numeral under corporate's `field`)
+      const styles = [undefined, ...BUILT_IN_STYLES]
+      for (const r of RECIPES) {
+        const ids = variantIds(r)
+        const sigs = ids.slice(1).map((v) => lookSignature(recipeSlide(r, registry, v), undefined, registry))
+        expect([r.id, new Set(sigs).size]).toEqual([r.id, sigs.length])
+        for (const v of ids.slice(1)) {
+          const differs = styles.some((st) => lookSignature(recipeSlide(r, registry, v, st), st, registry) !== lookSignature(recipeSlide(r, registry, undefined, st), st, registry))
+          expect([`${r.id}/${v}`, differs]).toEqual([`${r.id}/${v}`, true])
+        }
+      }
+    })
+
+    it('variants of the region-filling recipes still fill at least half of their region', () => {
+      for (const id of FILLS_ITS_REGION) {
+        const r = RECIPES.find((x) => x.id === id)!
+        for (const v of variantIds(r).slice(1)) {
+          const report = analyzeSlide(recipeSlide(r, registry, v), { registry })
+          const box = report.regions.timeline
+          const painted = report.blocks.filter((b) => b.region === 'timeline' && b.painted && b.layer !== 'backdrop').map((b) => b.painted!)
+          const fill = (Math.max(...painted.map((p) => p.y + p.height)) - Math.min(...painted.map((p) => p.y))) / box.height
+          expect([`${id}/${v}`, fill >= 0.5]).toEqual([`${id}/${v}`, true])
+        }
+      }
+    })
+
+    it('a deck style drops an example knob it sets itself (the style wins over the example)', () => {
+      const style = { blockDefaults: { 'tls.t.quote': { markStyle: 'rule' } } } as never
+      const slide = recipeSlide(RECIPES.find((r) => r.id === 'quote-pull')!, registry, undefined, style)
+      expect(slide.regions!.content[0].props).not.toHaveProperty('markStyle')
+      expect(recipeSlide(RECIPES.find((r) => r.id === 'quote-pull')!, registry).regions!.content[0].props).toHaveProperty('markStyle', 'glyph')
+    })
   })
 })

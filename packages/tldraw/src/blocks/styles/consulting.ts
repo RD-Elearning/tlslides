@@ -89,6 +89,12 @@ export const CONSULTING_STYLE: DeckStyle = {
     'tls.c.closing': { variant: 'centered' },
     'tls.g.pros-cons': { style: 'columns' },
   },
+  variety: {
+    'tls.t.title': { rule: [false, true] },
+    'tls.c.cover': { variant: ['split'] },
+    'tls.c.cards': { numeral: ['giant'] },
+    'tls.c.closing': { variant: ['split'] },
+  },
   prefer: ['tls.g.swot', 'tls.d.waterfall', 'tls.d.stacked-bar', 'tls.d.scorecard'],
   avoid: ['tls.c.kinetic-title', 'tls.m.decoration', 'tls.m.image-grid'],
   rules: [
