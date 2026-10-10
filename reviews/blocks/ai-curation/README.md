@@ -812,6 +812,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC7 | ✅ done 2026-10-10 | `4151b1c3`, `f1b8d241`, `d70c0627`, + the README/CLAUDE.md commit | `tools/layout-report/dry-run.js` + `blocks/pipeline/dryRun.ts` + `dry-run.spec.ts`: 10 styles x 12 slides, 0 errors, 0 warnings, 0 repairs needed; docs updated; prompt budget measured (all-roles total over 16k by 219-1,100, per-role within); see Notes — AC7 |
 | AC8 | ✅ done 2026-10-10 | `8fba06a4`, `7b86ec1c`, `ef132333`, `2b7e1337`, `c85121df`, + the docs commit | Variety: seeded picker with look signatures, 70 recipe variants, style `variety`, quote and image-full variants, knob values in the digest, strict knob validation, five showcase decks; 3 seeds × 10 styles clean, 92–100 % of slides differ between seeds (was 0 %); see §8 and Notes — AC8 |
 | AC8.5 | ✅ done 2026-10-10 | `0d138555`, `3484c6b6`, `30a3a35a`, + the docs commit | Quality pass on the variety decks: deck-level quality gate (fill, region fill, lead type) in the dry run and S4.1, content-asset input for the picker, roomy blocks and recipes, motif/contrast fixes; weak slides judged on the sheets 148 → ~15 of 360; 30 decks 0/0, 0 quality findings; see §8.9 and Notes — AC8.5 |
+| AC8.6 | ✅ done 2026-10-10 | `1b83fbd7`, `4a3a9640`, `1dc2fb4b`, + the docs commit | Small polish pass: stat-spotlight roomy tier, big-stat split label ladder, section-title as a real section design (layout `section-stack`, title `size: fit`, body `size`), flipped text ink 12:1; 30 decks 0/0, 0 quality findings; see §8.10 and Notes — AC8.6 |
 
 ### Session log
 
@@ -833,6 +834,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-10 | AC7 | Dry run (script, pure module, spec), LLM-ARCHITECTURE S0/S2a/S2b/S3/S4.1/S5.2/§9, `guides/blocks-authoring.md` §2.11 "Adding a deck style" | Plan closed except AC5 (awaiting the user's board review). Read Notes — AC7 "Open" first: the all-roles S2a prompt is over 16k; `capabilityIndexData` has no `styles`/`recipes` arrays. |
 | 2026-10-10 | AC8 | Audit (§8.2), variety picker, recipe variants, style `variety`, quote/image-full variants, digest knob values, validator, showcases, sheets `sheet8-*` | AC8 closed. Read Notes — AC8 "Open" first: consulting `section-title` reads pale on navy, the gradient cover-bleed title has one borderline line over-count in a dry-run deck, logo walls are empty offline. |
 | 2026-10-10 | AC8.5 | Quality pass (lead review of `sheet8-seeds-*`): quality gate, asset input, roomy blocks, motif/contrast fixes, sheets `sheet9-seeds-<style>` | Read Notes — AC8.5 "Open" first: stat-spotlight slides still read thin, big-stat `split` label small, hero `align: center` spec fails on the AC8 label slack. |
+| 2026-10-10 | AC8.6 | Polish pass (stat-spotlight, big-stat split, section-title), image-full / showcase-consulting re-check, sheets `ac86/sheet-*.png` | Read Notes — AC8.6 "Open" first: section-title passes only where the headline takes display type in the 1200 column (6 of 10 styles for the dry-run headline); the showcase fixtures still hold the pre-AC8.6 section slide. |
 
 ### Notes — AC0
 
@@ -1985,6 +1987,26 @@ Written up in [§8.9](#89-ac85--quality-pass-on-the-variety-decks). Open items:
 - `section-title` almost never survives the gate (a title alone on the section page covers 4–9 %
   of it); it stays as a recipe for the LLM and as a fallback.
 
+### Notes — AC8.6 (2026-10-10)
+
+Written up in [§8.10](#810-ac86--small-polish-pass). Open items:
+- `section-title` passes the gate only when its headline takes display type in the 1200-unit
+  column (`size: fit`). With the dry-run headline ("Why mid-market, why now") that is 6 of 10
+  styles; in gradient, editorial, swiss and memphis (wide display faces, 160–176 units) "Why
+  mid-market," does not fit 1200 at display, `fit` steps to title, the slide paints 14–15 % and the
+  gate moves on to a divider (honest; no threshold changed). A display rung between display and
+  title (e.g. display × 0.9) would let those styles keep it; not built.
+- The five showcase fixtures were not regenerated: `showcase-consulting` sc_03 is still the old
+  `section` layout title (now white ink, still thin). Regenerate the showcases with the picker when
+  their content is next touched.
+- Re-check of the AC5 board `fix` items: `image-full` panel variants differ per style (surface,
+  ink, face; glass blue panels, luxury dark panels, memphis white cards with ink outline) —
+  nothing broken (`sheet-image-full.png`). `showcase-consulting` action titles render well on all
+  twelve slides (`sheet-showcase-consulting.png`); sc_04 (bullets beside a photo) and sc_03
+  (section) are pre-AC8.5 designs that read thin, not defects.
+- The tier-1 index is at 16,994 of 17,000 chars; the next LLM-visible addition must pay for itself.
+- The digest header lost a few words to pay for this phase (§8.10); meaning unchanged.
+
 ---
 
 ## 8. AC8 — Variety
@@ -2345,3 +2367,88 @@ side, twelve slides each.
 `tls.t.bullets` `size: body | lead | fit`; `tls.m.icon-list` `size: body | fit`; `tls.t.takeaway`
 `size: column`; `tls.c.testimonial` `size: md | lg`; internal table density `grand`;
 `stableWrap` (composite kit); `TEXT_FLIP_FLOOR` (tokens). No new block type, no dependency.
+
+### 8.10 AC8.6 — small polish pass
+
+**Date:** 2026-10-10 · **Against commit:** `1c0e2407` (AC8.5 done). The three weak designs AC8.5
+left open, judged on before/after contact sheets (session scratchpad `ac86/`), all ten styles.
+
+**1. `data-stat-spotlight` roomy tier** (`tls-c-stat-spotlight/schema.ts` `SPOT_ROOMY`, poster).
+A box of at least 1200 × 600 (the spotlight filling a slide region) gets 210-unit stat bands
+(was 150), the stat values at `title` and their labels at `lead` (was heading / caption) when every
+value keeps one line and every label a whole line in its band, and the main label at `title` (was
+heading) when it takes at most two lines and the column fits. Smaller boxes keep the compact tier
+unchanged (`size.min` spec). The side column takes the roomy bands only when they still fit the
+box. The dry-run filler writes the key message into the spotlight's `context` (the example has
+none, so the right of the ring was empty). Template geometry is the same `geometry()`; text sizes
+follow the poster leaves (LO7), 0 html line mismatches in the harness.
+
+**2. `data-big-stat/split` label** (`BIG_STAT_SPLIT_LABEL`). In the large tier the label beside
+the number takes the largest of `title` / `heading` / `subheading` that wraps in ≤ 3 lines with no
+one-word last line and keeps the column inside the box; the context is `lead` (`body` when lead
+leaves a one-word last line). Compact split unchanged. The fixed-point property (laid out again at
+its own height it keeps the same number and label size) is in the spec.
+
+**3. `section-title`** — was `section` layout + `tls.t.title` alone at title size (4–9 % of the page;
+0 of 30 dry-run decks kept it, 11 rejections). Now:
+- layout **`section-stack`**: one `content` region at the safe margin, at most 1200 wide
+  (`SECTION_STACK_MAX_W`, the column `tls.c.divider` uses, clear of the section motifs right of x
+  1380), full content height, stack centred (`regionAlign`). Additive (18 layouts).
+- `tls.t.title` **`size: fit`** (`TITLE_FIT`, `fitToken`): the largest of display / title / heading
+  whose wrap is stable (≤ 3 lines, same count at 98.5 % and 104 % of the width) with no one-word
+  first or last line — the divider's `stableWrap` rule on the title block.
+- `tls.t.body` **`size: body | lead | subheading`** (default body).
+- recipe: `tls.t.title(size=fit, rule=true, align=start) + tls.t.body(size=subheading)` with the
+  key message (dry-run filler `MESSAGE_SLOTS`); its own align/rule win over the deck look
+  (applyDeckLook's documented contract; `dry-run.spec` now checks exactly that).
+- Ink: a flipped `text` role (dark theme ink on a dark page) now solves to **12:1** first, then 7:1,
+  then the 4.5 floor (`TEXT_FLIP_FLOORS`): consulting's navy section title is white (7:1 read as a
+  pale lavender under a display title).
+
+**Numbers** (dry run 3 seeds × 10 styles, default assets; per-design numbers on the data/section
+outline entries, ten styles):
+
+| Measure | Before | After |
+|---|---|---|
+| Errors / warnings / quality findings, 30 decks | 0 / 0 / 0 | 0 / 0 / 0 |
+| Seed difference, min over pairs (≥ 70 % bar) | 75 % (swiss) – 92 % | 75 % (swiss) – 92 % |
+| `section-title` in the 30 decks / rejected by the gate | 0 / 11 | 5 / 4 |
+| `section-title` fill (safe area) | 4–9 % (fails everywhere) | 22–31 % at display (6 styles pass, type-led); 14–15 % at title (gradient, editorial, swiss, memphis: rejected) |
+| `stat-spotlight` base: fill / region fill | 58–67 % / 57–64 % | 76–81 % / 75–79 % |
+| `stat-spotlight` side: fill / region fill | 71–72 % / 53–55 % | 75–76 % / 56–58 % |
+| `stat-spotlight` plain: fill / region fill | 58–67 % / 46–52 % | 76–81 % / 62–66 % |
+| `stat-spotlight` in the 30 decks | 12 (base 2, side 6, plain 4) | 12 (same picks) |
+| `big-stat/split` label size | lead (36) | heading–title (56–80) |
+| `big-stat/split` fill | 24–31 % | 28–35 % |
+| `big-stat/split` in the 30 decks | 3 | 3 |
+| `cli.js` on `__fixtures__/styles/*.json` (19 decks) | 0 / 0 | 0 / 0, `needsVisualCheck` empty |
+| Harness (10 review decks × 13 slides + the 30 dry-run slides shot), table line mismatches | 1 (display title at 1200, before `fit`) | 0; html parts 0 |
+| Tier-1 index (default) | 16,996 | 16,994 (≤ 17k; header trimmed by ~80 chars to pay for the recipe line) |
+| tsc | prod 0, spec 329 | prod 0, spec 329 |
+
+Judged on the sheets: stat-spotlight now reads full (title label + message beside the ring,
+title-size stats); the split label balances the number in all ten styles; section-title reads as a
+section page (display title, accent rule, message) in corporate, minimal, luxury, glass, doodle,
+consulting (white on navy).
+
+**Tests** (`--maxWorkers=1`, targeted): touched blocks (stat-spotlight 46, big-stat, title, body:
+164 incl. new AC8.6 cases), slide-layouts, recipes, tokens, capability-digest (snapshots regenerated),
+dry-run, styles + style-masters, block-metrics (size cards regenerated: stat-spotlight cpl),
+catalog-conformance, layout-report, layout-layers/anchor/calibration, slide-compiler/decompiler,
+slide-composition, deck-document, demo-deck-*, block-library-tour, validate-deck-spec,
+html-poster-geometry, composite-geometry, list-sizes, surface, and the neighbours hero, divider,
+cover, closing, image-full, statement, quote, card-paint, motion-showcase — all pass (hero's AC8.5
+failure was fixed by `1c0e2407`). Parity: the touched blocks' own suites (standard/showcase suites
+carry their DOM↔SVG probes) pass; no renderer changed.
+
+**Sheets** (session scratchpad `ac86/`): `sheet-stat-spotlight.png`, `sheet-big-stat-split.png`,
+`sheet-section-title.png` (before | after, ten styles), `sheet-image-full.png` (seven panels × five
+styles), `sheet-showcase-consulting.png`.
+
+**Vocabulary added:** slide layout `section-stack` (`SlideLayoutId`, `SECTION_STACK_MAX_W`);
+`tls.t.title` `size: fit` (`TITLE_FIT`, `fitToken`); `tls.t.body` slot `size` (`body | lead |
+subheading`, `bodyToken`); `SPOT_ROOMY`, `SpotGeometry.roomy` (stat-spotlight roomy tier);
+`BIG_STAT_SPLIT_LABEL`; `TEXT_FLIP_FLOORS` (replaces `TEXT_FLIP_FLOOR`, internal); dry-run
+`MESSAGE_SLOTS` entries for `tls.t.body` and `tls.c.stat-spotlight`. No new block type
+(`EXPECTED_BLOCK_COUNT` 131), no dependency, `TldrawApp.version` 16.
+
