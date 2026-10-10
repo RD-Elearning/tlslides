@@ -1,0 +1,651 @@
+{
+  "id": "cmp6-design-checks",
+  "title": "CMP2 design checks: one deliberately bad slide per finding, and a scrim done right",
+  "version": 1,
+  "style": "corporate",
+  "theme": "corporate-navy",
+  "slides": [
+    {
+      "id": "d_card3",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d1t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Card 3 pins a grey ink on the accent"
+            }
+          },
+          {
+            "id": "d1g",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 1,
+              "children": [
+                {
+                  "id": "d1c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d1c1t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "North",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d1c1b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Revenue grew in every region."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d1c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d1c2t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "South",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d1c2b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Margins held through the year."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d1c3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d1c3t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "West",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d1c3b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Pinned grey ink on the accent card."
+                        },
+                        "style": {
+                          "on": "#5A6B7C"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_misaligned",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d2t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Peers whose bodies start at different heights"
+            }
+          },
+          {
+            "id": "d2r",
+            "type": "tls.l.row",
+            "props": {
+              "children": [
+                {
+                  "id": "d2c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d2c1t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Plan",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d2c1b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "One short line."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d2c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d2c2t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "A much longer card title that wraps",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d2c2b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "One short line."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d2c3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d2c3t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Ship",
+                          "size": "heading"
+                        }
+                      },
+                      {
+                        "id": "d2c3b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "One short line."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_unequal",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d3t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Peers sized by their content"
+            }
+          },
+          {
+            "id": "d3r",
+            "type": "tls.l.row",
+            "props": {
+              "sizing": "content",
+              "children": [
+                {
+                  "id": "d3a",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Plan."
+                  }
+                },
+                {
+                  "id": "d3b",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Build the product with the pilot customers."
+                  }
+                },
+                {
+                  "id": "d3c",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Ship it."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_deep",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d4s",
+            "type": "tls.l.stack",
+            "props": {
+              "children": [
+                {
+                  "id": "d4c",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d4s2",
+                        "type": "tls.l.stack",
+                        "props": {
+                          "children": [
+                            {
+                              "id": "d4b",
+                              "type": "tls.t.body",
+                              "props": {
+                                "text": "Four authored levels: stack, card, stack, body."
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_sizes",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d5s",
+            "type": "tls.l.stack",
+            "props": {
+              "children": [
+                {
+                  "id": "d5a",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Display",
+                    "size": "display"
+                  }
+                },
+                {
+                  "id": "d5b",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Title",
+                    "size": "title"
+                  }
+                },
+                {
+                  "id": "d5c",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Heading",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "d5d",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Subheading",
+                    "size": "subheading"
+                  }
+                },
+                {
+                  "id": "d5e",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Body text at the body size."
+                  }
+                },
+                {
+                  "id": "d5f",
+                  "type": "tls.t.caption",
+                  "props": {
+                    "text": "A caption under it all."
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_accent",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d6t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Every card in the accent"
+            }
+          },
+          {
+            "id": "d6g",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 4,
+              "rows": 2,
+              "children": [
+                {
+                  "id": "d6c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b1",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 1"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b2",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 2"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b3",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 3"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c4",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b4",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 4"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c5",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b5",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 5"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c6",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b6",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 6"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                },
+                {
+                  "id": "d6c7",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d6b7",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Item 7"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_measure",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "d7t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "A paragraph across the whole slide"
+            }
+          },
+          {
+            "id": "d7b",
+            "type": "tls.t.body",
+            "props": {
+              "text": "This paragraph runs across the full width of the slide, so every line carries far more than the seventy-five characters a reader takes in comfortably; the eye loses its place on the way back to the start of the next line, and the slide reads like a page of a contract rather than a talk."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_motion",
+      "layout": "two-column",
+      "motionStyle": "expressive",
+      "regions": {
+        "title": [
+          {
+            "id": "d8t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Too much motion on one slide"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "d8l",
+            "type": "tls.t.bullets",
+            "props": {
+              "items": [
+                {
+                  "text": "Point number 1"
+                },
+                {
+                  "text": "Point number 2"
+                },
+                {
+                  "text": "Point number 3"
+                },
+                {
+                  "text": "Point number 4"
+                },
+                {
+                  "text": "Point number 5"
+                },
+                {
+                  "text": "Point number 6"
+                },
+                {
+                  "text": "Point number 7"
+                },
+                {
+                  "text": "Point number 8"
+                },
+                {
+                  "text": "Point number 9"
+                },
+                {
+                  "text": "Point number 10"
+                },
+                {
+                  "text": "Point number 11"
+                },
+                {
+                  "text": "Point number 12"
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "d8h1",
+            "type": "tls.t.hero-number",
+            "props": {
+              "value": "12%"
+            }
+          },
+          {
+            "id": "d8h2",
+            "type": "tls.t.hero-number",
+            "props": {
+              "value": "24%"
+            }
+          },
+          {
+            "id": "d8h3",
+            "type": "tls.t.hero-number",
+            "props": {
+              "value": "36%"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "d_scrim_ok",
+      "layout": "full-bleed",
+      "regions": {
+        "content": [
+          {
+            "id": "d9img",
+            "type": "tls.m.image",
+            "props": {
+              "src": "data:image/jpeg;base64,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",
+              "alt": "Team at work",
+              "fit": "cover"
+            },
+            "layer": "backdrop"
+          },
+          {
+            "id": "d9k",
+            "type": "tls.t.kicker",
+            "props": {
+              "text": "Annual review"
+            },
+            "layer": "overlay",
+            "anchor": "top-left",
+            "style": {
+              "surface": "scrim",
+              "padding": "xs"
+            }
+          },
+          {
+            "id": "d9t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "A year of building together",
+              "size": "display"
+            },
+            "layer": "overlay",
+            "anchor": "bottom-left",
+            "style": {
+              "surface": "scrim",
+              "padding": "lg",
+              "radius": "md"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

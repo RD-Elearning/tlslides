@@ -32,8 +32,7 @@
                         "type": "tls.t.hero-number",
                         "props": {
                           "value": "18%",
-                          "unit": "margin",
-                          "caption": "H2 2026"
+                          "unit": "margin"
                         }
                       },
                       {

@@ -25,7 +25,6 @@
             "layer": "overlay",
             "anchor": "top-left",
             "style": {
-              "padding": "xl",
               "accent": "text"
             }
           },
@@ -103,7 +102,8 @@
                   },
                   "anchor": "top-right",
                   "style": {
-                    "accent": "text"
+                    "surface": "scrim",
+                    "padding": "xs"
                   }
                 }
               ]

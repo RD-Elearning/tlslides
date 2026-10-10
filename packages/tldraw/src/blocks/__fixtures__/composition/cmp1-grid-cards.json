@@ -93,9 +93,6 @@
                         "props": {
                           "icon": "zap",
                           "size": "md"
-                        },
-                        "style": {
-                          "accent": "text"
                         }
                       },
                       {
@@ -271,8 +268,7 @@
                   },
                   "style": {
                     "tone": "gradient",
-                    "radius": "lg",
-                    "gap": "lg"
+                    "radius": "lg"
                   }
                 }
               ]
