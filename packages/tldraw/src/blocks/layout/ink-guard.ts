@@ -25,7 +25,10 @@
 
 import type { LayoutNode, Pt, SurfaceContext } from '../types'
 import { parseColorAlpha, relativeLuminance, solveForContrast } from '../color-math'
-import { collectPaint, floorOf, greyOfLuminance, inkContrast, paintAt, parseInk, type Background } from './paint-model'
+import { CONTRAST_FLOOR, collectPaint, floorOf, greyOfLuminance, inkContrast, paintAt, parseInk, type Background } from './paint-model'
+
+/** Below this ratio an ink has vanished on its background (same colour family). */
+const VANISHED = 1.5
 
 /** Contrast margin over translucent fills and slide gradients (see `guardInk`). */
 export const GLASS_MARGIN = 1.5
@@ -90,12 +93,15 @@ export function guardInk(root: LayoutNode, surface: SurfaceContext, literalInks:
       // scrimmed photo's other extreme), solve again against that — a few rounds, keep the best.
       let best = { color: hex, ratio: own.ratio }
       let against = own.bg
+      // ink that vanished outright (an accent icon on an accent card, ~1:1) is set clearly, at the
+      // text floor, not barely at the 3:1 graphics floor
+      const target = own.ratio < VANISHED ? Math.max(floor, CONTRAST_FLOOR.text) : floor
       for (let round = 0; round < 3; round++) {
-        const solved = solveForContrast(hex, relativeLuminance(against), floor)
+        const solved = solveForContrast(hex, relativeLuminance(against), target)
         const check = inkContrast({ ...ink, colors: [solved.color] }, ops, base)
         if (!check) break
         if (check.ratio > best.ratio) best = { color: solved.color, ratio: check.ratio }
-        if (check.ratio >= floor - 1e-6) break
+        if (check.ratio >= target - 1e-6) break
         against = check.bg
       }
       if (best.color !== hex) swap.set(color, best.color)
