@@ -6,6 +6,7 @@
  */
 
 import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
+import { isAuthoredContext } from '../../../layout/layout-child'
 import type { SectionProps } from './schema'
 import { tagChildren } from '../_motion'
 import { containerSurface, styleGap } from '../_style'
@@ -72,7 +73,7 @@ export function layout(props: SectionProps, ctx: LayoutContext): LayoutNode {
   let childNodes: LayoutNode[]
   if (children.length > 1) {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
-    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap, children, sizing: 'content' } }, contentBox, { surface: under })]
+    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap, children, sizing: 'content', ...(isAuthoredContext(ctx) ? { pack: true } : {}) } }, contentBox, { surface: under })]
   } else {
     childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox, { surface: under })))
   }

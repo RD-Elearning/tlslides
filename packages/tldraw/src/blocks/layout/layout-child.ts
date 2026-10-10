@@ -32,7 +32,10 @@ import { MAX_NESTING_DEPTH } from '../types'
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
 import { editorMetrics } from './measure'
-import { imageSurface, resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+import { imageSurface, isColorRole, resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+import { guardInk, opaqueHex } from './ink-guard'
+import { greyOfLuminance, parseInk } from './paint-model'
+import { relativeLuminance, rgbToHex } from '../color-math'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -94,6 +97,14 @@ export interface CreateLayoutContextOptions {
   authoredBlock?: boolean
   /** CMP1 — the authored child specs seen in this layout pass (by identity). Internal. */
   authored?: WeakSet<object>
+  /** CMP2 — the authored literal colours `resolveColor` was asked for in this layout pass (an
+   *  `on: '#…'`, a prop colour; opaque upper-case hex). The ink guard never re-solves these.
+   *  Internal; shared with every child. */
+  literalInks?: Set<string>
+  /** CMP2 — paint `style.surface` behind this block (see `layoutBlock`). Absent = paint it when
+   *  the style sets one; `layoutChild` passes `false` when the surface came only from a
+   *  composite's private `$block.style` (a surface *context*, not a request to paint). */
+  paintSurface?: boolean
 }
 
 /** CMP1 — the per-context nesting state `layoutChild` / `layoutBlock` share (never on `ctx`). */
@@ -102,14 +113,39 @@ interface NestState {
   authoredBlock: boolean
   authored: WeakSet<object>
   blockDefaults?: Record<string, Record<string, unknown>>
+  /** CMP2: authored literal colours of this layout pass (`CreateLayoutContextOptions.literalInks`). */
+  literalInks: Set<string>
 }
 const NEST = new WeakMap<LayoutContext, NestState>()
+/** CMP2 — does this context lay out an authored block (one in the document, not a composite's own
+ *  spec tree)? A card / section packs an authored block's children (`tls.l.stack` `pack`); a
+ *  composite's cards keep their geometry. */
+export function isAuthoredContext(ctx: LayoutContext): boolean {
+  return NEST.get(ctx)?.authoredBlock ?? true
+}
+
+/** CMP2 — the options a context was built from (to rebuild it with another surface). */
+const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
+
+/**
+ * CMP2 — blocks whose own layout paints `style.surface` (a container's fill, a takeaway's tint, the
+ * hero's field). Every other block with an authored `style.surface` gets it painted by
+ * `layoutBlock` as a rect behind its content (a solid panel, or a `scrim` over a photo).
+ */
+export const SURFACE_PAINTERS: ReadonlySet<string> = new Set([
+  'tls.l.card',
+  'tls.l.section',
+  'tls.l.overlay',
+  'tls.l.field',
+  'tls.t.takeaway',
+  'tls.c.hero',
+])
 
 /** The internal options that carry a context's nesting state into a rebuilt context. */
 function nestOptions(ctx: LayoutContext): Partial<CreateLayoutContextOptions> {
   const st = NEST.get(ctx)
   return st
-    ? { nestLevel: st.level, authoredBlock: st.authoredBlock, authored: st.authored, ...(st.blockDefaults ? { blockDefaults: st.blockDefaults } : {}) }
+    ? { nestLevel: st.level, authoredBlock: st.authoredBlock, authored: st.authored, literalInks: st.literalInks, ...(st.blockDefaults ? { blockDefaults: st.blockDefaults } : {}) }
     : {}
 }
 
@@ -279,10 +315,24 @@ export function createLayoutContext(
     )
   }
 
-  const resolveColorFn =
+  const baseResolveColor =
     options.resolveColor ??
     ((role: ColorRole | string, surface: SurfaceContext) =>
       defaultResolveColor(role, surface, tokens, options.theme))
+  // CMP2: remember the literal colours asked for in this pass (an authored `on: '#…'`, a prop
+  // colour) — the ink guard re-solves derived ink, never an author's pinned colour.
+  const literalInks = options.literalInks ?? new Set<string>()
+  // Only an authored block's literals are the author's: a composite's own spec tree passes colours
+  // it derived (an on-accent ink) as literal props, and those may be re-solved.
+  const authoredHere = options.authoredBlock ?? true
+  const resolveColorFn = (role: ColorRole | string, surface: SurfaceContext): ResolvedColor => {
+    const res = baseResolveColor(role, surface)
+    if (authoredHere && !isColorRole(role)) {
+      const hex = opaqueHex(res.color)
+      if (hex) literalInks.add(hex)
+    }
+    return res
+  }
 
   const resolveTextFn =
     options.resolveText ??
@@ -299,6 +349,7 @@ export function createLayoutContext(
     authoredBlock: options.authoredBlock ?? true,
     authored: options.authored ?? new WeakSet<object>(),
     ...(options.blockDefaults ? { blockDefaults: options.blockDefaults } : {}),
+    literalInks,
   }
 
   // Wrap resolveColor with instance style overrides: when the instance specifies
@@ -404,7 +455,7 @@ export function createLayoutContext(
         measureText,
         // Pass the *base* (surface-aware) resolver down, not this context's wrapped one: the
         // child's own style overrides must not inherit the parent's `on`/`accent`/`surface`.
-        resolveColor: resolveColorFn,
+        resolveColor: baseResolveColor,
         resolveText: resolveTextFn,
         asset: assetFn,
         resolveAsset: resolveAssetFn,
@@ -418,6 +469,10 @@ export function createLayoutContext(
         authoredBlock: authoredChild,
         authored: nest.authored,
         ...(nest.blockDefaults ? { blockDefaults: nest.blockDefaults } : {}),
+        literalInks: nest.literalInks,
+        // CMP2: only an authored `BlockSpec.style.surface` is painted; a composite's private
+        // `$block.style` surface is the context it already painted under the child.
+        paintSurface: !!spec.style && typeof spec.style === 'object' && spec.style.surface !== undefined,
       })
 
       // CMP1: an authored child gets the deck style's knob defaults, as a slide-level block does
@@ -457,6 +512,7 @@ export function createLayoutContext(
   }
 
   NEST.set(ctx, nest)
+  OPTIONS.set(ctx, options)
   return ctx
 }
 
@@ -736,9 +792,80 @@ export function layoutBlock(
   props: Record<string, unknown>,
   ctx: LayoutContext
 ): LayoutNode {
+  const node = layoutBlockInner(def, props, ctx)
+  // CMP2: a slide-level block (depth 0, authored level 1) — the ink guard re-solves derived ink
+  // that fails contrast on what the block itself painted under it.
+  const nest = NEST.get(ctx)
+  if (ctx.depth === 0 && (!nest || nest.level <= 1)) guardInk(node, ctx.surface, nest?.literalInks ?? new Set())
+  return node
+}
+
+/**
+ * CMP2 — `style.surface` as the paint `layoutBlock` puts behind a block that does not paint it
+ * itself (a role or a literal → solid; a `Paint` as is), with the surface its content then sits on.
+ */
+function paintedSurface(ctx: LayoutContext, surface: NonNullable<BlockStyleSpec['surface']>): { paint: Paint; under: SurfaceContext } {
+  const paint: Paint = typeof surface === 'string' ? { type: 'solid', color: ctx.resolveColor('surface').color } : surface
+  const box = { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }
+  const colors = paint.type === 'solid' ? [paint.color] : paint.stops.map((st) => st.color)
+  const parsed = colors.map((c) => parseInk(c))
+  const translucent = parsed.some((c) => !c || c.alpha < 0.999)
+  if (!translucent) return { paint, under: surfaceFromPaint(paint, box, box) }
+  // A translucent scrim: over a photo a dark one keeps the photo surface (ink solves light), a light
+  // one reads as its own colour; elsewhere it is blended over what is behind the block.
+  const dark = parsed.every((c) => !!c && relativeLuminance(c.rgb) < 0.18)
+  if (ctx.surface.overImage && dark) return { paint, under: { ...ctx.surface } }
+  const first = parsed.find((c) => !!c)
+  if (!first) return { paint, under: { ...ctx.surface } }
+  const behind = ctx.surface.overImage ? first.rgb : surfaceRgb(ctx.surface)
+  const a = first.alpha
+  const mix = { r: first.rgb.r * a + behind.r * (1 - a), g: first.rgb.g * a + behind.g * (1 - a), b: first.rgb.b * a + behind.b * (1 - a) }
+  const hex = rgbToHex(mix)
+  return { paint, under: surfaceFromPaint({ type: 'solid', color: hex }, box, box) }
+}
+
+function surfaceRgb(surface: SurfaceContext): { r: number; g: number; b: number } {
+  if (surface.behind?.type === 'solid') {
+    const c = parseInk(surface.behind.color)
+    if (c) return c.rgb
+  }
+  return greyOfLuminance(surface.luminance)
+}
+
+function layoutBlockInner(
+  def: BlockDefinition,
+  props: Record<string, unknown>,
+  ctx: LayoutContext
+): LayoutNode {
   // CMP1: an authored block's child specs are authored too (one nesting level deeper).
   const nest = NEST.get(ctx)
   if (nest?.authoredBlock) registerAuthoredChildren(def, props, nest.authored)
+
+  // CMP2: an authored `style.surface` on a block that does not paint it itself is painted here, as
+  // a rect behind the block (radius from `style.radius`); the block's content solves its ink on it.
+  const opts = OPTIONS.get(ctx)
+  const own = ctx.style?.surface
+  if (own !== undefined && opts && opts.paintSurface !== false && !SURFACE_PAINTERS.has(def.type)) {
+    const { paint, under } = paintedSurface(ctx, own)
+    const { surface: _drop, ...rest } = ctx.style as BlockStyleSpec
+    void _drop
+    const inner = createLayoutContext({ ...opts, box: { width: ctx.box.width, height: ctx.box.height }, surface: under, style: rest, paintSurface: false, ...nestOptions(ctx) })
+    const node = layoutBlockInner(def, props, inner)
+    const radiusOpt = ctx.style?.radius
+    const radius = typeof radiusOpt === 'number' ? radiusOpt : radiusOpt ? ctx.tokens.radius[radiusOpt] ?? 0 : 0
+    const height = node.box.height
+    const part = node.part
+    node.part = undefined
+    return {
+      k: 'group',
+      box: { x: 0, y: 0, width: ctx.box.width, height },
+      part,
+      children: [
+        { k: 'rect', box: { x: 0, y: 0, width: ctx.box.width, height }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
+        node,
+      ],
+    }
+  }
 
   const style = ctx.style
   const hasPadding = style !== undefined && style.padding !== undefined

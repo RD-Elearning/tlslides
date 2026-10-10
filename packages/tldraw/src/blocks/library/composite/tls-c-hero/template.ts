@@ -132,7 +132,8 @@ export function template(props: HeroProps, ctx: HtmlTemplateContext): string {
       `<div data-part="kicker" style="` +
         `font-family:var(--tls-font-family);` +
         pt.css('kicker', `font-size:var(--tls-type-caption);line-height:${HERO_LH.kicker};letter-spacing:0.08em;`) +
-        `color:${ctx.cssVar('accent')};` +
+        // CMP2: the ink guard's colour when it re-solved the kicker for contrast.
+        `color:${pt.color('kicker', ctx.cssVar('accent'))};` +
         `text-transform:uppercase;` +
         `margin-bottom:${space?.sm ?? 16}px;` +
       `">${pt.html('kicker', ctx.esc(props.kicker))}</div>`

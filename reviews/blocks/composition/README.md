@@ -253,6 +253,17 @@ layered image backdrop "marks its region"); `BlockReport.bleed` (report field mi
 `Deck.blockRegistry` (the registry the default export callback lays blocks out with); CLI flag
 `cli.js --tree`.
 
+**Added by CMP2 (engine-internal; none is LLM-facing spec vocabulary):** the paint model
+`layout/paint-model.ts` (`collectPaint`, `PaintOp`, `InkLeaf`, `backgroundsAt`, `inkContrast`,
+`floorOf`, `CONTRAST_FLOOR`, `arcPoints` moved here) and the ink guard `layout/ink-guard.ts`
+(`guardInk`, `GLASS_MARGIN`, `surfaceBase`, `opaqueHex`) — needed so accent parts are contrast-solved on
+the paint actually under them (open item a); `CreateLayoutContextOptions.literalInks` /
+`paintSurface`, `SURFACE_PAINTERS`, `isAuthoredContext` (layout-child; paint an authored
+`style.surface`, open item b; pack only authored cards, item c); `tls.l.stack` internal prop `pack`
+(set by card/section on their `$stack`, not in the schema); `SurfaceContext.place` (where a block
+sits on a slide gradient); `LayoutNode` text/icon `solved?: true` and `PosterText.color` (an html
+template paints the guard's colour); `isColorRole` exported from `tokens.ts`.
+
 ---
 
 ## 4. Budgets and machine rule

@@ -19,6 +19,8 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gap = styleGap(ctx, propGap) // CMP1: style.gap wins
   const sizingMode: 'equal' | 'content' = (props as unknown as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
   const children: BlockSpec[] = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  // CMP2: engine-internal (set by tls.l.card / tls.l.section on their `$stack`; not in the schema).
+  const pack = (props as unknown as { pack?: boolean }).pack === true
 
   const W = ctx.box.width
   const H = ctx.box.height
@@ -53,8 +55,20 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
 
     const totalIntrinsic = intrinsicSizes.reduce((sum, s) => sum + s.height, 0)
 
-    if (totalIntrinsic > 0) {
-      // Scale to fill available height
+    if (pack && totalIntrinsic > 0 && totalIntrinsic <= availableHeight) {
+      // CMP2: a card's / section's own stack packs content that fits at its natural heights — from
+      // the top, or centred / at the end per `style.align` — instead of scaling it up to fill: a
+      // card holding an icon, a number and a body no longer opens voids between them (composition
+      // README CMP2 c). Other content stacks (the composites' own) keep scaling to fill.
+      const free = availableHeight - totalIntrinsic
+      const align = ctx.style?.align
+      let currentY = align === 'center' ? free / 2 : align === 'end' ? free : 0
+      for (let i = 0; i < n; i++) {
+        sizes.push({ height: intrinsicSizes[i].height, y: currentY })
+        currentY += intrinsicSizes[i].height + gap
+      }
+    } else if (totalIntrinsic > 0) {
+      // Too much content: scale down to fit (as before)
       const scale = availableHeight / totalIntrinsic
       let currentY = 0
       for (let i = 0; i < n; i++) {

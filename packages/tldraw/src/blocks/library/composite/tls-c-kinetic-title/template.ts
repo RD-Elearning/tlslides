@@ -66,7 +66,7 @@ export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): st
     out.push(
       `<div data-part="kicker" style="position:relative;` +
         pt.css('kicker', `font-size:${ctx.tokens?.type?.caption?.size ?? 22}px;line-height:${KT.kickerLH};letter-spacing:${KT.kickerTracking}em;`) +
-        `text-transform:uppercase;font-weight:700;color:${accent};margin-bottom:${KT.kickerGap}px;">` +
+        `text-transform:uppercase;font-weight:700;color:${pt.color('kicker', accent)};margin-bottom:${KT.kickerGap}px;">` +
         `${pt.html('kicker', ctx.esc(kicker), false)}</div>`
     )
   }
@@ -124,7 +124,7 @@ export function template(props: KineticTitleProps, ctx: HtmlTemplateContext): st
     out.push(
       `<div data-part="subtitle" style="position:relative;${pt.active ? '' : `max-width:${Math.round(width * KT.subtitleCol)}px;`}margin-top:${KT.subtitleGap}px;` +
         pt.css('subtitle', `font-size:${ctx.tokens?.type?.lead?.size ?? 36}px;line-height:${KT.subtitleLH};`) +
-        `color:${panel ? ink : ctx.cssVar('text-muted')};${panel ? 'opacity:0.88;' : ''}">` +
+        `color:${pt.color('subtitle', panel ? ink : ctx.cssVar('text-muted'))};${panel ? 'opacity:0.88;' : ''}">` +
         `${pt.html('subtitle', ctx.esc(subtitle))}</div>`
     )
   }

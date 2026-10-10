@@ -7,6 +7,7 @@
  */
 
 import type { LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
+import { isAuthoredContext } from '../../../layout/layout-child'
 import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
@@ -47,8 +48,10 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   if (children.length > 1) {
     // Delegate multi-child stacking to tls.l.stack so each child gets a non-overlapping box.
     // CMP1: `style.gap` spaces the card's children (default `sm`).
-    const gapStyle = ctx.style?.gap !== undefined ? { style: { gap: ctx.style.gap } } : {}
-    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content' }, ...gapStyle }, contentBox, { surface: under })]
+    // CMP2: and `style.align` places the packed children (top / centre / end).
+    const inner = { ...(ctx.style?.gap !== undefined ? { gap: ctx.style.gap } : {}), ...(ctx.style?.align !== undefined ? { align: ctx.style.align } : {}) }
+    const gapStyle = Object.keys(inner).length ? { style: inner } : {}
+    childNodes = [ctx.layoutChild({ id: '$stack', type: 'tls.l.stack', props: { gap: 'sm', children, sizing: 'content', ...(isAuthoredContext(ctx) ? { pack: true } : {}) }, ...gapStyle }, contentBox, { surface: under })]
   } else {
     childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox, { surface: under })))
   }

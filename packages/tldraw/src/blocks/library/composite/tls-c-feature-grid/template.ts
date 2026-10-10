@@ -8,7 +8,7 @@
  * Parts emitted: cell[i].icon, cell[i].title, cell[i].desc for i = 0..N-1.
  */
 
-import type { HtmlTemplateContext } from '../../../types'
+import type { HtmlTemplateContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
 import { ICONS } from '../../../icons'
 import { posterText } from '../../../html-block'
@@ -19,6 +19,22 @@ export const FG_LH = { title: 1.3, desc: 1.5 } as const
 export const FG_ICON = 48
 export const FG_ICON_GAP = 12
 export const FG_TITLE_GAP = 8
+
+/** CMP2: the fill the ink guard solved for cell `i`'s icon glyph in the poster (the icon node
+ *  itself, or the glyph right after the cell's icon disc), when it did. */
+function solvedIconFill(poster: LayoutNode | undefined, i: number): string | undefined {
+  if (!poster) return undefined
+  const flat: LayoutNode[] = []
+  const walk = (n: LayoutNode): void => {
+    flat.push(n)
+    if (n.k === 'group') n.children.forEach(walk)
+  }
+  walk(poster)
+  const at = flat.findIndex((n) => n.part === `cell[${i}].icon`)
+  if (at < 0) return undefined
+  const glyph = flat[at].k === 'icon' ? flat[at] : flat[at + 1]
+  return glyph && glyph.k === 'icon' && glyph.solved ? glyph.fill : undefined
+}
 
 /**
  * Get icon path by name, with fallback to alert icon for unknown names.
@@ -65,7 +81,8 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const cellHtml = cells
     .map((cell, i) => {
       const iconPath = getIconPath(cell.icon as string)
-      const fillColor = ctx.cssVar('accent')
+      // CMP2: the ink guard's colour when it re-solved this cell's icon (on its disc or card).
+      const fillColor = solvedIconFill(ctx.poster, i) ?? ctx.cssVar('accent')
       
       return (
         `<div style="` +

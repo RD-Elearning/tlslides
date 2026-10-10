@@ -36,6 +36,7 @@ import type {
 } from '../types'
 import { createLayoutContext, layoutBlock } from './layout-child'
 import { estimateMetrics } from './measure'
+import { arcPoints } from './paint-model'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Types                                                                            */
@@ -196,48 +197,6 @@ function textPainted(node: Extract<LayoutNode, { k: 'text' }>, ox: number, oy: n
 
 const PATH_TOKEN = /[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g
 const PATH_ARITY: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 }
-
-/** Points along an SVG elliptical arc (endpoint parameterisation, SVG spec F.6.5). */
-function arcPoints(
-  x1: number, y1: number, rx: number, ry: number, phiDeg: number, large: number, sweep: number, x2: number, y2: number
-): Array<[number, number]> {
-  rx = Math.abs(rx)
-  ry = Math.abs(ry)
-  if (rx === 0 || ry === 0) return [[x2, y2]]
-  const phi = (phiDeg * Math.PI) / 180
-  const cos = Math.cos(phi)
-  const sin = Math.sin(phi)
-  const dx = (x1 - x2) / 2
-  const dy = (y1 - y2) / 2
-  const xp = cos * dx + sin * dy
-  const yp = -sin * dx + cos * dy
-  const lambda = (xp * xp) / (rx * rx) + (yp * yp) / (ry * ry)
-  if (lambda > 1) {
-    rx *= Math.sqrt(lambda)
-    ry *= Math.sqrt(lambda)
-  }
-  const num = rx * rx * ry * ry - rx * rx * yp * yp - ry * ry * xp * xp
-  const den = rx * rx * yp * yp + ry * ry * xp * xp
-  const coef = (large === sweep ? -1 : 1) * Math.sqrt(Math.max(0, num / (den || 1)))
-  const cxp = (coef * rx * yp) / ry
-  const cyp = (-coef * ry * xp) / rx
-  const cx = cos * cxp - sin * cyp + (x1 + x2) / 2
-  const cy = sin * cxp + cos * cyp + (y1 + y2) / 2
-  const ang = (ux: number, uy: number, vx: number, vy: number) => Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy)
-  const t1 = ang(1, 0, (xp - cxp) / rx, (yp - cyp) / ry)
-  let dt = ang((xp - cxp) / rx, (yp - cyp) / ry, (-xp - cxp) / rx, (-yp - cyp) / ry)
-  if (!sweep && dt > 0) dt -= 2 * Math.PI
-  if (sweep && dt < 0) dt += 2 * Math.PI
-  const pts: Array<[number, number]> = []
-  const steps = 24
-  for (let i = 1; i <= steps; i++) {
-    const t = t1 + (dt * i) / steps
-    const ex = rx * Math.cos(t)
-    const ey = ry * Math.sin(t)
-    pts.push([cos * ex - sin * ey + cx, sin * ex + cos * ey + cy])
-  }
-  return pts
-}
 
 /**
  * Bounding box of an SVG path's geometry, in the path's own coordinates (the node box's local

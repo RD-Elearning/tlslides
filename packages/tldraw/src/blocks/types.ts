@@ -651,9 +651,12 @@ export type LayoutNode =
       /** CMP1 (X3): the paragraph's font weight (400 regular, 700 when every run is bold), set by
        *  `layoutSlide`. Renderers draw weight per run (`TextRun.bold`) and ignore this field. */
       weight?: number
+      /** CMP2: the ink guard re-solved this leaf's colour for contrast (`layout/ink-guard.ts`); an
+       *  html template paints the poster's colour for such a leaf (`posterText().color`). */
+      solved?: true
     }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
-  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
+  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | {
       k: 'host'
@@ -966,6 +969,9 @@ export interface SurfaceContext {
   /** True if the surface is an image (forces a scrim decision — doc 02 §2.6 — rather than a
    *  contrast-solved text colour, since `luminance` above is a guess, not a measurement). */
   overImage: boolean
+  /** CMP2: for a slide-gradient surface, where the block sits on the page (`behind` spans the
+   *  page) — lets the ink guard sample the gradient under each leaf, not only at the block centre. */
+  place?: { x: number; y: number; page: [number, number] }
 }
 
 /**

@@ -253,7 +253,7 @@ const COLOR_ROLES: readonly ColorRole[] = [
   'scrim',
 ]
 
-function isColorRole(value: string): value is ColorRole {
+export function isColorRole(value: string): value is ColorRole {
   return (COLOR_ROLES as readonly string[]).includes(value)
 }
 
@@ -491,7 +491,7 @@ export function surfaceFromBackground(
 
   const { x, y } = normalizedCenter(box, pageSize[0], pageSize[1])
   const t = projectOntoGradient(paint, x, y)
-  return { behind: paint, luminance: paintLuminanceAt(paint, t), overImage: false }
+  return { behind: paint, luminance: paintLuminanceAt(paint, t), overImage: false, place: { x: box.x, y: box.y, page: [pageSize[0], pageSize[1]] } }
 }
 
 /**

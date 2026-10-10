@@ -50,7 +50,7 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
     `<div data-part="value" style="` +
       `font-family:var(--tls-font-family);` +
       pt.css('value', `font-size:${split ? `${split.valueSize}px` : 'var(--tls-type-display)'};line-height:${B.valueLH};letter-spacing:${B.valueTracking}em;`) +
-      `color:${ctx.cssVar(accent ? 'accent' : 'on')};` +
+      `color:${pt.color('value', ctx.cssVar(accent ? 'accent' : 'on'))};` +
       (split ? 'text-align:right;' : `margin-bottom:${large ? BIG_STAT_LARGE.valueGap : B.valueGap}px;`) +
     `">${pt.html('value', ctx.esc(valueText))}</div>`
   if (!split) parts.push(valueHtml)

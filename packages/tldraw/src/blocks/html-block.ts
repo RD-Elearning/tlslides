@@ -195,6 +195,9 @@ export interface PosterText {
   html(key: string, fallback: string, runs?: boolean): string
   /** `posterTextCss` of the leaf for `key`, or `fallback`. */
   css(key: string, fallback: string): string
+  /** CMP2: the colour the ink guard solved for the leaf `key` (contrast on what the poster paints
+   *  under it), or `fallback` (the template's own role var) when the guard left it alone. */
+  color(key: string, fallback: string): string
 }
 
 export function posterText(ctx: Pick<HtmlTemplateContext, 'poster' | 'esc'>): PosterText {
@@ -216,6 +219,10 @@ export function posterText(ctx: Pick<HtmlTemplateContext, 'poster' | 'esc'>): Po
     css(key, fallback) {
       const n = leaves.get(key)?.[0]
       return n ? posterTextCss(n.style) : fallback
+    },
+    color(key, fallback) {
+      const n = leaves.get(key)?.[0]
+      return n && n.solved ? n.style.color : fallback
     },
   }
 }
