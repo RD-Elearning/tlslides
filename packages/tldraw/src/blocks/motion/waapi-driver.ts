@@ -172,9 +172,21 @@ export function createWAAPI_driver(): MotionDriver {
     if (opts.onUpdate) {
       const onUpdate = opts.onUpdate
       const startTime = performance.now() + (opts.delay ?? 0)
+      // CMP3: the progress is the animation's own (eased, like the GSAP driver's ratio, and on the
+      // document timeline, so a slowed or paused timeline slows the count with the motion); the
+      // wall clock is the fallback where computed timing is not available.
+      const timed = (animation.effect as { getComputedTiming?: () => ComputedEffectTiming } | null)?.getComputedTiming
       const tick = () => {
-        const elapsed = performance.now() - startTime
-        const progress = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 1
+        let progress: number
+        if (typeof timed === 'function') {
+          const t = (animation.effect as KeyframeEffect).getComputedTiming()
+          progress = animation.playState === 'finished' ? 1 : typeof t.progress === 'number' ? Math.min(1, Math.max(0, t.progress)) : (t.localTime ?? 0) > (opts.delay ?? 0) ? 1 : 0
+        } else {
+          const elapsed = performance.now() - startTime
+          progress = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 1
+        }
+        // a cancelled tween still ends on its final value (the count shows the authored text)
+        if (animation.playState === 'idle') progress = 1
         onUpdate(progress)
         if (progress < 1) {
           rafId = requestAnimationFrame(tick)
