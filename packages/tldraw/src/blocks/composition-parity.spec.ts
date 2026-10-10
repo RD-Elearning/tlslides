@@ -45,6 +45,18 @@ describe('CMP1 composition parity (DOM ↔ SVG)', () => {
     await assertParity(registry.get('tls.l.overlay')!, props, { width: 900, height: 500 }, undefined, { registry })
   }, 30_000)
 
+  // CMP2: an authored `style.surface` painted as a rect behind a title (a scrim panel), and an
+  // accent kicker on an accent card re-solved by the ink guard — both live in the tree.
+  it('CMP2: a title on a painted scrim surface', async () => {
+    const props = { children: [{ id: 't', type: 'tls.t.title', props: { text: 'On a scrim', size: 'heading' }, style: { surface: 'scrim', padding: 'md', radius: 'md' } }] }
+    await assertParity(registry.get('tls.l.stack')!, props, { width: 700, height: 260 }, undefined, { registry })
+  }, 30_000)
+
+  it('CMP2: an accent kicker on an accent card (ink guard)', async () => {
+    const props = { children: [card('c', [{ id: 'k', type: 'tls.t.kicker', props: { text: 'Accent on accent' } }], { surface: 'accent' })] }
+    await assertParity(registry.get('tls.l.stack')!, props, { width: 600, height: 240 }, undefined, { registry })
+  }, 30_000)
+
   it('a bleeding child (decoration partly outside its container) draws the same', async () => {
     const probe: BlockDefinition = {
       type: 'probe.bleed',
