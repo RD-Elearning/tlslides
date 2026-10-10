@@ -211,10 +211,20 @@ function layoutImageFullV2(props: ImageFullProps, ctx: LayoutContext): LayoutNod
   const pieces: Piece[] = []
   pieces.push({ id: 'image', spec: { id: 'image', type: 'tls.m.image', props: { src: str(props.image), alt: str(props.alt) || plainOf(props.title), fit: 'cover', ...(radius ? { radius } : {}) } }, box: photo })
   if (gradient) {
-    // a fade from the text side: dark (the scrim colour at 0.86) through 0.5 to clear
+    // a fade from the text side: dark (the scrim colour at 0.86) to clear. CMP2 (`contrast/low`,
+    // P8/P11): the dark part holds over the whole text column — at ≥ 0.62 where the text ends, so
+    // light ink reads on any photo (over white the fade is a mid grey ≥ 4.5:1) — and only then fades
+    // out (before, 0.5 at 42 % of the photo left the top lines of a tall title at ~0.4 alpha).
     const a = (x: number) => `rgba(${scrimBase.rgb.join(',')},${x})`
     const angle = panel === 'left' ? 90 : panel === 'right' ? 270 : 0
-    const stops = [{ color: a(0.86), at: 0 }, { color: a(0.5), at: panel === 'center' ? 0.5 : 0.42 }, { color: a(0), at: panel === 'center' ? 1 : 0.8 }]
+    const textEnd =
+      panel === 'left'
+        ? (px + pad + headW - photo.x) / Math.max(1, photo.width)
+        : panel === 'right'
+          ? 1 - (px + pad - photo.x) / Math.max(1, photo.width)
+          : 1 - (py + pad - photo.y) / Math.max(1, photo.height)
+    const hold = Math.min(0.94, Math.max(0.42, textEnd + 0.04))
+    const stops = [{ color: a(0.86), at: 0 }, { color: a(0.62), at: panel === 'center' ? 0.5 : hold }, { color: a(0), at: panel === 'center' ? 1 : Math.min(1, Math.max(0.8, hold + 0.3)) }]
     const fill: Paint = panel === 'center' ? { type: 'solid', color: a(0.58) } : ({ type: 'linearGradient', angle, stops } as Paint)
     pieces.push({ id: 'scrim', raw: [{ k: 'rect', box: photo, fill, ...(radius ? { radius } : {}) } as LayoutNode], box: photo })
   } else {

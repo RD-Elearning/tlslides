@@ -48,7 +48,11 @@ function formatMarker(index: number): string {
 function buildMarker(index: number, x: number, y: number, size: number, ctx: LayoutContext): LayoutNode[] {
   const text = formatMarker(index)
   const accent = ctx.resolveColor('accent').color
-  const style = { ...ctx.resolveText('body', { size: Math.round(size * 0.42) }), color: onColor(ctx, accent) }
+  // CMP2 (P5, `type/too-many-sizes`): a number within 15 % of the body size is set at the body size
+  // (72-unit badge: 30 → 28), so the slide does not carry two near-identical sizes.
+  const own = Math.round(size * 0.42)
+  const body = ctx.resolveText('body').size
+  const style = { ...ctx.resolveText('body', { size: Math.abs(own - body) <= body * 0.15 ? body : own }), color: onColor(ctx, accent) }
   const w = Math.ceil(realWidth(text, style) * 1.04) + 1
   const lh = style.size * style.lineHeight
   const m = ctx.measureText(text, style, w + 8)

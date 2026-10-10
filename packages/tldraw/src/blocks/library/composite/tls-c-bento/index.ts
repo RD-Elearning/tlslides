@@ -158,6 +158,35 @@ const START: Record<'point' | 'quote', Step[]> = {
   quote: ['heading', 'subheading', 'body'],
 }
 
+/** Inner box and text room of a tile (as `layoutBento` lays it out: padding, icon disc, quote mark). */
+function tileRoom(t: Tile, c: Box, ctx: LayoutContext): { inner: Box; room: number } {
+  const pad = Math.round(Math.max(ctx.tokens.space.md, Math.min(ctx.tokens.space['2xl'], Math.min(c.width, c.height) * 0.1)))
+  const inner = { x: c.x + pad, y: c.y + pad, width: Math.max(1, c.width - 2 * pad), height: Math.max(1, c.height - 2 * pad) }
+  let room = inner.height
+  if (t.kind === 'point' && str(t.icon)) room -= Math.round(Math.max(56, Math.min(112, Math.min(c.width, c.height) * 0.26))) + ctx.tokens.space.md
+  if (t.kind === 'quote') {
+    const mw = Math.round(Math.max(40, Math.min(72, c.height * 0.16)))
+    room -= mw * 0.8 + ctx.tokens.space.sm
+  }
+  return { inner, room }
+}
+
+/** The ladder step a text tile's own text fits at (biggest first). */
+function tileStep(t: Tile, c: Box, ctx: LayoutContext): number {
+  const { inner, room } = tileRoom(t, c, ctx)
+  const ladder = START[t.kind as 'point' | 'quote']
+  const headline = t.kind === 'quote' ? str(t.quote) : str(t.title)
+  let k = Math.max(0, ladder.indexOf(pickToken(ctx, headline, inner.width, ladder, 3) as Step))
+  const gap = ctx.tokens.space.sm
+  const total = (specs: BlockSpec[]) => {
+    const hs = measureHeights(ctx, specs, inner.width)
+    return hs.reduce((a, b) => a + b, 0) + gap * Math.max(0, hs.length - 1)
+  }
+  // the tile's on-surface style does not change text height
+  while (total(tileSpecs(t, ladder[k], {})) > room && k < ladder.length - 1) k++
+  return k
+}
+
 export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, ctx.box.height) || 0
@@ -169,6 +198,8 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
   const accent = ctx.resolveColor('accent').color
   const radius = ctx.tokens.radius.lg
   const firstStat = used.findIndex((t) => t.kind === 'stat')
+  // the biggest step whose text fits each text tile's room, then the smallest of those for all
+  const sharedStep = used.reduce((most, t, i) => (t.kind === 'point' || t.kind === 'quote' ? Math.max(most, tileStep(t, cells[i], ctx)) : most), 0)
   const pieces: Piece[] = []
   used.forEach((t, i) => {
     const c = cells[i]
@@ -237,19 +268,14 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       if (label) pieces.push({ id: `label[${i}]`, spec: label, box: { x: inner.x, y, width: inner.width, height: lh } })
       return
     }
-    // the biggest step whose text fits the room left
+    // CMP2 (P4/P5): every text tile takes the same step — the smallest any of them needs — so peer
+    // tiles share one headline size and one small size (a slide carried 6 text sizes)
     const ladder = START[t.kind as 'point' | 'quote']
-    const headline = t.kind === 'quote' ? str(t.quote) : str(t.title)
-    let k = Math.max(0, ladder.indexOf(pickToken(ctx, headline, inner.width, ladder, 3) as Step))
-    let specs = tileSpecs(t, ladder[k], on, ink)
+    const k = sharedStep
+    const specs = tileSpecs(t, ladder[k], on, ink)
     const gap = ctx.tokens.space.sm
-    let hs = measureHeights(ctx, specs, inner.width)
+    const hs = measureHeights(ctx, specs, inner.width)
     const total = () => hs.reduce((a, b) => a + b, 0) + gap * Math.max(0, hs.length - 1)
-    while (total() > room && k < ladder.length - 1) {
-      k++
-      specs = tileSpecs(t, ladder[k], on, ink)
-      hs = measureHeights(ctx, specs, inner.width)
-    }
     // stat and point text sits at the foot of the tile, a quote under its mark
     let y = t.kind === 'quote' ? top : Math.max(top, inner.y + inner.height - total())
     specs.forEach((s, j) => {
