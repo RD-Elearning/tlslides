@@ -92,16 +92,26 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   const textS = big ? leadS : pitch >= lineH(bodyS) + 12 ? bodyS : pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
   const lh = lineH(textS)
   const ROW_GAP = clamp(pitch - lh, 3, big ? 1.25 * ROW_GAP_BODY : textS === bodyS ? ROW_GAP_BODY : ROW_GAP_MAX)
-  const linesAllowed = clamp(Math.floor((pitch - ROW_GAP) / lh), 1, 3)
+  let linesAllowed = clamp(Math.floor((pitch - ROW_GAP) / lh), 1, 3)
   const MARK = Math.round(clamp(Math.min(lh * 0.95, pitch - ROW_GAP), 14, big ? 40 : 30))
 
   // AC1.5: content-sized — the columns are as tall as their rows (no tall empty boxes), the verdict
   // follows them, and the whole composition is centred vertically in the box.
-  const rowHeights = (list: string[], w: number) => {
+  const rowHeights = (list: string[], w: number, n = linesAllowed) => {
     const tw = Math.max(10, w - 2 * pad - MARK - 14)
-    return list.map((text) => Math.max(linesHeight(ctx, text, textS, tw, linesAllowed), MARK))
+    return list.map((text) => Math.max(linesHeight(ctx, text, textS, tw, n), MARK))
   }
   const listH = (hs: number[]) => hs.reduce((n, h) => n + h, 0) + Math.max(0, hs.length - 1) * ROW_GAP
+  // AC5: the even per-row budget gives every point the same line allowance, so one long point was
+  // ellipsised (seen on the style decks) while the short ones left the room unused. Allow more
+  // lines whenever both measured lists still fit the body height.
+  const bodyH = pitch * maxRows
+  for (let n = 3; n > linesAllowed; n--) {
+    if (Math.max(listH(rowHeights(pros, colW[0], n)), listH(rowHeights(cons, colW[1], n))) <= bodyH) {
+      linesAllowed = n
+      break
+    }
+  }
   const colH = Math.min(H - verdictH - (verdict ? VERDICT_GAP : 0), bodyTop + Math.max(listH(rowHeights(pros, colW[0])), listH(rowHeights(cons, colW[1]))) + pad + (cards ? 0 : 4))
   const contentH = colH + (verdict ? VERDICT_GAP + verdictH : 0)
   const dy = Math.max(0, Math.round((H - contentH) / 2))
