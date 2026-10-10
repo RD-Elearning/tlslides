@@ -33,3 +33,6 @@ examples/consumer-smoke/vendor/
 examples/consumer-smoke/shots/
 examples/consumer-smoke/dist/
 examples/consumer-smoke/package-lock.json
+
+# AC7 dry-run output (generated decks, never committed)
+tools/layout-report/__dryrun__/

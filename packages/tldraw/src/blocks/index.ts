@@ -181,6 +181,8 @@ export type {
 export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide } from './recipes'
 export type { SlideRecipe, RecipeBlock, RecipeRole } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
+export { runDryRun, runStyle, measurePrompt, eligibleRecipes, fillSlide, shortenHeadline, DRY_RUN_OUTLINE, PROMPT_BUDGET } from './pipeline/dryRun'
+export type { StyleRunResult, PromptSections, OutlineEntry, Repair } from './pipeline/dryRun'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
 // geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact
