@@ -88,7 +88,9 @@ export const PANEL_PAD = 96
  *  the text, so it is left out (template and poster). */
 export function orbsFor(props: KineticTitleProps, width: number, height: number): ReturnType<typeof orbs> {
   const all = orbs(width, height)
-  return props.tone === 'accent' && props.align === 'start' ? all.filter((o) => o.kind !== 'disc') : all
+  // AC8.5: any start-aligned title drops the bottom-left disc (it sat under the subtitle; before,
+  // only the accent panel did)
+  return props.align === 'start' ? all.filter((o) => o.kind !== 'disc') : all
 }
 
 /** Decorative orbs, in fractions of the box (kept fully inside it). */

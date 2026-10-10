@@ -29,8 +29,9 @@ const MASTERS: MasterSpec[] = [
   {
     name: 'cover',
     // a red block bleeding off the lower right quarter: beside the split cover's flush-left title and
-    // under the closing's giant line (which ends above it)
-    blocks: { ...grid('surface'), ...TOP_RULE, 'red-block': placePx(band('accent'), 1056, 600, 864, 480) },
+    // under the closing's giant line (which ends above it). AC8.5: 576×312 from 1344/768 (was
+    // 864×480 from 1056/600): the split closing's person card sat on it, its email red on red
+    blocks: { ...grid('surface'), ...TOP_RULE, 'red-block': placePx(band('accent'), 1344, 768, 576, 312) },
     background: { type: 'solid', color: 'theme:background' },
   },
   {

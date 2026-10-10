@@ -37,7 +37,8 @@ const MASTERS: MasterSpec[] = [
   { name: 'cover', blocks: { ...frame(40, 2, 'accent'), ...frame(54, 2, 'accent2') }, background: VIGNETTE },
   {
     name: 'section',
-    blocks: { ...frame(40, 2, 'accent'), ring: placePx(motif('ring', { tone: 'accent', opacity: 'soft' }), 1140, 170, 740, 740) },
+    // AC8.5: the ring from x 1380 (was 1140): clear of the divider's display-size title
+    blocks: { ...frame(40, 2, 'accent'), ring: placePx(motif('ring', { tone: 'accent', opacity: 'soft' }), 1380, 240, 600, 600) },
     background: VIGNETTE,
   },
   { name: 'content', blocks: frame(40, 2, 'accent'), background: VIGNETTE },

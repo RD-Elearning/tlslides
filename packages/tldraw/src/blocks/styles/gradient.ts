@@ -80,11 +80,12 @@ export const GRADIENT_STYLE: DeckStyle = {
     {
       name: 'section',
       // the divider is flush left: the orb sits in the free right part. AC8: placed at 1290..1810
-      // (it filled image-right's `image` region from x ≈ 800 and a long section title ran into it)
+      // (it filled image-right's `image` region from x ≈ 800 and a long section title ran into it).
+      // AC8.5: 1400..1860 — the divider's display-size title runs to x 1296
       blocks: {
         mesh: MESH('medium'),
         grain: GRAIN,
-        'orb-a': placePx({ id: 'style-orb', type: 'tls.m.decoration', props: { shape: 'orb', tone: 'accent', opacity: 'strong' } }, 1290, 250, 520, 520),
+        'orb-a': placePx({ id: 'style-orb', type: 'tls.m.decoration', props: { shape: 'orb', tone: 'accent', opacity: 'strong' } }, 1400, 280, 460, 460),
       },
       background: {
         type: 'linearGradient',

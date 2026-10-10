@@ -28,7 +28,8 @@ const MASTERS: MasterSpec[] = [
   {
     name: 'section',
     blocks: {
-      star: at('star', 'accent', 6, 1240, 260, 520, 520, { rotation: 8 }),
+      // AC8.5: from x 1380 (was 1240 × 520): clear of the divider's display-size title
+      star: at('star', 'accent', 6, 1380, 300, 440, 440, { rotation: 8 }),
       sparkle: at('sparkle', 'accent2', 2, 1140, 210, 120, 120),
       squiggle: at('squiggle', 'accent2', 8, 1220, 860, 520, 72),
     },

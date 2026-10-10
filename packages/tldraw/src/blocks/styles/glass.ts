@@ -27,14 +27,15 @@ const orb = (tone: string, x: number, y: number, s: number) => placePx(motif('or
 const MASTERS: MasterSpec[] = [
   {
     name: 'cover',
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1560, 56, 300), 'orb-b': orb('accent2', 110, 720, 260), grain: GRAIN },
+    // AC8.5: orb-b moved to the bottom-left corner (was 110/720/260: under a two-line hero subtitle)
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1560, 56, 300), 'orb-b': orb('accent2', 40, 860, 200), grain: GRAIN },
     background: GRADIENT(135),
   },
   {
     name: 'section',
     // the divider is flush left: one big orb in the free right part (AC8: from x 1290, clear of a
-    // long section title)
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1290, 260, 540), 'orb-b': orb('accent2', 1700, 120, 150), grain: GRAIN },
+    // long section title; AC8.5: from x 1400, clear of a display-size title running to x 1296)
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1400, 300, 460), 'orb-b': orb('accent2', 1720, 120, 140), grain: GRAIN },
     background: GRADIENT(120),
   },
   {

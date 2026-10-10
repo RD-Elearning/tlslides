@@ -22,8 +22,9 @@ const MASTERS: MasterSpec[] = [
     blocks: {
       'dots-tl': dots(40, 40, 300, 200),
       'tri-tr': at('triangle', 'accent2', 1560, 60, 280, 280, { rotation: 14 }),
-      'half-bl': at('half-circle', 'accent', 40, 780, 460, 260),
-      'ring-bl': at('ring', 'accent2', 520, 880, 150, 150),
+      // AC8.5: lower and smaller (was 40/780/460×260 and the ring at 520/880): under the hero subtitle
+      'half-bl': at('half-circle', 'accent', 40, 880, 360, 200),
+      'ring-bl': at('ring', 'accent2', 430, 940, 110, 110),
       'zig-br': at('zigzag', 'accent', 1400, 970, 460, 70),
       'squig-tl': at('squiggle', 'accent', 1240, 80, 260, 70, { seed: 5 }),
       'yellow-sq': placePx(band('warning'), 1700, 620, 140, 140),
@@ -36,7 +37,8 @@ const MASTERS: MasterSpec[] = [
     // zigzag (opaque shapes: a 70 % teal over the pink reads muddy)
     name: 'section',
     blocks: {
-      'half-big': at('half-circle', 'alt', 1140, 600, 720, 420),
+      // AC8.5: from x 1300 (was 1140 × 720): clear of the divider's display-size title
+      'half-big': at('half-circle', 'alt', 1300, 660, 620, 360),
       'yellow-sq': placePx(band('warning'), 1580, 150, 200, 200),
       dots: placePx({ id: 'dots', type: 'tls.m.pattern', props: { pattern: 'dots', tone: 'line', opacity: 'medium', scale: 'sm' } }, 1180, 120, 340, 260),
       zig: at('zigzag', 'alt', 1140, 1000, 720, 56),

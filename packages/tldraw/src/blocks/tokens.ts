@@ -227,6 +227,14 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
 // under-specification rather than silently picking one reading.)
 const TEXT_CONTRAST_FLOOR = 4.5
 const LINE_CONTRAST_FLOOR = 1.4
+/**
+ * AC8.5: the floor for `text` when the theme's text colour sits on the wrong side of the surface
+ * (dark ink on a dark page — consulting's navy section page). The 4.5 floor then lands on a pale
+ * mid-tone that passes but reads washed out; a flipped text role goes to a clear light (or dark)
+ * ink instead (when one reaches 7:1 on that surface; else the 4.5 solution as before). Muted text
+ * and lines keep their floors (they are meant to recede).
+ */
+const TEXT_FLIP_FLOOR = 7
 
 const COLOR_ROLES: readonly ColorRole[] = [
   'surface',
@@ -281,7 +289,14 @@ export function resolveColor(
 
   if (role === 'text' || role === 'textMuted' || role === 'line') {
     const floor = role === 'line' ? LINE_CONTRAST_FLOOR : TEXT_CONTRAST_FLOOR
-    if (!tryHexToRgb(base)) return { color: base, ratio: 1, ok: false }
+    const rgb = tryHexToRgb(base)
+    if (!rgb) return { color: base, ratio: 1, ok: false }
+    const baseLum = relativeLuminance(rgb)
+    const flipped = role === 'text' && contrastRatio(baseLum, ctx.luminance) < floor && (baseLum < 0.18) === (ctx.luminance < 0.18)
+    if (flipped) {
+      const clear = solveForContrast(base, ctx.luminance, TEXT_FLIP_FLOOR)
+      if (clear.ok) return clear
+    }
     return solveForContrast(base, ctx.luminance, floor)
   }
 
