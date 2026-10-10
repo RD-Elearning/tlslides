@@ -1004,7 +1004,10 @@ describe('AC2 — look knobs (align, decoration)', () => {
   const leaves = (n: LayoutNode, ox = 0, oy = 0, out: Array<{ x: number; y: number; w: number; h: number; part?: string; k: string }> = []) => {
     const x = ox + n.box.x
     const y = oy + n.box.y
-    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: (n as any).part, k: n.k })
+    // A text leaf is measured by its ink (the line's width), not its box: alignText keeps a few % of
+    // wrap slack on the right of a small centred label (AC8), and the line still starts at box.x.
+    const w = n.k === 'text' && (n as any).lines?.length === 1 && (n as any).lines[0].width ? Math.min(n.box.width, (n as any).lines[0].width) : n.box.width
+    if (n.k !== 'group') out.push({ x, y, w, h: n.box.height, part: (n as any).part, k: n.k })
     if (n.k === 'group') for (const c of n.children) leaves(c, x, y, out)
     return out
   }
