@@ -18,7 +18,8 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { altFindings, str } from '../../media/_kit'
 import { cardNodes, cardPaint, composeFlat, measureHeights, onSurface, pick, pickToken, plainOf, toMeasurable, type Piece } from '../_kit'
-import { scrimColor } from '../tls-c-quote-image'
+import { parseScrim, scrimColor } from '../tls-c-quote-image'
+import { lumOf } from '../../text/_engine/color'
 
 export interface ImageFullProps extends Record<string, unknown> {
   image: string
@@ -26,8 +27,10 @@ export interface ImageFullProps extends Record<string, unknown> {
   kicker?: string
   title: string
   text?: string
-  panel?: 'bottom-left' | 'left' | 'center'
-  scrim?: 'medium' | 'strong'
+  panel?: 'bottom-left' | 'left' | 'center' | 'right' | 'split' | 'band'
+  scrim?: 'medium' | 'strong' | 'gradient'
+  /** AC8: the photo inset from the slide edge (a mat around it), corners rounded. */
+  frame?: boolean
 }
 
 export const schema: BlockSchema = {
@@ -36,8 +39,9 @@ export const schema: BlockSchema = {
   kicker: { type: { kind: 'text', maxChars: 40 }, role: 'content', label: 'Kicker' },
   title: { type: { kind: 'richText', maxChars: 90 }, role: 'content', label: 'Headline', required: true, guidance: 'Up to 12 words.' },
   text: { type: { kind: 'text', maxChars: 200 }, role: 'content', label: 'Text', guidance: 'One or two short sentences.' },
-  panel: enumSlot(['bottom-left', 'left', 'center'], 'Panel', 'Where the headline panel sits on the photo.'),
-  scrim: enumSlot(['medium', 'strong'], 'Scrim', 'strong = darker wash for busy photos.'),
+  panel: enumSlot(['bottom-left', 'left', 'center', 'right', 'split', 'band'], 'Panel', 'Card (bottom-left, center), side panel (left, right), split beside the photo, band at the foot.'),
+  scrim: enumSlot(['medium', 'strong', 'gradient'], 'Scrim', 'strong = darker; gradient = text on a dark fade.'),
+  frame: { type: { kind: 'boolean' }, role: 'option', label: 'Frame', help: 'Photo inset, rounded.' },
 }
 
 export const defaults: ImageFullProps = {
@@ -52,6 +56,7 @@ export const defaults: ImageFullProps = {
 
 const PANELS = ['bottom-left', 'left', 'center'] as const
 const SCRIMS = ['medium', 'strong'] as const
+const AC8_PANELS = ['bottom-left', 'left', 'center', 'right', 'split', 'band'] as const
 /** The wash over the photo is decoration (the panel carries contrast): lighter than quote-image's. */
 const WASH = { medium: 0.18, strong: 0.38 } as const
 
@@ -86,6 +91,9 @@ function panelPaint(ctx: LayoutContext) {
 }
 
 export function layoutImageFull(props: ImageFullProps, ctx: LayoutContext): LayoutNode {
+  // AC8: the new panels, the gradient scrim and the frame take their own path; the AC6 looks are
+  // laid out below exactly as before.
+  if (props.frame === true || props.scrim === 'gradient' || props.panel === 'right' || props.panel === 'split' || props.panel === 'band') return layoutImageFullV2(props, ctx)
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, ctx.box.height) || 0
   const panel = pick(props.panel, PANELS, 'bottom-left')
@@ -133,6 +141,103 @@ export function layoutImageFull(props: ImageFullProps, ctx: LayoutContext): Layo
   return composeFlat(ctx, pieces, total)
 }
 
+/** `#rrggbb` of an rgb triple. */
+const hex = (rgb: [number, number, number]) => '#' + rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')
+
+/**
+ * AC8 (`reviews/blocks/ai-curation/README.md` §8, lead review "the panel is the same in every
+ * style"): `right` (a full-height side panel on the right), `split` (the photo on the left 56 %,
+ * a solid panel beside it, no overlap), `band` (a strip across the foot: headline left, text right),
+ * `scrim: gradient` (no card: the text sits on a dark fade from the panel's side; contrast is the
+ * fade's, solved white-or-dark) and `frame` (the photo inset by `xl` with rounded corners).
+ */
+function layoutImageFullV2(props: ImageFullProps, ctx: LayoutContext): LayoutNode {
+  const W = Math.max(0, ctx.box.width) || 0
+  const H = Math.max(0, ctx.box.height) || 0
+  const panel = pick(props.panel, AC8_PANELS, 'bottom-left')
+  const gradient = props.scrim === 'gradient' && panel !== 'split'
+  const level = props.scrim === 'strong' ? 'strong' : 'medium'
+  const sp = ctx.tokens.space
+  const F = props.frame === true ? (W >= 1200 ? sp.xl : sp.md) : 0
+  const inset = sp['2xl']
+  const pad = W >= 1200 ? sp['2xl'] : sp.xl
+  const gap = sp.md
+  const cp = panelPaint(ctx)
+  const scrimBase = parseScrim(ctx.resolveColor('scrim').color)
+  const dark = hex(scrimBase.rgb)
+  // on the fade the text is set in a literal light (or dark) ink: the solver would only nudge the
+  // theme's text colour along its hue (navy became a mid blue on the dark fade)
+  const lightInk = lumOf(dark) < 0.4
+  const on = gradient ? { $block: { style: { surface: { type: 'solid', color: dark }, on: lightInk ? '#FFFFFF' : '#111111' } } } : onSurface(cp.fill as Paint)
+  const pw0 = W - 2 * F
+  // the text column per panel
+  const side = panel === 'left' || panel === 'right'
+  const split = panel === 'split'
+  const band = panel === 'band'
+  const photoW = split ? Math.round(pw0 * 0.56) : pw0
+  const pw = side ? Math.round(Math.min(pw0 * 0.44, 900)) : split ? pw0 - photoW - (F ? F : 0) : band ? pw0 : panel === 'center' ? Math.round(Math.min(pw0 - 2 * inset, Math.max(pw0 * 0.56, 640), 1100)) : Math.round(Math.min(pw0 - 2 * inset, Math.max(pw0 * 0.46, 560), 900))
+  const align = panel === 'center' ? 'center' : 'start'
+  const sizes: Array<'title' | 'heading' | 'subheading'> = ['title', 'heading', 'subheading']
+  // band: headline column (58 %) and text column side by side
+  const headW = band ? Math.round((pw - 2 * pad) * 0.58) : pw - 2 * pad
+  const textW = band ? pw - 2 * pad - headW - sp.xl : headW
+  const fullTall = side || split
+  const avail = (fullTall ? H - 2 * F : (H - 2 * F) * (band ? 0.5 : 1) - 2 * inset) - 2 * pad
+  let k = sizes.indexOf(pickToken(ctx, props.title, Math.max(120, headW), sizes, 3) as (typeof sizes)[number])
+  const specsAt = (i: number) => textSpecs(props, sizes[i], on)
+  let specs = specsAt(k)
+  const headSpecs = () => (band ? specs.filter((s) => s.id !== 'text') : specs)
+  const bodySpecs = () => (band ? specs.filter((s) => s.id === 'text') : [])
+  let hs = measureHeights(ctx, headSpecs(), Math.max(120, headW))
+  let bs = measureHeights(ctx, bodySpecs(), Math.max(120, textW))
+  const sum = (a: number[]) => a.reduce((x, y) => x + y, 0) + gap * Math.max(0, a.length - 1)
+  const stackH = () => Math.max(sum(hs), sum(bs))
+  while (stackH() > avail && k < sizes.length - 1) {
+    k++
+    specs = specsAt(k)
+    hs = measureHeights(ctx, headSpecs(), Math.max(120, headW))
+    bs = measureHeights(ctx, bodySpecs(), Math.max(120, textW))
+  }
+  const sH = stackH()
+  const ph = fullTall ? H - 2 * F : Math.ceil(sH + 2 * pad)
+  const total = Math.max(H, fullTall ? ph + 2 * F : ph + 2 * F + (band ? 0 : 2 * inset))
+  const innerH = total - 2 * F
+  const px = panel === 'left' ? F : panel === 'right' ? W - F - pw : split ? F + photoW + (F ? F : 0) : band ? F : panel === 'center' ? Math.round((W - pw) / 2) : F + inset
+  const py = fullTall ? F : band ? total - F - ph : panel === 'center' ? Math.round((total - ph) / 2) : total - F - inset - ph
+  const radius = F ? ctx.tokens.radius.lg : 0
+  const photo = { x: F, y: F, width: photoW, height: innerH }
+  const pieces: Piece[] = []
+  pieces.push({ id: 'image', spec: { id: 'image', type: 'tls.m.image', props: { src: str(props.image), alt: str(props.alt) || plainOf(props.title), fit: 'cover', ...(radius ? { radius } : {}) } }, box: photo })
+  if (gradient) {
+    // a fade from the text side: dark (the scrim colour at 0.86) through 0.5 to clear
+    const a = (x: number) => `rgba(${scrimBase.rgb.join(',')},${x})`
+    const angle = panel === 'left' ? 90 : panel === 'right' ? 270 : 0
+    const stops = [{ color: a(0.86), at: 0 }, { color: a(0.5), at: panel === 'center' ? 0.5 : 0.42 }, { color: a(0), at: panel === 'center' ? 1 : 0.8 }]
+    const fill: Paint = panel === 'center' ? { type: 'solid', color: a(0.58) } : ({ type: 'linearGradient', angle, stops } as Paint)
+    pieces.push({ id: 'scrim', raw: [{ k: 'rect', box: photo, fill, ...(radius ? { radius } : {}) } as LayoutNode], box: photo })
+  } else {
+    const wash = scrimColor(ctx.resolveColor('scrim').color, level).replace(/[\d.]+\)$/, `${WASH[level]})`)
+    pieces.push({ id: 'scrim', raw: [{ k: 'rect', box: photo, fill: { type: 'solid', color: wash }, ...(radius ? { radius } : {}) } as LayoutNode], box: photo })
+    const pr = side || split ? (F ? radius : 0) : band ? (F ? [0, 0, radius, radius] : 0) : ctx.tokens.radius.lg
+    pieces.push({ id: 'panel', raw: cardNodes(cp, { x: px, y: py, width: pw, height: ph }, pr), box: { x: px, y: py, width: pw, height: ph } })
+  }
+  // text: centred in a full-height panel, from the top padding otherwise; band: two columns
+  let y = fullTall ? py + Math.round((ph - sum(hs)) / 2) : py + pad
+  if (band) y = py + Math.round((ph - sum(hs)) / 2)
+  headSpecs().forEach((s, i) => {
+    pieces.push({ id: s.id, spec: s, box: { x: px + pad, y, width: headW, height: hs[i] }, align })
+    y += hs[i] + gap
+  })
+  if (band) {
+    let by = py + Math.round((ph - sum(bs)) / 2)
+    bodySpecs().forEach((s, i) => {
+      pieces.push({ id: s.id, spec: s, box: { x: px + pad + headW + sp.xl, y: by, width: textW, height: bs[i] } })
+      by += bs[i] + gap
+    })
+  }
+  return composeFlat(ctx, pieces, total)
+}
+
 export function lintImageFull(props: ImageFullProps, _ctx?: Partial<LintContext>): LintFinding[] {
   return altFindings([{ src: props.image, alt: props.alt, part: 'image' }])
 }
@@ -142,7 +247,7 @@ const composite = defineCompositeBlock<ImageFullProps>({
   name: 'Full-bleed photo',
   family: 'composite',
   tier: 'A',
-  summary: 'A photo across the whole slide with a headline panel: bottom-left card, left side panel or centred.',
+  summary: 'A photo across the slide with a headline on a card, a side panel, split, a band or a dark fade.',
   keywords: ['full bleed', 'photo', 'image', 'hero image', 'background photo', 'headline', 'scene', 'location'],
   category: 'media',
   scope: 'slide',
@@ -152,7 +257,7 @@ const composite = defineCompositeBlock<ImageFullProps>({
   defaults,
   size: { preferred: [1920, 1080], min: [960, 540] },
   describe: {
-    when: 'A photo-led slide: a place, a product in use, a moment, with one headline and at most two sentences; use the full-bleed layout so the photo reaches the slide edges.',
+    when: 'A photo-led slide (a place, a product in use, a moment) with one headline and at most two sentences; use the full-bleed layout.',
     avoid: 'A quote over a photo: tls.c.quote-image. Photo beside a list: tls.c.image-text.',
     example: {
       id: 'b_image_full',

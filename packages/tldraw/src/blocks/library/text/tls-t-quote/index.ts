@@ -6,15 +6,26 @@
 
 import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
-import { layout } from './layout'
+import { layout as classicLayout } from './layout'
+import { layoutVariant } from './variants'
 import { motion } from './motion'
+import type { LayoutContext, LayoutNode } from '../../../types'
+import type { QuoteProps } from './schema'
+
+const VARIANTS = ['big', 'card', 'side', 'image'] as const
+
+/** AC8: `classic` (and any unknown value) keeps the original layout byte for byte. */
+function layout(props: QuoteProps, ctx: LayoutContext): LayoutNode {
+  const v = props.variant as (typeof VARIANTS)[number]
+  return VARIANTS.includes(v) ? layoutVariant(v, props, ctx) : classicLayout(props, ctx)
+}
 
 export const tlsTQuote: BlockDefinition = {
   type: 'tls.t.quote',
   name: 'Quote',
   family: 'text',
   tier: 'A',
-  summary: 'Pull quote with decorative quotation glyph, attribution, and role.',
+  summary: 'Pull quote with attribution: mark beside the text, display-size, on a card, with a side bar, or beside a photo.',
   keywords: ['quote', 'blockquote', 'pull-quote', 'attribution', 'testimonial'],
   category: 'emphasis',
   scope: 'element',

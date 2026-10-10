@@ -13,6 +13,14 @@ export interface QuoteProps extends Record<string, unknown> {
   role: string
   /** How the quotation mark is rendered. */
   markStyle: 'glyph' | 'rule' | 'none'
+  /** AC8: the design. classic = mark beside the text (the original look); big = display-size quote
+   *  under a large mark; card = on a card with a name row; side = a heavy accent bar down the left;
+   *  image = a photo beside the quote. */
+  variant?: 'classic' | 'big' | 'card' | 'side' | 'image'
+  /** AC8: the photo for `variant: image` (ignored by the other designs). */
+  image?: string
+  /** AC8: alt text for `image`. */
+  alt?: string
 }
 
 export const schema: BlockSchema = {
@@ -40,6 +48,14 @@ export const schema: BlockSchema = {
     label: 'Mark Style',
     help: 'How the quotation mark is rendered.',
   },
+  variant: {
+    type: { kind: 'enum', values: ['classic', 'big', 'card', 'side', 'image'] },
+    role: 'option',
+    label: 'Variant',
+    help: 'classic: mark beside; big: display type; card: on a card; side: accent bar; image: photo beside.',
+  },
+  image: { type: { kind: 'image' }, role: 'content', label: 'Photo', guidance: 'Only drawn with variant image.' },
+  alt: { type: { kind: 'text', maxChars: 160 }, role: 'content', label: 'Photo alt text' },
 }
 
 export const defaults: QuoteProps = {
@@ -47,4 +63,5 @@ export const defaults: QuoteProps = {
   attribution: 'Steve Jobs',
   role: 'Co-founder, Apple',
   markStyle: 'glyph',
+  variant: 'classic',
 }

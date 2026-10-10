@@ -170,4 +170,51 @@ describe('tls.t.quote', () => {
       expect(size(tight)).toBeGreaterThanOrEqual(64 * 0.6 - 0.01)
     })
   })
+
+  // AC8 — the designed variants, at size.preferred and size.min
+  describe('AC8 variants', () => {
+    const LONG = 'We stopped buying tools for one person and started buying them for the whole team, and the numbers moved within a quarter.'
+    const VARIANTS = ['big', 'card', 'side', 'image'] as const
+    const boxes = [tlsTQuote.size.preferred, tlsTQuote.size.min, [1728, 888]] as const
+    it.each(VARIANTS.flatMap((v) => ['glyph', 'rule', 'none'].map((m) => [v, m] as const)))('%s with markStyle %s fits its box, text inside', (variant, markStyle) => {
+      for (const [w, h] of boxes) {
+        for (const text of [tlsTQuote.defaults.text, LONG]) {
+          const ctx = makeCtx({ width: w, height: h }, registry)
+          const node: any = tlsTQuote.layout({ ...tlsTQuote.defaults, text, variant, markStyle } as never, ctx)
+          assertValidNode(node)
+          expect(node.box.height).toBeLessThanOrEqual(h + 1)
+          for (const c of (node.children ?? []) as any[]) {
+            expect(c.box.x).toBeGreaterThanOrEqual(-0.5)
+            expect(c.box.x + c.box.width).toBeLessThanOrEqual(w + 0.5)
+            expect(c.box.y + c.box.height).toBeLessThanOrEqual(node.box.height + 0.5)
+          }
+          expect(collectParts(node)).toEqual(expect.arrayContaining(['text', 'attribution']))
+        }
+      }
+    })
+
+    it('big sets the quote larger than classic; card draws a card; side a full-height bar', () => {
+      const ctx = () => makeCtx({ width: 1728, height: 888 }, registry)
+      const size = (n: any) => n.children.find((c: any) => c.part === 'text').style.size
+      const classic = tlsTQuote.layout(tlsTQuote.defaults, ctx())
+      expect(size(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'big' } as never, ctx()))).toBeGreaterThan(size(classic))
+      expect(collectParts(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'card' } as never, ctx()))).toContain('card')
+      const side: any = tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'side' } as never, ctx())
+      const bar = side.children.find((c: any) => c.part === 'glyph')
+      const text = side.children.find((c: any) => c.part === 'text')
+      expect(bar.box.height).toBeGreaterThanOrEqual(text.box.height)
+    })
+
+    it('a long two-line quote is balanced (no orphan word on the last line)', () => {
+      const ctx = makeCtx({ width: 1728, height: 888 }, registry)
+      const n: any = tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'big' } as never, ctx)
+      const lines = n.children.find((c: any) => c.part === 'text').lines
+      if (lines.length >= 2) expect(lines[lines.length - 1].width).toBeGreaterThan(lines[0].width * 0.4)
+    })
+
+    it('classic is unchanged by the variant knob (default and explicit)', () => {
+      const ctx = () => makeCtx({ width: 960, height: 540 }, registry)
+      expect(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'classic' } as never, ctx())).toEqual(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: undefined } as never, ctx()))
+    })
+  })
 })

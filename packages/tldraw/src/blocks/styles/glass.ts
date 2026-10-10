@@ -20,13 +20,14 @@ const GRADIENT = (angle: number): Paint => ({
   ],
 })
 const MESH: BlockSpec = { id: 'style-mesh', type: 'tls.m.pattern', props: { pattern: 'mesh', opacity: 'medium', scale: 'md' } }
+const MESH_SOFT: BlockSpec = { id: 'style-mesh', type: 'tls.m.pattern', props: { pattern: 'mesh', opacity: 'soft', scale: 'md' } }
 const GRAIN: BlockSpec = { id: 'style-grain', type: 'tls.m.pattern', props: { pattern: 'grain', tone: 'line', opacity: 'soft', scale: 'md' } }
 const orb = (tone: string, x: number, y: number, s: number) => placePx(motif('orb', { tone, opacity: 'strong' }), x, y, s, s)
 
 const MASTERS: MasterSpec[] = [
   {
     name: 'cover',
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1560, 56, 300), 'orb-b': orb('accent2', 110, 720, 260), 'orb-c': orb('accent', 1640, 820, 140), grain: GRAIN },
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1560, 56, 300), 'orb-b': orb('accent2', 110, 720, 260), grain: GRAIN },
     background: GRADIENT(135),
   },
   {
@@ -40,7 +41,9 @@ const MASTERS: MasterSpec[] = [
     // orbs tucked into the corners of the margin: the cards are translucent, so an orb under a
     // card's text shows through at full strength (the first cut, 210 at 1650/850, sat under the
     // bottom-right card's text); these overlap the content box by a corner's padding at most
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1772, 932, 148), 'orb-b': orb('accent2', 1776, 24, 120), grain: GRAIN },
+    // AC8 (lead review: "4 orbs per content slide is busy"): one small orb in the lower-right margin
+    // corner and a soft mesh (two glows read as orbs too at medium)
+    blocks: { mesh: MESH_SOFT, 'orb-a': orb('accent', 1772, 932, 148), grain: GRAIN },
     background: GRADIENT(150),
   },
 ]
@@ -113,6 +116,14 @@ export const GLASS_STYLE: DeckStyle = {
     'tls.t.takeaway': { tone: 'accent' },
     'tls.c.closing': { variant: 'centered' },
     'tls.g.pros-cons': { style: 'cards' },
+  },
+  variety: {
+    'tls.t.title': { align: ['start', 'center'] },
+    'tls.c.cover': { variant: ['bleed'] },
+    'tls.c.divider': { variant: ['minimal'] },
+    'tls.c.cards': { lead: ['number'], align: ['center'] },
+    'tls.c.chart-insight': { side: ['below'] },
+    'tls.c.closing': { variant: ['split'] },
   },
   prefer: [],
   avoid: ['tls.d.table', 'tls.d.compare-table', 'tls.d.heatmap', 'tls.t.footnote'],
