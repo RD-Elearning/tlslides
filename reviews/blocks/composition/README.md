@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** CMP1, CMP2 done (2026-10-10); CMP3 next. Resume from [§6 Progress](#6-progress).
+**Status:** CMP1, CMP2 done (2026-10-10); CMP3 paused mid-phase (2026-10-10, user stop) — resume from Notes — CMP3. Resume from [§6 Progress](#6-progress).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -350,7 +350,7 @@ or recorded as open.
 | Survey | ✅ 2026-10-10 | `23673e8e` | [SURVEY.md](SURVEY.md) |
 | CMP1 | ✅ 2026-10-10 | `4c7f43a4` `c327fb3e` `383b60d2` `b7a53735` `a2f6299e` + docs | [Notes — CMP1](#notes--cmp1) |
 | CMP2 | ✅ 2026-10-10 | `603c94ec` `ea701dab` `3fd665dd` `dab86d1a` `223a68df` `6c32b303` `1b34acbb` `46ac51c5` `27c6fcb1` + docs | [Notes — CMP2](#notes--cmp2) |
-| CMP3 | — | | |
+| CMP3 | ⏸ paused 2026-10-10 | `67e0f750` `51a3c927` `99c37666` `59ed922e` `26819966` `7e69b725` + docs | [Notes — CMP3](#notes--cmp3): built + tested; left: motion probe J1–J8, PNG sheets (connectors ×3 styles, frame strips), parity chunk run, notes numbers |
 | CMP4 | — | | |
 | CMP5 | — | | |
 
@@ -359,8 +359,101 @@ or recorded as open.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-10 | CMP3 (opus subagent), paused by the user | atoms (badge, marker, shape, icon disc), `Stroke.dash` + rule `dash`, connectors (spec → compiled overlay shape, route, oracle, validator, round trip, draw-on motion), nested motion + 300 ms stagger cap, bento lead tile, fixtures `connectors.json` / `nested-motion.json`; WAAPI driver fixes | Resume CMP3 from Notes — CMP3 "Resume steps". |
 | 2026-10-10 | CMP2 (opus subagent) | oracle inside compositions (sub-blocks, id paths, sibling pairs) + 10 design checks + gate; paint model + ink guard; painted `style.surface`; authored cards pack; safe inset on full-bleed; block fixes (bento, steps, comparison, image-full, html kicker/value/icon colours); fixture `cmp6-design-checks` | Start CMP3 (opus). Read Notes — CMP2 "Open" first: the guard's glass margin and the bento/steps look changes want the lead's eye. |
 | 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
+
+### Notes — CMP3
+
+**Status: paused by the user mid-phase.** Code, specs and fixtures below are committed and pass their
+targeted specs; the visual / motion verification and the final numbers are not done.
+
+**Built (commits):**
+- `67e0f750` `Stroke.dash` (both renderers: path/line `stroke-dasharray`, rect SVG dash / DOM
+  `border-style: dashed`), `tls.x.rule` knob `dash` (equal dashes, a stroked path in the same box and
+  part), `ConnectorSpec` / `SlideSpec.connectors` types.
+- `51a3c927` atoms `tls.t.badge` (overlay, anchor top-right, pill or square tag by the style's radius),
+  `tls.t.marker` (disc 48/72/104 or oversized numeral), `tls.m.shape` (circle / rounded / hexagon,
+  centred label + optional icon), `tls.m.icon` `iconStyle: disc`; shared `library/text/_engine/atom.ts`
+  (tones solid/soft/outline; doodle/memphis ink border, memphis hard shadow, glass frosted soft). All
+  aiTier 2; tier-1 index 16,993 ≤ 17,000 (paid for by trimming three header phrases); size cards
+  regenerated; catalog count 131 → 135.
+- `99c37666` connectors: each connector is compiled **after layout** into one overlay
+  `tls.g.connector` shape (AI-hidden block type: renderers, Present, motion and export need no new
+  node kind). Endpoints by block id incl. nested ids (painted box via the X2 wrapper); sides auto /
+  explicit; straight (level when facing, else centre line; round ends clipped to the circle), elbow
+  (rounded corners), curved (one cubic); stealth arrowheads on a gap off the box; label pill.
+  Decompiler returns them to `SlideSpec.connectors`; validator rules `connector/malformed`,
+  `connector/duplicate-id`, `connector/unresolved`; oracle `connector/unresolved` (error),
+  `connector/crosses-text`, `connector/too-short` (also endpoints overlapping), `LayoutReport.connectors`;
+  JSON schema; full digest `## Connectors` section. Motion: joins the later endpoint's build step
+  (`withPrevious`, order + 0.5, delay = its delay + duration), `draw-path` 400 ms smoothOut, head fades
+  in at ~280 ms; subtle = fade; static = none. **Engine bugs found and fixed:** the WAAPI driver (the
+  viewer's default) wrote keyframes as `clip-path` / `stroke-dashoffset` — WAAPI ignores hyphenated
+  names, so every wipe and draw-on played nothing and those parts stayed hidden; a replayed draw-on
+  read its own `L L` dash as an authored dash. Dashed strokes now draw on by growing the dash
+  pattern (`dashedDraw`, proxy tween).
+- `59ed922e` `connectors.spec.ts` (21 tests).
+- `26819966` nested motion: a container playing its showy preset plays its *authored* children's
+  data / draw part reveals (`NESTED_PART_PRESETS`: count-up, sweep, draw, grows, …) starting with the
+  container part that carries the child; DOM wrappers carry `data-nested-id` / `-type`; definitions
+  known via `BlockRegistry.register`; settle covers nested parts; every indexed family's stagger is
+  capped at 300 ms (`STAGGER_CAP_MS`); `motion/too-many-heroes` counts nested heroes (path ids).
+  Bento: the largest point tile (≥ 1.5× every other text tile) takes its own bigger step, the others
+  share theirs with body-size small text (≤ 5 sizes with the slide title; doodle st_09 "Teams, not
+  users" 44 → 68). Fixtures `__fixtures__/composition/connectors.json` (7 slides: straight, flow of 4,
+  hub + satellites, elbow fan-in, curved dashed with label, nested endpoints, bad slide) and
+  `nested-motion.json` (3 slides). `nested-motion.spec.ts` (6 tests).
+- `7e69b725` WAAPI `onUpdate` reads the animation's own eased progress (count-up follows a slowed
+  timeline; a cancelled tween ends on its final value).
+
+**Verified so far:** tsc production 0, spec 329. Targeted jest at `26819966`/`7e69b725`, all green:
+rule, badge, marker, shape, icon(+list/label) (102+36), catalog-conformance + digest + block-metrics +
+defaults-sweep + layout-report + decompiler + validator + compiler + deck-document + layout-layers +
+motion (2223), connectors (21), nested-motion (6), motion + design-checks + motion-m2..m5 + render-dom +
+registry + motion-showcase + composition-engine (988), bento + design-checks (48 → +2 bento), motion
+dir after the onUpdate change (267). `cli.js`: all 19 `__fixtures__/styles` decks and showcases 0 errors
+0 warnings; `connectors.json` clean except the bad slide's 4 intended findings (unresolved bad2,
+crosses-text bad1, too-short bad3 overlap, too-short bad4); `nested-motion.json` clean. Dry run: 30
+decks 0 errors 0 warnings, only the 10 pre-existing `quality/sparse` repairs. PNGs looked at (in
+`/tmp/claude-1000/…/scratchpad/cmp3/`): `atoms-10-styles.png` (before the shape label-size fix) and
+`connectors-corporate.png` (lines draw and rest fully drawn after the WAAPI fix).
+
+**Deliberate behaviour changes:** wipes / draw-ons now actually play under the WAAPI driver (they
+were invisible-then-snapped-by-settle or stuck hidden); stagger families longer than 300 ms step
+faster; bento lead tile bigger; `layout-layers.spec` lists badge + connector as overlay; catalog count
+135; digest snapshots; full digest gains `## Connectors`; three tier-1 header phrases trimmed.
+
+**Resume steps (in order):**
+1. Re-render and look: `scratchpad/harness/` (`build.js OUT decks.json`, `sheet.js OUT sheets.json DEST`,
+   `gen-atoms.js`, `gen-fixture.js OUT name cols composition/connectors.json:<style>:<theme>`,
+   `gen-connectors.js` / `gen-nested.js` regenerate the fixtures). Atoms × 10 styles again (shape label
+   sizing changed), connectors in corporate + glass + doodle, nested-motion; fix what is not beautiful.
+2. Frame strips 0/25/50/75/100 % of a connector draw-on and a count-up in a card: CDP
+   `Animation.setPlaybackRate(0.1)` on the live viewer (`window.live(deck)` in the harness bundle),
+   screenshot on a schedule (the onUpdate change makes the count follow the slowed timeline).
+3. Motion probe J1–J8 (MOTION.md) for the 4 atoms, `tls.g.connector`, and the nested-motion fixture,
+   `static,subtle,expressive,reduced` — the probe's in-page sampler (`motion-probe.js installSampler`)
+   works on the harness viewer too; the WAAPI fix changes what wipes/draws do in every block, so a
+   wider re-probe (chart, decoration, process) is advisable.
+4. Parity chunks: `parity.spec`, `parity-3way.spec`, `composition-parity.spec`, plus
+   `src/blocks/library` composites/data/diagram suites and `state/render`, `state/deck`, `components`
+   (expect only `BlockInserter.spec` and the DeckViewer retreat test to fail, both pre-existing).
+5. ESLint on changed files; record numbers; finish this note (PPTX mapping below is drafted).
+
+**PPTX mapping (draft for CMP5):** connector → `p:cxnSp` (`stCxn`/`endCxn` idx: top 0, left 1,
+bottom 2, right 3), straight/elbow/curved → `straightConnector1` / `bentConnector3` /
+`curvedConnector3`, heads → `a:tailEnd`/`a:headEnd type="triangle"`, dash → `a:prstDash dash`, weight
+→ `a:ln w` (units × 9,525 EMU); a nested endpoint has no PPTX shape: use the compiled `fromBox`/`toBox`
+as a free connector. Atoms: badge/marker/shape → `prstGeom roundRect`/`ellipse`/`hexagon` with a text
+body; icon disc → ellipse + icon picture/freeform. Motion: connector draw → `wipe` (approximate),
+nested count-up → none (final value), stagger → sequential entrance delays.
+
+**Open:** the connector shape's bbox catches clicks over blocks in the editor (editor-only); a nested
+`tls.t.body size: subheading` in a packed card reports `text/overflow` +3 units (pre-existing
+measure/pack mismatch, avoided in the fixture); `motion/stagger-total` still measures the authored
+recipe (the engine now caps at 300 ms); composites' internal (non-authored) children never get nested
+motion by design.
 
 ### Notes — CMP2
 
