@@ -137,13 +137,24 @@ interface BlockSpec {
   props: Record<string, unknown>     // content + options
   style?: BlockStyleSpec             // presentation overrides
   motion?: BlockMotionSpec           // animation overrides
-  children?: BlockSpec[]             // for container blocks only
+  children?: BlockSpec[]             // NOT READ — child blocks go in props.children (CMP1: error)
   layer?: 'backdrop' | 'content' | 'overlay'  // LO2 — paint layer / stacking (see below)
   anchor?: 'fill' | 'top-left' | 'top' | 'top-right' | 'left' | 'center'
          | 'right' | 'bottom-left' | 'bottom' | 'bottom-right'  // LO2.1 — layered placement
-  anchorTo?: string                  // LO2.1 — id of a stacked block in the same region
+  anchorTo?: string                  // LO2.1 — id of a stacked block in the same region (CMP1: or nested in one)
+  bleed?: boolean                    // CMP1 — a backdrop that may leave the frame (no slide/overflow)
 }
 ```
+
+**Children (CMP1).** A container's child blocks live in **`props.children`** — the one slot every
+container (`tls.l.*`) reads. A non-empty block-level `children` renders nothing and is a
+`block/malformed` error. Nesting is limited to **6 levels** (`MAX_NESTING_DEPTH`; a region block is
+level 1): deeper is `block/nesting-depth` in the validator and is not drawn (`block/dropped` in the
+layout report). A nested child's own `style` applies (and the deck style's knob defaults reach it);
+a card / section / overlay passes the paint it drew under the child, so its text solves against
+it. Inside **`tls.l.overlay`**, a child's `anchor` places it at its natural size at that edge /
+corner of the overlay box (inset `space.lg`) and its `layer` orders the paint (backdrop, content,
+overlay); elsewhere inside a container `layer`/`anchor` only classify overlaps.
 
 **`layer`** (LO2, optional) — the block's paint layer. Absent = the definition's layer
 (`BlockDefinition.layer`, else category `decoration` → `backdrop`, else `content`). This is the
@@ -160,8 +171,12 @@ interface BlockSpec {
     natural size (`measureBlock`, grown until it paints that size unshrunk, clamped to the anchor
     box) at that corner/edge. Absent = the definition's `anchor` (`tls.d.trend-badge`:
     `"top-right"`), else `"fill"` (watermark, decoration, arrow);
-  - `anchor`/`anchorTo` on a block without such a layer, or inside a container, is ignored
-    (`block/anchor-unused` warning). z is deterministic: every region backdrop paints under every other block of the
+  - `anchor`/`anchorTo` on a block without such a layer, or inside a container (other than an
+    `anchor` on a child of `tls.l.overlay`), is ignored (`block/anchor-unused` warning). CMP1:
+    `anchorTo` may name a block nested inside a stacked block of the region (a badge on card 2 of
+    a grid).
+  - CMP1: a region whose layered backdrop is a `tls.m.image` puts its other blocks over a photo:
+    their text solves light (the layout report will ask for a scrim). z is deterministic: every region backdrop paints under every other block of the
   slide, every region overlay over every other block, authored order within each layer.
 - `"content"` or absent = stacked as usual. A decoration block *without* an explicit `layer`
   still stacks (old decks compile unchanged); its derived `backdrop` only affects overlap checks.

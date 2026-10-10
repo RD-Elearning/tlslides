@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** planned. Resume from [§6 Progress](#6-progress).
+**Status:** CMP1 done (2026-10-10); CMP2 next. Resume from [§6 Progress](#6-progress).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -240,6 +240,19 @@ node `align?`, `weight?`; `Stroke.dash?: number[]`; `layoutSlide`; findings `blo
 composition grammar validator rule ids `grammar/*`. Everything optional and additive;
 `TldrawApp.version` stays 16. Anything else a phase needs is added here first, in the same commit.
 
+**Added by CMP1 (engine-internal or export API; none is LLM-facing spec vocabulary):**
+`MAX_NESTING_DEPTH` (the existing validator constant, now exported from `types.ts` and shared with
+the engine); `layoutChild(spec, box, opts?)` with `opts.surface` / `opts.overImage` (how a container
+tells a child what it painted under it — needed for "a solid card surface becomes the children's
+surface context"); `CreateLayoutContextOptions.blockDefaults` / `nestLevel` / `authoredBlock` /
+`authored` (carry the style knob defaults and the authored nesting level through a layout pass);
+`imageSurface()` (`tokens.ts`); `$block.overImage` (compiled shape meta, never authored — how a
+layered image backdrop "marks its region"); `BlockReport.bleed` (report field mirroring
+`BlockSpec.bleed`); `layoutDeck`, `layoutPage`, `defaultBlockSvg`, `LaidOutSlide`, `LaidOutBlock`,
+`LayoutSlideContext` (the X1 / Q9 export API next to `layoutSlide`); `parseColorAlpha` (X5);
+`Deck.blockRegistry` (the registry the default export callback lays blocks out with); CLI flag
+`cli.js --tree`.
+
 ---
 
 ## 4. Budgets and machine rule
@@ -294,7 +307,7 @@ or recorded as open.
 | Phase | Status | Commit | Notes |
 |---|---|---|---|
 | Survey | ✅ 2026-10-10 | `23673e8e` | [SURVEY.md](SURVEY.md) |
-| CMP1 | ⏳ next | | |
+| CMP1 | ✅ 2026-10-10 | `4c7f43a4` `c327fb3e` `383b60d2` `b7a53735` `a2f6299e` + docs | [Notes — CMP1](#notes--cmp1) |
 | CMP2 | — | | |
 | CMP3 | — | | |
 | CMP4 | — | | |
@@ -305,3 +318,143 @@ or recorded as open.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
+
+### Notes — CMP1
+
+**What was built** (commits `4c7f43a4` engine, `c327fb3e` digest, `383b60d2` export contract,
+`b7a53735` fixtures + parity + light ink over photos + page parenting, `a2f6299e` JSON schema +
+parity-3way, then this docs commit):
+
+- **Nested style (F1).** `layoutChild` reads a child's `BlockSpec.style` (the composites' private
+  `$block.style` stays as a fallback; `spec.style` wins key by key). `measureIntrinsicSize` now
+  measures a child with *its own* style and nesting level — it used the container's context, so a
+  padded container added its own padding to every child it measured. The validator no longer
+  calls `$block` an unknown prop.
+- **Surface pass-down.** `layoutChild(spec, box, { surface })`: `tls.l.card`, `tls.l.section` and
+  `tls.l.overlay` pass the paint they drew (a translucent glass fill passes what is behind it), so
+  a child's text solves against the card — an inverted or accent card gets light ink.
+- **One children slot.** `props.children` is the slot; a non-empty block-level `children` is a
+  validator error (`block/malformed`, message names `props.children`; the subtree is still
+  validated). An empty `children: []` is not flagged; `tls.g.steps`' example lost its stray one.
+- **One depth limit (F3).** `MAX_NESTING_DEPTH = 6` (types.ts) for validator and engine. The engine
+  counts **authored** levels only: a spec is authored when it came out of an authored block's
+  `blocks` slot (tracked by identity per layout pass), so a composite's own spec tree and a card's
+  inner `$stack` stay on their author's level (a 6-deep tree ending in a stat-card draws). 32
+  layout hops remain a recursion safety net. A dropped child is an empty `lint/depth-overflow`
+  group carrying `blockId`/`type`; the report calls it **`block/dropped`** (error, names the child).
+- **Defaults (F4).** `tls.t.takeaway` with no tone paints `accent` (it painted `undefined12` in the
+  editor and threw in the report, which blanked a whole split). The deck style's `blockDefaults`
+  reach authored nested children through `layoutChild` (option `blockDefaults`, set by the
+  compiler, the report, `deckLayoutContext` and `useBlockLayoutContext`) — exactly what the
+  compiler fills into a slide-level block, so a block looks the same at any level
+  (`defaults-sweep.spec` compares nested vs top for every style × type pair). **Deviation from the
+  plan text:** schema `defaults` are *not* filled at any level. They are the gallery's sample
+  content (a timeline's four example events, `alternate: true`); filling them changed a nested
+  timeline's look against the same block at the top (`colorful-blocks-demo` sl_34 moved 72 units
+  in the first attempt) and would inject sample text. Instead `defaults-sweep.spec` lays out every
+  built-in (all 131 at the top, the 115 non-slide-scope ones also nested) with its option slots removed, and fails on a
+  throw, `undefined`/`NaN` in the tree, or a nested tree that differs from the top-level one
+  (nested html hosts' colour `vars` excepted, by design). All pass.
+- **Style fields honest (F2).** `tone` (`filled | outline | ghost | inverted | gradient`),
+  `radius` (token or units) and `elevation` (0/1/2) restyle `tls.l.card` and `tls.l.section`
+  through `cardNodes` (`library/layout/_style.ts`); `gap` (token or units) spaces the children of
+  stack, row, grid, card (its inner stack), section, repeater, split and sidebar (gutter). With no
+  style field a container paints byte-identically. `density` is gone from the digest (kept in the
+  type, marked deprecated); the digest's style section says where each field acts and is shorter
+  than before.
+- **Layers inside containers (F7).** `tls.l.overlay` children take `anchor` (natural size at that
+  anchor, inset `space.lg`, or the overlay's own `style.padding`; sized by two probes so a padded
+  card wraps as measured) and `layer` (paint order backdrop → content → overlay; motion parts keep
+  the authored order). A child painted over an image child sits on an image surface. `anchorTo`
+  may name a block nested inside a stacked region block (the compiler finds its wrapper group by
+  `blockId`): the fixture's badge sits on card 2 of a grid. `BlockSpec.bleed: true` on a backdrop:
+  no `slide/overflow`, not counted in the slide margins. A layered `tls.m.image` backdrop marks its
+  region's stacked and overlay shapes `$block.overImage`; editor, deck context and report then use
+  an image surface, and **foreground roles solve light over a photo** (text near-white, 18:1 against
+  black; before, the mid-grey 0.5 luminance guess kept dark ink on photos).
+- **Export-ready contract.** X1 `layoutSlide(spec, { deck, registry })` / `layoutDeck` /
+  `layoutPage`: the editor's own path (`deckSpecToDocument` → `contextForBlock` → `layoutBlock`) at
+  rest, one group per block at its absolute box with `blockId`/`type`, plus `blocks[]` with id,
+  type, box, layer, z and props (X8). X2: every `layoutChild` wrapper group carries `blockId` and
+  `type`. X3: text nodes carry `align` where centred/end text is emitted per line (`text-place`,
+  composites' `alignText`) and `weight` (700 when every run is bold, else 400, set by
+  `layoutSlide`); renderers ignore both. X5: `parseColorAlpha` (`#rgb`, `#rrggbb`, `#rrggbbaa`,
+  `rgb()`, `rgba()`, `transparent`). X6: clip policy on `LayoutNode` group `clip` — rectangle only;
+  an exporter pre-clips (crop images with `srcRect`, intersect rects, bake the rest). **Q9 step 3:**
+  `defaultBlockSvg(doc, page, registry)`; `Deck.getThumbnail` / `exportSlidePng` draw real blocks
+  with no host callback (a host callback still wins; an unknown type still draws the placeholder;
+  `<Tldraw blockRegistry>` reaches the Deck). Found on the way: `deckSpecToDocument` left every
+  compiled shape at `parentId: 'page'`, and `renderPageToSvg` draws only page children, so a
+  compiled deck exported **blank** — shapes are now parented to their page (the parity-3way test
+  that pinned the blank output was rewritten, see below). `cli.js --tree` prints `layoutDeck` as
+  JSON (68 KB for the 10-slide corporate fixture) — the input for the later python-pptx exporter.
+
+**Fixtures and pictures.** `__fixtures__/composition/` (generated, then committed):
+`cmp1-grid-cards` (accent card with an icon/body styled light; five card tones; a badge
+`anchorTo` card 2), `cmp2-backdrop-overlay` (full-bleed image backdrop + overlay kicker and title;
+`tls.l.overlay` with a backdrop photo, an inverted caption card bottom-left and a kicker
+top-right; a bleeding orb), `cmp3-split-stack` (split [stack(hero-number, tone-less takeaway),
+bar]), `cmp4-defaults` (minimal style: a nested tone-less takeaway takes the style's muted tone,
+`$block` channel, explicit tone wins), `cmp5-stress` (overflowing card, 6-deep drawn, 7-deep
+`block/dropped`, six titles in a row). Rendered before (`421162a9`, a scratch worktree) and after,
+DOM through the calibration harness (`DeckViewer`) and SVG through `renderPageToSvg` +
+`defaultBlockSvg` in headless Chromium; all looked at. Before → after: card 3 accent (was identical
+to its siblings), tones visible (were five identical grey cards), badge on card 2 (was on card 3,
+the grid's top-right), photo title light (was dark ink), overlay photo with anchored caption card
+and kicker (was a grey panel with the children stacked at the top-left), takeaway with its accent
+bar and tint (was bare text), 6-deep drawn (was blank). DOM and SVG agree on every slide (the SVG
+page has no background where the DOM shows the theme's off-white; gradient angle in a non-square
+card differs slightly — both pre-existing). Calibration on the 72 text leaves of these decks:
+table line breaks vs the browser 0 mismatches.
+
+**Numbers.** tsc production 0, spec 329 (= ceiling). ESLint on every changed file: 0 errors.
+Targeted jest, all `--maxWorkers=1`, all green except one pre-existing failure:
+layout/validator/compiler/report/anchor/layers/bridge/decompiler/takeaway (37 suites, 669),
+composites (36, 1165, 3 skipped pre-existing), defaults sweep (320), composition engine (15),
+digest + conformance + recipes (1796; digest snapshot updated), layout-slide + Deck (56), text +
+composites + render-dom/svg + renderPageToSvg + deck-document + round-trip + tour (64 suites, 1731),
+tokens/surface/layout library/media/ComponentUtil (43, 1074), composition parity (6), parity +
+parity-3way + nested host + shadow + html posters + motion (18 suites, 956), pipeline + recipes +
+dry-run + slide-layouts + block-metrics + data/diagram/chrome libraries + conformance + misc
+(74 suites, 3618, 1 skipped). The one failure, `components/BlockInserter/BlockInserter.spec.tsx`
+(`app.useStore is not a function` in `useDeckTokens` under the gallery test's mock app), fails
+identically at `421162a9` (1 failed / 23 passed there). `cli.js`: all 19 `__fixtures__/styles` decks
+and showcases 0 errors 0 warnings (unchanged); the four demo fixtures keep their findings;
+geometry diff against the baseline: only the four `colorful-blocks-demo` stacks with a numeric `gap`
+(see behaviour changes). Dry run: output and all 30 decks byte-identical to the baseline (0 errors,
+0 warnings, variety table unchanged). Size cards and the tier-1 index unchanged (their specs pass);
+only the digest markdown snapshot changed.
+
+**Deliberate behaviour changes (each with its test):**
+1. Depth: 6 authored levels draw (was 4 layout hops, silently blank — composites spent hops);
+   deeper is `block/dropped`. `layout.spec` "rejects depth 5" became "rejects an authored child
+   past MAX_NESTING_DEPTH" + "a block-built child is not a level".
+2. Non-empty `BlockSpec.children` is an error. `validate-deck-spec.spec` "a tls.g.timeline inside a
+   tls.l.card validates clean" used it (the card rendered empty while the validator said clean) and
+   now uses `props.children`.
+3. A stack honours a numeric `gap` (a section's inner stack and authored numeric gaps were
+   silently `md`): `colorful-blocks-demo` sl_07/13/14/17 stacks move 0–9 units.
+4. Children of a card/section/overlay solve ink against its fill; text over a photo solves light.
+5. `measureIntrinsicSize` measures a child with its own style, not its container's.
+6. `deckSpecToDocument` parents shapes to their page; `parity-3way.spec`'s first export test pinned
+   the blank export and now asserts the placeholder for each block.
+7. `Deck` thumbnails / PNG export draw real blocks by default.
+8. Text nodes may carry `align` (additive; no spec compared trees with it).
+
+**Open for CMP2 (and later), named:**
+- **Accent-role parts are not contrast-solved**: an icon, kicker or hero-number unit in `accent`
+  vanishes on an accent card or a photo (the fixtures set `style.accent: 'text'` on those children
+  to look right). `contrast/low` must check every leaf against the paint under it.
+- **A title's `style.surface` role is not painted** (F6): the photo title has no scrim; "year" sits
+  on a white blob in `c2_photo`. CMP2 asks for a scrim; CMP4's `photo-scrim-title` paints one.
+- **Stacks scale children to fill** (A4): cards with icon + number + body leave voids between them
+  (`c1_accent`, `c1_tones`) — a packing/top-align mode is not in CMP1.
+- **Region anchors have no safe inset** in `full-bleed` (a kicker at the frame edge); the fixture
+  uses the kicker's own `style.padding`.
+- **Six titles in a row** (`c5_row6`) still wrap mid-word with no finding — `layout/narrow-child`.
+- The parity harness pairs DOM and SVG elements by **part name**; children with the same part
+  names in one probe cannot be compared, so the CMP1 probes keep leaf parts unique (one card per
+  tone). A per-occurrence pairing would let CMP3 probe whole compositions.
+- `BlockStyleSpec.density` stays in the type (deprecated, not read; the validator does not warn).
+- `useDeckTokens`' `app.useStore` mock gap in `BlockInserter.spec` (pre-existing, above).
