@@ -196,3 +196,32 @@ describe('AC5 — every palette passes the contrast spec', () => {
     }
   })
 })
+
+// AC8 — showcase decks: the palettes never shown before and consulting with action titles, built
+// by the variety picker (session script, committed as fixtures). Separate files, so the ten style
+// decks keep their shared content (above).
+describe('AC8 showcase decks', () => {
+  const SHOWCASES: Array<[string, string, string]> = [
+    ['showcase-doodle-kids', 'doodle', 'doodle-kids'],
+    ['showcase-luxury-ivory', 'luxury', 'luxury-ivory'],
+    ['showcase-swiss-blue', 'swiss', 'swiss-blue'],
+    ['showcase-glass-pastel', 'glass', 'glass-pastel'],
+    ['showcase-consulting', 'consulting', 'consulting-ink'],
+  ]
+  it.each(SHOWCASES)('%s uses its style and palette and reports clean', (file, style, theme) => {
+    const deck: DeckSpec = JSON.parse(fs.readFileSync(path.join(FIX, `${file}.json`), 'utf8'))
+    expect([deck.style, deck.theme]).toEqual([style, theme])
+    expect(validateDeckSpec(deck).filter((f) => f.level === 'error')).toEqual([])
+    const findings = analyzeDeck(deck).flatMap((r) => r.findings).filter((f) => f.severity !== 'info')
+    expect(findings).toEqual([])
+  })
+  it('the consulting showcase has action titles (a full sentence on every titled slide)', () => {
+    const deck: DeckSpec = JSON.parse(fs.readFileSync(path.join(FIX, 'showcase-consulting.json'), 'utf8'))
+    const titles = deck.slides.flatMap((s) => Object.values(s.regions ?? {}).flat()).filter((b) => b.type === 'tls.t.title')
+    expect(titles.length).toBeGreaterThanOrEqual(6)
+    for (const t of titles) {
+      const text = JSON.stringify((t.props as Record<string, unknown>).text)
+      expect(text.split(/\s+/).length).toBeGreaterThanOrEqual(5)
+    }
+  })
+})

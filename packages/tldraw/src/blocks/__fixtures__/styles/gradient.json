@@ -262,7 +262,8 @@
             "props": {
               "text": "We stopped buying tools for one person and started buying them for the whole team.",
               "attribution": "Linh Pham",
-              "role": "COO, Saigon Logistics"
+              "role": "COO, Saigon Logistics",
+              "variant": "big"
             }
           }
         ]
