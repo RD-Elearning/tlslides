@@ -811,6 +811,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC6 | ✅ done 2026-10-10 | `9af1766f`, `fd6e0116` | `tls.c.bento`, `tls.c.image-full` (tier 1), `full-bleed` layout, recipes `content-bento` + `quote-image-full`; 131 blocks; in all ten style decks; see Notes — AC6 |
 | AC7 | ✅ done 2026-10-10 | `4151b1c3`, `f1b8d241`, `d70c0627`, + the README/CLAUDE.md commit | `tools/layout-report/dry-run.js` + `blocks/pipeline/dryRun.ts` + `dry-run.spec.ts`: 10 styles x 12 slides, 0 errors, 0 warnings, 0 repairs needed; docs updated; prompt budget measured (all-roles total over 16k by 219-1,100, per-role within); see Notes — AC7 |
 | AC8 | ✅ done 2026-10-10 | `8fba06a4`, `7b86ec1c`, `ef132333`, `2b7e1337`, `c85121df`, + the docs commit | Variety: seeded picker with look signatures, 70 recipe variants, style `variety`, quote and image-full variants, knob values in the digest, strict knob validation, five showcase decks; 3 seeds × 10 styles clean, 92–100 % of slides differ between seeds (was 0 %); see §8 and Notes — AC8 |
+| AC8.5 | ✅ done 2026-10-10 | `0d138555`, `3484c6b6`, `30a3a35a`, + the docs commit | Quality pass on the variety decks: deck-level quality gate (fill, region fill, lead type) in the dry run and S4.1, content-asset input for the picker, roomy blocks and recipes, motif/contrast fixes; weak slides judged on the sheets 148 → ~15 of 360; 30 decks 0/0, 0 quality findings; see §8.9 and Notes — AC8.5 |
 
 ### Session log
 
@@ -831,6 +832,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-10 | lead review | Looked at all 10 `sheet7-<style>.png` + `sheet7-ac6.png`; every style reads as its family, no blocking defect. Published the style board https://claude.ai/artifact/5nruezsKGMj4AFcLNxoevX | Next: read `styles` verdicts (ArtifactData list), fix every `fix`, then AC7 (Sonnet subagent, lead brief). Open items in Notes — AC5 "Open". |
 | 2026-10-10 | AC7 | Dry run (script, pure module, spec), LLM-ARCHITECTURE S0/S2a/S2b/S3/S4.1/S5.2/§9, `guides/blocks-authoring.md` §2.11 "Adding a deck style" | Plan closed except AC5 (awaiting the user's board review). Read Notes — AC7 "Open" first: the all-roles S2a prompt is over 16k; `capabilityIndexData` has no `styles`/`recipes` arrays. |
 | 2026-10-10 | AC8 | Audit (§8.2), variety picker, recipe variants, style `variety`, quote/image-full variants, digest knob values, validator, showcases, sheets `sheet8-*` | AC8 closed. Read Notes — AC8 "Open" first: consulting `section-title` reads pale on navy, the gradient cover-bleed title has one borderline line over-count in a dry-run deck, logo walls are empty offline. |
+| 2026-10-10 | AC8.5 | Quality pass (lead review of `sheet8-seeds-*`): quality gate, asset input, roomy blocks, motif/contrast fixes, sheets `sheet9-seeds-<style>` | Read Notes — AC8.5 "Open" first: stat-spotlight slides still read thin, big-stat `split` label small, hero `align: center` spec fails on the AC8 label slack. |
 
 ### Notes — AC0
 
@@ -1967,6 +1969,22 @@ session:
 - `agenda-image` (numbered bullets beside a big photo) reads thin with the example's three short
   items; it now appears more often (its `mirror` variant).
 
+### Notes — AC8.5 (2026-10-10)
+
+Written up in [§8.9](#89-ac85--quality-pass-on-the-variety-decks). Open items:
+- `data-stat-spotlight` (12 of 360 dry-run slides) still reads a little thin: a ring, one label and
+  two small stats in a 1728-wide region. It passes the gate (fill ≥ 50 %); a roomy tier for its
+  stats column is the next fix.
+- `data-big-stat/split` (3 slides): the label beside a 300-unit number is lead size and reads small.
+- `tls-c-hero.spec` "center centres the lines…" fails: the kicker's box carries the AC8 6 % wrap
+  slack (`alignText`, `2b7e1337`), so the box midpoint is 9 units right of centre while the text is
+  centred. Pre-existing since AC8 (not in AC8's spec list); not changed here.
+- Variety after the gate and the asset filter: min 75 % of slides differ between seeds (swiss),
+  was 92 %. Still above the 70 % bar; the gate rejects the sparse designs that made up some of the
+  variety (statement `lg`, image-text `top`, section-title on most styles).
+- `section-title` almost never survives the gate (a title alone on the section page covers 4–9 %
+  of it); it stays as a recipe for the LLM and as a fallback.
+
 ---
 
 ## 8. AC8 — Variety
@@ -2232,3 +2250,98 @@ Sheets (session scratchpad): `sheet8-variants.png` (quote and image-full variant
 corporate, memphis, glass-pastel), `sheet8-seeds-{corporate,luxury,doodle,gradient}.png` (the three
 seeds side by side), `sheet8-showcase.png` (four palettes + consulting action titles).
 
+### 8.9 AC8.5 — quality pass on the variety decks
+
+**Date:** 2026-10-10 · **Against commit:** `105e8e80` (AC8 done). Lead review of
+`sheet8-seeds-corporate.png`: the oracle reported every slide clean, yet logo walls drew empty
+plates, a slide was blank under its title, statements and section slides were small type on an
+empty page, three bullets sat beside a full-height photo.
+
+**Weak slides** (judged on the sheets, 360 dry-run slides = 3 seeds × 10 styles × 12):
+
+| Kind | Before | After |
+|---|---|---|
+| Asset-dependent pick without assets (logo wall, blank slide) | 19 | 0 |
+| Sparse: small statement / section / closing on an empty page | 54 | 0 |
+| Tiny text beside a photo | 34 | 0 |
+| Thin data (short table, one-stat spotlight, matrix with one item, small pros/cons) | 35 | ~15 (stat-spotlight 12, big-stat split 3) |
+| Defects (motif on text, red block under a card, pale section title) | 6 + consulting | 0 |
+| **Total** | **148** | **~15** |
+
+**Why s3-08 was blank.** The logo wall's six `/demo/logo-*.svg` URLs do not load offline; each
+image leaf is hidden on error (AC4), and nothing else was painted (plates off) — a region of
+hidden images. Root fix: a logo with no resolvable image is now set as a **wordmark** (its alt,
+muted, the largest of subheading/lead/body/caption that fits the cell without an ellipsis; a cell
+too small even for a caption keeps the placeholder leaf), so a logo wall can never paint nothing.
+Separately the picker no longer offers the logo wall when the content has no logos.
+
+**Content-asset input** (`recipes.ts`): `AssetKind = images | logos | portraits | chartData`,
+`SlideAssets`, `ASSET_KINDS`, `blockNeeds(type, knobs)`, `designNeeds(recipe, variant)`,
+`assetsAllow(recipe, variant, assets)`. The dry run takes `DryRunOptions.assets` (default
+`DRY_RUN_ASSETS`: images, portraits, chart data, no logos) and `OutlineEntry.assets` per slide, and
+filters the candidates before the pick. Degrading blocks need nothing (team, testimonial: initials
+discs; bento: drops an empty photo tile). Documented for the backend in LLM-ARCHITECTURE S2a
+"Content assets (AC8.5)".
+
+**Quality gate** (`pipeline/quality.ts`: `slideQuality`, `deckQuality`, `deckTitleSize`,
+`QUALITY_GATE`, codes `quality/sparse`, `quality/thin-region`, `quality/small-type`): per slide,
+fill of the safe area ≥ 30 % (≥ 15 % when type-led, lead ≥ 1.5 × title size), fill of every large
+non-title region ≥ 30 %, lead type ≥ 0.9 × the style's slide-title size. The dry run runs it in its
+S4.1 loop (a failure moves to the next design, never cuts the headline) and reports
+`StyleRunResult.quality` / `qualityFindings`. Calibrated against the before-sheets: it flags 99 of
+the 148 judged weak (the rest were asset or visual defects the geometry cannot see: those are
+fixed at the root above) and passes the strong slides. `dry-run.spec` holds 0 findings on 4 styles
+× 3 seeds and the variety bar; unit cases cover a sparse statement and a thin bullet column.
+
+**Fixes** (roomy, not sparse):
+- `tls.t.statement` `size: display` (new rung, ≤ 3 lines); `content-statement`/`quote-statement`
+  use it; the `lg` look was dropped.
+- `tls.t.bullets` and `tls.m.icon-list` `size: fit` — the largest type that leaves the list ≤ 60 %
+  of a tall box (≤ 2 lines an item), centred; used by the three list-beside-photo recipes.
+- `tls.t.takeaway` `size: column` — heading/subheading/lead card centred in a tall column
+  (`data-bar-takeaway`).
+- `tls.c.testimonial` `size: lg` — title (else heading) quote, lead name, larger avatar, the
+  rung the poster picks for the box; the initials take whichever of surface/text ink contrasts
+  with the accent disc (was navy on navy).
+- Tables take a **grand** tier (body → subheading, caption → lead) when they fit their box.
+- `tls.c.divider` and centred `tls.c.closing` lead with display type; divider, cover and the
+  divider's width (1200/1100/1000) are chosen by `stableWrap` (same line count at 98.5 % and
+  104 % of the width, no one-word line), which also fixed the gradient cover line over-count.
+- `tls.c.image-text` centres its text column on the photo; the `top` look was dropped.
+- `tls.t.quote` `side` and `card` start at display type.
+- `tls.c.image-full` band headline column 66 % (was 58 %), 4 lines in a full-height panel.
+- Outline message slots (`MESSAGE_SLOTS`): the dry-run filler writes the key message into
+  subtitles, closing text, big-stat label/context, image-full/image-text text, statement
+  attribution, and a cover kicker — the example text (Vietnamese subtitles, "Centre, spread and
+  shape") no longer shows.
+- Examples: stat-spotlight (English, two stats), pros/cons (3 + 2 points), matrix (3 items).
+- Styles: consulting section title is white — `resolveColor('text')` on a surface of the same
+  polarity as the text colour solves to 7:1 (`TEXT_FLIP_FLOOR`; 4.5 when unreachable) instead of a
+  pale mid-tone; section motifs moved right of x 1380 (gradient/glass orbs, luxury ring, doodle
+  star, memphis half circle); glass cover orb and memphis cover shapes clear of the subtitle; swiss
+  cover red block 576 × 312 (the split closing's card sat on it); start-aligned kinetic titles drop
+  the subtitle disc.
+
+**Numbers after.**
+
+| Check | Result |
+|---|---|
+| 30 dry-run decks | 0 errors, 0 warnings, 0 quality findings, 0 avoidable repeats |
+| Seed difference (min over pairs) | 75 % (swiss) – 92 %; ≥ 70 % ✅ (was 92 %) |
+| `cli.js` on `__fixtures__/styles/*.json` | 19 decks 0/0 (showcase-consulting one `text/shrunk` info, as before) |
+| Calibration `--shots`, 30 decks (360 slides) | 0 table line-count mismatches, html parts 0 |
+| tsc | prod 0, spec 329 |
+| Targeted jest (`--maxWorkers=1`) | 170 suites, 6,358 pass; 1 fail = the pre-existing hero centring test (Notes — AC8.5) |
+| Digest | tier-1 index 16,996 (≤ 17k), top-8 detail 11,987 (≤ 12k), S2a own-role ≤ 16k (spec) |
+
+Sheets (session scratchpad): `sheet9-seeds-<style>.png` for the ten styles, three seeds side by
+side, twelve slides each.
+
+**Vocabulary added:** `AssetKind`, `SlideAssets`, `ASSET_KINDS`, `blockNeeds`, `designNeeds`,
+`assetsAllow`; `OutlineEntry.kicker`, `OutlineEntry.assets`, `DryRunOptions.assets`,
+`DRY_RUN_ASSETS`, `StyleRunResult.quality/qualityFindings`; module `pipeline/quality.ts`
+(`slideQuality`, `deckQuality`, `deckTitleSize`, `QUALITY_GATE`, `SlideQuality`, `QualityFinding`,
+`QualityCode`, codes `quality/sparse | thin-region | small-type`); `tls.t.statement` `size: display`;
+`tls.t.bullets` `size: body | lead | fit`; `tls.m.icon-list` `size: body | fit`; `tls.t.takeaway`
+`size: column`; `tls.c.testimonial` `size: md | lg`; internal table density `grand`;
+`stableWrap` (composite kit); `TEXT_FLIP_FLOOR` (tokens). No new block type, no dependency.

@@ -326,10 +326,33 @@ two-tier digest. Both tiers are generated from the live registry
     fixes it in one step.
   - Measured (dry run, 3 seeds × 10 styles, 12 slides): 0 errors, 0 warnings, 0 repeated signature
     inside a deck, 92–100 % of slides differ between any two seeds of a style (before AC8: 0 %, the
-    picker had no seed). ai-curation README §8 has the numbers.
+    picker had no seed); after the AC8.5 quality gate and asset filter, 75–92 %. ai-curation
+    README §8 and §8.9 have the numbers.
   - **Budget after AC8** (chars): header 1.15–1.18k (was 2.43–2.50k), style card 1.03–1.19k,
     tier-1 index 16.0–17.0k (ceiling raised 16k → 17k, recorded), S2a with the slide's own role
     13.8–14.8k (≤ 16k, spec). All-roles S2a 16.9–18.0k: send per-role recipes.
+
+- **Content assets (AC8.5).** The picker only offers a design whose assets the slide's content
+  actually has. S1 records, per deck and optionally per slide, which of four asset kinds exist:
+  `assets: { images, logos, portraits, chartData }` (`SlideAssets`, booleans; a kind left out is
+  absent). Designs declare needs through their blocks (`designNeeds(recipe, variant)`: a photo
+  slot → `images`, `tls.m.logo-wall` → `logos`, bar/table/chart-insight → `chartData`; the cover's
+  split/bleed and the quote's `image` look need `images`). Blocks that degrade well need nothing:
+  `tls.c.team` and `tls.c.testimonial` fall back to initials discs without portraits, `tls.c.bento`
+  drops an empty photo tile, a logo with no image is set as a wordmark of its brand name.
+  `assetsAllow(recipe, variant, assets)` filters the candidates before the pick; if no design of the
+  role qualifies, all are offered (the oracle still decides). The dry run's default is
+  `DRY_RUN_ASSETS = { images: true, logos: false, portraits: true, chartData: true }`; an outline
+  entry's `assets` overrides it per slide (`OutlineEntry.assets`, `DryRunOptions.assets`). The
+  backend derives the flags from the user's uploads and the S1 outline (a client list with no logo
+  files is `logos: false`).
+- **Quality gate (AC8.5, S4.1).** Besides the oracle's errors and warnings, every filled slide runs
+  `slideQuality(report, { titleSize })` (`blocks/pipeline/quality.ts`): **fill** (painted union of
+  the content blocks / safe area) ≥ 30 % (≥ 15 % for a type-led slide whose largest text is
+  ≥ 1.5 × the deck's title size), **region fill** of every large non-title region ≥ 30 %, and the
+  **lead type** ≥ 0.9 × the style's slide-title size. A finding is repaired like a warning, but
+  only by moving to the next design (never by cutting the headline). The dry run reaches 0
+  findings on all 30 decks (3 seeds × 10 styles); `deckQuality(deck)` re-checks a finished deck.
 
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
