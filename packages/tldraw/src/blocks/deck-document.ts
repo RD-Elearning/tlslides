@@ -167,10 +167,13 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens)
     findings.push(...result.findings)
 
+    // CMP1: shapes are top-level children of their page (`parentId` = page id). `blockToShape`
+    // defaults it to `'page'`, and `renderPageToSvg` (static export) draws only shapes whose
+    // `parentId` is the page's id — a compiled deck exported blank.
     const shapes: Record<string, ComponentShape> = {}
-    for (const sh of sm.shapes) shapes[sh.id] = sh
+    for (const sh of sm.shapes) shapes[sh.id] = { ...sh, parentId: pageId }
     for (const shape of result.shapes) {
-      shapes[shape.id] = shape
+      shapes[shape.id] = { ...shape, parentId: pageId }
     }
 
     const page: TDPage = {

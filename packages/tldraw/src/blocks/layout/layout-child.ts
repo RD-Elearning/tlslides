@@ -32,7 +32,7 @@ import { MAX_NESTING_DEPTH } from '../types'
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
 import { editorMetrics } from './measure'
-import { resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+import { imageSurface, resolveColor as solveColor, surfaceFromPaint } from '../tokens'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -342,7 +342,7 @@ export function createLayoutContext(
     resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
-    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint }): LayoutNode => {
+    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean }): LayoutNode => {
       const newDepth = depth + 1
       // X2: the wrapper group names the child block (id + type) for exporters and the report.
       const ident = {
@@ -390,8 +390,9 @@ export function createLayoutContext(
       // overlay's surface) passes it, and the child solves against that paint instead.
       const parentBounds = { x: 0, y: 0, width: options.box.width, height: options.box.height }
       const parentPaint = childOpts?.surface ?? instanceStyle?.surface
-      const childSurface: SurfaceContext =
-        parentPaint !== undefined && typeof parentPaint !== 'string'
+      const childSurface: SurfaceContext = childOpts?.overImage
+        ? imageSurface()
+        : parentPaint !== undefined && typeof parentPaint !== 'string'
           ? surfaceFromPaint(parentPaint, box, parentBounds)
           : effectiveSurface
 

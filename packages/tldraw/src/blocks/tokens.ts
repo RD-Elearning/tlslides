@@ -294,14 +294,25 @@ export function resolveColor(
     const rgb = tryHexToRgb(base)
     if (!rgb) return { color: base, ratio: 1, ok: false }
     const baseLum = relativeLuminance(rgb)
-    const flipped = role === 'text' && contrastRatio(baseLum, ctx.luminance) < floor && (baseLum < 0.18) === (ctx.luminance < 0.18)
-    if (flipped) {
-      for (const f of TEXT_FLIP_FLOORS) {
-        const clear = solveForContrast(base, ctx.luminance, f)
+    // CMP1: over a photo (`overImage`) the luminance is unknowable; foreground solves *light*, as
+    // on a dark scrim — text on a photo reads light, and the layout report asks for the scrim.
+    const lum = ctx.overImage ? OVER_IMAGE_TEXT_LUMINANCE : ctx.luminance
+    if (ctx.overImage && role === 'text') {
+      // Near-white on a photo (18:1 against black ≈ #EEE), not the barely-clear grey a plain
+      // flip would pick: a photo is busier than a flat dark fill.
+      for (const f of OVER_IMAGE_TEXT_FLOORS) {
+        const clear = solveForContrast(base, lum, f)
         if (clear.ok) return clear
       }
     }
-    return solveForContrast(base, ctx.luminance, floor)
+    const flipped = role === 'text' && contrastRatio(baseLum, lum) < floor && (baseLum < 0.18) === (lum < 0.18)
+    if (flipped) {
+      for (const f of TEXT_FLIP_FLOORS) {
+        const clear = solveForContrast(base, lum, f)
+        if (clear.ok) return clear
+      }
+    }
+    return solveForContrast(base, lum, floor)
   }
 
   const rgb = tryHexToRgb(base)
@@ -319,6 +330,9 @@ export function resolveColor(
 // knowable without decoding it") — a plain mid-grey that never reads as an alarming colour and
 // never masquerades as a real measurement.
 const NEUTRAL_SURFACE_COLOR = '#9AA1AB'
+/** CMP1: the luminance foreground roles solve against over a photo — that of a black scrim. */
+const OVER_IMAGE_TEXT_LUMINANCE = 0
+const OVER_IMAGE_TEXT_FLOORS = [18, 12]
 const NEUTRAL_IMAGE_LUMINANCE = 0.5
 
 function solidSurface(color: string): SurfaceContext {

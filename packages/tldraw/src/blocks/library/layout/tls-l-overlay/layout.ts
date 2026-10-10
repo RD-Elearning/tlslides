@@ -10,7 +10,8 @@
  * - `layer`: `backdrop` children paint first, then content (absent), then `overlay` children;
  *   authored order within each layer. Motion parts (`child/<i>`) keep the authored order.
  *
- * The overlay's surface paint is passed to every child as the surface it sits on.
+ * The overlay's surface paint is passed to every child as the surface it sits on; a child painted
+ * over an image child sits on an image surface (`overImage`: its text solves light).
  */
 
 import type { BlockAnchor, BlockSpec, Box, LayoutContext, LayoutNode, Paint, SpaceToken } from '../../../types'
@@ -32,6 +33,7 @@ const ANCHOR_GRID: Record<Exclude<BlockAnchor, 'fill'>, [number, number]> = {
 }
 
 const LAYER_ORDER = { backdrop: 0, content: 1, overlay: 2 } as const
+const IMAGE_TYPE = 'tls.m.image'
 
 function insetOf(ctx: LayoutContext): [number, number] {
   const p = ctx.style?.padding
@@ -44,9 +46,12 @@ function insetOf(ctx: LayoutContext): [number, number] {
   return [ctx.tokens.space.lg, ctx.tokens.space.lg]
 }
 
-/** The box of an anchored child: its natural size (painted bounds of a probe layout inside the
- *  inset box) at the anchor. */
-function anchoredChildBox(ctx: LayoutContext, child: BlockSpec, anchor: Exclude<BlockAnchor, 'fill'>, full: Box, surface: Paint): Box {
+/**
+ * The box of an anchored child: its natural size at the anchor. Two probe layouts: at the inset
+ * box for the width (the painted content plus as much again as it is inset from the left — a
+ * card's padding on both sides), then at that width for the height (likewise top + bottom).
+ */
+function anchoredChildBox(ctx: LayoutContext, child: BlockSpec, anchor: Exclude<BlockAnchor, 'fill'>, full: Box, opts: { surface: Paint; overImage: boolean }): Box {
   const [padV, padH] = insetOf(ctx)
   const inner: Box =
     full.width > 2 * padH && full.height > 2 * padV
@@ -54,14 +59,16 @@ function anchoredChildBox(ctx: LayoutContext, child: BlockSpec, anchor: Exclude<
       : full
   let w = inner.width
   let h = inner.height
+  const bounds = (width: number) => {
+    const probe = ctx.layoutChild(child, { x: 0, y: 0, width, height: inner.height }, opts)
+    return paintedBounds(collectPaintedLeaves(probe, { width, height: inner.height }))
+  }
   try {
-    const probe = ctx.layoutChild(child, { x: 0, y: 0, width: inner.width, height: inner.height }, { surface })
-    const b = paintedBounds(collectPaintedLeaves(probe, { width: inner.width, height: inner.height }))
-    if (b) {
-      // A little slack so the re-layout at the natural width wraps the same lines.
-      w = Math.min(inner.width, Math.ceil(Math.max(0, b.x) + b.width + 2))
-      h = Math.min(inner.height, Math.ceil(Math.max(0, b.y) + b.height + 1))
-    }
+    const bw = bounds(inner.width)
+    // A little slack so the re-layout at the natural width wraps the same lines.
+    if (bw) w = Math.min(inner.width, Math.ceil(2 * Math.max(0, bw.x) + bw.width + 2))
+    const bh = bounds(w)
+    if (bh) h = Math.min(inner.height, Math.ceil(2 * Math.max(0, bh.y) + bh.height + 1))
   } catch {
     /* keep the whole inner box */
   }
@@ -82,10 +89,16 @@ export function layout(props: OverlayProps, ctx: LayoutContext): LayoutNode {
       ? ctx.style.surface
       : { type: 'solid', color: ctx.resolveColor('surface').color }
 
-  const childNodes: LayoutNode[] = children.map((child) => {
+  // A child painted over a photo child (an image that paints before it: a backdrop-layer image,
+  // or an earlier content-layer image) sits on an image surface: its text solves light.
+  const layerRank = (c: BlockSpec | undefined) => (c?.layer === 'backdrop' ? 0 : c?.layer === 'overlay' ? 2 : 1)
+  const isImage = (c: BlockSpec | undefined) => c?.type === IMAGE_TYPE
+  const childNodes: LayoutNode[] = children.map((child, i) => {
+    const overImage = children.some((o, j) => j !== i && isImage(o) && (layerRank(o) < layerRank(child) || (layerRank(o) === layerRank(child) && j < i)))
+    const opts = { surface: surfacePaint, overImage }
     const anchor = child && typeof child === 'object' ? child.anchor : undefined
-    const box = anchor && anchor !== 'fill' && anchor in ANCHOR_GRID ? anchoredChildBox(ctx, child, anchor as Exclude<BlockAnchor, 'fill'>, fullBox, surfacePaint) : fullBox
-    return ctx.layoutChild(child, box, { surface: surfacePaint })
+    const box = anchor && anchor !== 'fill' && anchor in ANCHOR_GRID ? anchoredChildBox(ctx, child, anchor as Exclude<BlockAnchor, 'fill'>, fullBox, opts) : fullBox
+    return ctx.layoutChild(child, box, opts)
   })
 
   // RVM2: child/<i> motion parts in authored order; then paint order by layer (stable).

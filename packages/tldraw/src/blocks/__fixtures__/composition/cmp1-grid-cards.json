@@ -1,0 +1,408 @@
+{
+  "id": "cmp1-grid-cards",
+  "slides": [
+    {
+      "id": "c1_accent",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t1",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three numbers that matter"
+            }
+          },
+          {
+            "id": "g1",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 1,
+              "children": [
+                {
+                  "id": "c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i1",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "trending-up",
+                          "size": "md"
+                        }
+                      },
+                      {
+                        "id": "h1",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "42%",
+                          "unit": "growth"
+                        }
+                      },
+                      {
+                        "id": "b1",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Revenue grew in every region this year."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i2",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "users",
+                          "size": "md"
+                        }
+                      },
+                      {
+                        "id": "h2",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "1.2M",
+                          "unit": "users"
+                        }
+                      },
+                      {
+                        "id": "b2",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Active users doubled since the launch."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i3",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "zap",
+                          "size": "md"
+                        },
+                        "style": {
+                          "accent": "text"
+                        }
+                      },
+                      {
+                        "id": "h3",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "3×",
+                          "unit": "faster"
+                        }
+                      },
+                      {
+                        "id": "b3",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Teams ship three times faster with it."
+                        },
+                        "style": {
+                          "on": "#ffffff"
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "surface": "accent"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c1_tones",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "g2",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 5,
+              "rows": 1,
+              "children": [
+                {
+                  "id": "tf",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "tf_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Filled",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "tf_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "The default card, radius xl, elevation 2."
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "tone": "filled",
+                    "radius": "xl",
+                    "elevation": 2
+                  }
+                },
+                {
+                  "id": "to",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "to_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Outline",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "to_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "A hairline border, no fill."
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "tone": "outline"
+                  }
+                },
+                {
+                  "id": "tg",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "tg_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Ghost",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "tg_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "No fill, no border: just spacing."
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "tone": "ghost"
+                  }
+                },
+                {
+                  "id": "ti",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "ti_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Inverted",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "ti_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Dark card, light ink solved on it."
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "tone": "inverted",
+                    "radius": "lg"
+                  }
+                },
+                {
+                  "id": "tgr",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "tgr_t",
+                        "type": "tls.t.title",
+                        "props": {
+                          "text": "Gradient",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "tgr_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Accent to accent 2, ink solved on it."
+                        }
+                      }
+                    ]
+                  },
+                  "style": {
+                    "tone": "gradient",
+                    "radius": "lg",
+                    "gap": "lg"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c1_anchor",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "g3",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 1,
+              "children": [
+                {
+                  "id": "c4",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i4",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "target",
+                          "size": "md"
+                        }
+                      },
+                      {
+                        "id": "h4",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "18",
+                          "unit": "markets"
+                        }
+                      },
+                      {
+                        "id": "b4",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Live in eighteen markets."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c5",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i5",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "award",
+                          "size": "md"
+                        }
+                      },
+                      {
+                        "id": "h5",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "#1",
+                          "unit": "in class"
+                        }
+                      },
+                      {
+                        "id": "b5",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Rated first by analysts this year."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c6",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "i6",
+                        "type": "tls.m.icon",
+                        "props": {
+                          "icon": "globe",
+                          "size": "md"
+                        }
+                      },
+                      {
+                        "id": "h6",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "62",
+                          "unit": "countries"
+                        }
+                      },
+                      {
+                        "id": "b6",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Customers in sixty-two countries."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "badge",
+            "type": "tls.d.trend-badge",
+            "props": {
+              "delta": 12.5,
+              "format": "percent",
+              "label": "vs 2025"
+            },
+            "layer": "overlay",
+            "anchor": "top-right",
+            "anchorTo": "c5"
+          }
+        ]
+      }
+    }
+  ]
+}

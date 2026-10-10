@@ -1,0 +1,162 @@
+{
+  "id": "cmp2-backdrop-overlay",
+  "slides": [
+    {
+      "id": "c2_photo",
+      "layout": "full-bleed",
+      "regions": {
+        "content": [
+          {
+            "id": "img",
+            "type": "tls.m.image",
+            "props": {
+              "src": "data:image/jpeg;base64,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",
+              "alt": "Team at work",
+              "fit": "cover"
+            },
+            "layer": "backdrop"
+          },
+          {
+            "id": "kick",
+            "type": "tls.t.kicker",
+            "props": {
+              "text": "Annual review"
+            },
+            "layer": "overlay",
+            "anchor": "top-left",
+            "style": {
+              "padding": "xl",
+              "accent": "text"
+            }
+          },
+          {
+            "id": "big",
+            "type": "tls.t.title",
+            "props": {
+              "text": "A year of building together",
+              "size": "display"
+            },
+            "layer": "overlay",
+            "anchor": "bottom-left",
+            "style": {
+              "padding": "xl"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c2_overlay",
+      "layout": "two-column",
+      "regions": {
+        "title": [
+          {
+            "id": "t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Text placed on a photo inside one block"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "ov",
+            "type": "tls.l.overlay",
+            "props": {
+              "children": [
+                {
+                  "id": "ov_img",
+                  "type": "tls.m.image",
+                  "props": {
+                    "src": "data:image/jpeg;base64,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",
+                    "alt": "Photo",
+                    "fit": "cover"
+                  },
+                  "layer": "backdrop"
+                },
+                {
+                  "id": "ov_card",
+                  "type": "tls.l.card",
+                  "props": {
+                    "padding": "md",
+                    "children": [
+                      {
+                        "id": "ov_b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Caption card anchored bottom-left"
+                        }
+                      }
+                    ]
+                  },
+                  "anchor": "bottom-left",
+                  "style": {
+                    "tone": "inverted",
+                    "radius": "md"
+                  }
+                },
+                {
+                  "id": "ov_kick",
+                  "type": "tls.t.kicker",
+                  "props": {
+                    "text": "Field study"
+                  },
+                  "anchor": "top-right",
+                  "style": {
+                    "accent": "text"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "r1",
+            "type": "tls.t.body",
+            "props": {
+              "text": "The overlay places each child at its anchor: the photo fills the box behind (layer backdrop), the caption card sits bottom-left at its natural size and the kicker top-right."
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c2_bleed",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "st",
+            "type": "tls.t.statement",
+            "props": {
+              "text": "Decoration may leave the frame on purpose."
+            }
+          }
+        ]
+      },
+      "free": [
+        {
+          "block": {
+            "id": "orb",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "blob",
+              "tone": "accent2",
+              "opacity": "soft",
+              "seed": 7
+            },
+            "layer": "backdrop",
+            "bleed": true
+          },
+          "box": {
+            "x": 1480,
+            "y": -160,
+            "width": 600,
+            "height": 600
+          }
+        }
+      ]
+    }
+  ]
+}

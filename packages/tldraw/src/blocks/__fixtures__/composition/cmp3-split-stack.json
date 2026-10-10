@@ -1,0 +1,83 @@
+{
+  "id": "cmp3-split-stack",
+  "slides": [
+    {
+      "id": "c3_split",
+      "layout": "two-column",
+      "regions": {
+        "title": [
+          {
+            "id": "t3",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Margin recovered in the second half"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "sp",
+            "type": "tls.l.split",
+            "props": {
+              "ratio": 0.45,
+              "children": [
+                {
+                  "id": "stk",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "sizing": "content",
+                    "children": [
+                      {
+                        "id": "hn",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "18%",
+                          "unit": "margin",
+                          "caption": "H2 2026"
+                        }
+                      },
+                      {
+                        "id": "tk",
+                        "type": "tls.t.takeaway",
+                        "props": {
+                          "text": "Pricing and mix drove the recovery, not volume."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "bar",
+                  "type": "tls.d.bar",
+                  "props": {
+                    "categories": [
+                      "Q1",
+                      "Q2",
+                      "Q3",
+                      "Q4"
+                    ],
+                    "series": [
+                      9,
+                      11,
+                      16,
+                      18
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "r3",
+            "type": "tls.t.body",
+            "props": {
+              "text": "The takeaway inside the stack sets no tone: it paints the accent tone (it threw in the report before CMP1)."
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
