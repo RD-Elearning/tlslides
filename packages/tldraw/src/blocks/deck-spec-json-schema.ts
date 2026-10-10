@@ -176,7 +176,9 @@ function blockSchema(
       children: {
         type: 'array',
         items: childrenItems,
-        description: 'Child blocks (container blocks only).',
+        description:
+          'Not read by any layout (validateDeckSpec: block/malformed error): child blocks go in props.children, ' +
+          'the one slot every container reads.',
       },
       slot: { type: 'string' },
       layer: {
@@ -189,15 +191,21 @@ function blockSchema(
       anchor: {
         enum: [...BLOCK_ANCHORS],
         description:
-          'Only with layer "backdrop"/"overlay" in a region: where the block sits in its anchor box (the region, ' +
+          'With layer "backdrop"/"overlay" in a region: where the block sits in its anchor box (the region, ' +
           'or the anchorTo block). "fill" = the whole box; any other value = the block\'s natural size at that ' +
-          'edge/corner. Default is the block type\'s anchor (trend badge: "top-right"), else "fill".',
+          'edge/corner. Default is the block type\'s anchor (trend badge: "top-right"), else "fill". ' +
+          'A child of tls.l.overlay is placed the same way inside the overlay box (inset space.lg).',
       },
       anchorTo: {
         type: 'string',
         description:
-          'Only with layer "backdrop"/"overlay": id of a stacked block in the same region whose painted box is the ' +
-          'anchor box (e.g. a badge on a card corner, inset by space.sm).',
+          'Only with layer "backdrop"/"overlay": id of a stacked block in the same region, or of a block nested ' +
+          'inside one (card 2 of a grid), whose painted box is the anchor box (e.g. a badge on a card corner, ' +
+          'inset by space.sm).',
+      },
+      bleed: {
+        type: 'boolean',
+        description: 'A backdrop that may leave the slide frame on purpose (no slide/overflow finding).',
       },
     },
     additionalProperties: false,
@@ -214,7 +222,8 @@ const MOTION_STYLE_SCHEMA: Record<string, unknown> = {
     'section openers), subtle (dense content), static (print/handout).',
 }
 
-/** Keeps the recursive `children` schema finite (and the object graph acyclic). */
+/** Keeps the recursive (legacy, unread) `children` schema finite and the object graph acyclic.
+ *  Not a layout limit — that is `MAX_NESTING_DEPTH` (types.ts), on `props.children`. */
 const MAX_BLOCK_NESTING_DEPTH = 4
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
