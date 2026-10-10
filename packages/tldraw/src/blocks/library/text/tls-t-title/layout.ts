@@ -56,8 +56,32 @@ function truncateLines(
   return { lines: kept, truncated: true }
 }
 
+/**
+ * AC8.6 — `size: fit`: the largest step of `ladder` whose wrap in the box is stable (at most
+ * `maxLines` lines, the same line count at 98.5 % and 104 % of the width, so the browser cannot wrap
+ * it otherwise) and leaves no one-word first or last line; else the last step. The rule
+ * `tls.c.divider` applies to its title (`stableWrap`), for a title that leads a slide alone
+ * (`section-title`): display type when the words allow it, never "Why / mid-market, / why now".
+ */
+export const TITLE_FIT = { ladder: ['display', 'title', 'heading'] as const, maxLines: 3 } as const
+
+export function fitToken(text: TitleProps['text'], ctx: LayoutContext): TypeToken {
+  const w = Math.max(1, ctx.box.width)
+  for (const token of TITLE_FIT.ladder) {
+    const style = ctx.resolveText(token, { letterSpacing: -0.03 })
+    const lines = ctx.measureText(text, style, w).lines
+    if (lines.length > TITLE_FIT.maxLines) continue
+    if (ctx.measureText(text, style, w * 0.985).lines.length !== lines.length) continue
+    if (ctx.measureText(text, style, w * 1.04).lines.length !== lines.length) continue
+    const words = (i: number) => lines[i].text.trim().split(/\s+/).filter(Boolean).length
+    if (lines.length > 1 && (words(0) < 2 || words(lines.length - 1) < 2)) continue
+    return token
+  }
+  return TITLE_FIT.ladder[TITLE_FIT.ladder.length - 1]
+}
+
 export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
-  const typeToken = (props.size ?? 'title') as TypeToken
+  const typeToken = (props.size === 'fit' ? fitToken(props.text, ctx) : props.size ?? 'title') as TypeToken
   const textColor = props.color ?? 'text'
 
   const style = ctx.resolveText(typeToken, { letterSpacing: -0.03 })

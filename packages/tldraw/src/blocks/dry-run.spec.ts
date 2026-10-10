@@ -78,8 +78,18 @@ describe('AC8 variety', () => {
     const registry = defaultBlockRegistry()
     for (const v of reports) {
       for (const r of v.runs) {
-        const titles = r.deck.slides.flatMap((s) => Object.values(s.regions ?? {}).flat()).filter((b) => b.type === 'tls.t.title')
-        for (const t of titles) for (const [k, val] of Object.entries(r.deckLook.title)) expect((t.props as Record<string, unknown>)[k]).toBe(val)
+        r.deck.slides.forEach((s, i) => {
+          // AC8.6: a knob the slide's own design sets wins (applyDeckLook's contract; section-title
+          // sets its display title's align and rule) and must then hold the design's value.
+          const [rid, vid] = r.designs[i].split('/')
+          const recipe = RECIPES.find((x) => x.id === rid)!
+          const variant = recipe.variants?.find((x) => x.id === vid)
+          const own = { ...(Object.values(recipe.regions).flat().find((b) => b.type === 'tls.t.title')?.knobs ?? {}), ...(variant?.knobs?.['tls.t.title'] ?? {}) }
+          const titles = Object.values(s.regions ?? {}).flat().filter((b) => b.type === 'tls.t.title')
+          for (const t of titles) {
+            for (const [k, val] of Object.entries(r.deckLook.title)) expect((t.props as Record<string, unknown>)[k]).toBe(k in own ? own[k] : val)
+          }
+        })
       }
       expect(registry.get('tls.t.title')).toBeDefined()
     }

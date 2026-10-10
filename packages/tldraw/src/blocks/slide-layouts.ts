@@ -97,6 +97,21 @@ function layoutSection(frame: { width: number; height: number }, tokens: Resolve
   }
 }
 
+/**
+ * AC8.6 — `section-stack`: the section page's text column. One `content` region, start-aligned at
+ * the safe margin, at most `SECTION_STACK_MAX_W` wide and the full content height, its blocks
+ * stacked and centred vertically (`regionAlign`). The cap keeps a display-size section title and
+ * its message clear of the style motifs that sit on the section page right of x 1380 (the same
+ * 1200 column `tls.c.divider` uses), and the region grows with the stack, unlike `section`'s fixed
+ * title-size band (a display title autofit-shrank and overflowed there).
+ */
+export const SECTION_STACK_MAX_W = 1200
+
+function layoutSectionStack(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  return { content: { x: ca.x, y: ca.y, width: Math.min(ca.width, SECTION_STACK_MAX_W), height: ca.height } }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* 3. two-column — left/right split with gutter                                  */
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -464,6 +479,7 @@ export type SlideLayoutId =
   | 'kpi-row'
   | 'blank'
   | 'full-bleed'
+  | 'section-stack'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -483,7 +499,7 @@ export interface SlideLayout {
 }
 
 /**
- * All 17 shipped slide layouts (AC6 added `full-bleed`). Each is a pure `compile(frame, tokens) → Record<string, Box>`.
+ * All 18 shipped slide layouts (AC6 added `full-bleed`, AC8.6 `section-stack`). Each is a pure `compile(frame, tokens) → Record<string, Box>`.
  */
 export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'title', name: 'Title', compile: layoutTitle },
@@ -503,6 +519,7 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
   { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
   { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
+  { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

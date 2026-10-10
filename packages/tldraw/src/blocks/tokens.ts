@@ -233,8 +233,10 @@ const LINE_CONTRAST_FLOOR = 1.4
  * mid-tone that passes but reads washed out; a flipped text role goes to a clear light (or dark)
  * ink instead (when one reaches 7:1 on that surface; else the 4.5 solution as before). Muted text
  * and lines keep their floors (they are meant to recede).
+ * AC8.6: first 12:1 (near-white on navy: the 7:1 ink still read as a pale lavender under a
+ * display section title), then 7:1, then the 4.5 floor.
  */
-const TEXT_FLIP_FLOOR = 7
+const TEXT_FLIP_FLOORS = [12, 7] as const
 
 const COLOR_ROLES: readonly ColorRole[] = [
   'surface',
@@ -294,8 +296,10 @@ export function resolveColor(
     const baseLum = relativeLuminance(rgb)
     const flipped = role === 'text' && contrastRatio(baseLum, ctx.luminance) < floor && (baseLum < 0.18) === (ctx.luminance < 0.18)
     if (flipped) {
-      const clear = solveForContrast(base, ctx.luminance, TEXT_FLIP_FLOOR)
-      if (clear.ok) return clear
+      for (const f of TEXT_FLIP_FLOORS) {
+        const clear = solveForContrast(base, ctx.luminance, f)
+        if (clear.ok) return clear
+      }
     }
     return solveForContrast(base, ctx.luminance, floor)
   }

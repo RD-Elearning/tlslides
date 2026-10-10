@@ -161,3 +161,16 @@ describe('RV02 — honest size (review G02)', () => {
     expect(runs.split(/[.!?](\s|$)/).filter((x) => x && x.trim()).length).toBeGreaterThanOrEqual(2)
   })
 })
+
+describe('AC8.6 — size knob', () => {
+  const textOf = (node: any): any => (node.k === 'text' ? node : node.children?.map(textOf).find(Boolean))
+  it.each([['body'], ['lead'], ['subheading']])('size: %s sets that type step', (size) => {
+    const ctx = rv02Ctx({ width: 1200, height: 400 })
+    const leaf = textOf(tlsTBody.layout({ ...tlsTBody.defaults, size } as any, ctx))
+    expect(leaf.style.size).toBe((ctx.tokens.type as any)[size].size)
+  })
+  it('defaults to body', () => {
+    const ctx = rv02Ctx({ width: 1200, height: 400 })
+    expect(textOf(tlsTBody.layout({ ...tlsTBody.defaults } as any, ctx)).style.size).toBe(ctx.tokens.type.body.size)
+  })
+})

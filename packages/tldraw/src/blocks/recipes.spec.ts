@@ -137,7 +137,12 @@ describe('AC0 slide recipes', () => {
       'data-table · timeline+title — tls.d.table + tls.t.footnote(marker=source) — exact values, with a source · looks: head'
     )
     expect(recipeLine(RECIPES.find((r) => r.id === 'content-bullets-image')!)).toContain('left: tls.t.bullets(size=fit); right: tls.m.image')
-    expect(recipeLine(RECIPES.find((r) => r.id === 'section-title')!)).toBe('section-title · section+title — title only — quiet section break')
+    // AC8.6: section-title is a display title over its message in the section-stack column (its main region implied)
+    expect(recipeLine(RECIPES.find((r) => r.id === 'section-title')!)).toBe(
+      'section-title · section-stack — tls.t.title(size=fit,rule=true,align=start) + tls.t.body(size=subheading) — section break'
+    )
+    // a recipe of a title alone still reads `title only` (no built-in recipe is one since AC8.6)
+    expect(recipeLine({ id: 'x', role: 'section', layout: 'section', regions: { title: [{ type: 'tls.t.title' }] }, when: 'w' })).toBe('x · section+title — title only — w')
   })
 
   // AC8 — every recipe variant is held to its recipe's bar, and is a design of its own.

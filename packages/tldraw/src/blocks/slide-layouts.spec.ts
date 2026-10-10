@@ -65,8 +65,17 @@ function allRegionsPositiveSize(regions: Record<string, Box>): void {
 /* ── SLIDE_LAYOUTS module-level object ─────────────────────────────────────── */
 
 describe('SLIDE_LAYOUTS module-level', () => {
-  it('contains exactly 17 layouts (AC6: + full-bleed)', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(17)
+  it('contains exactly 18 layouts (AC6: + full-bleed, AC8.6: + section-stack)', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(18)
+  })
+
+  it('AC8.6 section-stack: one start-aligned content column at most 1200 wide, centred stack', () => {
+    const l = getSlideLayout('section-stack')!
+    const regions = l.compile({ width: 1920, height: 1080 }, TEST_TOKENS)
+    expect(Object.keys(regions)).toEqual(['content'])
+    const blank = getSlideLayout('blank')!.compile({ width: 1920, height: 1080 }, TEST_TOKENS).content
+    expect(regions.content).toEqual({ ...blank, width: 1200 })
+    expect(l.regionAlign).toEqual({ content: 'center' })
   })
 
   it('is not aliased by reference — copy with not.toBe + toEqual', () => {

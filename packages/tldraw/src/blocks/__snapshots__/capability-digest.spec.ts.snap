@@ -106,6 +106,7 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 | \`kpi-row\` (KPI Row) | \`title\`, \`kpi1\`, \`kpi2\`, \`kpi3\`, \`kpi4\` | Title + 4 equal KPI cells — dashboard-style metrics. |
 | \`blank\` (Blank) | \`content\` | Single content region, full safe area — maximum flexibility. |
 | \`full-bleed\` (Full Bleed) | \`content\` |  |
+| \`section-stack\` (Section Stack) | \`content\` |  |
 
 ## Blocks
 
@@ -4396,6 +4397,7 @@ Paragraph body text with RichText, autofit, and multi-column. _(family: text; ke
 | \`text\` | yes | richText | A concise paragraph, 1–3 sentences. Use bold for key terms. |
 | \`columns\` | no | number (min 1, max 4) | Number of text columns. 1 = single paragraph. |
 | \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
+| \`size\` | no | enum: body \\\\| lead \\\\| subheading | Type step: \`body\` (default), \`lead\`, or \`subheading\` (a message line under a display title). |
 | \`autoFit\` | no | boolean | Shrink font when content overflows the box. |
 | \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
 
@@ -4943,7 +4945,7 @@ Slide title with inline styling, autofit, and truncation. _(family: text; keywor
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`text\` | yes | richText | A concise slide title. Bold one key word for emphasis. Never a full sentence. |
-| \`size\` | no | enum: display \\\\| title \\\\| heading \\\\| subheading | Type scale step for the title. |
+| \`size\` | no | enum: display \\\\| title \\\\| heading \\\\| subheading \\\\| fit | Type scale step for the title. \`fit\`: the largest of display/title/heading that wraps cleanly (≤ 3 lines, no one-word line). |
 | \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
 | \`rule\` | no | boolean | Show a short accent rule below the title. |
 | \`maxLines\` | no | number (min 1, max 10) | Maximum number of lines before truncation. Truncation adds a visible marker. |
@@ -5364,7 +5366,7 @@ Object {
     "line",
     "scrim",
   ],
-  "layoutCount": 17,
+  "layoutCount": 18,
   "layoutIds": Array [
     "title",
     "section",
@@ -5383,6 +5385,7 @@ Object {
     "kpi-row",
     "blank",
     "full-bleed",
+    "section-stack",
   ],
   "motionCount": 35,
   "motionPresetIds": Array [
@@ -5430,8 +5433,8 @@ exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) s
 
 Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
 Scope: \`element\` combines with others; \`group\` is one per region; \`slide\` sits alone in the main region, never nested.
-Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look, not the content: turn them before switching block; any other value is rejected. \`also:\` = more blocks by name. Get the detail digest of a type before filling its props.
-Height \`[h…]\` (1920×1080 units, at the width after \`@\`): \`B+P/L\` per text line, \`+P/item\` per item, \`fill\` takes the given height, \`X–Y\` varies.
+Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look: turn them before switching block; other values are rejected. \`also:\` more blocks by name. Get a type's detail digest before filling its props.
+Height \`[h…]\` (1920×1080 units, width after \`@\`): \`B+P/L\` per text line, \`+P/item\` per item, \`fill\` = the given height, \`X–Y\` varies.
 Layers: in one region, \`layer: \\"backdrop\\"\` paints behind, \`\\"overlay\\"\` on top (never over text); \`anchor\` fill, a corner/edge or center; \`anchorTo: \\"<id>\\"\`. Motion: \`motionStyle\` on deck/slide — expressive, subtle, static.
 
 ## Styles
@@ -5443,7 +5446,7 @@ playful: doodle (doodle-paper, doodle-kids); memphis (memphis-pop)
 
 ## Recipes
 
-Known-good slides per role (\`id · layout — region: blocks — when · looks\`), clean with example content. \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main one (\`content\`, \`timeline\`). \`looks:\` other designs, named \`id/look\`. Swap content, keep the rest; never repeat a recipe/look in a deck.
+Known-good slides per role (\`id · layout — region: blocks — when · looks\`), clean with example content. \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`). Swap content, keep the rest; never repeat a recipe/look in a deck.
 
 ### cover
 cover-hero · blank — tls.c.hero — type-led opener · looks: center|split
@@ -5454,7 +5457,7 @@ agenda-full · timeline+title — tls.c.agenda — numbered agenda, full slide �
 agenda-image · two-column+title — left: tls.t.bullets(marker=number,size=fit); right: tls.m.image — short agenda beside a photo · looks: mirror
 ### section
 section-divider · blank — tls.c.divider — section opener · looks: numeral|field|minimal|center
-section-title · section+title — title only — quiet section break
+section-title · section-stack — tls.t.title(size=fit,rule=true,align=start) + tls.t.body(size=subheading) — section break
 ### content
 content-bento · timeline+title — tls.c.bento — a number, points, a photo
 content-statement · blank — tls.t.statement(size=display) — one message, key words in accent · looks: center|underline|accent
@@ -5498,7 +5501,7 @@ closing-split · blank — tls.c.closing(variant=split) — contacts beside the 
 also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
 
 ## Headings
-tls.t.title · heading · element — Slide title, auto-fitted, with optional rule [h≈0+104/L@840] knobs: size=display|title|heading|subheading, align=start|center|end, rule
+tls.t.title · heading · element — Slide title, auto-fitted, with optional rule [h≈0+104/L@840] knobs: size=display|title|heading|subheading|fit, align=start|center|end, rule
 also: tls.t.kicker, tls.t.subtitle
 
 ## Text

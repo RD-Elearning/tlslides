@@ -684,12 +684,13 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
   )
   lines.push('Scope: `element` combines with others; `group` is one per region; `slide` sits alone in the main region, never nested.')
   lines.push(
+    // AC8.6: a few words trimmed to pay for the section-title recipe line (17k ceiling)
     'Lines: `type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle`. Knobs change the ' +
-      'look, not the content: turn them before switching block; any other value is rejected. `also:` = more blocks by ' +
-      'name. Get the detail digest of a type before filling its props.'
+      'look: turn them before switching block; other values are rejected. `also:` more blocks by ' +
+      "name. Get a type's detail digest before filling its props."
   )
   lines.push(
-    'Height `[h…]` (1920×1080 units, at the width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` takes ' +
+    'Height `[h…]` (1920×1080 units, width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` = ' +
       'the given height, `X–Y` varies.'
   )
   lines.push(
@@ -722,9 +723,10 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     lines.push('## Recipes')
     lines.push('')
     lines.push(
+      // AC8.6: trimmed (~40 chars) to pay for the section-title line within the 17k ceiling
       'Known-good slides per role (`id · layout — region: blocks — when · looks`), clean with example content. ' +
-        '`+title` = `tls.t.title` in the `title` region; no region name = the main one (`content`, `timeline`). ' +
-        '`looks:` other designs, named `id/look`. Swap content, keep the rest; never repeat a recipe/look in a deck.'
+        '`+title` = `tls.t.title` in the `title` region; no region name = the main region. ' +
+        '`looks:` other designs (`id/look`). Swap content, keep the rest; never repeat a recipe/look in a deck.'
     )
     lines.push('')
     let role: string | undefined

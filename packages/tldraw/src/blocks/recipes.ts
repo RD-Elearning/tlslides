@@ -104,12 +104,16 @@ export const RECIPES: readonly SlideRecipe[] = [
 
   // ── section ──
   { id: 'section-divider', role: 'section', layout: 'blank', regions: { content: [b('tls.c.divider')] }, when: 'section opener', variants: [v('numeral', { 'tls.c.divider': { variant: 'numeral' } }), v('field', { 'tls.c.divider': { variant: 'field' } }), v('minimal', { 'tls.c.divider': { variant: 'minimal' } }), v('center', { 'tls.c.divider': { align: 'center' } })] },
+  // AC8.6: a display title (`size: fit`: display when it wraps cleanly, else title) with an accent
+  // rule over the section's message, in the 1200-wide `section-stack` column (clear of the section
+  // page's motifs). Was the `section` layout's title alone at title size: 4–9 % of the page, it
+  // almost never passed the quality gate.
   {
     id: 'section-title',
     role: 'section',
-    layout: 'section',
-    regions: { title: [TITLE] },
-    when: 'quiet section break',
+    layout: 'section-stack',
+    regions: { content: [b('tls.t.title', { size: 'fit', rule: true, align: 'start' }), b('tls.t.body', { size: 'subheading' })] },
+    when: 'section break',
   },
 
   // ── content ──
@@ -216,7 +220,7 @@ export function recipesFor(role?: RecipeRole): SlideRecipe[] {
 }
 
 /** AC8: the main region of the layouts whose name a recipe line leaves implied. */
-const MAIN_REGION: Record<string, string> = { blank: 'content', 'full-bleed': 'content', timeline: 'timeline' }
+const MAIN_REGION: Record<string, string> = { blank: 'content', 'full-bleed': 'content', 'section-stack': 'content', timeline: 'timeline' }
 
 /**
  * Compact one-line form used by the tier-1 index: `id · layout — region: type(k=v) + type; … — when`.

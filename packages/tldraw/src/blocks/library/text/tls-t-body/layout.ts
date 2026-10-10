@@ -30,8 +30,14 @@ function effectiveFontSize(style: { size: number; scale?: number }): number {
   return style.size * (style.scale ?? 1)
 }
 
+/** AC8.6: the type token of `size` (default `body`). */
+export function bodyToken(props: BodyProps): TypeToken {
+  return (props.size === 'lead' || props.size === 'subheading' ? props.size : 'body') as TypeToken
+}
+
 export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
-  const typeToken = 'body' as TypeToken
+  // AC8.6: `size: lead | subheading` sets the paragraph larger (the section-title message line)
+  const typeToken = bodyToken(props)
   const align = props.align ?? 'start'
   const columns = Math.max(1, Math.min(4, props.columns ?? 1))
   const textColor = props.color ?? 'text'
@@ -132,7 +138,7 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
  *   paragraph that wraps to several lines, regressing a mode this change didn't set out to touch.
  */
 export function intrinsicSize(props: BodyProps, ctx: LayoutContext): Size {
-  const style = ctx.resolveText('body' as TypeToken)
+  const style = ctx.resolveText(bodyToken(props))
   const text = props.text
   const unwrapped = ctx.measureText(text, style)
   const wrapped = ctx.measureText(text, style, ctx.box.width)

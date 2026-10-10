@@ -17,10 +17,10 @@ export const schema: BlockSchema = {
     guidance: 'A concise slide title. Bold one key word for emphasis. Never a full sentence.',
   },
   size: {
-    type: { kind: 'enum', values: ['display', 'title', 'heading', 'subheading'] },
+    type: { kind: 'enum', values: ['display', 'title', 'heading', 'subheading', 'fit'] },
     role: 'option',
     label: 'Size',
-    help: 'Type scale step for the title.',
+    help: 'Type scale step for the title. `fit`: the largest of display/title/heading that wraps cleanly (≤ 3 lines, no one-word line).',
   },
   align: {
     type: { kind: 'enum', values: ['start', 'center', 'end'] },

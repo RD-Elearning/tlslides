@@ -204,3 +204,31 @@ describe('RV02 — honest size (review G02)', () => {
     }
   })
 })
+
+describe('AC8.6 — size: fit', () => {
+  const textOf = (node: any): any => (node.k === 'text' ? node : node.children?.map(textOf).find(Boolean))
+  const at = (text: string, width: number) => {
+    const ctx = rv02Ctx({ width, height: 888 })
+    return { ctx, leaf: textOf(tlsTTitle.layout({ text, size: 'fit' } as any, ctx)) }
+  }
+
+  it('declares fit as a size value', () => {
+    expect((tlsTTitle.schema.size.type as any).values).toContain('fit')
+  })
+
+  it('a short title that wraps cleanly takes display type', () => {
+    const { ctx, leaf } = at('Why now', 1200)
+    expect(leaf.style.size).toBe(ctx.tokens.type.display.size)
+  })
+
+  it('never leaves a one-word first or last line; steps down instead', () => {
+    for (const text of ['Why mid-market, why now', 'Expanding Pulse analytics to mid-market teams', 'Budget, two hires and one design partner']) {
+      for (const width of [1200, 1000, 800]) {
+        const { leaf } = at(text, width)
+        const n = leaf.lines.length
+        const words = (i: number) => leaf.lines[i].text.trim().split(/\s+/).length
+        expect([text, width, n === 1 || (words(0) >= 2 && words(n - 1) >= 2) || leaf.style.size === at(text, width).ctx.tokens.type.heading.size]).toEqual([text, width, true])
+      }
+    }
+  })
+})

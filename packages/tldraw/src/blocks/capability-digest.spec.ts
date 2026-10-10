@@ -783,7 +783,7 @@ describe('AC8 — knob values in the tier-1 index', () => {
     const md = capabilityIndex(freshBuiltInRegistry(), { tier: 1 })
     expect(md).toContain('knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule')
     expect(md).toContain('tls.t.title · heading · element')
-    expect(md).toMatch(/tls\.t\.title .* knobs: size=display\|title\|heading\|subheading, align=start\|center\|end, rule/)
+    expect(md).toMatch(/tls\.t\.title .* knobs: size=display\|title\|heading\|subheading\|fit, align=start\|center\|end, rule/)
   })
   it('the style card lists its knob defaults first and the accepted alternatives after them', () => {
     const card = styleCard(BUILT_IN_STYLES.find((s) => s.id === 'corporate')!)
