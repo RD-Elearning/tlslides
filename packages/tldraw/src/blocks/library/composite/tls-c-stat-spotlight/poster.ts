@@ -7,7 +7,7 @@ import type { LayoutContext, LayoutNode } from '../../../types'
 import { lineWidth } from '../_kit'
 import { backdrop, color, safe, str } from '../_showcase'
 import type { StatSpotlightProps } from './schema'
-import { geometry, progressOf, statsOf, SPOT } from './schema'
+import { geometry, progressOf, statsOf, SPOT, SPOT_ROOMY } from './schema'
 import { cssTextHeight } from '../../../html-block'
 
 /** Arc path from the top, clockwise, `p` of a full turn (two halves when p ~ 1). */
@@ -57,13 +57,23 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
     style: vStyle,
   })
 
-  const lStyle = { ...ctx.resolveText('heading', { letterSpacing: 0, lineHeight: SPOT.labelLH }), color: color(ctx, 'text') }
-  const lm = ctx.measureText({ runs: [{ text: str(props.label, 40), bold: true }] }, lStyle, g.colW)
-  const lH = cssTextHeight(lm.lines.length, lStyle)
   const context = str(props.context, 100)
   const cStyle = { ...ctx.resolveText('lead', { letterSpacing: 0, lineHeight: SPOT.contextLH }), color: color(ctx, 'textMuted') }
   const cm = context ? ctx.measureText(context, cStyle, g.colW) : undefined
   const cH = cm ? cssTextHeight(cm.lines.length, cStyle) : 0
+  // AC8.6: the roomy tier sets the label at `title` when it takes at most two lines and the column
+  // still fits the band; else `heading` (the compact tier).
+  const labelAt = (token: 'title' | 'heading') => {
+    const style = { ...ctx.resolveText(token, { letterSpacing: 0, lineHeight: SPOT.labelLH }), color: color(ctx, 'text') }
+    const m = ctx.measureText({ runs: [{ text: str(props.label, 40), bold: true }] }, style, g.colW)
+    return { style, m, h: cssTextHeight(m.lines.length, style) }
+  }
+  let lab = labelAt('heading')
+  if (g.roomy) {
+    const big = labelAt('title')
+    if (big.m.lines.length <= SPOT_ROOMY.labelLines && big.h + (cm ? SPOT.contextGap + cH : 0) <= g.mainH) lab = big
+  }
+  const { style: lStyle, m: lm, h: lH } = lab
   const colH = lH + (cm ? SPOT.contextGap + cH : 0)
   // `safe center` in the template: a column taller than the band starts at its top.
   let y = Math.max(0, (g.mainH - colH) / 2)
@@ -73,9 +83,25 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
 
   const stats = statsOf(props)
   if (stats.length) {
-    const svStyle = { ...ctx.resolveText('heading', { letterSpacing: 0, lineHeight: SPOT.statValueLH }), color: color(ctx, 'text') }
-    const slStyle = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: SPOT.statLabelLH }), color: color(ctx, 'textMuted') }
     const inset = SPOT.statBorder + SPOT.statPadLeft
+    const styles = (value: 'title' | 'heading', label: 'lead' | 'caption') => ({
+      sv: { ...ctx.resolveText(value, { letterSpacing: 0, lineHeight: SPOT.statValueLH }), color: color(ctx, 'text') },
+      sl: { ...ctx.resolveText(label, { letterSpacing: 0, lineHeight: SPOT.statLabelLH }), color: color(ctx, 'textMuted') },
+    })
+    // AC8.6: the roomy tier (title values, lead labels) when every value keeps one line and every
+    // label at least one whole line in its band; else the compact tier (heading, caption).
+    let { sv: svStyle, sl: slStyle } = styles('heading', 'caption')
+    if (g.roomy) {
+      const big = styles('title', 'lead')
+      const fits = stats.every((s, i) => {
+        const inner = Math.max(1, g.stats[i].width - inset)
+        if (ctx.measureText({ runs: [{ text: s.value, bold: true }] }, big.sv, inner).lines.length > 1) return false
+        const room = g.stats[i].height - SPOT.statPadTop - cssTextHeight(1, big.sv) - SPOT.statLabelGap
+        const lines = ctx.measureText(s.label, big.sl, inner).lines.length
+        return room >= big.sl.size * big.sl.lineHeight * Math.min(lines, 2)
+      })
+      if (fits) ({ sv: svStyle, sl: slStyle } = big)
+    }
     stats.forEach((s, i) => {
       const box = g.stats[i]
       const x = box.x

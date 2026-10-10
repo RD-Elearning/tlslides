@@ -153,6 +153,8 @@ const MESSAGE_SLOTS: Record<string, Array<{ prop: string; from: 'keyMessage' | '
   'tls.c.closing': [{ prop: 'text', from: 'keyMessage' }],
   'tls.t.statement': [{ prop: 'attribution', from: 'keyMessage' }],
   'tls.c.big-stat': [{ prop: 'label', from: 'headline' }, { prop: 'context', from: 'keyMessage' }],
+  // AC8.6: the key message under the spotlight's label (the example has no context line).
+  'tls.c.stat-spotlight': [{ prop: 'context', from: 'keyMessage' }],
   'tls.c.image-full': [{ prop: 'text', from: 'keyMessage' }],
   'tls.c.image-text': [{ prop: 'body', from: 'keyMessage' }],
 }
