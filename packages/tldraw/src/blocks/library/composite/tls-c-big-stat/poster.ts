@@ -12,7 +12,7 @@
 
 import type { LayoutContext, LayoutNode, Paint, ResolvedTextStyle } from '../../../types'
 import type { BigStatProps } from './schema'
-import { BIG_STAT_LARGE, BIG_STAT_RULE, formatValue, largeValueSize, splitGeometry } from './schema'
+import { BIG_STAT_LARGE, BIG_STAT_RULE, BIG_STAT_SPLIT_LABEL, formatValue, largeValueSize, splitGeometry } from './schema'
 import { isShown } from '../../../schema-helpers'
 import { cssTextHeight } from '../../../html-block'
 import { BIG_STAT as B } from './template'
@@ -54,7 +54,29 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
     const fixed = (accent ? BIG_STAT_RULE.height + BIG_STAT_RULE.gap : 0) + BIG_STAT_LARGE.valueGap + colHeight(L, w)
     size = largeValueSize(display.size, ctx.box.height, fixed, perSize, w, width0)
   }
-  const { label: labelStyle, context: contextStyle } = size !== null ? L : textStyles(false)
+  let { label: labelStyle, context: contextStyle } = size !== null ? L : textStyles(false)
+  // AC8.6: a large-tier split sets its label to balance the number beside it: the largest of
+  // title / heading / subheading whose label takes at most `BIG_STAT_SPLIT_LABEL.maxLines` lines
+  // of the column and whose column fits the box (context at lead); else lead / body as before.
+  if (split && size !== null) {
+    // a one-word last line (an orphan) reads unfinished beside a large number: the next rung
+    const orphan = (text: string, style: ResolvedTextStyle) => {
+      const ls = ctx.measureText(text, style, split!.colW).lines
+      return ls.length > 1 && ls[ls.length - 1].text.trim().split(/\s+/).filter(Boolean).length < 2
+    }
+    const contextAt = (token: 'lead' | 'body') => ({ ...ctx.resolveText(token, { letterSpacing: 0, lineHeight: B.contextLH }), color: muted })
+    const context = showContext && orphan(props.context as string, contextAt('lead')) ? contextAt('body') : contextAt('lead')
+    for (const token of BIG_STAT_SPLIT_LABEL.ladder) {
+      const st = { label: { ...ctx.resolveText(token, { letterSpacing: 0, lineHeight: B.labelLH }), color: muted }, context }
+      const lines = showLabel ? ctx.measureText(props.label, st.label, split.colW).lines.length : 0
+      if (showLabel && orphan(props.label, st.label)) continue
+      if (lines <= BIG_STAT_SPLIT_LABEL.maxLines && colHeight(st, split.colW) <= ctx.box.height) {
+        labelStyle = st.label
+        contextStyle = st.context
+        break
+      }
+    }
+  }
   const valueStyle = size !== null ? { ...baseValue, size } : baseValue
   const valueGap = size !== null ? BIG_STAT_LARGE.valueGap : B.valueGap
   const align = props.align === 'center' && !split ? 'center' : 'start'

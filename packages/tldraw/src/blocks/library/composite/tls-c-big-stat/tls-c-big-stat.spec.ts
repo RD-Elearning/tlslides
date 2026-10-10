@@ -15,7 +15,7 @@
 
 import { tlsCBigStat } from './index'
 import { makeCtx, SIZES, assertValidNode } from '../../text/test-helpers'
-import { BIG_STAT_LARGE, formatValue, isLargeTier } from './schema'
+import { BIG_STAT_LARGE, BIG_STAT_SPLIT_LABEL, formatValue, isLargeTier } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -660,11 +660,16 @@ describe('AC2 lead review — the number grows with the box (large tier)', () =>
       const value = textLeaf(node, 'value')!
       expect(value.style.size).toBeGreaterThanOrEqual(Math.min(display * 2, 280))
       expect(value.style.size).toBeLessThanOrEqual(BIG_STAT_LARGE.maxSize)
-      expect(textLeaf(node, 'label')!.style.size).toBe(c.tokens.type.lead.size)
+      // AC8.6: beside the number (split) the label takes the largest of title/heading/subheading
+      // that wraps without an orphan; stacked, it stays at lead.
+      const label = textLeaf(node, 'label')!.style.size
+      if (name === 'split') expect(BIG_STAT_SPLIT_LABEL.ladder.map((t) => c.tokens.type[t].size)).toContain(label)
+      else expect(label).toBe(c.tokens.type.lead.size)
       expect(node.box.height).toBeLessThanOrEqual(888)
       // The live host lays the block out again in a box of its content height (rounded up).
       const again = poster({ ...props, ...knobs }, ctx({ width: 1728, height: Math.ceil(node.box.height) }))
       expect(textLeaf(again, 'value')!.style.size).toBe(value.style.size)
+      expect(textLeaf(again, 'label')!.style.size).toBe(label)
       expect(again.box.height).toBe(node.box.height)
       // The template paints the poster's size and the large gap.
       const html = template({ ...props, ...knobs }, { ...tplCtx(c), poster: node } as any)
@@ -689,5 +694,25 @@ describe('AC2 lead review — the number grows with the box (large tier)', () =>
     expect(isLargeTier(value.style.size, c.tokens.type.display.size)).toBe(true)
     expect(value.lines).toHaveLength(1)
     expect(value.lines[0].width).toBeLessThanOrEqual(1400)
+  })
+})
+
+describe('AC8.6 — the split label balances a large number', () => {
+  const props = { ...(tlsCBigStat.defaults as BigStatProps), label: 'Net retention reached 118%', context: 'Existing accounts keep expanding after year one', variant: 'split' } as BigStatProps
+  const leaf = (n: LayoutNode, part: string): any => (n.k === 'text' && n.part === part ? n : n.k === 'group' ? n.children.map((c) => leaf(c, part)).find(Boolean) : undefined)
+
+  it('in a full-slide box the label is larger than lead, with no one-word last line', () => {
+    const c = ctx({ width: 1728, height: 888 })
+    const node = poster(props, c)
+    const label = leaf(node, 'label')
+    expect(label.style.size).toBeGreaterThan(c.tokens.type.lead.size)
+    const words = label.lines[label.lines.length - 1].text.trim().split(/\s+/).length
+    expect(label.lines.length === 1 || words >= 2).toBe(true)
+    expect(node.box.height).toBeLessThanOrEqual(888)
+  })
+
+  it('a compact split (short box) keeps the body label', () => {
+    const c = ctx({ width: 900, height: 300 })
+    expect(leaf(poster(props, c), 'label').style.size).toBe(c.tokens.type.body.size)
   })
 })

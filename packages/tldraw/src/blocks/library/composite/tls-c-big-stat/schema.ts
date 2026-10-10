@@ -174,6 +174,14 @@ export function isLargeTier(valueSize: number | undefined, displaySize: number):
   return valueSize !== undefined && valueSize >= displaySize * BIG_STAT_LARGE.minGain - 0.5
 }
 
+/**
+ * AC8.6 — the large-tier split label: the type tokens tried for the label beside a large number
+ * (largest first), and its most lines; a rung that leaves a one-word last line is skipped. AC8.5
+ * judged the lead-size label beside a ~300-unit number small; the label now scales with the number
+ * (context at lead, or body when lead leaves a one-word last line).
+ */
+export const BIG_STAT_SPLIT_LABEL = { ladder: ['title', 'heading', 'subheading'] as const, maxLines: 3 } as const
+
 /** AC2 `variant: split`: the number's share of the width (at most), the gap, the narrowest column. */
 const SPLIT = { share: 0.55, gap: 48, minCol: 220 } as const
 
