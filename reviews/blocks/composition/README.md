@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** CMP1 done (2026-10-10); CMP2 next. Resume from [§6 Progress](#6-progress).
+**Status:** CMP1, CMP2 done (2026-10-10); CMP3 next. Resume from [§6 Progress](#6-progress).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -325,7 +325,7 @@ or recorded as open.
 |---|---|---|---|
 | Survey | ✅ 2026-10-10 | `23673e8e` | [SURVEY.md](SURVEY.md) |
 | CMP1 | ✅ 2026-10-10 | `4c7f43a4` `c327fb3e` `383b60d2` `b7a53735` `a2f6299e` + docs | [Notes — CMP1](#notes--cmp1) |
-| CMP2 | — | | |
+| CMP2 | ✅ 2026-10-10 | `603c94ec` `ea701dab` `3fd665dd` `dab86d1a` `223a68df` `6c32b303` `1b34acbb` `46ac51c5` `27c6fcb1` + docs | [Notes — CMP2](#notes--cmp2) |
 | CMP3 | — | | |
 | CMP4 | — | | |
 | CMP5 | — | | |
@@ -335,7 +335,145 @@ or recorded as open.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-10 | CMP2 (opus subagent) | oracle inside compositions (sub-blocks, id paths, sibling pairs) + 10 design checks + gate; paint model + ink guard; painted `style.surface`; authored cards pack; safe inset on full-bleed; block fixes (bento, steps, comparison, image-full, html kicker/value/icon colours); fixture `cmp6-design-checks` | Start CMP3 (opus). Read Notes — CMP2 "Open" first: the guard's glass margin and the bento/steps look changes want the lead's eye. |
 | 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
+
+### Notes — CMP2
+
+**What was built** (commits `603c94ec` engine, `ea701dab` block fixes, `3fd665dd` oracle + gate,
+`dab86d1a` engine follow-ups, `223a68df` fixtures, `6c32b303` specs + parity, `1b34acbb` size cards,
+`46ac51c5` / `27c6fcb1` guard tuning, then this docs commit):
+
+- **Sub-blocks (F5).** `inspectBlock` (`design-checks.ts`) matches the wrapper groups `layoutChild`
+  stamps (`blockId`/`type`) to the authored specs in every `blocks` slot, so a container's own
+  internal wrappers (`$stack`, a composite's spec tree) stay part of their block. `BlockReport.children`
+  lists them (`g1/c2/b1`, level, layer, box, painted), every text leaf names its owner
+  (`TextLeafReport.block`), `text/overflow` names the child, and the text report prints one indented
+  line per child (≤ 12). Pair checks (overlap / collision / occlusion by layer) run among siblings
+  with the child paths; a child whose own text leaves its box is a `text/overflow` naming it.
+- **Paint model** (`layout/paint-model.ts`): paint ops in paint order (fills with alpha × group
+  opacity, gradients sampled per point, path fills as flattened polygons, images / opaque hosts as
+  "unknown" = both black and white), inks (text and icon leaves with sample points). `contrast/low`
+  composites every ink down through every block below it to the slide background (`theme:` colours
+  resolved; a decoration's image — a pattern's grain tile — is a texture, not a photo).
+- **Report on the real page.** `analyzeDeck` passes the slide background (own, else the style
+  master's), the theme, the motion style and the style family; blocks are laid out on that surface as
+  the editor lays them out (the report used a white surface for every deck before).
+- **Design checks and the gate.** All in `design-checks.ts`, thresholds in `DESIGN_THRESHOLDS` /
+  `ACCENT_BUDGET` (tighten only):
+
+| code | sev | threshold |
+|---|---|---|
+| `contrast/low` | error | text < 4.5:1, large text (≥ 36 units, bold ≥ 28) and icons < 3:1, on the actual paint; photo = black and white; ink alpha × opacity < 0.3 is decoration (skipped); backdrop / style-master blocks skipped |
+| `layout/misaligned` | warning | peers (same type, children of row / grid) side by side: matching text tops drift > 4 units; stacked in a column: start-aligned left edges > 4. Fix names the earlier leaf whose line count differs |
+| `layout/unequal-peers` | warning | peers side by side: box (a card: painted) widths or heights spread > 5 % |
+| `layout/narrow-child` | warning | nested text child wrapping (≥ 2 lines) at < 12 chars/line or in < 240 units; fix = peers per row at the width that gives 12 chars |
+| `nesting/too-deep` | warning | `llmAuthored` only (S4.1 / `dryRun.ts` sets it, CLI `--llm`): authored level > 3 (region block = 1) |
+| `type/too-many-sizes` | warning | > 5 distinct sizes on the slide (within 1 unit = one); fix merges the closest pair |
+| `accent/overuse` | warning | blocks / nested children painting the accent (same hue ±12°, lightness ±0.25; a block counts once) > premium 4, professional 6, modern 6, playful 10 (no style 6); mono accents skipped |
+| `text/long-measure` | info | wrapping text ≤ 40 units over 75 chars/line; fix = width for 75 |
+| `motion/stagger-total` | warning | one part's step × (items − 1) > 400 ms (reveal motion: own, else the slide style's) |
+| `motion/too-many-heroes` | warning | > 2 blocks with a `count-up` / `words-in` / `sweep` reveal |
+
+  Peer findings are one line, grouped: "3 of 3 card in d2r (d2c1, d2c2, d2c3): …". `slideQuality`
+  returns every non-info design finding as a gate finding (`QualityCode` widened); `dryRun.ts`'s
+  geometry `bad()` leaves them to the gate so nothing counts twice.
+- **CMP1 open items, fixed in the engine and the blocks (not by silencing):**
+  a. **Ink guard** (`layout/ink-guard.ts`): after a slide-level block is laid out, every text / icon
+     leaf failing its floor on the paint under it is re-solved along its hue (`solveForContrast`),
+     up to three rounds against the new worst background; ink that vanished (< 1.5:1) goes to 7:1.
+     Never an authored literal (`literalInks`: what an *authored* block asked `resolveColor` for as a
+     literal — a composite's derived colours are fair game). Over a bare photo it does nothing (the
+     report asks for a scrim); over a scrimmed photo it solves against both extremes. On a slide
+     gradient it samples under each leaf (`SurfaceContext.place`). Over glass or on a gradient page it
+     keeps 50 % headroom (`GLASS_MARGIN = 1.5`): a block cannot see the style master's glows painted
+     between page and block. Html posters: a solved leaf is marked `solved` and the hero / kinetic /
+     big-stat / feature-grid templates paint the poster colour for it (`posterText().color`).
+  b. **Painted `style.surface`**: an authored `style.surface` on a block that does not paint it
+     itself (not card / section / overlay / field / takeaway / hero) is a `surface` rect behind it,
+     hugging the content (+ horizontal padding), radius from `style.radius`; its content solves ink
+     on it (a dark translucent `scrim` over a photo keeps the photo surface: ink light). Export-
+     friendly: a plain rect / gradient node. Parity probe added. A composite's `$block.style` surface
+     stays a context, never painted.
+  c. **Packing**: an *authored* `tls.l.card` / `tls.l.section` packs its children at their natural
+     heights from the top (centre / end per `style.align`) instead of scaling them to fill
+     (`tls.l.stack` internal `pack`). Composites' cards are untouched (geometry diff over all fixtures,
+     showcases and the 30 dry-run decks: only the composition fixtures and the deliberate block
+     changes below moved).
+  d. **Safe inset**: a region block with a non-`fill` anchor and no `anchorTo` is anchored inside the
+     slide's safe area (`contentArea`): identity everywhere except `full-bleed`.
+  e. `c5_row6` → `layout/narrow-child` ("at most 3 per row at this size").
+- **Block fixes for findings on existing designs:** bento text tiles share one type step (6 sizes
+  on a slide → ≤ 5; P4), step numbers within 15 % of the body size are set at the body size (30 → 28),
+  comparison stagger 60 → 40 ms (9 items = 320 ms), image-full `scrim: gradient` holds 0.62 alpha over
+  the whole text column before fading (text read at ~0.4 alpha on tall titles).
+
+**Numbers.** Findings the new checks raised before the fixes (measured during the session, first-pick
+designs of the 30 dry-run decks, round-1 repairs): `contrast/low` 26, `accent/overuse` 24 (then a
+per-part metric; 0 under the final per-block metric), `type/too-many-sizes` 8, `motion/stagger-total`
+4; 19 style fixtures + showcases: `contrast/low` 65 (13 once pattern grain stopped counting as a
+photo), `accent/overuse` 15 (part metric), `type/too-many-sizes` 10, `motion/stagger-total` 3. After:
+**0** on both (`cli.js` 0 errors 0 warnings on all 19; dry run 30 decks 0 errors, 0 warnings, 0
+quality findings, output and all 30 decks **byte-identical** to the baseline, variety table
+unchanged — seed difference not lower; only the 10 pre-existing `quality/sparse` repairs remain).
+Composition fixtures (analysed as LLM-authored), exactly as `design-checks.spec` pins: `c2_photo`
+2 × `contrast/low` (overlay kicker and title on the photo, no scrim), `c5_deep6` too-deep, `c5_deep7`
+`block/dropped` + too-deep, `c5_row6` narrow-child, and one finding per bad slide of the new
+`cmp6-design-checks` deck (`d_card3` contrast — the survey's "card 3", now a pinned literal ink —,
+`d_misaligned`, `d_unequal`, `d_deep`, `d_sizes`, `d_accent`, `d_measure` info, `d_motion` stagger +
+heroes); `cmp1`, `cmp3`, `cmp4`, `c2_overlay`, `c2_bleed`, `d_scrim_ok` clean. The four demo
+fixtures (not gated) gain warnings — tour 5, colorful 17, demo 1, motion-showcase 3 — mostly
+`motion/stagger-total` on long lists and catalogue slides that put 7+ accent blocks on one page.
+Calibration (DOM harness, 37 slides of the touched decks incl. all composition fixtures): table line
+breaks vs the browser **0 mismatches**, html parts 0 line-count mismatches (as before). tsc
+production 0, spec 329 (= ceiling); ESLint on every changed file 0 errors. Targeted jest
+`--maxWorkers=1`, all at the final HEAD: `src/blocks/*.spec` 43 suites / 1871; `src/blocks/library`
+147 suites / 5446 (4 skipped, pre-existing); motion + layout + styles + pipeline + icons +
+state/render + state/deck + components 45 suites, 977 passed, **2 failed**: `BlockInserter.spec`
+(pre-existing, fails at `421162a9`) and `DeckViewer.spec` "retreating into an auto build step…" —
+caused by the **uncommitted** `DeckViewer.tsx` edit in the working tree (its new `retreat` skips auto
+steps), not by CMP2; CMP2 never touched that file.
+
+**Deliberate behaviour changes (each pinned by a spec or a regenerated artefact):**
+1. Ink colours change wherever derived ink failed contrast on what is painted under it (240 slides
+   of the fixtures and dry-run decks change a colour; no geometry): e.g. doodle's orange big
+   numbers (2.2:1 on paper) are a deeper orange, coral icons and accent kickers on light pages
+   darker, light labels on an orange gantt bar dark, glass muted text a little lighter.
+2. Authored cards / sections pack their children (size card `tls.l.card`: `fill` → container
+   height; block-metrics regenerated). Only the composition fixtures move (no other fixture, showcase or
+   dry-run deck has an authored multi-child card); geometry elsewhere moves only on the bento (`st_09`,
+   `content-bento`) and steps slides of item 3–4.
+3. Bento: one shared headline step (`swiss` / `doodle` / `editorial` … `content-bento` slides: the
+   point tile's headline and body step down to the quote tile's size).
+4. Steps numbers 30 → 28 units; comparison stagger 40 ms; image-full gradient fade darker over text.
+5. `analyzeDeck` lays blocks out on the real page background (colours in the report's tree match
+   the editor); report findings gain the design codes; text report prints nested children.
+6. Region anchors on `full-bleed` keep the 96-unit safe margin (`c2_photo`'s kicker and title move).
+7. Fixtures: `cmp1` lost its `style.accent: 'text'` and `gap: 'lg'` workarounds, `cmp2`'s kicker
+   padding workaround, `cmp3` the hero caption (6 sizes); `c2_overlay`'s kicker sits on a scrim.
+
+**Pictures.** Before (`b59c2fd0`, scratch worktree) | after, DOM through the calibration harness:
+`/tmp/claude-1000/…/scratchpad/cmp2/ba/*.png` (37). Looked at: composition fixtures (cards packed,
+card-3 icon light without the workaround, overlay kicker on a small scrim label, `d_scrim_ok` title on
+a scrim panel), doodle bento and big stat, glass cover, luxury-ivory cover, memphis image-full fade,
+minimal steps, swiss bento, surfaces-glass pricing.
+
+**Open, named (for CMP3 / CMP4 or the lead):**
+- `GLASS_MARGIN = 1.5` is a heuristic: a block's guard cannot see the style master's glows. The
+  clean fix composites the master paints into the page surface (`deckLayoutContext`); not done.
+- The bento shared step makes a large point tile read sparse (small headline in a big tile); the
+  lead should judge `content-bento` on a contact sheet (CMP4).
+- Doodle's signature orange numbers are now visibly deeper (contrast); a lead call whether the
+  palette's accent should change instead.
+- Nested motion (F11) is not built: children's own reveals do not play inside containers, so
+  `motion/too-many-heroes` counts slide-level blocks only — CMP3 must count nested heroes once it
+  plays them, and cap stagger in the engine (T2).
+- `accent/overuse` budgets were set from the designed decks (none exceed them); catalogue demo slides
+  do. `text/long-measure` stays info.
+- The parity harness still pairs DOM/SVG by part name (CMP1 note); the two new probes keep parts unique.
+- Html templates paint a guard-solved colour only for the parts listed (hero kicker, kinetic kicker
+  and subtitle, big-stat value, feature-grid icons); another html part the guard re-solves would
+  differ DOM vs poster — the census over all fixtures and dry-run decks found no other.
 
 ### Notes — CMP1
 
