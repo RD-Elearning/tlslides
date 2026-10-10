@@ -809,7 +809,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC4 | ✅ done 2026-10-09 | `75a0a16b`, `eeabb247`, `a12702c8`, `c38b0d48`, `e2cb3af5`, `2d2346c3` | rect.shadow, DeckTokens.surface + cardPaint (8 blocks), 8 motifs + grain/mesh, style master blocks painted on the page, chart look from tokens, Rough.js spike passed (adopt with doodle in AC5); see Notes — AC4 |
 | AC5 | 🟡 built, awaiting user review | `54894e92`, `2b3213cf`, `ae190106`, `cd7d9ef5`; review fixes `85a4f6e5`, `b98ec121`, `f1fc702b`, `c7bc8e7a` | seven styles (luxury, editorial, glass, swiss, doodle + doodle-kids, memphis, consulting), Rough.js motifs, contrast + per-style size-card specs; 10 decks clean, 100 shots looked at, `sheet7-<style>.png`; user review on the style board https://claude.ai/artifact/5nruezsKGMj4AFcLNxoevX (verdicts in db collection `styles`, one doc per style id + `ac6`); see Notes — AC5 |
 | AC6 | ✅ done 2026-10-10 | `9af1766f`, `fd6e0116` | `tls.c.bento`, `tls.c.image-full` (tier 1), `full-bleed` layout, recipes `content-bento` + `quote-image-full`; 131 blocks; in all ten style decks; see Notes — AC6 |
-| AC7 | ⬜ | | |
+| AC7 | ✅ done 2026-10-10 | `4151b1c3`, `f1b8d241`, `d70c0627`, + the README/CLAUDE.md commit | `tools/layout-report/dry-run.js` + `blocks/pipeline/dryRun.ts` + `dry-run.spec.ts`: 10 styles x 12 slides, 0 errors, 0 warnings, 0 repairs needed; docs updated; prompt budget measured (all-roles total over 16k by 219-1,100, per-role within); see Notes — AC7 |
 
 ### Session log
 
@@ -828,6 +828,7 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-10 | AC5/AC6 finish | Verification (reports, calibration, parity chunks, tsc, specs, digest), 100 shots looked at; fixes: icons, pros-cons ellipsis, glass orbs, consulting section, bento gaps; `sheet7-*` | Next: the lead's board review of the ten styles (AC5 → ✅ or `fix` rows), then AC7. Read Notes — AC5 "Open". |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 | 2026-10-10 | lead review | Looked at all 10 `sheet7-<style>.png` + `sheet7-ac6.png`; every style reads as its family, no blocking defect. Published the style board https://claude.ai/artifact/5nruezsKGMj4AFcLNxoevX | Next: read `styles` verdicts (ArtifactData list), fix every `fix`, then AC7 (Sonnet subagent, lead brief). Open items in Notes — AC5 "Open". |
+| 2026-10-10 | AC7 | Dry run (script, pure module, spec), LLM-ARCHITECTURE S0/S2a/S2b/S3/S4.1/S5.2/§9, `guides/blocks-authoring.md` §2.11 "Adding a deck style" | Plan closed except AC5 (awaiting the user's board review). Read Notes — AC7 "Open" first: the all-roles S2a prompt is over 16k; `capabilityIndexData` has no `styles`/`recipes` arrays. |
 
 ### Notes — AC0
 
@@ -1839,3 +1840,106 @@ Bento and image-full specs: 42 tests.
   style-level panel default (e.g. `left` for editorial) is a candidate `blockDefaults` entry.
 - The fixture photo is a small blurred data-URI JPEG (dusk skyline). A sharp, busy photo has not
   been looked at under the scrim.
+
+### Notes — AC7 (2026-10-10)
+
+**Built.**
+- `packages/tldraw/src/blocks/pipeline/dryRun.ts`: the pure logic (no DOM, no Chromium). Exported from
+  `blocks/index.ts`: `runDryRun`, `runStyle`, `eligibleRecipes`, `fillSlide`, `shortenHeadline`,
+  `measurePrompt`, `DRY_RUN_OUTLINE`, `PROMPT_BUDGET`.
+- `tools/layout-report/dry-run.js`: the CLI, loaded through `load.js` like `cli.js`.
+  `node tools/layout-report/dry-run.js [--out DIR] [--style id,id] [--json] [--dist]`; exit 1 when any
+  deck has errors. Decks go to `tools/layout-report/__dryrun__/` (git-ignored by explicit path).
+- `packages/tldraw/src/blocks/dry-run.spec.ts` (next to `recipes.spec.ts`): corporate and doodle, 0
+  errors and 0 warnings, no recipe twice in a row, the per-role prompt <= 16,000, a forced repair.
+- Docs: LLM-ARCHITECTURE (S0 style pick, S2a style-aware input with real excerpts and the budget
+  table, S2b "this style sets", S3 per-style size cards, S4.1 reference implementation, §5.2 per-style
+  rubric, §9 data shapes); `guides/blocks-authoring.md` §2.11 "Adding a deck style".
+
+**How the loop works.**
+- Outline: 12 fixed `{role, headline, keyMessage}` entries (cover, agenda, section, content, data,
+  comparison, process, people, data, quote, content, closing) about expanding a SaaS analytics
+  product to mid-market teams.
+- Pick (S2a stand-in): `eligibleRecipes(role, style)` = `recipesFor(role)` minus any recipe that
+  uses a type in `style.avoid`, an editor-only guide (`AI_HIDDEN_TYPES`) or a non-tier-1 block. Then
+  rotate: index = (n-th slide of this role + the style's index) mod eligible, and never the previous
+  slide's recipe if another exists.
+- Fill (S3 stand-in): `recipeSlide` from the examples, block ids prefixed with the slide id (the
+  validator needs deck-unique ids), the headline written into the title slot: `tls.t.title.text`,
+  `tls.c.hero|cover|kinetic-title|divider|closing|image-text|image-full .title`,
+  `tls.t.statement.text`. The theme is `style.palettes[0]`.
+- Oracle (S4.1 stand-in): `analyzeDeck` per slide (so style tokens, knob defaults and masters apply),
+  then once on the whole deck plus `validateDeckSpec`; both count. Up to 3 repair rounds: next
+  eligible recipe, then a shorter headline (first ~60 % of the words), then the next recipe again;
+  the cleanest variant wins.
+
+**Result (re-run: `node tools/layout-report/dry-run.js`).** Every style: 12 slides, 12 different
+recipes, 0 repairs, 0 errors, 0 warnings, `needsVisualCheck` 0.
+
+| Style | Slides | Distinct recipes | Repairs | Errors | Warnings | needsVisualCheck | Example text kept |
+|---|---|---|---|---|---|---|---|
+| corporate | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+| minimal | 12 | 12 | 0 | 0 | 0 | 0 | 2 |
+| gradient | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+| luxury | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+| editorial | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+| glass | 12 | 12 | 0 | 0 | 0 | 0 | 0 |
+| swiss | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+| doodle | 12 | 12 | 0 | 0 | 0 | 0 | 2 |
+| memphis | 12 | 12 | 0 | 0 | 0 | 0 | 0 |
+| consulting | 12 | 12 | 0 | 0 | 0 | 0 | 1 |
+
+"Example text kept" = slides where no title slot took the headline (recipes with no title block:
+`people-testimonial`, `data-big-stat`, `quote-pull`). `cli.js` on a generated deck agrees (0 errors,
+0 warnings, `needsVisualCheck` empty; checked on doodle and consulting).
+
+**Repairs needed: none** on the fixed outline, so the repair path is exercised only by the spec (a
+60-word headline on slide 4 forces it). Before that, the first run had 17-22 *validator* errors per
+deck, all `block/duplicate-id`: `recipeSlide` gives each slide the ids `b1`, `b2`; the filler now
+prefixes them with the slide id. That was the filler, not the oracle.
+
+**S2a prompt, measured against §5.2** (chars; tier-1 index with `{ style }` + `styleCard`; "header" =
+index preamble + its one-line `## Styles` section; recipes = all 10 roles):
+
+| Style | Header (~1.2k) | Card (<=1.2k) | Recipes (<=3k) | Tier-1 (~7k) | Tier-2 (<=1.5k) | Icons (~1.3k) | Total (<=16k) | Total, own role only |
+|---|---|---|---|---|---|---|---|---|
+| corporate | 2,486 | 956 | 3,961 | 6,983 | 1,369 | 796 | 16,551 | 13,525 |
+| minimal | 2,444 | 928 | 3,961 | 6,826 | 1,386 | 796 | 16,341 | 13,315 |
+| gradient | 2,431 | 897 | 4,055 | 7,283 | 1,352 | 796 | 16,814 | 13,694 |
+| luxury | 2,491 | 985 | 3,961 | 6,996 | 1,345 | 796 | 16,574 | 13,548 |
+| editorial | 2,499 | 1,091 | 3,961 | 7,120 | 1,360 | 796 | 16,827 | 13,801 |
+| glass | 2,496 | 1,073 | 3,819 | 6,649 | 1,386 | 796 | 16,219 | 13,335 |
+| swiss | 2,503 | 1,096 | 3,961 | 6,826 | 1,389 | 796 | 16,571 | 13,545 |
+| doodle | 2,430 | 1,118 | 3,948 | 7,493 | 1,315 | 796 | 17,100 | 14,087 |
+| memphis | 2,481 | 1,080 | 3,819 | 6,806 | 1,389 | 796 | 16,371 | 13,487 |
+| consulting | 2,475 | 1,087 | 3,961 | 7,364 | 1,336 | 796 | 17,019 | 13,993 |
+
+- Within target: card, tier-2, icons. Over: header (about 2x; the layer, size and motion lines were
+  added after the target), recipes with all roles (3.8-4.1k; one role is 935), tier-1 for four styles.
+- **Total with all roles: 16,219-17,100, over 16k by 219-1,100.** The tier-1 index alone is
+  <= 15,981 (the AC5 figure); the style card on top is what tips it. With only the slide's own role's
+  recipes (`roles: [role]`, `content` is the largest at 935) the total is 13,315-14,087. The spec
+  asserts that per-role figure; the all-roles overshoot is reported, not hidden.
+
+**Judgment calls.**
+- `SlideRecipe` has no `styles` field (the AC plan §5.1 sketched one); eligibility uses the style's
+  `avoid` list and tier-1 only.
+- `capabilityIndexData` has no `styles` / `recipes` arrays (plan §5.2 sketched them); the docs say the
+  backend reads `BUILT_IN_STYLES`, `RECIPES`, `styleCard` from the package instead. Not built: adding
+  them was not in the AC7 brief and would change the digest.
+- Style card column = `styleCard()` alone; the index's own `## Styles` line (the chosen style's brief
+  and rules again, about 400 chars) is counted in the header.
+- Rotation offset by the style's position, so the ten decks do not all use the same recipes; still
+  deterministic.
+- The quote slide keeps the example quote (and its attribution) in `quote-pull`; a headline is not a
+  quote, so there is no safe slot.
+
+**Open.**
+- The all-roles S2a prompt is over 16k (above). Either send per-role recipes (documented as the
+  backend rule), or trim the header: the layer, size and motion lines are ~1.1k together. Not changed
+  here (digest content is out of AC7's scope).
+- Style `prefer` lists only promote tier-2 types; the picker does not use them (no recipe names a
+  tier-2 type), so e.g. `consulting`'s `tls.g.swot` never appears in the dry run.
+- AC5 stays "awaiting user review" (the style board); not closed by this phase.
+- No browser pass: the dry-run decks were not rendered (Chromium was out of scope). To look at one, copy
+  it under `__fixtures__/styles/` and use `run.js --decks`.
