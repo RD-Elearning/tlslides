@@ -37,8 +37,10 @@ const MASTERS: MasterSpec[] = [
   },
   {
     name: 'content',
-    // orbs in the corners of the margin, peeking from under the edge cards: never under text
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1650, 850, 210), 'orb-b': orb('accent2', 1736, 40, 130), grain: GRAIN },
+    // orbs tucked into the corners of the margin: the cards are translucent, so an orb under a
+    // card's text shows through at full strength (the first cut, 210 at 1650/850, sat under the
+    // bottom-right card's text); these overlap the content box by a corner's padding at most
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1772, 932, 148), 'orb-b': orb('accent2', 1776, 24, 120), grain: GRAIN },
     background: GRADIENT(150),
   },
 ]
