@@ -29,6 +29,12 @@ export const schema: BlockSchema = {
     label: 'Size',
     help: 'sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone.',
   },
+  iconStyle: {
+    type: { kind: 'enum', values: ['plain', 'disc'] },
+    role: 'option',
+    label: 'Icon style',
+    help: 'disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent).',
+  },
 }
 
 export interface IconProps extends Record<string, unknown> {
@@ -38,6 +44,8 @@ export interface IconProps extends Record<string, unknown> {
   color?: 'accent' | 'surface' | 'onSurface' | 'onAccent'
   /** Icon side: sm 24 (default), md 48, lg 80, xl 128. */
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** CMP3 — `disc`: the icon on a tinted circle (SURVEY A4 "icon in disc"). Default `plain`. */
+  iconStyle?: 'plain' | 'disc'
 }
 
 export const defaults: IconProps = {

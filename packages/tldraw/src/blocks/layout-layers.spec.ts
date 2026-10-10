@@ -78,6 +78,8 @@ describe('LO2 — layer vocabulary on the built-in blocks', () => {
       'tls.x.watermark': 'backdrop',
       'tls.d.trend-badge': 'overlay',
       'tls.g.arrow': 'overlay',
+      // CMP3: a badge sits on a card or photo corner, like the trend badge.
+      'tls.t.badge': 'overlay',
     })
     // Every explicit `layer` is in the vocabulary, and each override differs from the derivation.
     for (const d of BUILT_IN_BLOCKS) {

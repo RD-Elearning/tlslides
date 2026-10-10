@@ -13,7 +13,7 @@ import { ctxNoAssets } from '../media-test'
 standardBlockSuite(tlsMIcon, { noCapacity: true })
 
 const lay = (props: Record<string, unknown>, w: number, h: number) => tlsMIcon.layout({ ...(tlsMIcon.defaults as any), ...props } as any, ctxNoAssets(w, h))
-const iconNode = (tree: any) => leavesOf(tree, 'icon')[0]
+const iconNode = (tree: any) => leavesOf(tree, 'icon').filter((l) => l.k === 'icon')[0]
 
 describe('tls.m.icon — size', () => {
   it('draws the size step, never larger than its box, and the example fits preferred and min', () => {
@@ -36,6 +36,39 @@ describe('tls.m.icon — size', () => {
     expect(tlsMIcon.intrinsicSize!({ icon: 'zap' } as any, ctxNoAssets(10, 10))).toEqual({ width: 24, height: 24 })
     expect(tlsMIcon.intrinsicSize!({ icon: 'zap', size: 'lg' } as any, ctxNoAssets(10, 10))).toEqual({ width: 80, height: 80 })
   })
+})
+
+describe('tls.m.icon — CMP3 disc', () => {
+  const disc = (tree: any) => leavesOf(tree, 'icon.disc')[0]
+  it('disc: a circle 1.75 x the icon, the icon centred on it', () => {
+    const t = lay({ size: 'lg', iconStyle: 'disc' }, 400, 300)
+    const d = disc(t)
+    expect([d.width, d.height]).toEqual([140, 140])
+    expect((d.node as any).radius).toBe(70)
+    const i = iconNode(t)
+    expect(i.width).toBe(80)
+    expect(i.x + i.width / 2).toBe(70)
+    expect(i.y + i.height / 2).toBe(70)
+  })
+
+  it('a tinted disc from the icon colour; onAccent gets a solid accent disc', () => {
+    const ctx = ctxNoAssets(400, 300)
+    const accent = ctx.resolveColor('accent').color
+    expect((disc(lay({ size: 'md', iconStyle: 'disc' }, 400, 300)).node as any).fill.color).not.toBe(accent)
+    expect((disc(lay({ size: 'md', iconStyle: 'disc', color: 'onAccent' }, 400, 300)).node as any).fill.color).toBe(accent)
+  })
+
+  it('the disc fits a small box; plain icons are unchanged (no group, no disc)', () => {
+    const t = lay({ size: 'xl', iconStyle: 'disc' }, 100, 100)
+    expect(disc(t).width).toBeLessThanOrEqual(100)
+    expect(lay({ size: 'md' }, 400, 300).k).toBe('icon')
+    expect(tlsMIcon.intrinsicSize!({ icon: 'zap', size: 'md', iconStyle: 'disc' } as any, ctxNoAssets(10, 10))).toEqual({ width: 84, height: 84 })
+  })
+
+  it('DOM and SVG agree on a disc icon (parity probe)', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsMIcon, { icon: 'shield', size: 'lg', iconStyle: 'disc' } as any, { width: 300, height: 200 })
+  }, 60000)
 })
 
 describe('tls.m.icon', () => {

@@ -4081,6 +4081,7 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
 | \`icon\` | yes | icon | Choose a name from the icon list in the capability index. Unknown names render a placeholder. |
 | \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
 | \`size\` | no | enum: sm \\\\| md \\\\| lg \\\\| xl | sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone. |
+| \`iconStyle\` | no | enum: plain \\\\| disc | disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent). |
 
 \`\`\`json
 {
@@ -4379,6 +4380,61 @@ Subtle backdrop texture: repeating dots, grid, lines or diagonal stripes (one pa
     \\"scale\\": \\"md\\",
     \\"tone\\": \\"accent\\",
     \\"opacity\\": \\"soft\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.shape\` — Shape
+
+A circle, rounded box or hexagon with a centred label and an optional icon above it. _(family: media; keywords: shape, circle, hexagon, node, hub, bubble, label)_
+
+**When:** Nodes you connect yourself: a hub and its satellites, or the boxes of a small flow joined by slide connectors.
+**Avoid:** A ready hub-and-spoke or cycle diagram (use tls.g.hub-spoke or tls.g.cycle) or a card with body text (use tls.l.card).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | yes | text (max 40 chars) | One to four words centred in the shape: a node, a concept, a hub (\\"Customer\\", \\"Data platform\\"). |
+| \`icon\` | no | icon | Optional icon above the label, from the icon list. Omit for a plain label. |
+| \`shape\` | no | enum: circle \\\\| rounded \\\\| hexagon |  |
+| \`tone\` | no | enum: solid \\\\| soft \\\\| outline | solid = accent fill, soft = a tint (default), outline = a border only. |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg | A circle sm 160, md 220, lg 300 units across; a box or hexagon about as large. A smaller box scales it down. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_shape\\",
+  \\"type\\": \\"tls.m.shape\\",
+  \\"props\\": {
+    \\"label\\": \\"Data platform\\",
+    \\"icon\\": \\"database\\",
+    \\"shape\\": \\"hexagon\\",
+    \\"tone\\": \\"soft\\",
+    \\"size\\": \\"md\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.badge\` — Badge [overlay]
+
+One short label on a pill (solid, soft or outline), optionally with a leading icon. _(family: text; keywords: badge, chip, pill, label, status, tag, highlight)_
+
+**When:** Flagging one card, plan or photo: \\"New\\", \\"Most popular\\", \\"Beta\\"; anchor it with \`layer: \\"overlay\\"\` + \`anchorTo\`.
+**Avoid:** Several labels in a row (use tls.t.tags) or a category above a title (use tls.t.kicker).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 24 chars) | One to three words: a status or a call-out, e.g. \\"New\\", \\"Most popular\\", \\"-38% cost\\". |
+| \`icon\` | no | icon | Optional leading icon from the icon list, e.g. \\"check\\", \\"star\\". Omit for a plain label. |
+| \`tone\` | no | enum: solid \\\\| soft \\\\| outline | solid = accent fill (default), soft = a tint, outline = a border only. |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_badge\\",
+  \\"type\\": \\"tls.t.badge\\",
+  \\"props\\": {
+    \\"text\\": \\"Most popular\\",
+    \\"icon\\": \\"star\\",
+    \\"tone\\": \\"solid\\"
   }
 }
 \`\`\`
@@ -4708,6 +4764,33 @@ Key and value pairs in aligned columns, with dotted or ruled leaders. _(family: 
       }
     ],
     \\"leader\\": \\"rule\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.marker\` — Marker
+
+A step or item number: on a disc (solid, soft or outline), or as an oversized numeral. _(family: text; keywords: marker, number, step, numeral, circle, index, badge)_
+
+**When:** Numbering cards or steps you compose yourself: a marker above each card title, or a big \\"01\\" beside a section.
+**Avoid:** A numbered list of text (use tls.t.numbered) or a ready process row (use tls.g.steps).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | text (max 4 chars) | The step or item number as it should read: \\"1\\", \\"02\\", \\"A\\". At most 4 characters. |
+| \`variant\` | no | enum: circle \\\\| numeral | circle = the number on a disc (default); numeral = an oversized accent numeral, no disc. |
+| \`tone\` | no | enum: solid \\\\| soft \\\\| outline | The disc of a circle marker: solid accent (default), soft tint, or an outline ring. |
+| \`size\` | no | enum: md \\\\| sm \\\\| lg | circle: sm 48, md 72, lg 104 units across; numeral: sm 64, md 112, lg 168 units tall type. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_marker\\",
+  \\"type\\": \\"tls.t.marker\\",
+  \\"props\\": {
+    \\"value\\": \\"1\\",
+    \\"variant\\": \\"circle\\",
+    \\"tone\\": \\"solid\\",
+    \\"size\\": \\"md\\"
   }
 }
 \`\`\`
@@ -5095,6 +5178,7 @@ A thin divider line, horizontal or vertical, plain or accent gradient, or a shor
 | \`weight\` | no | enum: hairline \\\\| md \\\\| bold | hairline 2, md 4, bold 8 slide units. |
 | \`tone\` | no | enum: line \\\\| accent \\\\| gradient | gradient runs from accent to accent2. |
 | \`length\` | no | enum: full \\\\| short | short is a 64 px bar at the start, e.g. under a heading. |
+| \`dash\` | no | boolean | A dashed separator (equal dashes and gaps). A gradient rule dashes in accent. |
 
 \`\`\`json
 {
@@ -5215,7 +5299,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 131,
+  "blockCount": 134,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -5324,6 +5408,8 @@ Object {
     "tls.m.logo",
     "tls.m.logo-wall",
     "tls.m.pattern",
+    "tls.m.shape",
+    "tls.t.badge",
     "tls.t.body",
     "tls.t.bullets",
     "tls.t.callout",
@@ -5334,6 +5420,7 @@ Object {
     "tls.t.hero-number",
     "tls.t.kicker",
     "tls.t.kv-list",
+    "tls.t.marker",
     "tls.t.numbered",
     "tls.t.qa",
     "tls.t.quote",
@@ -5431,9 +5518,9 @@ exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) s
 
 Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
 Scope: \`element\` combines with others; \`group\` is one per region; \`slide\` sits alone in the main region, never nested.
-Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look: turn them before switching block; other values are rejected. \`also:\` more blocks by name. Get a type's detail digest before filling its props.
+Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look: turn them before switching block; other values are rejected. \`also:\` more blocks by name. Get a type's detail before filling its props.
 Height \`[h…]\` (1920×1080 units, width after \`@\`): \`B+P/L\` per text line, \`+P/item\` per item, \`fill\` = the given height, \`X–Y\` varies.
-Layers: in one region, \`layer: \\"backdrop\\"\` paints behind, \`\\"overlay\\"\` on top (never over text); \`anchor\` fill, a corner/edge or center; \`anchorTo: \\"<id>\\"\`. Motion: \`motionStyle\` on deck/slide — expressive, subtle, static.
+Layers: in one region, \`layer: \\"backdrop\\"\` paints behind, \`\\"overlay\\"\` on top (never over text); \`anchor\` fill|corner|edge|center; \`anchorTo: \\"<id>\\"\`. Motion: \`motionStyle\` on deck/slide — expressive, subtle, static.
 
 ## Styles
 Set \`style\` and one of its palettes as \`theme\`; get its style card first.
@@ -5444,7 +5531,7 @@ playful: doodle (doodle-paper, doodle-kids); memphis (memphis-pop)
 
 ## Recipes
 
-Known-good slides per role (\`id · layout — region: blocks — when · looks\`), clean with example content. \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`). Swap content, keep the rest; never repeat a recipe/look in a deck.
+Known-good slides per role (\`id · layout — region: blocks — when · looks\`). \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`). Swap content, keep the rest; never repeat a recipe/look in a deck.
 
 ### cover
 cover-hero · blank — tls.c.hero — type-led opener · looks: center|split
@@ -5519,7 +5606,7 @@ also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
 tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=display|xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
 tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead|column
-also: tls.c.quote-image, tls.t.callout
+also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.marker
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
@@ -5564,7 +5651,7 @@ tls.g.tree · hierarchy · group — Org chart or hierarchy of boxes linked from
 also: tls.g.breakdown, tls.g.layers, tls.g.mindmap
 
 ## Relationships
-also: tls.g.bracket, tls.g.hub-spoke, tls.g.venn
+also: tls.g.bracket, tls.g.hub-spoke, tls.g.venn, tls.m.shape
 
 ## Media
 tls.c.image-full · media · slide — Full-slide photo with a headline panel [h=fill] knobs: panel=bottom-left|left|center|right|split|band, scrim=medium|strong|gradient, frame

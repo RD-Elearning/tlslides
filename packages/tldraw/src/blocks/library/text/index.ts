@@ -23,6 +23,8 @@ import { tlsTDefinition } from './tls-t-definition'
 import { tlsTKvList } from './tls-t-kv-list'
 import { tlsTTags } from './tls-t-tags'
 import { tlsTQa } from './tls-t-qa'
+import { tlsTBadge } from './tls-t-badge'
+import { tlsTMarker } from './tls-t-marker'
 
 /** All built-in text block definitions. */
 export const textBlocks: BlockDefinition[] = [
@@ -44,6 +46,8 @@ export const textBlocks: BlockDefinition[] = [
   tlsTKvList,
   tlsTTags,
   tlsTQa,
+  tlsTBadge,
+  tlsTMarker,
 ]
 
 export { tlsTTitle } from './tls-t-title'
@@ -64,3 +68,5 @@ export { tlsTDefinition } from './tls-t-definition'
 export { tlsTKvList } from './tls-t-kv-list'
 export { tlsTTags } from './tls-t-tags'
 export { tlsTQa } from './tls-t-qa'
+export { tlsTBadge } from './tls-t-badge'
+export { tlsTMarker } from './tls-t-marker'

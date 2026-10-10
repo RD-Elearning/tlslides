@@ -53,7 +53,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.arrow': t2(['kind', 'direction', 'heads', 'weight', 'tone']),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
-  'tls.x.rule': t2(['axis', 'weight', 'tone', 'length']),
+  'tls.x.rule': t2(['axis', 'weight', 'tone', 'length', 'dash']),
 
   // ── heading ──
   'tls.t.title': t1(['size', 'align', 'rule'], ['tls.t.kicker']),
@@ -72,6 +72,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.t.checklist': t2(['doneStyle', 'spacing', 'columns']),
   'tls.t.kv-list': t2(['leader', 'valueAlign', 'keyTone', 'columns']),
   'tls.t.tags': t2(['tone', 'shape', 'size', 'align', 'colorBy']),
+  // CMP3 atoms (composition README §2 CMP3): tier 2 — the tier-1 index has no room (§4).
+  'tls.t.badge': t2(['tone', 'size']),
+  'tls.t.marker': t2(['variant', 'tone', 'size']),
+  'tls.m.shape': t2(['shape', 'tone', 'size']),
   'tls.c.feature-grid': t1(['cell', 'align', 'iconStyle'], ['tls.m.icon-label', 'tls.c.feature-reveal']),
   'tls.c.cards': t1(['lead', 'tone', 'align', 'numeral'], ['tls.c.stat-card']),
   'tls.c.feature-reveal': t2(),
@@ -176,7 +180,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // AC6: full-bleed photo with a headline panel
   'tls.c.image-full': t1(['panel', 'scrim', 'frame']),
   'tls.m.image': t1(['fit'], ['tls.m.device-mock']),
-  'tls.m.icon': t2(['size']),
+  'tls.m.icon': t2(['size', 'iconStyle']),
   'tls.m.icon-label': t2(['size']),
   'tls.m.image-grid': t1(['pattern', 'cols', 'captions']),
   'tls.m.image-compare': t2(['mode', 'divider']),

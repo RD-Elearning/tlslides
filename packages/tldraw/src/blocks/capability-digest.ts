@@ -688,15 +688,15 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     // AC8.6: a few words trimmed to pay for the section-title recipe line (17k ceiling)
     'Lines: `type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle`. Knobs change the ' +
       'look: turn them before switching block; other values are rejected. `also:` more blocks by ' +
-      "name. Get a type's detail digest before filling its props."
+      "name. Get a type's detail before filling its props."
   )
   lines.push(
     'Height `[h…]` (1920×1080 units, width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` = ' +
       'the given height, `X–Y` varies.'
   )
   lines.push(
-    'Layers: in one region, `layer: "backdrop"` paints behind, `"overlay"` on top (never over text); `anchor` fill, a ' +
-      'corner/edge or center; `anchorTo: "<id>"`. Motion: `motionStyle` on deck/slide — expressive, subtle, static.'
+    'Layers: in one region, `layer: "backdrop"` paints behind, `"overlay"` on top (never over text); `anchor` ' +
+      'fill|corner|edge|center; `anchorTo: "<id>"`. Motion: `motionStyle` on deck/slide — expressive, subtle, static.'
   )
   lines.push('')
   // AC1: deck styles — one compact line each (or the chosen style's), full card on demand.
@@ -725,7 +725,8 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     lines.push('')
     lines.push(
       // AC8.6: trimmed (~40 chars) to pay for the section-title line within the 17k ceiling
-      'Known-good slides per role (`id · layout — region: blocks — when · looks`), clean with example content. ' +
+      // CMP3: trimmed (", clean with example content") to pay for the three atoms' `also:` names
+        'Known-good slides per role (`id · layout — region: blocks — when · looks`). ' +
         '`+title` = `tls.t.title` in the `title` region; no region name = the main region. ' +
         '`looks:` other designs (`id/look`). Swap content, keep the rest; never repeat a recipe/look in a deck.'
     )
