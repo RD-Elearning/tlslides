@@ -84,7 +84,8 @@ export function paintToCSS(paint: Paint): React.CSSProperties {
 /** Convert a `Stroke` to inline CSS border properties. */
 function strokeToCSS(stroke: Stroke): React.CSSProperties {
   return {
-    borderStyle: 'solid',
+    // CMP3: a dashed border (CSS cannot set the pattern; the SVG renderer draws the exact dash).
+    borderStyle: stroke.dash && stroke.dash.length > 0 ? 'dashed' : 'solid',
     borderWidth: `${stroke.width}px`,
     borderColor: stroke.color,
   }
@@ -550,7 +551,11 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               fill: fillCSS as string,
               ...(node.stroke
-                ? { stroke: node.stroke.color, strokeWidth: node.stroke.width }
+                ? {
+                    stroke: node.stroke.color,
+                    strokeWidth: node.stroke.width,
+                    ...(node.stroke.dash && node.stroke.dash.length > 0 ? { strokeDasharray: node.stroke.dash.join(' ') } : {}),
+                  }
                 : {}),
             }}
           />
@@ -709,6 +714,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               stroke: node.stroke.color,
               strokeWidth: node.stroke.width,
+              ...(node.stroke.dash && node.stroke.dash.length > 0 ? { strokeDasharray: node.stroke.dash.join(' ') } : {}),
             }}
             markerEnd={node.marker ? `url(#${renderMarkerId(node.marker)})` : undefined}
           />

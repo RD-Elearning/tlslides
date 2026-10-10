@@ -13,6 +13,8 @@ import type { RuleProps } from './schema'
 import { enumOf, side } from '../../media/_kit'
 
 export const RULE_PX = { hairline: 2, md: 4, bold: 8 } as const
+/** CMP3 (P14): a separator dashes 1:1; dash length per thickness (hairline 6, md 12, bold 24). */
+export const RULE_DASH = 3
 export const SHORT_PX = 64
 
 export function layout(props: RuleProps, ctx: LayoutContext): LayoutNode {
@@ -39,6 +41,22 @@ export function layout(props: RuleProps, ctx: LayoutContext): LayoutNode {
           ],
         }
       : { type: 'solid', color: ctx.resolveColor(tone === 'accent' ? 'accent' : 'line').color }
+  if (props.dash === true && len > 0) {
+    // CMP3: a dashed rule is a stroked path along the centre line (`Stroke.dash`, butt caps), in the
+    // same box and part as the solid bar, so the wipe motion and the anchor geometry are unchanged.
+    // A stroke has one colour: a gradient rule dashes in accent.
+    const color = fill.type === 'solid' ? fill.color : ctx.resolveColor('accent').color
+    const d = horizontal ? `M0 ${height / 2}L${width} ${height / 2}` : `M${width / 2} 0L${width / 2} ${height}`
+    const seg = t * RULE_DASH
+    const dashed: LayoutNode = {
+      k: 'path',
+      part: horizontal ? 'rule' : 'rule-v',
+      box: { x: 0, y: 0, width, height },
+      d,
+      stroke: { color, width: horizontal ? height : width, dash: [seg, seg] },
+    }
+    return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height }, children: [dashed] }
+  }
   const bar: LayoutNode = {
     k: 'rect',
     // A vertical rule is its own motion part so it can draw top-down along its length (M1b/E7).

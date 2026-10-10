@@ -206,6 +206,7 @@ function renderNodeInner(
       if (node.stroke) {
         styles.push(`stroke:${node.stroke.color}`)
         styles.push(`stroke-width:${node.stroke.width}`)
+        if (node.stroke.dash && node.stroke.dash.length > 0) styles.push(`stroke-dasharray:${node.stroke.dash.join(' ')}`)
       }
       if (styles.length > 0) {
         elAttrs.push(styleAttr(styles.join(';')))
@@ -233,6 +234,7 @@ function renderNodeInner(
       if (node.stroke) {
         styles.push(`stroke:${node.stroke.color}`)
         styles.push(`stroke-width:${node.stroke.width}`)
+        if (node.stroke.dash && node.stroke.dash.length > 0) styles.push(`stroke-dasharray:${node.stroke.dash.join(' ')}`)
       }
       return `<path d="${node.d}" ${styleAttr(styles.join(';'))}/>`
     }
@@ -334,7 +336,9 @@ function renderNodeInner(
 
     /* ── line ──────────────────────────────────────────────────────────────── */
     case 'line': {
-      const lineStyles = `stroke:${node.stroke.color};stroke-width:${node.stroke.width}`
+      const lineStyles =
+        `stroke:${node.stroke.color};stroke-width:${node.stroke.width}` +
+        (node.stroke.dash && node.stroke.dash.length > 0 ? `;stroke-dasharray:${node.stroke.dash.join(' ')}` : '')
       let markerAttrs = ''
       if (node.marker) {
         const id = markerId(node.marker, prefix)

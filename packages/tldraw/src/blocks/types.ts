@@ -715,6 +715,12 @@ export type Paint =
 export interface Stroke {
   color: string
   width: number
+  /** CMP3 (P14): a dash pattern in slide units, SVG `stroke-dasharray` order (`[8, 4]` a flow
+   *  connector, `[4, 4]` a separator). Absent = solid. Both renderers draw it on `path` and `line`
+   *  strokes (a `rect` border: SVG dash, DOM `border-style: dashed`); an exporter maps it to
+   *  DrawingML `a:prstDash` (`dash` / `sysDash`). A draw-on (`draw-path`) of a dashed stroke grows
+   *  the dash pattern along the path (`playBlockReveal`). */
+  dash?: number[]
 }
 
 /**
@@ -1136,6 +1142,50 @@ export interface SlideSpec {
   masterId?: string
   /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
   motionStyle?: MotionStyle
+  /** CMP3 (B2, X10) — lines between blocks, by block id (nested ids too), never by coordinates.
+   *  Compiled after layout into one overlay `tls.g.connector` shape each (on top of every block);
+   *  the round trip returns them here. */
+  connectors?: ConnectorSpec[]
+}
+
+/** CMP3 — which side of an endpoint block a connector leaves / enters. `auto` (default) = the
+ *  side facing the other endpoint. */
+export type ConnectorSide = 'auto' | 'top' | 'right' | 'bottom' | 'left'
+
+/** CMP3 — one end of a connector: a block id on the slide (a region block, a `free[]` block or a
+ *  block nested in a container's `props.children`) and the side to attach to. */
+export interface ConnectorEnd {
+  block: string
+  side?: ConnectorSide
+}
+
+/**
+ * CMP3 (B2, X10) — a line from one block to another (`SlideSpec.connectors`). Endpoints are block
+ * ids, so a connector survives re-layout, a theme change and an aspect change. The route attaches
+ * to the endpoints' painted boxes, with a small gap; the arrowhead sits on that gap.
+ *
+ * Maps 1:1 to a PPTX bound connector (`p:cxnSp`, `a:stCxn`/`a:endCxn` on the endpoint shapes):
+ * `straight` → `straightConnector1`, `elbow` → `bentConnector3`, `curved` → `curvedConnector3`;
+ * `head` → `a:tailEnd`/`a:headEnd type="triangle"`; `dash` → `a:prstDash val="dash"`.
+ */
+export interface ConnectorSpec {
+  /** Unique on the slide (shared namespace with block ids). */
+  id: string
+  from: ConnectorEnd
+  to: ConnectorEnd
+  /** `straight` (default; kept level when the boxes face each other), `elbow` (right angles with
+   *  rounded corners) or `curved` (a smooth S-curve). */
+  route?: 'straight' | 'elbow' | 'curved'
+  /** Arrowheads: `end` (default, at `to`), `both`, `none`. */
+  head?: 'end' | 'both' | 'none'
+  /** Colour: `line` (default, recessive), `accent`, `text`. */
+  tone?: 'line' | 'accent' | 'text'
+  /** Stroke: `hairline` 2, `md` 3 (default), `bold` 5 slide units. */
+  weight?: 'hairline' | 'md' | 'bold'
+  /** A dashed (flow) line. */
+  dash?: boolean
+  /** A short label at the middle of the line (≤ 24 chars), on a small pill. */
+  label?: string
 }
 
 /**

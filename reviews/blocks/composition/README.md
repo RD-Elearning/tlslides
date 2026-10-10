@@ -270,6 +270,13 @@ Oracle side: `design-checks.ts` (`inspectBlock`, `designFindings`, `DESIGN_CODES
 `dryRun.ts` — passes it; CLI flag `cli.js --llm`); quality gate `QualityFinding.code` widened to the
 design codes.
 
+**Added by CMP3:** `ConnectorEnd` / `ConnectorSide` (the type names of `ConnectorSpec.from`/`to` and
+`side`, values exactly as listed above plus `auto`, the default); `ConnectorSpec.tone` values
+`line | accent | text` and `weight` values `hairline | md | bold` (the `tls.x.rule` words; a connector
+needs a recessive default and the text colour, not a gradient); `ConnectorSpec.dash` and the
+`tls.x.rule` `dash` knob are booleans (the pattern is the engine's: flow `[8,4]`-like, separator 1:1);
+`RULE_DASH` (rule layout constant).
+
 ---
 
 ## 4. Budgets and machine rule

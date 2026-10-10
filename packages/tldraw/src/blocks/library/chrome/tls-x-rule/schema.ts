@@ -24,6 +24,12 @@ export const schema: BlockSchema = {
     label: 'Length',
     help: 'short is a 64 px bar at the start, e.g. under a heading.',
   },
+  dash: {
+    type: { kind: 'boolean' },
+    role: 'option',
+    label: 'Dashed',
+    help: 'A dashed separator (equal dashes and gaps). A gradient rule dashes in accent.',
+  },
 }
 
 export interface RuleProps extends Record<string, unknown> {
@@ -31,6 +37,8 @@ export interface RuleProps extends Record<string, unknown> {
   weight?: 'hairline' | 'md' | 'bold'
   tone?: 'line' | 'accent' | 'gradient'
   length?: 'full' | 'short'
+  /** CMP3 (P14) — a dashed separator (`Stroke.dash`). */
+  dash?: boolean
 }
 
 export const defaults: RuleProps = {
