@@ -178,10 +178,10 @@ export type {
   CapabilityPreference,
 } from './capability-digest'
 // AC0 — slide recipes per planner role (`reviews/blocks/ai-curation/README.md` §5.1).
-export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant, variantIds, BASE_VARIANT } from './recipes'
-export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant } from './recipes'
+export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant, variantIds, BASE_VARIANT, ASSET_KINDS, blockNeeds, designNeeds, assetsAllow } from './recipes'
+export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
-export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, shortenHeadline, DRY_RUN_OUTLINE, PROMPT_BUDGET } from './pipeline/dryRun'
+export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, shortenHeadline, DRY_RUN_OUTLINE, DRY_RUN_ASSETS, PROMPT_BUDGET } from './pipeline/dryRun'
 export type { StyleRunResult, PromptSections, OutlineEntry, Repair, VarietyReport, VarietyOptions, DryRunOptions } from './pipeline/dryRun'
 export {
   lookSignature,
@@ -197,6 +197,8 @@ export {
   DECK_LOOK_TYPES,
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
+export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE } from './pipeline/quality'
+export type { SlideQuality, QualityFinding, QualityCode } from './pipeline/quality'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
 // geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact

@@ -1220,11 +1220,15 @@ One key number in a progress ring that counts up, label beside it, up to 3 suppo
   \\"props\\": {
     \\"value\\": \\"87%\\",
     \\"progress\\": 87,
-    \\"label\\": \\"Tỉ lệ hoàn thành\\",
+    \\"label\\": \\"Pilots converted\\",
     \\"stats\\": [
       {
         \\"value\\": \\"312\\",
-        \\"label\\": \\"Sinh viên\\"
+        \\"label\\": \\"Active teams\\"
+      },
+      {
+        \\"value\\": \\"4.6\\",
+        \\"label\\": \\"Seats\\"
       }
     ]
   }
@@ -1334,8 +1338,9 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 | \`quote\` | yes | richText (max 500 chars) | The testimonial quote. 1–3 sentences. Bold key phrases for emphasis. |
 | \`name\` | yes | text (max 60 chars) | Speaker's full name. 2–4 words. |
 | \`role\` | yes | text (max 80 chars) | Speaker's title or position. 2–8 words. |
-| \`avatar\` | no | text (max 200 chars) | Avatar image URL (https:) or asset id. Optional; shows initials when absent. |
-| \`variant\` | no | enum: centered \\\\| photo | \`photo\`: the avatar as a large photo beside the quote. |
+| \`avatar\` | no | text (max 200 chars) | Image URL (https:) or asset id; initials when absent. |
+| \`variant\` | no | enum: centered \\\\| photo | \`photo\`: big photo beside. |
+| \`size\` | no | enum: md \\\\| lg |  |
 
 \`\`\`json
 {
@@ -2945,6 +2950,16 @@ Two-by-two quadrant grid with labelled axes and optional plotted points. _(famil
         \\"label\\": \\"Onboarding\\",
         \\"x\\": 0.2,
         \\"y\\": 0.8
+      },
+      {
+        \\"label\\": \\"SSO\\",
+        \\"x\\": 0.7,
+        \\"y\\": 0.8
+      },
+      {
+        \\"label\\": \\"Themes\\",
+        \\"x\\": 0.2,
+        \\"y\\": 0.2
       }
     ]
   }
@@ -3071,11 +3086,13 @@ Two columns of advantages and disadvantages with check and cross marks and an op
   \\"type\\": \\"tls.g.pros-cons\\",
   \\"props\\": {
     \\"pros\\": [
-      \\"Faster launch\\",
-      \\"Lower cost\\"
+      \\"Live in weeks, not quarters\\",
+      \\"Lower two-year cost\\",
+      \\"Vendor carries upkeep\\"
     ],
     \\"cons\\": [
-      \\"Less control\\"
+      \\"Less control over the roadmap\\",
+      \\"Data leaves our cloud\\"
     ],
     \\"verdict\\": \\"Worth it if speed matters most.\\"
   }
@@ -4116,6 +4133,7 @@ Stacked points, each with its own icon, title and short description. _(family: m
 | \`items\` | yes | list of object (icon, title, text) (2–6 items) | Title 2–5 words; description one short sentence. Pick an icon that names the idea. |
 | \`iconStyle\` | no | enum: plain \\\\| circle \\\\| square | circle and square put the icon on a tinted shape. |
 | \`iconTone\` | no | enum: accent \\\\| accent2 \\\\| text |  |
+| \`size\` | no | enum: body \\\\| fit | fit: biggest type that fills a tall column, centred. |
 | \`spacing\` | no | enum: default \\\\| compact \\\\| roomy |  |
 | \`showText\` | no | boolean |  |
 
@@ -4419,6 +4437,7 @@ Bullet list with dot/dash/chevron/number markers and indent levels. _(family: te
 | \`marker\` | no | enum: dot \\\\| dash \\\\| chevron \\\\| number \\\\| icon | Bullet style. |
 | \`indentLevels\` | no | boolean | Enable per-item indent levels for nested lists. |
 | \`spacing\` | no | enum: xs \\\\| sm \\\\| md \\\\| lg | Vertical spacing between items. |
+| \`size\` | no | enum: body \\\\| lead \\\\| fit | fit: biggest type that fills a tall column, centred. |
 | \`color\` | no | color (role or theme token — never hex) | Override the default text color role. |
 
 \`\`\`json
@@ -4801,7 +4820,7 @@ One large claim that fills the slide, key words emphasised. _(family: text; keyw
 |---|---|---|---|
 | \`text\` | yes | richText (max 140 chars) | One claim, a single sentence. Wrap the 1–3 key words in **double asterisks**. |
 | \`attribution\` | no | text (max 60 chars) | Optional source line, e.g. \\"Q3 board review\\". |
-| \`size\` | no | enum: xl \\\\| lg \\\\| md | Shrinks to fit, never below md. |
+| \`size\` | no | enum: display \\\\| xl \\\\| lg \\\\| md | Shrinks to fit, never below md. |
 | \`align\` | no | enum: start \\\\| center |  |
 | \`emphasis\` | no | enum: accent \\\\| underline \\\\| highlight | How the **bold** words render: accent colour, accent underline, or accent highlight. |
 | \`showAttribution\` | no | boolean |  |
@@ -4900,7 +4919,7 @@ Highlighted insight text with accent bar and optional label. _(family: text; key
 | \`tone\` | no | enum: accent \\\\| positive \\\\| warning \\\\| muted | Visual tone that controls the accent bar and surface tint. |
 | \`icon\` | no | icon | Optional icon shown beside the label. |
 | \`label\` | no | text | Short label, 1–3 words. e.g. \\"Key Insight\\", \\"Remember\\". |
-| \`size\` | no | enum: body \\\\| lead | \`lead\` reads at a glance beside a chart or under a KPI row; \`body\` for a long sentence. |
+| \`size\` | no | enum: body \\\\| lead \\\\| column | \`lead\` beside a chart or under a KPI row; \`column\`: big, centred in a tall column. |
 
 \`\`\`json
 {
@@ -5432,25 +5451,25 @@ cover-split-image · blank — tls.c.cover(variant=split,showImage=true) — ope
 cover-kinetic · blank — tls.c.kinetic-title — motion-led opener · looks: accent|start
 ### agenda
 agenda-full · timeline+title — tls.c.agenda — numbered agenda, full slide · looks: cards|badge|cards-badge
-agenda-image · two-column+title — left: tls.t.bullets(marker=number); right: tls.m.image — short agenda beside a photo · looks: mirror
+agenda-image · two-column+title — left: tls.t.bullets(marker=number,size=fit); right: tls.m.image — short agenda beside a photo · looks: mirror
 ### section
 section-divider · blank — tls.c.divider — section opener · looks: numeral|field|minimal|center
 section-title · section+title — title only — quiet section break
 ### content
 content-bento · timeline+title — tls.c.bento — a number, points, a photo
-content-statement · blank — tls.t.statement(size=xl) — one message, key words in accent · looks: center|underline|accent|lg
-content-bullets-image · two-column+title — left: tls.t.bullets; right: tls.m.image — a few points beside a picture · looks: mirror|chevron
+content-statement · blank — tls.t.statement(size=display) — one message, key words in accent · looks: center|underline|accent
+content-bullets-image · two-column+title — left: tls.t.bullets(size=fit); right: tls.m.image — points beside a photo · looks: mirror|chevron
 content-cards · timeline+title — tls.c.cards — 2–4 parallel points · looks: numbers|giant|accent|outline|center
 content-feature-grid · timeline+title — tls.c.feature-grid(cell=card) — features with icons · looks: circle|center
-content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list — icon points beside a photo · looks: mirror
-content-image-text · blank — tls.c.image-text — photo-led story · looks: right|top
+content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list(size=fit) — icon points beside a photo · looks: mirror
+content-image-text · blank — tls.c.image-text — photo-led story · looks: right
 ### data
 data-chart-insight · timeline+title — tls.c.chart-insight(insightSize=lead) — one chart, takeaway and source · looks: left|below|wide
 data-stat-spotlight · timeline+title — tls.c.stat-spotlight — a rate and three numbers · looks: side|plain
 data-big-stat · blank — tls.c.big-stat(align=center) — one giant number · looks: accent|split
 data-kpi-row · timeline+title — tls.c.kpi-row(tile=card) + tls.t.takeaway(size=lead) — 2–5 KPIs and their meaning · looks: bar|plain
 data-table · timeline+title — tls.d.table + tls.t.footnote(marker=source) — exact values, with a source · looks: head
-data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway(size=lead) — one-series bars, so-what beside · looks: mirror|horizontal
+data-bar-takeaway · two-column+title — left: tls.d.bar; right: tls.t.takeaway(size=column) — one-series bars, so-what beside · looks: mirror|horizontal
 ### comparison
 comparison-options · timeline+title — tls.c.comparison — 2–3 options side by side · looks: cards
 comparison-pros-cons · timeline+title — tls.g.pros-cons — arguments for and against · looks: cards|columns
@@ -5465,12 +5484,12 @@ process-timeline · timeline+title — tls.g.timeline(alternate=true) — dated 
 process-roadmap · timeline+title — tls.g.roadmap + tls.t.takeaway(size=lead) — plan by period and lane · looks: plain
 ### people
 people-team · timeline+title — tls.c.team — team members
-people-testimonial · blank — tls.c.testimonial — a customer quote
+people-testimonial · blank — tls.c.testimonial(size=lg) — a customer quote
 people-logo-wall · timeline+title — tls.m.logo-wall — clients or partners · looks: plates|dividers
 ### quote
 quote-pull · blank — tls.t.quote(variant=big) — a pull quote · looks: card|side|image
 quote-image-full · full-bleed — tls.c.image-full — a place or moment, edge to edge · looks: split|band|fade|fade-left|framed|framed-split
-quote-statement · blank — tls.t.statement(showAttribution=true,size=xl) — a quotable line, display type · looks: center|underline
+quote-statement · blank — tls.t.statement(showAttribution=true,size=display) — a quotable line · looks: center|underline
 ### closing
 closing-centered · blank — tls.c.closing(variant=centered) — thanks and a CTA · looks: link|big-type
 closing-split · blank — tls.c.closing(variant=split) — contacts beside the CTA · looks: link
@@ -5497,8 +5516,8 @@ also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.
 
 ## Emphasis
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
-tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
-tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead
+tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=display|xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
+tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead|column
 also: tls.c.quote-image, tls.t.callout
 
 ## Metrics
@@ -5516,16 +5535,16 @@ tls.d.line · chart · group · 2–24 items — Lines over ordered categories, 
 also: tls.d.area, tls.d.bubble, tls.d.funnel-chart, tls.d.heatmap, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.waterfall
 
 ## Tables
-tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h 222–284@840] knobs: zebra, rules=horizontal|head|none, header=filled|bold|none, density=default|compact
+tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h 222–332@840] knobs: zebra, rules=horizontal|head|none, header=filled|bold|none, density=default|compact
 also: tls.d.ranking, tls.d.scorecard
 
 ## Comparison
 tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style=plain|cards|versus
-tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–298@840] knobs: cellKind=check|rating|text, zebra, density=default|compact
+tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–350@840] knobs: cellKind=check|rating|text, zebra, density=default|compact
 tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h 525–822@840] knobs: featuredStyle=raised|outline|filled, align=top|stretch
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow=arrow|chevron|none, emphasis=after|none
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight=none|TL|TR|BL|BR, style=tinted|lines, showItems
-tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h≈168+73/item@840] knobs: style=columns|cards, balance=equal|auto, showVerdict
+tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h 354–604@840] knobs: style=columns|cards, balance=equal|auto, showVerdict
 also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.swot
 
 ## Process
@@ -5559,7 +5578,7 @@ tls.c.testimonial · people · group — Customer quote with name, role and avat
 also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
 
 ## Brand
-tls.m.logo-wall · brand · group · 3–16 items — Even grid of logos at equal visual weight, with an optional heading [h 104–280@544] knobs: cols=auto|3|4|5|6, plates, dividers
+tls.m.logo-wall · brand · group · 3–16 items — Even grid of logos at equal visual weight, with an optional heading [h 106–279@544] knobs: cols=auto|3|4|5|6, plates, dividers
 also: tls.m.logo
 
 ## Covers

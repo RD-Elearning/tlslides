@@ -2,7 +2,10 @@
  * AC7 — the scripted pipeline dry run (`pipeline/dryRun.ts`, CLI `tools/layout-report/dry-run.js`)
  * yields clean decks and a S2a prompt inside the 16k ceiling (`reviews/blocks/ai-curation/README.md` §5.2).
  */
-import { DRY_RUN_OUTLINE, PROMPT_BUDGET, runDryRun, runStyle, runVariety, shortenHeadline, signatureDiffer } from './pipeline/dryRun'
+import { DRY_RUN_ASSETS, DRY_RUN_OUTLINE, PROMPT_BUDGET, runDryRun, runStyle, runVariety, shortenHeadline, signatureDiffer } from './pipeline/dryRun'
+import { QUALITY_GATE, deckQuality, slideQuality } from './pipeline/quality'
+import { analyzeDeck } from './layout-report'
+import { RECIPES, assetsAllow, designNeeds } from './recipes'
 import { hashString, lookSignature, seedStride } from './pipeline/variety'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { getDeckStyle } from './styles'
@@ -108,5 +111,79 @@ describe('AC8 variety', () => {
       expect(seen.size).toBe(k)
     }
     expect(hashString('corporate|cover')).toBe(hashString('corporate|cover'))
+  })
+})
+
+// AC8.5 — the deck-level quality gate (`pipeline/quality.ts`, README §8.9) and the content-asset
+// input of the picker. The gate runs on the dry-run decks themselves, not only on recipe examples.
+describe('AC8.5 quality gate and assets', () => {
+  const reports = runVariety(['corporate', 'luxury', 'doodle', 'consulting'])
+
+  it('every slide of 4 styles x 3 seeds passes the quality gate (fill, region fill, lead type)', () => {
+    for (const v of reports) {
+      for (const r of v.runs) {
+        expect([v.style, r.seed, r.qualityFindings]).toEqual([v.style, r.seed, []])
+        // the gate the run reports is the one deckQuality computes from the finished deck
+        expect(deckQuality(r.deck).flatMap((q) => q.findings)).toEqual([])
+        expect(r.quality).toHaveLength(r.slides)
+        for (const q of r.quality) expect(q.fill).toBeGreaterThanOrEqual(QUALITY_GATE.displayFill)
+      }
+    }
+  })
+
+  it('variety still holds with the gate: >= 70% of slides differ between seeds, no avoidable repeat', () => {
+    for (const v of reports) {
+      expect([v.style, v.minDiffer >= 0.7]).toEqual([v.style, true])
+      expect([v.style, v.avoidableRepeats]).toEqual([v.style, 0])
+    }
+  })
+
+  it('flags a sparse slide: a title-size line alone on a blank page', () => {
+    const deck = { version: 1 as const, id: 'q', title: 'q', theme: 'corporate-navy', style: 'corporate', aspect: 'widescreen' as const, slides: [
+      { id: 'a', layout: 'blank', role: 'content' as const, regions: { content: [{ id: 'a1', type: 'tls.t.statement', props: { text: 'One short line.', size: 'lg' } }] } },
+    ] }
+    const [q] = deckQuality(deck)
+    expect(q.findings.map((f) => f.code)).toContain('quality/sparse')
+    expect(q.findings.map((f) => f.code)).toContain('quality/small-type')
+  })
+
+  it('flags a thin region: three short bullets beside a full-height photo, body size', () => {
+    const slide = { id: 'b', layout: 'two-column', role: 'content' as const, regions: {
+      title: [{ id: 'b1', type: 'tls.t.title', props: { text: { runs: [{ text: 'Points' }] } } }],
+      left: [{ id: 'b2', type: 'tls.t.bullets', props: { items: [{ text: 'Revenue up 42% YoY' }, { text: 'Enterprise APAC drove growth' }, { text: 'Churn fell to 3.1%' }] } }],
+      right: [{ id: 'b3', type: 'tls.m.image', props: { src: '', alt: 'Photo' } }],
+    } }
+    const deck = { version: 1 as const, id: 'q', title: 'q', theme: 'corporate-navy', style: 'corporate', aspect: 'widescreen' as const, slides: [slide] }
+    const q = slideQuality(analyzeDeck(deck)[0])
+    expect(q.thinRegion).toBe('left')
+    expect(q.findings.map((f) => f.code)).toContain('quality/thin-region')
+    // size: fit (what the recipes use) fills the column
+    const fit = { ...slide, regions: { ...slide.regions, left: [{ ...slide.regions.left[0], props: { ...slide.regions.left[0].props, size: 'fit' } }] } }
+    expect(slideQuality(analyzeDeck({ ...deck, slides: [fit] })[0]).findings).toEqual([])
+  })
+
+  it('names what a design needs, and the picker only offers designs the content can fill', () => {
+    const find = (id: string) => RECIPES.find((r) => r.id === id)!
+    expect(designNeeds(find('people-logo-wall'))).toEqual(['logos'])
+    expect(designNeeds(find('cover-split-image'))).toEqual(['images'])
+    expect(designNeeds(find('quote-pull'), 'image')).toEqual(['images'])
+    expect(designNeeds(find('quote-pull'), 'card')).toEqual([])
+    expect(designNeeds(find('people-team'))).toEqual([])
+    expect(assetsAllow(find('people-logo-wall'), 'base', { logos: false })).toBe(false)
+    expect(assetsAllow(find('people-logo-wall'), 'base', undefined)).toBe(true)
+    expect(DRY_RUN_ASSETS.logos).toBe(false)
+    // the default outline has no logos: no seed of any style picks the logo wall
+    for (const v of reports) for (const r of v.runs) expect(r.recipes).not.toContain('people-logo-wall')
+    // no images at all: no photo design anywhere in the deck
+    const bare = runStyle(getDeckStyle('corporate')!, 0, { seed: 2, assets: { images: false, logos: false, portraits: false, chartData: true } })
+    expect(bare.errors + bare.warnings).toBe(0)
+    for (let i = 0; i < bare.designs.length; i++) {
+      const [rid, vid] = bare.designs[i].split('/')
+      expect([bare.designs[i], designNeeds(find(rid), vid).includes('images')]).toEqual([bare.designs[i], false])
+    }
+    // a per-slide override: logos on the people slide only
+    const outline = DRY_RUN_OUTLINE.map((e) => (e.role === 'people' ? { ...e, assets: { logos: true } } : e))
+    const withLogos = [1, 2, 3, 4, 5, 6].map((seed) => runStyle(getDeckStyle('corporate')!, 0, { seed, outline }))
+    expect(withLogos.some((r) => r.recipes.includes('people-logo-wall'))).toBe(true)
   })
 })

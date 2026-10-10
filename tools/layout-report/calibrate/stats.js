@@ -75,9 +75,11 @@ for (const r of rows.filter(isLayout)) {
     if (!agrees(t.lines, d)) {
       tMis++
       if (t.lines < nearest(t.lines, d)) tUnder++
-      mis.push(`${r.slide}:${r.id} ${t.p} table ${t.lines} est ${e.lines} browser ${d.browserTol}-${d.browserStrict} (w ${Math.round(d.boxWidth)}, fs ${d.fontSize})`)
+      mis.push(`${r.slide}:${r.id} ${t.p} table ${t.lines} est ${e ? e.lines : '-'} browser ${d.browserTol}-${d.browserStrict} (w ${Math.round(d.boxWidth)}, fs ${d.fontSize})`)
     }
-    if (!agrees(e.lines, d)) {
+    // AC8.5: the estimate can lay a block out with another leaf count (a card that drops a line
+    // under the old average-width metric); the table pairing is what this report is about.
+    if (e && !agrees(e.lines, d)) {
       eMis++
       if (e.lines < nearest(e.lines, d)) eUnder++
     }

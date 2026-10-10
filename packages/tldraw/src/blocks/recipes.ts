@@ -99,7 +99,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'agenda-image',
     role: 'agenda',
     layout: 'two-column',
-    regions: { title: [TITLE], left: [b('tls.t.bullets', { marker: 'number' })], right: [b('tls.m.image')] },
+    regions: { title: [TITLE], left: [b('tls.t.bullets', { marker: 'number', size: 'fit' })], right: [b('tls.m.image')] },
     when: 'short agenda beside a photo', variants: [{ id: 'mirror', swap: ['left', 'right'] }] },
 
   // ── section ──
@@ -115,13 +115,14 @@ export const RECIPES: readonly SlideRecipe[] = [
   // ── content ──
   // AC6: the asymmetric tile grid (one big stat, points, a photo, a quote) under a title
   { id: 'content-bento', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.bento')] }, when: 'a number, points, a photo' },
-  { id: 'content-statement', role: 'content', layout: 'blank', regions: { content: [b('tls.t.statement', { size: 'xl' })] }, when: 'one message, key words in accent', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } }), v('accent', { 'tls.t.statement': { emphasis: 'accent' } }), v('lg', { 'tls.t.statement': { size: 'lg' } })] },
+  // AC8.5: display type (title-size type alone on a slide read unfinished); the `lg` look was dropped.
+  { id: 'content-statement', role: 'content', layout: 'blank', regions: { content: [b('tls.t.statement', { size: 'display' })] }, when: 'one message, key words in accent', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } }), v('accent', { 'tls.t.statement': { emphasis: 'accent' } })] },
   {
     id: 'content-bullets-image',
     role: 'content',
     layout: 'two-column',
-    regions: { title: [TITLE], left: [b('tls.t.bullets')], right: [b('tls.m.image')] },
-    when: 'a few points beside a picture', variants: [{ id: 'mirror', swap: ['left', 'right'] }, v('chevron', { 'tls.t.bullets': { marker: 'chevron' } })] },
+    regions: { title: [TITLE], left: [b('tls.t.bullets', { size: 'fit' })], right: [b('tls.m.image')] },
+    when: 'points beside a photo', variants: [{ id: 'mirror', swap: ['left', 'right'] }, v('chevron', { 'tls.t.bullets': { marker: 'chevron' } })] },
   { id: 'content-cards', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.cards')] }, when: '2–4 parallel points', variants: [v('numbers', { 'tls.c.cards': { lead: 'number' } }), v('giant', { 'tls.c.cards': { lead: 'number', numeral: 'giant' } }), v('accent', { 'tls.c.cards': { tone: 'accent-first' } }), v('outline', { 'tls.c.cards': { tone: 'outline' } }), v('center', { 'tls.c.cards': { align: 'center' } })] },
   {
     id: 'content-feature-grid',
@@ -133,14 +134,15 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'content-icon-list-image',
     role: 'content',
     layout: 'image-left',
-    regions: { title: [TITLE], image: [b('tls.m.image')], text: [b('tls.m.icon-list')] },
+    regions: { title: [TITLE], image: [b('tls.m.image')], text: [b('tls.m.icon-list', { size: 'fit' })] },
     when: 'icon points beside a photo', variants: [{ id: 'mirror', layout: 'image-right' }] },
   {
     id: 'content-image-text',
     role: 'content',
     layout: 'blank',
     regions: { content: [b('tls.c.image-text')] },
-    when: 'photo-led story', variants: [v('right', { 'tls.c.image-text': { placement: 'right' } }), v('top', { 'tls.c.image-text': { placement: 'top' } })] },
+    when: 'photo-led story', variants: [v('right', { 'tls.c.image-text': { placement: 'right' } })] },
+  // AC8.5: the `top` look was dropped — a short story under a wide photo left a third of the slide empty.
 
   // ── data ──
   {
@@ -167,7 +169,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     id: 'data-bar-takeaway',
     role: 'data',
     layout: 'two-column',
-    regions: { title: [TITLE], left: [b('tls.d.bar')], right: [b('tls.t.takeaway', { size: 'lead' })] },
+    regions: { title: [TITLE], left: [b('tls.d.bar')], right: [b('tls.t.takeaway', { size: 'column' })] },
     when: 'one-series bars, so-what beside', variants: [{ id: 'mirror', swap: ['left', 'right'] }, v('horizontal', { 'tls.d.bar': { orientation: 'horizontal' } })] },
 
   // ── comparison ──
@@ -186,7 +188,7 @@ export const RECIPES: readonly SlideRecipe[] = [
 
   // ── people ──
   { id: 'people-team', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.team')] }, when: 'team members', },
-  { id: 'people-testimonial', role: 'people', layout: 'blank', regions: { content: [b('tls.c.testimonial')] }, when: 'a customer quote' },
+  { id: 'people-testimonial', role: 'people', layout: 'blank', regions: { content: [b('tls.c.testimonial', { size: 'lg' })] }, when: 'a customer quote' },
   { id: 'people-logo-wall', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.m.logo-wall')] }, when: 'clients or partners', variants: [v('plates', { 'tls.m.logo-wall': { plates: true } }), v('dividers', { 'tls.m.logo-wall': { dividers: true } })] },
 
   // ── quote ──
@@ -194,7 +196,7 @@ export const RECIPES: readonly SlideRecipe[] = [
   { id: 'quote-pull', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.quote', { variant: 'big' })] }, when: 'a pull quote', variants: [v('card', { 'tls.t.quote': { variant: 'card' } }), v('side', { 'tls.t.quote': { variant: 'side' } }), v('image', { 'tls.t.quote': { variant: 'image' } })] },
   // AC6: a photo moment edge to edge (`full-bleed`, S13) with a headline panel
   { id: 'quote-image-full', role: 'quote', layout: 'full-bleed', regions: { content: [b('tls.c.image-full')] }, when: 'a place or moment, edge to edge', variants: [v('split', { 'tls.c.image-full': { panel: 'split' } }), v('band', { 'tls.c.image-full': { panel: 'band' } }), v('fade', { 'tls.c.image-full': { scrim: 'gradient' } }), v('fade-left', { 'tls.c.image-full': { panel: 'left', scrim: 'gradient' } }), v('framed', { 'tls.c.image-full': { frame: true, panel: 'center' } }), v('framed-split', { 'tls.c.image-full': { frame: true, panel: 'split' } })] },
-  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true, size: 'xl' })] }, when: 'a quotable line, display type', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } })] },
+  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true, size: 'display' })] }, when: 'a quotable line', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } })] },
 
   // ── closing ──
   // AC8: `variant: centered` spelled out — the example is the split variant, so before AC8 this
@@ -277,6 +279,52 @@ export function recipeSlide(recipe: SlideRecipe, registry: BlockRegistry, varian
   }
   const role = SLIDE_ROLE[recipe.role] ?? 'content'
   return { id: `sl_${recipe.id}${v ? `_${v.id}` : ''}`, layout: v?.layout ?? recipe.layout, role, regions }
+}
+
+/**
+ * AC8.5 — the content assets a slide can draw on. The outline (S1) says, per slide or per deck,
+ * whether the user's material has photos, logos, portraits of the people named, and chart data
+ * (a series or a table). The picker only offers a design whose needs are all present.
+ */
+export type AssetKind = 'images' | 'logos' | 'portraits' | 'chartData'
+export type SlideAssets = Record<AssetKind, boolean>
+export const ASSET_KINDS: readonly AssetKind[] = ['images', 'logos', 'portraits', 'chartData']
+
+/** Block type → what it cannot do without (a design that degrades well, e.g. initials discs on a
+ *  team or a testimonial without portraits, or a bento that drops its photo tile, needs nothing). */
+const TYPE_NEEDS: Record<string, AssetKind> = {
+  'tls.m.image': 'images',
+  'tls.c.image-full': 'images',
+  'tls.c.image-text': 'images',
+  'tls.m.logo-wall': 'logos',
+  'tls.d.bar': 'chartData',
+  'tls.d.table': 'chartData',
+  'tls.c.chart-insight': 'chartData',
+}
+
+/** What one block with these look knobs needs (knob-dependent for the cover and the quote). */
+export function blockNeeds(type: string, knobs: Record<string, unknown> = {}): AssetKind[] {
+  if (TYPE_NEEDS[type]) return [TYPE_NEEDS[type]]
+  if (type === 'tls.c.cover' && (knobs.showImage === true || knobs.variant === 'split' || knobs.variant === 'bleed')) return ['images']
+  if (type === 'tls.t.quote' && knobs.variant === 'image') return ['images']
+  return []
+}
+
+/** AC8.5 — the asset kinds a recipe design needs (its blocks with the recipe's and the variant's knobs). */
+export function designNeeds(recipe: SlideRecipe, variant?: string): AssetKind[] {
+  const v = findVariant(recipe, variant)
+  const out = new Set<AssetKind>()
+  for (const blocks of Object.values(recipe.regions)) {
+    for (const blk of blocks) for (const k of blockNeeds(blk.type, { ...(blk.knobs ?? {}), ...(v?.knobs?.[blk.type] ?? {}) })) out.add(k)
+  }
+  return ASSET_KINDS.filter((k) => out.has(k))
+}
+
+/** AC8.5 — does the slide's content have everything this design needs? A kind left out of
+ *  `assets` counts as absent; `undefined` (no availability given) allows everything. */
+export function assetsAllow(recipe: SlideRecipe, variant: string | undefined, assets: Partial<SlideAssets> | undefined): boolean {
+  if (!assets) return true
+  return designNeeds(recipe, variant).every((k) => assets[k] === true)
 }
 
 /** AC8 — a recipe's variant by id; `undefined` for the base design (or an unknown id). */

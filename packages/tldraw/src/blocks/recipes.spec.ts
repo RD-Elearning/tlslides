@@ -136,7 +136,7 @@ describe('AC0 slide recipes', () => {
     expect(recipeLine(RECIPES.find((r) => r.id === 'data-table')!)).toBe(
       'data-table · timeline+title — tls.d.table + tls.t.footnote(marker=source) — exact values, with a source · looks: head'
     )
-    expect(recipeLine(RECIPES.find((r) => r.id === 'content-bullets-image')!)).toContain('left: tls.t.bullets; right: tls.m.image')
+    expect(recipeLine(RECIPES.find((r) => r.id === 'content-bullets-image')!)).toContain('left: tls.t.bullets(size=fit); right: tls.m.image')
     expect(recipeLine(RECIPES.find((r) => r.id === 'section-title')!)).toBe('section-title · section+title — title only — quiet section break')
   })
 

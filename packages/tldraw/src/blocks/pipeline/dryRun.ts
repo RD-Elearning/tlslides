@@ -11,8 +11,10 @@
 import { AI_HIDDEN_TYPES, capabilityIndex } from '../capability-digest'
 import { analyzeDeck } from '../layout-report'
 import type { LayoutReport } from '../layout-report'
-import { RECIPE_ROLES, recipeSlide, recipesFor } from '../recipes'
-import type { RecipeRole, SlideRecipe } from '../recipes'
+import { RECIPE_ROLES, assetsAllow, recipeSlide, recipesFor } from '../recipes'
+import type { RecipeRole, SlideAssets, SlideRecipe } from '../recipes'
+import { deckTitleSize, slideQuality } from './quality'
+import type { SlideQuality } from './quality'
 import { applyDeckLook, deckLook, lookCandidates, lookSignature, pickOrder } from './variety'
 import type { DeckLook, LookCandidate } from './variety'
 import type { BlockRegistry } from '../registry'
@@ -25,11 +27,22 @@ export interface OutlineEntry {
   role: RecipeRole
   headline: string
   keyMessage: string
+  /** AC8.5: a short label above the headline (cover kicker). */
+  kicker?: string
+  /** AC8.5: what this slide's content has, over the deck's `DryRunOptions.assets`. */
+  assets?: Partial<SlideAssets>
 }
+
+/**
+ * AC8.5 — what the dry run's content provides (the S1 outline's assets): photos, portraits and
+ * chart data, no logos (the example logo URLs do not load offline, and a client list was never
+ * part of this outline).
+ */
+export const DRY_RUN_ASSETS: SlideAssets = { images: true, logos: false, portraits: true, chartData: true }
 
 /** The fixed 12-slide outline: one topic, the ten planner roles (data and content twice). */
 export const DRY_RUN_OUTLINE: readonly OutlineEntry[] = [
-  { role: 'cover', headline: 'Expanding Pulse analytics to mid-market teams', keyMessage: 'A focused plan to win the 200 to 2,000 employee segment' },
+  { role: 'cover', headline: 'Expanding Pulse analytics to mid-market teams', keyMessage: 'A focused plan to win the 200 to 2,000 employee segment', kicker: 'Quarterly review' },
   { role: 'agenda', headline: 'Agenda', keyMessage: 'Five questions we answer today' },
   { role: 'section', headline: 'Why mid-market, why now', keyMessage: 'The segment is under-served and ready to buy' },
   { role: 'content', headline: 'Mid-market teams outgrow spreadsheets', keyMessage: 'They need shared metrics without a data team' },
@@ -90,6 +103,10 @@ export interface StyleRunResult {
   exampleKept: number
   /** Every error/warning left, `slide N code: message`. */
   findings: string[]
+  /** AC8.5: the quality gate per slide (`pipeline/quality.ts`). */
+  quality: SlideQuality[]
+  /** AC8.5: every quality finding left, `slide N code: message`. */
+  qualityFindings: string[]
   /** All roles' recipes in the prompt (what the tier-1 index holds). */
   prompt: PromptSections
   /** The largest S2a prompt when only the slide's own role's recipes are sent (§5.2 "or all"). */
@@ -105,6 +122,9 @@ export interface DryRunOptions {
   avoidSignatures?: Iterable<string>
   /** AC8: palette id (default the style's first). */
   theme?: string
+  /** AC8.5: the deck's content assets (default `DRY_RUN_ASSETS`); an outline entry's `assets`
+   *  override it per slide. The picker only offers designs whose needs are present. */
+  assets?: Partial<SlideAssets>
 }
 
 /** Where a block type takes a headline: its prop, and whether that prop is rich text. */
@@ -119,6 +139,26 @@ const TITLE_SLOTS: Record<string, { prop: string; rich: boolean }> = {
   'tls.c.image-full': { prop: 'title', rich: false },
   'tls.t.statement': { prop: 'text', rich: false },
 }
+
+/**
+ * AC8.5 — the other slots S3 writes from the outline: the key message under the headline, the
+ * kicker above it, a big number's caption. Before AC8.5 these kept the block's example text
+ * ("Centre, spread and shape", a Vietnamese kinetic subtitle) on every dry-run deck.
+ */
+const MESSAGE_SLOTS: Record<string, Array<{ prop: string; from: 'keyMessage' | 'headline' | 'kicker'; rich?: boolean }>> = {
+  'tls.c.hero': [{ prop: 'subtitle', from: 'keyMessage', rich: true }, { prop: 'kicker', from: 'kicker' }],
+  'tls.c.cover': [{ prop: 'subtitle', from: 'keyMessage' }, { prop: 'kicker', from: 'kicker' }],
+  'tls.c.kinetic-title': [{ prop: 'subtitle', from: 'keyMessage' }, { prop: 'kicker', from: 'kicker' }],
+  'tls.c.divider': [{ prop: 'subtitle', from: 'keyMessage' }],
+  'tls.c.closing': [{ prop: 'text', from: 'keyMessage' }],
+  'tls.t.statement': [{ prop: 'attribution', from: 'keyMessage' }],
+  'tls.c.big-stat': [{ prop: 'label', from: 'headline' }, { prop: 'context', from: 'keyMessage' }],
+  'tls.c.image-full': [{ prop: 'text', from: 'keyMessage' }],
+  'tls.c.image-text': [{ prop: 'body', from: 'keyMessage' }],
+}
+
+/** Block types whose message slot carries the headline when the recipe has no title slot. */
+const HEADLINE_CARRIERS = new Set(['tls.c.big-stat'])
 
 /** Recipes the style allows: tier-1 blocks only, none of the style's `avoid` types or editor-only guides. */
 export function eligibleRecipes(role: RecipeRole, style: DeckStyle, registry: BlockRegistry): SlideRecipe[] {
@@ -143,7 +183,8 @@ export function fillSlide(
   id: string,
   variant?: string,
   style?: DeckStyle,
-  look?: DeckLook
+  look?: DeckLook,
+  entry?: Pick<OutlineEntry, 'keyMessage' | 'kicker'>
 ): { slide: SlideSpec; titled: boolean } {
   const raw = recipeSlide(recipe, registry, variant, style)
   const base = look ? applyDeckLook(raw, look, recipe, variant) : raw
@@ -158,10 +199,20 @@ export function fillSlide(
   for (const [name, blocks] of Object.entries(slide.regions ?? {})) {
     regions[name] = blocks.map((blk) => {
       const slot = TITLE_SLOTS[blk.type]
-      if (!slot) return blk
-      titled = true
-      const props: Record<string, unknown> = { ...(blk.props ?? {}), [slot.prop]: slot.rich ? { runs: [{ text: headline }] } : headline }
-      if (blk.type === 'tls.c.kinetic-title') props.highlight = headline.split(/\s+/).slice(-1)[0]
+      const extra = entry ? MESSAGE_SLOTS[blk.type] ?? [] : []
+      if (!slot && !extra.length) return blk
+      const props: Record<string, unknown> = { ...(blk.props ?? {}) }
+      if (slot) {
+        titled = true
+        props[slot.prop] = slot.rich ? { runs: [{ text: headline }] } : headline
+        if (blk.type === 'tls.c.kinetic-title') props.highlight = headline.split(/\s+/).slice(-1)[0]
+      }
+      for (const m of extra) {
+        const text = m.from === 'headline' ? headline : m.from === 'kicker' ? entry?.kicker ?? '' : entry?.keyMessage ?? ''
+        if (m.from === 'kicker' && !text) continue
+        props[m.prop] = m.rich ? { runs: [{ text }] } : text
+        if (m.from === 'headline' && HEADLINE_CARRIERS.has(blk.type)) titled = true
+      }
       return { ...blk, id: blk.id, props }
     })
   }
@@ -245,11 +296,19 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   let exampleKept = 0
   let avoidableRepeats = 0
   const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide], seed, opts.theme), { registry })[0]
+  // AC8.5: the quality gate is part of S4.1 — a design that looks unfinished is repaired like a warning.
+  const titleSize = deckTitleSize(deckOf(style, [], seed, opts.theme))
+  const problems = (report: LayoutReport) => [...bad(report), ...slideQuality(report, { titleSize }).findings.map((f) => `quality ${f.code}: ${f.message}`)]
+  const deckAssets = opts.assets ?? DRY_RUN_ASSETS
 
   const slides = outline.map((entry, i) => {
     const eligible = eligibleRecipes(entry.role, style, registry)
     if (!eligible.length) throw new Error(`style ${style.id}: no eligible recipe for role ${entry.role}`)
-    const candidates = lookCandidates(eligible, style, registry, look)
+    // AC8.5: only designs whose asset needs the slide's content meets (all of them if none does).
+    const assets = { ...deckAssets, ...(entry.assets ?? {}) }
+    const all = lookCandidates(eligible, style, registry, look)
+    const fit = all.filter((c) => assetsAllow(c.recipe, c.variant, assets))
+    const candidates = fit.length ? fit : all
     candidateCounts.push(candidates.length)
     // S2a stand-in (AC8 variety): rotate from a seeded start, fresh signatures first.
     const nth = seen[entry.role] ?? 0
@@ -259,15 +318,18 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
     let at = 0
     let cand: LookCandidate = order[0]
     let headline = entry.headline
-    const fill = () => fillSlide(cand.recipe, headline, registry, id, cand.variant, style, look)
+    const fill = () => fillSlide(cand.recipe, headline, registry, id, cand.variant, style, look, entry)
     let filled = fill()
     let report = analyze(filled.slide)
     // S4.1 stand-in: at most 3 repair rounds — next design in the order, then a shorter headline.
-    let best = { filled, cand, headline, count: bad(report).length, report }
-    for (let round = 1; round <= 3 && bad(report).length; round++) {
+    let best = { filled, cand, headline, count: problems(report).length, report }
+    for (let round = 1; round <= 3 && problems(report).length; round++) {
       let action: Repair['action']
       const from = `${cand.recipe.id}/${cand.variant}`
-      if (round !== 2 && order.length > 1) {
+      // AC8.5: a slide that only fails the quality gate gets another design, never a cut headline
+      // (shortening "Why mid-market, why now" to "Why mid-market, why" does not make it look finished)
+      const qualityOnly = !bad(report).length
+      if ((round !== 2 || qualityOnly) && order.length > 1) {
         action = 'next-recipe'
         at = (at + 1) % order.length
         cand = order[at]
@@ -277,11 +339,11 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
       }
       filled = fill()
       report = analyze(filled.slide)
-      repairs.push({ slide: i + 1, round, action, from, to: `${cand.recipe.id}/${cand.variant}`, detail: action === 'next-recipe' ? bad(best.report)[0] ?? '' : `"${headline}"` })
-      if (bad(report).length < best.count || !best.count) best = { filled, cand, headline, count: bad(report).length, report }
+      repairs.push({ slide: i + 1, round, action, from, to: `${cand.recipe.id}/${cand.variant}`, detail: action === 'next-recipe' ? problems(best.report)[0] ?? '' : `"${headline}"` })
+      if (problems(report).length < best.count || !best.count) best = { filled, cand, headline, count: problems(report).length, report }
     }
     // Keep the cleanest variant seen (the last when it is clean).
-    if (!bad(report).length) best = { filled, cand, headline, count: 0, report }
+    if (!problems(report).length) best = { filled, cand, headline, count: 0, report }
     if (!best.filled.titled) exampleKept++
     const sig = lookSignature(best.filled.slide, style, registry)
     if (usedSigs.has(sig) && candidates.some((c) => !usedSigs.has(c.signature))) avoidableRepeats++
@@ -304,6 +366,8 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
       if (f.severity !== 'info') findings.push(`slide ${i + 1} ${f.severity} ${f.code}: ${f.message}`)
     }
   })
+  const quality = reports.map((r) => slideQuality(r, { titleSize }))
+  const qualityFindings = quality.flatMap((q, i) => q.findings.map((f) => `slide ${i + 1} ${f.code}: ${f.message}`))
   for (const f of validateDeckSpec(deck, registry)) {
     if (f.level === 'error') errors++
     else warnings++
@@ -326,6 +390,8 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
     needsVisualCheck: reports.filter((r) => r.needsVisualCheck.length).length,
     exampleKept,
     findings,
+    quality,
+    qualityFindings,
     prompt: measurePrompt(style, registry),
     promptPerRole: perRolePrompt(style, registry),
   }
