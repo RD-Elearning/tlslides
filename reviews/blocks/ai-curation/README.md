@@ -807,8 +807,8 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | AC2 | ✅ done 2026-10-09 | part 1: `85c841de`, `609cc2d1`, `57ed1409`; part 2a: `89e49c55`, `349e4203`, `90ff0abe`, `8c9a73f7`, `237ba7ba`; part 2b: `d95333f1`, `3c4ea4d4`, `f6523e8d`, `c2151e22`, `591ed78f`, `466c13b7`, `3d546a40`, `c9d46d14` | §2.3 ranks 1–2 complete (feature-grid, testimonial, stat-spotlight, big-stat, hero; agenda, comparison, kpi-row, closing, cards, kinetic-title) + lead-review fixes; see Notes — AC2 (part 1), (part 2a), (part 2b) |
 | AC3 | ✅ done 2026-10-09 | `75348089`, `ea78f120`, `dab26adf` (pre-item: `a563f5d7`, `0f309f96`, `5f3d4bf3`) | heading/body families, 11 measured families + kerning pairs (Inter too), registry replaces name sniffing, sample + harness load the fonts, Vietnamese fixture deck; minimal = Be Vietnam Pro, gradient = Plus Jakarta Sans headings; sparse-recipe ratchet 3 → 0; see Notes — AC3 and AC3 (finish) |
 | AC4 | ✅ done 2026-10-09 | `75a0a16b`, `eeabb247`, `a12702c8`, `c38b0d48`, `e2cb3af5`, `2d2346c3` | rect.shadow, DeckTokens.surface + cardPaint (8 blocks), 8 motifs + grain/mesh, style master blocks painted on the page, chart look from tokens, Rough.js spike passed (adopt with doodle in AC5); see Notes — AC4 |
-| AC5 | ⬜ | | |
-| AC6 | ⬜ | | |
+| AC5 | 🟡 built, awaiting user review | `54894e92`, `2b3213cf`, `ae190106`, `cd7d9ef5`; review fixes `85a4f6e5`, `b98ec121`, `f1fc702b`, `c7bc8e7a` | seven styles (luxury, editorial, glass, swiss, doodle + doodle-kids, memphis, consulting), Rough.js motifs, contrast + per-style size-card specs; 10 decks clean, 100 shots looked at, `sheet7-<style>.png`; the lead runs the board review (`GVkKV9dh…`, "styles" tab); see Notes — AC5 |
+| AC6 | ✅ done 2026-10-10 | `9af1766f`, `fd6e0116` | `tls.c.bento`, `tls.c.image-full` (tier 1), `full-bleed` layout, recipes `content-bento` + `quote-image-full`; 131 blocks; in all ten style decks; see Notes — AC6 |
 | AC7 | ⬜ | | |
 
 ### Session log
@@ -824,6 +824,8 @@ fit-at-min pass; both appear in at least three style decks, clean reports, shots
 | 2026-10-09 | AC2 part 2b | Lead review of part 2a: big-stat large tier (number grows with the box), hero CTA on-accent label. §2.3 rank 2: agenda `variant`/`numbering`, comparison `style` (cards, versus), kpi-row `tile`, closing `variant: big-type`, cards `numeral: giant`, kinetic-title `tone`. AC2 ✅ | Next: AC3. Read Notes — AC2 (part 2b) "Open": the titled timeline recipes are still sparse by default (ratchet unchanged); digest top-8 has 49 chars of headroom (budget kept at 12,000). |
 | 2026-10-09 | AC2 lead review + AC3 | Roomy tiers so titled slides fill their region (sparse ratchet 11 → 3); heading/body families, 11 measured families, `font-widths.js`, fonts in sample + harness; minimal/gradient heading faces | Next: AC4. Read Notes — AC2 (lead review) and Notes — AC3 "Open". |
 | 2026-10-09 | AC3 finish + AC4 | AC3: kerning pairs (Inter p95 3.8 → 3.0 %), Vietnamese fixture, sparse ratchet 3 → 0. AC4: rect.shadow, surface + cardPaint, motifs, grain/mesh, master blocks on the page, chart look, Rough.js spike, two surfaces fixture decks | Next: AC5. Read Notes — AC4 "Open" first (minimal shows no ghost cards because its cards knob is `outline`; doodle adopts Rough.js; SVG poster icon size in feature-grid). |
+| 2026-10-09 | AC4 lead review + AC5 + AC6 | AC4 fixes (master shapes in `addSlideFromSpec`, SVG poster icons, minimal ghost cards, image fallbacks, pricing roomy tier); AC5 seven styles; AC6 bento + image-full + full-bleed | Session cut off by an API error before verification; finished in the next session. |
+| 2026-10-10 | AC5/AC6 finish | Verification (reports, calibration, parity chunks, tsc, specs, digest), 100 shots looked at; fixes: icons, pros-cons ellipsis, glass orbs, consulting section, bento gaps; `sheet7-*` | Next: the lead's board review of the ten styles (AC5 → ✅ or `fix` rows), then AC7. Read Notes — AC5 "Open". |
 | 2026-10-09 | AC1 | Style core, three pilot styles, fixture decks, digest style lines, `--metrics --style`, `run.js --decks` | Next: AC2. Read Notes — AC1 "Found" first (masters are not painted by the DOM path; pros-cons/agenda/quote need knobs or hug). |
 
 ### Notes — AC0
@@ -1615,3 +1617,224 @@ reuse the existing `style:` prefix.
 - Master blocks reach the page only through `deckSpecToDocument`. The editor's own
   `Deck.addSlideFromSpec` path does not add them yet.
 
+### Notes — AC4 (lead-review fixes, 2026-10-09)
+
+Five commits after the lead looked at the AC4 sheets, before AC5:
+- **`42289c75`** — `Deck.addSlideFromSpec` (the editor's own path) adds the style master shapes
+  and the master background, through a `styleMasterPage` helper shared with `deckSpecToDocument`.
+  This closes AC4 "Open" (master blocks reached the page only through `deckSpecToDocument`).
+  `style-masters.spec` +1 case.
+- **`05842baa`** — feature-grid poster icons are scaled to their box. The SVG export drew the
+  24-unit glyphs as dots (AC4 "Open"). A spec case pins the glyph to the disc.
+- **`b47beded`** — `minimal` drops its `cards.tone = outline` default, so the deck surface paints
+  the cards: ghost with a hairline top rule (AC4 "Open", the lead chose the surface).
+- **`7ebf37ba`** — image slots never show broken alt text.
+  - An avatar without a loadable photo draws an initials disc.
+  - A photo gets a tinted backing.
+  - The DOM hides an `<img>` that fails to load.
+  - Safe raster `data:` URIs resolve in `deck-context`.
+
+  Specs: avatar, image and deck-context cases.
+- **`16a1441f`** — pricing gets a roomy tier: bigger type, cards grow to 1.25× their content, and
+  the rules are aligned across cards. The pricing recipe joins the region-fill gate (≥ 80 %).
+  Size card and digest snapshot regenerated.
+
+### Notes — AC5 (2026-10-10)
+
+**What landed.**
+- **Rough.js** (`54894e92`): `roughjs` pinned `4.6.6`, a dependency of `packages/tldraw`, its
+  named consumer being `doodle` (AC4 spike decision). Generator only (`rough.generator()`, no
+  canvas or DOM). The seed is the decoration's existing `seed` prop (the doodle masters set one
+  per motif), so a render is byte-identical every time. It draws `squiggle`, `star` and `sparkle` hand-drawn
+  (`tls-m-decoration/rough.ts`). The paths are `M`/`C` only, so `pathBounds` measures them
+  exactly. Decoration spec +cases; the parity probes pass.
+- **Cards and surfaces** (`2b3213cf`):
+  - `cards lead=number` numbers the cards by position when no number is given.
+  - agenda (`cards` variant) and pros-cons (`cards` style) adopt `cardPaint`.
+- **Seven styles** (`ae190106`, review pass `cd7d9ef5`). Data in `blocks/styles/<id>.ts`, each
+  with one fixture deck `__fixtures__/styles/<id>.json`. All decks share the same slides; only
+  the id, title, theme and style differ, and `styles.spec` enforces that.
+
+  Master motifs in margins and corners are built by `styles/_place.ts`:
+  - nested `tls.l.split`s cut the frame down to the wanted box;
+  - `tls.l.spacer` fills the empty panels;
+  - `tls.l.field` makes the colour bands (`band(role)`).
+
+  This adds no new vocabulary, and the report, both renderers and the parity probe see ordinary
+  blocks.
+
+| Style | Palettes | Heading / body | Surface | Masters, motifs |
+|---|---|---|---|---|
+| `luxury` | `luxury-noir` #0E0E10 / gold #C8A96A; `luxury-ivory` #F7F3EC / #9A7B4F | Playfair Display / Inter | outline, hairline, shadow 0 | thin gold frame on every slide (double on cover and closing) over a radial vignette; a large soft gold `ring` in the section's empty half; slow fades |
+| `editorial` | `ivory-editorial` (existing), `editorial-ink` #FAF8F3 / red #C1272D / navy | Fraunces / Inter | ghost, bold → ink top rule | masthead (heavy ink rule over a hairline) and a folio rule on every page, a red accent bar on cover and section; giant numerals on cards; red pull-quote marks; one giant flush-left closing line |
+| `glass` | `glass-violet` #4C1D95→#1E3A8A gradient; `glass-pastel` #E0E7FF→#FCE7F3 | Plus Jakarta Sans / Inter | glass, hairline, shadow 1 | linear gradient + `mesh` (medium) + `grain`; lit `orb`s: three on the cover, one big one in the section's empty half, two small ones in the content margin corners |
+| `swiss` | `swiss-red` #F4F4F0 / #E3000F; `swiss-blue` #FFFFFF / #0047BB | Archivo / Archivo | ghost, bold → black top rule | visible 12-column hairline grid; heavy top rule; red square at the grid's top right; red block in the lower-right quarter of cover and closing; red bar at the section's left edge; flush left everywhere |
+| `doodle` | `doodle-paper` #FFFDF6 / #FF7A59 / #3DB8A6; `doodle-kids` #FFF8E7 / #EE4266 / #3BCEAC | Patrick Hand / Nunito | filled, bold ink stroke, shadow 0 | Rough.js stars, sparkles and squiggles in the margins (seeded); a big star in the section's empty half; short pops |
+| `memphis` | `memphis-pop` #FFF6E9 / #FF4F79 / #2EC4B6 (+ #FFC93C, #3A86FF) | Bricolage Grotesque / Nunito | filled, bold stroke, **hard** shadow | zigzag bands, triangles, half circles, dot patches, squiggles, yellow squares in margins and empty halves; pink section page with opaque shapes; scale pop-ins |
+| `consulting` | `consulting-ink` #FFFFFF / navy #00205B / teal #2BB3A3 | Source Serif 4 / Inter | outline, hairline, shadow 0 | content: navy tracker tab, hairline under the title band, footer rule; cover and closing: navy spine with a teal hairline on a light page; section: navy page with a teal edge, `field` divider in white; static |
+
+Fonts:
+- All eight heading/body families are OFL-1.1 and ship a `vietnamese` subset. They were checked
+  from the fontsource package metadata in AC3 (Notes — AC3): Playfair Display, Fraunces, Plus
+  Jakarta Sans, Archivo, Patrick Hand, Nunito, Bricolage Grotesque and Source Serif 4. Inter is
+  OFL too.
+- The width tables are the AC3 ones. AC5 adds no font.
+
+Specs:
+- **Contrast spec**: every palette passes text ≥ 4.5:1 on background and surface.
+- **Per-style tier-1 size-card spec** (§3.5): every tier-1 example still fits its `size.min`
+  under every style and palette.
+
+**Review fixes (this session, one commit each), found by looking at the 100 shots:**
+- **`85a4f6e5` icons**: the original ten icons were filled Material/Tabler shapes or hand-made
+  paths that the outline renderers stroke.
+  - `users` drew a garbled glyph in every deck's cards and bento.
+  - `clock`, `zap`, `shield` and `trending-up`/`trending-down` were also wrong.
+  - `check`, `arrow-right`, `globe` and `alert` drew doubled outlines.
+
+  All ten are now Lucide outlines. No snapshot held their paths.
+- **`b98ec121` pros-cons**: the per-row budget gave every point the same allowance of lines.
+  "Their sales team brings 400 mid-market accounts" was ellipsised in five decks (luxury,
+  editorial, gradient, glass, consulting) while the short points left room. A point now gets more
+  lines whenever both measured lists still fit the body height.
+- **`f1fc702b` glass**: the content master's 210-unit orb at the lower right sat under the
+  bottom-right card's text. The cards are translucent, so "Linh Pham, COO" was printed over a
+  bright pink orb. Both content orbs now sit in the corner margins (148 and 120 units) and overlap
+  the content box by at most a corner's padding.
+- **`c7bc8e7a` consulting section**: the `minimal` divider solved its title to a pale blue on the
+  navy page and dropped the number. The default is now `field`, which sets a white "01" and a
+  white title.
+- Tried and reverted: action-title wording in the consulting fixture. `styles.spec` requires every
+  style deck to carry the same content, so the consulting deck shows the style and not the
+  action-title rule. That rule lives in the style card and the critic (AC7).
+
+**Verification (2026-10-10).**
+- `cli.js` on all 14 `styles/*.json`: 0 errors, 0 warnings, 0 info, `needsVisualCheck` empty.
+  - The ten style decks have 10 slides each (8 canonical + bento + image-full).
+  - The other four decks: knobs 18, vietnamese 4, surfaces-glass 10, surfaces-hard 10.
+- **Calibration** `--shots` on the ten style decks: one Chromium run, 100 slides, 529 blocks.
+  - Painted height, table vs DOM: median 0.0 %, p95 0.5 % (4.0 units), 0 blocks > 5 %.
+  - **0 line-count mismatches** (table lines ≠ browser wrap: 0 of 695 leaves); there are no html
+    parts in these decks.
+  - Text-width |abs| p95: **2.5 % overall**. By family:
+
+    | Family | p95 |
+    |---|---|
+    | Inter | 3.0 % |
+    | Playfair Display | 1.0 % |
+    | Be Vietnam Pro | 0.6 % |
+    | Fraunces | 0.9 % |
+    | Plus Jakarta Sans | 0.8 % |
+    | Archivo | 2.7 % |
+    | Nunito | 2.5 % |
+    | **Patrick Hand** | **0.5 %** (budget 5 %) |
+    | Bricolage Grotesque | 0.6 % |
+    | Source Serif 4 | 1.0 % |
+
+  - 15 rendered lines run 1–3 % past their box: the cover and closing contact line in Inter.
+    These are invisible, as in LO5.
+- **Shots looked at**: all 100, before and after the fixes.
+- **LO8 parity chunks**, one at a time, all pass:
+  - data: 27 files, 29 probes;
+  - composite: 31 files, 68 probes, incl. bento and image-full;
+  - rest: 50 files, 70 probes, incl. the Rough.js motifs, image/avatar fallbacks, `parity.spec`
+    and `shadow.spec`.
+- **tsc**: prod 0, spec 329.
+- **jest** (`--maxWorkers=1`), all passing:
+  - styles (contrast, per-style size cards, masters), recipes, capability-digest,
+    catalog-conformance, layout-report, layout-calibration, block-metrics, slide-composition,
+    slide-layouts, demo-deck-*, block-library-tour, surface, deck-context, deck-document, icons,
+    and the touched blocks: 32 suites, 2,653 tests.
+  - library, non-parity: data 660, composite 1,074, rest 3,535.
+- **Size cards** regenerated: `gen-block-metrics.js` reproduces the committed file (131 blocks,
+  no drift).
+- **Digest**:
+
+  | Measure | Size / budget |
+  |---|---|
+  | top-8 detail | 11,951 / 12,000 |
+  | tier-1 index | **15,944 / 16,000** |
+  | full index | 18,958 / 20,000 |
+
+  Tier-1 per style: 15,145 (glass) – 15,981 (doodle).
+- **Sheets** (session scratchpad):
+  - `sheet7-<style>.png` for all ten styles: 8 canonical slides, 4×2, 720-px tiles;
+  - `sheet7-ac6.png`: bento + image-full × 10 styles.
+
+**Open / still weak (for the board review).**
+- The tier-1 index has only 56 chars of headroom; the next tier-1 line needs a trim first.
+- The glass bottom-right orb still touches a corner of a bottom-right card, in its padding and
+  not under its text. Glass has no real backdrop blur on layout cards; the blur is DOM-only in
+  html blocks.
+- The consulting fixture cannot show action titles (shared-content rule above). Its `field`
+  divider draws the card's hairline as an inset frame on the navy page; it reads as intentional,
+  but the reviewer may want it gone.
+- The doodle cover title wraps "Growing beyond one / product" (an orphan word); so do corporate
+  and consulting. There is no balanced-wrap rule for display titles yet.
+- The quote slides in every style are a single line pair in the middle of an empty page. Correct,
+  but sparse; a style-level quote treatment (giant mark, rule) is a candidate follow-up.
+- Rough.js motifs are hand-drawn outlines with a solid fill; at slide scale the roughness is
+  subtle.
+- `doodle-kids`, `luxury-ivory`, `swiss-blue` and `glass-pastel` have contrast specs but no
+  fixture deck. Only the default palette of each style was looked at.
+
+### Notes — AC6 (2026-10-10)
+
+**What landed** (`9af1766f`, finish `fd6e0116`).
+- **`tls.c.bento`**:
+  - slide scope, `category: list`, tier 1, `looks: ['pattern']`;
+  - patterns `1+2`, `2+1`, `hero+3`, `3+2`; a pattern with more slots than tiles falls back to
+    one that fits, and extra tiles are dropped;
+  - tile kinds `stat`, `point` (icon, title, text), `image` and `quote`;
+  - the first stat tile is the accent anchor, with its number set up to 2× display;
+  - other tiles take the deck surface through `cardPaint`.
+
+  The finish commit:
+  - scales the point icon disc with the tile (56–112 units, 26 % of the short side; it was
+    48–88, 20 %);
+  - keeps a gap under the stat number of 10 % of its size, because Playfair's old-style
+    descending "4" touched the label in luxury.
+- **`tls.c.image-full`**:
+  - slide scope, `category: media`, tier 1, `looks: ['panel', 'scrim']`;
+  - the photo covers the box under a scrim and an opaque headline panel (`bottom-left`, `left`
+    or `center`) with kicker, title and text.
+- **`full-bleed` layout**: one `content` region over the whole frame. It closes S13 for
+  `image-full` and `quote-image`.
+- **Recipes**: `content-bento` (timeline + title) and `quote-image-full` (`full-bleed`).
+  `recipes.spec` passes: every recipe compiles clean and the fill gate holds.
+- **Digest lines**:
+
+  ```
+  tls.c.bento · list · slide · 3–5 items — Asymmetric tile grid: a big stat, icon points, a photo, a quote [h=fill] knobs: pattern
+  tls.c.image-full · media · slide — Full-slide photo with a headline panel [h=fill] knobs: panel, scrim
+  ```
+
+  The tier-1 index was trimmed to stay within 16k: style lines are grouped one per family, and
+  some recipe `when` texts are shorter.
+- **Size cards**: bento preferred 1728×760, min 1200×560; image-full preferred 1920×1080, min
+  960×540. Both are `fill`, confidence high.
+- **Catalog**: `EXPECTED_BLOCK_COUNT` is 131, and the conformance gate passes.
+- **Decks**: both blocks are in all ten style decks (`st_09` bento, `st_10` image-full on
+  `full-bleed`).
+
+**Done-when check.**
+
+| Check | Result |
+|---|---|
+| Catalog count | 131 ✅ |
+| Standard suite (both) | ✅ |
+| Parity probes (in the composite chunk) | ✅ |
+| Fit at min | bento: every pattern at preferred and min size, contained, no text overlap; image-full: every panel at `size.min` ✅ |
+| In at least three style decks | in all 10 ✅ |
+| Clean reports | 0 / 0 / 0 ✅ |
+| Shots looked at | 20 (`sheet7-ac6.png`) ✅ |
+
+Bento and image-full specs: 42 tests.
+
+**Open.**
+- The bento point tile leaves an empty band between the icon and the bottom-anchored title in a
+  tall tile. That is by design (text at the foot), but a `hero+3` with short points looks airy.
+- The image-full panel is the same composition in every style; only the paint changes. A
+  style-level panel default (e.g. `left` for editorial) is a candidate `blockDefaults` entry.
+- The fixture photo is a small blurred data-URI JPEG (dusk skyline). A sharp, busy photo has not
+  been looked at under the scrim.
