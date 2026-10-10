@@ -42,7 +42,7 @@ import type { DeckTheme } from '~types'
 import { resolveThemeColor } from '~state/shapes/shared'
 import { designFindings, inspectBlock, type BlockInspection, type DesignBlock, type DesignCode } from './design-checks'
 import { paintAt, parseInk, type Background } from './layout/paint-model'
-import { shapeToBlock } from './shape-bridge'
+import { shapeToRevealBlock } from './shape-bridge'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
 import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
@@ -589,7 +589,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       styleOwned: id.startsWith(STYLE_MASTER_PREFIX) && base.layer === 'backdrop',
       box,
       spec: p.block,
-      motion: shapeToBlock(shape)?.motion,
+      motion: shapeToRevealBlock(shape)?.motion,
       ...(root ? { root } : {}),
       ...(inspection ? { inspection } : {}),
       text,

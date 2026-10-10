@@ -46,7 +46,7 @@ import type {
   SurfaceContext,
 } from './types'
 import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
-import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
+import { contentArea, getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
@@ -778,7 +778,14 @@ function compileLayered(
     if (!region) return []
     const def = registry?.get(l.block.type)
     const target = targetBox(l)
-    const box = anchoredBox(l.block, def, target ?? region, target ? tokens.space.sm : 0, tokens, registry, region, blockDefaults)
+    // CMP2: an anchored (not `fill`) block keeps the slide's safe margin — a region that reaches the
+    // frame edge (`full-bleed`) would put a corner kicker on the edge. Identity for every region that
+    // already lies inside the safe area.
+    const safe = contentArea(frame, tokens)
+    const anchored = !target && blockAnchor(l.block, def) !== 'fill'
+    const inSafe = anchored ? intersectBox(region, safe) : undefined
+    const container = target ?? inSafe ?? region
+    const box = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
     const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
     // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
     const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
@@ -856,6 +863,14 @@ function paintedBoxOf(
   } catch {
     return null
   }
+}
+
+function intersectBox(a: Box, b: Box): Box | undefined {
+  const x1 = Math.max(a.x, b.x)
+  const y1 = Math.max(a.y, b.y)
+  const x2 = Math.min(a.x + a.width, b.x + b.width)
+  const y2 = Math.min(a.y + a.height, b.y + b.height)
+  return x2 > x1 && y2 > y1 ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : undefined
 }
 
 /** Passes `anchoredSize` may grow a box by before it accepts what the block paints. */

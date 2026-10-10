@@ -34,7 +34,7 @@ import type { MeasureTextProvider } from './measure'
 import { editorMetrics } from './measure'
 import { imageSurface, isColorRole, resolveColor as solveColor, surfaceFromPaint } from '../tokens'
 import { guardInk, opaqueHex } from './ink-guard'
-import { greyOfLuminance, parseInk } from './paint-model'
+import { collectPaint, greyOfLuminance, parseInk } from './paint-model'
 import { relativeLuminance, rgbToHex } from '../color-math'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -854,6 +854,13 @@ function layoutBlockInner(
     const radiusOpt = ctx.style?.radius
     const radius = typeof radiusOpt === 'number' ? radiusOpt : radiusOpt ? ctx.tokens.radius[radiusOpt] ?? 0 : 0
     const height = node.box.height
+    // the panel hugs the content across (plus the block's own horizontal padding): a kicker's
+    // scrim is a label, not a full-width band, and an anchored block keeps its natural width
+    const [, padH] = ctx.style?.padding !== undefined ? resolvePadding(ctx.style.padding, ctx.tokens.space) : [0, 0]
+    const painted = collectPaint(node)
+    const xs = [...painted.ops.map((o) => o.box), ...painted.inks.map((i) => (i.node.k === 'text' ? { ...i.box, width: Math.max(0, ...i.node.lines.map((l) => l.width)) } : i.box))]
+    const x0 = xs.length ? Math.max(0, Math.min(...xs.map((bx) => bx.x)) - padH) : 0
+    const x1 = xs.length ? Math.min(ctx.box.width, Math.max(...xs.map((bx) => bx.x + bx.width)) + padH) : ctx.box.width
     const part = node.part
     node.part = undefined
     return {
@@ -861,7 +868,7 @@ function layoutBlockInner(
       box: { x: 0, y: 0, width: ctx.box.width, height },
       part,
       children: [
-        { k: 'rect', box: { x: 0, y: 0, width: ctx.box.width, height }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
+        { k: 'rect', box: { x: x0, y: 0, width: Math.max(0, x1 - x0), height }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
         node,
       ],
     }

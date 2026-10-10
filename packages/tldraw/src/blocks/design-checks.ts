@@ -641,13 +641,15 @@ function typeSizeCheck(blocks: DesignBlock[], out: Draft[]): void {
 }
 
 /** Is a colour the accent (same hue family; the ink guard may have darkened it)? */
-function accentLike(color: string | undefined, accent: { h: number; s: number }): boolean {
+function accentLike(color: string | undefined, accent: { h: number; s: number; l: number }): boolean {
   const c = parseInk(color)
   if (!c || c.alpha < 0.5) return false
   const hsl = rgbToHsl(c.rgb)
   if (hsl.s < 0.25 || hsl.l < 0.08 || hsl.l > 0.95) return false
+  // same hue, and not far in lightness (navy ink is not a bright blue accent; a solved accent moves
+  // a little)
   const d = Math.abs(hsl.h - accent.h)
-  return Math.min(d, 360 - d) <= 12
+  return Math.min(d, 360 - d) <= 12 && Math.abs(hsl.l - accent.l) <= 0.25
 }
 
 /** `accent/overuse` (P10): how many blocks paint the accent — a slide-level block, or a nested

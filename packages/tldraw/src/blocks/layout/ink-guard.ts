@@ -86,10 +86,19 @@ export function guardInk(root: LayoutNode, surface: SurfaceContext, literalInks:
       if (!hex || literalInks.has(hex)) continue
       const own = inkContrast({ ...ink, colors: [color] }, ops, base)
       if (!own || (own.overUnknown && !own.blended) || own.ratio >= floor - 1e-6) continue
-      const solved = solveForContrast(hex, relativeLuminance(own.bg), floor)
-      // A gradient under the ink can fail at another point: keep the better of the two.
-      const check = inkContrast({ ...ink, colors: [solved.color] }, ops, base)
-      if (check && check.ratio > own.ratio) swap.set(color, solved.color)
+      // Solve against the worst background; when the answer fails somewhere else (a gradient, a
+      // scrimmed photo's other extreme), solve again against that — a few rounds, keep the best.
+      let best = { color: hex, ratio: own.ratio }
+      let against = own.bg
+      for (let round = 0; round < 3; round++) {
+        const solved = solveForContrast(hex, relativeLuminance(against), floor)
+        const check = inkContrast({ ...ink, colors: [solved.color] }, ops, base)
+        if (!check) break
+        if (check.ratio > best.ratio) best = { color: solved.color, ratio: check.ratio }
+        if (check.ratio >= floor - 1e-6) break
+        against = check.bg
+      }
+      if (best.color !== hex) swap.set(color, best.color)
     }
     if (!swap.size) continue
     changed++

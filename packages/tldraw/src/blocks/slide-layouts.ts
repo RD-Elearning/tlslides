@@ -38,7 +38,7 @@ function gutter(tokens: ResolvedTokens): number {
 }
 
 /** The safe-margin inset box: the usable content area of the frame. */
-function contentArea(frame: { width: number; height: number }, tokens: ResolvedTokens): Box {
+export function contentArea(frame: { width: number; height: number }, tokens: ResolvedTokens): Box {
   const m = margin(tokens)
   return { x: m, y: m, width: Math.max(0, frame.width - 2 * m), height: Math.max(0, frame.height - 2 * m) }
 }
