@@ -113,9 +113,15 @@ export function alignText(nodes: LayoutNode[], align: 'start' | 'center' | 'end'
       const top = line.top ?? i * lh
       const lw = Math.min(n.box.width, lineWidth(line.text, n.style) || line.width)
       const x = align === 'center' ? n.box.x + (n.box.width - lw) / 2 : n.box.x + n.box.width - lw
+      // AC8: a centred small label (caption size and below) keeps 6 % slack on its right, inside the
+      // original box: headless Chromium rounds each advance of a 22 px glyph to a whole pixel (+3–5 %,
+      // AC3 notes), and a box shrunk to the measured width then wrapped "lan.tran@example.edu" onto
+      // two lines in the browser. The text still starts at `x`, so nothing moves.
+      const size = n.style.size * (n.style.scale ?? 1)
+      const slack = align === 'center' && size <= 24 ? Math.min(lw * 0.06 + 2, n.box.x + n.box.width - (x + lw + 1)) : 0
       out.push({
         ...n,
-        box: { x, y: n.box.y + top, width: Math.max(1, lw + 1), height: lh },
+        box: { x, y: n.box.y + top, width: Math.max(1, lw + 1 + Math.max(0, slack)), height: lh },
         lines: [{ ...line, top: 0, baseline: line.baseline - top }],
       } as LayoutNode)
     })

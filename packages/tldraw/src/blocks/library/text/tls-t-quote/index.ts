@@ -42,6 +42,8 @@ export const tlsTQuote: BlockDefinition = {
         attribution: 'Steve Jobs',
         role: 'Co-founder, Apple',
         markStyle: 'glyph',
+        image: '/demo/photo-1.svg',
+        alt: 'Students at a long table',
       },
     },
   },

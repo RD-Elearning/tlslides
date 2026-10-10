@@ -115,7 +115,7 @@ export const RECIPES: readonly SlideRecipe[] = [
   // ── content ──
   // AC6: the asymmetric tile grid (one big stat, points, a photo, a quote) under a title
   { id: 'content-bento', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.bento')] }, when: 'a number, points, a photo' },
-  { id: 'content-statement', role: 'content', layout: 'blank', regions: { content: [b('tls.t.statement')] }, when: 'one message, key words in accent', variants: [v('xl', { 'tls.t.statement': { size: 'xl' } }), v('xl-center', { 'tls.t.statement': { size: 'xl', align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } }), v('accent', { 'tls.t.statement': { emphasis: 'accent' } })] },
+  { id: 'content-statement', role: 'content', layout: 'blank', regions: { content: [b('tls.t.statement', { size: 'xl' })] }, when: 'one message, key words in accent', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } }), v('accent', { 'tls.t.statement': { emphasis: 'accent' } }), v('lg', { 'tls.t.statement': { size: 'lg' } })] },
   {
     id: 'content-bullets-image',
     role: 'content',
@@ -186,15 +186,15 @@ export const RECIPES: readonly SlideRecipe[] = [
 
   // ── people ──
   { id: 'people-team', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.team')] }, when: 'team members', },
-  { id: 'people-testimonial', role: 'people', layout: 'blank', regions: { content: [b('tls.c.testimonial')] }, when: 'a customer quote', variants: [v('photo', { 'tls.c.testimonial': { variant: 'photo' } })] },
+  { id: 'people-testimonial', role: 'people', layout: 'blank', regions: { content: [b('tls.c.testimonial')] }, when: 'a customer quote' },
   { id: 'people-logo-wall', role: 'people', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.m.logo-wall')] }, when: 'clients or partners', variants: [v('plates', { 'tls.m.logo-wall': { plates: true } }), v('dividers', { 'tls.m.logo-wall': { dividers: true } })] },
 
   // ── quote ──
   // `blank`, not the `quote` layout: its 140-unit quote region is shorter than a quote with attribution.
-  { id: 'quote-pull', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.quote')] }, when: 'a pull quote', variants: [v('big', { 'tls.t.quote': { variant: 'big' } }), v('card', { 'tls.t.quote': { variant: 'card' } }), v('side', { 'tls.t.quote': { variant: 'side' } }), v('image', { 'tls.t.quote': { variant: 'image' } })] },
+  { id: 'quote-pull', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.quote', { variant: 'big' })] }, when: 'a pull quote', variants: [v('card', { 'tls.t.quote': { variant: 'card' } }), v('side', { 'tls.t.quote': { variant: 'side' } }), v('image', { 'tls.t.quote': { variant: 'image' } })] },
   // AC6: a photo moment edge to edge (`full-bleed`, S13) with a headline panel
   { id: 'quote-image-full', role: 'quote', layout: 'full-bleed', regions: { content: [b('tls.c.image-full')] }, when: 'a place or moment, edge to edge', variants: [v('split', { 'tls.c.image-full': { panel: 'split' } }), v('band', { 'tls.c.image-full': { panel: 'band' } }), v('fade', { 'tls.c.image-full': { scrim: 'gradient' } }), v('fade-left', { 'tls.c.image-full': { panel: 'left', scrim: 'gradient' } }), v('framed', { 'tls.c.image-full': { frame: true, panel: 'center' } }), v('framed-split', { 'tls.c.image-full': { frame: true, panel: 'split' } })] },
-  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true })] }, when: 'a quotable line, display type', variants: [v('xl', { 'tls.t.statement': { size: 'xl' } }), v('xl-center', { 'tls.t.statement': { size: 'xl', align: 'center' } })] },
+  { id: 'quote-statement', role: 'quote', layout: 'blank', regions: { content: [b('tls.t.statement', { showAttribution: true, size: 'xl' })] }, when: 'a quotable line, display type', variants: [v('center', { 'tls.t.statement': { align: 'center' } }), v('underline', { 'tls.t.statement': { emphasis: 'underline' } })] },
 
   // ── closing ──
   // AC8: `variant: centered` spelled out — the example is the split variant, so before AC8 this

@@ -10,7 +10,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.cards': 'h=fill',
   'tls.c.case-study': 'h≈537@840',
   'tls.c.chart-insight': 'h=fill',
-  'tls.c.closing': 'h=fill',
+  'tls.c.closing': 'h≈413@840',
   'tls.c.comparison': 'h≈238+50/item@1728',
   'tls.c.contact': 'h≈196+72/item@840',
   'tls.c.cover': 'h=fill',

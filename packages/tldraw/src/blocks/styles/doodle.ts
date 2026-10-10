@@ -122,7 +122,7 @@ export const DOODLE_STYLE: DeckStyle = {
     'tls.c.divider': { variant: ['minimal'] },
     'tls.c.cards': { tone: ['accent-first'], lead: ['number'] },
     'tls.c.chart-insight': { side: ['below'] },
-    'tls.c.closing': { variant: ['split', 'big-type'] },
+    'tls.c.closing': { variant: ['split'] },
   },
   prefer: ['tls.g.cycle', 'tls.c.quiz', 'tls.t.checklist'],
   avoid: ['tls.d.table', 'tls.d.scatter', 'tls.d.bubble', 'tls.d.heatmap'],

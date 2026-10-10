@@ -4783,7 +4783,9 @@ Pull quote with attribution: mark beside the text, display-size, on a card, with
     \\"text\\": \\"The only way to do great work is to love what you do.\\",
     \\"attribution\\": \\"Steve Jobs\\",
     \\"role\\": \\"Co-founder, Apple\\",
-    \\"markStyle\\": \\"glyph\\"
+    \\"markStyle\\": \\"glyph\\",
+    \\"image\\": \\"/demo/photo-1.svg\\",
+    \\"alt\\": \\"Students at a long table\\"
   }
 }
 \`\`\`
@@ -5436,7 +5438,7 @@ section-divider · blank — tls.c.divider — section opener · looks: numeral|
 section-title · section+title — title only — quiet section break
 ### content
 content-bento · timeline+title — tls.c.bento — a number, points, a photo
-content-statement · blank — tls.t.statement — one message, key words in accent · looks: xl|xl-center|underline|accent
+content-statement · blank — tls.t.statement(size=xl) — one message, key words in accent · looks: center|underline|accent|lg
 content-bullets-image · two-column+title — left: tls.t.bullets; right: tls.m.image — a few points beside a picture · looks: mirror|chevron
 content-cards · timeline+title — tls.c.cards — 2–4 parallel points · looks: numbers|giant|accent|outline|center
 content-feature-grid · timeline+title — tls.c.feature-grid(cell=card) — features with icons · looks: circle|center
@@ -5463,12 +5465,12 @@ process-timeline · timeline+title — tls.g.timeline(alternate=true) — dated 
 process-roadmap · timeline+title — tls.g.roadmap + tls.t.takeaway(size=lead) — plan by period and lane · looks: plain
 ### people
 people-team · timeline+title — tls.c.team — team members
-people-testimonial · blank — tls.c.testimonial — a customer quote · looks: photo
+people-testimonial · blank — tls.c.testimonial — a customer quote
 people-logo-wall · timeline+title — tls.m.logo-wall — clients or partners · looks: plates|dividers
 ### quote
-quote-pull · blank — tls.t.quote — a pull quote · looks: big|card|side|image
+quote-pull · blank — tls.t.quote(variant=big) — a pull quote · looks: card|side|image
 quote-image-full · full-bleed — tls.c.image-full — a place or moment, edge to edge · looks: split|band|fade|fade-left|framed|framed-split
-quote-statement · blank — tls.t.statement(showAttribution=true) — a quotable line, display type · looks: xl|xl-center
+quote-statement · blank — tls.t.statement(showAttribution=true,size=xl) — a quotable line, display type · looks: center|underline
 ### closing
 closing-centered · blank — tls.c.closing(variant=centered) — thanks and a CTA · looks: link|big-type
 closing-split · blank — tls.c.closing(variant=split) — contacts beside the CTA · looks: link
@@ -5573,7 +5575,7 @@ tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with no
 also: tls.c.objectives
 
 ## Closing
-tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h=fill] knobs: variant=centered|split|big-type, ctaStyle=button|link
+tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h≈413@840] knobs: variant=centered|split|big-type, ctaStyle=button|link
 also: tls.c.contact, tls.c.recap
 
 ## Learning

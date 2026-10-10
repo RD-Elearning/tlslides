@@ -217,4 +217,12 @@ describe('tls.t.quote', () => {
       expect(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: 'classic' } as never, ctx())).toEqual(tlsTQuote.layout({ ...tlsTQuote.defaults, variant: undefined } as never, ctx()))
     })
   })
+
+  // AC8: DOM and SVG agree on every designed variant (layout leaves only; parity probe)
+  it('DOM and SVG agree for big, card, side and image (parity probe)', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    for (const variant of ['big', 'card', 'side', 'image']) {
+      await assertParity(tlsTQuote, { ...tlsTQuote.defaults, variant } as any, { width: 1600, height: 800 })
+    }
+  }, 120000)
 })

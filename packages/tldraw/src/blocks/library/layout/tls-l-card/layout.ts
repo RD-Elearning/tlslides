@@ -34,7 +34,11 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   }
   // AC4: a card with no instance surface takes the deck surface (`cardPaint`); an explicit
   // `style.surface` (a host's or a parent block's paint) wins.
-  const cp = explicit ? undefined : cardPaint(ctx, { fill: surfaceFill })
+  // AC8: a non-neutral colour-role surface (`'scrim'`, `'accent'`) is an explicit choice too —
+  // before AC8 a cover's photo scrim took the deck's glass paint (a light wash under light text on
+  // glass-pastel). `surface` / `surfaceAlt` stay the card's base under the deck surface.
+  const roleSurface = typeof ctx.style?.surface === 'string' && !['surface', 'surfaceAlt'].includes(ctx.style.surface)
+  const cp = explicit || roleSurface ? undefined : cardPaint(ctx, { fill: surfaceFill })
   const background: LayoutNode[] =
     cp && cp.styled
       ? cardNodes(cp, outerBox, ctx.tokens.radius.md, 'background')

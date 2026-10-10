@@ -564,7 +564,7 @@ describe('R7 — capability digest v2', () => {
       it('carries the recipes and the shared header', () => {
         expect(tier1).toContain('## Recipes')
         expect(tier1).toContain('cover-hero · blank — tls.c.hero — ')
-        expect(tier1).toContain('looks: big|card|side|image')
+        expect(tier1).toContain('tls.t.quote(variant=big) — a pull quote · looks: card|side|image')
         expect(tier1).toContain('Dated → `timeline`')
         expect(tier1).toContain('## Icons')
         expect(capabilityIndex(reg, { tier: 1, roles: ['cover'] })).not.toContain('data-big-stat ·')

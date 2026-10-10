@@ -4,7 +4,7 @@
 
 import { tlsCImageFull, buildImageFull } from './index'
 import { standardBlockSuite, leavesOf, absoluteLeaves, assertContained, assertNoTextOverlap } from '../../text/standard-suite'
-import { depthOk, layoutAt, hasPart, compileInRegion } from '../composite-test'
+import { depthOk, layoutAt, hasPart, compileInRegion, registry } from '../composite-test'
 import { getSlideLayout } from '../../../slide-layouts'
 import { resolveTokens } from '../../../tokens'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
@@ -124,6 +124,15 @@ describe('tls.c.image-full', () => {
     const { rects } = compileInRegion(tlsCImageFull, EX, 'full-bleed', 'content')
     expect(rects).toEqual([{ left: 0, top: 0, right: W, bottom: H }])
   })
+
+  // AC8: DOM and SVG agree on the new panels, the fade and the frame (parity probe)
+  it('DOM and SVG agree for split, band, gradient and frame (parity probe)', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    const reg = registry()
+    for (const knobs of [{ panel: 'split' }, { panel: 'band' }, { scrim: 'gradient' }, { frame: true, panel: 'center' }]) {
+      await assertParity(tlsCImageFull, { ...EX, ...knobs } as any, { width: 1600, height: 900 }, undefined, { registry: reg })
+    }
+  }, 120000)
 
   it('build() depth <= 4', () => {
     depthOk(tlsCImageFull, buildImageFull, EX, W, H)

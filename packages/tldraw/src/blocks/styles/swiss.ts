@@ -47,7 +47,7 @@ export const SWISS_STYLE: DeckStyle = {
   name: 'Swiss',
   brief:
     'International Typographic deck: off-white paper, big tight black grotesk, everything flush left on a ' +
-    'visible grid, heavy rules, one signal red, square corners, no ornament. Asymmetric, big type.',
+    'visible grid, heavy rules, one signal red, square corners, no ornament.',
   palettes: [
     {
       id: 'swiss-red',
@@ -113,6 +113,9 @@ export const SWISS_STYLE: DeckStyle = {
   },
   variety: {
     'tls.t.title': { rule: [false, true] },
+    // the cover master's colour block fills the lower-right quarter: split would run the title into it
+    'tls.c.hero': { variant: ['classic'], align: ['start'] },
+    'tls.c.feature-grid': { align: ['start'] },
     'tls.c.divider': { variant: ['minimal'] },
     'tls.c.cards': { numeral: ['giant'] },
     'tls.c.chart-insight': { side: ['left'] },

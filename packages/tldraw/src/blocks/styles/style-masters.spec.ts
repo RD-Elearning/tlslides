@@ -29,14 +29,15 @@ describe('AC4 style master blocks on the page', () => {
       expect(style.length).toBeGreaterThanOrEqual(2)
       for (const s of style) {
         expect(s.isLocked).toBe(true)
-        expect(['tls.m.pattern', 'tls.m.decoration']).toContain(s.componentId)
+        // AC8: the section orb is placed at a pixel box (`placePx`: nested `tls.l.split`s), as the AC5 styles place theirs
+        expect(['tls.m.pattern', 'tls.m.decoration', 'tls.l.split']).toContain(s.componentId)
         for (const o of own) expect(s.childIndex).toBeLessThan(o.childIndex)
       }
       const patterns = style.map((s) => (s.props as any).pattern).filter(Boolean)
       expect(patterns).toEqual(expect.arrayContaining(['mesh', 'grain']))
     }
     // the section master adds one orb, no other slide has one
-    const orbs = (id: string) => (Object.values(doc.pages[id].shapes) as ComponentShape[]).filter((s) => s.componentId === 'tls.m.decoration' && (s.props as any).shape === 'orb')
+    const orbs = (id: string) => (Object.values(doc.pages[id].shapes) as ComponentShape[]).filter((s) => JSON.stringify(s.props).includes('"shape":"orb"'))
     expect(orbs('st_03')).toHaveLength(1)
     expect(orbs('st_01')).toHaveLength(0)
   })
@@ -101,7 +102,10 @@ describe('AC4 style master blocks on the page', () => {
       for (const b of style) expect(b.layer).toBe('backdrop')
       expect(r.findings).toEqual([])
     }
-    expect((reps[2].blocks.find((b) => b.id === 'style:image')!.type)).toBe('tls.m.decoration')
+    // AC8: the section orb is the `orb-a` master block, placed clear of a long section title (x ≥ 1290)
+    const orb = reps[2].blocks.find((b) => b.id === 'style:orb-a')!
+    expect(orb.type).toBe('tls.l.split')
+    expect(orb.painted!.x).toBeGreaterThanOrEqual(1280)
     void BLOCK_PROP_KEY
   })
 })

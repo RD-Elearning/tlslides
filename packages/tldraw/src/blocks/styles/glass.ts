@@ -32,8 +32,9 @@ const MASTERS: MasterSpec[] = [
   },
   {
     name: 'section',
-    // the divider is flush left: one big orb fills the free right half
-    blocks: { mesh: MESH, 'orb-a': orb('accent', 1120, 180, 640), 'orb-b': orb('accent2', 1640, 120, 180), grain: GRAIN },
+    // the divider is flush left: one big orb in the free right part (AC8: from x 1290, clear of a
+    // long section title)
+    blocks: { mesh: MESH, 'orb-a': orb('accent', 1290, 260, 540), 'orb-b': orb('accent2', 1700, 120, 150), grain: GRAIN },
     background: GRADIENT(120),
   },
   {

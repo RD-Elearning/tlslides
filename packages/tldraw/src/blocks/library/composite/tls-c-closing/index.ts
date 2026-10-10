@@ -245,7 +245,11 @@ export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNo
 
   if (split) {
     const top = Math.max(0, (total - leftTotal) / 2)
-    pieces.push({ id: 'panel', spec: { id: 'panel', type: 'tls.l.card', props: { padding: 'md', children: [], $block: { style: { surface: 'surfaceAlt' } } } }, box: { x: px, y: 0, width: pw, height: total } })
+    // AC8: the panel hugs the person and contacts (2xl padding), centred beside the title column;
+    // before AC8 it ran the full height and read as a tall empty card.
+    const ph = Math.min(total, Math.round(rightTotal + 2 * pad + 2 * ctx.tokens.space.lg))
+    const py = Math.round((total - ph) / 2)
+    pieces.push({ id: 'panel', spec: { id: 'panel', type: 'tls.l.card', props: { padding: 'md', children: [], $block: { style: { surface: 'surfaceAlt' } } } }, box: { x: px, y: py, width: pw, height: ph } })
     emitLeft(lx, lw, top)
     let y = Math.max(pad, (total - rightTotal) / 2)
     rightSpecs.forEach((spec, i) => {
