@@ -27,6 +27,7 @@ import type {
   BlockLayer,
   BlockSpec,
   Box,
+  ConnectorSide,
   CapacityReport,
   DeckSpec,
   DeckStyle,
@@ -38,7 +39,7 @@ import type {
   SlideSpec,
   SurfaceContext,
 } from './types'
-import type { DeckTheme } from '~types'
+import type { ComponentShape, DeckTheme } from '~types'
 import { resolveThemeColor } from '~state/shapes/shared'
 import { designFindings, inspectBlock, type BlockInspection, type DesignBlock, type DesignCode } from './design-checks'
 import { paintAt, parseInk, type Background } from './layout/paint-model'
@@ -46,6 +47,8 @@ import { shapeToRevealBlock } from './shape-bridge'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
 import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
+import { CONNECTOR_BLOCK_TYPE } from './connectors'
+import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH, polylineHitsBox } from './layout/connector-route'
 import { blockLayer } from './block-layer'
 import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
@@ -93,6 +96,10 @@ export type LayoutFindingCode =
   | 'region/empty'
   // CMP2 design checks (`design-checks.ts`): inside compositions, contrast, type, motion.
   | DesignCode
+  // CMP3: slide connectors (`SlideSpec.connectors`).
+  | 'connector/unresolved'
+  | 'connector/crosses-text'
+  | 'connector/too-short'
 
 export interface LayoutFinding {
   code: LayoutFindingCode
@@ -193,6 +200,22 @@ export interface LayoutReport {
    *  wraps/paints its text differently from the report, or within the calibrated error margin of
    *  an overflow/collision). Empty = the report alone is trustworthy for this slide. */
   needsVisualCheck: VisualCheck[]
+  /** CMP3: the slide's drawn connectors (absent = none). */
+  connectors?: ConnectorReport[]
+}
+
+/** CMP3 — one drawn connector: its endpoints, route and where it runs (slide coordinates). */
+export interface ConnectorReport {
+  id: string
+  from: string
+  to: string
+  route: 'straight' | 'elbow' | 'curved'
+  /** Port-to-port length of the route. */
+  length: number
+  /** The route as a polyline (ports included), rounded to whole units. */
+  points: Array<[number, number]>
+  /** The connector shape's box. */
+  box: Box
 }
 
 /** One entry of `LayoutReport.needsVisualCheck`. */
@@ -455,7 +478,11 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const byId = new Map<string, Placed[]>()
   for (const p of placed) if (p.block.id) byId.set(p.block.id, [...(byId.get(p.block.id) ?? []), p])
   const used = new Set<Placed>()
-  compiled.shapes.forEach((shape, i) => {
+  // CMP3: connector shapes are not blocks of the slide; they are checked on their own (below).
+  const connectorShapes = compiled.shapes.filter((sh) => (sh as { componentId?: string }).componentId === CONNECTOR_BLOCK_TYPE)
+  compiled.shapes
+    .filter((sh) => !connectorShapes.includes(sh))
+    .forEach((shape, i) => {
     const metaId = (shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id
     const cands = metaId ? byId.get(metaId) : undefined
     const p = cands && cands.length === 1 && !used.has(cands[0]) ? cands[0] : placed[i]
@@ -698,6 +725,9 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const background = (pt: { x: number; y: number }): Background => slideBackgroundAt(pt, frame, opts)
   for (const f of designFindings(design, { frame, tokens, registry, background, ...(opts.family ? { family: opts.family } : {}), ...(opts.llmAuthored ? { llmAuthored: true } : {}) })) findings.push(f)
 
+  // 5c. CMP3: connectors — too short / endpoints overlapping, crossing text that is not their own.
+  const connectors = connectorShapes.map((shape) => connectorChecks(shape, blocks, findings)).filter((c): c is ConnectorReport => !!c)
+
   // 6. Slide summary numbers.
   const paintedAll = blocks.filter((b) => !marginless(b)).map((b) => b.painted).filter((b): b is Box => b !== null)
   const all = unionBox(paintedAll)
@@ -737,6 +767,87 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     margins,
     freeSpace,
     needsVisualCheck,
+    ...(connectors.length ? { connectors } : {}),
+  }
+}
+
+/**
+ * CMP3 — the oracle's view of one compiled connector: its route recomputed from the boxes the
+ * compiler resolved, then
+ * - `connector/too-short` (warning): the endpoints overlap, or the line between the ports is under
+ *   `MIN_CONNECTOR_LENGTH` units (an arrow with no shaft);
+ * - `connector/crosses-text` (warning): the line runs through text that belongs to neither endpoint
+ *   (nor to a block nested in one).
+ */
+function connectorChecks(shape: ComponentShape, blocks: BlockReport[], findings: LayoutFinding[]): ConnectorReport | undefined {
+  const meta = shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined
+  const id = meta?.id ?? shape.id
+  const p = shape.props as Record<string, unknown>
+  const at = (b: unknown): Box | undefined => {
+    const v = b as Box | undefined
+    return v && typeof v.x === 'number' ? { x: v.x + shape.point[0], y: v.y + shape.point[1], width: v.width, height: v.height } : undefined
+  }
+  const fromBox = at(p.fromBox)
+  const toBox = at(p.toBox)
+  const from = (p.from as { block?: string; side?: ConnectorSide } | undefined) ?? {}
+  const to = (p.to as { block?: string; side?: ConnectorSide } | undefined) ?? {}
+  if (!fromBox || !toBox || typeof from.block !== 'string' || typeof to.block !== 'string') return undefined
+  const weight = p.weight === 'hairline' || p.weight === 'bold' ? p.weight : 'md'
+  const width = CONNECTOR_WEIGHT[weight]
+  const route = p.route === 'elbow' || p.route === 'curved' ? p.route : 'straight'
+  const g = connectorRoute({
+    from: { box: fromBox, side: from.side, round: p.fromRound === true },
+    to: { box: toBox, side: to.side, round: p.toRound === true },
+    route,
+    head: p.head as 'end' | 'both' | 'none' | undefined,
+    width,
+  })
+  const ends = [from.block, to.block]
+  if (g.overlap) {
+    findings.push({
+      code: 'connector/too-short',
+      severity: 'warning',
+      blockIds: [id, ...ends],
+      message: `connector ${id}: its endpoints ${ends.join(' and ')} overlap; there is nothing to connect.`,
+      fix: `place ${ends[0]} and ${ends[1]} apart (another region, or a row / grid) or drop the connector`,
+    })
+  } else if (g.length < MIN_CONNECTOR_LENGTH) {
+    findings.push({
+      code: 'connector/too-short',
+      severity: 'warning',
+      blockIds: [id, ...ends],
+      message: `connector ${id}: the line from ${ends[0]} to ${ends[1]} is ${r(g.length)} units long (at least ${MIN_CONNECTOR_LENGTH}); the arrow reads as a blot.`,
+      fix: `widen the gap between ${ends[0]} and ${ends[1]} by ${Math.ceil(MIN_CONNECTOR_LENGTH - g.length)} units (a larger \`gap\` on their row / grid)`,
+    })
+  }
+  const own = (owner: string) => owner.split('/').some((seg) => ends.includes(seg))
+  const crossed = new Set<string>()
+  for (const b of blocks) {
+    if (b.layer === 'backdrop' || b.id.startsWith(STYLE_MASTER_PREFIX)) continue
+    for (const t of b.text) {
+      const owner = t.block ?? b.id
+      if (own(owner) || ends.includes(b.id)) continue
+      if (polylineHitsBox(g.samples, t.painted, width / 2 + 2)) crossed.add(owner.split('/').pop() as string)
+    }
+  }
+  if (crossed.size) {
+    const names = [...crossed]
+    findings.push({
+      code: 'connector/crosses-text',
+      severity: 'warning',
+      blockIds: [id, ...names],
+      message: `connector ${id} (${ends[0]} → ${ends[1]}) runs through the text of ${names.join(', ')}.`,
+      fix: route === 'elbow' ? `move ${names[0]} out of the path, or attach to other sides (\`side\`)` : `route it \`elbow\` (or set a \`side\`) around ${names[0]}, or move ${names[0]} out of the path`,
+    })
+  }
+  return {
+    id,
+    from: from.block,
+    to: to.block,
+    route,
+    length: r(g.length),
+    points: g.samples.filter((_, i, a) => i === 0 || i === a.length - 1 || i % 4 === 0).map((q) => [r(q.x), r(q.y)] as [number, number]),
+    box: { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] },
   }
 }
 
@@ -905,7 +1016,13 @@ function textName(t: TextLeafReport): string {
 
 function fromCompileFinding(f: CompileFinding, blocks: BlockReport[], regions: Record<string, Box>): LayoutFinding {
   const code: LayoutFindingCode =
-    f.rule === 'region/overflow' ? 'region/overflow' : f.rule === 'region/unknown' ? 'region/unknown' : 'block/unregistered'
+    f.rule === 'region/overflow'
+      ? 'region/overflow'
+      : f.rule === 'region/unknown'
+        ? 'region/unknown'
+        : f.rule === 'connector/unresolved'
+          ? 'connector/unresolved'
+          : 'block/unregistered'
   const out: LayoutFinding = {
     code,
     severity: f.level,
@@ -1478,6 +1595,7 @@ export function formatLayoutReport(report: LayoutReport, opts: { map?: boolean }
     for (const c of kids.slice(0, MAX_CHILD_LINES)) lines.push(`  ${'  '.repeat(Math.max(0, c.level - 2))}${c.path} ${c.type} ${fmtBox(c.box)}`)
     if (kids.length > MAX_CHILD_LINES) lines.push(`  … ${kids.length - MAX_CHILD_LINES} more nested blocks`)
   }
+  for (const c of report.connectors ?? []) lines.push(`connector ${c.id}: ${c.from} → ${c.to} ${c.route}, ${c.length} long`)
   if (report.findings.length === 0) {
     lines.push('findings: none')
   } else {

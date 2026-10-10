@@ -178,6 +178,9 @@ interface PartPlay {
   /** A radial sweep (M1b): the target's clip-path is a sector about this centre, written each
    *  frame from 12 o'clock clockwise by a proxy tween's progress. */
   sweep?: { cx: number; cy: number; rect: { left: number; top: number; width: number; height: number }; start: number; turn: number }
+  /** CMP3: a dashed stroke drawn on by growing its dash pattern (a proxy tween writes
+   *  `stroke-dasharray` each frame; the last frame restores the authored pattern). */
+  dashed?: { dash: number[]; len: number }
 }
 
 /**
@@ -357,25 +360,57 @@ function swapAxis(kf: MotionKeyframes, to: 'x' | 'y'): MotionKeyframes {
 /** The left-to-right wipe a filled part gets in place of a draw-on (equal four-term insets). */
 const DRAW_FALLBACK_WIPE = ['inset(0% 100% 0% 0%)', 'inset(0% 0% 0% 0%)']
 
+/** CMP3: the inline `stroke-dasharray` a stroke had before a draw-on prepared it (`L L`), so a
+ *  replay or a settle restores it instead of reading the prepared value as an authored dash. */
+const drawPrepared = new WeakMap<Element, string>()
+/** The strokes among them whose draw-on grows a dash pattern (a settle restores the pattern). */
+const dashedPrepared = new WeakSet<Element>()
+
+/** Restore what a draw-on wrote on a stroke (its own dash pattern, no offset). */
+function restoreStroke(g: Element): void {
+  const original = drawPrepared.get(g)
+  if (original === undefined) return
+  const st = (g as HTMLElement).style
+  st.strokeDasharray = original
+  st.strokeDashoffset = ''
+  drawPrepared.delete(g)
+  dashedPrepared.delete(g)
+}
+
+/** One stroke a draw-on traces: its length and, for a dashed stroke (CMP3), its dash pattern. */
+interface Stroked {
+  el: SVGElement
+  len: number
+  /** The authored dash pattern (px), when the stroke is dashed: the draw grows the pattern. */
+  dash?: number[]
+}
+
 /**
  * The stroked geometry a draw-on can trace inside `el` (the element itself or its SVG
  * descendants), each with its length; `undefined` when there is none, or when any of it is
- * filled (a stroke draw-on would leave the fill popping in) or already dashed (the draw would
- * replace its dash pattern).
+ * filled (a stroke draw-on would leave the fill popping in). CMP3: a dashed stroke is traced too
+ * (its pattern grows along the path, `dashedDraw`); a pattern a previous draw-on wrote is undone
+ * first, so a replay measures the stroke as authored.
  */
-function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undefined {
+function strokedGeometry(el: Element): Stroked[] | undefined {
   const all = [el, ...Array.from(el.querySelectorAll('path, line, polyline, polygon, circle, ellipse'))]
   const geom = all.filter(
     (n) => typeof (n as unknown as { getTotalLength?: unknown }).getTotalLength === 'function'
   ) as SVGElement[]
   if (geom.length === 0 || typeof getComputedStyle !== 'function') return undefined
-  const out: { el: SVGElement; len: number }[] = []
+  const out: Stroked[] = []
   for (const g of geom) {
+    restoreStroke(g)
     const cs = getComputedStyle(g)
     const stroked = !!cs.stroke && cs.stroke !== 'none' && parseFloat(cs.strokeWidth || '1') > 0
     const filled = !!cs.fill && cs.fill !== 'none' && parseFloat(cs.fillOpacity || '1') > 0
     if (!stroked || filled) return undefined
-    if (cs.strokeDasharray && cs.strokeDasharray !== 'none') return undefined
+    let dash: number[] | undefined
+    if (cs.strokeDasharray && cs.strokeDasharray !== 'none') {
+      dash = cs.strokeDasharray.split(/[ ,]+/).map((v) => parseFloat(v)).filter((v) => Number.isFinite(v) && v >= 0)
+      if (dash.length === 0 || dash.every((v) => v === 0)) return undefined
+      if (dash.length % 2 === 1) dash = [...dash, ...dash]
+    }
     let len = 0
     try {
       len = (g as unknown as { getTotalLength(): number }).getTotalLength()
@@ -383,9 +418,32 @@ function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undef
       return undefined
     }
     if (!(len > 0)) return undefined
-    out.push({ el: g, len })
+    out.push({ el: g, len, ...(dash ? { dash } : {}) })
   }
   return out
+}
+
+/**
+ * CMP3 — the dash array that shows the first `progress` of a dashed stroke `len` long: the
+ * pattern repeated up to `progress × len`, then one gap over the rest. At 1 → the pattern itself.
+ */
+export function dashedDraw(dash: number[], len: number, progress: number): string {
+  if (progress >= 1) return dash.join(' ')
+  const shown = Math.max(0, progress) * len
+  const out: number[] = []
+  let at = 0
+  for (let i = 0; at < shown && out.length < 4000; i++) {
+    const seg = dash[i % dash.length]
+    // the last dash (or gap) is cut where the drawn length ends
+    out.push(Math.min(seg, shown - at))
+    at += seg
+  }
+  // An odd count ends on a dash: close with the gap over the rest (an even count ends on a gap:
+  // lengthen it).
+  if (out.length % 2 === 1) out.push(len + 1)
+  else if (out.length > 0) out[out.length - 1] += len + 1
+  else out.push(0, len + 1)
+  return out.map((v) => Math.round(v * 100) / 100).join(' ')
 }
 
 /**
@@ -419,7 +477,10 @@ function partPlays(
     }
     return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin }]
   }
-  const plays: PartPlay[] = strokes.map(({ el, len }) => {
+  const plays: PartPlay[] = strokes.map(({ el, len, dash }) => {
+    drawPrepared.set(el, el.style.strokeDasharray)
+    if (dash) dashedPrepared.add(el)
+    if (dash) return { target: el, keyframes: {}, dashed: { dash, len } }
     el.style.strokeDasharray = `${len} ${len}`
     return { target: el, keyframes: { strokeDashoffset: [String(len), '0'] } }
   })
@@ -498,6 +559,10 @@ export function playBlockReveal(
         if (p.sweep) {
           sweepHandles.get(p.target)?.cancel()
           hidden.clipPath = sectorClip(p.sweep.cx, p.sweep.cy, p.sweep.rect, 0, p.sweep.start, p.sweep.turn)
+        }
+        if (p.dashed) {
+          sweepHandles.get(p.target)?.cancel()
+          ;(p.target as HTMLElement).style.strokeDasharray = dashedDraw(p.dashed.dash, p.dashed.len, 0)
         }
         if (Object.keys(hidden).length > 0) driver.set(p.target, hidden)
       }
@@ -591,6 +656,25 @@ export function playBlockReveal(
                 ...(p.origin ? { origin: p.origin } : {}),
               })
             }
+            if (p.dashed) {
+              // CMP3: a dash pattern cannot be tweened as a pair either: a detached proxy carries
+              // the eased progress and each frame writes the grown pattern; the last frame (and a
+              // settle) puts the authored pattern back.
+              const { dash, len } = p.dashed
+              const target = p.target as HTMLElement
+              const proxy = typeof document !== 'undefined' ? document.createElement('div') : target
+              const handle = driver.play(proxy, { opacity: [0, 1] }, {
+                duration: pm.durationMs,
+                delay,
+                easing: pm.easing,
+                fill: 'forwards',
+                onUpdate: (progress: number) => {
+                  if (progress >= 1) restoreStroke(target)
+                  else target.style.strokeDasharray = dashedDraw(dash, len, progress)
+                },
+              })
+              sweepHandles.set(target, handle)
+            }
             if (p.sweep) {
               // The sector is not a keyframe pair any interpolator can tween, so a detached proxy
               // carries the eased progress and each frame writes the sector. Settling the part
@@ -666,7 +750,11 @@ export function settleBlockParts(el: HTMLElement, spec: BlockSpec, def: BlockDef
       if (kf.clipPath || kf.strokeDashoffset || partEl.style.clipPath) state.clipPath = 'none'
       driver.set(partEl, state)
       for (const g of [partEl, ...Array.from(partEl.querySelectorAll<SVGElement>('path, line, polyline, polygon, circle, ellipse'))]) {
+        sweepHandles.get(g)?.cancel()
+        sweepHandles.delete(g)
         if ((g as HTMLElement).style?.strokeDasharray) driver.set(g, { strokeDashoffset: '0' })
+        // CMP3: a dashed draw-on cut short gets its authored pattern back
+        if (dashedPrepared.has(g)) restoreStroke(g)
       }
     }
   }

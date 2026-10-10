@@ -1,0 +1,810 @@
+{
+  "id": "cmp7-connectors",
+  "title": "CMP3 connectors: straight, elbow, curved, nested endpoints, a flow of four, hub and satellites, and a deliberately bad slide",
+  "version": 1,
+  "style": "corporate",
+  "theme": "corporate-navy",
+  "aspect": "widescreen",
+  "motionStyle": "expressive",
+  "slides": [
+    {
+      "id": "cn_straight",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t1",
+            "type": "tls.t.title",
+            "props": {
+              "text": "From signal to decision"
+            }
+          },
+          {
+            "id": "g1",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 1,
+              "gap": "3xl",
+              "children": [
+                {
+                  "id": "c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "c1m",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "1",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "c1h",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Collect",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "c1b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Events stream in from every product surface."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "c2m",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "2",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "c2h",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Model",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "c2b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "A nightly job turns events into features."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "c3m",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "3",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "c3h",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Decide",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "c3b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Teams act on one shared score."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "k1",
+          "from": {
+            "block": "c1"
+          },
+          "to": {
+            "block": "c2"
+          }
+        },
+        {
+          "id": "k2",
+          "from": {
+            "block": "c2"
+          },
+          "to": {
+            "block": "c3"
+          },
+          "tone": "accent"
+        }
+      ]
+    },
+    {
+      "id": "cn_flow4",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "A flow of four steps"
+            }
+          },
+          {
+            "id": "r2",
+            "type": "tls.l.row",
+            "props": {
+              "gap": "3xl",
+              "sizing": "equal",
+              "children": [
+                {
+                  "id": "f1",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Brief",
+                    "shape": "rounded",
+                    "icon": "file-text"
+                  }
+                },
+                {
+                  "id": "f2",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Outline",
+                    "shape": "rounded",
+                    "icon": "clipboard"
+                  }
+                },
+                {
+                  "id": "f3",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Draft",
+                    "shape": "rounded",
+                    "icon": "pencil"
+                  }
+                },
+                {
+                  "id": "f4",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Review",
+                    "shape": "rounded",
+                    "tone": "solid",
+                    "icon": "check"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "k3",
+          "from": {
+            "block": "f1"
+          },
+          "to": {
+            "block": "f2"
+          },
+          "dash": true
+        },
+        {
+          "id": "k4",
+          "from": {
+            "block": "f2"
+          },
+          "to": {
+            "block": "f3"
+          },
+          "dash": true
+        },
+        {
+          "id": "k5",
+          "from": {
+            "block": "f3"
+          },
+          "to": {
+            "block": "f4"
+          },
+          "tone": "accent",
+          "label": "approve"
+        }
+      ]
+    },
+    {
+      "id": "cn_hub",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "g3",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 3,
+              "gap": "lg",
+              "children": [
+                {
+                  "id": "s1",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Sales",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "x1",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "s2",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Support",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "x2",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "hub",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Customer",
+                    "tone": "solid",
+                    "icon": "users"
+                  }
+                },
+                {
+                  "id": "x3",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "s3",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Product",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "x4",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "s4",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Billing",
+                    "size": "sm"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "h1",
+          "from": {
+            "block": "hub"
+          },
+          "to": {
+            "block": "s1"
+          },
+          "head": "none"
+        },
+        {
+          "id": "h2",
+          "from": {
+            "block": "hub"
+          },
+          "to": {
+            "block": "s2"
+          },
+          "head": "none"
+        },
+        {
+          "id": "h3",
+          "from": {
+            "block": "hub"
+          },
+          "to": {
+            "block": "s3"
+          },
+          "head": "none"
+        },
+        {
+          "id": "h4",
+          "from": {
+            "block": "hub"
+          },
+          "to": {
+            "block": "s4"
+          },
+          "head": "none"
+        }
+      ]
+    },
+    {
+      "id": "cn_elbow",
+      "layout": "two-column",
+      "regions": {
+        "left": [
+          {
+            "id": "st5",
+            "type": "tls.l.stack",
+            "props": {
+              "gap": "xl",
+              "children": [
+                {
+                  "id": "e1",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Web",
+                    "shape": "rounded",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "e2",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Mobile",
+                    "shape": "rounded",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "e3",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Partners",
+                    "shape": "rounded",
+                    "size": "sm"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "e4",
+            "type": "tls.m.shape",
+            "props": {
+              "label": "One API",
+              "shape": "hexagon",
+              "tone": "solid",
+              "icon": "zap"
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "k6",
+          "from": {
+            "block": "e1"
+          },
+          "to": {
+            "block": "e4"
+          },
+          "route": "elbow"
+        },
+        {
+          "id": "k7",
+          "from": {
+            "block": "e2"
+          },
+          "to": {
+            "block": "e4"
+          },
+          "route": "elbow"
+        },
+        {
+          "id": "k8",
+          "from": {
+            "block": "e3"
+          },
+          "to": {
+            "block": "e4"
+          },
+          "route": "elbow"
+        }
+      ]
+    },
+    {
+      "id": "cn_curved",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t6",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Before and after the move"
+            }
+          },
+          {
+            "id": "g6",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 2,
+              "gap": "2xl",
+              "children": [
+                {
+                  "id": "d1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d1m",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "1",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "d1h",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Today",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "d1b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Three tools, three logins."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "y1",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "y2",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "y3",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "y4",
+                  "type": "tls.l.spacer",
+                  "props": {}
+                },
+                {
+                  "id": "d2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "d2m",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "2",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "d2h",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Next quarter",
+                          "size": "subheading"
+                        }
+                      },
+                      {
+                        "id": "d2b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "One workspace for every team."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "k9",
+          "from": {
+            "block": "d1",
+            "side": "right"
+          },
+          "to": {
+            "block": "d2",
+            "side": "left"
+          },
+          "route": "curved",
+          "tone": "accent",
+          "weight": "bold",
+          "dash": true,
+          "label": "migrate"
+        }
+      ]
+    },
+    {
+      "id": "cn_nested",
+      "layout": "two-column",
+      "regions": {
+        "left": [
+          {
+            "id": "n1",
+            "type": "tls.l.card",
+            "props": {
+              "children": [
+                {
+                  "id": "n1t",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Inputs"
+                  }
+                },
+                {
+                  "id": "n1r",
+                  "type": "tls.l.row",
+                  "props": {
+                    "gap": "xl",
+                    "children": [
+                      {
+                        "id": "n1a",
+                        "type": "tls.m.shape",
+                        "props": {
+                          "label": "CRM",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "n1b",
+                        "type": "tls.m.shape",
+                        "props": {
+                          "label": "ERP",
+                          "size": "sm"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "n2",
+            "type": "tls.l.card",
+            "props": {
+              "children": [
+                {
+                  "id": "n2t",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Outputs"
+                  }
+                },
+                {
+                  "id": "n2s",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "gap": "md",
+                    "children": [
+                      {
+                        "id": "n2a",
+                        "type": "tls.t.badge",
+                        "props": {
+                          "text": "Forecast"
+                        }
+                      },
+                      {
+                        "id": "n2b",
+                        "type": "tls.t.badge",
+                        "props": {
+                          "text": "Alerts",
+                          "tone": "soft"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "k10",
+          "from": {
+            "block": "n1b",
+            "side": "right"
+          },
+          "to": {
+            "block": "n2a",
+            "side": "left"
+          },
+          "route": "elbow",
+          "tone": "text"
+        },
+        {
+          "id": "k11",
+          "from": {
+            "block": "n1b",
+            "side": "bottom"
+          },
+          "to": {
+            "block": "n2b",
+            "side": "left"
+          },
+          "route": "elbow",
+          "head": "both"
+        }
+      ]
+    },
+    {
+      "id": "cn_bad",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t7",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Deliberately bad: a line through text, an unknown id, overlapping ends, a blot"
+            }
+          },
+          {
+            "id": "r7",
+            "type": "tls.l.row",
+            "props": {
+              "gap": "lg",
+              "sizing": "equal",
+              "children": [
+                {
+                  "id": "z1",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "Start",
+                    "size": "sm"
+                  }
+                },
+                {
+                  "id": "z2",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "This paragraph sits between the two shapes, so a straight line from Start to End runs right through it."
+                  }
+                },
+                {
+                  "id": "z3",
+                  "type": "tls.m.shape",
+                  "props": {
+                    "label": "End",
+                    "size": "sm"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "s8",
+            "type": "tls.l.card",
+            "props": {
+              "children": [
+                {
+                  "id": "z4",
+                  "type": "tls.t.badge",
+                  "props": {
+                    "text": "Step A"
+                  }
+                },
+                {
+                  "id": "z5",
+                  "type": "tls.t.badge",
+                  "props": {
+                    "text": "Step B"
+                  }
+                }
+              ]
+            },
+            "style": {
+              "gap": "2xs"
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "bad1",
+          "from": {
+            "block": "z1"
+          },
+          "to": {
+            "block": "z3"
+          }
+        },
+        {
+          "id": "bad2",
+          "from": {
+            "block": "z1"
+          },
+          "to": {
+            "block": "nope"
+          }
+        },
+        {
+          "id": "bad3",
+          "from": {
+            "block": "r7"
+          },
+          "to": {
+            "block": "z2"
+          }
+        },
+        {
+          "id": "bad4",
+          "from": {
+            "block": "z4"
+          },
+          "to": {
+            "block": "z5"
+          }
+        }
+      ]
+    }
+  ]
+}

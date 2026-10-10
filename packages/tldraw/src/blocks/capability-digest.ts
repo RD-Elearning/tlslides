@@ -115,8 +115,18 @@ export interface CapabilityIndexOptions {
   style?: string
 }
 
+/** CMP3 — how a slide draws lines between its blocks (`SlideSpec.connectors`), for the full digest. */
+export const CONNECTORS_LINE =
+  'Lines between blocks of one slide, by block id (a nested child id works too), never coordinates: ' +
+  '`"connectors": [{ "id": "k1", "from": { "block": "a" }, "to": { "block": "b" } }]` on the slide. ' +
+  'Optional: `side` on an end (auto | top | right | bottom | left; auto faces the other block), `route` ' +
+  'straight (default; level when the blocks face each other) | elbow | curved, `head` end | both | none, ' +
+  '`tone` line | accent | text, `weight` hairline | md | bold, `dash` true (a flow), `label` (≤ 24 chars). ' +
+  'The line draws on after the later endpoint appears. Keep the ends apart (≥ 40 units of line) and other ' +
+  'text out of its path. Never place `tls.g.connector` yourself.'
+
 /** AC1 — editor-only guides the AI never places (AC0 deferred item). */
-export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area']
+export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector']
 
 export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
@@ -421,6 +431,11 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     }
     lines.push('')
 
+    // ── Connectors (CMP3) ──
+    lines.push('## Connectors')
+    lines.push('')
+    lines.push(CONNECTORS_LINE)
+    lines.push('')
   }
 
   // ── Blocks ──

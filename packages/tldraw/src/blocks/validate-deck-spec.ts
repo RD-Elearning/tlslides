@@ -26,6 +26,7 @@ import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
+import { CONNECTOR_BLOCK_TYPE } from './connectors'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -368,6 +369,9 @@ function validateSlide(
     }
   }
 
+  // CMP3: connectors (after the blocks: endpoints refer to them)
+  validateConnectors(slide, slidePath, slideLabel, findings)
+
   // free[]
   if (slide.free !== undefined) {
     if (!Array.isArray(slide.free)) {
@@ -417,6 +421,111 @@ function validateSlide(
       })
     }
   }
+}
+
+const CONNECTOR_KEYS = ['id', 'from', 'to', 'route', 'head', 'tone', 'weight', 'dash', 'label']
+const CONNECTOR_ENUMS: Record<string, readonly string[]> = {
+  route: ['straight', 'elbow', 'curved'],
+  head: ['end', 'both', 'none'],
+  tone: ['line', 'accent', 'text'],
+  weight: ['hairline', 'md', 'bold'],
+}
+const CONNECTOR_SIDES = ['auto', 'top', 'right', 'bottom', 'left']
+/** `ConnectorSpec.label` limit (chars). */
+export const CONNECTOR_LABEL_MAX = 24
+
+/** Every block id on a slide: region blocks, free[] blocks and everything nested in them. */
+function slideBlockIds(slide: Record<string, unknown>): string[] {
+  const out: string[] = []
+  const visit = (b: unknown, depth: number) => {
+    if (!isRecord(b) || depth > MAX_NESTING_DEPTH + 2) return
+    if (typeof b.id === 'string') out.push(b.id)
+    if (isRecord(b.props)) for (const v of Object.values(b.props)) if (Array.isArray(v)) for (const c of v) if (isRecord(c) && typeof c.type === 'string') visit(c, depth + 1)
+  }
+  if (isRecord(slide.regions)) for (const bs of Object.values(slide.regions)) if (Array.isArray(bs)) bs.forEach((b) => visit(b, 1))
+  if (Array.isArray(slide.free)) for (const e of slide.free) if (isRecord(e)) visit(e.block, 1)
+  return out
+}
+
+/**
+ * CMP3 — `SlideSpec.connectors`: an array of `{ id, from: { block, side? }, to: { block, side? },
+ * route?, head?, tone?, weight?, dash?, label? }`. Errors: not an array / not an object / missing
+ * id or ends / bad enum value (`connector/malformed`); an id shared with a block or another
+ * connector (`connector/duplicate-id`); an endpoint id that is not a block on this slide, or the
+ * same block at both ends (`connector/unresolved`). Warnings: an unknown key, a label over
+ * `CONNECTOR_LABEL_MAX` chars (`connector/malformed`).
+ */
+function validateConnectors(slide: Record<string, unknown>, slidePath: string, slideLabel: string, findings: DeckFinding[]): void {
+  if (slide.connectors === undefined) return
+  const base = `${slidePath}.connectors`
+  if (!Array.isArray(slide.connectors)) {
+    findings.push({ level: 'error', rule: 'connector/malformed', path: base, message: `Slide "${slideLabel}"'s "connectors" must be an array; got ${describeType(slide.connectors)}.` })
+    return
+  }
+  const ids = slideBlockIds(slide)
+  const known = new Set(ids)
+  const seen = new Set<string>()
+  slide.connectors.forEach((raw, i) => {
+    const path = `${base}[${i}]`
+    if (!isRecord(raw)) {
+      findings.push({ level: 'error', rule: 'connector/malformed', path, message: `Connector ${i} on slide "${slideLabel}" is not an object (got ${describeType(raw)}).` })
+      return
+    }
+    const id = typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : undefined
+    const label = id ? `"${id}"` : `${i}`
+    if (!id) {
+      findings.push({ level: 'error', rule: 'deck/missing-field', path: `${path}.id`, message: `Connector ${i} on slide "${slideLabel}" is missing a required "id".` })
+    } else if (known.has(id) || seen.has(id)) {
+      findings.push({ level: 'error', rule: 'connector/duplicate-id', path: `${path}.id`, message: `Connector id "${id}" is already used by ${known.has(id) ? 'a block' : 'another connector'} on slide "${slideLabel}"; give the connector its own id.` })
+    }
+    if (id) seen.add(id)
+    for (const key of Object.keys(raw)) {
+      if (!CONNECTOR_KEYS.includes(key)) {
+        findings.push({ level: 'warning', rule: 'connector/malformed', path: `${path}.${key}`, message: `Connector ${label} has an unknown key "${key}" (ignored). Keys: ${CONNECTOR_KEYS.join(', ')}.` })
+      }
+    }
+    const ends: string[] = []
+    for (const k of ['from', 'to'] as const) {
+      const e = raw[k]
+      if (!isRecord(e) || typeof e.block !== 'string' || e.block.length === 0) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}`, message: `Connector ${label} needs "${k}": { "block": "<block id>" } (optionally "side": ${CONNECTOR_SIDES.join(' | ')}).` })
+        continue
+      }
+      ends.push(e.block)
+      if (!known.has(e.block)) {
+        const suggestion = nearestName(e.block, ids)
+        findings.push({
+          level: 'error',
+          rule: 'connector/unresolved',
+          path: `${path}.${k}.block`,
+          message: `Connector ${label}: "${e.block}" is not a block on slide "${slideLabel}"; the connector would not be drawn.` + (suggestion ? ` Did you mean "${suggestion}"?` : ''),
+          ...(suggestion ? { suggestion } : {}),
+        })
+      }
+      if (e.side !== undefined && !CONNECTOR_SIDES.includes(e.side as string)) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}.side`, message: `Connector ${label}: side "${stringifyForMessage(e.side)}" is not one of ${CONNECTOR_SIDES.join(', ')}.` })
+      }
+    }
+    if (ends.length === 2 && ends[0] === ends[1]) {
+      findings.push({ level: 'error', rule: 'connector/unresolved', path, message: `Connector ${label} starts and ends at the same block "${ends[0]}".` })
+    }
+    for (const [k, values] of Object.entries(CONNECTOR_ENUMS)) {
+      const v = raw[k]
+      if (v !== undefined && !values.includes(v as string)) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}`, message: `Connector ${label}: ${k} "${stringifyForMessage(v)}" is not one of ${values.join(', ')}.` })
+      }
+    }
+    if (raw.dash !== undefined && typeof raw.dash !== 'boolean') {
+      findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.dash`, message: `Connector ${label}: "dash" must be true or false.` })
+    }
+    if (raw.label !== undefined) {
+      if (typeof raw.label !== 'string') {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.label`, message: `Connector ${label}: "label" must be a string.` })
+      } else if (raw.label.length > CONNECTOR_LABEL_MAX) {
+        findings.push({ level: 'warning', rule: 'connector/malformed', path: `${path}.label`, message: `Connector ${label}: the label is ${raw.label.length} characters; keep it to ${CONNECTOR_LABEL_MAX} (one to three words).` })
+      }
+    }
+  })
 }
 
 /** P7 — `motionStyle` must be one of `MOTION_STYLES`; anything else is ignored at compile time. */
@@ -547,6 +656,15 @@ function validateBlockTree(
     })
   } else {
     def = reg.get(type)
+    if (type === CONNECTOR_BLOCK_TYPE) {
+      // CMP3: the compiled form of a slide connector, never authored as a block.
+      findings.push({
+        level: 'warning',
+        rule: 'connector/malformed',
+        path: `${path}.type`,
+        message: `Block ${label} is a "${CONNECTOR_BLOCK_TYPE}", which only the compiler creates. Write the line as a slide connector instead: "connectors": [{ "id": "…", "from": { "block": "<id>" }, "to": { "block": "<id>" } }].`,
+      })
+    }
     if (!def) {
       const suggestion = nearestBlockType(type, reg.list())
       findings.push({

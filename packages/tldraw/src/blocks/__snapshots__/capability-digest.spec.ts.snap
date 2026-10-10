@@ -107,6 +107,10 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 | \`full-bleed\` (Full Bleed) | \`content\` |  |
 | \`section-stack\` (Section Stack) | \`content\` |  |
 
+## Connectors
+
+Lines between blocks of one slide, by block id (a nested child id works too), never coordinates: \`\\"connectors\\": [{ \\"id\\": \\"k1\\", \\"from\\": { \\"block\\": \\"a\\" }, \\"to\\": { \\"block\\": \\"b\\" } }]\` on the slide. Optional: \`side\` on an end (auto | top | right | bottom | left; auto faces the other block), \`route\` straight (default; level when the blocks face each other) | elbow | curved, \`head\` end | both | none, \`tone\` line | accent | text, \`weight\` hairline | md | bold, \`dash\` true (a flow), \`label\` (≤ 24 chars). The line draws on after the later endpoint appears. Keep the ends apart (≥ 40 units of line) and other text out of its path. Never place \`tls.g.connector\` yourself.
+
 ## Blocks
 
 ### \`tls.c.agenda\` — Agenda
@@ -2645,6 +2649,55 @@ Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(
       }
     ],
     \\"currentIndex\\": 1
+  }
+}
+\`\`\`
+
+### \`tls.g.connector\` — Connector [overlay]
+
+A line between two blocks of a slide, compiled from \`SlideSpec.connectors\` (never authored as a block). _(family: diagram; keywords: connector, line, arrow, link, flow)_
+
+**When:** Never placed directly: write \`connectors: [{ id, from: { block }, to: { block } }]\` on the slide.
+**Avoid:** Authoring it in a region (use SlideSpec.connectors) or a free-standing arrow (use tls.g.arrow).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`from\` | no | object (block, side) |  |
+| \`to\` | no | object (block, side) |  |
+| \`route\` | no | enum: straight \\\\| elbow \\\\| curved |  |
+| \`head\` | no | enum: end \\\\| both \\\\| none |  |
+| \`tone\` | no | enum: line \\\\| accent \\\\| text |  |
+| \`weight\` | no | enum: md \\\\| hairline \\\\| bold |  |
+| \`dash\` | no | boolean |  |
+| \`label\` | no | text (max 24 chars) |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_connector\\",
+  \\"type\\": \\"tls.g.connector\\",
+  \\"props\\": {
+    \\"from\\": {
+      \\"block\\": \\"a\\"
+    },
+    \\"to\\": {
+      \\"block\\": \\"b\\"
+    },
+    \\"fromBox\\": {
+      \\"x\\": 0,
+      \\"y\\": 40,
+      \\"width\\": 60,
+      \\"height\\": 80
+    },
+    \\"toBox\\": {
+      \\"x\\": 360,
+      \\"y\\": 40,
+      \\"width\\": 60,
+      \\"height\\": 80
+    },
+    \\"route\\": \\"straight\\",
+    \\"head\\": \\"end\\",
+    \\"tone\\": \\"accent\\",
+    \\"weight\\": \\"md\\"
   }
 }
 \`\`\`
@@ -5299,7 +5352,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 134,
+  "blockCount": 135,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -5364,6 +5417,7 @@ Object {
     "tls.g.bracket",
     "tls.g.breakdown",
     "tls.g.chevrons",
+    "tls.g.connector",
     "tls.g.cycle",
     "tls.g.flow",
     "tls.g.funnel",

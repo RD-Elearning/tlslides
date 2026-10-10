@@ -57,6 +57,8 @@ import { deriveShapeAnimation } from './motion/resolve-motion'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
+import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
+import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -64,7 +66,7 @@ import { MAX_NESTING_DEPTH } from './types'
 
 export interface CompileFinding {
   level: 'error' | 'warning'
-  rule: 'region/unknown' | 'region/overflow' | 'block/unregistered'
+  rule: 'region/unknown' | 'region/overflow' | 'block/unregistered' | 'connector/unresolved'
   slideId: string
   region?: string
   blockId?: string
@@ -125,6 +127,20 @@ const FALLBACK_LAYOUT = 'blank' as const
  * @returns Compiled shapes and pass-through metadata.
  */
 export function compileSlide(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry?: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  const result = compileSlideBlocks(spec, frame, tokens, registry, opts)
+  // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
+  if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
+  return compileConnectors(spec, result, tokens, registry, opts)
+}
+
+/** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */
+function compileSlideBlocks(
   spec: SlideSpec,
   frame: { width: number; height: number },
   tokens: ResolvedTokens,
@@ -727,7 +743,7 @@ function compileLayered(
   registry: BlockRegistry | undefined,
   opts: CompileSlideOptions | undefined
 ): CompileSlideResult {
-  const result = compileSlide(split.flow, frame, tokens, registry, opts)
+  const result = compileSlideBlocks(split.flow, frame, tokens, registry, opts)
   const { regionBoxes } = resolveRegions(split.flow.layout, frame, tokens)
 
   const regionExtent = (region: string): Box | undefined => {
@@ -1018,4 +1034,134 @@ export function findBlockGroup(root: LayoutNode, id: string): { group: Extract<L
     if (hit) return hit
   }
   return undefined
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CMP3 — connectors                                                                */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** An endpoint resolved to the painted box of its block on the slide. */
+export interface ResolvedConnectorEnd {
+  box: Box
+  /** The slide-level shape that holds the endpoint (itself, or the container it is nested in). */
+  shape: ComponentShape
+  /** The endpoint's own spec (style defaults filled). */
+  block: BlockSpec
+  round: boolean
+}
+
+/**
+ * Resolve a block id to the painted box of that block on the compiled slide: a slide-level block
+ * (region, layered or free) by its shape, a nested block (a container's child, CMP1 X2 wrapper
+ * `blockId`) inside the slide-level block that holds it. `undefined` = no such block drawn.
+ */
+export function resolveConnectorEnd(
+  spec: SlideSpec,
+  shapes: ComponentShape[],
+  id: string,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  blockDefaults?: Record<string, Record<string, unknown>>
+): ResolvedConnectorEnd | undefined {
+  if (typeof id !== 'string' || id === '') return undefined
+  const authored: BlockSpec[] = [
+    ...Object.values(spec.regions ?? {}).flatMap((bs) => (Array.isArray(bs) ? bs : [])),
+    ...(spec.free ?? []).map((e) => e.block),
+  ].filter((b): b is BlockSpec => !!b && typeof b === 'object')
+  const top = authored.find((b) => b.id === id) ?? authored.find((b) => containsBlockId(b, id))
+  if (!top) return undefined
+  const shape = shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === top.id)
+  if (!shape) return undefined
+  const filled = blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top
+  const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+  const nested = top.id === id ? undefined : id
+  const painted = registry ? paintedBoxOf(filled, box, tokens, registry, blockDefaults, nested) : nested ? null : box
+  if (!painted) return undefined
+  const own = findBlockSpec(filled, id) ?? filled
+  return { box: painted, shape, block: own, round: isRoundBlock(own) }
+}
+
+/** Padding around a connector's painted route inside its shape (anti-aliasing, label slack). */
+const CONNECTOR_PAD = 6
+
+/**
+ * Append one overlay `tls.g.connector` shape per authored connector (after every block, authored
+ * order), sized to its route. An endpoint that does not resolve (unknown id, a block not drawn) is
+ * a `connector/unresolved` error finding and draws nothing. The connector's reveal follows the
+ * later endpoint's (`connectorMotion`).
+ */
+function compileConnectors(
+  spec: SlideSpec,
+  result: CompileSlideResult,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  opts: CompileSlideOptions | undefined
+): CompileSlideResult {
+  const shapes = [...result.shapes]
+  const findings = [...result.findings]
+  const def = registry?.get(CONNECTOR_BLOCK_TYPE)
+  const style = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
+  let childIndex = shapes.reduce((m, sh) => Math.max(m, sh.childIndex), 0) + 1
+  for (const c of spec.connectors ?? []) {
+    if (!c || typeof c !== 'object' || typeof c.id !== 'string') continue
+    const fromId = c.from?.block
+    const toId = c.to?.block
+    const a = resolveConnectorEnd(spec, result.shapes, fromId, tokens, registry, opts?.blockDefaults)
+    const b = resolveConnectorEnd(spec, result.shapes, toId, tokens, registry, opts?.blockDefaults)
+    if (!a || !b || fromId === toId) {
+      const missing = [!a ? fromId : undefined, !b ? toId : undefined].filter((x) => x !== undefined)
+      findings.push({
+        level: 'error',
+        rule: 'connector/unresolved',
+        slideId: spec.id,
+        blockId: c.id,
+        message:
+          fromId === toId
+            ? `Connector "${c.id}" starts and ends at the same block "${String(fromId)}".`
+            : `Connector "${c.id}": no block ${missing.map((m) => `"${String(m)}"`).join(' or ')} is drawn on this slide; the connector is not drawn.`,
+      })
+      continue
+    }
+    const width = CONNECTOR_WEIGHT[c.weight === 'hairline' || c.weight === 'bold' ? c.weight : 'md']
+    const g = connectorRoute({
+      from: { box: a.box, side: c.from.side, round: a.round },
+      to: { box: b.box, side: c.to.side, round: b.round },
+      route: c.route,
+      head: c.head,
+      width,
+    })
+    let bx = g.bounds
+    if (typeof c.label === 'string' && c.label.trim()) {
+      // Room for the label pill around the midpoint (caption type, ~0.6 em per character).
+      const size = tokens.type.caption?.size ?? 22
+      const lw = Math.min(40, c.label.trim().length) * size * 0.62 + size * 1.4
+      const lh = size * 2
+      bx = unionBox([bx, { x: g.mid.x - lw / 2, y: g.mid.y - lh / 2, width: lw, height: lh }]) ?? bx
+    }
+    const box: Box = {
+      x: Math.floor(bx.x - CONNECTOR_PAD),
+      y: Math.floor(bx.y - CONNECTOR_PAD),
+      width: Math.ceil(bx.width + 2 * CONNECTOR_PAD),
+      height: Math.ceil(bx.height + 2 * CONNECTOR_PAD),
+    }
+    const local = (r: Box): Box => ({ x: r.x - box.x, y: r.y - box.y, width: r.width, height: r.height })
+    const block: BlockSpec = {
+      id: c.id,
+      type: CONNECTOR_BLOCK_TYPE,
+      props: { ...connectorProps(c), fromBox: local(a.box), toBox: local(b.box), ...(a.round ? { fromRound: true } : {}), ...(b.round ? { toRound: true } : {}) },
+    }
+    const shape = blockToShape(block, box, { childIndex: childIndex++, ...(def ? { definitionMotion: def.motion } : {}) })
+    const motion = def ? connectorMotion([a.shape.animation, b.shape.animation], style) : undefined
+    if (motion && def) {
+      const animation = deriveShapeAnimation(motion, def.motion)
+      if (animation) {
+        shape.animation = animation
+        const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+        meta.styleMotion = motion
+        if (style === 'subtle' || style === 'expressive') meta.motionStyle = style
+      }
+    }
+    shapes.push(shape)
+  }
+  return { ...result, shapes, findings }
 }

@@ -275,7 +275,20 @@ design codes.
 `line | accent | text` and `weight` values `hairline | md | bold` (the `tls.x.rule` words; a connector
 needs a recessive default and the text colour, not a gradient); `ConnectorSpec.dash` and the
 `tls.x.rule` `dash` knob are booleans (the pattern is the engine's: flow `[8,4]`-like, separator 1:1);
-`RULE_DASH` (rule layout constant).
+`RULE_DASH` (rule layout constant). `tls.m.icon` knob name `iconStyle` (the value `disc` needs a
+knob; `iconStyle` is the name `tls.m.icon-list` / `tls.c.feature-grid` already use for the same
+idea), atoms' knobs `tone` (`solid | soft | outline`, the `tls.t.tags` values), `size`
+(`sm | md | lg`), `variant` (`circle | numeral`, marker), `shape` (`circle | rounded | hexagon`,
+shape) and the content slots `text` / `icon` / `value` / `label`; `library/text/_engine/atom.ts`
+(`atomPaint`, `chipRadius`, `behindColor`, `isSharpStyle`). **Connectors:** block type
+`tls.g.connector` (the compiled form of one connector — one overlay shape each, so both renderers,
+motion, Present and export handle it with no new node kind; AI-hidden) with compiler-filled props
+`fromBox` / `toBox` / `fromRound` / `toRound`; `connectors.ts` (`CONNECTOR_BLOCK_TYPE`,
+`connectorMotion`, `connectorProps`, `connectorFromBlock`, `findBlockSpec`, `isRoundBlock`),
+`layout/connector-route.ts` (`connectorRoute`, `CONNECTOR_WEIGHT`, `MIN_CONNECTOR_LENGTH`,
+`polylineHitsBox`, …), `resolveConnectorEnd` (compiler), compile rule `connector/unresolved`;
+validator rules `connector/malformed`, `connector/duplicate-id`, `connector/unresolved`;
+`LayoutReport.connectors` / `ConnectorReport`; digest `CONNECTORS_LINE`; motion `dashedDraw`.
 
 ---
 

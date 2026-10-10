@@ -18,7 +18,8 @@ import { STYLE_MASTER_PREFIX, documentDeckTokens, getDeckStyle, styleMasters } f
 import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
-import type { BlockSpec, Box, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
+import type { BlockSpec, Box, ConnectorSpec, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
+import { connectorFromBlock, CONNECTOR_BLOCK_TYPE } from './connectors'
 import { shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
@@ -260,6 +261,8 @@ export function pageToSlideSpec(
   }
   const regionEntries: Record<string, RegionEntry[]> = {}
   const free: PlacedBlock[] = []
+  // CMP3: compiled connector shapes go back to `SlideSpec.connectors`, in their compiled order.
+  const connectors: ConnectorSpec[] = []
 
   for (const shape of allShapes) {
     // AC4: style-master shapes (`style:<page>:<n>`, painted by `deckSpecToDocument`) belong to the
@@ -278,6 +281,11 @@ export function pageToSlideSpec(
         blockId: shape.id,
         message: `Shape "${shape.id}" (type: ${shape.type}) is not a block; dropped from SlideSpec.`,
       })
+      continue
+    }
+    if (blockSpec.type === CONNECTOR_BLOCK_TYPE) {
+      const c = connectorFromBlock(blockSpec)
+      if (c) connectors.push(c)
       continue
     }
 
@@ -364,6 +372,7 @@ export function pageToSlideSpec(
   if (free.length > 0) {
     spec.free = free
   }
+  if (connectors.length > 0) spec.connectors = connectors
 
   // Propagate optional metadata.
   if (page.background !== undefined) {

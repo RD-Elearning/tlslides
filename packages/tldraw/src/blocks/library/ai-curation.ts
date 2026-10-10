@@ -51,6 +51,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── decoration ──
   'tls.l.field': t2(),
   'tls.g.arrow': t2(['kind', 'direction', 'heads', 'weight', 'tone']),
+  // CMP3: compiled from SlideSpec.connectors; AI-hidden (capability-digest AI_HIDDEN_TYPES).
+  'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
   'tls.x.rule': t2(['axis', 'weight', 'tone', 'length', 'dash']),

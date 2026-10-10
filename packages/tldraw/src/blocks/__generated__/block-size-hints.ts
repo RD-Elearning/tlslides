@@ -67,6 +67,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.g.bracket': 'h≈-12+98/item@840',
   'tls.g.breakdown': 'h≈-12+122/item@840',
   'tls.g.chevrons': 'h 84–186@840',
+  'tls.g.connector': 'h≈37@840',
   'tls.g.cycle': 'h=fill',
   'tls.g.flow': 'h=fill',
   'tls.g.funnel': 'h≈-4+124/item@840',

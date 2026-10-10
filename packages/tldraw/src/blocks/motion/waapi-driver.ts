@@ -89,16 +89,12 @@ function toWAAPIKeyframes(keyframes: MotionKeyframes): Keyframe[] {
     const first = values[0]
     const last = values[values.length - 1]
 
-    if (typeof first === 'number') {
-      from[cssProp] = String(first)
-    } else {
-      from[cssProp] = String(first)
-    }
-    if (typeof last === 'number') {
-      to[cssProp] = String(last)
-    } else {
-      to[cssProp] = String(last)
-    }
+    // CMP3: a WAAPI keyframe names its property in IDL (camelCase) spelling; `clip-path` and
+    // `stroke-dashoffset` keys were silently ignored, so every wipe and draw-on played nothing under
+    // this (the default) driver and its parts stayed at their hidden state.
+    const idl = cssProp.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())
+    from[idl] = String(first)
+    to[idl] = String(last)
   }
 
   // scaleX / scaleY: CSS has one `scale` property, so combine the axes into "x y".

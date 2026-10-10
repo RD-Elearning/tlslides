@@ -141,9 +141,42 @@ function slideSchema(
       skip: { type: 'boolean' },
       masterId: { type: 'string' },
       motionStyle: MOTION_STYLE_SCHEMA,
+      connectors: CONNECTORS_SCHEMA,
     },
     additionalProperties: false,
   }
+}
+
+const CONNECTOR_END_SCHEMA = {
+  type: 'object',
+  properties: {
+    block: { type: 'string', description: 'Id of a block on this slide (a nested child id works too).' },
+    side: { type: 'string', enum: ['auto', 'top', 'right', 'bottom', 'left'] },
+  },
+  required: ['block'],
+  additionalProperties: false,
+}
+
+/** CMP3 — `SlideSpec.connectors`: lines between blocks by id. */
+const CONNECTORS_SCHEMA = {
+  type: 'array',
+  description: 'Lines between blocks of this slide, by block id; drawn after layout, never by coordinates.',
+  items: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      from: CONNECTOR_END_SCHEMA,
+      to: CONNECTOR_END_SCHEMA,
+      route: { type: 'string', enum: ['straight', 'elbow', 'curved'] },
+      head: { type: 'string', enum: ['end', 'both', 'none'] },
+      tone: { type: 'string', enum: ['line', 'accent', 'text'] },
+      weight: { type: 'string', enum: ['hairline', 'md', 'bold'] },
+      dash: { type: 'boolean' },
+      label: { type: 'string', maxLength: 24 },
+    },
+    required: ['id', 'from', 'to'],
+    additionalProperties: false,
+  },
 }
 
 /**

@@ -4,9 +4,9 @@
  *
  * The shape takes its size step (circle 160 / 220 / 300 across; the box is wider and lower, the
  * hexagon a touch wider), scaled down to fit a smaller box, and sits centred across the box at
- * its top; the root reports the shape's height. The label takes the largest step of heading →
- * subheading → body → caption that fits the shape's inner area in at most three lines, centred
- * line by line. Paint from `atomPaint` (solid / soft / outline and the deck style's border, hard
+ * its top; the root reports the shape's height. The label starts at the size's own step (sm body,
+ * md subheading, lg heading) and steps down only when it does not fit the inner area in three
+ * lines, centred line by line. Paint from `atomPaint` (solid / soft / outline and the deck style's border, hard
  * shadow, glass); a rounded box takes the style's card radius, a hexagon has softly rounded
  * corners (a filled `path`). One group part `shape`.
  *
@@ -17,11 +17,13 @@ import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } fr
 import type { ShapeProps } from './schema'
 import { atomPaint, type AtomTone } from '../../text/_engine/atom'
 import { iconLeaf } from '../../text/_engine/icon'
-import { textAligned } from '../../data/_chart/kit'
+import { textAligned, withRealWidths } from '../../data/_chart/kit'
 import { hasIcon } from '../../../icons'
 
 export const SHAPE_PX = { sm: 160, md: 220, lg: 300 } as const
 const STEPS: TypeToken[] = ['heading', 'subheading', 'body', 'caption']
+/** The label's own step per size: peers of one size share a type size whatever their labels. */
+const START: Record<'sm' | 'md' | 'lg', number> = { sm: 2, md: 1, lg: 0 }
 const MAX_LINES = 3
 
 type Kind = 'circle' | 'rounded' | 'hexagon'
@@ -38,7 +40,7 @@ function outer(kind: Kind, d: number): Size {
 
 /** The label's area inside the shape (relative to its top-left). */
 function inner(kind: Kind, s: Size): { x: number; y: number; width: number; height: number } {
-  const f = kind === 'circle' ? 0.7 : kind === 'hexagon' ? 0.62 : 0.84
+  const f = kind === 'circle' ? 0.78 : kind === 'hexagon' ? 0.64 : 0.84
   const g = kind === 'circle' ? 0.62 : kind === 'hexagon' ? 0.7 : 0.74
   const width = s.width * f
   const height = s.height * g
@@ -84,10 +86,11 @@ interface ShapeGeom {
   textH: number
 }
 
-function geometry(props: ShapeProps, ctx: LayoutContext, maxW: number, maxH: number): ShapeGeom {
+function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: number): ShapeGeom {
+  const ctx = withRealWidths(ctx0)
   const kind: Kind = props.shape === 'rounded' || props.shape === 'hexagon' ? props.shape : 'circle'
-  const step = SHAPE_PX[props.size === 'sm' || props.size === 'lg' ? props.size : 'md']
-  let size = outer(kind, step)
+  const sizeKey = props.size === 'sm' || props.size === 'lg' ? props.size : 'md'
+  let size = outer(kind, SHAPE_PX[sizeKey])
   const k = Math.min(1, maxW / size.width, maxH / size.height)
   if (k < 1) size = { width: Math.max(1, Math.floor(size.width * k)), height: Math.max(1, Math.floor(size.height * k)) }
   const box = inner(kind, size)
@@ -96,10 +99,11 @@ function geometry(props: ShapeProps, ctx: LayoutContext, maxW: number, maxH: num
   const icon = showIcon ? Math.round(Math.min(size.width, size.height) * 0.2) : 0
   const iconGap = showIcon ? Math.round(icon * 0.3) : 0
   let pick: { token: TypeToken; style: ResolvedTextStyle; h: number } | undefined
-  for (const token of STEPS) {
+  // The size's own step first (scaled with a shape the box made smaller); a label that does not
+  // fit steps down. Peers of one size therefore share one type size unless a label is too long.
+  for (const token of STEPS.slice(START[sizeKey])) {
     const base = ctx.resolveText(token)
-    // Scale the step with the shape (a small shape keeps the same proportions).
-    const style: ResolvedTextStyle = { ...base, size: Math.max(10, Math.round(base.size * Math.min(1, size.height / outer(kind, SHAPE_PX.md).height))), lineHeight: Math.min(base.lineHeight, 1.2) }
+    const style: ResolvedTextStyle = { ...base, size: Math.max(10, Math.round(base.size * Math.min(1, k))), lineHeight: Math.min(base.lineHeight, 1.2) }
     const m = ctx.measureText(label, style, box.width)
     pick = { token, style, h: m.height }
     const longest = Math.max(0, ...label.split(/\s+/).map((w) => ctx.measureText(w, style).width))
