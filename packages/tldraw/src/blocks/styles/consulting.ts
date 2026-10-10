@@ -31,7 +31,7 @@ const MASTERS: MasterSpec[] = [
   },
   {
     name: 'section',
-    // a navy section page with a teal edge; the minimal divider's text solves to white on it
+    // a navy section page with a teal edge; the field divider paints white text on the same navy
     blocks: { teal: placePx(band('accent2'), 0, 0, 16, 1080), 'foot-bar': placePx(band('accent2'), 96, 1000, 240, 8) },
     background: { type: 'solid', color: 'theme:accent1' },
   },
@@ -77,7 +77,8 @@ export const CONSULTING_STYLE: DeckStyle = {
   motionStyle: 'static',
   blockDefaults: {
     'tls.c.cover': { variant: 'centered', decoration: 'none' },
-    'tls.c.divider': { variant: 'minimal', align: 'start' },
+    // field: the navy section page reads as one navy field, the number and title in white
+    'tls.c.divider': { variant: 'field', align: 'start' },
     'tls.t.title': { size: 'heading' },
     'tls.c.cards': { lead: 'number', align: 'start' },
     'tls.c.agenda': { numbering: 'badge' },
