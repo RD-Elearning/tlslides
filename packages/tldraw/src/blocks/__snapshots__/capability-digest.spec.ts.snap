@@ -26,16 +26,15 @@ Use role names (e.g. \`accent\`, \`text\`) in slot values — never bare hex.
 
 BlockStyleSpec fields (all optional; absent = theme default):
 
-- \`surface: ColorRole | string — block background\`
-- \`on: ColorRole | string — foreground colour (derived from surface when absent)\`
+- \`surface: ColorRole | string | Paint — background; children solve ink on it\`
+- \`on: ColorRole | string — text colour (else solved against surface)\`
 - \`accent: ColorRole | string — emphasis colour\`
-- \`tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — visual tone\`
-- \`radius: RadiusToken | number — corner radius (none | sm | md | lg | xl | pill)\`
+- \`tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — card look (tls.l.card, tls.l.section)\`
+- \`radius: RadiusToken | number — card corner radius (none|sm|md|lg|xl|pill)\`
 - \`padding: SpaceToken | number | [number, number] — inner padding\`
-- \`gap: SpaceToken | number — gap between children\`
-- \`elevation: 0 | 1 | 2 — shadow level\`
+- \`gap: SpaceToken | number — gap between a container's children\`
+- \`elevation: 0 | 1 | 2 — card shadow\`
 - \`align: 'start' | 'center' | 'end' — content alignment\`
-- \`density: 'compact' | 'default' | 'roomy' — visual compactness\`
 
 Gradient shape: \`Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }\`
 
@@ -3236,8 +3235,7 @@ Numbered step strip: accent badge, title and one-line description per step, join
     ],
     \\"direction\\": \\"horizontal\\",
     \\"connector\\": \\"arrow\\"
-  },
-  \\"children\\": []
+  }
 }
 \`\`\`
 

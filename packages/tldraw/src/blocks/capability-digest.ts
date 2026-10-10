@@ -301,17 +301,18 @@ export function capabilityDigestData(registry?: BlockRegistry, opts?: Capability
 
   // Style
   const style: CapabilityStyleDigest = {
+    // CMP1: only fields a layout reads (density is gone; tone/radius/elevation act on the
+    // card-like containers, gap on every container).
     fields: [
-      'surface: ColorRole | string — block background',
-      'on: ColorRole | string — foreground colour (derived from surface when absent)',
-      'accent: ColorRole | string — emphasis colour',
-      "tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — visual tone",
-      "radius: RadiusToken | number — corner radius (none | sm | md | lg | xl | pill)",
+      "surface: ColorRole | string | Paint — background; children solve ink on it",
+      "on: ColorRole | string — text colour (else solved against surface)",
+      "accent: ColorRole | string — emphasis colour",
+      "tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — card look (tls.l.card, tls.l.section)",
+      "radius: RadiusToken | number — card corner radius (none|sm|md|lg|xl|pill)",
       "padding: SpaceToken | number | [number, number] — inner padding",
-      "gap: SpaceToken | number — gap between children",
-      "elevation: 0 | 1 | 2 — shadow level",
+      "gap: SpaceToken | number — gap between a container's children",
+      "elevation: 0 | 1 | 2 — card shadow",
       "align: 'start' | 'center' | 'end' — content alignment",
-      "density: 'compact' | 'default' | 'roomy' — visual compactness",
     ],
     gradient: "Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }",
   }

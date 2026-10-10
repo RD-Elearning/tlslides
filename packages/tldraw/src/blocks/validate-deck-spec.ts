@@ -652,8 +652,9 @@ function validateBlockTree(
 
   if (block.children !== undefined) {
     // CMP1: one children slot. No layout reads `BlockSpec.children`; a block that sets it renders
-    // without those children. Say so (the children are still validated below).
-    findings.push({
+    // without those children. Say so (the children are still validated below). An empty array
+    // loses nothing.
+    if (!Array.isArray(block.children) || block.children.length > 0) findings.push({
       level: 'error',
       rule: 'block/malformed',
       path: `${path}.children`,

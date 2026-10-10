@@ -36,7 +36,6 @@ export const tlsGSteps: BlockDefinition = {
         direction: 'horizontal',
         connector: 'arrow',
       },
-      children: [],
     },
   },
   schema,
