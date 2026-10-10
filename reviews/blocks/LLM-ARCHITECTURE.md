@@ -163,6 +163,22 @@ assumptions[], questions[] }`.
   passages** are saved so later stages cite them rather than re-reading the PDF.
 - Duration → slide count: teach ≈ 1.5–2 min/slide, keynote ≈ 1 min/slide, report ≈ 2–3
   min/slide. Store the formula with the profile.
+- **Style pick (AC7).** The deck's look is a `DeckStyle` (`BUILT_IN_STYLES`), chosen by the
+  person in the UI style picker; the default is the profile's style candidates (first entry).
+  The model never invents one. S0 outputs `style` (a style id) and `theme` (one of that style's
+  palette ids; the first is the style's default), saved as `DeckSpec.style` / `DeckSpec.theme`
+  and passed to every later stage. Styles are orthogonal to profiles: the profile decides
+  density and structure, the style decides the look. The ten ids, by family:
+
+  | Family | Style ids (palettes) |
+  |---|---|
+  | Premium | `luxury` (luxury-noir, luxury-ivory), `minimal` (minimal-white, minimal-stone), `editorial` (editorial-ink, ivory-editorial) |
+  | Modern | `gradient` (gradient-night, gradient-dawn), `glass` (glass-violet, glass-pastel), `swiss` (swiss-red, swiss-blue) |
+  | Playful | `doodle` (doodle-paper, doodle-kids), `memphis` (memphis-pop) |
+  | Corporate | `corporate` (corporate-navy, midnight, mono-grid), `consulting` (consulting-ink) |
+
+  (The `family` field in code reads `premium`, `modern`, `playful` and `professional`.) A UI
+  that has no picker passes no style and gets today's unstyled behaviour.
 
 ### S1 · Outline — the thing a person reviews
 
@@ -205,6 +221,9 @@ two-tier digest. Both tiers are generated from the live registry
   compact example for those blocks only (at most 12k chars for any 8 types). Layout region
   tables, colour roles, style and motion vocabulary stay in the unfiltered
   `capabilityDigest(reg)`, which is still available but is no longer size-capped by a test.
+  With a deck style, "this style sets: <blockDefaults>" is appended to the detail of each
+  shortlisted type (the `blockDefaults` entry for that type from the style card's "Already set by
+  the style" line): the model must not repeat those knob values, and a knob it sets itself wins.
   If the detail shows that a pick does not fit (the item count is outside the range, or `avoid`
   names a better sibling listed in `related`), the model may swap the type once before fill.
 - **Tier 1 + recipes (AC0).** S2a's default input is now the curated index
@@ -220,6 +239,64 @@ two-tier digest. Both tiers are generated from the live registry
   relationship demands it. `capabilityIndexData(reg, { tier: 1 })` returns the same set as JSON
   with `aiTier`, `looks`, `absorbs`; `RECIPES` / `recipeSlide()` are exported for the backend.
   The unfiltered `capabilityIndex(reg)` (all 129 blocks, ≤ 20k) is unchanged.
+- **Style-aware S2a (AC7).** With a deck style the S2a prompt is three things, all generated
+  from the live code: the **style card** (`styleCard(style)`, about 0.9-1.1k chars), the
+  **recipes for the slide's role** (`recipesFor(role)` or the `## Recipes` section of the index,
+  one `recipeLine` each) and the **style-filtered tier-1 index**
+  (`capabilityIndex(reg, { tier: 1, style, roles })`). A style's `avoid` drops the types from the
+  index and every recipe that uses them; its `prefer` promotes tier-2 types to full lines.
+  Real output for `corporate`, trimmed:
+
+  ```text
+  ## Style: corporate — Corporate
+  Clean business deck: white slides, navy text, one blue accent, small radii, numbers and charts first. ...
+  Palettes (write one as `theme`): corporate-navy, midnight, mono-grid (first = default).
+  Fonts: Inter / Inter (text width vs Inter: heading ×1.00, body ×1.00). Motion: subtle (deck default).
+  Rules: Every chart or table has a one-line takeaway. Consistent number formats across a slide. One accent use per slide; no decoration.
+  Prefer: tls.g.roadmap, tls.c.dashboard
+  Avoid: tls.c.kinetic-title, tls.m.decoration, tls.m.pattern
+  Already set by the style (do not repeat): tls.c.cover(variant=centered,decoration=none) tls.c.divider(variant=field,align=start) ...
+  ```
+
+  ```text
+  ### data
+  data-chart-insight · timeline+title — timeline: tls.c.chart-insight(insightSize=lead) — one chart, takeaway and source
+  data-kpi-row · timeline+title — timeline: tls.c.kpi-row(tile=card) + tls.t.takeaway(size=lead) — 2–5 headline KPIs and what they mean
+  data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
+  ```
+
+  ```text
+  ## Metric
+  tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile, gap
+  also: tls.c.dashboard, tls.c.kpi-tile, ...
+  ```
+
+  The model picks a recipe, keeps its layout and regions, swaps content, and turns knobs. The
+  backend gives it one recipe id per slide plus `why`; the deterministic post-check rejects an
+  id outside `recipesFor(role)` filtered by the style. The reference implementation of this pick
+  (without a model) is `tools/layout-report/dry-run.js`: it rotates through the role's eligible
+  recipes, `eligibleRecipes(role, style, registry)` in `blocks/pipeline/dryRun.ts`.
+
+  **Measured prompt budget** (dry run, chars; target = ai-curation README §5.2; the index is the
+  tier-1 index with `{ style }`, the card is `styleCard`; "header" is the index preamble plus its
+  one-line `## Styles` section):
+
+  | Section | Target | Measured (10 styles) | Verdict |
+  |---|---|---|---|
+  | Header (picking, scope, size, layer, motion rules) | ~1.2k | 2,430-2,503 | over: the layer, size and motion lines were added after the target was set |
+  | Style card | <= 1.2k | 897-1,118 | within |
+  | Recipes, all 10 roles | <= 3k | 3,819-4,055 | over; with the slide's own role only: 935 (`content`, the largest) |
+  | Tier-1 lines (45 + bento, image-full) | ~7k | 6,649-7,493 | around the target; doodle, consulting, gradient and editorial a little over |
+  | Tier-2 names | <= 1.5k | 1,315-1,389 | within |
+  | Icons | ~1.3k | 796 | within |
+  | **Total, all roles** | **<= 16k** | **16,219-17,100** | **over by 219-1,100** |
+  | **Total, slide's own role** | <= 16k | 13,315-14,087 | within |
+
+  The 16k ceiling holds when S2a sends only the slide's own role's recipes
+  (`roles: [role]`), which is what the backend should do: a slide has one role, and the saving
+  (2.9-3.1k) is larger than the overshoot. The full index with all roles is for the one-shot
+  planner. `dry-run.spec.ts` asserts the per-role total.
+
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix
@@ -249,6 +326,13 @@ two-tier digest. Both tiers are generated from the live registry
 - The model outputs `key`s; the backend assigns `id`s (`sl_03`, `b_03_title`) deterministically
   from keys so re-runs produce the same ids.
 - Effort `medium` is usually enough here; measure per profile.
+- **Per-style size cards (AC7).** The height hints the fill stage gets for the chosen types are
+  sampled with the deck's style (its default palette or `theme`, its tokens and its knob
+  defaults), not with the default theme:
+  `node tools/layout-report/cli.js --metrics --style <id> [--theme <palette>] [--types a,b]`
+  (the same data as `buildBlockMetrics(reg, { tokens, blockDefaults })`). A style with another
+  type scale or font changes heights, so use these cards, not the committed
+  `__generated__/block-metrics.json`, for a styled deck.
 
 ### S4 · Deterministic checks and repair
 
@@ -370,6 +454,13 @@ hosts without one), the editor wraps/paints the text differently from its true w
 still lays out with `estimateMetrics`), or painted content ends within the calibrated error margin
 of the frame edge / the next block. On the fixtures that is 21 of 95 slides.
 
+**Reference implementation (AC7).** `tools/layout-report/dry-run.js` runs S2a → S3 → S4.1 for
+all ten styles without a model: a fixed 12-slide outline, a deterministic recipe pick per slide,
+the headline written into the recipe's title slot, `analyzeDeck`, then at most three repair
+rounds (next eligible recipe for the role, then a shorter headline), and it measures the S2a
+prompt per section. The logic is the pure module `packages/tldraw/src/blocks/pipeline/dryRun.ts`
+(`runDryRun`, `eligibleRecipes`, `fillSlide`, `measurePrompt`); port its shape, not its picker.
+
 ### S5 · Render and review — the critic
 
 Detailed in §5. Output: `ReviewReport` + optionally `DeckSpec` v2 (`source: 'review'`).
@@ -421,6 +512,23 @@ Six dimensions, each scored 1–5 with a one-line justification, weights from th
 | **Density** | Right amount of content for the audience and profile? | 3 | 3 | 2 |
 | **Evidence** | Are numbers sourced, charts labelled, claims supported? | 2 | 1 | 3 |
 | **Consistency** | Same terminology, number format, tone, layout rhythm as neighbours? | 1 | 2 | 3 |
+
+**Per-style lines (AC7).** The critic gets the deck style's `rules` (the style card's "Rules"
+line) and the checks below on top of the six dimensions. They come from each style's `rules` /
+`avoid` in `packages/tldraw/src/blocks/styles/*.ts`:
+
+| Family | Style | Check the critic adds |
+|---|---|---|
+| Premium | `luxury` | Count accent uses: at most one per slide. At most 40 words per slide. Images full-bleed or absent; no scatter, bubble or heatmap charts, no tag pills. |
+| | `minimal` | One idea per slide; white space dominates. Grey and black only, an accent on one word at most; no decoration or pattern blocks. |
+| | `editorial` | Kicker, title, rule: type carries the page. A pull quote beats a bullet list. No glass, orbs, pills or gradients. |
+| Modern | `gradient` | Dark first, one glow per slide; headlines short and big; lists as cards, not bare text. |
+| | `glass` | Content sits on glass cards over the glow, never bare on the background. At most three chart series; no tables. |
+| | `swiss` | Everything flush left on an asymmetric grid; red for one thing per slide. No blobs, orbs, gradients or centred text. |
+| Playful | `doodle` | Short friendly sentences; one motif per slide, in the margin. Icons and pictures over dense text; no tables or scatter. |
+| | `memphis` | At most three motifs per slide, never over text. Flat bright colours with black outlines; short punchy headlines; no tables. |
+| Corporate | `corporate` | Every chart or table has a one-line takeaway. Number formats consistent across a slide. One accent use per slide, no decoration. |
+| | `consulting` | The title is an action title: one full sentence that states the insight. A source on every data slide. One message per slide. |
 
 Plus a **deck-level** pass on the contact sheet (all slides as a grid): rhythm, repetition,
 whether the story arc matches the profile's structure, whether the opening and closing carry
@@ -595,6 +703,31 @@ interface DeckVersion { id; deckId; spec: DeckSpec; source: VersionSource; paren
 
 interface GenerationTrace { id; deckId; versionId?; stage; slideKey?; model; effort; promptHash; inputTokens; cachedTokens; outputTokens; latencyMs; stopReason; findingsBefore: number; findingsAfter: number }
 ```
+
+AC7 additions, all optional and as they exist in code:
+
+```ts
+// DeckSpec (blocks/types.ts) gains one field: a BUILT_IN_STYLES id. `theme` is then a palette id of that style.
+interface DeckSpec { /* ... */ style?: string }
+
+// capabilityIndexData(reg, opts?) → CapabilityIndexEntry[] (blocks/capability-digest.ts); AC0 added:
+interface CapabilityIndexEntry {
+  /* type, category, scope, range?, shortDescription, related?, layer?, size? ... */
+  aiTier?: 1 | 2          // 1 = full line in the default index, 2 = by name
+  looks?: string[]        // enum/boolean knob slots that change the look, in the order to try them
+  absorbs?: string[]      // tier-2 types this block replaces by default
+}
+// opts: { categories?, scopes?, tier?: 1, profile?: { prefer?, avoid? }, roles?: RecipeRole[], style?: string }
+```
+
+`capabilityIndexData` returns blocks only. **The styles and the recipes are not fields of that
+JSON** (the AC plan §5.2 sketched `styles` and `recipes` arrays; they were not built): the
+backend reads them from the same package: `BUILT_IN_STYLES` (each a `DeckStyle`: `id`, `family`,
+`name`, `brief`, `palettes`, `fonts`, `tokens`, `surface`, `masters`, `motionStyle`,
+`blockDefaults`, `prefer`, `avoid`, `rules`), `styleCard(style)`, `styleLine(style)`, and
+`RECIPES` / `recipesFor(role)` / `recipeLine(r)` / `recipeSlide(r, registry)` (a `SlideRecipe` is
+`{ id, role, layout, regions: Record<string, { type, knobs? }[]>, when }`). A Python backend
+calls them through the Node sidecar, as for the layout oracle.
 
 `SlideRole = 'opener' | 'objective' | 'agenda' | 'section' | 'content' | 'data' | 'example' |
 'exercise' | 'recap' | 'quote' | 'summary' | 'cta' | 'references' | 'closing'`.

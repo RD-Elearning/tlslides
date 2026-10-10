@@ -398,6 +398,92 @@ your `layout()` tree, so an author's job is mostly to keep the tree honest:
   Commit both files with the block change. To check one slide while authoring:
   `node tools/layout-report/cli.js deck.json --slide <id>`.
 
+### 2.11 Adding a deck style
+
+A deck style (`DeckSpec.style`) is data, not code: a palette set, two fonts, token overrides, a
+card surface, masters, knob defaults per block and a few rules. The ten built-ins (corporate,
+minimal, gradient, luxury, editorial, glass, swiss, doodle, memphis, consulting) are the
+templates; copy the closest one. Design background: [reviews/blocks/ai-curation/README.md](../reviews/blocks/ai-curation/README.md) §3.
+
+**1. Files to create or touch** (all under `packages/tldraw/src/blocks/`):
+
+- `styles/<id>.ts` exports `<ID>_STYLE: DeckStyle` (`types.ts`). Use `styles/corporate.ts` as the
+  skeleton; `styles/_place.ts` holds the helpers masters use to place motifs.
+- `styles/index.ts`: import it and add it to `BUILT_IN_STYLES`. Nothing else enumerates styles:
+  the digest, the validator, the JSON Schema, `cli.js --style` and the dry run all read that array.
+- `__fixtures__/styles/<id>.json`: the fixture deck (below).
+
+**2. What a style controls** (the `DeckStyle` fields, §3.2 of the AC plan):
+
+| Field | Controls |
+|---|---|
+| `palettes` | 1-3 `DeckTheme`s; `[0]` is the default. Ids are `<style>-<name>` or an existing built-in theme. The AI writes one as `DeckSpec.theme`. |
+| `fonts` | `{ heading, body }` as `{ family, fallback, metricsKey }`; see Fonts below. |
+| `tokens` | Type-scale, radius, elevation, density, motion overrides, under `DeckSpec.tokens`. |
+| `surface` | How card-like blocks paint: `card` (`filled`, `outline`, `glass`, `ghost`, `raised`), `stroke`, `shadow`. |
+| `masters` | `cover` / `content` / `section` masters (background paint, backdrop blocks such as mesh, grain, motifs). A slide with no `masterId` gets one by role. |
+| `motionStyle` | The deck's default motion style. |
+| `blockDefaults` | Knob values per block type, filled under the authored props at compile time (never written into the authored spec). |
+| `prefer` / `avoid` | Tier-2 types promoted to index lines / types dropped from the index and from every recipe that uses them. |
+| `brief`, `rules` | Shown verbatim on the style card (`styleCard`), and the critic's rubric. Keep `brief` at 240 characters or fewer and at most 4 short rules. |
+
+Resolution order, lowest to highest: palette default, style tokens, `DeckSpec.tokens`, masters,
+`blockDefaults` under authored props, motion styles. A deck whose `theme` names none of the
+style's palettes gets `style/theme-mismatch` from the validator.
+
+**3. Fonts.** Use families that are OFL-licensed and ship a `vietnamese` subset (the sample
+serves the Latin, Latin-ext and Vietnamese subsets of each; check the package metadata before
+adding one). The layout oracle sizes copy from a per-family advance-width table, so a new family
+needs one:
+
+1. add the fontsource package to `examples/nextjs-sample/package.json` and import it in
+   `examples/nextjs-sample/app/layout.tsx`;
+2. add an entry (`key`, `family`, `pkg`, `css`, `generic`) to `FONT_SET` in
+   `tools/layout-report/calibrate/fonts.js`;
+3. measure it: `node tools/layout-report/calibrate/font-widths.js --keys <key>` writes
+   `packages/tldraw/src/blocks/layout/font-metrics/<key>.ts` (needs headless Chromium:
+   `node node_modules/playwright/cli.js install chromium-headless-shell`). Re-check all tables
+   with `font-widths.js --check` (exit 1 when a stored entry is more than 0.001 em off);
+4. register the table in `layout/font-metrics/index.ts` (`FONT_FACES`);
+5. use the same `key` as `metricsKey` in the style's `fonts`.
+
+The style card shows the result to the model as `text width vs Inter: heading x1.08`, so it can
+shorten copy for a wide face.
+
+**4. Fixture deck.** `__fixtures__/styles/<id>.json` is a DeckSpec with `style: "<id>"` and the
+default palette as `theme`: 8 slides (cover, agenda, section, content, data, comparison, quote,
+closing) with the same content as the others, so the styles compare like for like.
+`styles/styles.spec.ts` loads `__fixtures__/styles/<id>.json` for every entry of
+`BUILT_IN_STYLES` (a missing file fails the spec) and requires that it validates with 0 findings,
+reports clean in `analyzeDeck`, and round-trips through `deckSpecToDocument` /
+`documentToDeckSpec` without leaking style defaults.
+
+**5. Specs that gate a style** (all in `styles/styles.spec.ts` unless noted):
+
+- *contrast*: every palette, `text` on `background` at 4.5:1 or more and `textMuted` at 3:1 or more;
+- *size cards*: for every palette, each tier-1 block's `describe.example` still fits its
+  `size.min` under the style's tokens and `blockDefaults` (a style whose type scale or font breaks
+  a block is the wrong style);
+- *data*: 1-3 palettes with unique ids, `brief` at most 240 characters, at most 4 rules, `prefer` / `avoid` / `blockDefaults` name real blocks and valid enum or boolean knobs, the style card at most 1,200 characters;
+- `capability-digest.spec.ts`: the tier-1 index per style stays within its 16k ceiling.
+
+**6. Verify** (no browser unless noted):
+
+```bash
+node tools/layout-report/cli.js packages/tldraw/src/blocks/__fixtures__/styles/<id>.json   # 0 errors, 0 warnings
+node tools/layout-report/cli.js --metrics --style <id>                                      # the size cards the model gets for this style
+node tools/layout-report/dry-run.js --style <id>                                            # 12-slide pipeline run + prompt budget; exit 1 on errors
+cd packages/tldraw && ../../node_modules/.bin/jest src/blocks/styles src/blocks/dry-run.spec.ts --maxWorkers=1
+# browser (Chromium): render the fixture and LOOK at the PNGs
+node tools/layout-report/calibrate/run.js --decks <id>=styles/<id>.json --shots st_01,st_04
+```
+
+`run.js` needs a prior `next dev` or `next build` of `examples/nextjs-sample` (it reuses the
+fonts from `.next/static`), or `--font-css FILE`. Open the shots: the oracle does not see
+contrast on a painted backdrop, a motif crossing text, or a wrap it measured differently from the
+browser (`needsVisualCheck` lists the blocks worth a look). Run only one heavy job at a time on a
+4 GB machine.
+
 ## 3. FastAPI + LLM integration — how a model picks blocks
 
 The frontend never talks to the LLM. It talks to FastAPI in `DeckSpec` JSON; FastAPI owns the

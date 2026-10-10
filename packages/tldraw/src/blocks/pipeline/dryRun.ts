@@ -177,9 +177,9 @@ export function measurePrompt(style: DeckStyle, registry: BlockRegistry, roles?:
   }
   const card = styleCard(style)
   const sections = {
-    header: len(header),
-    // the card plus the index's own one-line style section
-    styleCard: card.length + 1 + len(styles),
+    // the index preamble plus its own "## Styles" section (one line for the chosen style)
+    header: len(header) + len(styles),
+    styleCard: card.length + 1,
     recipes: len(recipes),
     tier1: len(tier1),
     tier2: len(tier2),
