@@ -61,7 +61,7 @@ if (opts.json) {
     console.log([r.style.padEnd(10), pad(r.slides, 7), pad(uniq, 7), pad(r.repairs.length, 7), pad(r.errors, 7), pad(r.warnings, 7), pad(r.needsVisualCheck, 7), pad(r.exampleKept, 7)].join(' '))
   }
   console.log('')
-  console.log('S2a prompt chars per section, all roles' recipes (column header = §5.2 target; * = over target):')
+  console.log('S2a prompt chars per section, all-roles recipes (column header = §5.2 target; * = over target):')
   const cols = ['header', 'styleCard', 'recipes', 'tier1', 'tier2', 'icons', 'total']
   console.log(['style'.padEnd(10), ...cols.map((c) => pad(`${c}/${budget[c]}`, 15))].join(' '))
   for (const r of summary) console.log([r.style.padEnd(10), ...cols.map((c) => pad(r.prompt[c] + (r.prompt[c] > budget[c] ? '*' : ''), 15))].join(' '))
