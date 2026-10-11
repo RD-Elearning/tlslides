@@ -166,7 +166,7 @@ export type {
 // hand-written prompt fragment would.
 export { validateDeckSpec, defaultBlockRegistry } from './validate-deck-spec'
 export type { DeckFinding } from './validate-deck-spec'
-export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData, compositionCard } from './capability-digest'
 export type {
   CapabilityDigest,
   CapabilityBlockDigest,
@@ -182,6 +182,10 @@ export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant
 // CMP4 — composition patterns (`reviews/blocks/composition/README.md` CMP4).
 export { COMPOSITION_PATTERNS, PATTERN_RECIPES, ALL_DESIGNS, findDesign, patternRecipe, patternsFor } from './patterns'
 export type { CompositionPattern, ComposedSlide } from './patterns'
+export { checkGrammar, nearestPattern, validateFreeComposition, GRAMMAR_CONTAINERS, GRAMMAR_MAX_DEPTH, GRAMMAR_MAX_CHILDREN, GRAMMAR_STYLE_FIELDS } from './composition-grammar'
+export type { GrammarFinding } from './composition-grammar'
+export { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
+export type { Composition, ComposeKind, ComposeRunResult } from './pipeline/composeRun'
 export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
 export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, prefixIds, shortenHeadline, DRY_RUN_OUTLINE, DRY_RUN_ASSETS, PROMPT_BUDGET } from './pipeline/dryRun'
