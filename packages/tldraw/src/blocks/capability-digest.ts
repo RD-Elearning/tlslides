@@ -26,7 +26,8 @@ import { BLOCK_SIZE_HINTS } from './__generated__/block-size-hints'
 import { ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
-import { RECIPES, recipeLine } from './recipes'
+import { RECIPES, composedSlide, eachBlock, recipeLine } from './recipes'
+import { PATTERN_RECIPES } from './patterns'
 import type { RecipeRole } from './recipes'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -132,6 +133,30 @@ export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
   types?: string[]
   categories?: BlockCategory[]
+  /** CMP4: append the composition card (`compositionCard`), for an S2b call that composes freely. */
+  composition?: boolean
+}
+
+/**
+ * CMP4 — the composition card: how to compose a slide from containers, atoms, layers and
+ * connectors under the grammar (`composition-grammar.ts`). It goes only into the S2b detail call
+ * when the planner composes freely (`capabilityDigest(…, { composition: true })`), under its own
+ * budget (≤ 2.5k chars, `capability-digest.spec`). Every feature it names is one the engine reads.
+ */
+export function compositionCard(): string {
+  return [
+    '## Composing a slide',
+    'Prefer a pattern (`patterns:`); compose only when none fits. The validator checks the grammar (`grammar/*`).',
+    '- Containers (children in `props.children`): `tls.l.stack` (top-down, `sizing: content`), `tls.l.row` / `tls.l.grid` (`columns`, `rows`; peers: ONE child type, so wrap mixed content in `tls.l.card` or `tls.l.stack`), `tls.l.split` (`ratio` 0.3-0.7, two children), `tls.l.card` (a padded surface, `padding`), `tls.l.overlay`.',
+    '- At most 3 levels (a region block is 1) and 6 children per container. Inside a container only element blocks; a composite (`tls.c.*`) stands alone in a region.',
+    '- Atoms: `tls.t.title` (a card heading: `size: subheading|heading`), `tls.t.body` (`size: body|lead`), `tls.t.kicker`, `tls.t.badge` (`tone`), `tls.t.marker` (`value`; circle 48/72/104 or `variant: numeral`), `tls.m.icon` (`iconStyle: disc`), `tls.m.shape` (circle|rounded|hexagon, 160/220/300, `label`, `icon`), `tls.t.hero-number`, `tls.m.avatar`, `tls.m.image`, `tls.x.rule` (`dash`).',
+    '- Peer cards of one structure line up their children and share one height; a card is as tall as its content, and a lone container is centred by its region.',
+    '- Layers: a region block with `layer: backdrop` fills the region behind (a photo); `layer: overlay` + `anchor` (top-left … bottom-right, center) sits on top at its own size. Text on a photo: `style: { surface: scrim, padding: xl }`. `anchorTo: <id>` pins an overlay to a stacked block (a badge on a card corner).',
+    '- `style`: surface, on, accent (`text` = neutral), tone, radius, padding, gap, elevation, align. Nothing else is read.',
+    '- Connectors: `slide.connectors: [{ id, from: { block }, to: { block }, route: straight|elbow|curved, head: end|both|none, tone: line|accent|text, weight, dash, label }]` by block id (nested ids too), never coordinates; each draws on after its later block.',
+    '- Motion: a container staggers its children (300 ms in all); a hero number in a card counts up; at most 2 showy reveals a slide.',
+    'Example (timeline layout): `{"id":"r","type":"tls.l.row","props":{"children":[{"id":"c1","type":"tls.l.card","props":{"children":[{"id":"m1","type":"tls.t.marker","props":{"value":"1"}},{"id":"h1","type":"tls.t.title","props":{"text":"Pilot","size":"heading"}},{"id":"b1","type":"tls.t.body","props":{"text":"Two partners, eight weeks."}}]}}, …]}}` + `"connectors":[{"id":"k1","from":{"block":"c1"},"to":{"block":"c2"}}]`',
+  ].join('\n')
 }
 
 export interface CapabilityLayoutDigest {
@@ -491,6 +516,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
 
   }
 
+  // CMP4: the composition card, only when the planner composes freely
+  if (opts?.composition) lines.push('', compositionCard())
   return lines.join('\n')
 }
 
@@ -743,17 +770,32 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
       // CMP3: trimmed (", clean with example content") to pay for the three atoms' `also:` names
         'Known-good slides per role (`id · layout — region: blocks — when · looks`). ' +
         '`+title` = `tls.t.title` in the `title` region; no region name = the main region. ' +
-        '`looks:` other designs (`id/look`). Swap content, keep the rest; never repeat a recipe/look in a deck.'
+        '`looks:` other designs (`id/look`); `patterns:` composed designs, picked the same way. Swap content, keep the rest; never repeat a design in a deck.'
     )
     lines.push('')
+    // CMP4: per role, its composition patterns on one line (`id(look|look)`), picked like recipes
+    const patternsOf = (role: string) =>
+      PATTERN_RECIPES.filter((r) => r.role === role && (!opts.roles || opts.roles.includes(r.role))).filter((r) => {
+        let ok = true
+        eachBlock(composedSlide(r, 'base').regions, (b) => {
+          if (dropped.has(b.type)) ok = false
+        })
+        return ok
+      })
     let role: string | undefined
+    const flush = () => {
+      const ps = role ? patternsOf(role) : []
+      if (ps.length) lines.push(`patterns: ${ps.map((p) => `${p.id}${p.variants?.length ? `(${p.variants.map((v) => v.id).join('|')})` : ''}`).join(' · ')}`)
+    }
     for (const r of recipes) {
       if (r.role !== role) {
+        flush()
         role = r.role
         lines.push(`### ${role}`)
       }
       lines.push(recipeLine(r))
     }
+    flush()
     lines.push('')
   }
   for (const cat of BLOCK_CATEGORIES) {

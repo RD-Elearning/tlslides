@@ -5567,7 +5567,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 17k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 17.7k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -5585,18 +5585,21 @@ playful: doodle (doodle-paper, doodle-kids); memphis (memphis-pop)
 
 ## Recipes
 
-Known-good slides per role (\`id · layout — region: blocks — when · looks\`). \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`). Swap content, keep the rest; never repeat a recipe/look in a deck.
+Known-good slides per role (\`id · layout — region: blocks — when · looks\`). \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`); \`patterns:\` composed designs, picked the same way. Swap content, keep the rest; never repeat a design in a deck.
 
 ### cover
 cover-hero · blank — tls.c.hero — type-led opener · looks: center|split
 cover-split-image · blank — tls.c.cover(variant=split,showImage=true) — opener with a photo · looks: bleed
 cover-kinetic · blank — tls.c.kinetic-title — motion-led opener · looks: accent|start
+patterns: cover-photo-scrim(center|left) · cover-type-rule(badge) · cover-facts(plain)
 ### agenda
 agenda-full · timeline+title — tls.c.agenda — numbered agenda, full slide · looks: cards|badge|cards-badge
 agenda-image · two-column+title — left: tls.t.bullets(marker=number,size=fit); right: tls.m.image — short agenda beside a photo · looks: mirror
+patterns: agenda-marker-cards(row) · agenda-split-rail(chevron) · agenda-flow(shapes)
 ### section
 section-divider · blank — tls.c.divider — section opener · looks: numeral|field|minimal|center
 section-title · section-stack — tls.t.title(size=fit,rule=true,align=start) + tls.t.body(size=subheading) — section break
+patterns: section-marker(disc|style) · section-questions(chevron) · section-photo-scrim(center) · section-split-numeral(rule)
 ### content
 content-bento · timeline+title — tls.c.bento — a number, points, a photo
 content-statement · blank — tls.t.statement(size=display) — one message, key words in accent · looks: center|underline|accent
@@ -5605,6 +5608,7 @@ content-cards · timeline+title — tls.c.cards — 2–4 parallel points · loo
 content-feature-grid · timeline+title — tls.c.feature-grid(cell=card) — features with icons · looks: circle|center
 content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list(size=fit) — icon points beside a photo · looks: mirror
 content-image-text · blank — tls.c.image-text — photo-led story · looks: right
+patterns: content-icon-cards(three) · content-hub(outline)
 ### data
 data-chart-insight · timeline+title — tls.c.chart-insight(insightSize=lead) — one chart, takeaway and source · looks: left|below|wide
 data-stat-spotlight · timeline+title — tls.c.stat-spotlight — a rate and three numbers · looks: side|plain
@@ -5624,10 +5628,12 @@ process-steps · timeline+title — tls.c.steps + tls.t.takeaway(size=lead) — 
 process-chevrons · timeline+title — tls.g.chevrons(textPlacement=below) + tls.t.takeaway(size=lead) — phases, the current one · looks: single|series|inside
 process-timeline · timeline+title — tls.g.timeline(alternate=true) — dated events · looks: numbers
 process-roadmap · timeline+title — tls.g.roadmap + tls.t.takeaway(size=lead) — plan by period and lane · looks: plain
+patterns: process-marker-flow(four)
 ### people
 people-team · timeline+title — tls.c.team — team members
 people-testimonial · blank — tls.c.testimonial(size=lg) — a customer quote
 people-logo-wall · timeline+title — tls.m.logo-wall — clients or partners · looks: plates|dividers
+patterns: people-avatar-cards(three|plain) · people-quote-portrait(mirror) · people-roles(grid)
 ### quote
 quote-pull · blank — tls.t.quote(variant=big) — a pull quote · looks: card|side|image
 quote-image-full · full-bleed — tls.c.image-full — a place or moment, edge to edge · looks: split|band|fade|fade-left|framed|framed-split
@@ -5635,6 +5641,7 @@ quote-statement · blank — tls.t.statement(showAttribution=true,size=display) 
 ### closing
 closing-centered · blank — tls.c.closing(variant=centered) — thanks and a CTA · looks: link|big-type
 closing-split · blank — tls.c.closing(variant=split) — contacts beside the CTA · looks: link
+patterns: closing-next-steps(plain) · closing-photo-scrim(left) · closing-contact-cards(plain)
 
 ## Structure
 also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack

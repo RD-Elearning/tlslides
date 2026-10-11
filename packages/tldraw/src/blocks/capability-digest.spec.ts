@@ -10,7 +10,8 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { knobHint, AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+import { knobHint, AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData, compositionCard } from './capability-digest'
+import { PATTERN_RECIPES } from './patterns'
 import { BUILT_IN_STYLES, styleCard, styleLine } from './styles'
 import { deckSpecJsonSchema } from './deck-spec-json-schema'
 import { validateDeckSpec } from './validate-deck-spec'
@@ -520,6 +521,19 @@ describe('R7 — capability digest v2', () => {
       expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12000)
     })
 
+    it('CMP4: the composition card is ≤ 2.5k, names only real blocks, and joins the detail call on request', () => {
+      const card = compositionCard()
+      expect(card.length).toBeLessThanOrEqual(2500)
+      for (const t of card.match(/tls\.[a-z]\.[a-z-]+/g) ?? []) expect([t, !!reg.get(t)]).toEqual([t, true])
+      const types = ['tls.t.badge', 'tls.t.marker', 'tls.m.shape', 'tls.l.card']
+      expect(capabilityDigest(reg, { types })).not.toContain('## Composing a slide')
+      expect(capabilityDigest(reg, { types, composition: true })).toContain(card)
+      // the tier-1 index lists the patterns per role (ids and looks), not the card
+      const tier1 = capabilityIndex(reg, { tier: 1 })
+      expect(tier1).not.toContain('## Composing a slide')
+      for (const p of PATTERN_RECIPES) expect(tier1).toContain(p.id)
+    })
+
     it('capabilityDigest(categories) filters by category', () => {
       const md = capabilityDigest(reg, { categories: ['chart'] })
       expect(md).toContain('### `tls.d.bar`')
@@ -536,8 +550,10 @@ describe('R7 — capability digest v2', () => {
       // AC8 budget decision (ai-curation README §8): the knob values and recipe looks raised the
       // tier-1 index ceiling from 16k to 17k (the brief's allowance); the S2a prompt with the
       // slide's own role stays <= 16k (dry-run.spec).
-      it('stays within 17k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(17000)
+      // CMP4 budget decision (composition README §4): one `patterns:` line per role (+630 chars,
+      // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
+      it('stays within 17.7k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(17700)
         expect(tier1).toMatchSnapshot()
       })
 
@@ -603,10 +619,10 @@ describe('R7 — capability digest v2', () => {
         }
       })
 
-      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17k (AC8)', () => {
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17.7k (AC8, CMP4)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(17000)
+          expect(md.length).toBeLessThanOrEqual(17700)
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)
