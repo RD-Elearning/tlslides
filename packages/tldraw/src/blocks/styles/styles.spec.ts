@@ -106,6 +106,19 @@ describe('resolution order (§3.2)', () => {
     }
   })
 
+  it('locale: a spec in a built-in style draws numeric values in the deck language', () => {
+    const { defaultBlockSvg } = require('../layout-slide') as typeof import('../layout-slide')
+    const spec: DeckSpec = {
+      version: 1, id: 't8', title: 'T8', style: 'swiss', aspect: 'widescreen', tokens: { locale: 'vi' },
+      slides: [{ id: 's1', layout: 'blank', regions: { content: [{ id: 'b1', type: 'tls.c.big-stat', props: { value: 620_000_000_000, format: 'compact', label: 'Sữa nước' } }] } }],
+    } as DeckSpec
+    const { document } = deckSpecToDocument(spec)
+    const page = document.pages.s1
+    const svg = Object.values(page.shapes).map((sh) => defaultBlockSvg(document, page)(sh as ComponentShape) ?? '').join('')
+    expect(svg).toContain('620 tỷ')
+    expect(svg).not.toContain('620B')
+  })
+
   it('blockDefaults fill only unauthored knobs; authored props win', () => {
     const defaults = { 'tls.c.cover': { variant: 'split', decoration: 'none' } }
     const block = { id: 'b', type: 'tls.c.cover', props: { title: 'x', variant: 'centered' } }

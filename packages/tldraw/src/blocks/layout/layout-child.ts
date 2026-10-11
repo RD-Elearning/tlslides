@@ -307,6 +307,7 @@ export function createLayoutContext(
     ...(options.tokens.headingFamily !== undefined ? { headingFamily: options.tokens.headingFamily } : {}),
     ...(options.tokens.bodyFamily !== undefined ? { bodyFamily: options.tokens.bodyFamily } : {}),
     ...(options.tokens.surface !== undefined ? { surface: { ...options.tokens.surface } } : {}),
+    ...(options.tokens.locale !== undefined ? { locale: options.tokens.locale } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }
