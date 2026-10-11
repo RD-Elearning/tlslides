@@ -255,7 +255,38 @@ export function fillSlide(
       return { ...blk, id: blk.id, props }
     })
   }
+  // CMP4: a pattern nests its title (a lockup on a photo, a column beside a list): the first
+  // title in the tree takes the headline and the body right after it the key message
+  if (recipe.compose && !titled) {
+    const nested = fillNested(regions, headline, entry?.keyMessage)
+    return { slide: { ...slide, regions: nested.regions }, titled: nested.titled }
+  }
   return { slide: { ...slide, regions }, titled }
+}
+
+/** CMP4 — the first nested `tls.t.title` gets the headline, a `tls.t.body` sibling after it the key message. */
+function fillNested(regions: Record<string, BlockSpec[]>, headline: string, keyMessage?: string): { regions: Record<string, BlockSpec[]>; titled: boolean } {
+  let titled = false
+  const walk = (list: BlockSpec[]): BlockSpec[] => {
+    let messaged = false
+    let afterTitle = false
+    return list.map((b) => {
+      const props = (b.props ?? {}) as Record<string, unknown>
+      if (!titled && b.type === 'tls.t.title') {
+        titled = true
+        afterTitle = true
+        return { ...b, props: { ...props, text: { runs: [{ text: headline }] } } }
+      }
+      if (afterTitle && !messaged && keyMessage && b.type === 'tls.t.body') {
+        messaged = true
+        return { ...b, props: { ...props, text: { runs: [{ text: keyMessage }] } } }
+      }
+      if (Array.isArray(props.children)) return { ...b, props: { ...props, children: walk(props.children as BlockSpec[]) } }
+      return b
+    })
+  }
+  const out = Object.fromEntries(Object.entries(regions).map(([n, bs]) => [n, walk(bs)]))
+  return { regions: out, titled }
 }
 
 function deckOf(style: DeckStyle, slides: SlideSpec[], seed = 0, theme?: string): DeckSpec {
