@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** CMP1, CMP2 done (2026-10-10); CMP3 paused mid-phase (2026-10-10, user stop) — resume from Notes — CMP3. Resume from [§6 Progress](#6-progress).
+**Status:** CMP1, CMP2 done (2026-10-10); CMP3 done (2026-10-11). Next: CMP4. Resume from [§6 Progress](#6-progress).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -350,7 +350,7 @@ or recorded as open.
 | Survey | ✅ 2026-10-10 | `23673e8e` | [SURVEY.md](SURVEY.md) |
 | CMP1 | ✅ 2026-10-10 | `4c7f43a4` `c327fb3e` `383b60d2` `b7a53735` `a2f6299e` + docs | [Notes — CMP1](#notes--cmp1) |
 | CMP2 | ✅ 2026-10-10 | `603c94ec` `ea701dab` `3fd665dd` `dab86d1a` `223a68df` `6c32b303` `1b34acbb` `46ac51c5` `27c6fcb1` + docs | [Notes — CMP2](#notes--cmp2) |
-| CMP3 | ⏸ paused 2026-10-10 | `67e0f750` `51a3c927` `99c37666` `59ed922e` `26819966` `7e69b725` + docs | [Notes — CMP3](#notes--cmp3): built + tested; left: motion probe J1–J8, PNG sheets (connectors ×3 styles, frame strips), parity chunk run, notes numbers |
+| CMP3 | ✅ 2026-10-11 | `67e0f750` `51a3c927` `99c37666` `59ed922e` `26819966` `7e69b725` `06dca6fe` `13e1dece` + docs | [Notes — CMP3](#notes--cmp3): atoms, connectors, nested motion; PNGs + frame strips looked at by the lead; probe J1–J8 on 32 slide × style runs; parity green |
 | CMP4 | — | | |
 | CMP5 | — | | |
 
@@ -359,14 +359,16 @@ or recorded as open.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-11 | CMP3 finish (lead, main agent) | re-render + review (atoms × 10 styles, connectors × 3 styles, nested motion), frame strips, probe J1–J8, parity + library/state/components chunks, tsc, ESLint; fixes `06dca6fe` (shape label size), `13e1dece` (connector label mask) | Start CMP4 when the user says so. Work stays in the main agent (no subagents). |
 | 2026-10-10 | CMP3 (opus subagent), paused by the user | atoms (badge, marker, shape, icon disc), `Stroke.dash` + rule `dash`, connectors (spec → compiled overlay shape, route, oracle, validator, round trip, draw-on motion), nested motion + 300 ms stagger cap, bento lead tile, fixtures `connectors.json` / `nested-motion.json`; WAAPI driver fixes | Resume CMP3 from Notes — CMP3 "Resume steps". |
 | 2026-10-10 | CMP2 (opus subagent) | oracle inside compositions (sub-blocks, id paths, sibling pairs) + 10 design checks + gate; paint model + ink guard; painted `style.surface`; authored cards pack; safe inset on full-bleed; block fixes (bento, steps, comparison, image-full, html kicker/value/icon colours); fixture `cmp6-design-checks` | Start CMP3 (opus). Read Notes — CMP2 "Open" first: the guard's glass margin and the bento/steps look changes want the lead's eye. |
 | 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
 
 ### Notes — CMP3
 
-**Status: paused by the user mid-phase.** Code, specs and fixtures below are committed and pass their
-targeted specs; the visual / motion verification and the final numbers are not done.
+**Status: done 2026-10-11.** Built by an opus subagent (paused by the user mid-phase, then a rate limit);
+the visual / motion verification and two fixes were finished by the lead in the main agent (see
+"Finish (2026-10-11)" below).
 
 **Built (commits):**
 - `67e0f750` `Stroke.dash` (both renderers: path/line `stroke-dasharray`, rect SVG dash / DOM
@@ -424,22 +426,48 @@ were invisible-then-snapped-by-settle or stuck hidden); stagger families longer 
 faster; bento lead tile bigger; `layout-layers.spec` lists badge + connector as overlay; catalog count
 135; digest snapshots; full digest gains `## Connectors`; three tier-1 header phrases trimmed.
 
-**Resume steps (in order):**
-1. Re-render and look: `scratchpad/harness/` (`build.js OUT decks.json`, `sheet.js OUT sheets.json DEST`,
-   `gen-atoms.js`, `gen-fixture.js OUT name cols composition/connectors.json:<style>:<theme>`,
-   `gen-connectors.js` / `gen-nested.js` regenerate the fixtures). Atoms × 10 styles again (shape label
-   sizing changed), connectors in corporate + glass + doodle, nested-motion; fix what is not beautiful.
-2. Frame strips 0/25/50/75/100 % of a connector draw-on and a count-up in a card: CDP
-   `Animation.setPlaybackRate(0.1)` on the live viewer (`window.live(deck)` in the harness bundle),
-   screenshot on a schedule (the onUpdate change makes the count follow the slowed timeline).
-3. Motion probe J1–J8 (MOTION.md) for the 4 atoms, `tls.g.connector`, and the nested-motion fixture,
-   `static,subtle,expressive,reduced` — the probe's in-page sampler (`motion-probe.js installSampler`)
-   works on the harness viewer too; the WAAPI fix changes what wipes/draws do in every block, so a
-   wider re-probe (chart, decoration, process) is advisable.
-4. Parity chunks: `parity.spec`, `parity-3way.spec`, `composition-parity.spec`, plus
-   `src/blocks/library` composites/data/diagram suites and `state/render`, `state/deck`, `components`
-   (expect only `BlockInserter.spec` and the DeckViewer retreat test to fail, both pre-existing).
-5. ESLint on changed files; record numbers; finish this note (PPTX mapping below is drafted).
+**Finish (2026-10-11, lead).** The resume steps were done as follows.
+- **Looked at:** `atoms-10-styles.png`, `connectors-3-styles.png` (corporate / glass / doodle, all 7
+  fixture slides), `nested-motion.png` (corporate + memphis), frame strips `strip-flow.png`,
+  `strip-cards.png`, `zoom-flow-fine.png` (scratchpad `cmp3/`). Harness additions: `frames.js` (CDP
+  `Animation.setPlaybackRate`, screenshots on an animation-time schedule) and `probe.js` (the
+  `motion-probe.js` sampler + verdicts on the harness viewer: no dist build, no `next dev`).
+- **Fixed:**
+  - `06dca6fe`: in a row of `tls.m.shape` circles, a one-word label ("Customer") stepped down to
+    caption while its peers stayed at body. A one-line circle label may now use the chord across
+    the middle band, so every label in the row is 28 units (checked with `cli.js --tree`).
+  - `13e1dece`: mid-draw, a labelled connector's line struck through the label text while the label
+    faded in. The pill is now its own part `label-mask`, present from the first frame; only the text
+    fades. Rest frame unchanged.
+- **Seen and judged OK:**
+  - Atoms read well in all 10 styles (tones, doodle/memphis ink border + hard shadow, glass frost).
+  - Connectors draw progressively from their start after the later endpoint; heads fade in at
+    the end; dashed lines grow their pattern; hub lines stop on a gap off the circles; elbows
+    round their corners.
+  - Count-up inside cards plays with the card stagger (30 % → 41 % → 42 %, 999 → 1,224 → 1,250).
+- **Probe J1–J8** (static, subtle, expressive, reduced) × 8 slides: the atoms slide, cn_flow4,
+  cn_hub, cn_curved, cn_nested, nm_cards, nm_tiles and nm_flow.
+  - 30 / 32 runs are all ✓.
+  - The other two are `nm_cards` static / subtle, J7 ✗. Its title carries an *authored* `motion:
+    fade-up`, and authored block motion outranks the slide's `motionStyle` by design
+    (motion-style.ts precedence). This is a fixture choice, not an engine fault.
+  - The expressive connector chains are 267–467 ms.
+- **Tests:**
+  - parity, parity-3way, composition-parity (21) all pass.
+  - Library suites pass: composites/composite, data 689, diagram 481 (+1 skipped), media 420,
+    text 425, layout 157, chrome, motion-m2..m5, composite-geometry, list-sizes.
+  - state/render 42 and state/deck 56 pass.
+  - components: only the 2 known pre-existing failures (BlockInserter tabs; DeckViewer retreat,
+    caused by the user's uncommitted DeckViewer.tsx).
+  - connectors + catalog-conformance + motion (1,699), shape + conformance (1,427), block-metrics
+    (15) pass.
+- **Static checks:** tsc production 0, spec 329 (unchanged). ESLint on the changed files: 0 errors,
+  2 pre-existing `any` warnings.
+- **For CMP4:**
+  - Fixture cards stretch to the row height and leave empty space below their content (cn_straight,
+    nm_cards, nm_flow). This is the "cards size to content" item; patterns must size them.
+  - A short labelled connector (cn_flow4 "approve") is mostly label. Patterns should give a
+    labelled connector ≥ 2× the label width between its blocks.
 
 **PPTX mapping (draft for CMP5):** connector → `p:cxnSp` (`stCxn`/`endCxn` idx: top 0, left 1,
 bottom 2, right 3), straight/elbow/curved → `straightConnector1` / `bentConnector3` /
