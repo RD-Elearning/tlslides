@@ -97,6 +97,15 @@ describe('resolution order (§3.2)', () => {
     expect(merged).toEqual({ radius: { md: 20 }, density: 'roomy', type: { title: { size: 90, lineHeight: 1.1 } } })
   })
 
+  it('tokens: the spec locale survives the merge with the style tokens', () => {
+    expect(mergeDeckTokens({ radius: { md: 8 } }, { locale: 'vi' })).toEqual({ radius: { md: 8 }, locale: 'vi' })
+    expect(mergeDeckTokens({ locale: 'en' }, { locale: 'vi' })!.locale).toBe('vi')
+    expect(mergeDeckTokens({ locale: 'vi' }, { radius: { md: 8 } })!.locale).toBe('vi')
+    for (const style of BUILT_IN_STYLES) {
+      expect(deckSpecTokens({ style: style.id, tokens: { locale: 'vi', color: { accent: '#0F766E' } } })).toMatchObject({ locale: 'vi' })
+    }
+  })
+
   it('blockDefaults fill only unauthored knobs; authored props win', () => {
     const defaults = { 'tls.c.cover': { variant: 'split', decoration: 'none' } }
     const block = { id: 'b', type: 'tls.c.cover', props: { title: 'x', variant: 'centered' } }

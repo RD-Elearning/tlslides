@@ -106,6 +106,9 @@ export function mergeDeckTokens(base: DeckTokens | undefined, over: DeckTokens |
   const density = over.density ?? base.density
   if (density) out.density = density
   if (base.surface || over.surface) out.surface = { ...base.surface, ...over.surface }
+  // The deck language: every built-in style has tokens, so dropping it here lost it for every spec.
+  const locale = over.locale ?? base.locale
+  if (locale) out.locale = locale
   return out
 }
 
