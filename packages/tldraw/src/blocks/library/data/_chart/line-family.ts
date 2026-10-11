@@ -86,7 +86,7 @@ export function lineFamilyLayout(kind: LineKind, props: LineFamilyProps, ctx0: L
   const labelText = (s: Series) => {
     const last = lastIndex(s.values)
     const v = last >= 0 ? (s.values[last] as number) : null
-    return props.valueLabels === 'end' && v !== null ? `${s.name} ${fmtNum(v, fmt)}`.trim() : s.name
+    return props.valueLabels === 'end' && v !== null ? `${s.name} ${fmtNum(v, fmt, ctx.tokens.locale)}`.trim() : s.name
   }
   let labelW = 0
   if (endLabels) {

@@ -92,7 +92,7 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       const n = parseNumber(raw)
       if (!n) return { kind: 'text', text }
       const f = n.format ?? (format && format !== 'plain' ? format : undefined)
-      return { kind: 'text', text: fmtNum(n.value, f) }
+      return { kind: 'text', text: fmtNum(n.value, f, ctx.tokens.locale) }
     }
     case 'status': {
       const role = parseStatus(text)

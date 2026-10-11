@@ -36,6 +36,16 @@ function getSlideHeight(page: TDPage): number {
 export const Deck = React.memo(function Deck(): JSX.Element {
   const app = useTldrawApp()
 
+  // The strip floats over the canvas's right edge: fitting a slide leaves that edge free.
+  React.useEffect(() => {
+    const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 500px)').matches // stitches '@micro'
+    app.setFitInsets({ right: (narrow ? 150 : DECK_WIDTH) + 16 })
+    app.zoomToFit()
+    return () => {
+      app.setFitInsets({ right: 0 })
+    }
+  }, [app])
+
   const handleDuplicatePage = React.useCallback(() => {
     app.duplicatePage(app.currentPageId)
   }, [app])

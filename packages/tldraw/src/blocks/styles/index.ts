@@ -135,15 +135,19 @@ const COVER_TYPES = new Set(['tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title',
 const SECTION_TYPES = new Set(['tls.c.divider'])
 
 /**
- * The style master a slide with no `masterId` gets: `cover` for a cover/closing role or a
- * cover-type block, `section` for a section role/layout or a divider, else `content`; only when
+ * The style master a slide with no `masterId` gets: `cover` for a cover-type block or a cover/closing
+ * role that is not laid out like content (a `title` region and no cover-type block), `section` for a section role/layout or a divider, else `content`; only when
  * the style defines that master.
  */
 export function styleMasterFor(style: DeckStyle | undefined, slide: SlideSpec): string | undefined {
   if (!style || slide.masterId !== undefined) return undefined
   const types = Object.values(slide.regions ?? {}).flat().map((b) => b?.type)
   let kind = 'content'
-  if (slide.role === 'cover' || slide.role === 'closing' || types.some((t) => COVER_TYPES.has(t))) kind = 'cover'
+  // A cover/closing role built like a content slide (its own `title` region over cards, no
+  // cover-type composite) takes the content master: the cover master's motifs frame a centred
+  // title and land on a top-left one (doodle's star over "Cảm ơn", spro demo 2026-10-11).
+  const contentShaped = (slide.regions?.title?.length ?? 0) > 0 && !types.some((t) => COVER_TYPES.has(t))
+  if (types.some((t) => COVER_TYPES.has(t)) || ((slide.role === 'cover' || slide.role === 'closing') && !contentShaped)) kind = 'cover'
   else if (slide.role === 'section' || slide.layout === 'section' || types.some((t) => SECTION_TYPES.has(t))) kind = 'section'
   return style.masters.some((m) => m.name === kind) ? STYLE_MASTER_PREFIX + kind : undefined
 }

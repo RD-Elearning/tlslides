@@ -24,7 +24,7 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
   let y = 0
   const w = ctx.box.width
   // AC2 knobs (the template paints the same geometry).
-  const valueText = formatValue(props)
+  const valueText = formatValue(props, ctx.tokens.locale)
   const accent = props.variant === 'accent'
   const display = ctx.tokens.type.display
   const showLabel = isShown(props, 'showLabel')

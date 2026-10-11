@@ -39,7 +39,7 @@ export interface OutlineEntry {
  * chart data, no logos (the example logo URLs do not load offline, and a client list was never
  * part of this outline).
  */
-export const DRY_RUN_ASSETS: SlideAssets = { images: true, logos: false, portraits: true, chartData: true }
+export const DRY_RUN_ASSETS: SlideAssets = { images: true, logos: false, portraits: true, chartData: true, prices: true }
 
 /** The fixed 12-slide outline: one topic, the ten planner roles (data and content twice). */
 export const DRY_RUN_OUTLINE: readonly OutlineEntry[] = [

@@ -147,7 +147,7 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number } 
  * the style gives `tls.t.title` (`blockDefaults` `size`, default `title`), resolved.
  */
 export function deckTitleSize(deck: DeckSpec): number {
-  const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style), deckSpecTokens(deck))
+  const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style, deckSpecTokens(deck)), deckSpecTokens(deck))
   const token = getDeckStyle(deck.style)?.blockDefaults['tls.t.title']?.size
   const type = tokens.type as Record<string, { size: number }>
   return (typeof token === 'string' && type[token]?.size) || tokens.type.title.size

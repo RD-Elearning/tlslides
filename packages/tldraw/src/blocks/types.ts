@@ -956,6 +956,8 @@ export interface ResolvedTokens {
   /** AC4: the deck card surface (`DeckTokens.surface` resolved, every field set). Absent when the
    *  deck sets none: card-like blocks then keep their own look (`cardPaint`). */
   surface?: StyleSurface
+  /** `DeckTokens.locale`, when the deck sets one: number formatting (`localizeNumber`). */
+  locale?: string
 }
 
 /**

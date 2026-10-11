@@ -4,8 +4,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
-import { BUILT_IN_STYLES, getDeckStyle, mergeDeckTokens, styleCard, applyStyleBlockDefaults } from './index'
-import { deckSpecToDocument } from '../deck-document'
+import { BUILT_IN_STYLES, getDeckStyle, mergeDeckTokens, styleCard, applyStyleBlockDefaults, styleMasterFor } from './index'
+import { deckSpecToDocument, resolveDeckTheme } from '../deck-document'
 import { documentToDeckSpec } from '../slide-decompiler'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { deckSpecJsonSchema } from '../deck-spec-json-schema'
@@ -222,6 +222,55 @@ describe('AC8 showcase decks', () => {
     for (const t of titles) {
       const text = JSON.stringify((t.props as Record<string, unknown>).text)
       expect(text.split(/\s+/).length).toBeGreaterThanOrEqual(5)
+    }
+  })
+})
+
+describe('styleMasterFor', () => {
+  const doodle = getDeckStyle('doodle')!
+  const title = { id: 't', type: 'tls.t.title', props: { text: 'Cảm ơn' } }
+  it('a closing built like content (title region + cards) takes the content master', () => {
+    const slide = { id: 's', role: 'closing', layout: 'timeline', regions: { title: [title], timeline: [{ id: 'r', type: 'tls.l.row', props: {} }] } }
+    expect(styleMasterFor(doodle, slide as never)).toBe('style:content')
+  })
+  it('a closing composite or a centred cover keeps the cover master', () => {
+    const closing = { id: 's', role: 'closing', layout: 'blank', regions: { content: [{ id: 'c', type: 'tls.c.closing', props: {} }] } }
+    expect(styleMasterFor(doodle, closing as never)).toBe('style:cover')
+    const bare = { id: 's', role: 'cover', layout: 'blank', regions: { content: [title] } }
+    expect(styleMasterFor(doodle, bare as never)).toBe('style:cover')
+  })
+})
+
+describe('brand colour', () => {
+  it('replaces the palette accent in style chrome and the chart ramp too', () => {
+    const base = resolveDeckTheme('swiss-blue', 'swiss')
+    const brand = resolveDeckTheme('swiss-blue', 'swiss', { color: { accent: '#0F766E' } })
+    expect(base.colors.accent1).not.toBe('#0F766E')
+    expect(brand.colors.accent1).toBe('#0F766E')
+    expect(brand.colors.accent2).toBe(base.colors.accent2)
+    // the swiss cover's block is a `theme:accent1` band: it is painted in the brand colour
+    const { document } = deckSpecToDocument({
+      version: 1,
+      style: 'swiss',
+      theme: 'swiss-blue',
+      tokens: { color: { accent: '#0F766E' } },
+      slides: [{ id: 's1', role: 'cover', layout: 'blank', regions: { content: [{ id: 'c', type: 'tls.c.cover', props: { title: 'T' } }] } }],
+    } as unknown as DeckSpec)
+    expect(document.theme?.colors.accent1).toBe('#0F766E')
+  })
+})
+
+describe('font stacks', () => {
+  it('every built-in theme and style palette names its fonts with the Variable alias and a generic fallback', () => {
+    const palettes = [...BUILT_IN_DECK_THEMES, ...BUILT_IN_STYLES.flatMap((s) => s.palettes)]
+    for (const p of palettes) {
+      for (const fam of [p.fonts?.headingFamily, p.fonts?.bodyFamily]) {
+        if (!fam) continue
+        expect([p.id, fam]).toEqual([p.id, expect.stringMatching(/, (serif|sans-serif|monospace|cursive)$/)])
+        // faces published as variable fonts are registered as "<X> Variable" by @fontsource-variable
+        const first = fam.split(',')[0].replace(/"/g, '').trim()
+        if (!/Patrick Hand|Be Vietnam Pro/.test(first)) expect([p.id, fam]).toEqual([p.id, expect.stringContaining(`"${first} Variable"`)])
+      }
     }
   })
 })

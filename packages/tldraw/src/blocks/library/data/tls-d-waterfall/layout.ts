@@ -80,7 +80,7 @@ export function layout(props: WaterfallProps, ctx0: LayoutContext): LayoutNode {
 
   const colorOf = (s: Step) =>
     colorBy === 'single' || s.kind === 'total' ? c.accent : ctx.resolveColor(s.value >= 0 ? 'positive' : 'negative').color
-  const labelsFit = steps.every((s) => realWidth(s.kind === 'total' ? fmtNum(s.value, props.format) : fmtSigned(s.value, props.format), ls) * 1.04 <= bands.bandwidth * 1.1)
+  const labelsFit = steps.every((s) => realWidth(s.kind === 'total' ? fmtNum(s.value, props.format, ctx.tokens.locale) : fmtSigned(s.value, props.format, ctx.tokens.locale), ls) * 1.04 <= bands.bandwidth * 1.1)
 
   steps.forEach((s, i) => {
     const yA = ax.y(s.from)
@@ -90,7 +90,7 @@ export function layout(props: WaterfallProps, ctx0: LayoutContext): LayoutNode {
     const h = Math.max(Math.abs(yA - yB), 1)
     nodes.push(solidRect({ x, y: top, width: bands.bandwidth, height: h }, colorOf(s), `bar[${i}]`, 2))
     if (showValues && labelsFit) {
-      const txt = s.kind === 'total' ? fmtNum(s.value, props.format) : fmtSigned(s.value, props.format)
+      const txt = s.kind === 'total' ? fmtNum(s.value, props.format, ctx.tokens.locale) : fmtSigned(s.value, props.format, ctx.tokens.locale)
       const tw = Math.ceil(realWidth(txt, ls) * 1.04) + 2
       nodes.push(...textAligned(ctx, txt, { ...ls, color: c.text }, { x: centers[i] - tw / 2, y: top - lh - 2, width: tw }, 'center', `value[${i}]`).nodes)
     }

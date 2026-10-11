@@ -96,6 +96,9 @@ export interface DeckTokens {
    *  (`cardPaint` in `library/composite/_kit.ts`). A style supplies it (`DeckStyle.surface`);
    *  absent = every block keeps its own card look. Missing fields default to `filled`, `none`, 0. */
   surface?: Partial<StyleSurface>
+  /** The deck's language for numbers (`'vi'`, `'en'`, …): data blocks format "4,2 triệu",
+   *  "12,4%", "1.240" for `vi`. Absent = English formatting, as before. */
+  locale?: string
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -212,7 +215,11 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
     ? { card: tokens.surface.card ?? 'filled', stroke: tokens.surface.stroke ?? 'none', shadow: tokens.surface.shadow ?? 0 }
     : undefined
 
-  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily, ...(surface ? { surface } : {}) }
+  return {
+    color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily,
+    ...(surface ? { surface } : {}),
+    ...(tokens?.locale ? { locale: tokens.locale } : {}),
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

@@ -67,7 +67,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   // AC2: a tile with the height for it shows the value at `display` (label and delta at `body`);
   // a KPI row in a tall region used to float a heading-size number in empty space. Otherwise the
   // compact tier (heading value, caption label/delta) as before.
-  const formattedValue = formatValue(props.value, props.format)
+  const formattedValue = formatValue(props.value, props.format, { locale: ctx.tokens.locale })
   const showDelta = isShown(props, 'showDelta') && delta != null
   const tierHeight = (valueToken: 'display' | 'title' | 'heading', smallToken: 'body' | 'caption'): number => {
     const small = ctx.resolveText(smallToken)

@@ -69,7 +69,7 @@ export function layout(props: RadarProps, ctx0: LayoutContext): LayoutNode {
   for (let k = 1; k <= rings; k++) {
     if (!roomy && k !== rings) continue
     const r = (R * k) / rings
-    const txt = fmtNum((max * k) / rings)
+    const txt = fmtNum((max * k) / rings, undefined, ctx.tokens.locale)
     nodes.push(oneLine(ctx, txt, gs, { x: cx + 6, y: cy - r + 2, width: Math.max(1, ctx.measureText(txt, gs).width * 1.2 + 2) }, `gridlabel[${k - 1}]`))
   }
 

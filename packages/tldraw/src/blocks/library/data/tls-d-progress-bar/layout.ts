@@ -45,7 +45,7 @@ function plan(props: ProgressBarProps, ctx: LayoutContext, width: number) {
   const ls = style(ctx, 'caption', ctx.resolveColor('text').color)
   const rowGap = ctx.tokens.space.sm
   const showValue = enumOf(props.showValue, ['percent', 'value', 'none'] as const, 'percent')
-  const valueText = (r: Row) => (showValue === 'percent' ? `${Math.round(r.pct)}%` : showValue === 'value' ? fmtNum(r.value, props.format) : '')
+  const valueText = (r: Row) => (showValue === 'percent' ? `${Math.round(r.pct)}%` : showValue === 'value' ? fmtNum(r.value, props.format, ctx.tokens.locale) : '')
   const valueW = showValue === 'none' ? 0 : Math.ceil(Math.max(0, ...rows.map((r) => realWidth(valueText(r), ls))) * 1.04) + 4
   const labelW =
     labelPos === 'left'

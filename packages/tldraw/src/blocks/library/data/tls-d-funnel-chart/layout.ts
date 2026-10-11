@@ -40,7 +40,7 @@ export function layout(props: FunnelChartProps, ctx0: LayoutContext): LayoutNode
   const sp = ctx.tokens.space
 
   const labelW = Math.min(W * 0.28, Math.ceil(Math.max(...stages.map((s) => ctx.measureText(s.label, ns).width)) * TEXT_SLACK) + 2)
-  const dropTexts = stages.map((s, i) => (i === 0 || stages[i - 1].value <= 0 ? '' : `${fmtSigned(Math.round(((s.value - stages[i - 1].value) / stages[i - 1].value) * 100))}%`))
+  const dropTexts = stages.map((s, i) => (i === 0 || stages[i - 1].value <= 0 ? '' : `${fmtSigned(Math.round(((s.value - stages[i - 1].value) / stages[i - 1].value) * 100), undefined, ctx.tokens.locale)}%`))
   const dropW = dropoff ? Math.ceil(Math.max(0, ...dropTexts.map((t) => ctx.measureText(t, ds).width)) * TEXT_SLACK) + 4 : 0
   const gap = sp.xs
   const sx = labelW + gap
@@ -69,7 +69,7 @@ export function layout(props: FunnelChartProps, ctx0: LayoutContext): LayoutNode
     const nm = textAligned(ctx, s.label, ns, { x: 0, y: y + (rowH - lh) / 2, width: labelW }, 'end', `stage[${i}].label`)
     nodes.push(...nm.nodes.slice(0, 1))
     // Value: inside the shape if it fits (use the narrow edge), otherwise just outside.
-    const txt = fmtNum(s.value, props.format)
+    const txt = fmtNum(s.value, props.format, ctx.tokens.locale)
     const tw = ctx.measureText(txt, vs).width * TEXT_SLACK
     const narrow = shape === 'funnel' ? Math.min(wTop, next) : wTop
     if (tw + 8 <= narrow && rowH >= lh) {

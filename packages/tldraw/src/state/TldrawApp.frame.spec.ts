@@ -62,6 +62,31 @@ describe('Frame-aware zoomToFit', () => {
   })
 })
 
+describe('zoomToFit with a docked panel', () => {
+  it('centres the frame in the canvas the slide strip leaves free', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    app.setPageSize(app.page.id, [...SLIDE_ASPECT_PRESETS.widescreen])
+    app.updateBounds(VIEWPORT_BOUNDS)
+    app.setFitInsets({ right: 216 }).zoomToFit()
+    const { camera } = app.pageState
+    const screenWidth = 1920 * camera.zoom
+    const screenLeft = camera.point[0] * camera.zoom
+    expect(screenWidth).toBeCloseTo(1000 - 216 - FIT_TO_SCREEN_PADDING, 0)
+    expect(screenLeft).toBeCloseTo((1000 - 216 - screenWidth) / 2, 0)
+    expect(screenLeft + screenWidth).toBeLessThanOrEqual(1000 - 216)
+  })
+
+  it('ignores a panel that would leave less than half the canvas', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    app.setPageSize(app.page.id, [...SLIDE_ASPECT_PRESETS.widescreen])
+    app.updateBounds(VIEWPORT_BOUNDS)
+    app.setFitInsets({ right: 700 }).zoomToFit()
+    expect(1920 * app.pageState.camera.zoom).toBeCloseTo(1000 - FIT_TO_SCREEN_PADDING, 0)
+  })
+})
+
 describe('Auto-fit on page change', () => {
   it('re-fits the camera when changing to a page with a different frame size', () => {
     const app = new TldrawTestApp()

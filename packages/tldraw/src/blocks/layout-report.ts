@@ -859,7 +859,7 @@ export function analyzeDeck(
   opts: Omit<AnalyzeSlideOptions, 'frame' | 'tokens'> = {}
 ): LayoutReport[] {
   const frame = resolveDeckFrame(deck.aspect)
-  const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style), deckSpecTokens(deck))
+  const tokens = resolveTokens(resolveDeckTheme(deck.theme, deck.style, deckSpecTokens(deck)), deckSpecTokens(deck))
   // AC1: the style's knob defaults are part of what the editor compiles.
   const style = getDeckStyle(deck.style)
   const blockDefaults = style?.blockDefaults
@@ -880,7 +880,7 @@ export function analyzeDeck(
   }
   // CMP2: the page background (the slide's own, else its style master's) and the deck theme, so the
   // report lays blocks out on the real page and `contrast/low` composites down to it.
-  const theme = resolveDeckTheme(deck.theme, deck.style)
+  const theme = resolveDeckTheme(deck.theme, deck.style, deckSpecTokens(deck))
   const motionStyle = deck.motionStyle ?? style?.motionStyle
   const backgroundOf = (s: SlideSpec): Paint | undefined => {
     if (s.background) return s.background

@@ -22,7 +22,7 @@ import { realWidth } from '../../data/_chart/inter-width'
 export const BIG_STAT = { valueLH: 1, valueTracking: -0.04, valueGap: 16, labelLH: 1.4, labelGap: 8, contextLH: 1.4 } as const
 
 export function template(props: BigStatProps, ctx: HtmlTemplateContext): string {
-  const valueText = formatValue(props)
+  const valueText = formatValue(props, ctx.tokens?.locale)
 
   const parts: string[] = []
   // LO7: with a poster (the live host) the texts paint its lines and metrics.

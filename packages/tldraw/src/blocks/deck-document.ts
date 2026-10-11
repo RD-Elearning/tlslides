@@ -17,7 +17,7 @@
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, type CompileFinding } from './slide-compiler'
-import { resolveTokens } from './tokens'
+import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
@@ -78,7 +78,11 @@ export function resolveDeckFrame(aspect: DeckSpec['aspect']): { width: number; h
  *   undefined` that the type doesn't allow but a non-TS caller (FastAPI, a hand-built payload)
  *   could still send.
  */
-export function resolveDeckTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme {
+export function resolveDeckTheme(theme: DeckSpec['theme'], styleId?: string, tokens?: DeckTokens): DeckTheme {
+  return withBrandAccents(resolveBaseTheme(theme, styleId), tokens)
+}
+
+function resolveBaseTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme {
   // AC1: a styled deck uses one of its style's palettes (the default when `theme` names none).
   const styled = styleTheme(getDeckStyle(styleId), theme)
   if (styled) return styled
@@ -86,6 +90,19 @@ export function resolveDeckTheme(theme: DeckSpec['theme'], styleId?: string): De
     return BUILT_IN_DECK_THEMES.find((t) => t.id === theme) ?? stylePaletteById(theme) ?? DEFAULT_DECK_THEME
   }
   return activeDeckTheme(theme)
+}
+
+/**
+ * A brand colour (`tokens.color.accent` / `accent2`) is the theme's accent everywhere, not only
+ * where a block asks for the `accent` role: style chrome paints `theme:accent1` literals (swiss's
+ * block, a section bar) and the chart ramp is built from `accent1`/`accent2`, so without this a
+ * branded deck showed the palette's blue beside the brand's teal (spro demo 2026-10-11).
+ */
+function withBrandAccents(theme: DeckTheme, tokens?: DeckTokens): DeckTheme {
+  const a1 = tokens?.color?.accent
+  const a2 = tokens?.color?.accent2
+  if (!a1 && !a2) return theme
+  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}) } }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -141,7 +158,7 @@ export function styleMasterPage(
  */
 export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   const frame = resolveDeckFrame(spec.aspect)
-  const theme = resolveDeckTheme(spec.theme, spec.style)
+  const theme = resolveDeckTheme(spec.theme, spec.style, deckSpecTokens(spec))
   // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
   const style = getDeckStyle(spec.style)
   const tokens = resolveTokens(theme, deckSpecTokens(spec))

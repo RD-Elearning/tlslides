@@ -10,6 +10,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { localizeNumber } from '../../data/_engine/format-value'
 
 export interface BigStatProps extends Record<string, unknown> {
   /** The headline number. */
@@ -39,7 +40,7 @@ export interface BigStatProps extends Record<string, unknown> {
  *
  * This is the single source of truth for how the value appears on screen.
  */
-export function formatValue(props: BigStatProps): string {
+export function formatValue(props: BigStatProps, locale?: string): string {
   const { value, format = 'plain', prefix = '', suffix = '' } = props
   let formatted: string
 
@@ -72,13 +73,14 @@ export function formatValue(props: BigStatProps): string {
     default: {
       // Default: format with up to 10 significant digits, dropping trailing zeros.
       // Special-case zero so it does not become an empty string.
-      const num = Number(value.toFixed(10))
-      formatted = num === 0 ? '0' : num.toString().replace(/\.?0+$/, '')
+      // Number#toString already drops a decimal's trailing zeros; stripping zeros from the
+      // string as well turned 300 into "3" and 120000 into "12".
+      formatted = String(Number(value.toFixed(10)))
       break
     }
   }
 
-  return prefix + formatted + suffix
+  return prefix + localizeNumber(formatted, locale) + suffix
 }
 
 export const schema: BlockSchema = {

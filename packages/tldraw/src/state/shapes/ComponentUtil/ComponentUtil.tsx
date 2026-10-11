@@ -19,6 +19,7 @@ import { layoutBlock } from '~blocks/layout/layout-child'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 import { InlineEditor } from '~components/InlineEditor'
+import { fromEdited, toEditable } from '~components/InlineEditor/rich-edit'
 
 type T = ComponentShape
 type E = HTMLDivElement
@@ -73,9 +74,13 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       // it, see `render-dom.tsx`'s text case) to edit it in place. State lives here, one shape
       // at a time, rather than in a shared editor-wide registry: each ComponentShape already
       // gets its own `Component` instance, so there is nothing to coordinate across shapes.
-      const [editing, setEditing] = React.useState<{ propPath: string; rect: DOMRect } | null>(
-        null
-      )
+      const [editing, setEditing] = React.useState<{
+        propPath: string
+        rect: DOMRect
+        initial: string
+      } | null>(null)
+      const propsRef = React.useRef(props)
+      propsRef.current = props
 
       // Detected on `pointerdown`, not a native `dblclick`/`onDoubleClick`: `useShapeEvents`
       // (`@tlslides/core`) calls `e.currentTarget.setPointerCapture(e.pointerId)` in its own
@@ -99,7 +104,12 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           now - lastPointerDownRef.current.time < 250
         lastPointerDownRef.current = { time: now, target }
         const propPath = target?.getAttribute('data-prop-path')
-        if (isDouble && target && propPath) {
+        // `null` = a rich value with formatting plain text cannot carry: leave it to the inspector
+        const initial =
+          propPath != null
+            ? toEditable(getAtPath((propsRef.current ?? {}) as Record<string, unknown>, propPath))
+            : null
+        if (isDouble && target && propPath && initial !== null) {
           const rect = target.getBoundingClientRect()
           // Deferred: this same gesture's `pointerup` still has to reach `useShapeEvents`,
           // which independently recognizes it as a double-click (its own timer, unrelated to
@@ -107,7 +117,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           // the shape. That store write re-renders this shape and, empirically, wins a race
           // against a `setEditing` made synchronously here: the state lands, renders once, and
           // is then clobbered back to `null`. Opening on the next tick lets that settle first.
-          window.setTimeout(() => setEditing({ propPath, rect }), 0)
+          window.setTimeout(() => setEditing({ propPath, rect, initial }), 0)
         }
       }, [])
 
@@ -224,14 +234,13 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           {editing && (
             <InlineEditor
               propPath={editing.propPath}
-              initialValue={(() => {
-                const value = getAtPath((props ?? {}) as Record<string, unknown>, editing.propPath)
-                return typeof value === 'string' ? value : ''
-              })()}
+              initialValue={editing.initial}
               rect={editing.rect}
               onSave={(value) => {
                 const currentProps = (props ?? {}) as Record<string, unknown>
-                const newProps = setAtPath(currentProps, editing.propPath, value)
+                // a rich-text slot (`{ runs }`) stays rich: bold survives as `**…**` (rich-edit.ts)
+                const original = getAtPath(currentProps, editing.propPath)
+                const newProps = setAtPath(currentProps, editing.propPath, fromEdited(original, value))
                 app.updateShapes({ id: shape.id, props: newProps })
                 setEditing(null)
               }}

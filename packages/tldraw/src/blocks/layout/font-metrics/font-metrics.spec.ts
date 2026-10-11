@@ -87,15 +87,15 @@ describe('AC3 heading / body families (F4)', () => {
 
   it('resolveTokens sets headingFamily and bodyFamily; fontFamily stays the heading family', () => {
     const t = resolveTokens(ivory)
-    expect(t.headingFamily).toBe('"Crimson Pro"')
-    expect(t.bodyFamily).toBe('"Inter"')
+    expect(t.headingFamily).toBe('"Crimson Pro", "Crimson Pro Variable", serif')
+    expect(t.bodyFamily).toBe('"Inter", "Inter Variable", sans-serif')
     expect(t.fontFamily).toBe(t.headingFamily)
   })
 
   it('heading tokens take the heading family, the rest the body family', () => {
     const ctx = createLayoutContext({ box: { width: 100, height: 100 }, tokens: resolveTokens(ivory), surface: SURFACE })
-    for (const tok of ['display', 'title', 'heading', 'subheading'] as const) expect(ctx.resolveText(tok).family).toBe('"Crimson Pro"')
-    for (const tok of ['lead', 'body', 'caption', 'footnote'] as const) expect(ctx.resolveText(tok).family).toBe('"Inter"')
+    for (const tok of ['display', 'title', 'heading', 'subheading'] as const) expect(ctx.resolveText(tok).family).toBe('"Crimson Pro", "Crimson Pro Variable", serif')
+    for (const tok of ['lead', 'body', 'caption', 'footnote'] as const) expect(ctx.resolveText(tok).family).toBe('"Inter", "Inter Variable", sans-serif')
     expect(ctx.resolveText('body', { family: 'X' }).family).toBe('X')
   })
 

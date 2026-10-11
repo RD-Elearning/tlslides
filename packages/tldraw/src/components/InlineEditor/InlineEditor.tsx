@@ -4,6 +4,7 @@
  */
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { styled } from '../../styles'
 
 export interface InlineEditorProps {
@@ -70,7 +71,9 @@ export const InlineEditor: React.FC<InlineEditorProps> = ({
     }
   }
 
-  return (
+  // Portalled to <body>: the shape sits inside the canvas's CSS transform, and a transformed
+  // ancestor makes `position: fixed` relative to itself — the overlay landed away from the text.
+  const overlay = (
     <EditorPortal data-prop-path={propPath}>
       <EditorOverlay onMouseDown={commit} />
       <EditorDiv
@@ -91,6 +94,7 @@ export const InlineEditor: React.FC<InlineEditorProps> = ({
       />
     </EditorPortal>
   )
+  return typeof document === 'undefined' ? overlay : createPortal(overlay, document.body)
 }
 
 const EditorPortal = styled('div', {

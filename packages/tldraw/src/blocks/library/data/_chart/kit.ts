@@ -17,7 +17,7 @@
 import type { Box, CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
-import { formatValue } from '../_engine/format-value'
+import { formatValue, localizeNumber } from '../_engine/format-value'
 import { MAX_HUES } from '../_engine/series-color'
 import { realWidth, wrapReal } from './inter-width'
 
@@ -92,7 +92,11 @@ export function noData(series: ReadonlyArray<Series>): boolean {
 const trim = (s: string) => (s.includes('.') ? s.replace(/\.?0+$/, '') : s)
 
 /** Axis / label number: trimmed (no "50.0"), grouped thousands, shared format vocabulary. */
-export function fmtNum(v: number, format?: string): string {
+export function fmtNum(v: number, format?: string, locale?: string): string {
+  return localizeNumber(fmtNumEn(v, format), locale)
+}
+
+function fmtNumEn(v: number, format?: string): string {
   if (!isNum(v)) return ''
   const r = Math.round(v * 1e6) / 1e6
   switch (format) {
@@ -113,8 +117,8 @@ export function fmtNum(v: number, format?: string): string {
 }
 
 /** Signed variant: "+12", "-3" (a true minus is avoided: it is missing from some fonts). */
-export function fmtSigned(v: number, format?: string): string {
-  const s = fmtNum(Math.abs(v), format)
+export function fmtSigned(v: number, format?: string, locale?: string): string {
+  const s = fmtNum(Math.abs(v), format, locale)
   return v > 0 ? `+${s}` : v < 0 ? `-${s}` : s
 }
 
@@ -414,7 +418,7 @@ export function valueAxisLeft(
   o: { format?: string; gridlines: boolean; rightPad?: number; c: ChartColors }
 ): YAxis {
   const s = mutedStyle(ctx, 'footnote')
-  const labels = axis.ticks.map((t) => fmtNum(t, o.format))
+  const labels = axis.ticks.map((t) => fmtNum(t, o.format, ctx.tokens.locale))
   const colW = Math.min(area.width * 0.3, Math.ceil(Math.max(0, ...labels.map((l) => ctx.measureText(l, s).width)) * 1.2) + 2)
   const plot: Box = {
     x: area.x + colW + PLOT_PAD,

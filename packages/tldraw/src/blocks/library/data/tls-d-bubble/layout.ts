@@ -71,7 +71,7 @@ export function layout(props: BubbleProps, ctx0: LayoutContext): LayoutNode {
   const py = yaxis.y
   const radius = (v: number) => (v <= 0 ? 0 : Math.max(5, Math.sqrt(v / maxR) * rMaxPx))
 
-  const xt = ax.ticks.map((t) => fmtNum(t, props.format))
+  const xt = ax.ticks.map((t) => fmtNum(t, props.format, ctx.tokens.locale))
   const maxW = Math.max(...xt.map((t) => ctx.measureText(t, ls).width)) * TEXT_SLACK
   const spacing = ax.ticks.length > 1 ? (plot.width - 2 * inset) / (ax.ticks.length - 1) : plot.width
   const stride = Math.max(1, Math.ceil((maxW + 8) / Math.max(1, spacing)))
@@ -127,7 +127,7 @@ export function layout(props: BubbleProps, ctx0: LayoutContext): LayoutNode {
       })
       // A value label only when it has a line of its own (nested circles crowd on small charts).
       if (lastTop - tip >= lh + 2) {
-        nodes.push(...textAligned(ctx, fmtNum(v, props.format), ls, { x: cxL + rMaxPx + 6, y: tip - lh / 2, width: ctx.measureText(fmtNum(v, props.format), ls).width * 1.12 }, 'start', `sizelegend[${k}].label`).nodes.slice(0, 1))
+        nodes.push(...textAligned(ctx, fmtNum(v, props.format, ctx.tokens.locale), ls, { x: cxL + rMaxPx + 6, y: tip - lh / 2, width: ctx.measureText(fmtNum(v, props.format, ctx.tokens.locale), ls).width * 1.12 }, 'start', `sizelegend[${k}].label`).nodes.slice(0, 1))
         lastTop = tip
       }
     })

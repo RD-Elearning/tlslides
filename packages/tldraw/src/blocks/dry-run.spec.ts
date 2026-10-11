@@ -214,3 +214,16 @@ describe('AC8.5 quality gate and assets', () => {
     expect(withLogos.some((r) => r.recipes.includes('people-logo-wall'))).toBe(true)
   })
 })
+
+describe('prices asset (spro demo 2026-10-11)', () => {
+  const pricing = RECIPES.find((r) => r.id === 'comparison-pricing')!
+  it('a pricing table needs prices in the content', () => {
+    expect(designNeeds(pricing)).toEqual(['prices'])
+    expect(assetsAllow(pricing, undefined, { images: false, logos: false, portraits: false, chartData: true })).toBe(false)
+    expect(assetsAllow(pricing, undefined, { chartData: true, prices: true })).toBe(true)
+  })
+  it('other comparison designs are not affected', () => {
+    for (const r of RECIPES.filter((x) => x.role === 'comparison' && x.id !== 'comparison-pricing'))
+      expect([r.id, designNeeds(r).includes('prices')]).toEqual([r.id, false])
+  })
+})

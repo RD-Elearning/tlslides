@@ -276,6 +276,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   // camera. Once true, it stays true for the app's lifetime.
   private hasKnownViewport = false
 
+  /**
+   * Canvas edges a docked panel covers (the Deck slide strip on the right). `zoomToFit` centres
+   * the slide in what is left instead of under the panel. Set by the panel itself while shown.
+   */
+  fitInsets: { right: number } = { right: 0 }
+
+  setFitInsets = (insets: Partial<{ right: number }>): this => {
+    this.fitInsets = { ...this.fitInsets, ...insets }
+    return this
+  }
+
   viewport = Utils.getBoundsFromPoints([
     [0, 0],
     [100, 100],
@@ -2674,14 +2685,17 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const commonBounds = frame
       ? { minX: 0, minY: 0, maxX: frame[0], maxY: frame[1], width: frame[0], height: frame[1] }
       : Utils.getCommonBounds(shapes.map(TLDR.getBounds))
+    // the part of the canvas no docked panel covers (a too-narrow remainder ignores the panel)
+    const inset = rendererBounds.width - this.fitInsets.right > rendererBounds.width / 2 ? this.fitInsets.right : 0
+    const width = rendererBounds.width - inset
     let zoom = TLDR.getCameraZoom(
       Math.min(
-        (rendererBounds.width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
+        (width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
         (rendererBounds.height - FIT_TO_SCREEN_PADDING) / commonBounds.height
       )
     )
     zoom = camera.zoom === zoom || camera.zoom < 1 ? Math.min(1, zoom) : zoom
-    const mx = (rendererBounds.width - commonBounds.width * zoom) / 2 / zoom
+    const mx = (width - commonBounds.width * zoom) / 2 / zoom
     const my = (rendererBounds.height - commonBounds.height * zoom) / 2 / zoom
     return this.setCamera(
       Vec.toFixed(Vec.sub([mx, my], [commonBounds.minX, commonBounds.minY])),

@@ -326,9 +326,11 @@ export function recipeSlide(recipe: SlideRecipe, registry: BlockRegistry, varian
  * whether the user's material has photos, logos, portraits of the people named, and chart data
  * (a series or a table). The picker only offers a design whose needs are all present.
  */
-export type AssetKind = 'images' | 'logos' | 'portraits' | 'chartData'
+/** `prices`: the slide's content has plans or prices to list — without it a pricing table
+ *  fills with invented "$29 / Unlimited projects" (spro demo 2026-10-11: offered for a seminar). */
+export type AssetKind = 'images' | 'logos' | 'portraits' | 'chartData' | 'prices'
 export type SlideAssets = Record<AssetKind, boolean>
-export const ASSET_KINDS: readonly AssetKind[] = ['images', 'logos', 'portraits', 'chartData']
+export const ASSET_KINDS: readonly AssetKind[] = ['images', 'logos', 'portraits', 'chartData', 'prices']
 
 /** Block type → what it cannot do without (a design that degrades well, e.g. initials discs on a
  *  team or a testimonial without portraits, or a bento that drops its photo tile, needs nothing). */
@@ -340,6 +342,7 @@ const TYPE_NEEDS: Record<string, AssetKind> = {
   'tls.d.bar': 'chartData',
   'tls.d.table': 'chartData',
   'tls.c.chart-insight': 'chartData',
+  'tls.d.pricing': 'prices',
 }
 
 /** What one block with these look knobs needs (knob-dependent for the cover and the quote). */

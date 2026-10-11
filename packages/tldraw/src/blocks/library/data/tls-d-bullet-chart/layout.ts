@@ -36,7 +36,7 @@ export function layout(props: BulletChartProps, ctx0: LayoutContext): LayoutNode
   const nodes: LayoutNode[] = []
 
   const labelW = Math.min(W * 0.28, Math.ceil(Math.max(...items.map((it) => ctx.measureText(it.label, ls).width))) + 2)
-  const valueTexts = items.map((it) => fmtNum(it.value ?? 0, props.format))
+  const valueTexts = items.map((it) => fmtNum(it.value ?? 0, props.format, ctx.tokens.locale))
   const valueW = Math.ceil(Math.max(...valueTexts.map((t) => ctx.measureText(t, vs).width))) + 2
   const gap = sp.xs
   const bx = labelW + gap
