@@ -3,7 +3,10 @@
  */
 
 import { tlsMShape } from './index'
-import { SHAPE_PX, hexagonPath } from './layout'
+import { SHAPE_PX, hexagonPath, peerShapeSteps } from './layout'
+import { tlsLGrid } from '../../layout/tls-l-grid'
+import { tlsLRow } from '../../layout/tls-l-row'
+import { defaultBlockRegistry } from '../../../validate-deck-spec'
 import { makeCtx, makeRegistry } from '../../text/test-helpers'
 import { standardBlockSuite, leavesOf, absoluteLeaves } from '../../text/standard-suite'
 
@@ -75,5 +78,43 @@ describe('tls.m.shape', () => {
     const ctx = makeCtx({ width: 600, height: 400 })
     expect(tlsMShape.intrinsicSize!({ label: 'x', shape: 'circle', size: 'sm' } as any, ctx)).toEqual({ width: 160, height: 160 })
     expect(tlsMShape.motion).toEqual({ parts: ['shape'], preset: 'fade-up', expressive: 'pop' })
+  })
+})
+
+describe('tls.m.shape — peer label step (CS1)', () => {
+  const shape = (id: string, label: string) => ({ id, type: 'tls.m.shape', props: { label, shape: 'circle', size: 'md', icon: 'layers' } })
+  // one label long enough to step down at md, the rest short
+  const LONG = 'Customer data platform and analytics'
+  const labels = ['Học', LONG, 'Liệu thay', 'Trên dữ', 'Suất bác', 'Sales']
+  const full = defaultBlockRegistry()
+  const sizes = (root: any) => leavesOf(root, 'shape.label').map((l) => (l.node as any).style.size)
+
+  it('alone, a one-word label keeps the size step and a two-word one steps down', () => {
+    expect(sizes(lay({ label: 'Học' }, 300, 300))[0]).toBeGreaterThan(sizes(lay({ label: LONG }, 300, 300))[0])
+  })
+
+  it('peer shapes in a grid share the lowest step any of them needs', () => {
+    const ctx = makeCtx({ width: 1500, height: 640 }, full)
+    const grid = tlsLGrid.layout({ ...(tlsLGrid.defaults as any), columns: 3, rows: 2, children: labels.map((l, i) => shape(`s${i}`, l)) } as any, ctx)
+    const s = sizes(grid)
+    expect(s.length).toBeGreaterThanOrEqual(6)
+    expect(new Set(s).size).toBe(1)
+    expect(s[0]).toBeLessThan(sizes(lay({ label: 'Học' }, 470, 300))[0])
+  })
+
+  it('peer shapes in a row share it too; a lone shape among other blocks keeps its own', () => {
+    const ctx = makeCtx({ width: 1500, height: 300 }, full)
+    const row = tlsLRow.layout({ ...(tlsLRow.defaults as any), children: [shape('a', 'Học'), shape('b', LONG)] } as any, ctx)
+    expect(new Set(sizes(row)).size).toBe(1)
+    const steps = peerShapeSteps([shape('a', 'Học'), { id: 't', type: 'tls.t.body', props: {} } as any], [{ width: 300, height: 300 }, { width: 300, height: 300 }], ctx)
+    expect(steps).toEqual([undefined, undefined])
+  })
+
+  it('shapes of different sizes are separate groups', () => {
+    const ctx = makeCtx({ width: 1500, height: 300 }, full)
+    const lg = { ...shape('c', 'Học'), props: { ...shape('c', 'Học').props, size: 'lg' } }
+    const steps = peerShapeSteps([shape('a', 'Học'), shape('b', LONG), lg], [300, 300, 300].map((w) => ({ width: w, height: 300 })), ctx)
+    expect(steps[0]).toBe(steps[1])
+    expect(steps[2]).toBeUndefined()
   })
 })

@@ -13,7 +13,8 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
+import type { BlockSpec, Box, LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
+import { contextPeerStep } from '../../../layout/layout-child'
 import type { ShapeProps } from './schema'
 import { atomPaint, type AtomTone } from '../../text/_engine/atom'
 import { iconLeaf } from '../../text/_engine/icon'
@@ -88,7 +89,7 @@ interface ShapeGeom {
   textW: number
 }
 
-function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: number): ShapeGeom {
+function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: number, minStep = 0): ShapeGeom {
   const ctx = withRealWidths(ctx0)
   const kind: Kind = props.shape === 'rounded' || props.shape === 'hexagon' ? props.shape : 'circle'
   const sizeKey = props.size === 'sm' || props.size === 'lg' ? props.size : 'md'
@@ -103,7 +104,7 @@ function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: nu
   let pick: { token: TypeToken; style: ResolvedTextStyle; h: number; w: number } | undefined
   // The size's own step first (scaled with a shape the box made smaller); a label that does not
   // fit steps down. Peers of one size therefore share one type size unless a label is too long.
-  for (const token of STEPS.slice(START[sizeKey])) {
+  for (const token of STEPS.slice(Math.min(STEPS.length - 1, Math.max(START[sizeKey], minStep)))) {
     const base = ctx.resolveText(token)
     const style: ResolvedTextStyle = { ...base, size: Math.max(10, Math.round(base.size * Math.min(1, k))), lineHeight: Math.min(base.lineHeight, 1.2) }
     const m = ctx.measureText(label, style, box.width)
@@ -135,7 +136,8 @@ function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: nu
 export function layout(props: ShapeProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = ctx.box.height > 0 ? ctx.box.height : Infinity
-  const g = geometry(props, ctx, W, H)
+  // CS1: a row/grid may hold its peer shapes to one step (`peerShapeSteps`)
+  const g = geometry(props, ctx, W, H, contextPeerStep(ctx) ?? 0)
   const { width: w, height: h } = g.size
   const tone: AtomTone = props.tone === 'solid' || props.tone === 'outline' ? props.tone : 'soft'
   const paint = atomPaint(ctx, tone, ctx.resolveColor('accent').color)
@@ -180,4 +182,34 @@ export function layout(props: ShapeProps, ctx: LayoutContext): LayoutNode {
 /** The shape's own size (a stack or an anchor gives it exactly this). */
 export function intrinsicSize(props: ShapeProps, ctx: LayoutContext): Size {
   return geometry(props, ctx, Math.max(1, ctx.box.width || 4000), Infinity).size
+}
+
+/**
+ * CS1 — one label step for peer shapes. In a row or grid, shapes of one kind and size each pick
+ * their step alone: a one-word label keeps the size's step, a two-word label ("Bán hàng",
+ * "Customer success") steps down, and five hub satellites came out in three type sizes. The
+ * container calls this with its children and their boxes and passes the result to each child
+ * (`layoutChild(…, { peerStep })`): every shape in a group of two or more gets the lowest step any
+ * of them needed. Non-shapes get `undefined`.
+ */
+export function peerShapeSteps(children: readonly BlockSpec[], boxes: readonly Pick<Box, 'width' | 'height'>[], ctx: LayoutContext): Array<number | undefined> {
+  const groups = new Map<string, number[]>()
+  children.forEach((c, i) => {
+    if (c?.type !== 'tls.m.shape' || !boxes[i]) return
+    const p = (c.props ?? {}) as ShapeProps
+    const key = `${p.shape ?? 'circle'}|${p.size ?? 'md'}`
+    groups.set(key, [...(groups.get(key) ?? []), i])
+  })
+  const out: Array<number | undefined> = children.map(() => undefined)
+  for (const members of groups.values()) {
+    if (members.length < 2) continue
+    let step = 0
+    for (const i of members) {
+      const b = boxes[i]
+      const g = geometry((children[i].props ?? {}) as ShapeProps, ctx, Math.max(1, b.width), b.height > 0 ? b.height : Infinity)
+      step = Math.max(step, STEPS.indexOf(g.token))
+    }
+    for (const i of members) out[i] = step
+  }
+  return out
 }

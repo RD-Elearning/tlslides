@@ -843,8 +843,9 @@ export interface LayoutContext {
    *  drew under the child — the child's text solves its ink against it (a dark card on a light
    *  slide gets light text). `opts.overImage`: the child sits on a photo another child paints
    *  (`tls.l.overlay` over an image) — an image surface, text solves light. Absent = what is
-   *  behind the container. */
-  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[] }): LayoutNode
+   *  behind the container. `opts.tracks` (CMP4): shared child heights for peer cards.
+   *  `opts.peerStep` (CS1): the lowest label step for a peer `tls.m.shape`. */
+  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode
   /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
    *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
    *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same

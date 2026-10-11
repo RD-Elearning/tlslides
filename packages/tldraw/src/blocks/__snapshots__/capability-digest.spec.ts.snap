@@ -5078,7 +5078,7 @@ Slide title with inline styling, autofit, and truncation. _(family: text; keywor
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`text\` | yes | richText | A concise slide title. Bold one key word for emphasis. Never a full sentence. |
+| \`text\` | yes | richText | One line: at most 40 characters (60 on a cover or section). Bold one key word. Never a full sentence. |
 | \`size\` | no | enum: display \\\\| title \\\\| heading \\\\| subheading \\\\| fit | Type scale step for the title. \`fit\`: the largest of display/title/heading that wraps cleanly (≤ 3 lines, no one-word line). |
 | \`align\` | no | enum: start \\\\| center \\\\| end | Text alignment. |
 | \`rule\` | no | boolean | Show a short accent rule below the title. |

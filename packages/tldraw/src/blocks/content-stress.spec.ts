@@ -53,10 +53,10 @@ describe('CS0 content stress — generator', () => {
     expect(list(stressSlide(bullets, registry, 'over', 'en')).length).toBe(10)
   })
 
-  it('`words` writes the guidance maximum: 12 words in a title, 8 in a bullet', () => {
+  it('`words` writes the guidance maximum: the title character budget (CS2), 8 words in a bullet', () => {
     const s = stressSlide(bullets, registry, 'words', 'en')
     const title = plainText((blocks(s).find((b) => b.type === 'tls.t.title')!.props as { text: unknown }).text)
-    expect(title.split(/\s+/).length).toBe(12)
+    expect(Math.abs(title.length - 40)).toBeLessThanOrEqual(6)
     expect(list(s)[0].text.split(/\s+/).length).toBe(8)
   })
 
@@ -106,7 +106,8 @@ describe('CS0 content stress — golden briefs (ratchet)', () => {
     const rows = runContentStress(cases, registry, ['same'])
     expect(rows.length).toBeGreaterThan(800)
     const bad = rows.filter((r) => r.levels.same.length).map((r) => `${r.style}/${r.lang} ${r.design}`)
-    // CS0 baseline 2026-10-11: 28. Lower it as CS1 fixes land; never raise it.
-    expect(bad.length).toBeLessThanOrEqual(28)
+    // CS0 baseline 2026-10-11: 28; CS1: 18 (left: sparse-by-design dividers, editorial's accent
+    // budget and glass contrast — open items in the README). Never raise it.
+    expect(bad.length).toBeLessThanOrEqual(18)
   }, 120_000)
 })

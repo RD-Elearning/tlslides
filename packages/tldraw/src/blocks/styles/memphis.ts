@@ -72,7 +72,9 @@ export const MEMPHIS_STYLE: DeckStyle = {
         background: '#FFF6E9',
         surface: '#FFFFFF',
         text: '#1B1B1B',
-        textMuted: '#4A4440',
+        // CS1: #4A4440 → #433D3A: footer and meta text over the masters' pink half-disc (#FF819B)
+        // read 4.0:1; this is the oracle's own fix (4.5:1), visually the same warm grey
+        textMuted: '#433D3A',
         accent1: '#FF4F79',
         accent2: '#2EC4B6',
         positive: '#13795B',

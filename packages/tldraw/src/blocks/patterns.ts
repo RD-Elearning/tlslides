@@ -208,7 +208,9 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     looks: ['chevron'],
     build(look) {
       // both columns centred on the slide's height (the list's `fit` type fills its column)
-      const left = stack('lead', [title('Agenda', { size: 'display' }), body('lede', 'Four questions, forty minutes', { size: 'lead' })], { gap: 'md' }, { style: { align: 'center' } })
+      // CS1: `fit`, not `display`: a longer title ("Hypothesis testing") in the 40 % column broke
+      // inside a word at a display-heavy style's size (memphis); fit steps down instead
+      const left = stack('lead', [title('Agenda', { size: 'fit' }), body('lede', 'Four questions, forty minutes', { size: 'lead' })], { gap: 'md' }, { style: { align: 'center' } })
       // a numbered list that sizes its type to the column (`size: fit`), markers on its lines
       const list = blk('list', 'tls.t.bullets', { items: AGENDA.map((a) => ({ text: a.head })), marker: look === 'chevron' ? 'chevron' : 'number', size: 'fit', spacing: 'lg' }, { style: { align: 'center' } })
       return { regions: { content: [split('split', 0.4, [left, list], { gutter: '4xl' })] } }
@@ -331,7 +333,9 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     looks: ['outline'],
     build(look) {
       const shape = 'circle'
-      const size = 'md'
+      // CS1: `lg` (was `md`): the five labels now share one step (`peerShapeSteps`); in md circles
+      // that shared step was caption-small for two-word Vietnamese labels
+      const size = 'lg'
       // the satellites in the text colour: the accent stays on the hub (P10 accent budget)
       const tone = look === 'outline' ? 'outline' : 'soft'
       const sat = (id: string, label: string, icon: string) => blk(id, 'tls.m.shape', { label, icon, shape, tone, size }, { style: { accent: 'text' } })

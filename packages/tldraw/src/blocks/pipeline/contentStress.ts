@@ -12,8 +12,9 @@
  * - `min`   — lists at the low end of their range (the slot guidance's `A–B items`, else the
  *             schema's `min`); text as `same`.
  * - `items` — lists at the high end of their range; text as `same`.
- * - `words` — every text slot whose guidance (or its list's) names `A–B words` at `B` words; the
- *             rest as `same`. Measures whether the guidance is a promise the design keeps.
+ * - `words` — every text slot whose guidance (or its list's) names `at most N characters` at N
+ *             characters, else `A–B words` at `B` words; the rest as `same`. Measures whether the
+ *             guidance is a promise the design keeps.
  * - `over`  — both past the range (items + 2, words × 1.6): the oracle must report, not pass.
  *
  * Text and numerals: a string without two letters in a row (`02`, `Q3`, `→`) is left alone.
@@ -57,6 +58,8 @@ export const STRESS_TEXT: Record<StressLang, readonly string[]> = {
 
 const ITEMS_RE = /(\d+)\s*[–-]\s*(\d+)\s*items/
 const WORDS_RE = /(\d+)\s*[–-]\s*(\d+)\s*words/
+/** CS2: a character budget ("at most 40 characters") — the first one named is the strictest. */
+const CHARS_RE = /at most (\d+) characters/
 
 function rangeIn(re: RegExp, ...texts: Array<string | undefined>): [number, number] | undefined {
   for (const t of texts) {
@@ -114,9 +117,12 @@ function fillText(kind: 'text' | 'richText', old: unknown, slot: { guidance?: st
   const before = plainText(old)
   if (!before || !isProse(before)) return old
   const words = rangeIn(WORDS_RE, slot.guidance, slot.help)
+  const charsMatch = CHARS_RE.exec(`${slot.guidance ?? ''} ${slot.help ?? ''}`)
+  const budget = charsMatch ? Number(charsMatch[1]) : undefined
   const stretch = !ctx.only || ctx.only === ctx.type
   let s: string
-  if (ctx.level === 'words' && words && stretch) s = ctx.src.words(words[1])
+  if (ctx.level === 'words' && budget && stretch) s = ctx.src.chars(budget)
+  else if (ctx.level === 'words' && words && stretch) s = ctx.src.words(words[1])
   else if (ctx.level === 'over') s = ctx.src.words(Math.ceil((words?.[1] ?? before.split(/\s+/).length * 1.5) * 1.6))
   else s = ctx.src.chars(before.length)
   if (maxChars && ctx.level !== 'over' && s.length > maxChars) s = s.slice(0, maxChars).replace(/\s+\S*$/, '') || s.slice(0, maxChars)

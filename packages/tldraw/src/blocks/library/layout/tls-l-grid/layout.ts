@@ -14,6 +14,7 @@ import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
 import { isAuthoredContext } from '../../../layout/layout-child'
 import { peerTracks } from '../../../layout/peer-tracks'
+import { peerShapeSteps } from '../../media/tls-m-shape/layout'
 
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
@@ -108,6 +109,11 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
     }
   }
 
+  // CS1: peer shapes of one kind and size share one label step
+  const shapeSteps = isAuthoredContext(ctx)
+    ? peerShapeSteps(children.slice(0, limit), children.slice(0, limit).map((_, i) => ({ width: colWidths[i % cols] ?? 0, height: rowHeights[Math.floor(i / cols)] ?? 0 })), ctx)
+    : undefined
+
   for (let i = 0; i < limit; i++) {
     const col = i % cols
     const row = Math.floor(i / cols)
@@ -129,7 +135,8 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
       height: rowHeights[row] ?? 0,
     }
     const tracks = rowTracks[row]
-    childNodes.push(ctx.layoutChild(children[i], childBox, tracks ? { tracks } : undefined))
+    const peerStep = shapeSteps?.[i]
+    childNodes.push(ctx.layoutChild(children[i], childBox, tracks || peerStep !== undefined ? { ...(tracks ? { tracks } : {}), ...(peerStep !== undefined ? { peerStep } : {}) } : undefined))
   }
 
   return {

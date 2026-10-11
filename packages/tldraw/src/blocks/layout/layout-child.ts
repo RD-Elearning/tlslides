@@ -132,6 +132,15 @@ export function contextTracks(ctx: LayoutContext): number[] | undefined {
   return TRACKS.get(ctx)
 }
 
+/** CS1 — the type step a row/grid gave its peer shapes (`peerShapeSteps`). Internal. */
+const PEER_STEP = new WeakMap<LayoutContext, number>()
+
+/** CS1 — the lowest label step this context's `tls.m.shape` may use, set by its row/grid so peer
+ *  shapes of one size share one type size; `undefined` = none (the shape's own step). */
+export function contextPeerStep(ctx: LayoutContext): number | undefined {
+  return PEER_STEP.get(ctx)
+}
+
 /** CMP2 — the options a context was built from (to rebuild it with another surface). */
 const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
 
@@ -401,7 +410,7 @@ export function createLayoutContext(
     resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
-    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[] }): LayoutNode => {
+    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode => {
       const newDepth = depth + 1
       // X2: the wrapper group names the child block (id + type) for exporters and the report.
       const ident = {
@@ -484,6 +493,8 @@ export function createLayoutContext(
       })
       // CMP4: the shared tracks a row/grid computed for its peer cards (`peer-tracks.ts`)
       if (childOpts?.tracks) TRACKS.set(childCtx, childOpts.tracks)
+      // CS1: the shared label step a row/grid computed for its peer shapes
+      if (childOpts?.peerStep !== undefined) PEER_STEP.set(childCtx, childOpts.peerStep)
 
       // CMP1: an authored child gets the deck style's knob defaults, as a slide-level block does
       // (generated specs are their builder's business).
@@ -516,6 +527,8 @@ export function createLayoutContext(
       // CMP4: a padded peer card keeps the tracks its row gave it
       const tracks = TRACKS.get(ctx)
       if (tracks) TRACKS.set(next, tracks)
+      const step = PEER_STEP.get(ctx)
+      if (step !== undefined) PEER_STEP.set(next, step)
       return next
     },
     asset: assetFn,
