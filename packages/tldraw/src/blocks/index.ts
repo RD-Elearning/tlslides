@@ -165,6 +165,7 @@ export type {
 // `BUILT_IN_BLOCKS` and `SLIDE_LAYOUTS` so it cannot drift from the library the way a
 // hand-written prompt fragment would.
 export { validateDeckSpec, defaultBlockRegistry } from './validate-deck-spec'
+export { deckSpecJsonSchema } from './deck-spec-json-schema'
 export type { DeckFinding } from './validate-deck-spec'
 export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData, compositionCard } from './capability-digest'
 export type {

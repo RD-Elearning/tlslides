@@ -24,7 +24,7 @@ export const MINIMAL_STYLE: DeckStyle = {
         negative: '#B3261E',
         warning: '#9A6700',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
       shapeDefaults: { isFilled: false, cornerRadius: 12 },
     },
     {
@@ -41,7 +41,7 @@ export const MINIMAL_STYLE: DeckStyle = {
         negative: '#9F2D2D',
         warning: '#8A6116',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Be Vietnam Pro", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
       shapeDefaults: { isFilled: false, cornerRadius: 12 },
     },
   ],

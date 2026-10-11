@@ -9,7 +9,7 @@ import { motif, placePx } from './_place'
  * blocks add a DOM-only backdrop blur). Plus Jakarta Sans over Inter, very round corners.
  * The palette's `background` → `surface` pair is the gradient.
  */
-const FONTS = { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter"' }
+const FONTS = { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 
 const GRADIENT = (angle: number): Paint => ({
   type: 'linearGradient',

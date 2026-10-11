@@ -16,7 +16,7 @@ const builtIn = (id: string) => {
  * are open columns under an ink rule with giant numerals, pull quotes get big red marks, and the
  * closing is one giant flush-left line.
  */
-const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Fraunces", "Fraunces Variable", serif', bodyFamily: '"Inter"' }
+const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Fraunces", "Fraunces Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 
 /** The masthead: a heavy ink rule and a hairline under it, across the type area. */
 const MASTHEAD: Record<string, BlockSpec> = {

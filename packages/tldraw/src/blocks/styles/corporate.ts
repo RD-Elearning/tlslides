@@ -31,7 +31,7 @@ export const CORPORATE_STYLE: DeckStyle = {
         negative: '#C62828',
         warning: '#B26A00',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter", "Inter Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
       shapeDefaults: { isFilled: true, cornerRadius: 8 },
     },
     builtIn('midnight'),

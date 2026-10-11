@@ -716,6 +716,9 @@ importers:
       mobx:
         specifier: ^6.3.8
         version: 6.16.1
+      playwright:
+        specifier: 1.62.1
+        version: 1.62.1
       react:
         specifier: '>=16.8'
         version: 17.0.2

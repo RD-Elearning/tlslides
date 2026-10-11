@@ -33,7 +33,7 @@ export const GRADIENT_STYLE: DeckStyle = {
         negative: '#F87171',
         warning: '#FBBF24',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
       shapeDefaults: { isFilled: true, cornerRadius: 24 },
     },
     {
@@ -50,7 +50,7 @@ export const GRADIENT_STYLE: DeckStyle = {
         negative: '#DC2626',
         warning: '#B45309',
       },
-      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter"' },
+      fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
       shapeDefaults: { isFilled: true, cornerRadius: 24 },
     },
   ],

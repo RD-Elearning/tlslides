@@ -9,7 +9,7 @@ import { band, placePx } from './_place'
  * pages carry a navy tracker tab at the top left, a hairline under the title band and a footer
  * rule; the cover and closing carry a navy spine with a teal hairline; the section page is navy with a teal edge.
  */
-const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Source Serif 4", "Source Serif 4 Variable", serif', bodyFamily: '"Inter"' }
+const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Source Serif 4", "Source Serif 4 Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 
 const CONTENT_CHROME: Record<string, BlockSpec> = {
   tracker: placePx(band('accent'), 96, 40, 120, 12),

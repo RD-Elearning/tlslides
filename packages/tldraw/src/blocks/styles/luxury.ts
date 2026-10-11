@@ -9,7 +9,7 @@ import { band, motif, placePx } from './_place'
  * on cover and closing) over a soft radial vignette; the section slide adds a large gold ring in
  * its empty half. Motion is slow fades.
  */
-const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Playfair Display", "Playfair Display Variable", serif', bodyFamily: '"Inter"' }
+const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Playfair Display", "Playfair Display Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 
 /** A hairline frame `inset` units inside the slide edge, in a colour role. */
 function frame(inset: number, w: number, role: string): Record<string, BlockSpec> {
