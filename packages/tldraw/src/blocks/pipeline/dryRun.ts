@@ -17,7 +17,7 @@ import type { RecipeRole, SlideAssets, SlideRecipe } from '../recipes'
 import { deckTitleSize, slideQuality } from './quality'
 import { DESIGN_CODES } from '../design-checks'
 import type { SlideQuality } from './quality'
-import { applyDeckLook, deckLook, lookCandidates, lookSignature, pickOrder } from './variety'
+import { applyDeckLook, deckLook, designWeight, lookCandidates, lookSignature, pickOrder } from './variety'
 import type { DeckLook, LookCandidate } from './variety'
 import type { BlockRegistry } from '../registry'
 import { BUILT_IN_STYLES, getDeckStyle, styleCard } from '../styles'
@@ -365,6 +365,8 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   const signatures: string[] = []
   const candidateCounts: number[] = []
   const usedSigs = new Set<string>()
+  // CMP4 (P12 rhythm): each picked slide's design weight
+  const weights: number[] = []
   const seen: Partial<Record<RecipeRole, number>> = {}
   let exampleKept = 0
   let avoidableRepeats = 0
@@ -387,7 +389,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
     // S2a stand-in (AC8 variety): rotate from a seeded start, fresh signatures first.
     const nth = seen[entry.role] ?? 0
     seen[entry.role] = nth + 1
-    const order = pickOrder(candidates, style.id, entry.role, seed, nth, { used: usedSigs, avoid, previousRecipe: used[i - 1] })
+    const order = pickOrder(candidates, style.id, entry.role, seed, nth, { used: usedSigs, avoid, previousRecipe: used[i - 1], previousWeight: weights[i - 1] })
     const id = `s${String(i + 1).padStart(2, '0')}`
     let at = 0
     let cand: LookCandidate = order[0]
@@ -422,6 +424,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
     const sig = lookSignature(best.filled.slide, style, registry)
     if (usedSigs.has(sig) && candidates.some((c) => !usedSigs.has(c.signature))) avoidableRepeats++
     usedSigs.add(sig)
+    weights.push(designWeight(best.filled.slide))
     used.push(best.cand.recipe.id)
     designs.push(`${best.cand.recipe.id}/${best.cand.variant}`)
     signatures.push(sig)

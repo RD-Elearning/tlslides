@@ -2,12 +2,12 @@
  * AC7 — the scripted pipeline dry run (`pipeline/dryRun.ts`, CLI `tools/layout-report/dry-run.js`)
  * yields clean decks and a S2a prompt inside the 16k ceiling (`reviews/blocks/ai-curation/README.md` §5.2).
  */
-import { DRY_RUN_ASSETS, DRY_RUN_OUTLINE, PROMPT_BUDGET, runDryRun, runStyle, runVariety, shortenHeadline, signatureDiffer } from './pipeline/dryRun'
+import { DRY_RUN_ASSETS, DRY_RUN_OUTLINE, PROMPT_BUDGET, eligibleRecipes, runDryRun, runStyle, runVariety, shortenHeadline, signatureDiffer } from './pipeline/dryRun'
 import { QUALITY_GATE, deckQuality, slideQuality } from './pipeline/quality'
 import { analyzeDeck } from './layout-report'
 import { RECIPES, assetsAllow, composedSlide, designNeeds } from './recipes'
 import { findDesign } from './patterns'
-import { hashString, lookSignature, seedStride } from './pipeline/variety'
+import { CALM_WEIGHT, DENSE_WEIGHT, hashString, lookCandidates, lookSignature, pickOrder, seedStride } from './pipeline/variety'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { getDeckStyle } from './styles'
 
@@ -130,6 +130,19 @@ describe('AC8 variety', () => {
 
 // AC8.5 — the deck-level quality gate (`pipeline/quality.ts`, README §8.9) and the content-asset
 // input of the picker. The gate runs on the dry-run decks themselves, not only on recipe examples.
+describe('CMP4 rhythm (P12)', () => {
+  it('after a dense slide the calm designs come first; otherwise the order is unchanged', () => {
+    const style = getDeckStyle('corporate')!
+    const registry = defaultBlockRegistry()
+    const cands = lookCandidates(eligibleRecipes('content', style, registry), style, registry)
+    expect(cands.some((c) => (c.weight ?? 0) <= CALM_WEIGHT)).toBe(true)
+    const calm = pickOrder(cands, style.id, 'content', 1, 0, { used: new Set(), previousWeight: DENSE_WEIGHT })
+    const plain = pickOrder(cands, style.id, 'content', 1, 0, { used: new Set() })
+    expect(calm[0].weight).toBeLessThanOrEqual(CALM_WEIGHT)
+    expect(new Set(calm.map((c) => c.signature))).toEqual(new Set(plain.map((c) => c.signature)))
+  })
+})
+
 describe('AC8.5 quality gate and assets', () => {
   const reports = runVariety(['corporate', 'luxury', 'doodle', 'consulting'])
 

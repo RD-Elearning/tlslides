@@ -30,6 +30,25 @@ export interface LookCandidate {
   /** `base` or a variant id of `recipe`. */
   variant: string
   signature: string
+  /** CMP4 (P12 rhythm): how busy the design reads — its leaf blocks, a list-bearing block counting
+   *  its items (`designWeight`). */
+  weight?: number
+}
+
+/** CMP4 — a design at or above this weight is dense; the next slide prefers one at or under `CALM_WEIGHT`. */
+export const DENSE_WEIGHT = 8
+export const CALM_WEIGHT = 4
+
+/** CMP4 (P12) — how busy a slide reads: every leaf block 1, a block holding a list its item count. */
+export function designWeight(slide: SlideSpec): number {
+  let w = 0
+  eachBlock(slide.regions ?? {}, (b) => {
+    const props = (b.props ?? {}) as Record<string, unknown>
+    if (Array.isArray(props.children)) return
+    const lists = Object.values(props).filter((v): v is unknown[] => Array.isArray(v) && v.length > 0 && typeof v[0] === 'object')
+    w += Math.max(1, ...lists.map((l) => l.length))
+  })
+  return w
 }
 
 /** Knobs fixed once per deck (consistent inside it, varied across decks). */
@@ -197,7 +216,7 @@ export function lookCandidates(recipes: readonly SlideRecipe[], style: DeckStyle
     const signature = lookSignature(slide, style, registry)
     if (seen.has(signature)) continue
     seen.add(signature)
-    out.push({ ...d, signature })
+    out.push({ ...d, signature, weight: designWeight(slide) })
   }
   return out
 }
@@ -209,6 +228,8 @@ export interface PickContext {
   avoid?: ReadonlySet<string>
   /** The previous slide's recipe id (no recipe twice in a row while another exists). */
   previousRecipe?: string
+  /** CMP4 (P12 rhythm): the previous slide's design weight; after a dense slide a calm one comes first. */
+  previousWeight?: number
 }
 
 /**
@@ -226,8 +247,12 @@ export function pickOrder(candidates: readonly LookCandidate[], styleId: string,
   const fresh = (c: LookCandidate) => !ctx.used.has(c.signature)
   const welcome = (c: LookCandidate) => !ctx.avoid?.has(c.signature)
   const other = (c: LookCandidate) => c.recipe.id !== ctx.previousRecipe
+  // CMP4 (P12): after a dense slide, the calm designs of the first pass come first (a breather)
+  const breathe = (ctx.previousWeight ?? 0) >= DENSE_WEIGHT
+  const first = rotated.filter((c) => fresh(c) && welcome(c) && other(c))
   const passes = [
-    rotated.filter((c) => fresh(c) && welcome(c) && other(c)),
+    ...(breathe ? [first.filter((c) => (c.weight ?? 0) <= CALM_WEIGHT)] : []),
+    first,
     rotated.filter((c) => fresh(c) && welcome(c)),
     rotated.filter((c) => fresh(c)),
     rotated,

@@ -202,6 +202,9 @@ export {
   seedStride,
   hashString,
   DECK_LOOK_TYPES,
+  designWeight,
+  DENSE_WEIGHT,
+  CALM_WEIGHT,
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
 export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE } from './pipeline/quality'
