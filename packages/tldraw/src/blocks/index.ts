@@ -208,7 +208,10 @@ export {
   CALM_WEIGHT,
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
-export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE } from './pipeline/quality'
+export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, geometryProblems, slideProblems } from './pipeline/quality'
+// CS0 — content stress + design capacity (`reviews/blocks/content-stress/README.md`).
+export { STRESS_LEVELS, STRESS_TEXT, stressSlide, soloDeck, soloProblems, designCapacity, runContentStress, plainText } from './pipeline/contentStress'
+export type { StressLevel, StressLang, StressCase, StressRow, DesignCapacity, ListCapacity } from './pipeline/contentStress'
 export type { SlideQuality, QualityFinding, QualityCode } from './pipeline/quality'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's

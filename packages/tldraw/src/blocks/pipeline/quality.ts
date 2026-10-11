@@ -159,3 +159,21 @@ export function deckQuality(deck: DeckSpec, opts: { registry?: BlockRegistry; re
   const titleSize = deckTitleSize(deck)
   return reports.map((r) => slideQuality(r, { titleSize }))
 }
+
+/**
+ * CS0 — the oracle's geometry findings that block a slide (errors and warnings outside the design
+ * checks, which `slideQuality` already carries) — the S4.1 repair loop's "fix this" list.
+ */
+export function geometryProblems(report: LayoutReport): string[] {
+  return report.findings
+    .filter((f) => f.severity !== 'info' && !(DESIGN_CODES as readonly string[]).includes(f.code))
+    .map((f) => `${f.severity} ${f.code}: ${f.message}`)
+}
+
+/**
+ * CS0 — everything that keeps a slide from being accepted: geometry problems plus the quality gate.
+ * Empty = clean. The dry run's repair loop and the content stress run share this bar.
+ */
+export function slideProblems(report: LayoutReport, titleSize: number): string[] {
+  return [...geometryProblems(report), ...slideQuality(report, { titleSize }).findings.map((f) => `quality ${f.code}: ${f.message}`)]
+}

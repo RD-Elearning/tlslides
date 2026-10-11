@@ -35,6 +35,8 @@ motion, Present) by one subagent per group G01–G11; resume from its §6 Progre
 
 **Composition plan (2026-10-10): [reviews/blocks/composition/README.md](reviews/blocks/composition/README.md)** — the LLM composes many designs from containers, atoms, layers and connectors; CMP1–CMP5 (engine correctness + export-ready contract, oracle inside compositions incl. contrast, atoms/connectors/nested motion, composition patterns + grammar + picker, docs); factual base [SURVEY.md](reviews/blocks/composition/SURVEY.md); all five phases done (2026-10-11); readiness report in its §5.1, PPTX route in [composition/PPTX-MAPPING.md](reviews/blocks/composition/PPTX-MAPPING.md). PPTX exporter deferred, code stays export-ready. Next is the FastAPI/LLM service — only when the owner says so.
 
+**Content stress (2026-10-11): [reviews/blocks/content-stress/README.md](reviews/blocks/content-stress/README.md)** — golden briefs (VI/EN) poured into every design at real length, guidance maxima and past them (`pipeline/contentStress.ts`, CLI `tools/layout-report/stress-run.js`), plus `designCapacity` (measured title chars / list items per design) for the fill stage; CS0 done, CS1–CS3 open; resume from its §5.
+
 The visual-fidelity slice has been attempted twice and is on its third plan. The **current work
 list is [reviews/blocks/BACKLOG-visual-fix-2.md](reviews/blocks/BACKLOG-visual-fix-2.md)**
 (G0–G6) — start there. Its §0 is the verified state of the tree (of the earlier V1–V8 and F0–F6

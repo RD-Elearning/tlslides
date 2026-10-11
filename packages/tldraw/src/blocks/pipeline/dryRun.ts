@@ -14,8 +14,7 @@ import type { LayoutReport } from '../layout-report'
 import { RECIPE_ROLES, assetsAllow, eachBlock, composedSlide, recipeSlide, recipesFor } from '../recipes'
 import { PATTERN_RECIPES } from '../patterns'
 import type { RecipeRole, SlideAssets, SlideRecipe } from '../recipes'
-import { deckTitleSize, slideQuality } from './quality'
-import { DESIGN_CODES } from '../design-checks'
+import { deckTitleSize, geometryProblems, slideProblems, slideQuality } from './quality'
 import type { SlideQuality } from './quality'
 import { applyDeckLook, deckLook, designWeight, lookCandidates, lookSignature, pickOrder } from './variety'
 import type { DeckLook, LookCandidate } from './variety'
@@ -301,12 +300,6 @@ function deckOf(style: DeckStyle, slides: SlideSpec[], seed = 0, theme?: string)
   }
 }
 
-/** The oracle's geometry findings (the design checks are the quality gate's, CMP2). */
-function bad(report: LayoutReport): string[] {
-  return report.findings
-    .filter((f) => f.severity !== 'info' && !(DESIGN_CODES as readonly string[]).includes(f.code))
-    .map((f) => `${f.severity} ${f.code}: ${f.message}`)
-}
 
 /** Measure the S2a prompt for one style against §5.2: the tier-1 index split into its sections plus the style card. */
 export function measurePrompt(style: DeckStyle, registry: BlockRegistry, roles?: RecipeRole[]): PromptSections {
@@ -374,7 +367,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   const analyze = (slide: SlideSpec) => analyzeDeck(deckOf(style, [slide], seed, opts.theme), { registry, llmAuthored: true })[0]
   // AC8.5: the quality gate is part of S4.1 — a design that looks unfinished is repaired like a warning.
   const titleSize = deckTitleSize(deckOf(style, [], seed, opts.theme))
-  const problems = (report: LayoutReport) => [...bad(report), ...slideQuality(report, { titleSize }).findings.map((f) => `quality ${f.code}: ${f.message}`)]
+  const problems = (report: LayoutReport) => slideProblems(report, titleSize)
   const deckAssets = opts.assets ?? DRY_RUN_ASSETS
 
   const slides = outline.map((entry, i) => {
@@ -404,7 +397,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
       const from = `${cand.recipe.id}/${cand.variant}`
       // AC8.5: a slide that only fails the quality gate gets another design, never a cut headline
       // (shortening "Why mid-market, why now" to "Why mid-market, why" does not make it look finished)
-      const qualityOnly = !bad(report).length
+      const qualityOnly = !geometryProblems(report).length
       if ((round !== 2 || qualityOnly) && order.length > 1) {
         action = 'next-recipe'
         at = (at + 1) % order.length
