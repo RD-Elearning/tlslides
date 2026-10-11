@@ -11,7 +11,8 @@
 import { AI_HIDDEN_TYPES, capabilityIndex } from '../capability-digest'
 import { analyzeDeck } from '../layout-report'
 import type { LayoutReport } from '../layout-report'
-import { RECIPE_ROLES, assetsAllow, recipeSlide, recipesFor } from '../recipes'
+import { RECIPE_ROLES, assetsAllow, eachBlock, composedSlide, recipeSlide, recipesFor } from '../recipes'
+import { PATTERN_RECIPES } from '../patterns'
 import type { RecipeRole, SlideAssets, SlideRecipe } from '../recipes'
 import { deckTitleSize, slideQuality } from './quality'
 import { DESIGN_CODES } from '../design-checks'
@@ -126,6 +127,8 @@ export interface DryRunOptions {
   /** AC8.5: the deck's content assets (default `DRY_RUN_ASSETS`); an outline entry's `assets`
    *  override it per slide. The picker only offers designs whose needs are present. */
   assets?: Partial<SlideAssets>
+  /** CMP4: offer the composition patterns besides the recipes (default true). */
+  patterns?: boolean
 }
 
 /** Where a block type takes a headline: its prop, and whether that prop is rich text. */
@@ -165,12 +168,47 @@ const MESSAGE_SLOTS: Record<string, Array<{ prop: string; from: 'keyMessage' | '
 /** Block types whose message slot carries the headline when the recipe has no title slot. */
 const HEADLINE_CARRIERS = new Set(['tls.c.big-stat'])
 
-/** Recipes the style allows: tier-1 blocks only, none of the style's `avoid` types or editor-only guides. */
-export function eligibleRecipes(role: RecipeRole, style: DeckStyle, registry: BlockRegistry): SlideRecipe[] {
+/**
+ * Recipes the style allows: tier-1 blocks only, none of the style's `avoid` types or editor-only
+ * guides. CMP4: plus the role's composition patterns (`patterns.ts`, unless `patterns: false`),
+ * whose parts may be tier 2 (containers and atoms), none of them avoided or hidden, in any look.
+ */
+export function eligibleRecipes(role: RecipeRole, style: DeckStyle, registry: BlockRegistry, opts: { patterns?: boolean } = {}): SlideRecipe[] {
   const dropped = new Set<string>([...style.avoid, ...AI_HIDDEN_TYPES])
-  return recipesFor(role).filter((r) =>
+  const recipes = recipesFor(role).filter((r) =>
     Object.values(r.regions).every((blocks) => blocks.every((blk) => !dropped.has(blk.type) && registry.get(blk.type)?.aiTier === 1))
   )
+  if (opts.patterns === false) return recipes
+  const patterns = PATTERN_RECIPES.filter((r) => r.role === role).filter((r) => {
+    let ok = true
+    for (const look of [undefined, ...(r.variants ?? []).map((v) => v.id)]) {
+      eachBlock(composedSlide(r, look ?? 'base').regions, (b) => {
+        const tier = registry.get(b.type)?.aiTier
+        if (dropped.has(b.type) || (tier !== 1 && tier !== 2)) ok = false
+      })
+    }
+    return ok
+  })
+  return [...recipes, ...patterns]
+}
+
+/**
+ * CMP4 — block ids are unique across the deck (validator rule block/duplicate-id): prefix every id
+ * of a slide, nested ones included, and follow the references (`anchorTo`, connector ends).
+ */
+export function prefixIds(slide: SlideSpec, prefix: string): SlideSpec {
+  const ids = new Set<string>()
+  eachBlock(slide.regions ?? {}, (b) => ids.add(b.id))
+  const re = (id: string) => (ids.has(id) ? `${prefix}_${id}` : id)
+  const walk = (list: BlockSpec[]): BlockSpec[] =>
+    list.map((b) => {
+      const props = (b.props ?? {}) as Record<string, unknown>
+      const kids = Array.isArray(props.children) ? { ...props, children: walk(props.children as BlockSpec[]) } : b.props
+      return { ...b, id: re(b.id), ...(b.anchorTo ? { anchorTo: re(b.anchorTo) } : {}), ...(kids !== b.props ? { props: kids } : {}) }
+    })
+  const regions = Object.fromEntries(Object.entries(slide.regions ?? {}).map(([n, bs]) => [n, walk(bs)]))
+  const connectors = slide.connectors?.map((c) => ({ ...c, id: `${prefix}_${c.id}`, from: { ...c.from, block: re(c.from.block) }, to: { ...c.to, block: re(c.to.block) } }))
+  return { ...slide, regions, ...(connectors ? { connectors } : {}) }
 }
 
 /** Shorten a headline to its first ~60 % of words (at least two). */
@@ -194,11 +232,7 @@ export function fillSlide(
   const raw = recipeSlide(recipe, registry, variant, style)
   const base = look ? applyDeckLook(raw, look, recipe, variant) : raw
   // block ids are unique across the whole deck (validator rule block/duplicate-id)
-  const slide: SlideSpec = {
-    ...base,
-    id,
-    regions: Object.fromEntries(Object.entries(base.regions ?? {}).map(([n, bs]) => [n, bs.map((b) => ({ ...b, id: `${id}_${b.id}` }))])),
-  }
+  const slide: SlideSpec = { ...prefixIds(base, id), id }
   let titled = false
   const regions: Record<string, BlockSpec[]> = {}
   for (const [name, blocks] of Object.entries(slide.regions ?? {})) {
@@ -311,7 +345,7 @@ export function runStyle(style: DeckStyle, _styleIndex: number, opts: DryRunOpti
   const deckAssets = opts.assets ?? DRY_RUN_ASSETS
 
   const slides = outline.map((entry, i) => {
-    const eligible = eligibleRecipes(entry.role, style, registry)
+    const eligible = eligibleRecipes(entry.role, style, registry, { patterns: opts.patterns })
     if (!eligible.length) throw new Error(`style ${style.id}: no eligible recipe for role ${entry.role}`)
     // AC8.5: only designs whose asset needs the slide's content meets (all of them if none does).
     const assets = { ...deckAssets, ...(entry.assets ?? {}) }

@@ -11,7 +11,7 @@
  */
 
 import type { BlockRegistry } from './registry'
-import type { BlockSpec, DeckStyle, SlideSpec } from './types'
+import type { BlockSpec, ConnectorSpec, DeckStyle, SlideSpec } from './types'
 
 /** The planner's slide roles (LLM-ARCHITECTURE S1 outline). Wider than `SlideSpec.role`. */
 export type RecipeRole =
@@ -73,6 +73,30 @@ export interface SlideRecipe {
   when: string
   /** AC8 — more designs of this recipe (the recipe itself is the variant `base`). */
   variants?: RecipeVariant[]
+  /**
+   * CMP4 — a composition pattern (`patterns.ts`): builds the slide's regions and connectors for a
+   * look (`base` or a variant id). `regions` is then empty: the blocks come from here.
+   */
+  compose?: (look: string) => { regions: Record<string, BlockSpec[]>; connectors?: ConnectorSpec[] }
+  /** CMP4 — the content assets a pattern needs on top of what its blocks need. */
+  needs?: AssetKind[]
+}
+
+/** CMP4 — every block of a slide's regions, depth first (children through `props.children`). */
+export function eachBlock(regions: Record<string, readonly BlockSpec[]>, fn: (b: BlockSpec) => void): void {
+  const walk = (list: readonly BlockSpec[]) => {
+    for (const b of list) {
+      fn(b)
+      const kids = (b.props as Record<string, unknown> | undefined)?.children
+      if (Array.isArray(kids)) walk(kids as BlockSpec[])
+    }
+  }
+  for (const list of Object.values(regions)) walk(list)
+}
+
+/** CMP4 — a pattern's slide for a look, deep-cloned (the builder's objects are never shared). */
+export function composedSlide(recipe: SlideRecipe, look: string): { regions: Record<string, BlockSpec[]>; connectors?: ConnectorSpec[] } {
+  return JSON.parse(JSON.stringify(recipe.compose ? recipe.compose(look) : { regions: {} }))
 }
 
 /** AC8 — the id of a recipe's own design, before any variant. */
@@ -259,6 +283,18 @@ const SLIDE_ROLE: Partial<Record<RecipeRole, SlideSpec['role']>> = { cover: 'cov
  */
 export function recipeSlide(recipe: SlideRecipe, registry: BlockRegistry, variant?: string, style?: DeckStyle): SlideSpec {
   const v = findVariant(recipe, variant)
+  if (recipe.compose) {
+    // CMP4: a pattern builds its own blocks (ids, nesting, layers, connectors) for the look
+    const built = composedSlide(recipe, v?.id ?? BASE_VARIANT)
+    const role = SLIDE_ROLE[recipe.role] ?? 'content'
+    return {
+      id: `sl_${recipe.id}${v ? `_${v.id}` : ''}`,
+      layout: v?.layout ?? recipe.layout,
+      role,
+      regions: built.regions,
+      ...(built.connectors?.length ? { connectors: built.connectors } : {}),
+    }
+  }
   let n = 0
   const regions: Record<string, BlockSpec[]> = {}
   for (const [region, blocks] of Object.entries(recipe.regions)) {
@@ -317,7 +353,13 @@ export function blockNeeds(type: string, knobs: Record<string, unknown> = {}): A
 /** AC8.5 — the asset kinds a recipe design needs (its blocks with the recipe's and the variant's knobs). */
 export function designNeeds(recipe: SlideRecipe, variant?: string): AssetKind[] {
   const v = findVariant(recipe, variant)
-  const out = new Set<AssetKind>()
+  const out = new Set<AssetKind>(recipe.needs ?? [])
+  if (recipe.compose) {
+    eachBlock(composedSlide(recipe, v?.id ?? BASE_VARIANT).regions, (b) => {
+      for (const k of blockNeeds(b.type, (b.props ?? {}) as Record<string, unknown>)) out.add(k)
+    })
+    return ASSET_KINDS.filter((k) => out.has(k))
+  }
   for (const blocks of Object.values(recipe.regions)) {
     for (const blk of blocks) for (const k of blockNeeds(blk.type, { ...(blk.knobs ?? {}), ...(v?.knobs?.[blk.type] ?? {}) })) out.add(k)
   }

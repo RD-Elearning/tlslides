@@ -19,7 +19,7 @@
  * coprime with the candidate count, so seeds 1, 2, 3 start on three different candidates).
  * The backend mirrors this module, or calls it, before S3.
  */
-import { BASE_VARIANT, recipeSlide, variantIds, findVariant } from '../recipes'
+import { BASE_VARIANT, composedSlide, eachBlock, recipeSlide, variantIds, findVariant } from '../recipes'
 import type { RecipeRole, SlideRecipe } from '../recipes'
 import type { BlockRegistry } from '../registry'
 import type { BlockSpec, DeckStyle, SlideSpec } from '../types'
@@ -70,7 +70,11 @@ export function seedStride(k: number, r = 1): number {
   return 1
 }
 
-/** The resolved look-knob values of one block (authored > style default > block default). */
+/**
+ * The resolved look-knob values of one block (authored > style default > block default). CMP4: a
+ * container's look includes its children's (`[a+b]`), and a layered block its layer and anchor, so
+ * two compositions of the same container are two designs.
+ */
 export function blockLook(block: BlockSpec, style: DeckStyle | undefined, registry: BlockRegistry): string {
   const def = registry.get(block.type)
   if (!def) return block.type
@@ -78,13 +82,16 @@ export function blockLook(block: BlockSpec, style: DeckStyle | undefined, regist
   const props = (block.props ?? {}) as Record<string, unknown>
   const defaults = (def.defaults ?? {}) as Record<string, unknown>
   const knobs = (def.looks ?? []).map((k) => `${k}=${String(props[k] ?? pinned[k] ?? defaults[k])}`)
-  return `${block.type}{${knobs.join(',')}}`
+  const placed = block.layer && block.layer !== 'content' ? `@${block.layer}${block.anchor ? `:${block.anchor}` : ''}` : ''
+  const kids = Array.isArray(props.children) ? `[${(props.children as BlockSpec[]).map((c) => blockLook(c, style, registry)).join('+')}]` : ''
+  return `${block.type}{${knobs.join(',')}}${placed}${kids}`
 }
 
-/** The look signature of a slide (see the module comment). */
+/** The look signature of a slide (see the module comment; CMP4: plus its connectors' routes). */
 export function lookSignature(slide: SlideSpec, style: DeckStyle | undefined, registry: BlockRegistry): string {
   const regions = Object.entries(slide.regions ?? {}).map(([name, blocks]) => `${name}:${blocks.map((b) => blockLook(b, style, registry)).join('+')}`)
-  return `${slide.layout}|${regions.join(';')}`
+  const links = slide.connectors?.length ? `|cx:${slide.connectors.map((c) => `${c.route ?? 'straight'}/${c.head ?? 'end'}`).join(',')}` : ''
+  return `${slide.layout}|${regions.join(';')}${links}`
 }
 
 /**
@@ -104,6 +111,16 @@ export function knobAllowed(type: string, knob: string, value: unknown, style: D
 function designKnobs(recipe: SlideRecipe, variant: string): Array<[string, Record<string, unknown>]> {
   const v = findVariant(recipe, variant)
   const out: Array<[string, Record<string, unknown>]> = []
+  if (recipe.compose) {
+    // CMP4: every block of the pattern's tree with the props it sets (a style that pins a knob to
+    // another value rules the look out, as for a recipe)
+    eachBlock(composedSlide(recipe, v?.id ?? BASE_VARIANT).regions, (b) => {
+      const { children: _kids, ...props } = (b.props ?? {}) as Record<string, unknown>
+      void _kids
+      out.push([b.type, props])
+    })
+    return out
+  }
   for (const blocks of Object.values(recipe.regions)) {
     for (const blk of blocks) out.push([blk.type, { ...(blk.knobs ?? {}), ...(v?.knobs?.[blk.type] ?? {}) }])
   }
@@ -143,7 +160,8 @@ export function applyDeckLook(slide: SlideSpec, look: DeckLook, recipe?: SlideRe
   for (const [name, blocks] of Object.entries(slide.regions ?? {})) {
     regions[name] = blocks.map((b) => {
       if (b.type !== 'tls.t.title' || !Object.keys(look.title).length) return b
-      const own = set.get(b.type) ?? {}
+      // CMP4: a pattern authors its blocks: the title's own props are what the design sets
+      const own = recipe?.compose ? ((b.props ?? {}) as Record<string, unknown>) : set.get(b.type) ?? {}
       const add = Object.fromEntries(Object.entries(look.title).filter(([k]) => !(k in own)))
       return { ...b, props: { ...(b.props ?? {}), ...add } }
     })

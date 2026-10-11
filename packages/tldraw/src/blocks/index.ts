@@ -178,10 +178,13 @@ export type {
   CapabilityPreference,
 } from './capability-digest'
 // AC0 — slide recipes per planner role (`reviews/blocks/ai-curation/README.md` §5.1).
-export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant, variantIds, BASE_VARIANT, ASSET_KINDS, blockNeeds, designNeeds, assetsAllow } from './recipes'
+export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant, variantIds, BASE_VARIANT, ASSET_KINDS, blockNeeds, designNeeds, assetsAllow, eachBlock, composedSlide } from './recipes'
+// CMP4 — composition patterns (`reviews/blocks/composition/README.md` CMP4).
+export { COMPOSITION_PATTERNS, PATTERN_RECIPES, ALL_DESIGNS, findDesign, patternRecipe, patternsFor } from './patterns'
+export type { CompositionPattern, ComposedSlide } from './patterns'
 export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
-export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, shortenHeadline, DRY_RUN_OUTLINE, DRY_RUN_ASSETS, PROMPT_BUDGET } from './pipeline/dryRun'
+export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, prefixIds, shortenHeadline, DRY_RUN_OUTLINE, DRY_RUN_ASSETS, PROMPT_BUDGET } from './pipeline/dryRun'
 export type { StyleRunResult, PromptSections, OutlineEntry, Repair, VarietyReport, VarietyOptions, DryRunOptions } from './pipeline/dryRun'
 export {
   lookSignature,

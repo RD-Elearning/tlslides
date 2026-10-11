@@ -5,7 +5,8 @@
 import { DRY_RUN_ASSETS, DRY_RUN_OUTLINE, PROMPT_BUDGET, runDryRun, runStyle, runVariety, shortenHeadline, signatureDiffer } from './pipeline/dryRun'
 import { QUALITY_GATE, deckQuality, slideQuality } from './pipeline/quality'
 import { analyzeDeck } from './layout-report'
-import { RECIPES, assetsAllow, designNeeds } from './recipes'
+import { RECIPES, assetsAllow, composedSlide, designNeeds } from './recipes'
+import { findDesign } from './patterns'
 import { hashString, lookSignature, seedStride } from './pipeline/variety'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { getDeckStyle } from './styles'
@@ -42,7 +43,8 @@ describe('AC7 dry run', () => {
   it('repairs a slide whose headline overflows, and logs it', () => {
     const long = 'word '.repeat(60).trim()
     const outline = DRY_RUN_OUTLINE.map((e, i) => (i === 3 ? { ...e, headline: long } : e))
-    const r = runStyle(getDeckStyle('corporate')!, 0, { outline })
+    // the recipes alone (CMP4: a composition pattern may hold the long headline without a repair)
+    const r = runStyle(getDeckStyle('corporate')!, 0, { outline, patterns: false })
     expect(r.repairs.some((x) => x.slide === 4)).toBe(true)
     expect(r.repairs.filter((x) => x.slide === 4).length).toBeLessThanOrEqual(3)
   })
@@ -82,9 +84,11 @@ describe('AC8 variety', () => {
           // AC8.6: a knob the slide's own design sets wins (applyDeckLook's contract; section-title
           // sets its display title's align and rule) and must then hold the design's value.
           const [rid, vid] = r.designs[i].split('/')
-          const recipe = RECIPES.find((x) => x.id === rid)!
+          const recipe = findDesign(rid)!
           const variant = recipe.variants?.find((x) => x.id === vid)
-          const own = { ...(Object.values(recipe.regions).flat().find((b) => b.type === 'tls.t.title')?.knobs ?? {}), ...(variant?.knobs?.['tls.t.title'] ?? {}) }
+          // CMP4: a pattern's own title props are what it sets
+          const composed = recipe.compose ? ((Object.values(composedSlide(recipe, vid).regions).flat().find((b) => b.type === 'tls.t.title')?.props ?? {}) as Record<string, unknown>) : undefined
+          const own = composed ?? { ...(Object.values(recipe.regions).flat().find((b) => b.type === 'tls.t.title')?.knobs ?? {}), ...(variant?.knobs?.['tls.t.title'] ?? {}) }
           const titles = Object.values(s.regions ?? {}).flat().filter((b) => b.type === 'tls.t.title')
           for (const t of titles) {
             for (const [k, val] of Object.entries(r.deckLook.title)) expect((t.props as Record<string, unknown>)[k]).toBe(k in own ? own[k] : val)
@@ -173,7 +177,7 @@ describe('AC8.5 quality gate and assets', () => {
   })
 
   it('names what a design needs, and the picker only offers designs the content can fill', () => {
-    const find = (id: string) => RECIPES.find((r) => r.id === id)!
+    const find = (id: string) => findDesign(id)!
     expect(designNeeds(find('people-logo-wall'))).toEqual(['logos'])
     expect(designNeeds(find('cover-split-image'))).toEqual(['images'])
     expect(designNeeds(find('quote-pull'), 'image')).toEqual(['images'])
