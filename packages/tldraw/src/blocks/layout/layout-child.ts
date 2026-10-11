@@ -124,6 +124,14 @@ export function isAuthoredContext(ctx: LayoutContext): boolean {
   return NEST.get(ctx)?.authoredBlock ?? true
 }
 
+/** CMP4 — shared tracks a row/grid passed to a peer card or stack (`peer-tracks.ts`). Internal. */
+const TRACKS = new WeakMap<LayoutContext, number[]>()
+
+/** CMP4 — the tracks this context's block was given by its row/grid, if any. */
+export function contextTracks(ctx: LayoutContext): number[] | undefined {
+  return TRACKS.get(ctx)
+}
+
 /** CMP2 — the options a context was built from (to rebuild it with another surface). */
 const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
 
@@ -393,7 +401,7 @@ export function createLayoutContext(
     resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
-    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean }): LayoutNode => {
+    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[] }): LayoutNode => {
       const newDepth = depth + 1
       // X2: the wrapper group names the child block (id + type) for exporters and the report.
       const ident = {
@@ -474,6 +482,8 @@ export function createLayoutContext(
         // `$block.style` surface is the context it already painted under the child.
         paintSurface: !!spec.style && typeof spec.style === 'object' && spec.style.surface !== undefined,
       })
+      // CMP4: the shared tracks a row/grid computed for its peer cards (`peer-tracks.ts`)
+      if (childOpts?.tracks) TRACKS.set(childCtx, childOpts.tracks)
 
       // CMP1: an authored child gets the deck style's knob defaults, as a slide-level block does
       // (generated specs are their builder's business).
@@ -498,11 +508,16 @@ export function createLayoutContext(
      * `createLayoutContext` call (not a spread) so closure-bound methods resample against the
      * new box, fixing the padding-too-wide trap recorded in B3-H6.
      */
-    withBox: (size: Size): LayoutContext =>
-      createLayoutContext({
+    withBox: (size: Size): LayoutContext => {
+      const next = createLayoutContext({
         ...options,
         box: size,
-      }),
+      })
+      // CMP4: a padded peer card keeps the tracks its row gave it
+      const tracks = TRACKS.get(ctx)
+      if (tracks) TRACKS.set(next, tracks)
+      return next
+    },
     asset: assetFn,
     resolveAsset: resolveAssetFn,
     icon: iconFn,
@@ -856,11 +871,16 @@ function layoutBlockInner(
     const height = node.box.height
     // the panel hugs the content across (plus the block's own horizontal padding): a kicker's
     // scrim is a label, not a full-width band, and an anchored block keeps its natural width
-    const [, padH] = ctx.style?.padding !== undefined ? resolvePadding(ctx.style.padding, ctx.tokens.space) : [0, 0]
+    // CMP4: and down (plus the vertical padding): a lockup packed at the top of a taller box keeps
+    // a panel its own height, so the block still has a natural size (an anchored scrimmed stack
+    // measured as filling any box it got, and fell back to the preferred 800 × 480)
+    const [padV, padH] = ctx.style?.padding !== undefined ? resolvePadding(ctx.style.padding, ctx.tokens.space) : [0, 0]
     const painted = collectPaint(node)
     const xs = [...painted.ops.map((o) => o.box), ...painted.inks.map((i) => (i.node.k === 'text' ? { ...i.box, width: Math.max(0, ...i.node.lines.map((l) => l.width)) } : i.box))]
     const x0 = xs.length ? Math.max(0, Math.min(...xs.map((bx) => bx.x)) - padH) : 0
     const x1 = xs.length ? Math.min(ctx.box.width, Math.max(...xs.map((bx) => bx.x + bx.width)) + padH) : ctx.box.width
+    const y0 = xs.length ? Math.max(0, Math.min(...xs.map((bx) => bx.y)) - padV) : 0
+    const y1 = xs.length ? Math.min(height, Math.max(...xs.map((bx) => bx.y + bx.height)) + padV) : height
     const part = node.part
     node.part = undefined
     return {
@@ -868,7 +888,7 @@ function layoutBlockInner(
       box: { x: 0, y: 0, width: ctx.box.width, height },
       part,
       children: [
-        { k: 'rect', box: { x: x0, y: 0, width: Math.max(0, x1 - x0), height }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
+        { k: 'rect', box: { x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0) }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
         node,
       ],
     }

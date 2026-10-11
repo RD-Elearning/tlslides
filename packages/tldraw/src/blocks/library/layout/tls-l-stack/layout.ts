@@ -11,6 +11,7 @@ import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../
 import type { StackProps } from './schema'
 import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
+import { contextTracks, isAuthoredContext } from '../../../layout/layout-child'
 
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -20,7 +21,9 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const sizingMode: 'equal' | 'content' = (props as unknown as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
   const children: BlockSpec[] = (props as unknown as { children?: BlockSpec[] }).children ?? []
   // CMP2: engine-internal (set by tls.l.card / tls.l.section on their `$stack`; not in the schema).
-  const pack = (props as unknown as { pack?: boolean }).pack === true
+  // CMP4: an *authored* content-sized stack packs too (a title lockup on a photo, a column of
+  // atoms): it then has a natural size, so an anchored one takes the size of its content.
+  const pack = (props as unknown as { pack?: boolean }).pack === true || (sizingMode === 'content' && isAuthoredContext(ctx))
 
   const W = ctx.box.width
   const H = ctx.box.height
@@ -53,7 +56,18 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
       }
     }
 
-    const totalIntrinsic = intrinsicSizes.reduce((sum, s) => sum + s.height, 0)
+    let totalIntrinsic = intrinsicSizes.reduce((sum, s) => sum + s.height, 0)
+    // CMP4: peer tracks (a row of cards of one structure): every child at least as tall as the
+    // tallest same-index child of its peers, so the peers' children start on shared lines.
+    const tracks = (props as unknown as { tracks?: number[] }).tracks ?? contextTracks(ctx)
+    if (pack && tracks && tracks.length === intrinsicSizes.length) {
+      const tracked = intrinsicSizes.map((s, i) => ({ height: Math.max(s.height, tracks[i] ?? 0) }))
+      const sum = tracked.reduce((a, s) => a + s.height, 0)
+      if (sum <= availableHeight) {
+        intrinsicSizes.splice(0, intrinsicSizes.length, ...tracked)
+        totalIntrinsic = sum
+      }
+    }
 
     if (pack && totalIntrinsic > 0 && totalIntrinsic <= availableHeight) {
       // CMP2: a card's / section's own stack packs content that fits at its natural heights — from

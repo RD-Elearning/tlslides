@@ -34,10 +34,12 @@ export interface AtomPaint {
   under: string
 }
 
-const GLASS_DARK = 'rgba(255,255,255,0.14)'
 const GLASS_LIGHT = 'rgba(255,255,255,0.6)'
 const GLASS_EDGE_DARK = 'rgba(255,255,255,0.38)'
 const GLASS_EDGE_LIGHT = 'rgba(255,255,255,0.95)'
+/** CMP4 — a smoked frost for a dark page where white would not read on the light one. */
+const GLASS_SMOKE_ALPHA = 0.2
+const GLASS_SMOKE = `rgba(0,0,0,${GLASS_SMOKE_ALPHA})`
 
 /** The solid colour an atom sits on: the surface behind it when solid, else the theme surface. */
 export function behindColor(ctx: LayoutContext): string {
@@ -49,6 +51,16 @@ export function behindColor(ctx: LayoutContext): string {
     if (/^#[0-9a-f]{6}$/i.test(mid)) return mid
   }
   return ctx.resolveColor('surface').color
+}
+
+/** CMP4 — the lightest colour behind (a gradient page's lightest stop; else `behindColor`). */
+function lightestBehind(ctx: LayoutContext, fallback: string): string {
+  const b = ctx.surface?.behind
+  if (b && b.type !== 'solid' && b.stops.length > 0) {
+    const hexes = b.stops.map((st) => st.color).filter((c) => /^#[0-9a-f]{6}$/i.test(c))
+    if (hexes.length) return hexes.reduce((a, c) => (lumOf(c) > lumOf(a) ? c : a))
+  }
+  return fallback
 }
 
 /** A sharp style (square tags) or a soft one (pills). */
@@ -86,11 +98,24 @@ export function atomPaint(ctx: LayoutContext, tone: AtomTone, color: string): At
   }
   if (tone === 'soft') {
     if (s?.card === 'glass') {
+      // CMP4: on a dark glass page a soft atom is a *smoked* frost (a 20 % black film) under white
+      // ink. A light frost over a mid violet card left white at 3.9–4.1:1 wherever the page's real
+      // paint (a gradient, a frosted card) is lighter than the colour this layout can see.
+      if (dark) {
+        const under = tintOf(lightestBehind(ctx, behind), '#000000', GLASS_SMOKE_ALPHA)
+        return {
+          fill: { type: 'solid', color: GLASS_SMOKE },
+          stroke: { color: GLASS_EDGE_DARK, width: 2 },
+          ink: readableOn('#FFFFFF', under),
+          under,
+        }
+      }
+      const under = tintOf(behind, '#FFFFFF', 0.6)
       return {
-        fill: { type: 'solid', color: dark ? GLASS_DARK : GLASS_LIGHT },
-        stroke: { color: dark ? GLASS_EDGE_DARK : GLASS_EDGE_LIGHT, width: 2 },
-        ink: readableOn(dark ? '#FFFFFF' : color, behind),
-        under: behind,
+        fill: { type: 'solid', color: GLASS_LIGHT },
+        stroke: { color: GLASS_EDGE_LIGHT, width: 2 },
+        ink: readableOn(color, under),
+        under,
       }
     }
     // A tint of the colour; stronger on a dark page, where a 14 % tint would vanish.

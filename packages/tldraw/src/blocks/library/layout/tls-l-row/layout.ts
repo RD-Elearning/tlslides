@@ -11,7 +11,8 @@ import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../
 import type { RowProps } from './schema'
 import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
-import { distributeSpace } from '../../../layout/layout-child'
+import { distributeSpace, isAuthoredContext } from '../../../layout/layout-child'
+import { peerTracks } from '../../../layout/peer-tracks'
 
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -77,6 +78,9 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
     }
   }
 
+  // CMP4: authored peer cards of one structure share their children's tracks (`peer-tracks.ts`)
+  const tracks = isAuthoredContext(ctx) ? peerTracks(children, sizes.map((s) => s.width), ctx, H) : undefined
+
   // Position children
   const childNodes: LayoutNode[] = []
   
@@ -88,7 +92,7 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
       width,
       height: H,
     }
-    childNodes.push(ctx.layoutChild(children[i], childBox))
+    childNodes.push(ctx.layoutChild(children[i], childBox, tracks ? { tracks } : undefined))
   }
 
   return {

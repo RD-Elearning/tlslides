@@ -112,11 +112,16 @@ function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: nu
     if (m.lines.length <= MAX_LINES && m.height + icon + iconGap <= box.height && longest <= box.width) break
     // A one-line label in a circle may use the chord across its middle band, which is wider than
     // the square inner box: a single word like "Customer" keeps its peers' type size.
-    if (kind === 'circle') {
+    // CMP4: a hexagon's middle band is wider than its inner box too (full width at the waist,
+    // narrowing to half at the flat top and bottom).
+    if (kind === 'circle' || kind === 'hexagon') {
       const one = ctx.measureText(label, style)
       const band = one.height + icon + iconGap
       const r = size.width / 2
-      const chord = band < 2 * r ? 2 * Math.sqrt(r * r - (band / 2) * (band / 2)) * 0.86 : 0
+      const chord =
+        kind === 'circle'
+          ? band < 2 * r ? 2 * Math.sqrt(r * r - (band / 2) * (band / 2)) * 0.86 : 0
+          : band < size.height ? size.width * (1 - band / (2 * size.height)) * 0.86 : 0
       if (one.lines.length <= 1 && one.width <= chord && band <= box.height) {
         pick = { token, style, h: one.height, w: Math.ceil(one.width) + 2 }
         break

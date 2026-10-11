@@ -967,8 +967,23 @@ function anchoredSize(
   if (m.elastic || m.reason?.startsWith('layout threw') || m.natural.height <= 0) {
     return { width: clampW(def.size.preferred[0]), height: clampH(def.size.preferred[1]) }
   }
-  const want = m.natural
-  let w = clampW(want.width)
+  let want = m.natural
+  let w0 = want.width
+  // CMP4: the natural height was measured at the container's width; at the narrower natural width
+  // text can re-wrap (a stack holding a display title: 2 lines at 1728, 4 at 800, since the painted
+  // width of wrapped text is its longest line and laid out at exactly that width the same text can
+  // break one word earlier). When it does, the box takes a small slack.
+  if (want.width < inner.width - FLOW_TOL) {
+    const exact = measureBlock(def, props, clampW(want.width), ctxAt({ width: clampW(want.width), height: inner.height }), { height: inner.height })
+    if (!exact.elastic && exact.natural.height > want.height + FLOW_TOL) {
+      const at = clampW(want.width * 1.02 + 4)
+      const m2 = measureBlock(def, props, at, ctxAt({ width: at, height: inner.height }), { height: inner.height })
+      // only when the slack restores the measured height (an autofit title can re-wrap at any
+      // width near its natural one: then the box keeps the old sizing rule)
+      if (!m2.elastic && m2.natural.height > 0 && m2.natural.height <= want.height + FLOW_TOL) w0 = at
+    }
+  }
+  let w = clampW(w0)
   let h = clampH(want.height)
   for (let i = 0; i < ANCHOR_FIT_PASSES; i++) {
     let b: Box | null
