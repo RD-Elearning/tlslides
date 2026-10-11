@@ -33,6 +33,7 @@ import { blockLayer } from './block-layer'
 import { collectPaint, floorOf, hexOf, inkContrast, parseInk, type Background, type InkLeaf, type PaintOp } from './layout/paint-model'
 import { relativeLuminance, rgbToHsl, solveForContrast } from './color-math'
 import { resolveBlockMotion, resolvePartMotion } from './motion/resolve-motion'
+import { cappedStagger, NESTED_PART_PRESETS } from './motion/play-reveal'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Thresholds                                                                       */
@@ -662,11 +663,18 @@ export function accentUses(blocks: DesignBlock[], tokens: ResolvedTokens): strin
   const hsl = rgbToHsl(acc.rgb)
   // an achromatic accent (a mono palette) is the ink itself: nothing to count
   if (hsl.s < 0.25 || hexOf(acc.rgb) === hexOf(text.rgb)) return []
+  // CMP4: the theme's own text inks are never accent uses, even when their hue is the accent's
+  // (consulting's navy text beside its navy accent counted every heading and body of a card row)
+  const neutral = [tokens.color.text, tokens.color.textMuted].map((c) => parseInk(c)).filter((c): c is NonNullable<typeof c> => !!c)
+  const isText = (color: string) => {
+    const c = parseInk(color)
+    return !!c && neutral.some((n) => Math.abs(n.rgb.r - c.rgb.r) + Math.abs(n.rgb.g - c.rgb.g) + Math.abs(n.rgb.b - c.rgb.b) <= 24)
+  }
   const uses = new Set<string>()
   for (const b of blocks) {
     if (!b.inspection || b.layer === 'backdrop' || b.styleOwned) continue
     const owners = b.inspection.owners
-    for (const ink of b.inspection.inks) if (ink.colors.some((c) => accentLike(c, hsl))) uses.add(owners[ink.owner ?? 0])
+    for (const ink of b.inspection.inks) if (ink.colors.some((c) => accentLike(c, hsl) && !isText(c))) uses.add(owners[ink.owner ?? 0])
     for (const op of b.inspection.ops) {
       if (op.kind === 'fill' && op.paint?.type === 'solid' && accentLike(op.paint.color, hsl)) uses.add(owners[op.owner ?? 0])
     }
@@ -743,7 +751,9 @@ function motionChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): 
         const cd = ctx.registry.get(sub.type)
         const cs = cd?.motion ? cd.motion.expressive ?? cd.motion.preset : undefined
         if (!cd || cd.kind === 'html' || !cs || cs === 'none') continue
-        if (resolvePartMotion({ preset: cs }, cd.motion).some((p) => p.presetId && SHOWY_PRESETS.has(p.presetId))) heroes.push(sub.path)
+        // CMP4: only the part presets the engine plays for a nested child (NESTED_PART_PRESETS: a
+        // card's heading never plays `words-in`, a hero number in it does count up)
+        if (resolvePartMotion({ preset: cs }, cd.motion).some((p) => p.presetId && SHOWY_PRESETS.has(p.presetId) && NESTED_PART_PRESETS.has(p.presetId))) heroes.push(sub.path)
       }
     }
     const names = partNames(b.root)
@@ -752,7 +762,8 @@ function motionChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): 
       const step = p.staggerMs ?? 0
       if (!step) continue
       const items = matchCount(names, p.partName)
-      const total = step * Math.max(0, items - 1)
+      // CMP4: what plays — the engine caps every indexed family at STAGGER_CAP_MS (CMP3)
+      const total = Math.round(cappedStagger(step, items) * Math.max(0, items - 1))
       if (!worst || total > worst.total) worst = { part: p.partName, items, step, total }
     }
     if (worst && worst.total > DESIGN_THRESHOLDS.staggerTotal) {

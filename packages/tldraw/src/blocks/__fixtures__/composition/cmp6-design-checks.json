@@ -164,6 +164,13 @@
                         "props": {
                           "text": "One short line."
                         }
+                      },
+                      {
+                        "id": "d2c2x",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "A second line of detail."
+                        }
                       }
                     ]
                   }

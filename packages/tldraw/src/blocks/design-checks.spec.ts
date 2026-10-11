@@ -75,8 +75,16 @@ describe('CMP2 design checks: positive and negative cases', () => {
   })
 
   it('layout/misaligned: one peer title wraps; equal titles do not', () => {
-    const peers = (t2: string) => row('r', [card('c1', [T('t1', 'Plan', { size: 'heading' }), B('b1', 'Short.')]), card('c2', [T('t2', t2, { size: 'heading' }), B('b2', 'Short.')]), card('c3', [T('t3', 'Ship', { size: 'heading' }), B('b3', 'Short.')])])
-    const bad = codes(report(blank('s', [peers('A much longer card title that wraps')])), 'layout/misaligned')
+    // CMP4: peer cards of one structure share their children's tracks (`peer-tracks.ts`), so the
+    // engine itself aligns them; a peer of another structure (an extra child) still drifts.
+    const peers = (t2: string, extra = false) =>
+      row('r', [
+        card('c1', [T('t1', 'Plan', { size: 'heading' }), B('b1', 'Short.')]),
+        card('c2', [T('t2', t2, { size: 'heading' }), B('b2', 'Short.'), ...(extra ? [B('b2x', 'More.')] : [])]),
+        card('c3', [T('t3', 'Ship', { size: 'heading' }), B('b3', 'Short.')]),
+      ])
+    expect(codes(report(blank('s', [peers('A much longer card title that wraps')])), 'layout/misaligned')).toHaveLength(0)
+    const bad = codes(report(blank('s', [peers('A much longer card title that wraps', true)])), 'layout/misaligned')
     expect(bad).toHaveLength(1)
     expect(bad[0].message).toMatch(/^3 of 3 card in r \(c1, c2, c3\)/)
     expect(bad[0].fix).toContain('c2')
@@ -131,7 +139,9 @@ describe('CMP2 design checks: positive and negative cases', () => {
     const heroes = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `h${i}`, type: 'tls.t.hero-number', props: { value: `${(i + 1) * 12}%` } }) as BlockSpec)
     const slide = (n: number, h: number): SlideSpec => ({ id: 's', layout: 'two-column', motionStyle: 'expressive', regions: { left: [items(n)], right: heroes(h) } })
     const bad = report(slide(12, 3))
-    expect(codes(bad, 'motion/stagger-total')).toHaveLength(1)
+    // CMP4: the check measures what plays — the engine caps every indexed family at
+    // STAGGER_CAP_MS (300 ms, CMP3), under the 400 ms threshold: 12 bullets play in 300 ms
+    expect(codes(bad, 'motion/stagger-total')).toHaveLength(0)
     expect(codes(bad, 'motion/too-many-heroes')).toHaveLength(1)
     const ok = report(slide(11, 2))
     expect(codes(ok, 'motion/stagger-total')).toHaveLength(0)
@@ -163,7 +173,7 @@ describe('CMP2 composition fixtures', () => {
       d_sizes: ['type/too-many-sizes'],
       d_accent: ['accent/overuse'],
       d_measure: ['text/long-measure'],
-      d_motion: ['motion/stagger-total', 'motion/too-many-heroes'],
+      d_motion: ['motion/too-many-heroes'],
     },
   }
   it.each(Object.keys(EXPECTED))('%s', (file) => {
