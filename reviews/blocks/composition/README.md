@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** CMP1, CMP2 done (2026-10-10); CMP3 done (2026-10-11). Next: CMP4. Resume from [§6 Progress](#6-progress).
+**Status:** CMP1, CMP2 done (2026-10-10); CMP3, CMP4 done (2026-10-11). Next: CMP5 (docs). Resume from [§6 Progress](#6-progress).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -294,6 +294,19 @@ validator rules `connector/malformed`, `connector/duplicate-id`, `connector/unre
 `cappedStagger`, `NESTED_PART_PRESETS`, `authoredChildIds`, `rememberBlockDefinition` (called by
 `BlockRegistry.register`).
 
+
+**Added by CMP4:** `SlideRecipe.compose` / `SlideRecipe.needs` (a pattern as a recipe; `regions`
+empty), `eachBlock`, `composedSlide` (recipes.ts); `CompositionPattern`, `ComposedSlide`,
+`COMPOSITION_PATTERNS`, `PATTERN_RECIPES`, `ALL_DESIGNS`, `findDesign`, `patternRecipe`,
+`patternsFor`, the pattern ids and their looks (patterns.ts, listed in the tier-1 index's
+`patterns:` lines); `prefixIds`, `DryRunOptions.patterns` (dryRun.ts); `LookCandidate.weight`,
+`PickContext.previousWeight`, `designWeight`, `DENSE_WEIGHT`, `CALM_WEIGHT` (P12 rhythm, variety.ts);
+grammar rule ids `grammar/container|depth|leaves|scope|peers|style`, `checkGrammar`,
+`validateFreeComposition`, `nearestPattern`, `GRAMMAR_*` constants (composition-grammar.ts);
+`generateCompositions`, `runRandomCompositions`, `COMPOSE_KINDS` (pipeline/composeRun.ts), CLI
+`tools/layout-report/compose-run.js`; `compositionCard`, `CapabilityDetailOptions.composition`
+(capability-digest.ts). Engine-internal: `layoutChild(…, { tracks })`, `contextTracks`,
+`peerTracks` (layout/peer-tracks.ts), `SIZED_CONTAINERS` (slide-compiler.ts).
 ---
 
 ## 4. Budgets and machine rule
@@ -351,7 +364,7 @@ or recorded as open.
 | CMP1 | ✅ 2026-10-10 | `4c7f43a4` `c327fb3e` `383b60d2` `b7a53735` `a2f6299e` + docs | [Notes — CMP1](#notes--cmp1) |
 | CMP2 | ✅ 2026-10-10 | `603c94ec` `ea701dab` `3fd665dd` `dab86d1a` `223a68df` `6c32b303` `1b34acbb` `46ac51c5` `27c6fcb1` + docs | [Notes — CMP2](#notes--cmp2) |
 | CMP3 | ✅ 2026-10-11 | `67e0f750` `51a3c927` `99c37666` `59ed922e` `26819966` `7e69b725` `06dca6fe` `13e1dece` + docs | [Notes — CMP3](#notes--cmp3): atoms, connectors, nested motion; PNGs + frame strips looked at by the lead; probe J1–J8 on 32 slide × style runs; parity green |
-| CMP4 | — | | |
+| CMP4 | ✅ 2026-10-11 | `ce3d8521` `18077c3e` `8397b28d` `b740d5ce` `b9ae8e59` `67842405` `7739424e` `83cc06aa` `605826f6` + docs | [Notes — CMP4](#notes--cmp4): 19 patterns / 41 looks, ≥ 8 designs per role per style, seeds differ 100 %, 30 dry-run decks 0 errors 0 quality findings, free composition 94 % |
 | CMP5 | — | | |
 
 ### Session log
@@ -359,10 +372,122 @@ or recorded as open.
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-11 | CMP4 (lead, main agent) | engine for composed designs (peer tracks, cards size to content, lone containers centred, anchored re-measure, surface hug, packed stacks spill), oracle alignment (nested heroes, capped stagger, text inks not accent), 19 patterns judged on contact sheets, picker integration + rhythm, grammar + fallback + random-composition run, digest `patterns:` lines + composition card, VI check | Start CMP5 (sonnet, docs) when the user says so. Read Notes — CMP4 "Open" first. |
 | 2026-10-11 | CMP3 finish (lead, main agent) | re-render + review (atoms × 10 styles, connectors × 3 styles, nested motion), frame strips, probe J1–J8, parity + library/state/components chunks, tsc, ESLint; fixes `06dca6fe` (shape label size), `13e1dece` (connector label mask) | Start CMP4 when the user says so. Work stays in the main agent (no subagents). |
 | 2026-10-10 | CMP3 (opus subagent), paused by the user | atoms (badge, marker, shape, icon disc), `Stroke.dash` + rule `dash`, connectors (spec → compiled overlay shape, route, oracle, validator, round trip, draw-on motion), nested motion + 300 ms stagger cap, bento lead tile, fixtures `connectors.json` / `nested-motion.json`; WAAPI driver fixes | Resume CMP3 from Notes — CMP3 "Resume steps". |
 | 2026-10-10 | CMP2 (opus subagent) | oracle inside compositions (sub-blocks, id paths, sibling pairs) + 10 design checks + gate; paint model + ink guard; painted `style.surface`; authored cards pack; safe inset on full-bleed; block fixes (bento, steps, comparison, image-full, html kicker/value/icon colours); fixture `cmp6-design-checks` | Start CMP3 (opus). Read Notes — CMP2 "Open" first: the guard's glass margin and the bento/steps look changes want the lead's eye. |
 | 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
+
+### Notes — CMP4
+
+**Done 2026-10-11 by the lead in the main agent** (user: no more subagents).
+
+**Engine, found while composing** (commits `ce3d8521`, `b740d5ce`):
+- **Peer tracks** (`layout/peer-tracks.ts`). A row or grid row of authored cards (or content stacks)
+  with the same child types gives each i-th child the tallest i-th child's height. Headings that
+  wrap differently no longer push bodies onto different lines. CSS-subgrid-like; `style.padding`
+  is counted.
+- **Cards size to content.** An authored card of text and atoms paints its background to its packed
+  children plus padding. Peers come out the same height. A composite's card, a card with
+  `style.align`, or a chart or photo inside keeps the box.
+- **Lone containers.** An authored `tls.l.row|grid|stack|card|split` alone in its region takes its
+  painted height, so the region's alignment centres it. Before, a card row hugged the top over an
+  empty half.
+- **Packed stacks.** An authored content stack packs. A packed stack too tall for its box spills
+  instead of squashing every child, so the compiler's fit pass grows the box and the oracle sees
+  the overflow.
+- **Painted surface.** A painted `style.surface` (scrim) hugs its content vertically too. An
+  anchored scrimmed lockup measured as elastic and got 800 × 480.
+- **Anchored boxes.** Re-measured at their own width, with a small slack when text re-wraps: a
+  display title went from 2 lines to 4 at its natural width.
+- **Atoms.**
+  - `tls.m.shape`: one-line circle and hexagon labels use the middle band, so peers keep one type
+    size.
+  - Soft atoms on dark glass are a smoked frost: white ink was 3.9:1 on the light frost.
+
+**Oracle alignment** (`18077c3e`). Nested heroes count only presets the engine plays nested
+(`NESTED_PART_PRESETS`). `motion/stagger-total` measures the capped stagger, so it never fires
+while the cap (300) is under the threshold (400). Theme text inks never count as accent
+(consulting's navy text counted every heading).
+
+**Patterns** (`patterns.ts`, `patterns.spec.ts`): 19 patterns, 41 looks.
+- cover-photo-scrim ×3, cover-type-rule ×2, cover-facts ×2
+- agenda-marker-cards ×2, agenda-split-rail ×2, agenda-flow ×2
+- section-marker ×3, section-questions ×2, section-photo-scrim ×2, section-split-numeral ×2
+- content-icon-cards ×2, content-hub ×2
+- process-marker-flow ×2
+- people-avatar-cards ×3, people-quote-portrait ×2, people-roles ×2
+- closing-next-steps ×2, closing-photo-scrim ×2, closing-contact-cards ×2
+
+Each cites its rule (P2/P13/P14/U1–U3). Every look × 10 styles is valid, with 0 oracle findings,
+the quality gate silent, a signature of its own, and depth ≤ 3.
+
+Designs per role per style (recipes + patterns, the dry run's assets) went from 1–7 to 8–25 for the
+thin roles. Cover is 9–14, agenda 9–12, section 8–13, people 9, closing 9–11.
+
+Judged by the lead on contact sheets (scratchpad `cmp4/`, one per pattern look × 10 styles). Dropped
+or reworked after looking:
+- `cover-split-photo`: `fit` chose title-size type and display broke "mid-market"; recipe
+  `cover-split-image` already does it better. Dropped.
+- Two band patterns: the gate counts text, not the band's fill, so they read 15 % sparse. Dropped.
+- The hub's hexagon look: labels stepped to two sizes in the narrow waist. Became an outline look.
+- A marker-grid agenda rail: markers shrank to 44 units. Became `tls.t.bullets size: fit`.
+- `cover-facts` hero numbers autofit unequally. Became a `tls.c.kpi-row`.
+
+**Picker.** Patterns are recipes of their role. They pass `styleAllows` on their own tree; nested
+headings are exempt from slide-title pins. Look signatures read the whole tree plus connectors. Ids
+are prefixed deep (anchorTo and connector ends follow). The dry run fills a pattern's first nested
+title and the body after it. Rhythm (P12): after a slide of weight ≥ 8, calm designs (≤ 4) come
+first.
+
+**Numbers.**
+- Dry run, 30 decks: 0 errors, 0 warnings, 0 quality findings, 5 repairs (was 10).
+- Seeds differ 100 % in every style; target ≥ 85 %.
+- Free composition, 200 × 10 styles: 94 % pass. By kind: peers 86 %, lockup 83 %, split, photo
+  and path 100 %.
+- Rejected classes (all quality, written down, not engine faults):
+  - `quality/sparse` (67): a lockup whose `fit` title chose title size.
+  - `quality/thin-region` (58): two cards without bodies.
+  - `quality/small-type` (25).
+
+  These fall back to `nearestPattern`.
+- Tier-1 index: 16,994 → 17,624. Ceiling 17k → 17.7k, a recorded decision. The per-role S2a prompt
+  is ≤ 14.7k.
+- Composition card: 2,399 ≤ 2.5k, in the detail call only.
+- Tests:
+  - tsc production 0, spec 329 (unchanged).
+  - Targeted suites green: layout library, composition-engine, design-checks, layout-anchor,
+    layout-layers, recipes, dry-run, patterns, composition-grammar, capability-digest,
+    block-metrics, conformance, the parity trio, the composite/data/text/media/diagram/chrome
+    libraries, and the 19 style fixtures through `cli.js`.
+
+**Vietnamese check.** 8 patterns × 4 styles (Inter, Playfair, Fraunces, Patrick Hand) with
+diacritic-heavy Vietnamese content: rendered and looked at, no clipped marks. 2 of 32 had
+`quality/small-type`, from a long sample title (content length, not typography).
+
+**Deliberate behaviour changes:**
+- Authored cards hug their content; peers are aligned.
+- An authored lone container is centred in its region.
+- Authored content stacks pack, and spill when too tall.
+- The scrim panel hugs vertically.
+- `motion/stagger-total` uses the capped stagger.
+- Accent counting ignores text inks.
+- The design-checks spec and the `cmp6` fixture now prove the misaligned check with peers of
+  another structure (same-structure peers are aligned by the engine).
+- `composition-engine.spec`'s card expects a content-height rect.
+- The digest snapshot gains the `patterns:` lines.
+
+**Open:**
+- `tls.t.kicker` alone on a glass page reads 3.9–4.2:1. The ink guard does not re-solve it; seen in
+  recipe `cover-kinetic` too. Patterns use a badge instead.
+- A nested `tls.c.kpi-row` with `tile: card` paints accent values on an accent tile in swiss.
+- A card with `style.padding` (rather than its `padding` prop) wraps differently in the DOM than in
+  layout. Patterns use the prop.
+- The doodle closing motif (a star) overlaps a timeline title.
+- A hero-number in a split cell sits top, not centred.
+- `fit` titles in a half column rarely reach display.
+- From the plan, not done: section-title display ×0.9 step and regenerating the showcase fixtures.
+  Both are carried to CMP5 / a follow-up.
 
 ### Notes — CMP3
 
