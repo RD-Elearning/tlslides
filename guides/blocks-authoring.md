@@ -485,6 +485,97 @@ contrast on a painted backdrop, a motif crossing text, or a wrap it measured dif
 browser (`needsVisualCheck` lists the blocks worth a look). Run only one heavy job at a time on a
 4 GB machine.
 
+### 2.12 Adding a composition pattern
+
+A **composition pattern** is a named slide design built from parts — containers, atoms, layers,
+anchors, connectors — rather than one composite block. The picker treats it like a recipe of its
+role, so every pattern you add is one more design the AI can choose. Background:
+[reviews/blocks/composition/README.md](../reviews/blocks/composition/README.md) (CMP4).
+
+1. **Add an entry to `COMPOSITION_PATTERNS`** in `packages/tldraw/src/blocks/patterns.ts`:
+   `{ id, role, layout, when, ref, looks?, needs?, build(look) → { regions, connectors? } }`.
+   - `id`: unique across recipes and patterns; `<role>-<name>`.
+   - `ref`: the rule it follows (ppt-master P2 relationship, P13 device, ui-ux-pro-max U1–U3).
+   - `looks`: other designs of the same content (`base` is implied). Each look must differ in
+     its look signature.
+   - `needs`: asset kinds (`images`, `portraits`, `logos`, `chartData`) the design cannot do
+     without.
+   - Use the file's builders (`title`, `heading`, `body`, `card`, `row`, `grid`, `stack`, `split`,
+     `image`, `link`) and its sample content. Ids only need to be unique within the slide; the
+     picker prefixes them.
+2. **Rules that keep it clean in all ten styles:**
+   - At most 3 levels (region block = 1); the grammar and `patterns.spec` check it.
+   - A card or column heading is `heading(…)`: a `tls.t.title` in the text colour, one or two
+     steps down. Never a second slide title in accent.
+   - Peers in a row or grid share one structure. The engine then aligns their children and gives
+     them one height (peer tracks); cards are as tall as their content.
+   - A lone container is centred by its region. Use `section-stack` for a type-led column clear
+     of the styles' motifs (swiss's red block, gradient's orb).
+   - Text on a photo: a stack with `layer: 'overlay'`, an `anchor`, and
+     `style: { surface: 'scrim', padding: 'xl', radius: 'md' }`.
+   - Do not force `size: 'display'` in a half column (it breaks words); use `fit`.
+   - Keep the accent budget: satellites or secondary shapes take `style: { accent: 'text' }`.
+   - On a glass page prefer a badge to a bare kicker (open contrast item, Notes — CMP4).
+3. **Check, then look:**
+   - `node tools/layout-report/pattern-check.js <id> [--out <dir>]` (validator + oracle + gate per
+     look × style; `--out` writes decks and sheet specs for a contact sheet), or the spec:
+     `jest --config jest.config.js --maxWorkers=1 src/blocks/patterns`. Every look × 10 styles
+     must be valid, with 0 oracle findings and a silent quality gate.
+   - Render a contact sheet: one page per look × 10 styles. Look at it: the gate passes things
+     that are not yet beautiful (a lockup hugging the top, tiny type in a roomy row).
+4. **Nothing else to wire:**
+   - `eligibleRecipes` picks the pattern up.
+   - The tier-1 index lists it on the role's `patterns:` line.
+   - The dry run uses it (`node tools/layout-report/dry-run.js`); re-run it and keep 0 findings.
+
+### 2.13 Adding an atom
+
+An **atom** is a small element block the LLM composes with (`tls.t.badge`, `tls.t.marker`,
+`tls.m.shape`, `tls.m.icon` `iconStyle: disc`). Add one like any block (§2.1–2.5). In addition:
+
+- **Paint.** Use `atomPaint(ctx, tone, color)` (`library/text/_engine/atom.ts`): tones
+  `solid | soft | outline`, the style's border and hard shadow (doodle, memphis), glass frost. Its
+  ink is solved on the paint as drawn.
+- **Size.** Steps `sm | md | lg`. A label keeps its size's type step and steps down only when it
+  does not fit, so peers share one size.
+- **Register** it as `aiTier: 2` in `library/ai-curation.ts`. Its name joins the index's `also:`
+  line within the 17.7k ceiling. Regenerate the size cards:
+  `node tools/layout-report/gen-block-metrics.js` (see §2.10).
+- **Composition card.** If the LLM should compose with it, name it in `compositionCard()`
+  (`capability-digest.ts`, ≤ 2.5k). The spec checks every name it mentions exists.
+- **Checks.** Run the atom's spec, `catalog-conformance`, `defaults-sweep`, `capability-digest`,
+  `block-metrics` and the parity trio. Look at it in all ten styles: the CMP3 atom sheet is the
+  model.
+
+### 2.14 Connectors
+
+A connector joins two blocks on a slide by **id**, never by coordinates:
+
+```json
+"connectors": [{ "id": "k1", "from": { "block": "c1" }, "to": { "block": "c2", "side": "left" },
+                 "route": "elbow", "head": "end", "tone": "line", "weight": "md", "dash": true, "label": "approve" }]
+```
+
+- **Endpoints.** Any block id on the slide, nested ones included (a marker inside a card).
+  - `side`: `auto` (default), `top`, `right`, `bottom` or `left`.
+  - `route`: `straight` (level when the boxes face each other), `elbow` (rounded right angles) or
+    `curved`.
+  - `head`: `end`, `both` or `none`.
+  - `tone`: `line` (recessive, solved to 3:1), `accent` or `text`.
+  - `weight`: `hairline`, `md` or `bold`.
+- **Compiling.** After layout the compiler turns each connector into one overlay
+  `tls.g.connector` shape (`connectors.ts`, `layout/connector-route.ts`). Renderers, Present,
+  motion and export need no new node kind. The decompiler returns it to `SlideSpec.connectors`.
+- **Checks.**
+  - The validator: `connector/malformed`, `connector/duplicate-id`, `connector/unresolved`.
+  - The oracle: `connector/unresolved`, `connector/crosses-text`, `connector/too-short` (also
+    when the ends overlap).
+  - Give a labelled connector at least twice the label's width between its blocks.
+- **Motion.** A connector draws on after the later of its two endpoints, over 400 ms smoothOut. A
+  dashed line grows its pattern, the head fades in at the end, and the label's mask is there from
+  the first frame. Static output (PNG, SVG, PPTX later) shows it fully drawn.
+- **Export.** One `p:cxnSp` per connector ([composition/PPTX-MAPPING.md](../reviews/blocks/composition/PPTX-MAPPING.md) §4).
+
 ## 3. FastAPI + LLM integration — how a model picks blocks
 
 The frontend never talks to the LLM. It talks to FastAPI in `DeckSpec` JSON; FastAPI owns the

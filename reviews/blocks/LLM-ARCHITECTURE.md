@@ -354,6 +354,32 @@ two-tier digest. Both tiers are generated from the live registry
   only by moving to the next design (never by cutting the headline). The dry run reaches 0
   findings on all 30 decks (3 seeds × 10 styles); `deckQuality(deck)` re-checks a finished deck.
 
+- **Composition (CMP4, [composition/README.md](composition/README.md)).** Beyond recipes, a slide
+  can take a **composition pattern** (`blocks/patterns.ts`). There are 19 patterns with 41 looks:
+  cover photo-scrim / type-rule / facts, agenda cards / rail / path, section marker / questions /
+  photo / numeral, icon cards, hub, marker flow, team cards / quote / roles, next steps / photo /
+  contacts.
+  - **In the picker.** Each pattern is a recipe of its role (`PATTERN_RECIPES`, `findDesign`). It
+    is built from containers, atoms, layers and connectors, and held to the oracle and the
+    quality gate in all ten styles (`patterns.spec.ts`). The tier-1 index lists them as one
+    `patterns: id(look|look) · …` line per role; the model names `id/look` exactly like a recipe
+    design. The variety picker offers them with the recipes. Look signatures read the whole tree
+    and the connectors. After a dense slide (design weight ≥ 8) a calm one (≤ 4) comes first
+    (`designWeight`, P12 rhythm).
+  - **Variety.** Every role now has ≥ 8 designs in every style (8–25), and seeds differ on 100 %
+    of the dry-run slides.
+  - **Free composition.** When no recipe or pattern fits the content's relationship, S2b may
+    compose: `capabilityDigest(reg, { types, composition: true })` appends the **composition
+    card** (`compositionCard()`, ≤ 2.5k, the grammar, containers, atoms with sizes, layers and
+    anchors, connector syntax, one example). The result goes through `validateFreeComposition`
+    (the validator plus `grammar/container|depth|leaves|scope|peers|style`), the oracle and the
+    quality gate.
+  - **Fallback.** A composition that fails falls back to `nearestPattern(slide, role, …)`: the
+    role's pattern sharing the most leaf types. The random-composition dry run
+    (`tools/layout-report/compose-run.js`, 200 × 10 styles) passes 94 %, and every rejection is a
+    quality verdict (sparse, thin region, small type), never an engine fault.
+  - **Budget after CMP4.** The tier-1 index is 17.6k (ceiling 17.7k, recorded). The per-role S2a
+    prompt is ≤ 14.7k. The card costs only the composing calls.
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix
@@ -518,6 +544,19 @@ rounds (next eligible recipe for the role, then a shorter headline), and it meas
 prompt per section. The logic is the pure module `packages/tldraw/src/blocks/pipeline/dryRun.ts`
 (`runDryRun`, `eligibleRecipes`, `fillSlide`, `measurePrompt`); port its shape, not its picker.
 
+**Findings added by the composition plan** (all in the same `LayoutReport` and the same repair loop;
+the design checks also feed the quality gate):
+- CMP1: `block/dropped`.
+- CMP2 design checks: `layout/misaligned`, `layout/unequal-peers`, `layout/narrow-child`,
+  `nesting/too-deep` (LLM-authored slides, ≤ 3 levels), `type/too-many-sizes`, `accent/overuse`,
+  `contrast/low` (on the real paint under the ink, photos and scrims included),
+  `text/long-measure` (info), `motion/stagger-total`, `motion/too-many-heroes`.
+- CMP3 connectors: `connector/unresolved`, `connector/crosses-text`, `connector/too-short`.
+- CMP4: the validator's `grammar/*` rules for a free composition.
+
+The fixes the messages name are concrete (which child to widen, which ink to use, which pattern
+to fall back to).
+
 ### S5 · Render and review — the critic
 
 Detailed in §5. Output: `ReviewReport` + optionally `DeckSpec` v2 (`source: 'review'`).
@@ -586,6 +625,14 @@ line) and the checks below on top of the six dimensions. They come from each sty
 | | `memphis` | At most three motifs per slide, never over text. Flat bright colours with black outlines; short punchy headlines; no tables. |
 | Corporate | `corporate` | Every chart or table has a one-line takeaway. Number formats consistent across a slide. One accent use per slide, no decoration. |
 | | `consulting` | The title is an action title: one full sentence that states the insight. A source on every data slide. One message per slide. |
+
+**Composition lines (CMP4).** Alignment, equal peers, contrast and stagger are gated before the
+critic sees a slide (S4.1), so the critic judges what geometry cannot:
+- **balance**: does a centred group sit where the eye expects, and is a photo lockup clear of
+  the subject?
+- **peer weight**: does one card shout over the others without a reason?
+- **rhythm across slides**: dense and calm alternate, and no two neighbours share a design
+  (the picker's signatures and `designWeight` make this the default; the critic flags what slipped).
 
 Plus a **deck-level** pass on the contact sheet (all slides as a grid): rhythm, repetition,
 whether the story arc matches the profile's structure, whether the opening and closing carry
@@ -660,6 +707,8 @@ Ordered by how much they change output quality per unit of effort.
 4. **Give the model roles and presets, never numbers.** No coordinates (ban `free[]` in the
    prompt *and* strip it in the backend), no hex, no milliseconds. This is what makes the output
    theme-switchable and editable.
+   CMP4 keeps the ban: composition goes through regions, containers, layers, anchors and
+   connectors **by block id**, never through `free[]` or a coordinate (`composition-grammar.ts`).
 5. **Findings are the repair prompt.** `DeckFinding.message` is already written for the model;
    send the array, ask for replacements by key. Do not paraphrase findings into prose.
 6. **Patch, don't regenerate.** Revision and repair return replacement slides by id. Keeps the

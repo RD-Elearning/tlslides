@@ -33,7 +33,7 @@ motion, Present) by one subagent per group G01–G11; resume from its §6 Progre
 (B1–B7 — nested HTML blocks, container children, padding/align, element toggles,
 `defineCompositeBlock`, inspector, block gallery); one detail file per task.
 
-**Composition plan (2026-10-10): [reviews/blocks/composition/README.md](reviews/blocks/composition/README.md)** — the LLM composes many designs from containers, atoms, layers and connectors; CMP1–CMP5 (engine correctness + export-ready contract, oracle inside compositions incl. contrast, atoms/connectors/nested motion, composition patterns + grammar + picker, docs); factual base [SURVEY.md](reviews/blocks/composition/SURVEY.md); resume from its §6 Progress. PPTX exporter deferred, code stays export-ready.
+**Composition plan (2026-10-10): [reviews/blocks/composition/README.md](reviews/blocks/composition/README.md)** — the LLM composes many designs from containers, atoms, layers and connectors; CMP1–CMP5 (engine correctness + export-ready contract, oracle inside compositions incl. contrast, atoms/connectors/nested motion, composition patterns + grammar + picker, docs); factual base [SURVEY.md](reviews/blocks/composition/SURVEY.md); all five phases done (2026-10-11); readiness report in its §5.1, PPTX route in [composition/PPTX-MAPPING.md](reviews/blocks/composition/PPTX-MAPPING.md). PPTX exporter deferred, code stays export-ready. Next is the FastAPI/LLM service — only when the owner says so.
 
 The visual-fidelity slice has been attempted twice and is on its third plan. The **current work
 list is [reviews/blocks/BACKLOG-visual-fix-2.md](reviews/blocks/BACKLOG-visual-fix-2.md)**

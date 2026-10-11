@@ -1,7 +1,7 @@
 # Composition — the LLM composes many good-looking slides from existing blocks
 
 **Date:** 2026-10-10 · **Branch:** `plan/block-system` · **Against commit:** `23673e8e` (survey)
-**Status:** CMP1, CMP2 done (2026-10-10); CMP3, CMP4 done (2026-10-11). Next: CMP5 (docs). Resume from [§6 Progress](#6-progress).
+**Status:** all five phases done (CMP1–CMP2 2026-10-10, CMP3–CMP5 2026-10-11). Readiness report: §5. Next: the FastAPI / LLM service, when the owner says so. PPTX mapping: [PPTX-MAPPING.md](PPTX-MAPPING.md).
 **Factual base:** [SURVEY.md](SURVEY.md). Every finding id below (F1–F12, X1–X12, P/T/U rules,
 D1–D14) points into it. Read it before any phase.
 
@@ -354,6 +354,39 @@ or recorded as open.
 10. **Vietnamese typography check:** diacritics, line height and width tables on the composition
     sheets (AC3 fixture extended). CMP4.
 
+
+### 5.1 Readiness report (CMP5, 2026-10-11)
+
+Each item was checked against the tree. **Verdict: ready to start LLM content generation.** The
+open items below are named and none blocks a first deck; each would show up as a gate finding, not
+as a silent defect.
+
+| # | Item | State | Evidence |
+|---|---|---|---|
+| 1 | Contrast and text over images are gated | ✅ (one open case) | `contrast/low` on the real paint (`design-checks.ts`, `layout/paint-model.ts`); ink guard (`layout/ink-guard.ts`); the photo-scrim patterns are clean in 10 styles (`patterns.spec`). Open: a bare `tls.t.kicker` on a glass page is 3.9–4.2:1, so patterns use a badge. |
+| 2 | Alignment and equal peers are gated, and done by the engine | ✅ | `layout/misaligned`, `layout/unequal-peers` (CMP2). Peer tracks and content-height cards (CMP4) align same-structure peers. The `cmp6` fixture proves the check on a different structure. |
+| 3 | Measure cap and type-size count | ✅ | `text/long-measure` (info), `type/too-many-sizes` (≤ 5), `layout/narrow-child` (CMP2), all in the gate. |
+| 4 | Honest digest | ✅ | CMP1 dropped the dead style fields from the digest. `compositionCard` names only registered blocks (spec). Patterns appear in the index only after `patterns.spec` holds them clean in every style. The grammar names only the fields the engine reads. |
+| 5 | Variety with patterns | ✅ | ≥ 8 designs per role per style (8–25, `patterns.spec`). Seeds differ on 100 % of the dry-run slides (target ≥ 85 %). 30 dry-run decks: 0 errors, 0 warnings, 0 quality findings (`dry-run.spec`). |
+| 6 | Every pattern × style judged by eye | ✅ | Contact sheets of all 41 looks × 10 styles, judged by the lead (Notes — CMP4). Three designs were dropped and five reworked. `tools/layout-report/pattern-check.js --out` writes the decks again. |
+| 7 | Static export shows real blocks | ✅ | Default `blocks` export in `Deck.getThumbnail` / `exportSlidePng` (CMP1); `cli.js --tree` dumps the laid-out tree. PPTX route and mapping: [PPTX-MAPPING.md](PPTX-MAPPING.md). |
+| 8 | Motion | ✅ | Connectors draw after their later endpoint, count-up plays inside cards, and every stagger family is capped at 300 ms. Frame strips and probe J1–J8 on 32 runs are in Notes — CMP3. |
+| 9 | Golden briefs | ✅ | `__fixtures__/golden-briefs.json`: 10 briefs (5 VI, 5 EN), all 8 profiles. `golden-briefs.spec` checks the data and that every role each brief needs has ≥ 2 designs in its style with its assets. |
+| 10 | Vietnamese typography | ✅ | 8 patterns × 4 styles with diacritic-heavy content, rendered and looked at: no clipped marks (Notes — CMP4). Glyph widths are already calibrated for Be Vietnam Pro and the other families (layout-oracle LO5/LO6). |
+
+**Open items carried to the FastAPI phase or a follow-up** (none blocks):
+- (a) `tls.t.kicker` alone on glass: contrast 3.9–4.2:1. The ink guard should re-solve it.
+- (b) A nested `tls.c.kpi-row` with `tile: card` in swiss puts accent values on an accent tile.
+- (c) A card with `style.padding` wraps differently in the DOM than in layout; use the card's
+  `padding` prop.
+- (d) The doodle closing motif overlaps a timeline title.
+- (e) A hero-number in a split cell sits at the top.
+- (f) `fit` titles in a half column rarely reach display.
+- (g) `section-title` is thin in gradient, editorial, swiss and memphis (the picker repairs it to a
+  section pattern). Its display ×0.9 step and the style showcase fixtures are still to do.
+- (h) The free-composition rejections (sparse lockups, thin two-card rows) are quality verdicts by
+  design; the S2b card already steers away from them.
+
 ---
 
 ## 6. Progress
@@ -365,18 +398,46 @@ or recorded as open.
 | CMP2 | ✅ 2026-10-10 | `603c94ec` `ea701dab` `3fd665dd` `dab86d1a` `223a68df` `6c32b303` `1b34acbb` `46ac51c5` `27c6fcb1` + docs | [Notes — CMP2](#notes--cmp2) |
 | CMP3 | ✅ 2026-10-11 | `67e0f750` `51a3c927` `99c37666` `59ed922e` `26819966` `7e69b725` `06dca6fe` `13e1dece` + docs | [Notes — CMP3](#notes--cmp3): atoms, connectors, nested motion; PNGs + frame strips looked at by the lead; probe J1–J8 on 32 slide × style runs; parity green |
 | CMP4 | ✅ 2026-10-11 | `ce3d8521` `18077c3e` `8397b28d` `b740d5ce` `b9ae8e59` `67842405` `7739424e` `83cc06aa` `605826f6` + docs | [Notes — CMP4](#notes--cmp4): 19 patterns / 41 looks, ≥ 8 designs per role per style, seeds differ 100 %, 30 dry-run decks 0 errors 0 quality findings, free composition 94 % |
-| CMP5 | — | | |
+| CMP5 | ✅ 2026-10-11 | docs commit (this one) | [Notes — CMP5](#notes--cmp5): LLM-ARCHITECTURE (S2 composition, S4.1 findings, S5 composition lines, §6 ban kept), [PPTX-MAPPING.md](PPTX-MAPPING.md), blocks-authoring §2.12–2.14, `pattern-check.js`, golden briefs + spec, readiness report §5.1 |
 
 ### Session log
 
 | Date | Session | Moved | Notes for next session |
 |---|---|---|---|
 | 2026-10-10 | survey + plan | SURVEY.md; this plan | Start CMP1 (opus). Read SURVEY §0 and §A first. |
+| 2026-10-11 | CMP5 (lead, main agent) | docs and hand-off: LLM-ARCHITECTURE, PPTX mapping, authoring guide, pattern-check CLI, golden briefs, readiness report | The composition plan is complete. Next: the FastAPI / LLM service, only when the owner says so (memory: FastAPI waits for review). |
 | 2026-10-11 | CMP4 (lead, main agent) | engine for composed designs (peer tracks, cards size to content, lone containers centred, anchored re-measure, surface hug, packed stacks spill), oracle alignment (nested heroes, capped stagger, text inks not accent), 19 patterns judged on contact sheets, picker integration + rhythm, grammar + fallback + random-composition run, digest `patterns:` lines + composition card, VI check | Start CMP5 (sonnet, docs) when the user says so. Read Notes — CMP4 "Open" first. |
 | 2026-10-11 | CMP3 finish (lead, main agent) | re-render + review (atoms × 10 styles, connectors × 3 styles, nested motion), frame strips, probe J1–J8, parity + library/state/components chunks, tsc, ESLint; fixes `06dca6fe` (shape label size), `13e1dece` (connector label mask) | Start CMP4 when the user says so. Work stays in the main agent (no subagents). |
 | 2026-10-10 | CMP3 (opus subagent), paused by the user | atoms (badge, marker, shape, icon disc), `Stroke.dash` + rule `dash`, connectors (spec → compiled overlay shape, route, oracle, validator, round trip, draw-on motion), nested motion + 300 ms stagger cap, bento lead tile, fixtures `connectors.json` / `nested-motion.json`; WAAPI driver fixes | Resume CMP3 from Notes — CMP3 "Resume steps". |
 | 2026-10-10 | CMP2 (opus subagent) | oracle inside compositions (sub-blocks, id paths, sibling pairs) + 10 design checks + gate; paint model + ink guard; painted `style.surface`; authored cards pack; safe inset on full-bleed; block fixes (bento, steps, comparison, image-full, html kicker/value/icon colours); fixture `cmp6-design-checks` | Start CMP3 (opus). Read Notes — CMP2 "Open" first: the guard's glass margin and the bento/steps look changes want the lead's eye. |
 | 2026-10-10 | CMP1 (opus subagent) | engine: nested style, surface pass-down, one depth limit + `block/dropped`, style knob defaults nested, honest style fields, overlay anchors/layers, nested `anchorTo`, `bleed`, `overImage`; export contract X1/X2/X3/X5/X6 + default `blocks` export + `cli.js --tree`; fixtures `__fixtures__/composition/cmp1–cmp5`; parity probes | Start CMP2 (opus). Read Notes — CMP1 "Open for CMP2" first: the contrast cases it lists are real and visible on the fixture PNGs. |
+
+### Notes — CMP5
+
+Done by the lead in the main agent (the plan said sonnet; the owner asked for no subagents).
+
+- **`LLM-ARCHITECTURE.md`**
+  - S2 gains a "Composition (CMP4)" bullet: patterns in the picker and the index, variety numbers,
+    free composition through the card, the grammar and `validateFreeComposition`,
+    `nearestPattern` fallback, the random-composition pass rate, the budget.
+  - S4.1 lists every finding the plan added.
+  - S5 gains composition lines for the critic: balance, peer weight, rhythm across slides.
+  - §6 rule 4 keeps the `free[]` and coordinate ban.
+- **[PPTX-MAPPING.md](PPTX-MAPPING.md)**
+  - Node kind → DrawingML with fidelity (stable / approximate / bake).
+  - Paints, composition parts (atoms, connectors as `p:cxnSp` with snap indices).
+  - Motion preset → PowerPoint entrance; fonts, images, notes.
+  - What the exporter must test.
+  - The route stays FastAPI + `python-pptx` on the `cli.js --tree` dump.
+- **`guides/blocks-authoring.md`**
+  - §2.12 adding a composition pattern: rules learned on the contact sheets, the check loop.
+  - §2.13 adding an atom.
+  - §2.14 connectors.
+  - New CLI `tools/layout-report/pattern-check.js [<id>] [--out <dir>]` (410/410 clean).
+- **Golden briefs**: `packages/tldraw/src/blocks/__fixtures__/golden-briefs.json` with
+  `golden-briefs.spec.ts` (3 tests).
+- **Readiness report**: §5.1, all ten items ✅ with evidence, open items (a)–(h).
+- tsc production 0, spec 329 (unchanged).
 
 ### Notes — CMP4
 
