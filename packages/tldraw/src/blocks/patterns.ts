@@ -129,24 +129,6 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     },
   },
   {
-    id: 'cover-split-photo',
-    role: 'cover',
-    layout: 'blank',
-    when: 'opener beside a photo',
-    ref: 'P2 image-text split, U1 hero split 55/45',
-    looks: ['mirror'],
-    needs: ['images'],
-    build(look) {
-      const text = stack('lockup', [
-        blk('badge', 'tls.t.badge', { text: 'Quarterly review', tone: 'soft' }),
-        title('Expanding into mid-market teams', { size: 'fit' }),
-        body('sub', 'A focused plan for the 200 to 2,000 employee segment', { size: 'lead' }),
-      ], { gap: 'lg' })
-      const photo = image('photo', '/demo/photo-1.svg', 'Team meeting in a bright office')
-      return { regions: { content: [split('split', look === 'mirror' ? 0.5 : 0.52, look === 'mirror' ? [photo, text] : [text, photo], { gutter: '3xl' })] } }
-    },
-  },
-  {
     id: 'cover-type-rule',
     role: 'cover',
     layout: 'section-stack',
@@ -167,6 +149,35 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     },
   },
 
+  {
+    id: 'cover-facts',
+    role: 'cover',
+    // the 1200-wide column clear of the cover motifs (swiss's red block, gradient's orb)
+    layout: 'section-stack',
+    when: 'opener with the three numbers that frame it',
+    ref: 'P2 evidence under the claim; U3 type ratio (the style\'s own title size)',
+    looks: ['plain'],
+    build(look) {
+      return {
+        regions: {
+          content: [
+            // one content-sized lockup (its region centres it)
+            stack('lockup', [
+              blk('label', 'tls.t.badge', { text: 'Quarterly review', tone: 'soft' }),
+              title('Expanding into mid-market teams', { rule: true }),
+              // the numbers as a KPI row (the composite aligns values and labels and counts up once)
+              blk('facts', 'tls.c.kpi-row', { tiles: [
+                { value: 40, label: 'Teams interviewed', format: 'plain' },
+                { value: 3, label: 'Times the pipeline, two quarters', format: 'plain' },
+                { value: 118, label: 'Net retention, percent', format: 'plain' },
+              ], tile: look === 'plain' ? 'plain' : 'accent-bar', gap: 'lg' }),
+            ], { gap: 'xl' }),
+          ],
+        },
+      }
+    },
+  },
+
   // ── agenda ──
   {
     id: 'agenda-marker-cards',
@@ -176,8 +187,14 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     ref: 'P2 parallel sequence; P13 numbered markers',
     looks: ['row'],
     build(look) {
+      // the 2 × 2 grid has room for a step more type than four cards in a row
+      const roomy = look !== 'row'
       const cards = AGENDA.map((a, i) =>
-        card(`c${i + 1}`, [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: i === 0 ? 'solid' : 'soft' }), heading(`h${i + 1}`, a.head), body(`b${i + 1}`, a.text)])
+        card(`c${i + 1}`, [
+          blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: i === 0 ? 'solid' : 'soft' }),
+          heading(`h${i + 1}`, a.head, roomy ? 'heading' : 'subheading'),
+          body(`b${i + 1}`, a.text, roomy ? { size: 'lead' } : {}),
+        ])
       )
       return { regions: { title: [title('Agenda')], timeline: [look === 'row' ? row('cards', cards, { gap: 'lg' }) : grid('cards', 2, 2, cards, { gap: 'lg' })] } }
     },
@@ -188,17 +205,35 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     layout: 'blank',
     when: 'agenda beside a big label',
     ref: 'P2 focal column 4:6; P13 numbered markers',
-    looks: ['numerals'],
+    looks: ['chevron'],
     build(look) {
-      const left = look === 'numerals'
-        ? title('Agenda', { size: 'display' })
-        : stack('lead', [title('Agenda', { size: 'display' }), body('lede', 'Four questions, forty minutes', { size: 'lead' })], { gap: 'md' })
-      // marker | heading pairs in a two-column grid sized to content (depth 3: split > grid > atom)
-      const cells = AGENDA.flatMap((a, i) => [
-        blk(`m${i + 1}`, 'tls.t.marker', look === 'numerals' ? { value: `0${i + 1}`, variant: 'numeral', size: 'sm' } : { value: String(i + 1), tone: 'soft', size: 'sm' }),
-        heading(`h${i + 1}`, a.head, 'heading'),
-      ])
-      return { regions: { content: [split('split', 0.38, [left, grid('rail', 2, AGENDA.length, cells, { sizing: 'content', gap: 'xl' })], { gutter: '4xl' })] } }
+      // both columns centred on the slide's height (the list's `fit` type fills its column)
+      const left = stack('lead', [title('Agenda', { size: 'display' }), body('lede', 'Four questions, forty minutes', { size: 'lead' })], { gap: 'md' }, { style: { align: 'center' } })
+      // a numbered list that sizes its type to the column (`size: fit`), markers on its lines
+      const list = blk('list', 'tls.t.bullets', { items: AGENDA.map((a) => ({ text: a.head })), marker: look === 'chevron' ? 'chevron' : 'number', size: 'fit', spacing: 'lg' }, { style: { align: 'center' } })
+      return { regions: { content: [split('split', 0.4, [left, list], { gutter: '4xl' })] } }
+    },
+  },
+
+  {
+    id: 'agenda-flow',
+    role: 'agenda',
+    layout: 'timeline',
+    when: 'four agenda items as a path',
+    ref: 'P2 parallel sequence; P14 flow line',
+    looks: ['shapes'],
+    build(look) {
+      const steps = AGENDA.map((a, i) =>
+        stack(`c${i + 1}`, [
+          look === 'shapes'
+            ? blk(`m${i + 1}`, 'tls.m.shape', { label: String(i + 1), shape: 'circle', tone: i === 0 ? 'solid' : 'soft', size: 'sm' })
+            : blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: i === 0 ? 'solid' : 'outline', size: 'lg' }),
+          heading(`h${i + 1}`, a.head),
+          body(`b${i + 1}`, a.text),
+        ], { gap: 'md' })
+      )
+      const connectors = steps.slice(1).map((_, i) => link(`k${i + 1}`, `m${i + 1}`, `m${i + 2}`, { dash: true, head: 'none' }))
+      return { regions: { title: [title('Agenda')], timeline: [row('path', steps, { gap: '2xl' })] }, connectors }
     },
   },
 
@@ -209,14 +244,33 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     layout: 'section-stack',
     when: 'section break with its number',
     ref: 'P13 oversized numeral; U3 type ratio',
-    looks: ['disc'],
+    looks: ['disc', 'style'],
     build(look) {
       return {
         regions: {
           content: [
             blk('num', 'tls.t.marker', { value: '02', variant: look === 'disc' ? 'circle' : 'numeral', size: 'lg', tone: 'solid' }),
-            title('Why mid-market, why now', { size: 'display' }),
+            title('Why mid-market, why now', look === 'style' ? {} : { size: 'display' }),
             body('sub', 'The segment is under-served and ready to buy', { size: 'subheading' }),
+          ],
+        },
+      }
+    },
+  },
+  {
+    id: 'section-questions',
+    role: 'section',
+    layout: 'section-stack',
+    when: 'section break with the questions it answers',
+    ref: 'P2 focal column; the style\'s own title size',
+    looks: ['chevron'],
+    build(look) {
+      return {
+        regions: {
+          content: [
+            blk('label', 'tls.t.badge', { text: 'Part two', tone: 'soft' }),
+            title('Why mid-market, why now', { rule: true }),
+            blk('qs', 'tls.t.bullets', { items: [{ text: 'Who buys, and how fast?' }, { text: 'What do they use today?' }, { text: 'Where do we win?' }], marker: look === 'chevron' ? 'chevron' : 'number', size: 'fit', spacing: 'md' }),
           ],
         },
       }
@@ -256,9 +310,15 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     looks: ['three'],
     build(look) {
       const n = look === 'three' ? 3 : 4
+      // three cards have room for a step more type (U3: card heading ≥ 1.4× its body)
+      const roomy = n === 3
       const cards = POINTS.slice(0, n).map((p, i) =>
-        card(`c${i + 1}`, [blk(`i${i + 1}`, 'tls.m.icon', { icon: p.icon, size: 'md', iconStyle: 'disc' }), heading(`h${i + 1}`, p.head), body(`b${i + 1}`, p.text)])
-      )
+        card(`c${i + 1}`, [
+          blk(`i${i + 1}`, 'tls.m.icon', { icon: p.icon, size: 'lg', iconStyle: 'disc' }),
+          heading(`h${i + 1}`, p.head, roomy ? 'heading' : 'subheading'),
+          body(`b${i + 1}`, p.text, roomy ? { size: 'lead' } : {}),
+        ])
+      ).map((c) => (roomy ? { ...c, props: { ...c.props, padding: 'xl' } } : c))
       return { regions: { title: [title('What mid-market teams need')], timeline: [row('cards', cards, { gap: 'lg' })] } }
     },
   },
@@ -304,7 +364,10 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     looks: ['four'],
     build(look) {
       const n = look === 'four' ? 4 : 3
-      const cards = STEPS.slice(0, n).map((s, i) => card(`c${i + 1}`, [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1) }), heading(`h${i + 1}`, s.head), body(`b${i + 1}`, s.text)]))
+      const roomy = n === 3
+      const cards = STEPS.slice(0, n).map((s, i) =>
+        card(`c${i + 1}`, [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1) }), heading(`h${i + 1}`, s.head, roomy ? 'heading' : 'subheading'), body(`b${i + 1}`, s.text, roomy ? { size: 'lead' } : {})])
+      )
       const connectors = cards.slice(1).map((c, i) => link(`k${i + 1}`, cards[i].id, c.id))
       return { regions: { title: [title('A phased rollout')], timeline: [row('steps', cards, { gap: '3xl' })] }, connectors }
     },
@@ -317,11 +380,14 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
     layout: 'timeline',
     when: '3–4 people with their roles',
     ref: 'P2 parallel; U1 team row',
-    looks: ['three'],
+    looks: ['three', 'plain'],
     needs: ['portraits'],
     build(look) {
       const n = look === 'three' ? 3 : 4
-      const cards = PEOPLE.slice(0, n).map((p, i) => card(`c${i + 1}`, [blk(`a${i + 1}`, 'tls.m.avatar', { ...p, size: 'lg', layout: 'stacked', align: 'center' })]))
+      // four in a row keep `lg` (an `xl` name truncated in the narrower column)
+      const avatar = (p: (typeof PEOPLE)[number], i: number) => blk(`a${i + 1}`, 'tls.m.avatar', { ...p, size: n === 3 ? 'xl' : 'lg', layout: 'stacked', align: 'center' })
+      // `plain`: the people on the page, no cards (a calmer team row)
+      const cards = PEOPLE.slice(0, n).map((p, i) => (look === 'plain' ? avatar(p, i) : card(`c${i + 1}`, [avatar(p, i)])))
       return { regions: { title: [title('The team behind the launch')], timeline: [row('people', cards, { gap: 'lg' })] } }
     },
   },
@@ -355,7 +421,7 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
         { head: 'Review in six weeks', text: 'One scorecard, shared with this group.' },
       ]
       const one = (it: { head: string; text: string }, i: number) => {
-        const kids = [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: i === 0 ? 'solid' : 'soft' }), heading(`h${i + 1}`, it.head), body(`b${i + 1}`, it.text)]
+        const kids = [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: i === 0 ? 'solid' : 'soft' }), heading(`h${i + 1}`, it.head, 'heading'), body(`b${i + 1}`, it.text, { size: 'lead' })]
         return look === 'plain' ? stack(`c${i + 1}`, kids, { gap: 'sm' }) : card(`c${i + 1}`, kids)
       }
       return { regions: { title: [title('Thank you — next steps')], timeline: [row('steps', items.map(one), { gap: 'xl' })] } }
@@ -382,6 +448,67 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
           ],
         },
       }
+    },
+  },
+
+  // ── more for the thin roles (a style's own title size, no forced display type) ──
+  {
+    id: 'section-split-numeral',
+    role: 'section',
+    layout: 'blank',
+    when: 'section break, its number beside the title',
+    ref: 'P13 oversized numeral; P2 focal column',
+    looks: ['rule'],
+    build(look) {
+      return {
+        regions: {
+          content: [
+            // the text on the left, the numeral where a style's motif sits (top right on gradient/glass)
+            split('split', 0.68, [
+              stack('text', [title('Why mid-market, why now', look === 'rule' ? { rule: true } : {}), body('sub', 'The segment is under-served and ready to buy', { size: 'lead' })], { gap: 'lg' }, { style: { align: 'center' } }),
+              blk('num', 'tls.t.marker', { value: '02', variant: 'numeral', size: 'lg' }),
+            ], { gutter: '3xl' }),
+          ],
+        },
+      }
+    },
+  },
+  {
+    id: 'closing-contact-cards',
+    role: 'closing',
+    layout: 'timeline',
+    when: 'thanks and how to reach us',
+    ref: 'U1 CTA closing; P13 icon disc',
+    looks: ['plain'],
+    build(look) {
+      const items = [
+        { icon: 'mail', head: 'hello@pulse.example', text: 'Questions and the pilot plan' },
+        { icon: 'calendar', head: 'Review on 12 May', text: 'Leadership check-in, 30 minutes' },
+        { icon: 'users', head: 'Two design partners', text: 'Introductions welcome' },
+      ]
+      const one = (it: { icon: string; head: string; text: string }, i: number) => {
+        const kids = [blk(`i${i + 1}`, 'tls.m.icon', { icon: it.icon, size: 'lg', iconStyle: 'disc' }), heading(`h${i + 1}`, it.head), body(`b${i + 1}`, it.text, { size: 'lead' })]
+        return look === 'plain' ? stack(`c${i + 1}`, kids, { gap: 'sm' }) : card(`c${i + 1}`, kids)
+      }
+      return { regions: { title: [title('Thank you')], timeline: [row('contacts', items.map(one), { gap: 'xl' })] } }
+    },
+  },
+  {
+    id: 'people-roles',
+    role: 'people',
+    layout: 'timeline',
+    when: 'the roles of a team, no portraits needed',
+    ref: 'P2 parallel; P13 icon disc',
+    looks: ['grid'],
+    build(look) {
+      const roles = [
+        { icon: 'layers', head: 'Product', text: 'Owns the roadmap and the pilot scorecard.' },
+        { icon: 'database', head: 'Data', text: 'Builds the shared metric layer.' },
+        { icon: 'message', head: 'Customer success', text: 'Runs onboarding for every account.' },
+        { icon: 'pencil', head: 'Design', text: 'Makes the guided questions feel simple.' },
+      ]
+      const cards = roles.map((r, i) => card(`c${i + 1}`, [blk(`i${i + 1}`, 'tls.m.icon', { icon: r.icon, size: 'lg', iconStyle: 'disc' }), heading(`h${i + 1}`, r.head, look === 'grid' ? 'heading' : 'subheading'), body(`b${i + 1}`, r.text, look === 'grid' ? { size: 'lead' } : {})]))
+      return { regions: { title: [title('One squad, four disciplines')], timeline: [look === 'grid' ? grid('roles', 2, 2, cards, { gap: 'lg' }) : row('roles', cards, { gap: 'lg' })] } }
     },
   },
 ]

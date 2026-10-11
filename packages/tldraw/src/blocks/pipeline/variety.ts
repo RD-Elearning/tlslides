@@ -114,7 +114,12 @@ function designKnobs(recipe: SlideRecipe, variant: string): Array<[string, Recor
   if (recipe.compose) {
     // CMP4: every block of the pattern's tree with the props it sets (a style that pins a knob to
     // another value rules the look out, as for a recipe)
+    // A nested `tls.t.title` is a card or column heading, not the slide title a style's title
+    // knobs are about (consulting pins the slide title to `heading`): only region-level titles
+    // are held to them.
+    const top = new Set(Object.values(composedSlide(recipe, v?.id ?? BASE_VARIANT).regions).flat().map((b) => b.id))
     eachBlock(composedSlide(recipe, v?.id ?? BASE_VARIANT).regions, (b) => {
+      if (b.type === 'tls.t.title' && !top.has(b.id)) return
       const { children: _kids, ...props } = (b.props ?? {}) as Record<string, unknown>
       void _kids
       out.push([b.type, props])
