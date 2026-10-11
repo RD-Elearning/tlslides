@@ -61,15 +61,16 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
     // tallest same-index child of its peers, so the peers' children start on shared lines.
     const tracks = (props as unknown as { tracks?: number[] }).tracks ?? contextTracks(ctx)
     if (pack && tracks && tracks.length === intrinsicSizes.length) {
+      // (a packed stack spills rather than squashes, so the tracks always hold)
       const tracked = intrinsicSizes.map((s, i) => ({ height: Math.max(s.height, tracks[i] ?? 0) }))
-      const sum = tracked.reduce((a, s) => a + s.height, 0)
-      if (sum <= availableHeight) {
-        intrinsicSizes.splice(0, intrinsicSizes.length, ...tracked)
-        totalIntrinsic = sum
-      }
+      intrinsicSizes.splice(0, intrinsicSizes.length, ...tracked)
+      totalIntrinsic = tracked.reduce((a, s) => a + s.height, 0)
     }
 
-    if (pack && totalIntrinsic > 0 && totalIntrinsic <= availableHeight) {
+    // CMP4: a packed stack (authored, or an authored card's own) whose content is taller than its
+    // box keeps its natural heights and spills (the oracle reports it, the compiler's fit pass grows the box) instead of
+    // squashing every child (text clipped in boxes smaller than its lines, reported nowhere).
+    if (pack && totalIntrinsic > 0 && (totalIntrinsic <= availableHeight || pack)) {
       // CMP2: a card's / section's own stack packs content that fits at its natural heights — from
       // the top, or centred / at the end per `style.align` — instead of scaling it up to fill: a
       // card holding an icon, a number and a body no longer opens voids between them (composition

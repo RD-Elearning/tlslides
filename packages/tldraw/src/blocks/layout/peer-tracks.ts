@@ -24,10 +24,14 @@ const kidsOf = (spec: BlockSpec): BlockSpec[] => {
 
 /** The width a peer's children get: a card's content box (its padding prop, default `md`). */
 function innerWidth(spec: BlockSpec, width: number, ctx: LayoutContext): number {
-  if (spec.type !== 'tls.l.card') return width
+  // an authored `style.padding` insets the block first (`layoutBlock`), then a card its own padding
+  const sp = spec.style?.padding
+  const styleH = sp === undefined ? 0 : typeof sp === 'number' ? sp : Array.isArray(sp) ? sp[1] : ctx.tokens.space[sp] ?? 0
+  const inner = Math.max(1, width - 2 * styleH)
+  if (spec.type !== 'tls.l.card') return inner
   const token = ((spec.props as { padding?: SpaceToken } | undefined)?.padding ?? 'md') as SpaceToken
   const pad = ctx.tokens.space[token] ?? ctx.tokens.space.md
-  return Math.max(1, width - 2 * pad)
+  return Math.max(1, inner - 2 * pad)
 }
 
 /**

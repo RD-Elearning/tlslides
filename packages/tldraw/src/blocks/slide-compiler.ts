@@ -527,7 +527,35 @@ function measureRegionBlocks(
       return -1
     }
   })
-  if (blocks.length < 2) return roots
+  if (blocks.length < 2) {
+    // CMP4: an authored container alone in its region (a row of cards, a grid of atoms) whose
+    // content does not fill the region takes its painted height, so the region's alignment places
+    // it (a card row centred under the title, not hugging the top over an empty half).
+    const only = blocks[0]
+    if (only && roots[0] > 0 && SIZED_CONTAINERS.has(only.type)) {
+      const def = registry.get(only.type)!
+      const ctx = ctxFor(only)
+      const props = only.props as Record<string, unknown>
+      const m = measureBlock(def, props, regionBox.width, ctx, { height: regionBox.height })
+      if (!m.elastic && !m.reason && m.natural.height > 0 && m.natural.height < roots[0] - FLOW_TOL) {
+        // what the container paints at the region's size, its cards' own fills included (a card
+        // that hugs its content paints a rect `measureBlock` sets aside as a backdrop)
+        let bottom = 0
+        try {
+          const c = collectPaintedLeaves(layoutBlock(def, props, ctx), regionSize)
+          for (const l of [...c.leaves, ...c.backdrops]) bottom = Math.max(bottom, l.box.y + l.box.height)
+        } catch {
+          bottom = roots[0]
+        }
+        const natural = Math.max(m.natural.height, bottom)
+        if (natural < roots[0] - FLOW_TOL) {
+          const fitted = fitContentHeight(def, props, ctx, regionBox.width, natural, roots[0])
+          return [Math.min(roots[0], fitted)]
+        }
+      }
+    }
+    return roots
+  }
 
   const sizing: Array<RegionSizing | null> = blocks.map((block, i) => {
     const root = roots[i]
@@ -888,6 +916,9 @@ function intersectBox(a: Box, b: Box): Box | undefined {
   const y2 = Math.min(a.y + a.height, b.y + b.height)
   return x2 > x1 && y2 > y1 ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : undefined
 }
+
+/** CMP4 — authored containers that take their content's height when alone in a region. */
+const SIZED_CONTAINERS: ReadonlySet<string> = new Set(['tls.l.row', 'tls.l.grid', 'tls.l.stack', 'tls.l.card', 'tls.l.split'])
 
 /** Passes `anchoredSize` may grow a box by before it accepts what the block paints. */
 const ANCHOR_FIT_PASSES = 6

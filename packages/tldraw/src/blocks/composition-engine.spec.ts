@@ -86,7 +86,11 @@ describe('CMP1 honest style fields (F2)', () => {
     expect(bg(lay(card('c', [body('b')], { elevation: 0, tone: 'filled' })))?.shadow).toBeUndefined()
   })
   it('no style field = the card paints exactly as before', () => {
-    expect(bg(lay(card('c', [body('b')])))).toEqual({ k: 'rect', box: { x: 0, y: 0, width: 900, height: 500 }, part: 'background', fill: { type: 'solid', color: expect.any(String) } })
+    // CMP4: an authored card of text is as tall as its content plus its padding (not the 500 it
+    // was given); the paint itself is unchanged: one plain solid rect, full width, from the top
+    const r = bg(lay(card('c', [body('b')])))
+    expect(r).toEqual({ k: 'rect', box: { x: 0, y: 0, width: 900, height: expect.any(Number) }, part: 'background', fill: { type: 'solid', color: expect.any(String) } })
+    expect(r!.box.height).toBeLessThan(500)
   })
   it('style.gap spaces a stack’s and a card’s children', () => {
     const kids = [body('a', 'one'), body('b', 'two')]

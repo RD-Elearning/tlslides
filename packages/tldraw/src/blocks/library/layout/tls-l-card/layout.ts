@@ -12,6 +12,8 @@ import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
 import { containerSurface } from '../_style'
+import { collectPaintedLeaves, paintedBounds } from '../../../layout/measure-block'
+import type { BlockSpec } from '../../../types'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
@@ -58,13 +60,49 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
     childNodes = tagChildren(children.map((child) => ctx.layoutChild(child, contentBox, { surface: under })))
   }
 
+  // CMP4: an authored card of content-sized children (text, atoms) is as tall as what its packed
+  // children paint plus its padding, not as tall as the cell it was given: a row of cards no
+  // longer paints three quarters empty, it has a natural height and its region places it. Peer
+  // cards of one structure share their tracks, so they come out the same height. A composite's
+  // card, a card with `style.align`, a chart or a photo inside, or content that fills the box
+  // keep the full box.
+  const hug = hugBottom(ctx, children, childNodes, contentBox, padding)
+  const bg = hug !== undefined ? containerSurface(ctx, { x: 0, y: 0, width: W, height: hug }, surfaceFill, 'background', !(explicit || roleSurface)).nodes : background
+
   return {
     k: 'group',
     box: outerBox,
     part: 'root',
     children: [
-      ...background,
+      ...bg,
       ...childNodes,
     ],
   }
 }
+
+/** Children that fill their box (a chart, a photo, a nested grid): a card holding one keeps its box. */
+const FILLS = /^tls\.(d\.|m\.(image|decoration|pattern|image-grid|device-mock|logo-wall)$|l\.(grid|row|split|overlay|field|repeater)$)/
+
+/** The card height that hugs its laid-out content, or `undefined` to keep the box (see above). */
+function hugBottom(ctx: LayoutContext, children: BlockSpec[], nodes: LayoutNode[], content: { y: number; height: number }, padding: number): number | undefined {
+  if (!isAuthoredContext(ctx) || !children.length || ctx.style?.align !== undefined) return undefined
+  if (children.some((c) => !c || typeof c.type !== 'string' || FILLS.test(c.type))) return undefined
+  let end: number | undefined
+  if (children.length > 1) {
+    // the inner stack's slots (peer tracks included), so peer cards end on one line whatever
+    // their last child paints: wrapper → stack root → one wrapper group per child
+    const root = nodes[0]?.k === 'group' ? nodes[0].children?.[0] : undefined
+    const slots = root?.k === 'group' ? root.children ?? [] : []
+    if (slots.length) end = content.y + Math.max(...slots.map((n) => n.box.y + n.box.height))
+  } else {
+    const size = { width: ctx.box.width, height: ctx.box.height }
+    const b = paintedBounds(collectPaintedLeaves({ k: 'group', box: { x: 0, y: 0, ...size }, children: nodes }, size))
+    if (b) end = b.y + b.height
+  }
+  if (end === undefined) return undefined
+  const bottom = Math.ceil(end + padding)
+  // content that reaches the box's padding edge fills it: keep the box
+  return bottom < content.y + content.height + padding - 1 ? bottom : undefined
+}
+
+
