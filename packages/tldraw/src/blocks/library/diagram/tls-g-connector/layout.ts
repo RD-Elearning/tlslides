@@ -8,7 +8,8 @@
  * muted text colour on a pill of the surface behind, centred on the route's midpoint, so the line
  * never strikes through it.
  *
- * Parts: `line` (path), `head` / `head-start` (filled paths), `label` (group). Pure and DOM-free.
+ * Parts: `line` (path), `head` / `head-start` (filled paths), `label-mask` (the pill, a rect in
+ * the surface colour), `label` (group with the text). Pure and DOM-free.
  */
 
 import type { LayoutContext, LayoutNode } from '../../../types'
@@ -70,14 +71,14 @@ export function layout(props: ConnectorProps, ctx0: LayoutContext): LayoutNode {
     const lh = Math.round(th + 2 * padY)
     const x = Math.max(0, Math.min(W - lw, g.mid.x - lw / 2))
     const y = Math.max(0, Math.min(H - lh, g.mid.y - lh / 2))
+    // The pill is its own part, present from the first frame: it masks the line as it draws
+    // through the label's place, so the stroke never crosses the text while the label fades in.
+    nodes.push({ k: 'rect', part: 'label-mask', box: { x, y, width: lw, height: lh }, fill: { type: 'solid', color: behind }, radius: lh / 2 })
     nodes.push({
       k: 'group',
       part: 'label',
       box: { x, y, width: lw, height: lh },
-      children: [
-        { k: 'rect', part: 'label.pill', box: { x: 0, y: 0, width: lw, height: lh }, fill: { type: 'solid', color: behind }, radius: lh / 2 },
-        { k: 'text', part: 'label.text', box: { x: padX, y: padY, width: tw, height: th }, lines: m.lines.slice(0, 1), style, propPath: 'label' },
-      ],
+      children: [{ k: 'text', part: 'label.text', box: { x: padX, y: padY, width: tw, height: th }, lines: m.lines.slice(0, 1), style, propPath: 'label' }],
     })
   }
   return root(nodes)

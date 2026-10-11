@@ -229,7 +229,7 @@ describe('CMP3 dashed draw-on and the connector block', () => {
     const ctx = require('./library/layout/test-helpers').makeCtx({ width: 420, height: 160 })
     const t = tlsGConnector.layout({ ...(tlsGConnector.defaults as any), dash: true, label: 'then', head: 'both' }, ctx) as any
     const parts = t.children.map((c: any) => c.part)
-    expect(parts).toEqual(['line', 'head-start', 'head', 'label'])
+    expect(parts).toEqual(['line', 'head-start', 'head', 'label-mask', 'label'])
     expect(t.children[0].stroke.dash).toEqual([4 * CONNECTOR_WEIGHT.md, 2 * CONNECTOR_WEIGHT.md])
     expect(tlsGConnector.motion.preset).toBe('draw-path')
     expect(tlsGConnector.layout({} as any, ctx)).toMatchObject({ k: 'group', children: [] })
