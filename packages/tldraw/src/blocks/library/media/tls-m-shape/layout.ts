@@ -84,6 +84,8 @@ interface ShapeGeom {
   token: TypeToken
   style: ResolvedTextStyle
   textH: number
+  /** The label's wrap width (a one-line label in a circle may use the wider chord). */
+  textW: number
 }
 
 function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: number): ShapeGeom {
@@ -98,19 +100,31 @@ function geometry(props: ShapeProps, ctx0: LayoutContext, maxW: number, maxH: nu
   const showIcon = typeof props.icon === 'string' && props.icon !== '' && hasIcon(props.icon)
   const icon = showIcon ? Math.round(Math.min(size.width, size.height) * 0.2) : 0
   const iconGap = showIcon ? Math.round(icon * 0.3) : 0
-  let pick: { token: TypeToken; style: ResolvedTextStyle; h: number } | undefined
+  let pick: { token: TypeToken; style: ResolvedTextStyle; h: number; w: number } | undefined
   // The size's own step first (scaled with a shape the box made smaller); a label that does not
   // fit steps down. Peers of one size therefore share one type size unless a label is too long.
   for (const token of STEPS.slice(START[sizeKey])) {
     const base = ctx.resolveText(token)
     const style: ResolvedTextStyle = { ...base, size: Math.max(10, Math.round(base.size * Math.min(1, k))), lineHeight: Math.min(base.lineHeight, 1.2) }
     const m = ctx.measureText(label, style, box.width)
-    pick = { token, style, h: m.height }
+    pick = { token, style, h: m.height, w: box.width }
     const longest = Math.max(0, ...label.split(/\s+/).map((w) => ctx.measureText(w, style).width))
     if (m.lines.length <= MAX_LINES && m.height + icon + iconGap <= box.height && longest <= box.width) break
+    // A one-line label in a circle may use the chord across its middle band, which is wider than
+    // the square inner box: a single word like "Customer" keeps its peers' type size.
+    if (kind === 'circle') {
+      const one = ctx.measureText(label, style)
+      const band = one.height + icon + iconGap
+      const r = size.width / 2
+      const chord = band < 2 * r ? 2 * Math.sqrt(r * r - (band / 2) * (band / 2)) * 0.86 : 0
+      if (one.lines.length <= 1 && one.width <= chord && band <= box.height) {
+        pick = { token, style, h: one.height, w: Math.ceil(one.width) + 2 }
+        break
+      }
+    }
   }
-  const p = pick as { token: TypeToken; style: ResolvedTextStyle; h: number }
-  return { kind, size, icon: icon > 0 ? icon + iconGap : 0, token: p.token, style: p.style, textH: p.h }
+  const p = pick as { token: TypeToken; style: ResolvedTextStyle; h: number; w: number }
+  return { kind, size, icon: icon > 0 ? icon + iconGap : 0, token: p.token, style: p.style, textH: p.h, textW: p.w }
 }
 
 export function layout(props: ShapeProps, ctx: LayoutContext): LayoutNode {
@@ -152,7 +166,7 @@ export function layout(props: ShapeProps, ctx: LayoutContext): LayoutNode {
     y += g.icon
   }
   const label = typeof props.label === 'string' ? props.label : ''
-  const t = textAligned(ctx, label, { ...g.style, color: paint.ink }, { x: area.x, y, width: area.width }, 'center', 'shape.label')
+  const t = textAligned(ctx, label, { ...g.style, color: paint.ink }, { x: (w - Math.max(area.width, g.textW)) / 2, y, width: Math.max(area.width, g.textW) }, 'center', 'shape.label')
   children.push(...t.nodes.map((n) => (n.k === 'text' ? ({ ...n, propPath: 'label' } as LayoutNode) : n)))
   const shape: LayoutNode = { k: 'group', part: 'shape', box: { x: Math.max(0, (W - w) / 2), y: 0, width: w, height: h }, children }
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: h }, children: [shape] }
