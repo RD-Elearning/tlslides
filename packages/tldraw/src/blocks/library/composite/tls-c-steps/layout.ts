@@ -52,7 +52,11 @@ function buildMarker(index: number, x: number, y: number, size: number, ctx: Lay
   // (72-unit badge: 30 → 28), so the slide does not carry two near-identical sizes.
   const own = Math.round(size * 0.42)
   const body = ctx.resolveText('body').size
-  const style = { ...ctx.resolveText('body', { size: Math.abs(own - body) <= body * 0.15 ? body : own }), color: onColor(ctx, accent) }
+  // spro demo T19: a small badge's number (48 → 20) snaps to the caption size as it does to the
+  // body size — 20 next to the takeaway's 22 caption was a sixth size on a process-steps slide
+  const caption = ctx.resolveText('caption').size
+  const snapped = Math.abs(own - body) <= body * 0.15 ? body : own < body && Math.abs(own - caption) <= caption * 0.25 ? caption : own
+  const style = { ...ctx.resolveText('body', { size: snapped }), color: onColor(ctx, accent) }
   const w = Math.ceil(realWidth(text, style) * 1.04) + 1
   const lh = style.size * style.lineHeight
   const m = ctx.measureText(text, style, w + 8)
