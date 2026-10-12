@@ -407,8 +407,12 @@ export function collectPaintedLeaves(root: LayoutNode, layoutBox: Size): Collect
         let geo: Box | null = abs
         if (n.k === 'path') {
           // `d` is drawn in the node box's local space and clipped to it (svg viewBox).
+          // A stroke paints half its width outside the outline (a ring's arc, spro demo T11: the
+          // stat spotlight's ring read 17 units lower than it drew); the clip still applies.
           const local = pathBounds(n.d)
-          geo = local ? intersect(offset(local, abs.x, abs.y), abs) : null
+          const half = n.stroke ? n.stroke.width / 2 : 0
+          const grown = local && half > 0 ? { x: local.x - half, y: local.y - half, width: local.width + 2 * half, height: local.height + 2 * half } : local
+          geo = grown ? intersect(offset(grown, abs.x, abs.y), abs) : null
           if (!geo) return
         }
         // A rect that paints nothing (fully transparent fill, no stroke) is structure — e.g. the

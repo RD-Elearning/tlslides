@@ -100,6 +100,8 @@ export type LayoutFindingCode =
   | 'connector/unresolved'
   | 'connector/crosses-text'
   | 'connector/too-short'
+  // A style master's rule (a hairline band) touched or crossed by content (spro demo T11).
+  | 'motif/too-close'
 
 export interface LayoutFinding {
   code: LayoutFindingCode
@@ -426,6 +428,9 @@ interface Placed {
  * Analyze one slide's geometry. Never throws on a well-formed `SlideSpec`: a block whose layout
  * throws is reported (`block/layout-failed`, confidence `low`) instead.
  */
+/** A style-master band at most this thick (slide units) is a rule, for `motif/too-close`. */
+const RULE_THICKNESS = 6
+
 export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}): LayoutReport {
   const fill = (b: BlockSpec): BlockSpec => applyStyleBlockDefaults(b, opts.blockDefaults).block
   const spec: SlideSpec = opts.blockDefaults
@@ -716,6 +721,44 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     for (let j = i + 1; j < blocks.length; j++) {
       if (styleOwned(blocks[i]) || styleOwned(blocks[j])) continue
       pairFindings(blocks[i], blocks[j], findings)
+    }
+  }
+
+  // 5a. spro demo T11: a style master's rule (a hairline band: consulting's title rule, an
+  // editorial masthead, a luxury frame line) sits in the gap between regions. Content painted
+  // closer to it than `space.sm` reads as touching the line — the backdrop is out of the pairwise
+  // checks above, so this is the only place that sees it. A rule spanning the whole frame is a grid
+  // guide that content crosses by design (swiss columns), not a separator; a full-bleed slide's
+  // picture runs under the chrome by design too.
+  const clearance = tokens.space.sm
+  for (const rule of spec.layout === 'full-bleed' ? [] : blocks) {
+    if (!styleOwned(rule) || !rule.painted) continue
+    const p = rule.painted
+    const horizontal = p.height <= RULE_THICKNESS && p.width >= p.height * 8 && p.width < frame.width
+    const vertical = p.width <= RULE_THICKNESS && p.height >= p.width * 8 && p.height < frame.height
+    if (!horizontal && !vertical) continue
+    for (const b of blocks) {
+      if (styleOwned(b) || b.layer === 'backdrop' || b.bleed || !b.painted) continue
+      const q = b.painted
+      // the extent they share along the rule, then the distance across it (negative = crossing)
+      const along = horizontal
+        ? Math.min(p.x + p.width, q.x + q.width) - Math.max(p.x, q.x)
+        : Math.min(p.y + p.height, q.y + q.height) - Math.max(p.y, q.y)
+      if (along <= 0) continue
+      const [p0, p1, q0, q1] = horizontal ? [p.y, p.y + p.height, q.y, q.y + q.height] : [p.x, p.x + p.width, q.x, q.x + q.width]
+      const gap = q0 >= p1 ? q0 - p1 : p0 >= q1 ? p0 - q1 : -1
+      if (gap >= clearance) continue
+      const name = rule.id.slice(STYLE_MASTER_PREFIX.length)
+      findings.push({
+        code: 'motif/too-close',
+        severity: gap < 0 ? 'error' : 'warning',
+        blockIds: [b.id, rule.id],
+        message:
+          gap < 0
+            ? `${b.id} paints across the style's ${horizontal ? 'horizontal' : 'vertical'} rule \`${name}\` (at ${horizontal ? 'y' : 'x'} ${r(p0)}).`
+            : `${b.id} paints ${r(gap)} from the style's rule \`${name}\` (at ${horizontal ? 'y' : 'x'} ${r(p0)}); it needs ${clearance} clear.`,
+        fix: `keep ${b.id} at least ${clearance} ${horizontal ? (q0 >= p1 ? 'below' : 'above') : q0 >= p1 ? 'right of' : 'left of'} the rule (a smaller block, or a design that leaves the band clear)`,
+      })
     }
   }
 

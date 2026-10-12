@@ -76,6 +76,14 @@ export interface DeckViewerProps {
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
   autoAdvanceMs?: number
+  /** What a click on the slide does: `advance` (default) always moves forward; `halves` moves back
+   *  on the left half and forward on the right half (a build step, then the next slide). */
+  clickNavigation?: 'advance' | 'halves'
+  /** Where a slide change made by the HOST (a new `slideIndex` prop, step uncontrolled) lands:
+   *  `start` (default) = before the first build step; `built` = every step shown, like a
+   *  thumbnail jump in a presentation app. The viewer's own navigation is unaffected (back
+   *  lands built, forward at the start). */
+  slideEntry?: 'start' | 'built'
   /** Optional block registry override. When absent, the module-level `sharedRegistry` is used. */
   registry?: BlockRegistry
   /** Optional host registry for `k: 'host'` layout nodes. */
@@ -271,6 +279,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   driver,
   gsap,
   autoAdvanceMs,
+  clickNavigation = 'advance',
+  slideEntry = 'start',
   registry: registryProp,
   hostRegistry,
   className,
@@ -334,8 +344,14 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   /* --- Navigation state transitions --------------------------------------------------- */
 
+  // The slide index the viewer itself last asked a controlling host for: when the host follows
+  // with that index, the step this viewer set (a retreat lands on the previous slide fully built)
+  // must stand — before, the host-change reset below wiped it back to 0 (spro demo T12).
+  const selfRequestedSlideRef = React.useRef<number | undefined>(undefined)
+
   const setSlide = React.useCallback(
     (index: number, step: number) => {
+      selfRequestedSlideRef.current = index
       if (isSlideControlled) onSlideChange?.(index)
       else setInnerSlideIndex(index)
       if (isStepControlled) onBuildStepChange?.(step)
@@ -405,10 +421,14 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const prevControlledSlideRef = React.useRef(slideIndex)
   React.useEffect(() => {
     if (isSlideControlled && !isStepControlled && prevControlledSlideRef.current !== slideIndex) {
-      setInnerBuildStep(0)
+      if (selfRequestedSlideRef.current !== slideIndex) {
+        const target = pages[clampIndex(slideIndex as number, pages.length)]
+        setInnerBuildStep(slideEntry === 'built' && target ? computeBuildSteps(target).length : 0)
+      }
     }
+    selfRequestedSlideRef.current = undefined
     prevControlledSlideRef.current = slideIndex
-  }, [slideIndex, isSlideControlled, isStepControlled])
+  }, [slideIndex, isSlideControlled, isStepControlled, slideEntry, pages])
 
   /* --- Build-step visual sync ---------------------------------------------------------- */
 
@@ -645,7 +665,19 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     [advance, retreat, goHome, goEnd]
   )
 
-  const handleClick = React.useCallback(() => advance(), [advance])
+  const handleClick = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (clickNavigation === 'halves') {
+        const rect = e.currentTarget.getBoundingClientRect()
+        if (e.clientX - rect.left < rect.width / 2) {
+          retreat()
+          return
+        }
+      }
+      advance()
+    },
+    [advance, retreat, clickNavigation]
+  )
 
   /* --- Viewport scale-to-fit -------------------------------------------------------------- */
 

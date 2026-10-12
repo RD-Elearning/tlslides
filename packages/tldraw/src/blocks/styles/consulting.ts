@@ -13,7 +13,9 @@ const FONTS = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '
 
 const CONTENT_CHROME: Record<string, BlockSpec> = {
   tracker: placePx(band('accent'), 96, 40, 120, 12),
-  'title-rule': placePx(band('line'), 96, 222, 1728, 2),
+  // in the middle of the gutter between the title band (ends at y 180) and the body (starts at
+  // 228): at y 222 every block that fills its region painted on the line (spro demo T11)
+  'title-rule': placePx(band('line'), 96, 203, 1728, 2),
   'foot-rule': placePx(band('line'), 96, 1022, 1728, 2),
 }
 

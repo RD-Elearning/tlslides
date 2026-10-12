@@ -117,7 +117,7 @@ Lines between blocks of one slide, by block id (a nested child id works too), ne
 
 Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
 
-**When:** Use for a table-of-contents or agenda slide listing 3–8 topics. Set \`current\` to highlight the active topic.
+**When:** Use for a table-of-contents or agenda slide listing 3–8 topics. Set \`current\` only to mark where a returning agenda is (\\"you are here\\") or when asked; leave it unset for a plain contents slide.
 **Avoid:** Do not use for more than 8 items (split into two sections), for a dated sequence (use tls.c.steps) or nested in another block: it fills the whole slide.
 
 | Slot | Required | Type | Guidance |
@@ -149,8 +149,7 @@ Agenda or contents slide: numbered items with titles and optional notes. The cur
         \\"title\\": \\"Q&A\\",
         \\"note\\": \\"Questions and discussion\\"
       }
-    ],
-    \\"current\\": 1
+    ]
   }
 }
 \`\`\`
@@ -5678,7 +5677,7 @@ also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.
 ## Charts
 tls.c.chart-insight · chart · group — Chart with a highlighted takeaway beside it and a source line [h=fill] knobs: side=right|left|below, ratio=2:1|3:2|1:1, insightSize=body|lead
 tls.d.bar · chart · group · ≤20 items — Column or horizontal bar chart of one series [h=fill] knobs: orientation=vertical|horizontal, valueLabels=end|none
-tls.d.donut · chart · group · ≤6 items — Ring of slices showing shares of a whole, with a centre value [h≈364+0/item@544] knobs: labels=legend|outside, showPercent
+tls.d.donut · chart · group · ≤6 items — Ring of slices showing shares of a whole, with a centre value [h≈366+0/item@544] knobs: labels=legend|outside, showPercent
 tls.d.grouped-bar · chart · group · 2–12 items — Side-by-side bars per category, one colour per series [h=fill] knobs: orientation=vertical|horizontal, valueLabels=none|end|inside, legend=top|bottom|right|none
 tls.d.line · chart · group · 2–24 items — Lines over ordered categories, one per series, labelled at the line ends [h=fill] knobs: curve=linear|monotone, markers=none|last|all, endLabels, legend=top|bottom|right|none
 also: tls.d.area, tls.d.bubble, tls.d.funnel-chart, tls.d.heatmap, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.waterfall
@@ -5739,7 +5738,7 @@ tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by 
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant=numeral|field|minimal, align=start|center
 
 ## Agenda
-tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; current item highlighted [h 169–981@1728] knobs: variant=list|cards, numbering=plain|badge|none
+tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; one can be marked current [h 169–970@1728] knobs: variant=list|cards, numbering=plain|badge|none
 also: tls.c.objectives
 
 ## Closing

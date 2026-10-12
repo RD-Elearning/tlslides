@@ -70,5 +70,7 @@ export const defaults: AgendaProps = {
     { title: 'Strategy', note: 'Next quarter priorities' },
     { title: 'Q&A', note: 'Questions and discussion' },
   ],
-  current: 1,
+  // no item highlighted by default: a contents slide lists topics; `current` marks one only when
+  // the agenda returns between sections ("you are here") or someone asks for it (spro demo T10)
+  current: null,
 }

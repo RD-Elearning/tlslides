@@ -448,3 +448,84 @@ describe('DeckViewer navigation', () => {
     }
   })
 })
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* spro demo T12 — click halves, host slide changes                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('click halves and host-controlled slides (spro demo T12)', () => {
+  // two slides, each with two click steps after the first (auto) one
+  const built: DeckSpec = {
+    version: 1,
+    id: 'halves-test',
+    title: 'Halves test',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: ['s0', 's1'].map((id) => ({
+      id,
+      layout: 'blank',
+      regions: {
+        content: [
+          titleBlock(`${id}a`, `${id} one`, { order: 1 }),
+          titleBlock(`${id}b`, `${id} two`, { order: 2, trigger: 'onClick' }),
+          titleBlock(`${id}c`, `${id} three`, { order: 3, trigger: 'onClick' }),
+        ],
+      },
+    })),
+  }
+  const stepCount = computeBuildSteps(Object.values(deckSpecToDocument(built).document.pages)[0]).length
+
+  /** A host that follows `onSlideChange` (the way spro's workspace does). */
+  function Host(props: { entry?: 'start' | 'built'; jump?: (go: (i: number) => void) => void }) {
+    const [index, setIndex] = React.useState(0)
+    React.useEffect(() => props.jump?.(setIndex), [])
+    return <DeckViewer spec={built} slideIndex={index} onSlideChange={setIndex} driver={NOOP_DRIVER} clickNavigation="halves" slideEntry={props.entry} />
+  }
+
+  const viewerOf = (c: HTMLElement) => c.querySelector('[data-testid="deck-viewer"]') as HTMLElement
+  /** jsdom lays nothing out: give the viewer a 1000 px wide box to click in. */
+  function sized(el: HTMLElement) {
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 560, right: 1000, bottom: 560, x: 0, y: 0, toJSON: noop }) as DOMRect
+    return el
+  }
+
+  it('the right half advances a step, then the slide; the left half goes back', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    const start = Number(viewer.dataset.buildStep)
+    fireEvent.click(viewer, { clientX: 800 })
+    expect(Number(viewer.dataset.buildStep)).toBe(start + 1)
+    expect(viewer.dataset.slideIndex).toBe('0')
+    fireEvent.click(viewer, { clientX: 200 })
+    expect(Number(viewer.dataset.buildStep)).toBe(start)
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+  })
+
+  it('going back to the previous slide under a controlling host lands on it fully built', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+    // back past slide 1's steps: the host follows to slide 0, which must stay built
+    for (let i = 0; i < 4 && viewer.dataset.slideIndex === '1'; i++) fireEvent.click(viewer, { clientX: 100 })
+    expect(viewer.dataset.slideIndex).toBe('0')
+    expect(viewer.dataset.buildStep).toBe(String(stepCount))
+  })
+
+  it('a host jump lands at the start by default and fully built with slideEntry="built"', () => {
+    mockMatchMedia(true)
+    let go: (i: number) => void = noop
+    const a = render(<Host jump={(g) => (go = g)} />)
+    act(() => go(1))
+    expect(viewerOf(a.container).dataset.slideIndex).toBe('1')
+    expect(Number(viewerOf(a.container).dataset.buildStep)).toBeLessThan(stepCount)
+    a.unmount()
+
+    const b = render(<Host entry="built" jump={(g) => (go = g)} />)
+    act(() => go(1))
+    expect(viewerOf(b.container).dataset.buildStep).toBe(String(stepCount))
+  })
+})
