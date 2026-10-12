@@ -37,7 +37,8 @@ export function layout(props: CodeProps, ctx: LayoutContext): LayoutNode {
   const text = ctx.resolveColor('text').color
   const muted = ctx.resolveColor('textMuted').color
   const accent = ctx.resolveColor('accent').color
-  const lines = str(props.code).replace(/\t/g, '  ').split('\n').slice(0, MAX_LINES)
+  // indentation: leading spaces as no-break spaces, which neither measuring nor rendering collapses
+  const lines = str(props.code).replace(/\t/g, '  ').split('\n').slice(0, MAX_LINES).map((l) => l.replace(/^ +/, (m) => '\u00A0'.repeat(m.length)))
   while (lines.length > 1 && !lines[lines.length - 1].trim()) lines.pop()
   const marks = highlighted(props.highlight)
   const numbers = props.lineNumbers !== false

@@ -12,7 +12,7 @@ export const schema: BlockSchema = {
     label: 'Expression',
     required: true,
     guidance:
-      'Plain characters; `_x` / `^x` raise or lower ONE character, `_{…}` / `^{…}` a group: "h = log_2(N+1)", "n_0 = 2^{h+1} - 1", "O(n^2)". One line per step, separated by a new line (at most 4). Never Unicode sub/superscripts (₂, ²).',
+      'Plain characters; `_` / `^` lower / raise the letters or the digits right after them (`h_min`, `log_2N`, `2^h`), `_{…}` / `^{…}` a group: "h = log_2(N+1)", "n_0 = 2^{h+1} - 1", "O(n^2)". One line per step, separated by a new line (at most 4). Never Unicode sub/superscripts (₂, ²).',
   },
   caption: {
     type: { kind: 'text', maxChars: 160 },

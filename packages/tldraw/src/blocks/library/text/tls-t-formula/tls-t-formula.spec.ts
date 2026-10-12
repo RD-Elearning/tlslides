@@ -15,6 +15,7 @@ describe('tls.t.formula', () => {
     expect(parseFormula('log_2N')).toEqual([{ text: 'log', kind: 'base' }, { text: '2', kind: 'sub' }, { text: 'N', kind: 'base' }])
     expect(parseFormula('2^{h+1} - 1')).toEqual([{ text: '2', kind: 'base' }, { text: 'h+1', kind: 'sup' }, { text: ' - 1', kind: 'base' }])
     expect(parseFormula('a_')).toEqual([{ text: 'a_', kind: 'base' }])
+    expect(parseFormula('h_min = 2^h')).toEqual([{ text: 'h', kind: 'base' }, { text: 'min', kind: 'sub' }, { text: ' = 2', kind: 'base' }, { text: 'h', kind: 'sup' }])
   })
 
   it('a subscript is smaller and lower, a superscript smaller and higher, on one line', () => {

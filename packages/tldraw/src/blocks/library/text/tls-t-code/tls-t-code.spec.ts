@@ -21,6 +21,13 @@ describe('tls.t.code', () => {
     expect(rows[5].y + rows[5].height).toBeLessThanOrEqual(panel.y + panel.height)
   })
 
+  it('keeps indentation: an indented line starts right of its parent line', () => {
+    const rows = leavesOf(lay({ code: 'a\n    b' }), 'line')
+    const text = (l: any) => l.node.lines[0].text as string
+    expect(text(rows[1]).startsWith('\u00A0\u00A0\u00A0\u00A0')).toBe(true)
+    expect((rows[1].node as any).lines[0].width).toBeGreaterThan((rows[0].node as any).lines[0].width)
+  })
+
   it('parses highlighted lines and tints exactly those rows', () => {
     expect([...highlighted('2, 5-6')]).toEqual([2, 5, 6])
     expect([...highlighted('x, 3')]).toEqual([3])
