@@ -92,7 +92,16 @@ export function checkGrammar(slide: SlideSpec, registry: BlockRegistry, basePath
       const types = [...new Set(children.filter((c) => c && c.type !== SPACER).map((c) => c.type))]
       if (types.length > 1) out.push({ level: 'error', rule: 'grammar/peers', path, message: `the children of \`${b.id}\` are peers and must share one type (found ${types.join(', ')}); wrap each in a \`tls.l.card\` or \`tls.l.stack\`.` })
     }
-    children.forEach((c, i) => c && typeof c === 'object' && visit(c, `${path}.props.children[${i}]`, level + 1))
+    children.forEach((c, i) => {
+      const at = `${path}.props.children[${i}]`
+      // a child with no type is a malformed answer: reported, never a crash (spro llm-eval
+      // 2026-10-13: a model's child block without `type` made /check answer 500)
+      if (!c || typeof c !== 'object' || typeof c.type !== 'string') {
+        out.push({ level: 'error', rule: 'grammar/container', path: at, message: 'every child needs a `type` and `props`; this one has no type.' })
+        return
+      }
+      visit(c, at, level + 1)
+    })
   }
   const accents: string[] = []
   const decorations: string[] = []

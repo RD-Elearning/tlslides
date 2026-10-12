@@ -83,3 +83,10 @@ describe('compose PLAN.md B2/B6 — one accent, one decoration', () => {
     expect(checkGrammar(slide, reg).map((x) => x.rule)).toContain('grammar/decoration')
   })
 })
+
+it('a child without a type is a grammar finding, not a crash', () => {
+  const reg = defaultBlockRegistry()
+  const slide = { id: 's', layout: 'blank', regions: { content: [{ id: 'r', type: 'tls.l.stack', props: { children: [{ id: 'x', props: {} }] } }] } } as any
+  const f = checkGrammar(slide, reg)
+  expect(f.map((x) => x.path)).toContain('regions.content[0].props.children[0]')
+})
