@@ -18,7 +18,7 @@ import { getAtPath, setAtPath } from '~blocks/prop-path'
 import { layoutBlock } from '~blocks/layout/layout-child'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
-import { InlineEditor } from '~components/InlineEditor'
+import { InlineEditor, editorStyleOf, type InlineEditorStyle } from '~components/InlineEditor'
 import { fromEdited, toEditable } from '~components/InlineEditor/rich-edit'
 
 type T = ComponentShape
@@ -78,7 +78,21 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
         propPath: string
         rect: DOMRect
         initial: string
+        style: InlineEditorStyle
+        target: HTMLElement
       } | null>(null)
+
+      // The text being edited is hidden while the overlay (drawn in its own type) sits on it, so
+      // the two never show at once (spro demo T9).
+      React.useEffect(() => {
+        if (!editing) return
+        const el = editing.target
+        const before = el.style.visibility
+        el.style.visibility = 'hidden'
+        return () => {
+          el.style.visibility = before
+        }
+      }, [editing])
       const propsRef = React.useRef(props)
       propsRef.current = props
 
@@ -117,7 +131,8 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           // the shape. That store write re-renders this shape and, empirically, wins a race
           // against a `setEditing` made synchronously here: the state lands, renders once, and
           // is then clobbered back to `null`. Opening on the next tick lets that settle first.
-          window.setTimeout(() => setEditing({ propPath, rect, initial }), 0)
+          const style = editorStyleOf(target, rect)
+          window.setTimeout(() => setEditing({ propPath, rect, initial, style, target }), 0)
         }
       }, [])
 
@@ -236,6 +251,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
               propPath={editing.propPath}
               initialValue={editing.initial}
               rect={editing.rect}
+              style={editing.style}
               onSave={(value) => {
                 const currentProps = (props ?? {}) as Record<string, unknown>
                 // a rich-text slot (`{ runs }`) stays rich: bold survives as `**…**` (rich-edit.ts)

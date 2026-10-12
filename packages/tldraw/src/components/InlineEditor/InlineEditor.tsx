@@ -13,9 +13,43 @@ export interface InlineEditorProps {
   /** The target element's own bounding rect (viewport coordinates), used to position the
    *  overlay exactly on top of the text it is replacing. */
   rect: DOMRect
-  style?: { size?: number; color?: string }
+  style?: InlineEditorStyle
   onSave: (value: string) => void
   onCancel: () => void
+}
+
+/** The edited text's own type, in viewport pixels (`editorStyleOf`). */
+export interface InlineEditorStyle {
+  size?: number
+  color?: string
+  family?: string
+  weight?: string
+  lineHeight?: number
+  letterSpacing?: number
+  align?: string
+}
+
+/**
+ * The type of `target` as it appears on screen: its computed style (CSS pixels inside the canvas)
+ * times the canvas zoom, which is how much wider the element shows (`rect`) than it is laid out.
+ * Before (spro demo T9) the overlay drew every text at the browser's default 16 px over the slide.
+ */
+export function editorStyleOf(target: HTMLElement, rect: DOMRect): InlineEditorStyle {
+  const cs = window.getComputedStyle(target)
+  const zoom = target.offsetWidth > 0 ? rect.width / target.offsetWidth : 1
+  const px = (v: string) => {
+    const n = parseFloat(v)
+    return Number.isFinite(n) ? n * zoom : undefined
+  }
+  return {
+    size: px(cs.fontSize),
+    color: cs.color,
+    family: cs.fontFamily,
+    weight: cs.fontWeight,
+    lineHeight: px(cs.lineHeight),
+    letterSpacing: px(cs.letterSpacing),
+    align: cs.textAlign,
+  }
 }
 
 export const InlineEditor: React.FC<InlineEditorProps> = ({
@@ -90,6 +124,11 @@ export const InlineEditor: React.FC<InlineEditorProps> = ({
           minHeight: rect.height,
           fontSize: style?.size,
           color: style?.color,
+          fontFamily: style?.family,
+          fontWeight: style?.weight as React.CSSProperties['fontWeight'],
+          lineHeight: style?.lineHeight ? `${style.lineHeight}px` : undefined,
+          letterSpacing: style?.letterSpacing,
+          textAlign: style?.align as React.CSSProperties['textAlign'],
         }}
       />
     </EditorPortal>
@@ -119,9 +158,10 @@ const EditorDiv = styled('div', {
   whiteSpace: 'pre-wrap',
   overflowWrap: 'break-word',
   borderRadius: '4px',
-  padding: '2px 4px',
+  padding: 0,
   outline: '2px solid #0066ff',
   outlineOffset: '2px',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  // the slide shows through: the text keeps its own colour on its own background (white text on
+  // a dark slide read white on white before); the original text is hidden meanwhile
+  backgroundColor: 'transparent',
 })
