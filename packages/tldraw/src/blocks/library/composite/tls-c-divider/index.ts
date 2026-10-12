@@ -81,7 +81,10 @@ export function layoutDivider(props: DividerProps, ctx: LayoutContext): LayoutNo
   // (luxury ring, gradient and glass orbs, doodle star, memphis half circle).
   // the first (size, width) with a stable wrap: display at 1200, 1100 or 1000 wide, then title, …
   const sizes: Array<'display' | 'title' | 'heading'> = ['display', 'title', 'heading']
-  const widths = [1200, 1100, 1000].map((w) => Math.min(W - 2 * inset, w))
+  // spro demo T14: narrower measures before a smaller size — "The decision flow of a household"
+  // left "household" alone on the last line at 1000–1200 in display and title type, fell to
+  // heading (60, under the title size) and failed the quality gate (sparse, small type)
+  const widths = [1200, 1100, 1000, 900, 800, 700].map((w) => Math.min(W - 2 * inset, w))
   let start = sizes.length - 1
   let tw = widths[0]
   search: for (let k = 0; k < sizes.length; k++) {

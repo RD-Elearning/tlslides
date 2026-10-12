@@ -8,6 +8,9 @@ import { collectParts } from '../../layout/test-helpers'
 import { contrastRatio } from '../../../color-math'
 import { lumOf } from '../../text/_engine/color'
 import { depthOk, layoutAt, hasPart, slideScopeCompiles } from '../composite-test'
+import type { DeckSpec } from '../../../types'
+import { analyzeDeck } from '../../../layout-report'
+import { deckTitleSize, slideQuality } from '../../../pipeline/quality'
 
 standardBlockSuite(tlsCDivider, { withRegistry: true, noCapacity: true })
 
@@ -37,6 +40,22 @@ describe('tls.c.divider', () => {
   it('minimal has no number and draws the title rule', () => {
     const t = layoutAt(tlsCDivider, { ...EX, variant: 'minimal' }, 1600, 800)
     expect(hasPart(t, 'number')).toBe(false)
+  })
+
+  it('a long minimal title narrows its measure before dropping below title size (spro demo T14)', () => {
+    // editorial: "The decision flow of a household" left "household" alone at 1000–1200 in display
+    // and title type, fell to heading and failed the quality gate's small-type rule
+    const deck = {
+      version: 1,
+      id: 'd',
+      style: 'editorial',
+      theme: 'editorial-ink',
+      aspect: 'widescreen',
+      slides: [{ id: 's13', layout: 'blank', role: 'section', regions: { content: [{ id: 'b', type: 'tls.c.divider', props: { title: 'The decision flow of a household', subtitle: 'Next they look at what', variant: 'minimal' } }] } }],
+    } as unknown as DeckSpec
+    const [report] = analyzeDeck(deck)
+    const q = slideQuality(report, { titleSize: deckTitleSize(deck) })
+    expect(q.findings.map((f) => f.code)).not.toContain('quality/small-type')
   })
 
   it('numeral: number sits above the title; centre alignment centres every line', () => {
