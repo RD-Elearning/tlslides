@@ -98,6 +98,9 @@ export interface DeckViewerProps {
 const sharedRegistry = new BlockRegistry()
 registerBuiltInBlocks(sharedRegistry)
 
+/** A touch that moves at least this far sideways (and mostly sideways) is a swipe, not a tap. */
+const SWIPE_MIN_PX = 40
+
 /** A layout effect in the browser (runs before paint), a plain effect during SSR. */
 const useIsoLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
@@ -672,8 +675,44 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     [advance, retreat, goHome, goEnd]
   )
 
+  // `halves`: the pointer says which way a click goes (‹ on the left half, › on the right); a
+  // horizontal swipe on a touch screen goes the same way, and the click it ends with is ignored
+  const [side, setSide] = React.useState<'left' | 'right'>('right')
+  const swipeRef = React.useRef<{ x: number; y: number; swiped: boolean } | null>(null)
+  const handleMouseMove = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (clickNavigation !== 'halves') return
+      const rect = e.currentTarget.getBoundingClientRect()
+      setSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right')
+    },
+    [clickNavigation]
+  )
+  const handleTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const t = e.touches[0]
+    swipeRef.current = t ? { x: t.clientX, y: t.clientY, swiped: false } : null
+  }, [])
+  const handleTouchEnd = React.useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const start = swipeRef.current
+      const t = e.changedTouches[0]
+      if (!start || !t || clickNavigation !== 'halves') return
+      const dx = t.clientX - start.x
+      const dy = t.clientY - start.y
+      if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        start.swiped = true
+        if (dx < 0) advance()
+        else retreat()
+      }
+    },
+    [advance, retreat, clickNavigation]
+  )
+
   const handleClick = React.useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      if (swipeRef.current?.swiped) {
+        swipeRef.current = null
+        return
+      }
       if (clickNavigation === 'halves') {
         const rect = e.currentTarget.getBoundingClientRect()
         if (e.clientX - rect.left < rect.width / 2) {
@@ -774,7 +813,18 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       aria-live="polite"
       onKeyDown={handleKeyDown}
       onClick={handleClick}
-      style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', outline: 'none' }}
+      onMouseMove={handleMouseMove}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      data-click-side={clickNavigation === 'halves' ? side : undefined}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        outline: 'none',
+        ...(clickNavigation === 'halves' ? { cursor: side === 'left' ? 'w-resize' : 'e-resize', touchAction: 'pan-y' } : {}),
+      }}
       data-testid="deck-viewer"
       data-slide-index={currentSlideIndex}
       data-slide-count={pages.length}

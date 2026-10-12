@@ -545,3 +545,45 @@ describe('click halves and host-controlled slides (spro demo T12)', () => {
     expect(viewerOf(b.container).dataset.buildStep).toBe(String(stepCount))
   })
 })
+
+describe('halves: pointer hint and swipes (spro demo T12)', () => {
+  const two: DeckSpec = {
+    version: 1,
+    id: 'swipe-test',
+    title: 'Swipe test',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: ['a', 'b'].map((id) => ({ id, layout: 'blank', regions: { content: [titleBlock(`${id}t`, `slide ${id}`)] } })),
+  }
+  const box = (el: HTMLElement) => {
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 560, right: 1000, bottom: 560, x: 0, y: 0, toJSON: noop }) as DOMRect
+    return el
+  }
+
+  it('the cursor points the way a click goes', () => {
+    const { container } = render(<DeckViewer spec={two} driver={NOOP_DRIVER} clickNavigation="halves" />)
+    const v = box(container.querySelector('[data-testid="deck-viewer"]') as HTMLElement)
+    fireEvent.mouseMove(v, { clientX: 100 })
+    expect(v.dataset.clickSide).toBe('left')
+    expect(v.style.cursor).toBe('w-resize')
+    fireEvent.mouseMove(v, { clientX: 900 })
+    expect(v.style.cursor).toBe('e-resize')
+  })
+
+  it('a swipe left goes forward, a swipe right goes back; the click a swipe ends with is ignored', () => {
+    const { container } = render(<DeckViewer spec={two} driver={NOOP_DRIVER} clickNavigation="halves" />)
+    const v = box(container.querySelector('[data-testid="deck-viewer"]') as HTMLElement)
+    fireEvent.touchStart(v, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 600, clientY: 310 }] })
+    fireEvent.click(v, { clientX: 600 })
+    expect(v.dataset.slideIndex).toBe('1')
+    fireEvent.touchStart(v, { touches: [{ clientX: 200, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 400, clientY: 300 }] })
+    expect(v.dataset.slideIndex).toBe('0')
+    // a tap is still a click
+    fireEvent.touchStart(v, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 805, clientY: 300 }] })
+    fireEvent.click(v, { clientX: 805 })
+    expect(v.dataset.slideIndex).toBe('1')
+  })
+})
