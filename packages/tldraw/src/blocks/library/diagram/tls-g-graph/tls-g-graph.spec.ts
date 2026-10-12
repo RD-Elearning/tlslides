@@ -61,7 +61,7 @@ describe('tls.g.graph — robust input, token sizes', () => {
   it('labels and badges use sizes of the type scale', () => {
     const { makeCtx, makeRegistry } = require('../../text/test-helpers')
     const ctx = makeCtx({ width: 1200, height: 640 }, makeRegistry())
-    const scale = new Set(['heading', 'subheading', 'lead', 'body', 'caption', 'footnote'].map((t) => ctx.resolveText(t).size))
+    const scale = new Set(['lead', 'body', 'caption', 'footnote'].map((t) => ctx.resolveText(t).size))
     const sizes = leavesOf(lay({}), 'label').concat(leavesOf(lay({}), 'order')).filter((l) => l.k === 'text').map((l) => (l.node as any).style.size)
     for (const s of sizes) expect(scale.has(s)).toBe(true)
   })

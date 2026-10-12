@@ -79,7 +79,9 @@ function readNodes(raw: unknown, rawEdges?: unknown): GraphNode[] {
 
 /** The largest type-scale size at most `px` (a token size: `type/too-many-sizes` counts sizes). */
 function tokenAtMost(ctx: LayoutContext, px: number): ResolvedTextStyle {
-  for (const t of ['heading', 'subheading', 'lead', 'body', 'caption', 'footnote'] as const) {
+  // lead and below only: the sizes the slide's text blocks use already (a diagram beside a
+  // definition added a sixth size at subheading)
+  for (const t of ['lead', 'body', 'caption', 'footnote'] as const) {
     const s = ctx.resolveText(t)
     if (s.size <= px) return s
   }
