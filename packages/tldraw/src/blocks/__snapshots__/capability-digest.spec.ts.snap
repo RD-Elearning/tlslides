@@ -216,7 +216,7 @@ Big number slide. One enormous headline metric with a short label and optional c
 | \`showLabel\` | no | boolean | Toggle the label below the value on/off. |
 | \`context\` | no | text (max 60 chars) | Optional supporting line below the label (e.g. \\"vs last quarter\\"). |
 | \`showContext\` | no | boolean | Toggle the context line on/off. |
-| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234). |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency | Number format: plain (default), compact (1.2K/3.4M), percent (0.12 → 12%), currency (1,234). |
 | \`prefix\` | no | text (max 4 chars) | Optional prefix before the number (e.g. \\"$\\", \\"€\\"). Max 4 chars. |
 | \`suffix\` | no | text (max 4 chars) | Optional suffix after the number (e.g. \\"%\\", \\"M\\"). Max 4 chars. |
 | \`variant\` | no | enum: plain \\\\| accent \\\\| split | \`accent\`: accent number under a rule; \`split\`: label beside the number. |

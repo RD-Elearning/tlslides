@@ -122,7 +122,9 @@ export const schema: BlockSchema = {
     type: { kind: 'enum', values: ['plain', 'compact', 'percent', 'currency'] },
     role: 'option',
     label: 'Format',
-    guidance: 'Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234).',
+    // spro demo T13: "percent (12%)" read as "write 12" and drew 9500% for 95; this block takes a
+    // fraction (charts and KPI tiles take the percentage itself)
+    guidance: 'Number format: plain (default), compact (1.2K/3.4M), percent (0.12 → 12%), currency (1,234).',
   },
   prefix: {
     type: { kind: 'text', maxChars: 4 },
