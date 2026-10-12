@@ -437,11 +437,12 @@ describe('DeckViewer navigation', () => {
       act(() => { jest.runOnlyPendingTimers() })
       expect(viewer.dataset.buildStep).toBe(viewer.dataset.buildStepCount)
 
-      // Retreat once: should land back on step 2 (b2's step un-revealed again) — and STAY
-      // there. Running any pending timers must not snap it forward again.
+      // Retreat once: undoes the last click — b1's step and the 'afterPrevious' b2 that chained
+      // after it (spro demo T12) — landing on step 1, and STAYS there. Running any pending
+      // timers must not snap it forward again.
       fireEvent.keyDown(viewer, { key: 'ArrowLeft' })
       act(() => { jest.runOnlyPendingTimers() })
-      expect(viewer.dataset.buildStep).toBe('2')
+      expect(viewer.dataset.buildStep).toBe('1')
       expect(viewer.dataset.buildStep).not.toBe(viewer.dataset.buildStepCount)
     } finally {
       jest.useRealTimers()
@@ -495,12 +496,27 @@ describe('click halves and host-controlled slides (spro demo T12)', () => {
     const viewer = sized(viewerOf(container))
     const start = Number(viewer.dataset.buildStep)
     fireEvent.click(viewer, { clientX: 800 })
-    expect(Number(viewer.dataset.buildStep)).toBe(start + 1)
+    const one = Number(viewer.dataset.buildStep)
+    fireEvent.click(viewer, { clientX: 800 })
+    expect(Number(viewer.dataset.buildStep)).toBe(one + 1)
+    expect(one).toBeGreaterThan(start)
     expect(viewer.dataset.slideIndex).toBe('0')
+    // back undoes that click only
     fireEvent.click(viewer, { clientX: 200 })
-    expect(Number(viewer.dataset.buildStep)).toBe(start)
+    expect(Number(viewer.dataset.buildStep)).toBe(one)
     for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
     expect(viewer.dataset.slideIndex).toBe('1')
+  })
+
+  it('back with nothing clicked yet on a slide leaves it (the entry step is part of arriving)', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+    fireEvent.click(viewer, { clientX: 800 }) // slide 1's entry step
+    fireEvent.click(viewer, { clientX: 100 })
+    expect(viewer.dataset.slideIndex).toBe('0')
   })
 
   it('going back to the previous slide under a controlling host lands on it fully built', () => {

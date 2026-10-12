@@ -389,8 +389,15 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   const retreat = React.useCallback(() => {
     navDirectionRef.current = 'backward'
-    if (currentBuildStep > 0) {
-      setStep(currentBuildStep - 1)
+    // Back undoes the last CLICK, as in a presentation app: the latest revealed step that waited
+    // for one, with the auto steps that chained after it. Steps that revealed themselves on entry
+    // (step 0 is always auto) are part of arriving, so with nothing clicked yet back leaves the
+    // slide. Stepping back one auto step at a time looked like "back does nothing" on a deck
+    // whose builds all chain (spro demo T12).
+    let group = Math.min(currentBuildStep, steps.length) - 1
+    while (group > 0 && steps[group].auto) group--
+    if (group > 0) {
+      setStep(group)
       return
     }
     const prev = prevPresentableIndex(pages, currentSlideIndex)
@@ -399,7 +406,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       const prevSteps = prevPage ? computeBuildSteps(prevPage) : []
       setSlide(prev, prevSteps.length)
     }
-  }, [currentBuildStep, pages, currentSlideIndex, setStep, setSlide])
+  }, [currentBuildStep, steps, pages, currentSlideIndex, setStep, setSlide])
 
   const goHome = React.useCallback(() => {
     navDirectionRef.current = 'forward'
