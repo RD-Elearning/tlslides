@@ -7,6 +7,7 @@
 
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { TitleProps } from './schema'
+import { alignedTextNodes } from '../_engine/text-place'
 
 /**
  * Effective font size, accounting for the style's scale multiplier.
@@ -121,17 +122,11 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
     ? finalLines.length * effectiveFontSize(scaledStyle) * scaledStyle.lineHeight
     : m.height
 
-  const nodes: LayoutNode[] = [{
-    k: 'text',
-    part: 'text',
-    // G8.4: report the true measured height, not clamped to the given box — a clamp here
-    // defeats V2.1's two-pass reflow, which relies on this value to know a region needs to
-    // grow (BACKLOG-visual-fix-2.md §8.0/§8.4).
-    box: { ...inner, height: textHeight },
-    lines: finalLines,
-    style: scaledStyle,
-    propPath: 'text',
-  }]
+  // G8.4: report the true measured height, not clamped to the given box — a clamp here
+  // defeats V2.1's two-pass reflow, which relies on this value to know a region needs to
+  // grow (BACKLOG-visual-fix-2.md §8.0/§8.4).
+  const align = props.align === 'center' || props.align === 'end' ? props.align : 'start'
+  const nodes: LayoutNode[] = alignedTextNodes(finalLines, scaledStyle, { ...inner, height: textHeight }, align, 'text', 'text')
 
   // Optional decorative rule
   if (props.rule) {
@@ -139,7 +134,8 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
     nodes.push({
       k: 'rect',
       part: 'rule',
-      box: { x: inner.x, y: ruleY, width: 120, height: 6 },
+      // under the title's first line start, its centre or its end, as the text is aligned
+      box: { x: align === 'center' ? inner.x + (inner.width - 120) / 2 : align === 'end' ? inner.x + inner.width - 120 : inner.x, y: ruleY, width: 120, height: 6 },
       fill: { type: 'solid', color: ctx.resolveColor('accent').color },
       radius: 3,
     })

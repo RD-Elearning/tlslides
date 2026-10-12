@@ -232,3 +232,39 @@ describe('AC8.6 — size: fit', () => {
     }
   })
 })
+
+describe('tls.t.title / tls.t.body align (spro demo T16)', () => {
+  const registry = makeRegistry()
+  const texts = (node: any) => (node.children as any[]).filter((c) => c.k === 'text')
+
+  it('a centred title draws each line centred, an end-aligned one flush right; start is one node', () => {
+    const W = 960
+    const centre = texts(tlsTTitle.layout({ text: 'Short title', align: 'center' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(centre.length).toBeGreaterThanOrEqual(1)
+    for (const t of centre) {
+      const mid = t.box.x + t.box.width / 2
+      expect(Math.abs(mid - W / 2)).toBeLessThan(2)
+      expect(t.part).toBe('text')
+      expect(t.propPath).toBe('text')
+    }
+    const end = texts(tlsTTitle.layout({ text: 'Short title', align: 'end' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(Math.abs(end[0].box.x + end[0].box.width - W)).toBeLessThan(2)
+    const start = texts(tlsTTitle.layout({ text: 'Short title' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(start).toHaveLength(1)
+    expect(start[0].box.x).toBe(0)
+  })
+
+  it('a centred title centres its rule too', () => {
+    const W = 960
+    const node: any = tlsTTitle.layout({ text: 'Short title', align: 'center', rule: true } as any, makeCtx({ width: W, height: 300 }, registry))
+    const rule = node.children.find((c: any) => c.part === 'rule')
+    expect(rule.box.x + rule.box.width / 2).toBeCloseTo(W / 2)
+  })
+
+  it('a one-column body follows its align', () => {
+    const { tlsTBody } = jest.requireActual('../tls-t-body') as { tlsTBody: typeof tlsTTitle }
+    const W = 960
+    const lines = texts(tlsTBody.layout({ text: 'One short line', align: 'center' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(Math.abs(lines[0].box.x + lines[0].box.width / 2 - W / 2)).toBeLessThan(2)
+  })
+})

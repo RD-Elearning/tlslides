@@ -15,6 +15,7 @@
 
 import type { LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import type { BodyProps } from './schema'
+import { alignedTextNodes } from '../_engine/text-place'
 
 /**
  * Apply a scale factor to a resolved text style.
@@ -70,17 +71,11 @@ export function layout(props: BodyProps, ctx: LayoutContext): LayoutNode {
       }
     }
 
-    const textNode: LayoutNode = {
-      k: 'text',
-      part: 'text',
-      box: { ...inner, height: m.height },
-      lines: m.lines,
-      style: currentStyle,
-      propPath: 'text',
-    }
+    const at = align === 'center' || align === 'end' ? align : 'start'
+    const textNodes = alignedTextNodes(m.lines, currentStyle, { ...inner, height: m.height }, at, 'text', 'text')
 
     // Return measured content height, not the full available box height.
-    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children: [textNode] }
+    return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: m.height }, part: 'root', children: textNodes }
   }
 
   // Multi-column: split text by newlines, or if no newlines, split by space
