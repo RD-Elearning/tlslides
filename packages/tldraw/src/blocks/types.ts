@@ -406,8 +406,10 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   defaults: P
 
   /** Sizing. `preferred` is what the inserter drops; `min` is enforced on resize.
-   *  All in slide units (1920×1080 frame). */
-  size: { preferred: [number, number]; min: [number, number]; aspect?: number }
+   *  All in slide units (1920×1080 frame). `hug`: in a region it shares with other blocks and
+   *  that is centred / bottom-aligned, the block keeps its content height instead of taking the
+   *  leftover (for a block that only centres itself in a taller box — spro demo T19). */
+  size: { preferred: [number, number]; min: [number, number]; aspect?: number; hug?: boolean }
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
    *  This is the single source of truth for what the block looks like.

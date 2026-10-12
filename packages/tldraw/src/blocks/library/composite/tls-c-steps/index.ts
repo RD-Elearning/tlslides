@@ -148,7 +148,9 @@ export const tlsCSteps: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [840, 460] },
+  // min height: the example's row at the min width (it was 460, which held a
+  // row of steps at twice its height above a takeaway — spro demo T19)
+  size: { preferred: derivePreferredSize(), min: [840, 300], hug: true },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacityFn as BlockDefinition['capacity'],

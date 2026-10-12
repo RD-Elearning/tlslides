@@ -209,7 +209,7 @@ export const RECIPES: readonly SlideRecipe[] = [
   { id: 'comparison-table', role: 'comparison', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.d.compare-table'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'feature matrix, with the verdict', },
 
   // ── process ──
-  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'ordered steps, their point' },
+  { id: 'process-steps', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.steps', { align: 'center' }), b('tls.t.takeaway', { size: 'lead' })] }, when: 'ordered steps, their point' },
   { id: 'process-chevrons', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.chevrons', { textPlacement: 'below' }), b('tls.t.takeaway', { size: 'lead' })] }, when: 'phases, the current one', variants: [v('single', { 'tls.g.chevrons': { fill: 'single' } }), v('series', { 'tls.g.chevrons': { fill: 'series' } }), v('inside', { 'tls.g.chevrons': { textPlacement: 'inside' } })] },
   { id: 'process-timeline', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.timeline', { alternate: true })] }, when: 'dated events', variants: [v('numbers', { 'tls.g.timeline': { nodeStyle: 'number' } })] },
   { id: 'process-roadmap', role: 'process', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.g.roadmap'), b('tls.t.takeaway', { size: 'lead' })] }, when: 'plan by period and lane', variants: [v('plain', { 'tls.g.roadmap': { statusColors: false } })] },

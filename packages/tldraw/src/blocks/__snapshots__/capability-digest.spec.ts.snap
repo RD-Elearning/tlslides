@@ -1249,6 +1249,7 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
 |---|---|---|---|
 | \`steps\` | yes | list of object (title, desc) (1–12 items) | 2–6 steps, each 2–8 words in the title. Description is optional, 1–2 sentences. |
 | \`orientation\` | no | enum: horizontal \\\\| vertical | Layout direction: horizontal (left to right) or vertical (top to bottom). |
+| \`align\` | no | enum: start \\\\| center | Horizontal steps: start = badge and text at the column start; center = badge over the middle, text centred. |
 
 \`\`\`json
 {
@@ -5623,7 +5624,7 @@ comparison-pricing · timeline+title — tls.d.pricing — plans and prices · l
 comparison-matrix · timeline+title — tls.g.matrix-2x2 — items on two axes · looks: lines
 comparison-table · timeline+title — tls.d.compare-table + tls.t.takeaway(size=lead) — feature matrix, with the verdict
 ### process
-process-steps · timeline+title — tls.c.steps + tls.t.takeaway(size=lead) — ordered steps, their point
+process-steps · timeline+title — tls.c.steps(align=center) + tls.t.takeaway(size=lead) — ordered steps, their point
 process-chevrons · timeline+title — tls.g.chevrons(textPlacement=below) + tls.t.takeaway(size=lead) — phases, the current one · looks: single|series|inside
 process-timeline · timeline+title — tls.g.timeline(alternate=true) — dated events · looks: numbers
 process-roadmap · timeline+title — tls.g.roadmap + tls.t.takeaway(size=lead) — plan by period and lane · looks: plain

@@ -220,7 +220,7 @@ function compileSlideUnstyled(
       const blocks = spec.regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults)
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, regionAlignMap?.[regionName] ?? 'start')
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -461,6 +461,8 @@ interface RegionSizing {
   height: number
   /** Never taller than the root it returned at the full region height. */
   cap: number
+  /** `content` block whose definition sets `size.hug` (keeps its height in a centred region). */
+  hug?: boolean
 }
 
 /**
@@ -476,7 +478,8 @@ interface RegionSizing {
  * Then the region height left after rigid/content blocks and gaps is shared among the fill
  * blocks (each at least `def.size.min[1]`); with no fill block, the leftover is shared among the
  * `content` blocks instead, so a block that was designed to take the region still does, minus
- * its siblings. Pure: same input, same heights.
+ * its siblings — except a `size.hug` block in a centred / end-aligned region, which keeps its
+ * own height so the placement aligns the group. Pure: same input, same heights.
  */
 function measureRegionBlocks(
   blocks: BlockSpec[],
@@ -485,7 +488,8 @@ function measureRegionBlocks(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   intrinsicSizeCache: Map<string, Size>,
-  blockDefaults?: Record<string, Record<string, unknown>>
+  blockDefaults?: Record<string, Record<string, unknown>>,
+  align: 'start' | 'center' | 'end' = 'start'
 ): number[] {
   const regionSize = { width: regionBox.width, height: regionBox.height }
   // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
@@ -569,7 +573,8 @@ function measureRegionBlocks(
     if (m.reason?.startsWith('layout threw')) return { kind: 'rigid', height: root, cap: root }
     if (m.elastic) return { kind: 'fill', height: minH, cap: root }
     const fitted = fitContentHeight(def, props, ctx, regionBox.width, m.natural.height, root)
-    return { kind: 'content', height: Math.min(root, Math.max(fitted, minH)), cap: root }
+    const height = Math.min(root, Math.max(fitted, minH))
+    return { kind: 'content', height, cap: root, hug: def.size.hug === true }
   })
 
   const fixedTotal = sizing.reduce((sum, s) => sum + (s && s.kind !== 'fill' ? s.height : 0), 0)
@@ -584,8 +589,13 @@ function measureRegionBlocks(
       const share = room / flex.length
       for (const s of flex) s.height = Math.min(s.cap, Math.max(s.height, share))
     } else {
-      const extra = Math.max(0, room - flexBase) / flex.length
-      for (const s of flex) s.height = Math.min(s.cap, s.height + extra)
+      // spro demo T19: in a centred (or bottom-aligned) region, a `size.hug` block (a row of steps
+      // that only centres itself in a taller box) keeps its own height, so the region places the
+      // blocks as one group — sharing the leftover gave such a row a tall box, with one gap above
+      // it and another between it and the takeaway under it. Other content blocks still share it.
+      const taking = align === 'start' ? flex : flex.filter((s) => !s.hug)
+      const extra = Math.max(0, room - flexBase) / Math.max(1, taking.length)
+      for (const s of taking) s.height = Math.min(s.cap, s.height + extra)
     }
   }
   return sizing.map((s, i) => (s ? s.height : roots[i]))
