@@ -50,3 +50,19 @@ describe('tls.g.graph', () => {
     expect(leavesOf(tree, 'null').length).toBeGreaterThan(0)
   })
 })
+
+describe('tls.g.graph — robust input, token sizes', () => {
+  it('a tree written as edges is laid out like parent/side', () => {
+    const tree = lay({ nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }], edges: [{ from: 'a', to: 'b' }, { from: 'a', to: 'c' }], order: [] })
+    const nodes = leavesOf(tree, 'node')
+    expect(nodes).toHaveLength(3)
+    expect(nodes[0].x).toBeLessThan(nodes[1].x) // b (left) before a before c
+  })
+  it('labels and badges use sizes of the type scale', () => {
+    const { makeCtx, makeRegistry } = require('../../text/test-helpers')
+    const ctx = makeCtx({ width: 1200, height: 640 }, makeRegistry())
+    const scale = new Set(['heading', 'subheading', 'lead', 'body', 'caption', 'footnote'].map((t) => ctx.resolveText(t).size))
+    const sizes = leavesOf(lay({}), 'label').concat(leavesOf(lay({}), 'order')).filter((l) => l.k === 'text').map((l) => (l.node as any).style.size)
+    for (const s of sizes) expect(scale.has(s)).toBe(true)
+  })
+})

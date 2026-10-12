@@ -31,6 +31,12 @@ export const schema: BlockSchema = {
     guidance:
       'Short labels (a key or value, ≤ 8 chars). binary-tree: every node but the root has `parent` (an id) and `side` (left|right), at most 5 levels; list: in order, no parent.',
   },
+  edges: {
+    type: { kind: 'list', of: { kind: 'object', fields: { from: { type: { kind: 'text', maxChars: 12 }, role: 'content', label: 'From' }, to: { type: { kind: 'text', maxChars: 12 }, role: 'content', label: 'To' } } }, max: GRAPH_MAX_NODES },
+    role: 'content',
+    label: 'Edges',
+    guidance: 'Optional instead of parent/side: parent → child links; a parent\'s first edge is its left child.',
+  },
   order: {
     type: { kind: 'list', of: { kind: 'text', maxChars: 12 }, max: GRAPH_MAX_NODES },
     role: 'content',
@@ -62,6 +68,7 @@ export interface GraphNode {
 export interface GraphProps extends Record<string, unknown> {
   kind?: 'binary-tree' | 'list'
   nodes: GraphNode[]
+  edges?: Array<{ from: string; to: string }>
   order?: string[]
   orderLabel?: string
   highlight?: string[]

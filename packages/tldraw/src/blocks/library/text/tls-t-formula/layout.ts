@@ -1,6 +1,6 @@
 /**
  * Pure layout for tls.t.formula — each line of the expression set on one baseline, subscripts and
- * superscripts at 62 % size, lowered / raised by the engine (no Unicode sub/superscript glyphs:
+ * superscripts two steps down the type scale, lowered / raised by the engine (no Unicode sub/superscript glyphs:
  * most fonts lack them and they render as boxes — spro llm-eval 2026-10-12, "log₂N").
  *
  * The size ladder display → title → heading takes the largest size at which the widest line fits
@@ -15,7 +15,9 @@ import { str } from '../_engine/rich'
 import { isShown } from '../../../schema-helpers'
 import { parseFormula, type Seg } from './parse'
 
-export const SCRIPT_SCALE = 0.62
+/** The type scale: a script is set two steps below its line (a token size, so the slide keeps
+ *  to its few sizes — `type/too-many-sizes`). */
+const SCALE: TypeToken[] = ['display', 'title', 'heading', 'subheading', 'lead', 'body', 'caption', 'footnote']
 export const MAX_LINES = 4
 const LADDER: TypeToken[] = ['display', 'title', 'heading']
 
@@ -39,7 +41,7 @@ export function layout(props: FormulaProps, ctx: LayoutContext): LayoutNode {
   const start = Math.max(0, LADDER.indexOf((props.size as TypeToken) ?? 'title'))
   const styled = (token: TypeToken) => {
     const base: ResolvedTextStyle = { ...ctx.resolveText(token), color: text }
-    const script: ResolvedTextStyle = { ...base, size: Math.round(base.size * SCRIPT_SCALE) }
+    const script: ResolvedTextStyle = { ...ctx.resolveText(SCALE[Math.min(SCALE.length - 1, SCALE.indexOf(token) + 2)]), color: text }
     const widthOf = (seg: Seg) => ctx.measureText(seg.text, seg.kind === 'base' ? base : script).width
     const rowWidth = (row: Seg[]) => row.reduce((w, s) => w + widthOf(s), 0)
     return { base, script, widthOf, widest: Math.max(0, ...rows.map(rowWidth)), rowWidth }

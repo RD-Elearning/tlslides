@@ -56,11 +56,34 @@ export function placeTree(nodes: GraphNode[]): Placed[] {
   return out
 }
 
-function readNodes(raw: unknown): GraphNode[] {
-  return objs(raw)
+/** Nodes; a node without `parent` takes it from `edges` (from → to, a parent's first edge is its
+ *  left child) — the form models write for a tree when they think of it as a graph. */
+function readNodes(raw: unknown, rawEdges?: unknown): GraphNode[] {
+  const nodes = objs(raw)
     .slice(0, GRAPH_MAX_NODES)
-    .map((o) => ({ id: str(o.id), label: str(o.label), parent: str(o.parent) || undefined, side: o.side === 'left' || o.side === 'right' ? o.side : undefined }))
+    .map((o) => ({ id: str(o.id), label: str(o.label), parent: str(o.parent) || undefined, side: o.side === 'left' || o.side === 'right' ? (o.side as 'left' | 'right') : undefined }))
     .filter((n) => n.id)
+  const kidsSeen = new Map<string, number>()
+  for (const e of objs(rawEdges)) {
+    const from = str(e.from)
+    const to = str(e.to)
+    const n = nodes.find((x) => x.id === to)
+    if (!n || n.parent || !from || from === to) continue
+    const k = kidsSeen.get(from) ?? 0
+    kidsSeen.set(from, k + 1)
+    n.parent = from
+    n.side = n.side ?? (k === 0 ? 'left' : 'right')
+  }
+  return nodes
+}
+
+/** The largest type-scale size at most `px` (a token size: `type/too-many-sizes` counts sizes). */
+function tokenAtMost(ctx: LayoutContext, px: number): ResolvedTextStyle {
+  for (const t of ['heading', 'subheading', 'lead', 'body', 'caption', 'footnote'] as const) {
+    const s = ctx.resolveText(t)
+    if (s.size <= px) return s
+  }
+  return ctx.resolveText('footnote')
 }
 
 const ids = (v: unknown) => (Array.isArray(v) ? v.map(str).filter(Boolean) : [])
@@ -68,7 +91,7 @@ const ids = (v: unknown) => (Array.isArray(v) ? v.map(str).filter(Boolean) : [])
 export function layout(props: GraphProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
-  const nodes = readNodes(props.nodes)
+  const nodes = readNodes(props.nodes, (props as Record<string, unknown>).edges)
   if (!nodes.length) return emptyState(ctx, 'No nodes')
   const c = chartColors(ctx)
   const accent = ctx.resolveColor('accent').color
@@ -92,7 +115,7 @@ export function layout(props: GraphProps, ctx: LayoutContext): LayoutNode {
     const ink = hi.has(id) ? onColor(ctx, accent) : c.text
     const w = rect ? d * 1.5 : d
     children.push({ k: 'rect', part: `node[${i}]`, box: { x: cx - w / 2, y: cy - d / 2, width: w, height: d }, fill: { type: 'solid', color: fill }, stroke: { color: accent, width: 2 }, radius: rect ? ctx.tokens.radius.sm : d / 2 })
-    const ts: ResolvedTextStyle = { ...style(ctx, 'heading', ink), size: clamp(Math.round(d * 0.36), 16, 48), lineHeight: 1.15 }
+    const ts: ResolvedTextStyle = { ...tokenAtMost(ctx, d * 0.4), color: ink, lineHeight: 1.15 }
     const t = placeLines(ctx, label, ts, { x: cx - w / 2 + 4, y: cy - (ts.size * ts.lineHeight) / 2, width: w - 8 }, 'center', 1, `label[${i}]`)
     children.push(...t.nodes)
     const r = rank.get(id)
@@ -101,7 +124,7 @@ export function layout(props: GraphProps, ctx: LayoutContext): LayoutNode {
       const bx = cx + w / 2 - b * 0.35
       const by = cy - d / 2 - b * 0.55
       children.push({ k: 'rect', part: `order[${r - 1}]`, box: { x: bx - b / 2, y: by, width: b, height: b }, fill: { type: 'solid', color: accent }, radius: b / 2 })
-      const bs: ResolvedTextStyle = { ...style(ctx, 'caption', onColor(ctx, accent)), size: clamp(Math.round(b * 0.55), 12, 28), lineHeight: 1.1 }
+      const bs: ResolvedTextStyle = { ...tokenAtMost(ctx, b * 0.6), color: onColor(ctx, accent), lineHeight: 1.1 }
       children.push(...placeLines(ctx, String(r), bs, { x: bx - b / 2, y: by + (b - bs.size * bs.lineHeight) / 2, width: b }, 'center', 1, `order[${r - 1}].n`).nodes)
     }
   }

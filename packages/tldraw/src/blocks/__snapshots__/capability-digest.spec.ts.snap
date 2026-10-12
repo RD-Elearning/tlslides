@@ -2854,6 +2854,7 @@ A binary tree (left/right children kept) or a linked list, laid out by the engin
 |---|---|---|---|
 | \`kind\` | no | enum: binary-tree \\\\| list | binary-tree: nodes with parent + side; list: nodes in order, joined by arrows. |
 | \`nodes\` | yes | list of object (id, label, parent, side) (1–31 items) | Short labels (a key or value, ≤ 8 chars). binary-tree: every node but the root has \`parent\` (an id) and \`side\` (left\\\\|right), at most 5 levels; list: in order, no parent. |
+| \`edges\` | no | list of object (from, to) (0–31 items) | Optional instead of parent/side: parent → child links; a parent's first edge is its left child. |
 | \`order\` | no | list of text (max 12 chars) (0–31 items) | Optional: node ids in the order a traversal visits them; numbered on the nodes and written out below. |
 | \`orderLabel\` | no | text (max 40 chars) | Optional: names the order, e.g. \\"Pre-order (NLR)\\". |
 | \`highlight\` | no | list of text (max 12 chars) (0–31 items) | Optional: ids drawn in the accent (a search path, an inserted node). |
