@@ -501,6 +501,13 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
   }
 
+  // The detail is what a model fills a slide from: with an icon slot and no names it guesses, and
+  // a guessed icon renders as a placeholder (spro llm-eval 2026-10-12: git-commit, box-select).
+  if (filtered && data.blocks.some((b) => b.slots.some((s) => /(^icon$|\bicon\b.*\))/.test(s.type)))) {
+    lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+    lines.push('')
+  }
+
   if (!filtered) {
     lines.push('## Worked example — a valid slide')
     lines.push('')

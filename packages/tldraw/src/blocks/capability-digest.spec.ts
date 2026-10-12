@@ -521,6 +521,13 @@ describe('R7 — capability digest v2', () => {
       expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12000)
     })
 
+    it('the detail names the valid icons when a block has an icon slot (spro llm-eval: guessed icons)', () => {
+      const grid = capabilityDigest(reg, { types: ['tls.c.feature-grid'] })
+      expect(grid).toContain('Valid icon names: zap, shield')
+      expect(grid).toContain('git-branch')
+      expect(capabilityDigest(reg, { types: ['tls.t.title'] })).not.toContain('Valid icon names')
+    })
+
     it('CMP4: the composition card is ≤ 2.5k, names only real blocks, and joins the detail call on request', () => {
       const card = compositionCard()
       expect(card.length).toBeLessThanOrEqual(2500)
