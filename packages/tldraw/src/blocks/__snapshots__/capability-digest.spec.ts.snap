@@ -4832,6 +4832,7 @@ A step or item number: on a disc (solid, soft or outline), or as an oversized nu
 | \`variant\` | no | enum: circle \\\\| numeral | circle = the number on a disc (default); numeral = an oversized accent numeral, no disc. |
 | \`tone\` | no | enum: solid \\\\| soft \\\\| outline | The disc of a circle marker: solid accent (default), soft tint, or an outline ring. |
 | \`size\` | no | enum: md \\\\| sm \\\\| lg | circle: sm 48, md 72, lg 104 units across; numeral: sm 64, md 112, lg 168 units tall type. |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Where the marker sits across its column: start (default), center (above centred text), end. |
 
 \`\`\`json
 {

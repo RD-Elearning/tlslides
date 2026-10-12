@@ -229,7 +229,7 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
         stack(`c${i + 1}`, [
           look === 'shapes'
             ? blk(`m${i + 1}`, 'tls.m.shape', { label: String(i + 1), shape: 'circle', tone: 'solid', size: 'sm' })
-            : blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: 'solid', size: 'lg' }),
+            : blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: 'solid', size: 'lg', align: 'center' }),
           // centred under the marker: a path reads column by column (spro demo T10)
           heading(`h${i + 1}`, a.head, 'subheading', { align: 'center' }),
           body(`b${i + 1}`, a.text, { align: 'center' }),
@@ -426,7 +426,7 @@ export const COMPOSITION_PATTERNS: readonly CompositionPattern[] = [
         { head: 'Review in six weeks', text: 'One scorecard, shared with this group.' },
       ]
       const one = (it: { head: string; text: string }, i: number) => {
-        const kids = [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: 'solid' }), heading(`h${i + 1}`, it.head, 'heading', { align: 'center' }), body(`b${i + 1}`, it.text, { size: 'lead', align: 'center' })]
+        const kids = [blk(`m${i + 1}`, 'tls.t.marker', { value: String(i + 1), tone: 'solid', align: 'center' }), heading(`h${i + 1}`, it.head, 'heading', { align: 'center' }), body(`b${i + 1}`, it.text, { size: 'lead', align: 'center' })]
         return look === 'plain' ? stack(`c${i + 1}`, kids, { gap: 'sm' }) : card(`c${i + 1}`, kids)
       }
       return { regions: { title: [title('Thank you — next steps')], timeline: [row('steps', items.map(one), { gap: 'xl' })] } }

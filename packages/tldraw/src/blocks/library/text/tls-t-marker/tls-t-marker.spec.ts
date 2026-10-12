@@ -60,3 +60,17 @@ describe('tls.t.marker', () => {
     expect(tlsTMarker.motion).toEqual({ parts: ['marker'], preset: 'fade-up', expressive: 'pop' })
   })
 })
+
+describe('tls.t.marker align (spro demo T17)', () => {
+  it('sits at the start by default, centred or at the end of its column when asked', () => {
+    const { tlsTMarker } = jest.requireActual('./index') as { tlsTMarker: { layout: (p: unknown, c: unknown) => any } }
+    const { makeCtx, makeRegistry } = jest.requireActual('../test-helpers') as typeof import('../test-helpers')
+    const ctx = () => makeCtx({ width: 600, height: 200 }, makeRegistry())
+    const disc = (align?: string) => tlsTMarker.layout({ value: '1', ...(align ? { align } : {}) }, ctx()).children[0].box
+    expect(disc().x).toBe(0)
+    const c = disc('center')
+    expect(c.x + c.width / 2).toBeCloseTo(300)
+    const e = disc('end')
+    expect(e.x + e.width).toBeCloseTo(600)
+  })
+})

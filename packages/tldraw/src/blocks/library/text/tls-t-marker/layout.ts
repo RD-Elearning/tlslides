@@ -100,7 +100,9 @@ export function layout(props: MarkerProps, ctx: LayoutContext): LayoutNode {
     propPath: 'value',
     align: 'center',
   })
-  const marker: LayoutNode = { k: 'group', part: 'marker', box: { x: 0, y: 0, width: g.w, height: g.h }, children }
+  // spro demo T17: a column of centred text had its number pinned to the left edge
+  const x = props.align === 'center' ? (W - g.w) / 2 : props.align === 'end' ? W - g.w : 0
+  const marker: LayoutNode = { k: 'group', part: 'marker', box: { x, y: 0, width: g.w, height: g.h }, children }
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: g.h }, children: [marker] }
 }
 

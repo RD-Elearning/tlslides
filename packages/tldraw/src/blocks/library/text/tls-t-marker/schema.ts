@@ -31,6 +31,12 @@ export const schema: BlockSchema = {
     label: 'Size',
     help: 'circle: sm 48, md 72, lg 104 units across; numeral: sm 64, md 112, lg 168 units tall type.',
   },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center', 'end'] },
+    role: 'option',
+    label: 'Alignment',
+    help: 'Where the marker sits across its column: start (default), center (above centred text), end.',
+  },
 }
 
 export interface MarkerProps extends Record<string, unknown> {
@@ -38,6 +44,7 @@ export interface MarkerProps extends Record<string, unknown> {
   variant?: 'circle' | 'numeral'
   tone?: 'solid' | 'soft' | 'outline'
   size?: 'md' | 'sm' | 'lg'
+  align?: 'start' | 'center' | 'end'
 }
 
 export const defaults: MarkerProps = {
