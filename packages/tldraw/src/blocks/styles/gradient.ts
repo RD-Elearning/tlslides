@@ -133,5 +133,6 @@ export const GRADIENT_STYLE: DeckStyle = {
   },
   prefer: ['tls.m.device-mock'],
   avoid: ['tls.d.scatter', 'tls.d.heatmap'],
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:orb', 'tls.m.decoration:ring', 'tls.m.pattern:mesh'], zones: ['corner', 'behind-title', 'watermark'], icons: 'disc', accent: 'One glow per slide: the gradient on the key number or word.' },
   rules: ['Dark first; one glow per slide.', 'Short, big headlines.', 'Cards over bare text for lists.'],
 }

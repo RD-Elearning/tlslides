@@ -129,5 +129,6 @@ export const GLASS_STYLE: DeckStyle = {
   },
   prefer: [],
   avoid: ['tls.d.table', 'tls.d.compare-table', 'tls.d.heatmap', 'tls.t.footnote'],
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:orb', 'tls.m.decoration:blob', 'tls.m.pattern:mesh'], zones: ['corner', 'behind-title', 'beside-visual'], icons: 'disc', accent: 'Soft light on the card that matters; never more than one lit orb.' },
   rules: ['Content on glass cards over the glow, never on bare background.', 'At most three chart series.', 'Short, friendly headlines.'],
 }

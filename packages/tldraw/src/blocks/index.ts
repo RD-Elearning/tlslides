@@ -186,6 +186,8 @@ export type { CompositionPattern, ComposedSlide } from './patterns'
 export { checkGrammar, nearestPattern, validateFreeComposition, GRAMMAR_CONTAINERS, GRAMMAR_MAX_DEPTH, GRAMMAR_MAX_CHILDREN, GRAMMAR_STYLE_FIELDS } from './composition-grammar'
 export type { GrammarFinding } from './composition-grammar'
 export { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
+export { composeKit, composeCard, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
+export type { SlideShape, ComposeKit, ComposeKitOptions } from './compose-kit'
 export type { Composition, ComposeKind, ComposeRunResult } from './pipeline/composeRun'
 export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
@@ -307,4 +309,4 @@ export {
   styleCard,
   stylePreference,
 } from './styles'
-export type { DeckStyle, FontRef, StyleSurface } from './types'
+export type { DeckStyle, FontRef, StyleConcept, StyleSurface } from './types'

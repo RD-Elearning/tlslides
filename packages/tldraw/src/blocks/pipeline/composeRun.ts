@@ -20,7 +20,19 @@ import type { BlockRegistry } from '../registry'
 import type { BlockSpec, ConnectorSpec, DeckSpec, SlideSpec } from '../types'
 
 /** The kinds of composition the generator writes. */
-export const COMPOSE_KINDS = ['peers', 'split', 'lockup', 'photo', 'path'] as const
+/** spro compose PLAN.md B1: `diagram` (a shape family's block under the title, from its own
+ *  example), `accented` (a diagram beside text with one accent), `decorated` (peer cards with one
+ *  decorative element in a corner or a rule under the heading). */
+export const COMPOSE_KINDS = ['peers', 'split', 'lockup', 'photo', 'path', 'diagram', 'accented', 'decorated'] as const
+
+/** The blocks the `diagram` / `accented` kinds exercise: the teaching blocks no recipe reaches. */
+export const DIAGRAM_TYPES = ['tls.g.tree', 'tls.g.cycle', 'tls.g.mindmap', 'tls.g.pyramid', 'tls.g.breakdown', 'tls.g.layers', 'tls.t.definition', 'tls.t.qa', 'tls.d.table', 'tls.t.checklist', 'tls.g.matrix-2x2', 'tls.g.hub-spoke'] as const
+const DECORATIONS = [
+  { type: 'tls.m.decoration', props: { shape: 'squiggle', tone: 'accent2', opacity: 'soft' } },
+  { type: 'tls.m.decoration', props: { shape: 'orb', tone: 'accent', opacity: 'soft' } },
+  { type: 'tls.m.decoration', props: { shape: 'dots', tone: 'accent2', opacity: 'medium' } },
+  { type: 'tls.m.decoration', props: { shape: 'star', tone: 'accent', opacity: 'medium' } },
+] as const
 export type ComposeKind = (typeof COMPOSE_KINDS)[number]
 
 export interface Composition {
@@ -57,6 +69,8 @@ const STATS = ['42%', '3×', '118%', '1,250', '$2.4M']
 
 export function generateCompositions(count: number, seed = 1): Composition[] {
   const rnd = prng(seed)
+  const reg = defaultBlockRegistry()
+  const example = (type: string, id: string): BlockSpec => ({ ...(JSON.parse(JSON.stringify(reg.get(type)!.describe!.example)) as BlockSpec), id })
   const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]
   const int = (lo: number, hi: number) => lo + Math.floor(rnd() * (hi - lo + 1))
   const out: Composition[] = []
@@ -115,6 +129,31 @@ export function generateCompositions(count: number, seed = 1): Composition[] {
             bodyB(pick(BODIES), 'subheading'),
           ],
         },
+      }
+    } else if (kind === 'diagram') {
+      slide = { id: 's', layout: 'timeline', regions: { title: [title], timeline: [example(DIAGRAM_TYPES[n % DIAGRAM_TYPES.length], nid('g'))] } }
+    } else if (kind === 'accented') {
+      const accent = pick(['takeaway', 'callout', 'hero'] as const)
+      const side =
+        accent === 'hero' ? b('tls.t.hero-number', { value: pick(STATS), caption: 'since the pilot' })
+        : accent === 'callout' ? b('tls.t.callout', { title: 'Note', text: pick(BODIES), variant: 'tip' })
+        : b('tls.t.takeaway', { text: pick(BODIES) })
+      slide = { id: 's', layout: 'two-column', regions: { title: [title], left: [example(DIAGRAM_TYPES[(n * 3) % DIAGRAM_TYPES.length], nid('g'))], right: [b('tls.t.bullets', { items: [{ text: pick(BODIES) }, { text: pick(BODIES) }, { text: pick(BODIES) }] }), side] } }
+    } else if (kind === 'decorated') {
+      const count = int(2, 3)
+      const peers = Array.from({ length: count }, (_, i) =>
+        b('tls.l.card', { children: [b('tls.m.icon', { icon: ICONS[(i + n) % ICONS.length], size: 'lg', iconStyle: 'disc' }), heading(HEADS[(i + n) % HEADS.length], 'heading'), bodyB(BODIES[(i + n) % BODIES.length])] })
+      )
+      const row = b('tls.l.row', { sizing: 'equal', gap: 'lg', children: peers })
+      const d = DECORATIONS[n % DECORATIONS.length]
+      const where = pick(['title-corner', 'backdrop', 'rule'] as const)
+      const deco =
+        where === 'rule' ? b('tls.x.rule', { length: 'short', tone: 'accent', weight: 'md' })
+        : b(d.type, { ...d.props }, where === 'backdrop' ? { layer: 'backdrop' } : { layer: 'overlay', anchor: 'right' })
+      slide = {
+        id: 's',
+        layout: 'timeline',
+        regions: where === 'title-corner' ? { title: [title, deco], timeline: [row] } : { title: [title], timeline: where === 'rule' ? [deco, row] : [deco, row] },
       }
     } else {
       const anchor = pick(['bottom-left', 'left', 'center'] as const)

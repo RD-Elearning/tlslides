@@ -1266,6 +1266,25 @@ export interface StyleSurface {
 }
 
 /**
+ * The style's concept for a slide the LLM composes (spro compose PLAN.md §4 B4/B6): how much
+ * decoration the style wants, which decorative blocks suit it and where they may sit, how icons
+ * are drawn and how the accent colour is spent. Read by `styleConceptCard`; the model picks the
+ * decoration per slide inside it, the engine draws it. Absent = derived (`styleConcept`).
+ */
+export interface StyleConcept {
+  /** How often a content slide carries a decorative element. */
+  decoration: 'none' | 'sparse' | 'rich'
+  /** Decorative blocks that suit the style, as `type` or `type:shape` (`tls.m.decoration:squiggle`). */
+  motifs: string[]
+  /** Where a decorative element may sit. */
+  zones: Array<'corner' | 'behind-title' | 'beside-visual' | 'watermark' | 'under-heading'>
+  /** How icons are drawn: `disc` (tinted circle), `plain`, or `none` (a typographic style). */
+  icons: 'disc' | 'plain' | 'none'
+  /** One sentence: how the accent colour is spent on a slide. */
+  accent: string
+}
+
+/**
  * AC1 — a deck style preset (`reviews/blocks/ai-curation/README.md` §3.2): data, not code. Lives
  * in `blocks/styles/<id>.ts`, registered in `BUILT_IN_STYLES`. Every part resolves *under* what
  * the `DeckSpec` authors and is never written back into it.
@@ -1299,4 +1318,6 @@ export interface DeckStyle {
    *  slides only inside them; a knob the style sets and does not list here stays fixed. Shown to
    *  the LLM as the style card's `Vary:` line. */
   variety?: Record<string, Record<string, Array<string | boolean>>>
+  /** The concept a composed slide follows (`StyleConcept`). */
+  concept?: StyleConcept
 }

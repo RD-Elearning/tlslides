@@ -73,6 +73,7 @@ export const CORPORATE_STYLE: DeckStyle = {
   },
   prefer: ['tls.g.roadmap', 'tls.c.dashboard'],
   avoid: ['tls.c.kinetic-title', 'tls.m.decoration', 'tls.m.pattern'],
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'disc', accent: 'Blue for the one figure or term the slide is about; charts carry their own colours.' },
   rules: [
     'Every chart or table has a one-line takeaway.',
     'Consistent number formats across a slide.',

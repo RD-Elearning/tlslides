@@ -99,6 +99,7 @@ export const CONSULTING_STYLE: DeckStyle = {
   },
   prefer: ['tls.g.swot', 'tls.d.waterfall', 'tls.d.stacked-bar', 'tls.d.scorecard'],
   avoid: ['tls.c.kinetic-title', 'tls.m.decoration', 'tls.m.image-grid'],
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'none', accent: 'Navy and teal mark the insight in the action title and one highlighted row or bar.' },
   rules: [
     'Action titles: one full sentence that states the insight.',
     'A source on every data slide.',

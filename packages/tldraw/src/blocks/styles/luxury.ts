@@ -128,6 +128,7 @@ export const LUXURY_STYLE: DeckStyle = {
   },
   prefer: [],
   avoid: ['tls.d.heatmap', 'tls.d.bubble', 'tls.d.scatter', 'tls.t.tags', 'tls.c.kinetic-title'],
+  concept: { decoration: 'sparse', motifs: ['tls.x.rule', 'tls.m.decoration:frame', 'tls.m.decoration:ring'], zones: ['under-heading', 'corner'], icons: 'plain', accent: 'Gold on one thin rule, one numeral or one word.' },
   rules: [
     'At most one accent use per slide.',
     'At most 40 words per slide.',
