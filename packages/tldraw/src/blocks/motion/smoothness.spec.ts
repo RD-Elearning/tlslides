@@ -663,6 +663,17 @@ describe('M6 — sweep start angle, settle, images', () => {
     expect(sets.find((x) => x.target === el.querySelector('path'))!.state).toEqual({ strokeDashoffset: '0' })
   })
 
+  it('settleBlockParts clears a blur entrance cut short (spro demo T18: a title stayed at blur(3px))', () => {
+    const el = document.createElement('div')
+    el.innerHTML = '<div data-part="text"></div>'
+    const text = el.querySelector('[data-part="text"]') as HTMLElement
+    text.style.filter = 'blur(3px)' // the words-in from-state, set before it plays
+    const def = { type: 'test.t18', motion: { parts: ['text'], preset: 'words-in' } } as unknown as BlockDefinition
+    const { driver, sets } = recorder()
+    settleBlockParts(el, { id: 'b', type: 'test.t18', props: {} } as BlockSpec, def, driver)
+    expect(sets.find((x) => x.target === text)!.state).toMatchObject({ opacity: 1, filter: 'none' })
+  })
+
   const imgDef = { type: 'test.m6img', motion: { parts: ['photo'], preset: 'fade' } } as unknown as BlockDefinition
   const imgSpec = { id: 'b', type: 'test.m6img', props: {}, motion: { preset: 'fade' } } as BlockSpec
   const slowImage = (decode: () => Promise<void>) => {

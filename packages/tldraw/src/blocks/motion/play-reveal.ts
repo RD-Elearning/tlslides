@@ -883,6 +883,9 @@ export function settleBlockParts(el: HTMLElement, spec: BlockSpec, def: BlockDef
         state.scaleY = 1
       }
       if (kf.clipPath || kf.strokeDashoffset || partEl.style.clipPath) state.clipPath = 'none'
+      // spro demo T18: a blur entrance (words-in, lines-in, quote-in) cut short by the next build
+      // step kept its from-state `blur(3px)` — the title stayed soft once the content had come in
+      if (kf.filter || partEl.style.filter) state.filter = 'none'
       driver.set(partEl, state)
       for (const g of [partEl, ...Array.from(partEl.querySelectorAll<SVGElement>('path, line, polyline, polygon, circle, ellipse'))]) {
         sweepHandles.get(g)?.cancel()
