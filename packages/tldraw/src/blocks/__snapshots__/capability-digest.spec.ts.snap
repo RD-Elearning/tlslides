@@ -2843,6 +2843,63 @@ Narrowing stages from broad to focused, with a note per stage and no numbers. _(
 }
 \`\`\`
 
+### \`tls.g.graph\` — Data structure
+
+A binary tree (left/right children kept) or a linked list, laid out by the engine, with a numbered visit order. _(family: diagram; keywords: binary tree, bst, linked list, traversal, data structure, nodes, graph)_
+
+**When:** Data structures in a lecture: a binary (search) tree, a traversal order, a linked list, an insertion.
+**Avoid:** Org charts and taxonomies with word labels (use tls.g.tree); processes with decisions (use tls.g.flow).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kind\` | no | enum: binary-tree \\\\| list | binary-tree: nodes with parent + side; list: nodes in order, joined by arrows. |
+| \`nodes\` | yes | list of object (id, label, parent, side) (1–31 items) | Short labels (a key or value, ≤ 8 chars). binary-tree: every node but the root has \`parent\` (an id) and \`side\` (left\\\\|right), at most 5 levels; list: in order, no parent. |
+| \`order\` | no | list of text (max 12 chars) (0–31 items) | Optional: node ids in the order a traversal visits them; numbered on the nodes and written out below. |
+| \`orderLabel\` | no | text (max 40 chars) | Optional: names the order, e.g. \\"Pre-order (NLR)\\". |
+| \`highlight\` | no | list of text (max 12 chars) (0–31 items) | Optional: ids drawn in the accent (a search path, an inserted node). |
+| \`showNull\` | no | boolean | list: a NULL after the last node. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_graph\\",
+  \\"type\\": \\"tls.g.graph\\",
+  \\"props\\": {
+    \\"kind\\": \\"binary-tree\\",
+    \\"nodes\\": [
+      {
+        \\"id\\": \\"n1\\",
+        \\"label\\": \\"A\\"
+      },
+      {
+        \\"id\\": \\"n2\\",
+        \\"label\\": \\"B\\",
+        \\"parent\\": \\"n1\\",
+        \\"side\\": \\"left\\"
+      },
+      {
+        \\"id\\": \\"n3\\",
+        \\"label\\": \\"C\\",
+        \\"parent\\": \\"n1\\",
+        \\"side\\": \\"right\\"
+      },
+      {
+        \\"id\\": \\"n4\\",
+        \\"label\\": \\"D\\",
+        \\"parent\\": \\"n2\\",
+        \\"side\\": \\"right\\"
+      }
+    ],
+    \\"order\\": [
+      \\"n1\\",
+      \\"n2\\",
+      \\"n4\\",
+      \\"n3\\"
+    ],
+    \\"orderLabel\\": \\"Pre-order (NLR)\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.hub-spoke\` — Hub and Spoke
 
 A central hub with 3-8 satellite cards on connecting lines, full circle or fanned over a half circle. _(family: diagram; keywords: hub, spoke, ecosystem, satellites, core, modules, stakeholders)_
@@ -4663,6 +4720,35 @@ Checklist with a done, open or blocked state per item. _(family: text; keywords:
 }
 \`\`\`
 
+### \`tls.t.code\` — Code
+
+A code snippet or pseudo-code in a monospace panel with line numbers and highlighted lines. _(family: text; keywords: code, snippet, pseudo-code, algorithm, program, syntax)_
+
+**When:** A snippet, pseudo-code or a function signature the audience must read (programming lectures).
+**Avoid:** Prose or steps in words (use tls.t.numbered or tls.c.steps); more than 14 lines (split the slide).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`code\` | yes | text (max 900 chars) | The snippet exactly as in the source, lines separated by new lines, indentation kept; at most 14 lines of at most 60 characters. |
+| \`language\` | no | text (max 20 chars) | Optional label in the corner, e.g. \\"C++\\", \\"Python\\", \\"pseudo-code\\". |
+| \`highlight\` | no | text (max 40 chars) | Optional: the lines to point at, 1-based, e.g. \\"3\\" or \\"2, 5-6\\". |
+| \`caption\` | no | text (max 160 chars) | Optional: one line on what the code does. |
+| \`lineNumbers\` | no | boolean |  |
+| \`showCaption\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_code\\",
+  \\"type\\": \\"tls.t.code\\",
+  \\"props\\": {
+    \\"code\\": \\"def preorder(t):\\\\n    if t is None:\\\\n        return\\\\n    visit(t)\\\\n    preorder(t.left)\\\\n    preorder(t.right)\\",
+    \\"language\\": \\"Python\\",
+    \\"highlight\\": \\"4\\",
+    \\"caption\\": \\"Pre-order: the node before its subtrees\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.definition\` — Definition
 
 A term with its definition, optional pronunciation, part of speech and example. _(family: text; keywords: definition, term, glossary, vocabulary, concept)_
@@ -4721,6 +4807,33 @@ Small-print source or footnote lines with an optional marker. _(family: text; ke
     ],
     \\"marker\\": \\"source\\",
     \\"align\\": \\"start\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.formula\` — Formula
+
+One to four lines of math with subscripts and superscripts set by the engine, and a caption. _(family: text; keywords: formula, equation, math, complexity, expression, notation)_
+
+**When:** An equation, a complexity (O(n log n)), a rule written in symbols, a short derivation (lectures).
+**Avoid:** Words that only mention a number (use tls.t.statement or tls.t.hero-number); code (use tls.t.code).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`expression\` | yes | text (max 200 chars) | Plain characters; \`_x\` / \`^x\` raise or lower ONE character, \`_{…}\` / \`^{…}\` a group: \\"h = log_2(N+1)\\", \\"n_0 = 2^{h+1} - 1\\", \\"O(n^2)\\". One line per step, separated by a new line (at most 4). Never Unicode sub/superscripts (₂, ²). |
+| \`caption\` | no | text (max 160 chars) | Optional: what the symbols mean, e.g. \\"N = number of nodes, h = height\\". |
+| \`size\` | no | enum: display \\\\| title \\\\| heading | The largest size that fits is used, down to heading. |
+| \`align\` | no | enum: center \\\\| start |  |
+| \`showCaption\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_formula\\",
+  \\"type\\": \\"tls.t.formula\\",
+  \\"props\\": {
+    \\"expression\\": \\"n_max = 2^{h+1} - 1\\",
+    \\"caption\\": \\"Most nodes in a binary tree of height h\\",
+    \\"size\\": \\"title\\"
   }
 }
 \`\`\`
@@ -5352,7 +5465,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 135,
+  "blockCount": 138,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -5421,6 +5534,7 @@ Object {
     "tls.g.cycle",
     "tls.g.flow",
     "tls.g.funnel",
+    "tls.g.graph",
     "tls.g.hub-spoke",
     "tls.g.iceberg",
     "tls.g.layers",
@@ -5469,8 +5583,10 @@ Object {
     "tls.t.callout",
     "tls.t.caption",
     "tls.t.checklist",
+    "tls.t.code",
     "tls.t.definition",
     "tls.t.footnote",
+    "tls.t.formula",
     "tls.t.hero-number",
     "tls.t.kicker",
     "tls.t.kv-list",
@@ -5653,7 +5769,7 @@ also: tls.t.kicker, tls.t.subtitle
 ## Text
 tls.t.body · text · element — Paragraph text, auto-fitted, optionally in columns [h≈0+41/L@840] knobs: align=start|center|end, autoFit
 tls.t.footnote · text · element · ≤4 items — Small-print source, reference or footnote line with optional marker [h≈-6+30/item@840] knobs: marker=none|number|asterisk|source, align=start|end
-also: tls.t.caption, tls.t.definition
+also: tls.t.caption, tls.t.code, tls.t.definition, tls.t.formula
 
 ## Lists
 tls.c.bento · list · slide · 3–5 items — Asymmetric tile grid: a big stat, icon points, a photo, a quote [h=fill] knobs: pattern=1+2|2+1|hero+3|3+2
@@ -5709,7 +5825,7 @@ also: tls.c.journey, tls.g.milestones
 ## Hierarchy
 tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction=up|down, notes=side|inside|none, fill=gradient|series|single
 tls.g.tree · hierarchy · group — Org chart or hierarchy of boxes linked from one root, top-down or left-right [h=fill] knobs: direction=TB|LR, nodeStyle=card|pill|avatar, compact
-also: tls.g.breakdown, tls.g.layers, tls.g.mindmap
+also: tls.g.breakdown, tls.g.graph, tls.g.layers, tls.g.mindmap
 
 ## Relationships
 also: tls.g.bracket, tls.g.hub-spoke, tls.g.venn, tls.m.shape

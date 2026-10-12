@@ -9,6 +9,7 @@ import { PATTERN_RECIPES } from './patterns'
 import { recipeSlide } from './recipes'
 import { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
 import type { BlockSpec, DeckSpec, SlideSpec } from './types'
+import { defaultBlockRegistry } from './validate-deck-spec'
 
 const registry = new BlockRegistry()
 registerBuiltInBlocks(registry)
@@ -63,4 +64,22 @@ describe('CMP4 random-composition dry run', () => {
     // what a gate rejects is a design verdict (quality), never an engine error or a grammar break
     for (const c of r.rejected) expect(c.code).toMatch(/^quality\//)
   }, 60000)
+})
+
+describe('compose PLAN.md B2/B6 — one accent, one decoration', () => {
+  const reg = defaultBlockRegistry()
+  const tk = (id: string) => ({ id, type: 'tls.t.takeaway', props: { text: 'x' } })
+  it('a second takeaway or callout is a grammar/accent warning; one is fine', () => {
+    const one = { id: 's', layout: 'two-column', regions: { title: [], left: [tk('a')], right: [] } } as any
+    const two = { id: 's', layout: 'two-column', regions: { title: [], left: [tk('a')], right: [{ id: 'c', type: 'tls.t.callout', props: { text: 'y' } }] } } as any
+    expect(checkGrammar(one, reg).filter((f) => f.rule === 'grammar/accent')).toEqual([])
+    const f = checkGrammar(two, reg).filter((x) => x.rule === 'grammar/accent')
+    expect(f).toHaveLength(1)
+    expect(f[0].level).toBe('warning')
+  })
+  it('two decorative blocks are a grammar/decoration warning', () => {
+    const d = (id: string) => ({ id, type: 'tls.m.decoration', props: { shape: 'blob' }, layer: 'backdrop' })
+    const slide = { id: 's', layout: 'blank', regions: { content: [d('a'), d('b')] } } as any
+    expect(checkGrammar(slide, reg).map((x) => x.rule)).toContain('grammar/decoration')
+  })
 })

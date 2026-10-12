@@ -26,7 +26,7 @@ import type { BlockSpec, ConnectorSpec, DeckSpec, SlideSpec } from '../types'
 export const COMPOSE_KINDS = ['peers', 'split', 'lockup', 'photo', 'path', 'diagram', 'accented', 'decorated'] as const
 
 /** The blocks the `diagram` / `accented` kinds exercise: the teaching blocks no recipe reaches. */
-export const DIAGRAM_TYPES = ['tls.g.tree', 'tls.g.cycle', 'tls.g.mindmap', 'tls.g.pyramid', 'tls.g.breakdown', 'tls.g.layers', 'tls.t.definition', 'tls.t.qa', 'tls.d.table', 'tls.t.checklist', 'tls.g.matrix-2x2', 'tls.g.hub-spoke'] as const
+export const DIAGRAM_TYPES = ['tls.g.tree', 'tls.g.cycle', 'tls.g.mindmap', 'tls.g.pyramid', 'tls.g.breakdown', 'tls.g.layers', 'tls.t.definition', 'tls.t.qa', 'tls.d.table', 'tls.t.checklist', 'tls.g.matrix-2x2', 'tls.g.hub-spoke', 'tls.t.formula', 'tls.t.code', 'tls.g.graph'] as const
 const DECORATIONS = [
   { type: 'tls.m.decoration', props: { shape: 'squiggle', tone: 'accent2', opacity: 'soft' } },
   { type: 'tls.m.decoration', props: { shape: 'orb', tone: 'accent', opacity: 'soft' } },

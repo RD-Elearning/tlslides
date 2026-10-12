@@ -35,7 +35,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 135
+const EXPECTED_BLOCK_COUNT = 138
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()

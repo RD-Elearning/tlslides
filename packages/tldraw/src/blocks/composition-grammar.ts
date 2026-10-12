@@ -16,6 +16,9 @@
  * - `grammar/peers`: the children of a row or a grid share one type (spacers aside): peers are
  *   peers.
  * - `grammar/style`: `BlockStyleSpec` fields the engine reads only (CMP1's honest fields).
+ * - `grammar/accent` (spro compose PLAN.md B2): at most one focal accent (`tls.t.takeaway`,
+ *   `tls.t.callout`) as a region block — a second one competes with the main structure.
+ * - `grammar/decoration` (B6): at most one decorative region block (`tls.m.decoration`, `tls.m.pattern`).
  *
  * Connectors are checked by the validator's own `connector/*` rules (by block id, no coordinates).
  * Pure and DOM-free.
@@ -43,7 +46,7 @@ const PEER_CONTAINERS = new Set(['tls.l.row', 'tls.l.grid'])
 
 export interface GrammarFinding {
   level: 'error' | 'warning'
-  rule: 'grammar/container' | 'grammar/depth' | 'grammar/leaves' | 'grammar/scope' | 'grammar/peers' | 'grammar/style'
+  rule: 'grammar/container' | 'grammar/depth' | 'grammar/leaves' | 'grammar/scope' | 'grammar/peers' | 'grammar/style' | 'grammar/accent' | 'grammar/decoration'
   /** e.g. `regions.content[0].props.children[2]`. */
   path: string
   message: string
@@ -91,14 +94,29 @@ export function checkGrammar(slide: SlideSpec, registry: BlockRegistry, basePath
     }
     children.forEach((c, i) => c && typeof c === 'object' && visit(c, `${path}.props.children[${i}]`, level + 1))
   }
+  const accents: string[] = []
+  const decorations: string[] = []
   for (const [region, blocks] of Object.entries(slide.regions ?? {})) {
     blocks.forEach((b, i) => {
       if (!b || typeof b !== 'object' || typeof b.type !== 'string') return
-      visit(b, `${basePath}regions.${region}[${i}]`, 1)
+      const path = `${basePath}regions.${region}[${i}]`
+      if (FOCAL_ACCENTS.has(b.type)) accents.push(path)
+      if (DECORATIONS.has(b.type)) decorations.push(path)
+      visit(b, path, 1)
     })
+  }
+  if (accents.length > 1) {
+    out.push({ level: 'warning', rule: 'grammar/accent', path: accents[1], message: `${accents.length} takeaways or callouts on one slide; keep one accent beside the main structure (drop or merge the others).` })
+  }
+  if (decorations.length > 1) {
+    out.push({ level: 'warning', rule: 'grammar/decoration', path: decorations[1], message: `${decorations.length} decorative blocks on one slide; keep at most one.` })
   }
   return out
 }
+
+/** B2/B6: region-level blocks that count as the slide's one accent / one decoration. */
+const FOCAL_ACCENTS = new Set(['tls.t.takeaway', 'tls.t.callout'])
+const DECORATIONS = new Set(['tls.m.decoration', 'tls.m.pattern'])
 
 /** The leaf types of a slide (a multiset as type → count). */
 function leafTypes(regions: Record<string, readonly BlockSpec[]>): Map<string, number> {

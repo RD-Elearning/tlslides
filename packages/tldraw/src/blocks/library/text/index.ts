@@ -25,6 +25,8 @@ import { tlsTTags } from './tls-t-tags'
 import { tlsTQa } from './tls-t-qa'
 import { tlsTBadge } from './tls-t-badge'
 import { tlsTMarker } from './tls-t-marker'
+import { tlsTFormula } from './tls-t-formula'
+import { tlsTCode } from './tls-t-code'
 
 /** All built-in text block definitions. */
 export const textBlocks: BlockDefinition[] = [
@@ -48,6 +50,8 @@ export const textBlocks: BlockDefinition[] = [
   tlsTQa,
   tlsTBadge,
   tlsTMarker,
+  tlsTFormula,
+  tlsTCode,
 ]
 
 export { tlsTTitle } from './tls-t-title'
@@ -70,3 +74,5 @@ export { tlsTTags } from './tls-t-tags'
 export { tlsTQa } from './tls-t-qa'
 export { tlsTBadge } from './tls-t-badge'
 export { tlsTMarker } from './tls-t-marker'
+export { tlsTFormula } from './tls-t-formula'
+export { tlsTCode } from './tls-t-code'
