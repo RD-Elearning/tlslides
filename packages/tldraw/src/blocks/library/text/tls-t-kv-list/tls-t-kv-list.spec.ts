@@ -92,3 +92,13 @@ describe('tls.t.kv-list', () => {
     expect(r.remedy).toEqual([{ kind: 'reflow', to: "columns: '2'" }, { kind: 'truncate', slot: 'items' }])
   })
 })
+
+describe('tls.t.kv-list — the last rule is inside the box', () => {
+  it('no part paints below the reported height with leader rule', () => {
+    const { tlsTKvList } = require('./index')
+    const { makeCtx, makeRegistry } = require('../test-helpers')
+    const { absoluteLeaves } = require('../standard-suite')
+    const tree = tlsTKvList.layout({ ...tlsTKvList.defaults, leader: 'rule' }, makeCtx({ width: 840, height: 400 }, makeRegistry()))
+    for (const l of absoluteLeaves(tree)) expect(l.y + l.height).toBeLessThanOrEqual(tree.box.height + 0.01)
+  })
+})

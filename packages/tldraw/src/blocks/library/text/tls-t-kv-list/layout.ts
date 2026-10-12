@@ -108,7 +108,9 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
       }
       y += rowH + rowGap
     }
-    heights.push(Math.max(0, y - rowGap))
+    // a rule hangs half a gap under its row: the last one is part of the block (it painted 7
+    // units below the reported box — spro llm-eval 2026-10-13, every composed kv-list overflowed)
+    heights.push(Math.max(0, y - rowGap + (leader === 'rule' && counts[c] > 0 ? Math.ceil(rowGap / 2 + 0.5) : 0)))
   }
   const height = Math.max(0, ...heights)
   return { nodes, height, lines, items, columns, lineH }
