@@ -195,3 +195,28 @@ describe('AC5 — hand-drawn motifs through Rough.js', () => {
     void squigglePath
   })
 })
+
+describe('tls.m.decoration — isometric solids (spro enhance S4)', () => {
+  const SOLIDS = ['cube', 'cylinder', 'cone', 'pyramid', 'slab'] as const
+  const paths = (n: any): any[] => (n.k === 'path' ? [n] : n.children ? n.children.flatMap(paths) : [])
+  it.each(SOLIDS)('%s: tinted faces under an ink outline, inside its box, no arcs', (shape) => {
+    const t: any = lay({ shape, tone: 'accent', opacity: 'soft' }, 300, 300)
+    expect(t.opacity).toBeGreaterThanOrEqual(0.85)
+    const all = paths(t)
+    const faces = all.filter((p) => p.fill)
+    const edges = all.filter((p) => p.stroke)
+    expect(faces.length).toBeGreaterThanOrEqual(2)
+    expect(edges.length).toBeGreaterThanOrEqual(1)
+    expect(new Set(faces.map((p) => p.fill.color)).size).toBeGreaterThanOrEqual(2)
+    for (const p of all) {
+      expect(p.d).not.toMatch(/[aA]/)
+      const nums = (p.d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        expect(nums[i]).toBeGreaterThanOrEqual(-0.5)
+        expect(nums[i]).toBeLessThanOrEqual(300.5)
+        expect(nums[i + 1]).toBeGreaterThanOrEqual(-0.5)
+        expect(nums[i + 1]).toBeLessThanOrEqual(300.5)
+      }
+    }
+  })
+})
