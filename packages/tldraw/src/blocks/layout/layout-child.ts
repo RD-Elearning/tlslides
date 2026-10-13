@@ -265,6 +265,12 @@ function defaultResolveText(
   }
 }
 
+/** enhance L5: a block style's `textScale`, clamped to 0.5-2; `undefined` when absent or invalid. */
+export function textScaleOf(style: BlockStyleSpec | undefined): number | undefined {
+  const k = style?.textScale
+  return typeof k === 'number' && Number.isFinite(k) && k > 0 ? Math.min(2, Math.max(0.5, k)) : undefined
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* createLayoutContext                                                             */
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -308,6 +314,7 @@ export function createLayoutContext(
     ...(options.tokens.bodyFamily !== undefined ? { bodyFamily: options.tokens.bodyFamily } : {}),
     ...(options.tokens.surface !== undefined ? { surface: { ...options.tokens.surface } } : {}),
     ...(options.tokens.locale !== undefined ? { locale: options.tokens.locale } : {}),
+    ...(options.tokens.textScale !== undefined ? { textScale: options.tokens.textScale } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }
@@ -352,9 +359,23 @@ export function createLayoutContext(
     return res
   }
 
-  const resolveTextFn =
-    options.resolveText ??
-    ((token: TypeToken, over?: Partial<TextStyleSpec>) => defaultResolveText(token, over, tokens))
+  // enhance L5: `style.textScale` scales every type size, relative to the deck's and once — a
+  // nested context built from already scaled tokens (a child, `withBox`, a measure probe) keeps them.
+  const textScale = textScaleOf(instanceStyle)
+  const scaleBy = textScale !== undefined ? textScale / (options.tokens.textScale ?? 1) : 1
+  if (Math.abs(scaleBy - 1) > 1e-6) {
+    for (const v of Object.values(tokens.type)) v.size = Math.round(v.size * scaleBy * 100) / 100
+    tokens.textScale = textScale
+  }
+  const givenResolveText = options.resolveText
+  const resolveTextFn: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle = givenResolveText
+    ? Math.abs(scaleBy - 1) > 1e-6
+      ? (token, over) => {
+          const r = givenResolveText(token, over)
+          return over?.size !== undefined ? r : { ...r, size: Math.round(r.size * scaleBy * 100) / 100 }
+        }
+      : givenResolveText
+    : (token, over) => defaultResolveText(token, over, tokens)
 
   const assetFn = options.asset ?? (() => undefined)
   const resolveAssetFn = options.resolveAsset

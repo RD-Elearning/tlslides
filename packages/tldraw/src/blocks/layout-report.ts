@@ -543,6 +543,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       opts.theme || opts.background
         ? surfaceFromBackground(opts.background, box, [frame.width, frame.height], opts.theme)
         : MINIMAL_SURFACE
+    const shapeStyle = (shape.props[BLOCK_PROP_KEY] as { style?: BlockSpec['style'] } | undefined)?.style ?? p.block.style
     const ctx = createLayoutContext({
       box: { width: box.width, height: box.height },
       tokens,
@@ -551,7 +552,8 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       registry,
       measureText: provider,
       intrinsicSizeCache,
-      ...(p.block.style ? { style: p.block.style } : {}),
+      // L5: the compiled style (`growText` may have given the block a `textScale`)
+      ...(shapeStyle ? { style: shapeStyle } : {}),
       ...(opts.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
     })
     const props = p.block.props as Record<string, unknown>

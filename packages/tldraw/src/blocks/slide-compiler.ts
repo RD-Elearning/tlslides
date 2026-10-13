@@ -34,6 +34,7 @@ import type {
   BlockAnchor,
   BlockDefinition,
   BlockSpec,
+  BlockStyleSpec,
   DeckStyle,
   Box,
   LayoutContext,
@@ -50,7 +51,7 @@ import { contentArea, getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
-import { layoutBlock } from './layout/layout-child'
+import { layoutBlock, textScaleOf } from './layout/layout-child'
 import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
@@ -133,10 +134,123 @@ export function compileSlide(
   registry?: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
-  const result = compileSlideBlocks(spec, frame, tokens, registry, opts)
+  const result = (registry && growText(spec, frame, tokens, registry, opts)) || compileSlideBlocks(spec, frame, tokens, registry, opts)
   // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
   if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
   return compileConnectors(spec, result, tokens, registry, opts)
+}
+
+/** enhance L5: below this share of the content regions' area, a balanced slide's content floats. */
+export const GROW_BELOW = 0.5
+/** The text scales tried, largest first (≈ one type-scale step and halves of it). */
+export const GROW_STEPS: readonly number[] = [1.3, 1.2, 1.1]
+/** A grown slide's content may cover at most this share of the content regions' height. */
+export const GROW_MAX_HEIGHT = 0.9
+
+/**
+ * enhance L5 — content grows into the space. A balanced slide (`valign: 'auto'`, the content
+ * slides spro composes) whose content paints under `GROW_BELOW` of its content regions reads as
+ * "small content in a large empty page" (the golden rubric's most common note). Its in-flow
+ * content blocks (every region but the title) are compiled again with one shared
+ * `style.textScale` — one step for every size, so the slide keeps its count of text sizes and
+ * peers keep one size — and the largest step whose content still paints inside its boxes (nothing
+ * cut, nothing shrunk to fit, the group under `GROW_MAX_HEIGHT`) wins. The scale is recorded as
+ * `$block.grown`, so the decompiler returns the authored style. `null` = compile as authored.
+ */
+function growText(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult | null {
+  if (spec.valign !== 'auto' || opts?.growText === false) return null
+  const grows = (name: string, b: BlockSpec | undefined) =>
+    name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && !GROW_SKIP.has(b.type) && textScaleOf(b.style) === undefined
+  const ids = new Set<string>()
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (Array.isArray(blocks)) for (const b of blocks) if (grows(name, b)) ids.add(b.id as string)
+  }
+  if (!ids.size) return null
+  const { regionBoxes } = resolveRegions(spec.layout, frame, tokens)
+  const area = unionBox(
+    Object.entries(regionBoxes)
+      .filter(([name]) => name !== 'title' && (spec.regions?.[name] ?? []).some((b) => b && ids.has(b.id as string)))
+      .map(([, box]) => box)
+  )
+  if (!area) return null
+  const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
+  const before = paintedContent(base, ids, tokens, registry, opts)
+  if (!before.ok || !before.box || before.box.width * before.box.height >= GROW_BELOW * area.width * area.height) return null
+  for (const k of GROW_STEPS) {
+    const scaled: SlideSpec = {
+      ...spec,
+      regions: Object.fromEntries(
+        Object.entries(spec.regions ?? {}).map(([name, blocks]) => [
+          name,
+          Array.isArray(blocks) ? blocks.map((b) => (grows(name, b) ? { ...b, style: { ...(b.style ?? {}), textScale: k } } : b)) : blocks,
+        ])
+      ),
+    }
+    const result = compileSlideBlocks(scaled, frame, tokens, registry, opts)
+    const overflow = (r: CompileSlideResult) => r.findings.filter((f) => f.rule === 'region/overflow').length
+    if (overflow(result) > overflow(base)) continue
+    const after = paintedContent(result, ids, tokens, registry, opts)
+    if (!after.ok || !after.box || after.box.height > GROW_MAX_HEIGHT * area.height || after.box.width > area.width + FLOW_TOL) continue
+    if (after.box.y < area.y - FLOW_TOL || after.box.y + after.box.height > area.y + area.height + FLOW_TOL) continue
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      if (meta && typeof meta.id === 'string' && ids.has(meta.id)) meta.grown = k
+    }
+    return result
+  }
+  return null
+}
+
+/** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
+const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image'])
+
+/**
+ * The painted union of the shapes `ids` names, in slide units, and `ok: false` when one of them
+ * paints outside its box, cuts a text or shrinks one to fit (a grown slide must not).
+ */
+function paintedContent(
+  result: CompileSlideResult,
+  ids: ReadonlySet<string>,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): { box: Box | null; ok: boolean } {
+  const boxes: Box[] = []
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; style?: BlockStyleSpec } | undefined
+    if (!meta || typeof meta.id !== 'string' || !ids.has(meta.id)) continue
+    const def = registry.get(shape.componentId as string)
+    if (!def) continue
+    const size = { width: shape.size[0], height: shape.size[1] }
+    const props = { ...shape.props }
+    delete props[BLOCK_PROP_KEY]
+    let painted: Box | null
+    try {
+      const ctx = createLayoutContext({
+        box: size,
+        tokens,
+        surface: MINIMAL_SURFACE,
+        registry,
+        ...(meta.style ? { style: meta.style } : {}),
+        ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
+      })
+      const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false }
+      painted = paintedBounds(c)
+    } catch {
+      return { box: null, ok: false }
+    }
+    if (!painted) continue
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false }
+    boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
+  }
+  return { box: unionBox(boxes), ok: true }
 }
 
 /** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */
@@ -420,6 +534,8 @@ export interface CompileSlideOptions {
   motionStyle?: MotionStyle
   /** AC1 — the deck style's `blockDefaults`, filled under authored props (`$block.styleDefaults`). */
   blockDefaults?: DeckStyle['blockDefaults']
+  /** enhance L5 — `false` compiles a balanced slide as authored (no `growText`). */
+  growText?: boolean
 }
 
 interface StyleCandidate {
@@ -511,7 +627,7 @@ function measureRegionBlocks(
   const ctxFor = (block: BlockSpec): LayoutContext => {
     const blockStyle = block.style
     const usePerBlock =
-      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined)
+      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined || blockStyle.textScale !== undefined)
     return usePerBlock
       ? createLayoutContext({
           box: regionSize,

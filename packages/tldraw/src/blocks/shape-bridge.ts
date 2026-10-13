@@ -62,6 +62,10 @@ interface BlockMetadata {
    *  `shapeToAuthoredBlock` (the decompiler) drops a filled key whose value is still the default,
    *  so the round trip returns the authored props. */
   styleDefaults?: Record<string, unknown>
+  /** enhance L5 — the `style.textScale` `compileSlide` gave the block to grow a balanced slide's
+   *  content into its page (`growText`). Never authored: `shapeToBlock` keeps the scale (renderers
+   *  need it), `shapeToAuthoredBlock` drops it while it is still this value. */
+  grown?: number
 }
 
 /** LO8 — see `BlockMetadata.placed`. */
@@ -300,6 +304,12 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
  */
 export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
   const spec = shapeToBlock(shape)
+  const grown = blockMetaOf(shape)?.grown
+  if (spec?.style && typeof grown === 'number' && spec.style.textScale === grown) {
+    const { textScale: _grown, ...rest } = spec.style
+    if (Object.keys(rest).length) spec.style = rest
+    else delete spec.style
+  }
   const filled = blockMetaOf(shape)?.styleDefaults
   if (!spec || !filled || typeof filled !== 'object') return spec
   for (const [key, value] of Object.entries(filled)) {

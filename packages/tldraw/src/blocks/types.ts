@@ -146,6 +146,10 @@ export interface BlockStyleSpec {
   elevation?: 0 | 1 | 2
   /** Content alignment. */
   align?: 'start' | 'center' | 'end'
+  /** enhance L5: every type size of the block (and its children) times this, 1-1.5. `compileSlide`
+   *  sets it on the content of a balanced slide that would float in its page (`growText`); an
+   *  author may set it too. */
+  textScale?: number
   /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
@@ -938,6 +942,9 @@ export interface ResolvedTokens {
   radius: Record<RadiusToken, number>
   /** Typography scale: size + line-height per named step. */
   type: Record<TypeToken, TypeScaleValue>
+  /** enhance L5: the `style.textScale` already applied to `type` (absent = 1), so a nested
+   *  context built from these tokens does not scale them twice. */
+  textScale?: number
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */
