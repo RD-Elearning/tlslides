@@ -23,7 +23,7 @@ import type { BlockLayer } from './types'
 import { BLOCK_CATEGORIES, CATEGORY_INFO } from './types'
 import { definitionLayer } from './block-layer'
 import { BLOCK_SIZE_HINTS } from './__generated__/block-size-hints'
-import { ICONS } from './icons'
+import { CORE_ICON_NAMES, ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
 import { RECIPES, composedSlide, eachBlock, recipeLine } from './recipes'
@@ -504,7 +504,7 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
   // The detail is what a model fills a slide from: with an icon slot and no names it guesses, and
   // a guessed icon renders as a placeholder (spro llm-eval 2026-10-12: git-commit, box-select).
   if (filtered && data.blocks.some((b) => b.slots.some((s) => /(^icon$|\bicon\b.*\))/.test(s.type)))) {
-    lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+    lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
     lines.push('')
   }
 
@@ -699,7 +699,7 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   }
   lines.push('## Icons')
   lines.push('')
-  lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+  lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
   lines.push('')
   return lines.join('\n')
 }
@@ -820,7 +820,7 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
   }
   lines.push('## Icons')
   lines.push('')
-  lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+  lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
   lines.push('')
   return lines.join('\n')
 }

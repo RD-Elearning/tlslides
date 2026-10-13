@@ -687,7 +687,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               fill: node.fill,
               ...(node.strokeWidth
-                ? { stroke: node.fill, strokeWidth: node.strokeWidth, fill: 'none' }
+                ? { stroke: node.fill, strokeWidth: node.strokeWidth, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }
                 : {}),
             }}
           />

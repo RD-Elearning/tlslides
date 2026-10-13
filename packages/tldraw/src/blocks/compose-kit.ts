@@ -11,7 +11,7 @@
  * (`compose-kit.spec.ts`), so a renamed block fails a test instead of the prompt.
  */
 import { capabilityDigest } from './capability-digest'
-import { ICON_GROUPS } from './icons'
+import { iconGroupOf, iconsFor } from './icons/search'
 import type { BlockRegistry } from './registry'
 import type { DeckStyle, StyleConcept } from './types'
 import { defaultBlockRegistry } from './validate-deck-spec'
@@ -161,9 +161,19 @@ export function composeCard(): string {
   ].join('\n')
 }
 
-/** Icon names by meaning, for the model to pick an icon that fits each item. */
-export function iconCard(): string {
-  return ['## Icons (by meaning; any other name renders a placeholder)', ...Object.entries(ICON_GROUPS).map(([g, names]) => `- ${g}: ${names.join(', ')}`)].join('\n')
+/**
+ * Icon names by meaning, for the model to pick an icon that fits each item. With `text` (the
+ * slide's words), only the ~40 icons that fit it (enhance I-2: the set has 800+); without it, a
+ * note that the slide brief lists them.
+ */
+export function iconCard(text?: string): string {
+  if (text === undefined) return '## Icons\nThe icons that fit this slide are listed with the slide (`Icons:`); any other name renders a placeholder.'
+  const byGroup = new Map<string, string[]>()
+  for (const name of iconsFor(text)) {
+    const g = iconGroupOf(name)
+    byGroup.set(g, [...(byGroup.get(g) ?? []), name])
+  }
+  return ['## Icons that fit this slide (any other name renders a placeholder)', ...[...byGroup].map(([g, names]) => `- ${g}: ${names.join(', ')}`)].join('\n')
 }
 
 export interface ComposeKitOptions {
@@ -173,6 +183,8 @@ export interface ComposeKitOptions {
   extra?: readonly string[]
   /** Character budget of the block detail (default 9000). */
   budget?: number
+  /** The slide's words: the icon card lists the icons that fit them (absent = a note only). */
+  iconText?: string
 }
 
 export interface ComposeKit {
@@ -200,6 +212,6 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   }
   // the generic detail header and icon line are replaced by the kit's own sections
   detail = detail.replace(/^Valid icon names:.*$/m, '').trim()
-  const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard()].join('\n\n')
+  const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
   return { markdown, types, shape: opts.shape }
 }

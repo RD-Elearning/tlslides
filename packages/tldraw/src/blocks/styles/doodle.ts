@@ -99,7 +99,8 @@ export const DOODLE_STYLE: DeckStyle = {
     type: { display: { size: 168, lineHeight: 1.0 }, title: { size: 100, lineHeight: 1.05 }, heading: { size: 68 } },
     motion: { ease: { 'ease-out': 'cubic-bezier(0.34, 1.56, 0.64, 1)' }, duration: { normal: 300 } },
   },
-  surface: { card: 'filled', stroke: 'bold', shadow: 0 },
+  // enhance S2: every border, rule and connector is drawn by hand, not only the margin motifs
+  surface: { card: 'filled', stroke: 'bold', shadow: 0, render: { stroke: 'rough', roughness: 1 } },
   masters: MASTERS,
   motionStyle: 'expressive',
   blockDefaults: {

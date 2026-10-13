@@ -56,8 +56,9 @@ export const defaults: IconProps = {
 // Validation helper for icon names - used by linting
 export function validateIconName(name: string): string | undefined {
   if (!hasIcon(name)) {
-    const available = Object.keys(ICONS).join(', ')
-    return `Unknown icon name: "${name}". Available: ${available}`
+    // 800+ names: the closest ones, not the whole set
+    const near = Object.keys(ICONS).filter((n) => n.includes(name) || name.includes(n) || n.split('-')[0] === name.split('-')[0]).slice(0, 12)
+    return `Unknown icon name: "${name}".${near.length ? ` Close: ${near.join(', ')}` : ''}`
   }
   return undefined
 }

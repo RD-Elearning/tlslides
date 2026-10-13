@@ -322,6 +322,9 @@ function renderNodeInner(
         styles.push('fill:none')
         styles.push(`stroke:${node.fill}`)
         styles.push(`stroke-width:${node.strokeWidth}`)
+        // Lucide and Tabler outlines are drawn for round caps (a dot is `h.01`)
+        styles.push('stroke-linecap:round')
+        styles.push('stroke-linejoin:round')
       } else {
         styles.push(`fill:${node.fill}`)
       }

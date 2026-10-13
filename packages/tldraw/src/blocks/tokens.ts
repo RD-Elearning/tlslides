@@ -212,7 +212,7 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
   const bodyFamily = theme.fonts?.bodyFamily ?? theme.fonts?.headingFamily ?? DEFAULT_FONT_FAMILY
 
   const surface: StyleSurface | undefined = tokens?.surface
-    ? { card: tokens.surface.card ?? 'filled', stroke: tokens.surface.stroke ?? 'none', shadow: tokens.surface.shadow ?? 0 }
+    ? { card: tokens.surface.card ?? 'filled', stroke: tokens.surface.stroke ?? 'none', shadow: tokens.surface.shadow ?? 0, ...(tokens.surface.render ? { render: { ...tokens.surface.render } } : {}) }
     : undefined
 
   return {

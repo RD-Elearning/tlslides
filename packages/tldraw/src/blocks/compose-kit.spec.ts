@@ -53,6 +53,6 @@ describe('compose kit', () => {
     expect(kit.types[0]).toBe('tls.g.tree')
     expect(kit.markdown).toContain('# Composing a slide')
     expect(kit.markdown).toContain('## Style concept')
-    expect(kit.markdown).toContain('education: book')
+    expect(kit.markdown).toContain('listed with the slide')
   })
 })

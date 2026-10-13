@@ -1267,6 +1267,10 @@ export interface StyleSurface {
   card: 'filled' | 'outline' | 'glass' | 'ghost' | 'raised'
   stroke: 'none' | 'hairline' | 'bold'
   shadow: 0 | 1 | 2 | 'hard'
+  /** spro enhance S2 — how the style draws what the layout placed (`paint-treatment.ts`): `stroke:
+   *  'rough'` sketches borders, rules and connectors by hand, `fill: 'hachure'` pen-hatches filled
+   *  panels. Paint only; geometry is unchanged. Absent = crisp vector drawing. */
+  render?: { stroke?: 'crisp' | 'rough'; fill?: 'flat' | 'hachure'; roughness?: number }
 }
 
 /**

@@ -31,6 +31,8 @@ export interface Icon {
   source?: string
 }
 
+import { TABLER_ICONS, TABLER_SOURCE } from './tabler'
+
 const LUCIDE_SOURCE = 'Lucide, ISC License - https://lucide.dev (path data copied by hand; multi-element icons merged into one path, dots drawn as tiny circles because the renderers use butt caps)'
 
 /** Build an icon entry from hand-copied Lucide path data. */
@@ -136,10 +138,26 @@ export const ICONS: Record<string, Icon> = {
   'mic': lucide('Mic', 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v3'),
 }
 
-/**
- * Icon names grouped for pickers (inspector, gallery). Every icon in `ICONS` is in exactly one group.
- */
-export const ICON_GROUPS: Record<string, string[]> = {
+/** The hand-picked Lucide set: what a prompt lists when it does not search by meaning. */
+export const CORE_ICON_NAMES: readonly string[] = Object.keys(ICONS)
+
+// spro enhance I-1: the curated Tabler outline set (same 24 grid and 2-unit stroke); a Lucide icon
+// of the same name, or of the same drawing, stays the one drawn.
+{
+  const drawn = new Set(Object.values(ICONS).map((i) => i.path))
+  for (const [name, [title, path]] of Object.entries(TABLER_ICONS)) {
+    if (name in ICONS || drawn.has(path)) continue
+    ICONS[name] = { name: title, path, source: TABLER_SOURCE }
+    drawn.add(path)
+  }
+}
+
+/** Search words of an icon (Tabler's tags; the Lucide set has its name only). */
+export function iconTags(name: string): string[] {
+  return TABLER_ICONS[name]?.[3] ?? []
+}
+
+const LUCIDE_GROUPS: Record<string, string[]> = {
   'arrows-status': ['arrow-right', 'check', 'alert', 'trending-up', 'trending-down', 'arrow-left', 'arrow-up', 'arrow-down', 'chevron-right', 'refresh', 'check-circle', 'x-circle', 'alert-triangle', 'info', 'help-circle', 'plus', 'minus'],
   'business': ['briefcase', 'building', 'chart-bar', 'chart-line', 'chart-pie', 'target', 'trophy', 'award', 'dollar', 'wallet', 'credit-card', 'shopping-cart', 'handshake', 'rocket', 'flag', 'gauge'],
   'people': ['users', 'user', 'user-plus', 'heart', 'smile', 'message', 'mail', 'phone'],
@@ -148,6 +166,21 @@ export const ICON_GROUPS: Record<string, string[]> = {
   'time-place': ['clock', 'globe', 'calendar', 'hourglass', 'map-pin', 'home'],
   'misc': ['zap', 'star', 'sparkles', 'leaf', 'sun', 'eye', 'search', 'filter', 'link', 'download', 'share', 'image', 'video', 'mic'],
 }
+
+/**
+ * Icon names grouped by meaning, for pickers (inspector, gallery) and the compose kit. Every icon
+ * in `ICONS` is in exactly one group: the Lucide groups first, then the Tabler icons by theirs.
+ */
+export const ICON_GROUPS: Record<string, string[]> = (() => {
+  const groups: Record<string, string[]> = Object.fromEntries(Object.entries(LUCIDE_GROUPS).map(([g, n]) => [g, [...n]]))
+  const placed = new Set(Object.values(groups).flat())
+  for (const [name, [, , group]] of Object.entries(TABLER_ICONS)) {
+    if (placed.has(name) || !(name in ICONS)) continue
+    ;(groups[group] ??= []).push(name)
+    placed.add(name)
+  }
+  return groups
+})()
 
 
 /**

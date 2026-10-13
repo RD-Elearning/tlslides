@@ -30,6 +30,7 @@ import { layoutBlock } from './layout/layout-child'
 import { BLOCK_PROP_KEY, shapeToBlock } from './shape-bridge'
 import { blockLayer } from './block-layer'
 import { renderNodeToSvg } from './render-svg'
+import { treatTree } from './paint-treatment'
 
 /** One laid-out block of a slide. */
 export interface LaidOutBlock {
@@ -140,7 +141,8 @@ export function defaultBlockSvg(doc: TDDocument, page: TDPage | undefined, regis
     if (!spec || !def) return undefined
     try {
       const ctx = contextForBlock(shape, doc, { headless: true, slideBackground: page?.background, registry })
-      const root = layoutBlock(def, spec.props, ctx)
+      // enhance S2: the style's render treatment, seeded as the editor seeds it
+      const root = treatTree(layoutBlock(def, spec.props, ctx), ctx.tokens.surface?.render, `${spec.type}|${spec.id ?? ''}`)
       const prefix = `b${String((shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id ?? shape.id).replace(/[^A-Za-z0-9_-]/g, '_')}-`
       // Inline the content (defs + tree), not a nested <svg> (which would clip to 100% of the page).
       return renderNodeToSvg(root, prefix).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')

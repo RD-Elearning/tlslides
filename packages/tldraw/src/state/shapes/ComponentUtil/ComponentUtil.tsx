@@ -16,6 +16,7 @@ import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutCont
 import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { getAtPath, setAtPath } from '~blocks/prop-path'
 import { layoutBlock } from '~blocks/layout/layout-child'
+import { treatTree } from '~blocks/paint-treatment'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 import { InlineEditor, editorStyleOf, type InlineEditorStyle } from '~components/InlineEditor'
@@ -181,8 +182,13 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           ? ((props as Record<string, unknown>).$block as Record<string, unknown>).props ??
             props
           : props
+        // enhance S2: the style's render treatment (hand-drawn strokes, hatching) — paint only
         blockNode = renderNodeToDom(
-          layoutBlock(blockDef, layoutProps as Record<string, unknown>, layoutCtx),
+          treatTree(
+            layoutBlock(blockDef, layoutProps as Record<string, unknown>, layoutCtx),
+            layoutCtx.tokens.surface?.render,
+            `${componentId}|${String(blockMeta?.id ?? '')}`,
+          ),
         )
       }
 

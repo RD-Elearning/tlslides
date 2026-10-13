@@ -20,6 +20,7 @@ import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-d
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
 import { layoutBlock } from '~blocks/layout/layout-child'
+import { treatTree } from '~blocks/paint-treatment'
 import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
@@ -215,12 +216,15 @@ function BlockContent({
   blockDef,
   props,
   ctx,
+  paintKey = '',
 }: {
   blockDef: BlockDefinition
   props: Record<string, unknown>
   ctx: LayoutContext
+  /** enhance S2: seeds the style's render treatment (`${type}|${id}`, as the editor and export). */
+  paintKey?: string
 }) {
-  return <React.Fragment>{renderNodeToDom(layoutBlock(blockDef, props, ctx))}</React.Fragment>
+  return <React.Fragment>{renderNodeToDom(treatTree(layoutBlock(blockDef, props, ctx), ctx.tokens.surface?.render, paintKey))}</React.Fragment>
 }
 
 interface BlockBoundaryState {
@@ -881,7 +885,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                       props: blockSpec.props,
                       headless: false,
                     }}>
-                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} />
+                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} />
                     </HostLayoutContext.Provider>
                   ) : (
                     <UnknownBlockPlaceholder type={shape.componentId} />
