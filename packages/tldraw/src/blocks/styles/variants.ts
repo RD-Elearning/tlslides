@@ -1,5 +1,6 @@
 import { FontStyle } from '~types'
-import type { BlockSpec, DeckStyle, DeckTheme, MasterSpec } from '../types'
+import type { DeckTheme } from '~types'
+import type { BlockSpec, DeckStyle, MasterSpec } from '../types'
 import { DOODLE_STYLE } from './doodle'
 import { GLASS_STYLE } from './glass'
 import { MEMPHIS_STYLE } from './memphis'
