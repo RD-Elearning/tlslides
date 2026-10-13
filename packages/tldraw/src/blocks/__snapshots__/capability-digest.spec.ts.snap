@@ -3446,8 +3446,10 @@ Org chart or hierarchy: a root box linked to children and grandchildren, top-dow
 |---|---|---|---|
 | \`root\` | yes | object (label, sub, children) | Nested {label, sub?, children?: [{label, sub?, children?: [{label, sub?}]}]}. Max 3 levels, 15 nodes in all, 6 children per node. Labels 1-3 words. |
 | \`direction\` | no | enum: TB \\\\| LR | TB = top-down, LR = left to right (fits more leaves). |
-| \`nodeStyle\` | no | enum: card \\\\| pill \\\\| avatar | avatar adds a round monogram (initials) to each card. |
+| \`nodeStyle\` | no | enum: card \\\\| pill \\\\| avatar \\\\| circle | avatar adds a round monogram (initials) to each card; circle = round nodes with straight links (a binary tree, short labels). |
 | \`compact\` | no | boolean | Labels only, tighter boxes: fits more nodes. |
+| \`highlight\` | no | list of text (max 30 chars) (0–15 items) | Labels of the nodes to mark (a path, the visited nodes, the leaves). |
+| \`order\` | no | list of text (max 30 chars) (0–15 items) | Node labels in the order a traversal visits them: each node gets its number in a badge beside it. |
 
 \`\`\`json
 {
@@ -5828,7 +5830,7 @@ also: tls.c.journey, tls.g.milestones
 
 ## Hierarchy
 tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction=up|down, notes=side|inside|none, fill=gradient|series|single
-tls.g.tree · hierarchy · group — Org chart or hierarchy of boxes linked from one root, top-down or left-right [h=fill] knobs: direction=TB|LR, nodeStyle=card|pill|avatar, compact
+tls.g.tree · hierarchy · group — Org chart or hierarchy of nodes linked from one root, down or sideways [h=fill] knobs: direction=TB|LR, nodeStyle=card|pill|avatar|circle, compact
 also: tls.g.breakdown, tls.g.graph, tls.g.layers, tls.g.mindmap
 
 ## Relationships

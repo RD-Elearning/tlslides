@@ -77,7 +77,11 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
 
   const c = chartColors(ctx)
   const horizontal = enumOf(props.direction, ['TB', 'LR'] as const, 'TB') === 'LR'
-  const nodeStyle = enumOf(props.nodeStyle, ['card', 'pill', 'avatar'] as const, 'card')
+  const nodeStyle = enumOf(props.nodeStyle, ['card', 'pill', 'avatar', 'circle'] as const, 'card')
+  const circle = nodeStyle === 'circle'
+  const marked = new Set((Array.isArray(props.highlight) ? props.highlight : []).map((l) => str(l).trim()).filter(Boolean))
+  // enhance L3: the visit order, as each node's number (the first unvisited node with the label)
+  const orderOf = new Map<string, number>()
   const compact = props.compact === true
   const subS = mutedStyle(ctx, 'footnote')
   const lhS = lineH(subS)
@@ -119,10 +123,16 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   }
   nodeCross = Math.max(1, nodeCross)
   nodeMain = Math.max(1, nodeMain)
+  if (circle) {
+    // round nodes: one diameter on both axes, at most what a level and a slot give
+    const d = clamp(Math.min(nodeCross, horizontal ? nodeCross : mainExtent / (levels + 0.9 * (levels - 1)), 120), 24, 120)
+    nodeCross = d
+    nodeMain = d
+  }
   const size = horizontal ? { width: nodeMain, height: nodeCross } : { width: nodeCross, height: nodeMain }
   const layoutRes = tidyTree(tt, horizontal ? 'LR' : 'TB', { x: 0, y: 0, width: W, height: H }, { nodeSize: size, minGap: 0 })
   const boxes = layoutRes.boxes
-  if (!horizontal) {
+  if (!horizontal && !circle) {
     // A parent may be as wide as the leaf slots below it (never wider), so long labels keep their text.
     const leafBoxes = (n: TNode): Array<{ x: number; width: number }> => (n.kids.length === 0 ? [boxes[n.id]] : n.kids.flatMap(leafBoxes))
     for (const n of byId.values()) {
@@ -149,7 +159,19 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     const a = boxes[e.from]
     const b = boxes[e.to]
     if (!a || !b) continue
-    const pts = horizontal
+    const pts = circle
+      ? (() => {
+          // a straight link between the circles' rims
+          const ax = a.x + a.width / 2
+          const ay = a.y + a.height / 2
+          const bx = b.x + b.width / 2
+          const by = b.y + b.height / 2
+          const len = Math.max(1, Math.hypot(bx - ax, by - ay))
+          const ra = a.width / 2
+          const rb = b.width / 2
+          return [{ x: ax + ((bx - ax) * ra) / len, y: ay + ((by - ay) * ra) / len }, { x: bx - ((bx - ax) * rb) / len, y: by - ((by - ay) * rb) / len }]
+        })()
+      : horizontal
       ? (() => {
           const x1 = a.x + a.width
           const y1 = a.y + a.height / 2
@@ -173,6 +195,14 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   }
 
   const accent = c.accent
+  if (Array.isArray(props.order)) {
+    const ids = [...byId.values()]
+    props.order.forEach((label, k) => {
+      const hit = ids.find((n) => n.label.trim() === str(label).trim() && !orderOf.has(n.id))
+      if (hit) orderOf.set(hit.id, k + 1)
+    })
+  }
+  const badgeS = style(ctx, 'footnote', c.text)
   for (const [id, b] of Object.entries(boxes)) {
     const n = byId.get(id)!
     const startLen = nodes.length
@@ -180,7 +210,13 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     let edge: string | undefined
     let ink: string
     let subInk: string
-    if (n.depth === 0) {
+    if (marked.has(n.label.trim())) {
+      // a marked node (a path, the visited ones): the second accent, whatever its depth
+      fill = ctx.resolveColor('accent2').color
+      edge = undefined
+      ink = onColor(ctx, fill)
+      subInk = ink
+    } else if (n.depth === 0) {
       fill = accent
       ink = onColor(ctx, fill)
       subInk = ink
@@ -196,7 +232,7 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
       subInk = c.muted
     }
     const pillStyle = nodeStyle === 'pill'
-    const radius = pillStyle ? b.height / 2 : Math.min(14, b.height / 3)
+    const radius = pillStyle || circle ? b.height / 2 : Math.min(14, b.height / 3)
     nodes.push({
       k: 'rect',
       part: `node[${id}]`,
@@ -236,6 +272,15 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     const align = horizontal || nodeStyle === 'avatar' ? 'start' : 'center'
     nodes.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x, y: top, width: w }, align, labelLines, `label[${id}]`).nodes)
     if (sh) nodes.push(...placeLines(ctx, n.sub, { ...subS, color: subInk }, { x, y: top + lh + 2, width: w }, align, 1, `sub[${id}]`).nodes)
+    // enhance L3: the visit number in a badge outside the node's top-right corner
+    const no = orderOf.get(id)
+    if (no !== undefined) {
+      const bd = Math.max(22, lineH(badgeS) + 6)
+      const bx = Math.min(W - bd, b.x + b.width - bd * (circle ? 0.15 : 0.45))
+      const by = Math.max(0, b.y - bd * (circle ? 0.55 : 0.6))
+      nodes.push({ k: 'rect', part: `badge[${id}]`, box: { x: bx, y: by, width: bd, height: bd }, fill: { type: 'solid', color: c.text }, radius: bd / 2 })
+      nodes.push(...placeLines(ctx, String(no), { ...badgeS, color: onColor(ctx, c.text) }, { x: bx, y: by + (bd - lineH(badgeS)) / 2, width: bd }, 'center', 1, `order[${id}]`).nodes)
+    }
     // Everything of one node is one numbered group (`item[k]`) so the recipe can target it.
     const mine = nodes.splice(startLen)
     const g: LayoutNode = { k: 'group', part: `item[${itemNo++}]`, box: { x: 0, y: 0, width: W, height: H }, children: mine }

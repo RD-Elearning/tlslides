@@ -41,8 +41,20 @@ export const schema: BlockSchema = {
       'Nested {label, sub?, children?: [{label, sub?, children?: [{label, sub?}]}]}. Max 3 levels, 15 nodes in all, 6 children per node. Labels 1-3 words.',
   },
   direction: enumSlot(['TB', 'LR'], 'Direction', 'TB = top-down, LR = left to right (fits more leaves).'),
-  nodeStyle: enumSlot(['card', 'pill', 'avatar'], 'Node style', 'avatar adds a round monogram (initials) to each card.'),
+  nodeStyle: enumSlot(['card', 'pill', 'avatar', 'circle'], 'Node style', 'avatar adds a round monogram (initials) to each card; circle = round nodes with straight links (a binary tree, short labels).'),
   compact: { type: { kind: 'boolean' }, role: 'option', label: 'Compact', help: 'Labels only, tighter boxes: fits more nodes.' },
+  highlight: {
+    type: { kind: 'list', of: { kind: 'text', maxChars: 30 }, max: TREE_MAX_NODES },
+    role: 'content',
+    label: 'Highlighted nodes',
+    help: 'Labels of the nodes to mark (a path, the visited nodes, the leaves).',
+  },
+  order: {
+    type: { kind: 'list', of: { kind: 'text', maxChars: 30 }, max: TREE_MAX_NODES },
+    role: 'content',
+    label: 'Visit order',
+    help: 'Node labels in the order a traversal visits them: each node gets its number in a badge beside it.',
+  },
 }
 
 export interface TreeNodeProps {
@@ -54,8 +66,12 @@ export interface TreeNodeProps {
 export interface TreeProps extends Record<string, unknown> {
   root: TreeNodeProps
   direction?: 'TB' | 'LR'
-  nodeStyle?: 'card' | 'pill' | 'avatar'
+  nodeStyle?: 'card' | 'pill' | 'avatar' | 'circle'
   compact?: boolean
+  /** enhance L3: labels of the nodes to mark. */
+  highlight?: string[]
+  /** enhance L3: labels in visit order — a numbered badge beside each node. */
+  order?: string[]
 }
 
 export const defaults: TreeProps = {

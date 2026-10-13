@@ -128,3 +128,30 @@ describe('tls.g.tree example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGTree))
   it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTree))
 })
+
+describe('L3 — circle nodes, highlighted nodes, the visit order', () => {
+  const binary = { label: 'A', children: [{ label: 'B', children: [{ label: 'D' }, { label: 'E' }] }, { label: 'C', children: [{ label: 'F' }, { label: 'G' }] }] }
+  const size = { width: 900, height: 560 }
+  it('circle nodes are round and the same size; badges number the visit order', () => {
+    const tree = layoutOf(tlsGTree, { root: binary, nodeStyle: 'circle', order: ['A', 'B', 'D', 'E', 'C', 'F', 'G'], highlight: ['A', 'B', 'D'] }, size)
+    const nodes = rectsOf(tree, /^node\[/)
+    expect(nodes).toHaveLength(7)
+    for (const n of nodes) expect(n.width).toBeCloseTo(n.height, 3)
+    expect(new Set(nodes.map((n) => Math.round(n.width))).size).toBe(1)
+    const badges = rectsOf(tree, /^badge\[/)
+    expect(badges).toHaveLength(7)
+    for (const b of badges) within(b, size)
+    if (process.env.TREE_SVG) require('fs').writeFileSync(process.env.TREE_SVG, `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" style="background:#fff">${require('../../../render-svg').renderNodeToSvg(tree)}</svg>`)
+  })
+  it('two traversals of one tree give different numbers to the nodes', () => {
+    const pre = layoutOf(tlsGTree, { root: binary, nodeStyle: 'circle', order: ['A', 'B', 'D', 'E', 'C', 'F', 'G'] }, size)
+    const post = layoutOf(tlsGTree, { root: binary, nodeStyle: 'circle', order: ['D', 'E', 'B', 'F', 'G', 'C', 'A'] }, size)
+    const textOf = (t: any) => JSON.stringify(rectsOf(t, /^order\[0\]/))
+    expect(textOf(pre)).not.toBe('')
+    expect(JSON.stringify(pre)).not.toBe(JSON.stringify(post))
+  })
+  it('an order label that is not a node is skipped; no order, no badge', () => {
+    expect(rectsOf(layoutOf(tlsGTree, { root: binary, order: ['Z', 'A'] }, size), /^badge\[/)).toHaveLength(1)
+    expect(rectsOf(layoutOf(tlsGTree, { root: binary }, size), /^badge\[/)).toHaveLength(0)
+  })
+})
