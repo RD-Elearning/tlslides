@@ -1273,7 +1273,7 @@ export interface StyleSurface {
   /** spro enhance S2 — how the style draws what the layout placed (`paint-treatment.ts`): `stroke:
    *  'rough'` sketches borders, rules and connectors by hand, `fill: 'hachure'` pen-hatches filled
    *  panels. Paint only; geometry is unchanged. Absent = crisp vector drawing. */
-  render?: { stroke?: 'crisp' | 'rough'; fill?: 'flat' | 'hachure'; roughness?: number }
+  render?: { stroke?: 'crisp' | 'rough'; fill?: 'flat' | 'hachure'; roughness?: number; emphasis?: 'bold' | 'highlighter'; highlight?: string }
 }
 
 /**

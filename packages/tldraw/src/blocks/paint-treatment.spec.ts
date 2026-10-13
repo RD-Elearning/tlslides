@@ -71,4 +71,17 @@ describe('render treatment', () => {
     expect(roundedRectPath(100, 50, 10)).toMatch(/^M10 0 .* Z$/)
     expect(roundedRectPath(100, 50, 0)).toBe('M0 0 L100 0 L100 50 L0 50 Z')
   })
+
+  it('highlighter puts a band behind each bold run, under the text', () => {
+    const text: LayoutNode = { k: 'text', box: { x: 100, y: 50, width: 600, height: 60 }, lines: [{ text: 'Tree is a graph', top: 0, baseline: 40, width: 300, runs: [{ text: 'Tree ' }, { text: 'is a graph', bold: true }] }], style: { family: 'Inter', size: 40, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
+    const out = treatTree(text, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    expect(out.k).toBe('group')
+    expect(out.box).toEqual(text.box)
+    const [band, inner] = out.children
+    expect(band).toMatchObject({ k: 'rect', part: 'highlight' })
+    expect(band.box.x).toBeGreaterThan(40)
+    expect(inner).toMatchObject({ k: 'text', box: { x: 0, y: 0 } })
+    const plain: LayoutNode = { ...text, lines: [{ ...text.lines[0], runs: [{ text: 'Tree is a graph' }] }] } as LayoutNode
+    expect(treatTree(plain, { emphasis: 'highlighter' }, 'k')).toBe(plain)
+  })
 })
