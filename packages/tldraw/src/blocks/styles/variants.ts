@@ -35,7 +35,8 @@ const texture = (pattern: string, scale = 'md', tone = 'line'): BlockSpec => ({ 
 const SKETCH_MASTERS: MasterSpec[] = [
   { name: 'cover', blocks: { star: at('star', 'accent', 3, 140, 120, 140, 140, { rotation: 10 }), sparkle: at('sparkle', 'accent2', 6, 1660, 140, 110, 110), squiggle: at('squiggle', 'accent2', 7, 160, 880, 360, 64) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { star: at('star', 'accent', 8, 1420, 320, 380, 380, { rotation: 6 }), squiggle: at('squiggle', 'accent2', 2, 1240, 880, 480, 64) }, background: { type: 'solid', color: 'theme:surface' } },
-  { name: 'content', blocks: { sparkle: at('sparkle', 'accent', 4, 1816, 32, 60, 60) }, background: { type: 'solid', color: 'theme:background' } },
+  // S4: the content master carries the page only; the slide's motif comes from its ticket
+  { name: 'content', blocks: {}, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
   ...DOODLE_STYLE,
@@ -58,7 +59,7 @@ export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
 const GEO_MASTERS: MasterSpec[] = [
   { name: 'cover', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 1, 1480, 120, 300, 300), cyl: at('cylinder', 'accent2', 2, 140, 760, 200, 240), cone: at('cone', 'accent', 3, 1660, 760, 180, 220) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 4, 1360, 300, 420, 420), slab: at('slab', 'accent2', 5, 1180, 820, 300, 180) }, background: { type: 'solid', color: 'theme:surface' } },
-  { name: 'content', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent2', 6, 1812, 28, 72, 72) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'content', blocks: { grid: texture('grid', 'lg') }, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const DOODLE_GEO3D_STYLE: DeckStyle = {
   ...DOODLE_STYLE,
@@ -150,7 +151,7 @@ export const MINIMAL_SOFT_STYLE: DeckStyle = {
 const CLAY_MASTERS: MasterSpec[] = [
   { name: 'cover', blocks: { orb: at('orb', 'accent', 1, 1420, 100, 360, 360), orb2: at('orb', 'accent2', 2, 120, 760, 220, 220), blob: at('blob', 'accent2', 9, 1560, 760, 260, 220, { opacity: 'soft' }) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { orb: at('orb', 'accent', 3, 1300, 260, 480, 480) }, background: { type: 'solid', color: 'theme:surface' } },
-  { name: 'content', blocks: { orb: at('orb', 'accent2', 4, 1810, 30, 70, 70) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'content', blocks: {}, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const GLASS_CLAY_STYLE: DeckStyle = {
   ...GLASS_STYLE,
@@ -175,7 +176,7 @@ export const GLASS_CLAY_STYLE: DeckStyle = {
 const CONFETTI_MASTERS: MasterSpec[] = [
   { name: 'cover', blocks: { cube: at('cube', 'accent', 1, 1540, 80, 260, 260), pyr: at('pyramid', 'accent2', 2, 120, 760, 240, 240), zig: at('zigzag', 'accent', 3, 1380, 970, 460, 70), cyl: at('cylinder', 'accent', 4, 1700, 700, 160, 200) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { cube: at('cube', 'alt', 5, 1340, 300, 440, 440), zig: at('zigzag', 'alt', 6, 1140, 1000, 720, 56) }, background: { type: 'solid', color: 'theme:accent1' } },
-  { name: 'content', blocks: { cube: at('cube', 'accent2', 7, 1820, 28, 64, 64), zig: at('zigzag', 'accent', 8, 40, 1024, 260, 40) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'content', blocks: { zig: at('zigzag', 'accent', 8, 40, 1024, 260, 40) }, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const MEMPHIS_CONFETTI_STYLE: DeckStyle = {
   ...MEMPHIS_STYLE,
