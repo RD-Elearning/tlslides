@@ -13,7 +13,7 @@
  *
  * Pure and DOM-free.
  */
-import { roughPaths } from './library/media/tls-m-decoration/rough'
+import { roughOutline, roughPaths } from './library/media/tls-m-decoration/rough'
 import type { LayoutNode, Paint, Stroke, StyleSurface } from './types'
 import { mixHex } from './color-math'
 
@@ -62,7 +62,13 @@ function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment,
     ...(stroke ? { stroke: { color: stroke.color, width: stroke.width } } : {}),
     ...(hatch ? { hachure: { color: mixHex(fillHex!, '#000000', 0.12), gap: 14, weight: 1.5 } } : {}),
   })
-  const base: LayoutNode = { k: 'rect', box: { x: 0, y: 0, width: W, height: H }, ...(node.fill ? { fill: node.fill } : {}), ...(node.radius !== undefined ? { radius: node.radius } : {}), ...(node.shadow ? { shadow: node.shadow } : {}), ...(node.part ? { part: node.part } : {}) }
+  // the fill follows the hand-drawn edge (one wobbly outline), so no crisp corner shows past the
+  // ink; a shadowed panel keeps its rect (the shadow is a rect effect)
+  const local = { x: 0, y: 0, width: W, height: H }
+  const base: LayoutNode =
+    rough && node.fill && !node.shadow
+      ? { k: 'path', box: local, d: roughOutline(d, W, H, { seed, roughness: (t.roughness ?? 1) * 0.6, margin: stroke!.width / 2 + 1 }), fill: node.fill, ...(node.part ? { part: node.part } : {}) }
+      : { k: 'rect', box: local, ...(node.fill ? { fill: node.fill } : {}), ...(node.radius !== undefined ? { radius: node.radius } : {}), ...(node.shadow ? { shadow: node.shadow } : {}), ...(node.part ? { part: node.part } : {}) }
   return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [base, ...sketch] }
 }
 

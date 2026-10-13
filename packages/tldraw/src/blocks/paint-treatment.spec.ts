@@ -25,9 +25,12 @@ describe('render treatment', () => {
     const out = treatTree(card, { stroke: 'rough' }, 'k') as Extract<LayoutNode, { k: 'group' }>
     expect(out.k).toBe('group')
     expect(boxOf(out)).toEqual(card.box)
-    const base = out.children[0] as Extract<LayoutNode, { k: 'rect' }>
-    expect(base).toMatchObject({ k: 'rect', box: { x: 0, y: 0, width: 300, height: 200 }, radius: 28, fill: { type: 'solid', color: '#FFF0DC' } })
+    // the fill follows the hand-drawn edge
+    const base = out.children[0] as Extract<LayoutNode, { k: 'path' }>
+    expect(base).toMatchObject({ k: 'path', box: { x: 0, y: 0, width: 300, height: 200 }, fill: { type: 'solid', color: '#FFF0DC' } })
     expect(base.stroke).toBeUndefined()
+    const shadowed = treatTree({ ...card, shadow: 1 } as LayoutNode, { stroke: 'rough' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    expect(shadowed.children[0]).toMatchObject({ k: 'rect', radius: 28, shadow: 1 })
     const sketch = paths(out)
     expect(sketch.length).toBeGreaterThan(0)
     for (const p of sketch) {
