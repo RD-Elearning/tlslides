@@ -89,6 +89,9 @@ export type LayoutFindingCode =
   | 'text/overflow'
   | 'content/overflow'
   | 'text/shrunk'
+  // enhance: a block cut its text to fit; a chart drew its empty state
+  | 'text/truncated'
+  | 'data/empty'
   | 'capacity/exceeded'
   // LO5b composition hints (no geometry error; help an LLM compose without a screenshot).
   | 'layout/unbalanced'
@@ -129,6 +132,8 @@ export interface TextLeafReport {
   painted: Box
   /** CMP2: the nested authored block that owns this text (`g1/c2/b1`); absent = the block itself. */
   block?: string
+  /** enhance: the block cut this text to fit. */
+  truncated?: true
 }
 
 /** CMP2 — an authored nested child of a block (a container's child), slide coordinates. */
@@ -1050,6 +1055,7 @@ function toSlideText(t: TextLeafMeasure, box: Box): TextLeafReport {
     charsPerLine: t.charsPerLine,
     box: offset(t.box, box.x, box.y),
     painted: offset(t.painted, box.x, box.y),
+    ...(t.truncated ? { truncated: true as const } : {}),
   }
 }
 
@@ -1205,6 +1211,28 @@ function blockFindings(
       blockIds: [b.id],
       message: `${b.id} \`${textName(t)}\` autofit to ${Math.round(t.scale * 100)}% (${r(t.fontSize)} units) to fit.`,
       fix,
+    })
+  }
+
+  // enhance: text the block cut to fit (a diagram label with an ellipsis) is text nobody reads
+  const cut = b.text.filter((t) => t.truncated)
+  if (cut.length > 0) {
+    out.push({
+      code: 'text/truncated',
+      severity: 'warning',
+      blockIds: [b.id],
+      message: `${b.id} cut ${cut.length === 1 ? `\`${textName(cut[0])}\`` : `${cut.length} labels`} to fit (an ellipsis or dropped lines).`,
+      fix: `shorten ${cut.map(textName).slice(0, 4).join(', ')} or give ${b.id} more room`,
+    })
+  }
+  // enhance: a chart with no usable data draws "No data"
+  if (b.text.some((t) => t.part === 'empty') && b.type.startsWith('tls.d.')) {
+    out.push({
+      code: 'data/empty',
+      severity: 'warning',
+      blockIds: [b.id],
+      message: `${b.id} has no data to draw (its series are empty, zero or missing).`,
+      fix: `give ${b.id} the series and categories from the source, or show the idea another way`,
     })
   }
 

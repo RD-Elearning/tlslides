@@ -656,6 +656,9 @@ export type LayoutNode =
       /** CMP2: the ink guard re-solved this leaf's colour for contrast (`layout/ink-guard.ts`); an
        *  html template paints the poster's colour for such a leaf (`posterText().color`). */
       solved?: true
+      /** enhance: the block cut this text to fit (an ellipsis, dropped lines) — the reader does not
+       *  see all of it (`text/truncated`). */
+      truncated?: true
     }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true }

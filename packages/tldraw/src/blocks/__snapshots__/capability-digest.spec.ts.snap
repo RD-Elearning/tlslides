@@ -1301,8 +1301,8 @@ Grid of team members with photo, name, role and optional bio. _(family: composit
     \\"people\\": [
       {
         \\"image\\": \\"/demo/portrait-1.svg\\",
-        \\"name\\": \\"Dr. Tran Thi Lan\\",
-        \\"role\\": \\"Head of Data Science\\",
+        \\"name\\": \\"Dr. Lan Tran\\",
+        \\"role\\": \\"Data science lead\\",
         \\"bio\\": \\"Leads the analytics group.\\"
       },
       {

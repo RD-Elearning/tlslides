@@ -74,6 +74,8 @@ export interface TextLeafMeasure {
   box: Box
   /** The painted extent: first line top to last line bottom, widest line. */
   painted: Box
+  /** The block cut this text to fit (`text/truncated`). */
+  truncated?: true
 }
 
 export interface BlockMeasure {
@@ -192,6 +194,7 @@ function textPainted(node: Extract<LayoutNode, { k: 'text' }>, ox: number, oy: n
     charsPerLine,
     box,
     painted: { x: box.x, y: box.y + first, width: maxLineWidth, height: bottom - first },
+    ...(node.truncated ? { truncated: true as const } : {}),
   }
 }
 

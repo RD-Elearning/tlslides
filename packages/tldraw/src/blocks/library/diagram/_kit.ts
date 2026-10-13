@@ -55,9 +55,12 @@ export function placeLines(
   // RV07: browser-true Inter widths: a box sized from the flat estimate was a few px narrower than
   // its glyphs ("Check" 63 in a 60 box), so the DOM wrapped it.
   const rc = withRealWidths(ctx)
-  const words = clean.split(' ').map((x) => ellipsize(rc, x, s, w))
+  const raw = clean.split(' ')
+  const words = raw.map((x) => ellipsize(rc, x, s, w))
   const m = rc.measureText(words.join(' '), s, w)
   const lines = clipLines(m.lines, Math.max(1, Math.floor(maxLines)))
+  // enhance: a cut word or a dropped line is text the reader never sees
+  const cut = m.lines.length > lines.length || words.some((x, i) => x !== raw[i])
   // The ellipsis appended to the last kept line can push it past the box: drop words until it fits.
   if (m.lines.length > lines.length) {
     const last = lines[lines.length - 1]
@@ -73,7 +76,7 @@ export function placeLines(
   const width = Math.min(w, Math.max(0, ...lines.map((l) => l.width)))
   if (align === 'start') {
     return {
-      nodes: [{ k: 'text', part, box: { x: box.x, y: box.y, width: w, height }, lines, style: s }],
+      nodes: [{ k: 'text', part, box: { x: box.x, y: box.y, width: w, height }, lines, style: s, ...(cut ? { truncated: true as const } : {}) }],
       height,
       width,
       lineCount: lines.length,
@@ -88,6 +91,7 @@ export function placeLines(
       box: { x, y: box.y + i * lh, width: Math.max(1, lw + 1), height: lh },
       lines: [{ ...l, top: 0, baseline: l.baseline - (l.top ?? i * lh) }],
       style: s,
+      ...(cut ? { truncated: true as const } : {}),
     } as LayoutNode
   })
   return { nodes, height, width, lineCount: lines.length }

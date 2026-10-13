@@ -62,7 +62,7 @@ export const schema: BlockSchema = {
 
 export const defaults: TeamProps = {
   people: [
-    { name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the applied analytics group.' },
+    { name: 'Dr. Tran Thi Lan', role: 'Data science lead', bio: 'Leads the applied analytics group.' },
     { name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches probability and inference.' },
     { name: 'Pham Thu Ha', role: 'Teaching assistant', bio: 'Runs the weekly lab sessions.' },
   ],
@@ -247,7 +247,7 @@ const composite = defineCompositeBlock<TeamProps>({
       type: 'tls.c.team',
       props: {
         people: [
-          { image: '/demo/portrait-1.svg', name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the analytics group.' },
+          { image: '/demo/portrait-1.svg', name: 'Dr. Lan Tran', role: 'Data science lead', bio: 'Leads the analytics group.' },
           { image: '/demo/portrait-2.svg', name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches inference.' },
           { image: '/demo/portrait-3.svg', name: 'Le Minh Chau', role: 'Postdoc', bio: 'Works on causal models.' },
           { image: '/demo/portrait-4.svg', name: 'Pham Quoc Bao', role: 'PhD student', bio: 'Builds forecasting tools.' },
