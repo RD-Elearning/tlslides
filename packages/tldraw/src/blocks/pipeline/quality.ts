@@ -49,6 +49,14 @@ export interface SlideQuality {
   thinRegion: string
   /** Largest painted font size on the slide, slide units. */
   lead: number
+  /** spro enhance PLAN.md L1 — balance: the empty band between the lowest content and the
+   *  safe area's bottom edge, as a share of the safe height (0 = content reaches the bottom). */
+  bottomGap: number
+  /** The tallest empty horizontal band between content blocks, as a share of the safe height. */
+  innerGap: number
+  /** The slide title's painted text (left x, top y, width, font size), for title drift across
+   *  slides; absent when the slide has no `title` region text. */
+  title?: { x: number; y: number; width: number; fontSize: number }
   findings: QualityFinding[]
 }
 
@@ -88,6 +96,21 @@ function union(boxes: Array<{ x: number; y: number; width: number; height: numbe
   return r
 }
 
+/** Ornament, not content: left out of the balance measures. */
+const DECORATIVE = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule'])
+
+/** The tallest gap between the vertical extents of `boxes` (sorted, merged), in units. */
+function largestGap(boxes: Array<{ y: number; height: number }>): number {
+  const spans = boxes.map((b) => [b.y, b.y + b.height] as [number, number]).sort((a, b) => a[0] - b[0])
+  let gap = 0
+  let end = spans.length ? spans[0][1] : 0
+  for (const [y0, y1] of spans.slice(1)) {
+    if (y0 > end) gap = Math.max(gap, y0 - end)
+    end = Math.max(end, y1)
+  }
+  return gap
+}
+
 const area = (r: Rect | null) => (r ? Math.max(0, r.x1 - r.x0) * Math.max(0, r.y1 - r.y0) : 0)
 const pct = (n: number) => `${Math.round(n * 100)}%`
 
@@ -120,6 +143,19 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number } 
   let lead = 0
   for (const b of content) for (const t of b.text) lead = Math.max(lead, t.fontSize * (t.scale || 1))
 
+  // balance (L1): measured on the content blocks only — no backdrops, overlays or ornaments
+  const safeH = Math.max(1, H - 2 * m)
+  const flow = content.filter((b) => !b.outOfFlow && !DECORATIVE.has(b.type) && b.painted)
+  const lowest = flow.reduce((y, b) => Math.max(y, b.painted!.y + b.painted!.height), m)
+  const bottomGap = Math.max(0, Math.min(1, (H - m - lowest) / safeH))
+  const innerGap = Math.min(1, largestGap(flow.map((b) => b.painted!)) / safeH)
+  let title: SlideQuality['title']
+  const titleText = content.filter((b) => b.region === 'title' && !DECORATIVE.has(b.type)).flatMap((b) => b.text)
+  if (titleText.length) {
+    const t = titleText[0]
+    title = { x: Math.round(t.painted.x), y: Math.round(t.painted.y), width: Math.round(t.painted.width), fontSize: Math.round(t.fontSize * (t.scale || 1)) }
+  }
+
   const findings: QualityFinding[] = []
   const typeLed = !!opts.titleSize && lead >= opts.titleSize * QUALITY_GATE.displayOfTitle
   const minFill = typeLed ? QUALITY_GATE.displayFill : QUALITY_GATE.minFill
@@ -139,7 +175,7 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number } 
     if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
     findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
-  return { fill, regionFill, thinRegion, lead, findings }
+  return { fill, regionFill, thinRegion, lead, bottomGap, innerGap, ...(title ? { title } : {}), findings }
 }
 
 /**
