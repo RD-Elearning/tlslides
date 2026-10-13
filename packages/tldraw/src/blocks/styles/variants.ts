@@ -33,7 +33,8 @@ const texture = (pattern: string, scale = 'md', tone = 'line'): BlockSpec => ({ 
 
 // ── doodle / sketchnote ─────────────────────────────────────────────────────────────────────────
 const SKETCH_MASTERS: MasterSpec[] = [
-  { name: 'cover', blocks: { star: at('star', 'accent', 3, 140, 120, 140, 140, { rotation: 10 }), sparkle: at('sparkle', 'accent2', 6, 1660, 140, 110, 110), squiggle: at('squiggle', 'accent2', 7, 160, 880, 360, 64) }, background: { type: 'solid', color: 'theme:background' } },
+  // the motifs keep to the right edge and the bottom margin: the cover's kicker and title sit top-left
+  { name: 'cover', blocks: { star: at('star', 'accent', 3, 1640, 120, 150, 150, { rotation: 10 }), sparkle: at('sparkle', 'accent2', 6, 1500, 300, 90, 90), squiggle: at('squiggle', 'accent2', 7, 1400, 930, 420, 64) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { star: at('star', 'accent', 8, 1420, 320, 380, 380, { rotation: 6 }), squiggle: at('squiggle', 'accent2', 2, 1240, 880, 480, 64) }, background: { type: 'solid', color: 'theme:surface' } },
   // S4: the content master carries the page only; the slide's motif comes from its ticket
   { name: 'content', blocks: {}, background: { type: 'solid', color: 'theme:background' } },
@@ -51,7 +52,8 @@ export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
   ],
   surface: { card: 'filled', stroke: 'bold', shadow: 0, render: { stroke: 'rough', fill: 'hachure', roughness: 1.3, emphasis: 'highlighter', highlight: '#FFD86B' } },
   masters: SKETCH_MASTERS,
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle', 'tls.m.decoration:wave'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' },
+  // a big wave behind a diagram read as clutter (golden v1): corners and behind a statement only
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle'], zones: ['corner', 'behind-title'], icons: 'disc', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' },
   rules: ['Short, friendly sentences.', 'Draw the idea, not paragraphs.'],
 }
 
