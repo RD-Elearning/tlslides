@@ -113,7 +113,7 @@ export const DOODLE_STYLE: DeckStyle = {
     'tls.t.statement': { emphasis: 'underline' },
     'tls.c.chart-insight': { side: 'right' },
     'tls.t.quote': { markStyle: 'glyph' },
-    'tls.t.takeaway': { tone: 'accent' },
+    'tls.t.takeaway': { tone: 'accent', variant: 'note' },
     'tls.g.chevrons': { fill: 'series' },
     'tls.c.closing': { variant: 'centered' },
     'tls.g.pros-cons': { style: 'cards' },

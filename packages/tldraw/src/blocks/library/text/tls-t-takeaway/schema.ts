@@ -15,6 +15,9 @@ export interface TakeawayProps extends Record<string, unknown> {
   label: string
   /** Text tier: `body` (default) or `lead` — bigger, for a takeaway beside a chart or under a KPI row. */
   size?: 'body' | 'lead' | 'column'
+  /** enhance L4: how it stands out — `bar` (a left accent bar on a tint, the default), `tint` (the
+   *  tint alone), `line` (a short accent rule above, no panel), `note` (a sticky-note panel). */
+  variant?: 'bar' | 'tint' | 'line' | 'note'
 }
 
 export const schema: BlockSchema = {
@@ -41,6 +44,12 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Label',
     guidance: 'Short label, 1–3 words. e.g. "Key Insight", "Remember".',
+  },
+  variant: {
+    type: { kind: 'enum', values: ['bar', 'tint', 'line', 'note'] },
+    role: 'option',
+    label: 'Look',
+    help: 'bar = left accent bar on a tint; tint = the tint alone; line = a short rule above, no panel; note = a sticky note.',
   },
   size: {
     type: { kind: 'enum', values: ['body', 'lead', 'column'] },

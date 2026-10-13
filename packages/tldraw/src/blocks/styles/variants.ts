@@ -75,6 +75,7 @@ export const DOODLE_GEO3D_STYLE: DeckStyle = {
   masters: GEO_MASTERS,
   concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:cylinder', 'tls.m.decoration:cone', 'tls.m.decoration:pyramid', 'tls.m.decoration:slab'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Indigo for structure, amber for the one thing to notice; one solid beside the main visual.' },
   rules: ['Structure first: layers, stacks, trees, steps.', 'One solid per slide, beside the visual.'],
+  blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
 
 // ── doodle / chalkboard ─────────────────────────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ export const DOODLE_CHALKBOARD_STYLE: DeckStyle = {
   motionStyle: 'subtle',
   concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:sparkle'], zones: ['corner', 'behind-title'], icons: 'plain', accent: 'Chalk yellow for the key word, mint for the second idea; outlines only, no filled panels.' },
   rules: ['Few words, big, as on a board.', 'Outlines, never solid panels.'],
+  blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'line' } },
 }
 
 // ── doodle / notebook ───────────────────────────────────────────────────────────────────────────
@@ -141,6 +143,7 @@ export const MINIMAL_SOFT_STYLE: DeckStyle = {
   surface: { card: 'raised', stroke: 'none', shadow: 1 },
   concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'disc', accent: 'The accent on the key word and the one number; everything else grey.' },
   rules: ['One idea per slide.', 'White cards on a soft page; no ornament.', 'One accent colour, used once per slide.'],
+  blockDefaults: { ...MINIMAL_STYLE.blockDefaults, 'tls.t.takeaway': { ...MINIMAL_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
 
 // ── glass / clay 3D ─────────────────────────────────────────────────────────────────────────────
@@ -165,6 +168,7 @@ export const GLASS_CLAY_STYLE: DeckStyle = {
   masters: CLAY_MASTERS,
   concept: { decoration: 'sparse', motifs: ['tls.m.decoration:orb', 'tls.m.decoration:blob'], zones: ['corner', 'beside-visual'], icons: 'disc', accent: 'One saturated colour for the focus; spheres in the margin, never on the text.' },
   rules: ['Big, rounded, friendly.', 'One sphere or blob per slide, in the margin.', 'Numbers large, words few.'],
+  blockDefaults: { ...GLASS_STYLE.blockDefaults, 'tls.t.takeaway': { ...GLASS_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
 
 // ── memphis / confetti 3D ───────────────────────────────────────────────────────────────────────
@@ -204,6 +208,7 @@ export const ACADEMIC_LECTURE_STYLE: DeckStyle = {
   surface: { card: 'outline', stroke: 'hairline', shadow: 0 },
   concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'none', accent: 'The accent on defined terms and the one result; figures and formulas carry the slide.' },
   rules: ['Define, then show: a definition, a figure, a worked example.', 'Number figures and equations.', 'No ornament; rules and boxes only.'],
+  blockDefaults: { ...MINIMAL_STYLE.blockDefaults, 'tls.t.takeaway': { ...MINIMAL_STYLE.blockDefaults['tls.t.takeaway'], variant: 'line' } },
 }
 
 /** Wave-1 variants, in the order a picker lists them under their family. */

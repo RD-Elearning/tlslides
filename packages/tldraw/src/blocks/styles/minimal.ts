@@ -65,7 +65,7 @@ export const MINIMAL_STYLE: DeckStyle = {
     'tls.c.chart-insight': { side: 'below' },
     'tls.g.chevrons': { fill: 'single' },
     'tls.t.quote': { markStyle: 'none' },
-    'tls.t.takeaway': { tone: 'muted' },
+    'tls.t.takeaway': { tone: 'muted', variant: 'line' },
     'tls.c.closing': { variant: 'centered' },
     'tls.d.table': { rules: 'head', header: 'bold', zebra: false },
     'tls.g.pros-cons': { style: 'columns' },

@@ -47,19 +47,22 @@ export function layout(props: TakeawayProps, ctx: LayoutContext): LayoutNode {
 }
 
 function layoutCard(props: TakeawayProps, ctx: LayoutContext, column?: TypeToken): LayoutNode {
+  const variant = props.variant === 'tint' || props.variant === 'line' || props.variant === 'note' ? props.variant : 'bar'
   const pad = column ? ctx.tokens.space.xl : ctx.tokens.space.md
   const gap = ctx.tokens.space.sm
   const barWidth = ctx.tokens.space.xs
-  const radius = ctx.tokens.radius.md
+  const radius = variant === 'note' ? ctx.tokens.radius.sm : ctx.tokens.radius.md
 
   const role = toneToColorRole(props.tone)
   const accentColor = ctx.resolveColor(role).color
 
-  // Content box after padding
+  // Content box after padding (L4: only `bar` keeps a column for the bar; `line` has no side pad)
   const barX = pad
-  const contentX = barX + barWidth + gap
-  const contentW = Math.max(0, ctx.box.width - contentX - pad)
-  let y = pad
+  const sidePad = variant === 'line' ? 0 : pad
+  const contentX = variant === 'bar' ? barX + barWidth + gap : sidePad
+  const ruleH = variant === 'line' ? Math.max(3, barWidth / 2) : 0
+  const contentW = Math.max(0, ctx.box.width - contentX - sidePad)
+  let y = variant === 'line' ? ruleH + gap : pad
 
   const children: LayoutNode[] = []
 
@@ -129,40 +132,55 @@ function layoutCard(props: TakeawayProps, ctx: LayoutContext, column?: TypeToken
   // it ran far below the tinted surface.)
   const barHeight = Math.max(0, y - pad)
 
-  children.unshift({
-    k: 'rect',
-    part: 'accent-bar',
-    box: { x: barX, y: pad, width: barWidth, height: barHeight },
-    fill: { type: 'solid', color: accentColor } as Paint,
-    radius: barWidth / 2,
-  })
+  if (variant === 'bar') {
+    children.unshift({
+      k: 'rect',
+      part: 'accent-bar',
+      box: { x: barX, y: pad, width: barWidth, height: barHeight },
+      fill: { type: 'solid', color: accentColor } as Paint,
+      radius: barWidth / 2,
+    })
+  } else if (variant === 'line') {
+    // a short accent rule above the label: the mark is the rule, not a panel
+    children.unshift({
+      k: 'rect',
+      part: 'accent-bar',
+      box: { x: 0, y: 0, width: Math.min(ctx.box.width, ctx.tokens.space['3xl'] ?? 64), height: ruleH },
+      fill: { type: 'solid', color: accentColor } as Paint,
+      radius: ruleH / 2,
+    })
+  }
 
   // ── Surface background (subtle tinted rect behind everything) ─────────
   // When the instance specifies a surface Paint, use it; otherwise derive
   // from the accent colour at ~7% opacity.
   const surfacePaint: Paint = ctx.style?.surface && typeof ctx.style.surface !== 'string'
     ? ctx.style.surface
-    : {
-        type: 'solid',
-        color: accentColor + '12', // ~7% opacity via alpha hex
-      }
+    : variant === 'note'
+      ? { type: 'solid', color: ctx.resolveColor('warning').color + '2E' } // a sticky note: ~18 % of the warm colour
+      : {
+          type: 'solid',
+          color: accentColor + '12', // ~7% opacity via alpha hex
+        }
 
   // Return measured content height (y after last content + bottom pad),
   // not the full available box height.
-  const contentHeight = y + pad
+  const contentHeight = y + (variant === 'line' ? 0 : pad)
 
   return {
     k: 'group',
     box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight },
     part: 'root',
     children: [
-      {
-        k: 'rect',
-        part: 'surface',
-        box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight },
-        fill: surfacePaint,
-        radius,
-      },
+      ...(variant === 'line'
+        ? []
+        : [{
+            k: 'rect',
+            part: 'surface',
+            box: { x: 0, y: 0, width: ctx.box.width, height: contentHeight },
+            fill: surfacePaint,
+            radius,
+          } as LayoutNode]),
       ...children,
     ],
   }
