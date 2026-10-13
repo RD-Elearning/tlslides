@@ -19,10 +19,10 @@ const BRICOLAGE = { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily
 const JAKARTA = { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Plus Jakarta Sans", "Plus Jakarta Sans Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 const SERIF = { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Source Serif 4", "Source Serif 4 Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' }
 
-const pal = (id: string, name: string, fonts: DeckTheme['fonts'], c: Record<string, string>, radius: number): DeckTheme => ({
+const pal = (id: string, name: string, fonts: DeckTheme['fonts'], c: DeckTheme['colors'], radius: number): DeckTheme => ({
   id,
   name,
-  colors: c as DeckTheme['colors'],
+  colors: c,
   fonts,
   shapeDefaults: { isFilled: true, cornerRadius: radius },
 })
