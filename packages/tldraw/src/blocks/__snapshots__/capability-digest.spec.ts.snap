@@ -4131,7 +4131,7 @@ Decorative shape or motif in a theme colour; deterministic from a seed. _(family
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame \\\\| cube \\\\| cylinder \\\\| cone \\\\| pyramid \\\\| slab | orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame \\\\| cube \\\\| cylinder \\\\| cone \\\\| pyramid \\\\| slab \\\\| tree \\\\| graph \\\\| gear \\\\| book \\\\| flask \\\\| globe \\\\| bulb \\\\| chart \\\\| code | orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids, tree…code = subject doodles (a drawing of the topic). Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
 | \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
 | \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
 | \`rotation\` | no | number (min 0, max 359) | Degrees. |

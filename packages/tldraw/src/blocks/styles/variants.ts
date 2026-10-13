@@ -53,7 +53,7 @@ export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
   surface: { card: 'filled', stroke: 'bold', shadow: 0, render: { stroke: 'rough', fill: 'hachure', roughness: 1.3, emphasis: 'highlighter', highlight: '#FFD86B' } },
   masters: SKETCH_MASTERS,
   // a big wave behind a diagram read as clutter (golden v1): corners and behind a statement only
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle'], zones: ['corner', 'behind-title'], icons: 'disc', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle'], zones: ['corner', 'behind-title'], icons: 'disc', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' , subjects: true },
   rules: ['Short, friendly sentences.', 'Draw the idea, not paragraphs.'],
 }
 
@@ -76,7 +76,7 @@ export const DOODLE_GEO3D_STYLE: DeckStyle = {
   ],
   surface: { card: 'filled', stroke: 'bold', shadow: 'hard', render: { stroke: 'rough', roughness: 0.7 } },
   masters: GEO_MASTERS,
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:cylinder', 'tls.m.decoration:cone', 'tls.m.decoration:pyramid', 'tls.m.decoration:slab'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Indigo for structure, amber for the one thing to notice; one solid beside the main visual.' },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:cylinder', 'tls.m.decoration:cone', 'tls.m.decoration:pyramid', 'tls.m.decoration:slab'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Indigo for structure, amber for the one thing to notice; one solid beside the main visual.' , subjects: true },
   rules: ['Structure first: layers, stacks, trees, steps.', 'One solid per slide, beside the visual.'],
   blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
@@ -101,7 +101,7 @@ export const DOODLE_CHALKBOARD_STYLE: DeckStyle = {
   surface: { card: 'outline', stroke: 'bold', shadow: 0, render: { stroke: 'rough', roughness: 1.6 } },
   masters: CHALK_MASTERS,
   motionStyle: 'subtle',
-  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:sparkle'], zones: ['corner', 'behind-title'], icons: 'plain', accent: 'Chalk yellow for the key word, mint for the second idea; outlines only, no filled panels.' },
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:sparkle'], zones: ['corner', 'behind-title'], icons: 'plain', accent: 'Chalk yellow for the key word, mint for the second idea; outlines only, no filled panels.' , subjects: true },
   rules: ['Few words, big, as on a board.', 'Outlines, never solid panels.'],
   blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'line' } },
 }
@@ -125,7 +125,7 @@ export const DOODLE_NOTEBOOK_STYLE: DeckStyle = {
   ],
   surface: { card: 'filled', stroke: 'hairline', shadow: 1, render: { stroke: 'rough', roughness: 1, emphasis: 'highlighter', highlight: '#FFE066' } },
   masters: NOTE_MASTERS,
-  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle'], zones: ['corner', 'under-heading'], icons: 'plain', accent: 'Blue ink for text, a yellow highlighter on one key word per slide.' },
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle'], zones: ['corner', 'under-heading'], icons: 'plain', accent: 'Blue ink for text, a yellow highlighter on one key word per slide.' , subjects: true },
   rules: ['Notes, not prose.', 'One highlighted word per slide.'],
 }
 
@@ -191,7 +191,7 @@ export const MEMPHIS_CONFETTI_STYLE: DeckStyle = {
     pal('memphis-confetti-sun', 'Confetti Sun', BRICOLAGE, { background: '#FFFBEA', surface: '#FFFFFF', text: '#1A1A1A', textMuted: '#4D4743', accent1: '#3A86FF', accent2: '#FF006E', positive: '#2F855A', negative: '#C53030', warning: '#9A6700' }, 8),
   ],
   masters: CONFETTI_MASTERS,
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:pyramid', 'tls.m.decoration:zigzag', 'tls.m.decoration:cylinder', 'tls.m.decoration:dots'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Flat bright blocks; one floating solid in the margin, never on the text.' },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:pyramid', 'tls.m.decoration:zigzag', 'tls.m.decoration:cylinder', 'tls.m.decoration:dots'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Flat bright blocks; one floating solid in the margin, never on the text.' , subjects: true },
 }
 
 // ── academic / lecture ──────────────────────────────────────────────────────────────────────────

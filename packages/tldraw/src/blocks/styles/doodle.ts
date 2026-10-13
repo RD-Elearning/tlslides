@@ -128,6 +128,6 @@ export const DOODLE_STYLE: DeckStyle = {
   },
   prefer: ['tls.g.cycle', 'tls.c.quiz', 'tls.t.checklist'],
   avoid: ['tls.d.table', 'tls.d.scatter', 'tls.d.bubble', 'tls.d.heatmap'],
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:squiggle', 'tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:wave'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Coral for the key word, teal for the second idea; one sketched motif in the margin.' },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:squiggle', 'tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:wave'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'disc', accent: 'Coral for the key word, teal for the second idea; one sketched motif in the margin.' , subjects: true },
   rules: ['Friendly, short sentences.', 'One motif per slide, in the margin.', 'Icons and pictures over dense text.'],
 }

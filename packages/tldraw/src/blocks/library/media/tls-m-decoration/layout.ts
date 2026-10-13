@@ -14,6 +14,7 @@ import { DECORATION_SHAPES, type DecorationProps } from './schema'
 import { enumOf, side, tintOf } from '../_kit'
 import { roughOutline, roughPaths } from './rough'
 import { SOLID_SHAPES, solidNode, type SolidShape } from './solids'
+import { SUBJECT_SHAPES, subjectNode, type SubjectShape } from './subjects'
 
 /** Deterministic PRNG: the same seed gives the same sequence. */
 export function mulberry32(seed: number): () => number {
@@ -303,6 +304,8 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
   else if (shape === 'orb') return orbNode(W, H, color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
   // enhance S4: isometric solids (lit, base, shaded faces + an ink outline), as solid as an orb
   else if ((SOLID_SHAPES as readonly string[]).includes(shape)) return solidNode(shape as SolidShape, W, H, color, ctx.resolveColor('text').color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
+  // enhance S4: subject doodles (a tree, a flask…), tinted shapes under an outline in the colour
+  else if ((SUBJECT_SHAPES as readonly string[]).includes(shape)) return subjectNode(shape as SubjectShape, W, H, color, ctx.resolveColor('surface').color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
   else if (shape === 'star') d = starPath(c[0], c[1], R * 0.92, 5, 0.45, rotation)
   else if (shape === 'sparkle') d = sparklePath(c[0], c[1], R * 0.92, rotation)
   else if (shape === 'triangle') d = trianglePath(c, R, rotation)

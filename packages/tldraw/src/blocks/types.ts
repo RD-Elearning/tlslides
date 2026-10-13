@@ -543,6 +543,9 @@ export interface SlotSpec {
   /** B4: when set, this boolean slot toggles the visibility of the element named by
    *  this `part` value. The slot key must start with `show` (e.g. `showKicker`). */
   toggles?: string
+  /** enhance S4: the enum values the tier-1 index's knob hint lists (default: all). The others
+   *  stay valid; they are planned elsewhere (the art direction's subject doodles). */
+  indexValues?: string[]
 }
 
 /**
@@ -1300,6 +1303,9 @@ export interface StyleConcept {
   icons: 'disc' | 'plain' | 'none'
   /** One sentence: how the accent colour is spent on a slide. */
   accent: string
+  /** enhance S4: subject doodles suit the style (`tls.m.decoration` tree, flask, globe…): the art
+   *  direction may pick the one that draws the deck's topic. */
+  subjects?: boolean
 }
 
 /**

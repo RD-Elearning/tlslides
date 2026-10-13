@@ -796,9 +796,10 @@ describe('R7 — no hand-written catalog text', () => {
 })
 
 /** AC8 — the look values of a definition, as `capabilityIndexData` reports them. */
-function lookValuesOf(def: { looks?: string[]; schema: Record<string, { type: { kind: string; values?: string[] } }> }): Record<string, string[] | 'boolean'> {
+function lookValuesOf(def: { looks?: string[]; schema: Record<string, { type: { kind: string; values?: string[] }; indexValues?: string[] }> }): Record<string, string[] | 'boolean'> {
   const out: Record<string, string[] | 'boolean'> = {}
-  for (const k of def.looks ?? []) out[k] = def.schema[k].type.kind === 'enum' ? [...def.schema[k].type.values!] : 'boolean'
+  // enhance S4: `indexValues` narrows what the index lists (the decoration's subject doodles)
+  for (const k of def.looks ?? []) out[k] = def.schema[k].type.kind === 'enum' ? [...(def.schema[k].indexValues ?? def.schema[k].type.values!)] : 'boolean'
   return out
 }
 

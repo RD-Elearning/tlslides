@@ -220,3 +220,32 @@ describe('tls.m.decoration — isometric solids (spro enhance S4)', () => {
     }
   })
 })
+
+describe('subject doodles (enhance S4)', () => {
+  const subjects = ['tree', 'graph', 'gear', 'book', 'flask', 'globe', 'bulb', 'chart', 'code']
+  it.each(subjects)('%s: tinted faces under an outline, inside the box, the same every time', (shape) => {
+    const a = lay({ shape, tone: 'accent', opacity: 'strong' }, 300, 200)
+    expect(JSON.stringify(a)).toBe(JSON.stringify(lay({ shape, tone: 'accent', opacity: 'strong' }, 300, 200)))
+    const leaves = absoluteLeaves(a).filter((l) => l.k === 'path')
+    const faces = leaves.filter((l) => (l.node as any).fill)
+    const edges = leaves.filter((l) => (l.node as any).stroke)
+    expect(faces.length).toBeGreaterThan(0)
+    expect(edges.length).toBeGreaterThan(0)
+    for (const l of leaves) {
+      const d = (l.node as any).d as string
+      expect(d).not.toMatch(/[aAqQsStThHvV]/) // M/L/C/Z only: the render treatment can sketch it
+      const b = pathBounds(d)!
+      expect(b.x).toBeGreaterThanOrEqual(-0.5)
+      expect(b.y).toBeGreaterThanOrEqual(-0.5)
+      expect(b.x + b.width).toBeLessThanOrEqual(300.5)
+      expect(b.y + b.height).toBeLessThanOrEqual(200.5)
+    }
+    if (process.env.DOODLE_SVG) {
+      const svg = leaves.map((l) => {
+        const n = l.node as any
+        return `<path d="${n.d}" fill="${n.fill?.color ?? 'none'}" stroke="${n.stroke?.color ?? 'none'}" stroke-width="${n.stroke?.width ?? 0}" stroke-linejoin="round" stroke-linecap="round"/>`
+      })
+      require('fs').writeFileSync(`${process.env.DOODLE_SVG}/${shape}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" style="background:#fff">${svg.join('')}</svg>`)
+    }
+  })
+})

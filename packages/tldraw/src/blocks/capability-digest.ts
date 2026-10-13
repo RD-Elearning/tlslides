@@ -605,7 +605,7 @@ function lookValues(def: BlockDefinition): Record<string, string[] | 'boolean'> 
   const out: Record<string, string[] | 'boolean'> = {}
   for (const k of def.looks ?? []) {
     const t = def.schema[k]?.type
-    if (t?.kind === 'enum') out[k] = [...t.values]
+    if (t?.kind === 'enum') out[k] = [...(def.schema[k]?.indexValues ?? t.values)]
     else if (t?.kind === 'boolean') out[k] = 'boolean'
   }
   return out
