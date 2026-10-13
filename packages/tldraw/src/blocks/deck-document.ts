@@ -208,6 +208,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       masterId: result.masterId ?? sm.masterId,
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
+    if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     pages[pageId] = page
 
     pageStates[pageId] = {

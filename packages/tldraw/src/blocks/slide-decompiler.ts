@@ -391,6 +391,9 @@ export function pageToSlideSpec(
   if (page.motionStyle !== undefined) {
     spec.motionStyle = page.motionStyle
   }
+  if (page.valign !== undefined) {
+    spec.valign = page.valign
+  }
 
   return { spec, findings }
 }

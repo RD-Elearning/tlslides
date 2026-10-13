@@ -265,6 +265,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   // P7 — the slide's authored `SlideSpec.motionStyle`, carried so `documentToDeckSpec` can
   // return it. Playback does not read it: the compiler already baked it into each shape.
   motionStyle?: 'static' | 'subtle' | 'expressive'
+  // enhance L1 — the authored `SlideSpec.valign`, carried back by `documentToDeckSpec`.
+  valign?: 'start' | 'auto'
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

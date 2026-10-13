@@ -31,7 +31,7 @@ import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | DesignCode
 
 export interface QualityFinding {
   code: QualityCode
@@ -81,6 +81,10 @@ export const QUALITY_GATE = {
   leadOfTitle: 0.9,
   /** Safe-area margin, as a share of the frame width (96 / 1920). */
   margin: 0.05,
+  /** enhance L1: the most the empty band under the content may exceed the one above it, and the
+   *  tallest gap between the body's blocks, as shares of the safe height (`balance` only). */
+  maxBottomExcess: 0.2,
+  maxInnerGap: 0.2,
 } as const
 
 interface Rect {
@@ -122,7 +126,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
  * The quality of one slide. `titleSize` is the deck's resolved `title` type size (the style's), for
  * the lead-type rule; without it that rule is skipped.
  */
-export function slideQuality(report: LayoutReport, opts: { titleSize?: number } = {}): SlideQuality {
+export function slideQuality(report: LayoutReport, opts: { titleSize?: number; balance?: boolean } = {}): SlideQuality {
   const W = report.frame.width
   const H = report.frame.height
   const m = W * QUALITY_GATE.margin
@@ -178,6 +182,15 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number } 
   }
   if (opts.titleSize && lead > 0 && lead < opts.titleSize * QUALITY_GATE.leadOfTitle) {
     findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}` })
+  }
+  // enhance L1: judged only when asked (spro's composed and filled content slides, which set
+  // `valign: 'auto'`); the recipes and the dry-run decks keep today's bar
+  if (opts.balance && body.length) {
+    if (bottomGap - topGap > QUALITY_GATE.maxBottomExcess) {
+      findings.push({ code: 'quality/unbalanced', message: `the content ends ${pct(bottomGap)} of the page above the bottom edge (${pct(topGap)} under the title): a larger lead size or visual, move the accent beside the main block, or a layout whose regions fill the page` })
+    } else if (innerGap > QUALITY_GATE.maxInnerGap) {
+      findings.push({ code: 'quality/unbalanced', message: `an empty band of ${pct(innerGap)} of the page between blocks: keep the blocks of a region together, or put them side by side` })
+    }
   }
   // CMP2: the design checks the oracle ran (info, e.g. `text/long-measure`, stays advice)
   for (const f of report.findings) {

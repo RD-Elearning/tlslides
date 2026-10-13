@@ -203,6 +203,9 @@ function compileSlideUnstyled(
 
   // 2. Get vertical alignment map from the resolved layout.
   const regionAlignMap = resolvedLayout?.regionAlign
+  // L1: `valign: 'auto'` centres the content regions the layout leaves at the top
+  const alignOf = (name: string): 'start' | 'center' | 'end' =>
+    regionAlignMap?.[name] ?? (spec.valign === 'auto' && name !== 'title' ? 'center' : 'start')
 
   // V2.1: Two-pass region resolution.
   // Pass 1 — measure every region's blocks once (LO1.5: fill-aware, see `measureRegionBlocks`);
@@ -220,7 +223,7 @@ function compileSlideUnstyled(
       const blocks = spec.regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, regionAlignMap?.[regionName] ?? 'start')
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName))
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -259,7 +262,7 @@ function compileSlideUnstyled(
       continue
     }
 
-    const regionAlign = regionAlignMap?.[regionName] ?? 'start'
+    const regionAlign = alignOf(regionName)
 
     if (blocks.length === 0) {
       // Empty region — no shapes.
@@ -580,7 +583,9 @@ function measureRegionBlocks(
   const fixedTotal = sizing.reduce((sum, s) => sum + (s && s.kind !== 'fill' ? s.height : 0), 0)
   const gapsTotal = (blocks.length - 1) * gap
   const flexKind: RegionSizing['kind'] = sizing.some((s) => s?.kind === 'fill') ? 'fill' : 'content'
-  const flex = sizing.filter((s): s is RegionSizing => s !== null && s.kind === flexKind)
+  const flexIdx = sizing.map((s, i) => (s !== null && s.kind === flexKind ? i : -1)).filter((i) => i >= 0)
+  const flex = flexIdx.map((i) => sizing[i]!)
+  const flexTypes = flexIdx.map((i) => blocks[i].type)
   // Failed blocks (-1) take an equal split of what is left in the placement loop; leave them out.
   const flexBase = flexKind === 'content' ? flex.reduce((sum, s) => sum + s.height, 0) : 0
   const room = regionBox.height - gapsTotal - (fixedTotal - flexBase)
@@ -592,8 +597,11 @@ function measureRegionBlocks(
       // spro demo T19: in a centred (or bottom-aligned) region, a `size.hug` block (a row of steps
       // that only centres itself in a taller box) keeps its own height, so the region places the
       // blocks as one group — sharing the leftover gave such a row a tall box, with one gap above
-      // it and another between it and the takeaway under it. Other content blocks still share it.
-      const taking = align === 'start' ? flex : flex.filter((s) => !s.hug)
+      // it and another between it and the takeaway under it. enhance L1 (2026-10-13): the same
+      // for an authored container (`SIZED_CONTAINERS`) — a `tls.l.row` of cards with a takeaway
+      // under it took 577 of the region's 731 units and painted 309, a 30 % empty band between the
+      // two. A chart or a diagram still takes the leftover: it draws larger in a larger box.
+      const taking = align === 'start' ? flex : flex.filter((s, i) => !s.hug && !SIZED_CONTAINERS.has(flexTypes[i]))
       const extra = Math.max(0, room - flexBase) / Math.max(1, taking.length)
       for (const s of taking) s.height = Math.min(s.cap, s.height + extra)
     }

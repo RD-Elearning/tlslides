@@ -109,6 +109,7 @@ function slideSchema(
       layout: { type: 'string', enum: layoutIds },
       role: { type: 'string', enum: ['cover', 'section', 'content', 'closing'] },
       rhythm: { type: 'string', enum: ['anchor', 'dense', 'breath'] },
+      valign: { type: 'string', enum: ['start', 'auto'] },
       regions: {
         type: 'object',
         additionalProperties: {

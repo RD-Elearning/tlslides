@@ -1133,6 +1133,10 @@ export interface SlideSpec {
   role?: 'cover' | 'section' | 'content' | 'closing'
   /** Rhythm hint for the slide. */
   rhythm?: 'anchor' | 'dense' | 'breath'
+  /** spro enhance PLAN.md L1 — vertical placement of the content regions. `auto` centres every
+   *  non-title region whose layout sets no alignment of its own, so a short column sits in the
+   *  middle of the page instead of leaving its lower half empty. Absent = `start` (top). */
+  valign?: 'start' | 'auto'
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */

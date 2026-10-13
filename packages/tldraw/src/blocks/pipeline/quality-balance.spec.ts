@@ -9,7 +9,13 @@ import { slideQuality } from './quality'
 const T = (text: string, props: Record<string, unknown> = {}): BlockSpec => ({ id: 't', type: 'tls.t.title', props: { text, ...props } })
 const B = (id: string, text: string): BlockSpec => ({ id, type: 'tls.t.body', props: { text } })
 const deck = (slide: SlideSpec): DeckSpec => ({ version: 1, id: 'q', title: 'q', theme: 'minimal-white', style: 'minimal', aspect: 'widescreen', slides: [slide] }) as DeckSpec
-const quality = (slide: SlideSpec) => slideQuality(analyzeDeck(deck(slide))[0])
+const quality = (slide: SlideSpec, balance = false) => slideQuality(analyzeDeck(deck(slide))[0], { balance })
+const cards = (n: number): BlockSpec => ({
+  id: 'row',
+  type: 'tls.l.row',
+  props: { children: Array.from({ length: n }, (_, i) => ({ id: `c${i}`, type: 'tls.l.card', props: { children: [{ id: `h${i}`, type: 'tls.t.title', props: { text: `Card ${i + 1}`, size: 'subheading' } }, B(`b${i}`, 'One short line of text.')] } })) },
+})
+const takeaway: BlockSpec = { id: 'tk', type: 'tls.t.takeaway', props: { text: 'What to remember from these cards.' } }
 
 describe('quality balance measures', () => {
   it('a short column under a title leaves most of the slide empty below it', () => {
@@ -37,5 +43,27 @@ describe('quality balance measures', () => {
     const centred = quality({ id: 's', layout: 'two-column', regions: { title: [T('A title', { align: 'center' })], left: [B('a', 'x')], right: [B('b', 'y')] } })
     expect(left.title?.fontSize).toBeGreaterThan(40)
     expect(centred.title!.x).toBeGreaterThan(left.title!.x + 200)
+  })
+
+  it("valign 'auto' centres short columns: as much space below the content as above it", () => {
+    const regions = { title: [T('Short')], left: [B('a', 'One line.')], right: [B('b', 'Another line.')] }
+    const top = quality({ id: 's', layout: 'two-column', regions }, true)
+    const auto = quality({ id: 's', layout: 'two-column', valign: 'auto', regions }, true)
+    expect(top.findings.map((f) => f.code)).toContain('quality/unbalanced')
+    // topGap also holds the layout's own gap under the title (~5 %)
+    expect(Math.abs(auto.bottomGap - auto.topGap)).toBeLessThan(0.1)
+    expect(auto.findings.map((f) => f.code)).not.toContain('quality/unbalanced')
+  })
+
+  it('a row of cards and a takeaway under it stay together in a centred region', () => {
+    const q = quality({ id: 's', layout: 'timeline', regions: { title: [T('Recap')], timeline: [cards(4), takeaway] } }, true)
+    expect(q.innerGap).toBeLessThan(0.1)
+    expect(q.findings.map((f) => f.code)).not.toContain('quality/unbalanced')
+  })
+
+  it('without `balance` an unbalanced page is measured, not judged', () => {
+    const q = quality({ id: 's', layout: 'two-column', regions: { title: [T('Short')], left: [B('a', 'x')], right: [B('b', 'y')] } })
+    expect(q.bottomGap).toBeGreaterThan(0.5)
+    expect(q.findings.map((f) => f.code)).not.toContain('quality/unbalanced')
   })
 })
