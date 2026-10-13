@@ -66,4 +66,11 @@ describe('quality balance measures', () => {
     expect(q.bottomGap).toBeGreaterThan(0.5)
     expect(q.findings.map((f) => f.code)).not.toContain('quality/unbalanced')
   })
+
+  it('a balanced slide must fill at least half of the safe area', () => {
+    const regions = { title: [T('Short')], left: [B('a', 'One line.')], right: [B('b', 'Another line.')] }
+    const judged = quality({ id: 's', layout: 'two-column', valign: 'auto', regions }, true)
+    expect(judged.fill).toBeLessThan(0.5)
+    expect(judged.findings.map((f) => f.code)).toContain('quality/sparse')
+  })
 })

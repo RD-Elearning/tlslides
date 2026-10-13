@@ -85,6 +85,8 @@ export const QUALITY_GATE = {
    *  tallest gap between the body's blocks, as shares of the safe height (`balance` only). */
   maxBottomExcess: 0.2,
   maxInnerGap: 0.2,
+  /** Minimum `fill` of a slide judged on balance (content slides spro composes). */
+  balancedMinFill: 0.5,
 } as const
 
 interface Rect {
@@ -171,7 +173,9 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
 
   const findings: QualityFinding[] = []
   const typeLed = !!opts.titleSize && lead >= opts.titleSize * QUALITY_GATE.displayOfTitle
-  const minFill = typeLed ? QUALITY_GATE.displayFill : QUALITY_GATE.minFill
+  // enhance L1: a slide judged on balance is centred, so a small content block no longer leaves
+  // a hole — it floats; the golden rubric scored such slides 2 for balance below ~50 % fill
+  const minFill = typeLed ? QUALITY_GATE.displayFill : opts.balance ? QUALITY_GATE.balancedMinFill : QUALITY_GATE.minFill
   if (fill < minFill) {
     findings.push({ code: 'quality/sparse', message: `content covers ${pct(fill)} of the safe area (minimum ${pct(minFill)}): use a roomier design, larger type or more content` })
   }
