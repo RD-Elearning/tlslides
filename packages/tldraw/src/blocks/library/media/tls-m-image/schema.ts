@@ -45,6 +45,18 @@ export const schema: BlockSchema = {
     label: 'Caption',
     help: 'Optional caption displayed below the image.',
   },
+  aspect: {
+    type: { kind: 'number', min: 0.2, max: 8 },
+    role: 'option',
+    label: 'Aspect',
+    help: 'Width / height of the image when the asset table does not know it (a figure). With fit contain the block draws the picture at its own shape, framed.',
+  },
+  frame: {
+    type: { kind: 'enum', values: ['none', 'card', 'tape', 'polaroid'] },
+    role: 'option',
+    label: 'Frame',
+    help: 'With fit contain and a known aspect: card (a panel), tape (a panel taped at two corners), polaroid (a white print, wider at the bottom).',
+  },
 }
 
 export interface ImageProps extends Record<string, unknown> {
@@ -60,6 +72,10 @@ export interface ImageProps extends Record<string, unknown> {
   caption?: string
   /** Corner radius in slide units. */
   radius?: number
+  /** enhance IM4: width / height when the asset table does not know it. */
+  aspect?: number
+  /** enhance IM4: the frame of a contained image (needs its aspect). */
+  frame?: 'none' | 'card' | 'tape' | 'polaroid'
 }
 
 export const defaults: ImageProps = {

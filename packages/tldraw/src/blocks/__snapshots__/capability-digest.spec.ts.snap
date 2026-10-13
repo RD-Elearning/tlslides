@@ -4288,6 +4288,8 @@ Image with cover/contain fit, focal point, and optional caption. _(family: media
 | \`fit\` | no | enum: cover \\\\| contain | How the image fills its box: cover (crop to fill) or contain (letterbox). |
 | \`focal\` | no | object (fx, fy) | Focus area when fit is \\"cover\\". Default is center [0.5, 0.5]. |
 | \`caption\` | no | text (max 200 chars) | Optional caption displayed below the image. |
+| \`aspect\` | no | number (min 0.2, max 8) | Width / height of the image when the asset table does not know it (a figure). With fit contain the block draws the picture at its own shape, framed. |
+| \`frame\` | no | enum: none \\\\| card \\\\| tape \\\\| polaroid | With fit contain and a known aspect: card (a panel), tape (a panel taped at two corners), polaroid (a white print, wider at the bottom). |
 
 \`\`\`json
 {
