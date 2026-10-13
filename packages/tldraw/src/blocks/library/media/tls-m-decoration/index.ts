@@ -13,10 +13,10 @@ export const tlsMDecoration: BlockDefinition = {
   family: 'media',
   tier: 'A',
   summary: 'Decorative shape or motif in a theme colour; deterministic from a seed.',
-  keywords: ['decoration', 'blob', 'shape', 'wave', 'dots', 'ornament', 'background', 'accent', 'orb', 'sphere', 'star', 'sparkle', 'squiggle', 'memphis', 'doodle'],
+  keywords: ['decoration', 'blob', 'shape', 'wave', 'dots', 'ornament', 'background', 'accent', 'orb', 'sphere', 'star', 'sparkle', 'squiggle', 'memphis', 'doodle', 'cube', 'cylinder', 'isometric', '3d'],
   category: 'decoration',
   scope: 'element',
-  shortDescription: 'Decorative shape or motif (blob, orb, star, squiggle, frame…) in a theme colour',
+  shortDescription: 'Decorative motif or 3D solid in a theme colour',
   related: ['tls.m.pattern', 'tls.x.rule'],
   describe: {
     when: 'Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.',

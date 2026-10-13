@@ -758,8 +758,10 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
     // AC5: ten styles — one line per family, `style (palettes)` (the per-style line cost the budget)
     const families: string[] = []
     for (const st of BUILT_IN_STYLES) if (!families.includes(st.family)) families.push(st.family)
+    // enhance S3: the family base styles only — a variant (`variantOf`) is picked in the brief
+    // (the catalogue) and reaches the model as `Deck style:` with its own card (the budget holds)
     for (const fam of families)
-      lines.push(`${fam}: ${BUILT_IN_STYLES.filter((st) => st.family === fam).map((st) => `${st.id} (${st.palettes.map((p) => p.id).join(', ')})`).join('; ')}`)
+      lines.push(`${fam}: ${BUILT_IN_STYLES.filter((st) => st.family === fam && !st.variantOf).map((st) => `${st.id} (${st.palettes.map((p) => p.id).join(', ')})`).join('; ')}`)
   }
   lines.push('')
   // A recipe that uses a dropped type is dropped with it (a style that avoids `tls.t.footnote`

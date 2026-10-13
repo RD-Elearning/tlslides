@@ -4124,14 +4124,14 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
 
 ### \`tls.m.decoration\` — Decoration [backdrop]
 
-Decorative shape or motif in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent, orb, sphere, star, sparkle, squiggle, memphis, doodle)_
+Decorative shape or motif in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent, orb, sphere, star, sparkle, squiggle, memphis, doodle, cube, cylinder, isometric, 3d)_
 
 **When:** Visual interest on sparse slides: covers, dividers, quotes. Place it in its own region.
 **Avoid:** Anything that carries meaning (use a real block, e.g. tls.t.statement); texture over dense text.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame | orb = pseudo-3D sphere, frame = corner brackets. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame \\\\| cube \\\\| cylinder \\\\| cone \\\\| pyramid \\\\| slab | orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
 | \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
 | \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
 | \`rotation\` | no | number (min 0, max 359) | Degrees. |
@@ -5870,7 +5870,7 @@ also: tls.c.quiz, tls.t.qa
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark
 
 ## Decoration
-tls.m.decoration · decoration · element · backdrop — Decorative shape or motif (blob, orb, star, squiggle, frame…) in a theme colour [h=fill] knobs: shape=blob|arc|ring|dots|wave|corner|orb|squiggle|star|sparkle|zigzag|triangle|half-circle|frame, tone=accent|accent2|alt|line, opacity=soft|medium|strong
+tls.m.decoration · decoration · element · backdrop — Decorative motif or 3D solid in a theme colour [h=fill] knobs: shape=blob|arc|ring|dots|wave|corner|orb|squiggle|star|sparkle|zigzag|triangle|half-circle|frame|cube|cylinder|cone|pyramid|slab, tone=accent|accent2|alt|line, opacity=soft|medium|strong
 also: tls.g.arrow, tls.l.field, tls.m.pattern, tls.x.rule
 
 ## Icons

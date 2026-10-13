@@ -619,7 +619,8 @@ describe('R7 — capability digest v2', () => {
 
       it('AC1: lists every style with its palettes (AC5: one line per family), within 16k', () => {
         expect(tier1).toContain('## Styles')
-        for (const st of BUILT_IN_STYLES) {
+        // enhance S3: variants are chosen in the brief and named by `{ style }` (next test)
+        for (const st of BUILT_IN_STYLES.filter((s) => !s.variantOf)) {
           const line = tier1.split('\n').find((l) => l.startsWith(`${st.family}: `))
           expect(line).toBeDefined()
           expect(line).toContain(`${st.id} (${st.palettes.map((p) => p.id).join(', ')})`)

@@ -9,7 +9,7 @@ import { RECIPES, assetsAllow, composedSlide, designNeeds } from './recipes'
 import { findDesign } from './patterns'
 import { CALM_WEIGHT, DENSE_WEIGHT, hashString, lookCandidates, lookSignature, pickOrder, seedStride } from './pipeline/variety'
 import { defaultBlockRegistry } from './validate-deck-spec'
-import { getDeckStyle } from './styles'
+import { BUILT_IN_STYLES, getDeckStyle } from './styles'
 
 describe('AC7 dry run', () => {
   const results = runDryRun(['corporate', 'doodle'])
@@ -55,7 +55,8 @@ describe('AC8 variety', () => {
   const reports = runVariety()
 
   it('runs every style with three seeds, 0 errors and 0 warnings in every deck', () => {
-    expect(reports).toHaveLength(10)
+    // every built-in style (ten family styles + the enhance S3 variants)
+    expect(reports).toHaveLength(BUILT_IN_STYLES.length)
     for (const v of reports) {
       expect(v.runs.map((r) => r.seed)).toEqual([1, 2, 3])
       for (const r of v.runs) expect([v.style, r.seed, r.findings]).toEqual([v.style, r.seed, []])

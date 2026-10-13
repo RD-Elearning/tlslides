@@ -24,6 +24,7 @@ import { SWISS_STYLE } from './swiss'
 import { DOODLE_STYLE } from './doodle'
 import { MEMPHIS_STYLE } from './memphis'
 import { CONSULTING_STYLE } from './consulting'
+import { VARIANT_STYLES } from './variants'
 import { textWidthRatio } from '../layout/font-metrics'
 
 /** Every built-in deck style (ai-curation §3.1: ten styles in four families). */
@@ -38,6 +39,8 @@ export const BUILT_IN_STYLES: readonly DeckStyle[] = [
   DOODLE_STYLE,
   MEMPHIS_STYLE,
   CONSULTING_STYLE,
+  // spro enhance S3: wave-1 variants, each a complete style of its family (`variantOf`)
+  ...VARIANT_STYLES,
 ]
 
 /** Reserved master-name prefix for style masters. */

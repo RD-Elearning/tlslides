@@ -10,7 +10,7 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Shape',
     // AC4 motifs: orb (pseudo-3D sphere), squiggle, star, sparkle, zigzag, triangle, half-circle, frame (corner brackets).
-    help: 'orb = pseudo-3D sphere, frame = corner brackets; cube, cylinder, cone, pyramid, slab = isometric solids in three tints with an ink outline. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle.',
+    help: 'orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle.',
   },
   tone: { type: { kind: 'enum', values: ['accent', 'accent2', 'alt', 'line'] }, role: 'option', label: 'Colour' },
   opacity: { type: { kind: 'enum', values: ['soft', 'medium', 'strong'] }, role: 'option', label: 'Opacity', help: 'Ignored for tone alt, which is already quiet.' },

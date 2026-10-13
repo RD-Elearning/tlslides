@@ -1328,4 +1328,7 @@ export interface DeckStyle {
   variety?: Record<string, Record<string, Array<string | boolean>>>
   /** The concept a composed slide follows (`StyleConcept`). */
   concept?: StyleConcept
+  /** spro enhance S1 — the family style this one is a variant of (`'doodle'` for
+   *  `doodle-geo3d`); absent = a family's own base style. */
+  variantOf?: string
 }
