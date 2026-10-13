@@ -127,10 +127,12 @@ export function styleMasterPage(
   slideSpec: SlideSpec,
   pageId: string,
   frame: { width: number; height: number },
-  tokens: ResolvedTokens
+  tokens: ResolvedTokens,
+  /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
+  motif?: string
 ): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
   const masterId = styleMasterFor(style, slideSpec)
-  const master = masterId ? styleMasters(style).find((m) => m.name === masterId) : undefined
+  const master = masterId ? styleMasters(style, motif).find((m) => m.name === masterId) : undefined
   if (!masterId || !master) return { shapes: [] }
   const shapes: ComponentShape[] = []
   // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
@@ -162,7 +164,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
   const style = getDeckStyle(spec.style)
   const tokens = resolveTokens(theme, deckSpecTokens(spec))
-  const masterList = styleMasters(style)
+  const masterList = styleMasters(style, spec.motif)
   const motionStyle = spec.motionStyle ?? style?.motionStyle
   const findings: CompileFinding[] = []
 
@@ -181,7 +183,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens)
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif)
     findings.push(...result.findings)
 
     // CMP1: shapes are top-level children of their page (`parentId` = page id). `blockToShape`
@@ -236,6 +238,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
 
   if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
   if (style) document.styleId = style.id
+  if (spec.motif !== undefined) document.motif = spec.motif
 
   return { document, findings }
 }

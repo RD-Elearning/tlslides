@@ -19,6 +19,8 @@ const dots = (x: number, y: number, w: number, h: number): BlockSpec =>
 const MASTERS: MasterSpec[] = [
   {
     name: 'cover',
+    // enhance F1: a deck motif (a subject doodle) takes the triangle's place
+    signature: 'tri-tr',
     blocks: {
       'dots-tl': dots(40, 40, 300, 200),
       'tri-tr': at('triangle', 'accent2', 1560, 60, 280, 280, { rotation: 14 }),

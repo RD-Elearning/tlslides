@@ -479,5 +479,6 @@ export function documentToDeckSpec(
   if (deckSpec.masters && !deckSpec.masters.length) delete deckSpec.masters
   if (doc.motionStyle !== undefined) deckSpec.motionStyle = doc.motionStyle
   if (doc.styleId !== undefined) deckSpec.style = doc.styleId
+  if (doc.motif !== undefined) deckSpec.motif = doc.motif
   return { spec: deckSpec, findings }
 }

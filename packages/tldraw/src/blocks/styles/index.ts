@@ -14,6 +14,7 @@
  */
 import type { DeckTheme, TDDocument } from '~types'
 import type { BlockSpec, DeckSpec, DeckStyle, DeckTokens, MasterSpec, SlideSpec } from '../types'
+import { SUBJECT_SHAPES } from '../library/media/tls-m-decoration/subjects'
 import { CORPORATE_STYLE } from './corporate'
 import { MINIMAL_STYLE } from './minimal'
 import { GRADIENT_STYLE } from './gradient'
@@ -132,9 +133,26 @@ export function documentDeckTokens(doc: Pick<TDDocument, 'styleId' | 'tokens'>):
 }
 
 /** Style masters under their reserved names (`style:cover`, …). */
-export function styleMasters(style: DeckStyle | undefined): MasterSpec[] {
+export function styleMasters(style: DeckStyle | undefined, motif?: string): MasterSpec[] {
   if (!style) return []
-  return style.masters.map((m) => ({ ...JSON.parse(JSON.stringify(m)), name: STYLE_MASTER_PREFIX + m.name }))
+  const swap = deckMotif(style, motif)
+  return style.masters.map((m) => {
+    const copy: MasterSpec = { ...JSON.parse(JSON.stringify(m)), name: STYLE_MASTER_PREFIX + m.name }
+    if (swap && copy.signature && copy.blocks[copy.signature]) copy.blocks[copy.signature] = withShape(copy.blocks[copy.signature], swap)
+    return copy
+  })
+}
+
+/** enhance F1: the subject doodle a deck's `motif` names, when its style draws subjects. */
+export function deckMotif(style: DeckStyle | undefined, motif: string | undefined): string | undefined {
+  return motif && style?.concept?.subjects && (SUBJECT_SHAPES as readonly string[]).includes(motif) ? motif : undefined
+}
+
+/** The block with its `tls.m.decoration` leaf (inside the placing splits) drawn as `shape`. */
+function withShape(block: BlockSpec, shape: string): BlockSpec {
+  if (block.type === 'tls.m.decoration') return { ...block, props: { ...block.props, shape, rotation: 0 } }
+  const children = (block.props as { children?: unknown })?.children
+  return Array.isArray(children) ? { ...block, props: { ...block.props, children: children.map((c) => withShape(c as BlockSpec, shape)) } } : block
 }
 
 const COVER_TYPES = new Set(['tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title', 'tls.c.closing'])

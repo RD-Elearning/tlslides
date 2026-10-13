@@ -12,6 +12,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`, no network.
  */
 
+import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import { SLIDE_ASPECT_PRESETS } from '~constants'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, getDeckStyle, stylePaletteIds } from './styles'
@@ -160,6 +161,16 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
       message: `DeckSpec.theme must be a built-in theme id (string) or a theme object; got ${describeType(
         s.theme
       )}.`,
+    })
+  }
+
+  // enhance F1: the deck motif is a subject doodle
+  if (s.motif !== undefined && !(typeof s.motif === 'string' && (SUBJECT_SHAPES as readonly string[]).includes(s.motif))) {
+    findings.push({
+      level: 'warning',
+      rule: 'deck/unknown-motif',
+      path: 'motif',
+      message: `Motif ${stringifyForMessage(s.motif)} is not a subject doodle (${SUBJECT_SHAPES.join(', ')}); it is ignored.`,
     })
   }
 

@@ -1224,6 +1224,9 @@ export interface MasterSpec {
   background?: Paint
   /** Default layout name. */
   layout?: string
+  /** enhance F1: the key of the `blocks` entry a deck's `motif` replaces (a style master's main
+   *  motif on the cover and section pages: doodle's big star becomes the deck's tree). */
+  signature?: string
 }
 
 /**
@@ -1260,6 +1263,10 @@ export interface DeckSpec {
    *  motion style, each under what this spec authors (`reviews/blocks/ai-curation/README.md`
    *  §3.2). `theme` should name one of the style's palettes (`style/theme-mismatch`). */
   style?: string
+  /** enhance F1: the deck's signature motif, a subject doodle (`tree`, `flask`, … —
+   *  `SUBJECT_SHAPES`). A style whose concept has `subjects` draws it in place of its masters'
+   *  `signature` motif on the cover and section pages; other styles ignore it. */
+  motif?: string
 }
 
 /** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */

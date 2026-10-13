@@ -187,6 +187,9 @@ export interface TDDocument {
   // token reader (`documentDeckTokens`) find the style; the style's tokens/masters are NOT copied
   // into `tokens`/`masters`' authored part, so `documentToDeckSpec` returns what was authored.
   styleId?: string
+  // enhance F1 — the deck's `DeckSpec.motif` (a subject doodle), carried for the masters and the
+  // round trip.
+  motif?: string
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —

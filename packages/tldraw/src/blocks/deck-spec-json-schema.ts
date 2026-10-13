@@ -12,6 +12,7 @@ import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
+import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
 import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
 
@@ -84,6 +85,11 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         type: 'string',
         enum: BUILT_IN_STYLES.map((st) => st.id),
         description: 'AC1 — a deck style id; `theme` should then be one of its palettes.',
+      },
+      motif: {
+        type: 'string',
+        enum: [...SUBJECT_SHAPES],
+        description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
       },
     },
     additionalProperties: false,

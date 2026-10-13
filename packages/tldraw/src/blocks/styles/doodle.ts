@@ -16,6 +16,8 @@ const at = (shape: string, tone: string, seed: number, x: number, y: number, w: 
 const MASTERS: MasterSpec[] = [
   {
     name: 'cover',
+    // enhance F1: a deck motif (a subject doodle) takes the star's place
+    signature: 'star',
     blocks: {
       star: at('star', 'accent', 3, 150, 130, 150, 150, { rotation: 12 }),
       sparkle: at('sparkle', 'accent2', 5, 1660, 150, 110, 110),
@@ -27,6 +29,7 @@ const MASTERS: MasterSpec[] = [
   },
   {
     name: 'section',
+    signature: 'star',
     blocks: {
       // AC8.5: from x 1380 (was 1240 × 520): clear of the divider's display-size title
       star: at('star', 'accent', 6, 1380, 300, 440, 440, { rotation: 8 }),

@@ -34,8 +34,8 @@ const texture = (pattern: string, scale = 'md', tone = 'line'): BlockSpec => ({ 
 // ── doodle / sketchnote ─────────────────────────────────────────────────────────────────────────
 const SKETCH_MASTERS: MasterSpec[] = [
   // the motifs keep to the right edge and the bottom margin: the cover's kicker and title sit top-left
-  { name: 'cover', blocks: { star: at('star', 'accent', 3, 1640, 120, 150, 150, { rotation: 10 }), sparkle: at('sparkle', 'accent2', 6, 1500, 300, 90, 90), squiggle: at('squiggle', 'accent2', 7, 1400, 930, 420, 64) }, background: { type: 'solid', color: 'theme:background' } },
-  { name: 'section', blocks: { star: at('star', 'accent', 8, 1420, 320, 380, 380, { rotation: 6 }), squiggle: at('squiggle', 'accent2', 2, 1240, 880, 480, 64) }, background: { type: 'solid', color: 'theme:surface' } },
+  { name: 'cover', signature: 'star', blocks: { star: at('star', 'accent', 3, 1640, 120, 150, 150, { rotation: 10 }), sparkle: at('sparkle', 'accent2', 6, 1500, 300, 90, 90), squiggle: at('squiggle', 'accent2', 7, 1400, 930, 420, 64) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'section', signature: 'star', blocks: { star: at('star', 'accent', 8, 1420, 320, 380, 380, { rotation: 6 }), squiggle: at('squiggle', 'accent2', 2, 1240, 880, 480, 64) }, background: { type: 'solid', color: 'theme:surface' } },
   // S4: the content master carries the page only; the slide's motif comes from its ticket
   { name: 'content', blocks: {}, background: { type: 'solid', color: 'theme:background' } },
 ]
@@ -59,8 +59,8 @@ export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
 
 // ── doodle / geo3d ──────────────────────────────────────────────────────────────────────────────
 const GEO_MASTERS: MasterSpec[] = [
-  { name: 'cover', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 1, 1480, 120, 300, 300), cyl: at('cylinder', 'accent2', 2, 140, 760, 200, 240), cone: at('cone', 'accent', 3, 1660, 760, 180, 220) }, background: { type: 'solid', color: 'theme:background' } },
-  { name: 'section', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 4, 1360, 300, 420, 420), slab: at('slab', 'accent2', 5, 1180, 820, 300, 180) }, background: { type: 'solid', color: 'theme:surface' } },
+  { name: 'cover', signature: 'cube', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 1, 1480, 120, 300, 300), cyl: at('cylinder', 'accent2', 2, 140, 760, 200, 240), cone: at('cone', 'accent', 3, 1660, 760, 180, 220) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'section', signature: 'cube', blocks: { grid: texture('grid', 'lg'), cube: at('cube', 'accent', 4, 1360, 300, 420, 420), slab: at('slab', 'accent2', 5, 1180, 820, 300, 180) }, background: { type: 'solid', color: 'theme:surface' } },
   { name: 'content', blocks: { grid: texture('grid', 'lg') }, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const DOODLE_GEO3D_STYLE: DeckStyle = {
@@ -83,8 +83,8 @@ export const DOODLE_GEO3D_STYLE: DeckStyle = {
 
 // ── doodle / chalkboard ─────────────────────────────────────────────────────────────────────────
 const CHALK_MASTERS: MasterSpec[] = [
-  { name: 'cover', blocks: { grain: texture('grain', 'md', 'line'), star: at('star', 'accent', 3, 150, 130, 130, 130), squiggle: at('squiggle', 'accent2', 7, 160, 880, 380, 60) }, background: { type: 'solid', color: 'theme:background' } },
-  { name: 'section', blocks: { grain: texture('grain', 'md', 'line'), sparkle: at('sparkle', 'accent', 2, 1520, 300, 260, 260) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'cover', signature: 'star', blocks: { grain: texture('grain', 'md', 'line'), star: at('star', 'accent', 3, 150, 130, 130, 130), squiggle: at('squiggle', 'accent2', 7, 160, 880, 380, 60) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'section', signature: 'sparkle', blocks: { grain: texture('grain', 'md', 'line'), sparkle: at('sparkle', 'accent', 2, 1520, 300, 260, 260) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'content', blocks: { grain: texture('grain', 'md', 'line') }, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const DOODLE_CHALKBOARD_STYLE: DeckStyle = {
@@ -108,7 +108,7 @@ export const DOODLE_CHALKBOARD_STYLE: DeckStyle = {
 
 // ── doodle / notebook ───────────────────────────────────────────────────────────────────────────
 const NOTE_MASTERS: MasterSpec[] = [
-  { name: 'cover', blocks: { lines: texture('lines', 'lg'), star: at('star', 'accent2', 3, 1640, 140, 140, 140) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'cover', signature: 'star', blocks: { lines: texture('lines', 'lg'), star: at('star', 'accent2', 3, 1640, 140, 140, 140) }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'section', blocks: { lines: texture('lines', 'lg') }, background: { type: 'solid', color: 'theme:background' } },
   { name: 'content', blocks: { lines: texture('lines', 'lg') }, background: { type: 'solid', color: 'theme:background' } },
 ]
@@ -176,8 +176,8 @@ export const GLASS_CLAY_STYLE: DeckStyle = {
 
 // ── memphis / confetti 3D ───────────────────────────────────────────────────────────────────────
 const CONFETTI_MASTERS: MasterSpec[] = [
-  { name: 'cover', blocks: { cube: at('cube', 'accent', 1, 1540, 80, 260, 260), pyr: at('pyramid', 'accent2', 2, 120, 760, 240, 240), zig: at('zigzag', 'accent', 3, 1380, 970, 460, 70), cyl: at('cylinder', 'accent', 4, 1700, 700, 160, 200) }, background: { type: 'solid', color: 'theme:background' } },
-  { name: 'section', blocks: { cube: at('cube', 'alt', 5, 1340, 300, 440, 440), zig: at('zigzag', 'alt', 6, 1140, 1000, 720, 56) }, background: { type: 'solid', color: 'theme:accent1' } },
+  { name: 'cover', signature: 'cube', blocks: { cube: at('cube', 'accent', 1, 1540, 80, 260, 260), pyr: at('pyramid', 'accent2', 2, 120, 760, 240, 240), zig: at('zigzag', 'accent', 3, 1380, 970, 460, 70), cyl: at('cylinder', 'accent', 4, 1700, 700, 160, 200) }, background: { type: 'solid', color: 'theme:background' } },
+  { name: 'section', signature: 'cube', blocks: { cube: at('cube', 'alt', 5, 1340, 300, 440, 440), zig: at('zigzag', 'alt', 6, 1140, 1000, 720, 56) }, background: { type: 'solid', color: 'theme:accent1' } },
   { name: 'content', blocks: { zig: at('zigzag', 'accent', 8, 40, 1024, 260, 40) }, background: { type: 'solid', color: 'theme:background' } },
 ]
 export const MEMPHIS_CONFETTI_STYLE: DeckStyle = {
