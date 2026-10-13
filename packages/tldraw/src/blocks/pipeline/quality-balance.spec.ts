@@ -16,6 +16,13 @@ describe('quality balance measures', () => {
     const q = quality({ id: 's', layout: 'two-column', regions: { title: [T('Short')], left: [B('a', 'One line.')], right: [B('b', 'Another line.')] } })
     expect(q.bottomGap).toBeGreaterThan(0.5)
     expect(q.innerGap).toBeLessThan(q.bottomGap)
+    expect(q.topGap).toBeLessThan(0.1)
+  })
+
+  it('a statement centred on a blank slide has as much space above as below', () => {
+    const q = quality({ id: 's', layout: 'blank', regions: { content: [{ id: 'st', type: 'tls.t.statement', props: { text: 'One strong sentence.' } }] } })
+    expect(q.bottomGap).toBeGreaterThan(0.2)
+    expect(Math.abs(q.bottomGap - q.topGap)).toBeLessThan(0.1)
   })
 
   it('a decoration at the bottom is not content', () => {
