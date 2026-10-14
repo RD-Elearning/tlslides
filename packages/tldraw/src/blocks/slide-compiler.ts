@@ -172,6 +172,12 @@ function growText(
     if (Array.isArray(blocks)) for (const b of blocks) if (grows(name, b)) ids.add(b.id as string)
   }
   if (!ids.size) return null
+  // an html block (big-stat, hero…) sizes its own type in its template; scaled tokens and the DOM
+  // would disagree (golden e8 seminar: a 34.7 % big-stat drawn as overlapping glyphs) — the slide
+  // is compiled as authored
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (name !== 'title' && Array.isArray(blocks) && blocks.some((b) => b && !b.layer && registry.get(b.type)?.kind === 'html')) return null
+  }
   const { regionBoxes } = resolveRegions(spec.layout, frame, tokens)
   const area = unionBox(
     Object.entries(regionBoxes)

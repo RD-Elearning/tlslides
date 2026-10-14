@@ -62,3 +62,10 @@ describe('growText (L5)', () => {
     expect(shapeToAuthoredBlock(shape)?.style).toEqual({ align: 'start' })
   })
 })
+
+describe('growText leaves html blocks alone', () => {
+  it('a slide with a big-stat compiles as authored', () => {
+    const stat: BlockSpec = { id: 'k', type: 'tls.c.big-stat', props: { value: 34.7, label: 'Error rate' } }
+    expect(grownIds(slide([stat, list(2)], 'auto'))).toEqual([])
+  })
+})
