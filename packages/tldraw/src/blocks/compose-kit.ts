@@ -73,6 +73,8 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
   { id: 'section-stack', regions: 'content', when: 'a centred stack, no title bar: a statement, a number, a question' },
   { id: 'blank', regions: 'content', when: 'one region, the whole safe area' },
   { id: 'quote', regions: 'quote, attribution', when: 'a quotation and who said it' },
+  { id: 'sidebar-title', regions: 'title, content', when: 'the title in a tall left column, one structure filling the right' },
+  { id: 'band', regions: 'title, band, foot', when: 'one wide band (a process, a timeline, a row) and a short line or takeaway under it' },
 ]
 
 /** Blocks that stand out beside the main structure (B2): at most one per slide. */

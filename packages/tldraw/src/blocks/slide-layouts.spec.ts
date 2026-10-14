@@ -65,8 +65,19 @@ function allRegionsPositiveSize(regions: Record<string, Box>): void {
 /* ── SLIDE_LAYOUTS module-level object ─────────────────────────────────────── */
 
 describe('SLIDE_LAYOUTS module-level', () => {
-  it('contains exactly 18 layouts (AC6: + full-bleed, AC8.6: + section-stack)', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(18)
+  it('contains exactly 20 layouts (AC6: + full-bleed, AC8.6: + section-stack, enhance L2: + sidebar-title, band)', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(20)
+  })
+
+  it('enhance L2: sidebar-title puts the title in a left column the full height; band stacks a wide band over a foot', () => {
+    const side = getSlideLayout('sidebar-title')!.compile({ width: 1920, height: 1080 }, TEST_TOKENS)
+    expect(Object.keys(side)).toEqual(['title', 'content'])
+    expect(side.title.height).toBe(side.content.height)
+    expect(side.title.width).toBeLessThan(side.content.width / 2)
+    const band = getSlideLayout('band')!.compile({ width: 1920, height: 1080 }, TEST_TOKENS)
+    expect(Object.keys(band)).toEqual(['title', 'band', 'foot'])
+    expect(band.band.y + band.band.height).toBeLessThan(band.foot.y)
+    expect(band.band.height).toBeGreaterThan(band.foot.height * 1.5)
   })
 
   it('AC8.6 section-stack: one start-aligned content column at most 1200 wide, centred stack', () => {

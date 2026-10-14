@@ -105,6 +105,8 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 | \`kpi-row\` (KPI Row) | \`title\`, \`kpi1\`, \`kpi2\`, \`kpi3\`, \`kpi4\` | Title + 4 equal KPI cells — dashboard-style metrics. |
 | \`blank\` (Blank) | \`content\` | Single content region, full safe area — maximum flexibility. |
 | \`full-bleed\` (Full Bleed) | \`content\` |  |
+| \`sidebar-title\` (Sidebar Title) | \`title\`, \`content\` |  |
+| \`band\` (Band) | \`title\`, \`band\`, \`foot\` |  |
 | \`section-stack\` (Section Stack) | \`content\` |  |
 
 ## Connectors
@@ -5627,7 +5629,7 @@ Object {
     "line",
     "scrim",
   ],
-  "layoutCount": 18,
+  "layoutCount": 20,
   "layoutIds": Array [
     "title",
     "section",
@@ -5646,6 +5648,8 @@ Object {
     "kpi-row",
     "blank",
     "full-bleed",
+    "sidebar-title",
+    "band",
     "section-stack",
   ],
   "motionCount": 35,

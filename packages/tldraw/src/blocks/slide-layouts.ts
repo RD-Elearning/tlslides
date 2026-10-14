@@ -388,6 +388,28 @@ function layoutBlank(frame: { width: number; height: number }, tokens: ResolvedT
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /** Split a rectangular region horizontally (left/right) at a given ratio with a gutter. */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* enhance L2 — sidebar-title, band                                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** The title in a left column (30 %) the full height, centred; the content beside it. */
+function layoutSidebarTitle(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens) * 2
+  const [title, content] = splitX(ca.x, ca.y, ca.width, ca.height, 0.3, g)
+  return { title, content }
+}
+
+/** The title band, one wide band (60 % of the body) and a foot under it for the takeaway. */
+function layoutBand(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const bodyTop = ca.y + tH + g
+  const [band, foot] = splitY(ca.x, bodyTop, ca.width, ca.height - tH - g, 0.66, g)
+  return { title: { x: ca.x, y: ca.y, width: ca.width, height: tH }, band, foot }
+}
+
 function splitX(
   x: number, y: number, width: number, height: number,
   ratio: number, g: number,
@@ -480,6 +502,8 @@ export type SlideLayoutId =
   | 'blank'
   | 'full-bleed'
   | 'section-stack'
+  | 'sidebar-title'
+  | 'band'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -519,6 +543,8 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
   { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
   { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
+  { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'center', content: 'center' } },
+  { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' } },
   { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
 ]
 
