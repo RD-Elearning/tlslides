@@ -22,6 +22,9 @@ export interface KpiRowProps extends Record<string, unknown> {
   tiles: KpiTileEntry[]
   /** Horizontal gap between tiles. */
   gap?: string
+  /** AC2: `plain` (default, the tiles on the slide), `card` (each tile on a soft card) or
+   *  `accent-bar` (the card with an accent bar down its left edge). */
+  tile?: 'plain' | 'card' | 'accent-bar'
 }
 
 export const schema: BlockSchema = {
@@ -64,6 +67,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Gap',
     help: 'Horizontal spacing between tiles.',
+  },
+  tile: {
+    type: { kind: 'enum', values: ['plain', 'card', 'accent-bar'] },
+    role: 'option',
+    label: 'Tile',
+    guidance: '`card` / `accent-bar` give each KPI a card.',
   },
 }
 

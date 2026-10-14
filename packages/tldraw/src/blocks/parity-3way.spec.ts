@@ -201,31 +201,20 @@ describe('Q17 three-way parity — ground truth + SVG export (Node-only)', () =>
   })
 
   describe('renderPageToSvg default behaviour (opts.blocks not supplied — the demo app never supplies it)', () => {
-    it('on the document exactly as deckSpecToDocument hands it back, renders nothing at all — not even a placeholder', () => {
-      // `blockToShape` (shape-bridge.ts) stamps every compiled block with `parentId: 'page'`, a
-      // literal sentinel string — never the real page id (`sl_01`, ...). The *only* place that
-      // sentinel is ever repaired is `TldrawApp`'s load-time `migrate()` (`state/data/migrate.ts`
-      // — "Fix missing parent bug": `if (parentId !== page.id && !page.shapes[parentId]) shape.
-      // parentId = page.id`). `renderPageToSvg`'s own top-level filter requires `shape.parentId
-      // === page.id` (its "a group's own children are rendered by recursion, never independently
-      // here too" comment) and never calls `migrate()` itself — so on a document that was
-      // compiled and handed straight to `renderPageToSvg` (exactly the use case the module's own
-      // doc comment describes: "a server can call it on a TDDocument it only just deserialized"),
-      // every shape fails that check and the page renders as an *empty* `<svg>` — not even the
-      // dashed "unrenderable component" placeholder is reached. Verified directly below, not
-      // inferred: the compiled shapes' actual `parentId` is printed alongside the empty output.
+    // CMP1 (deliberate change): this test pinned a bug — `deckSpecToDocument` left every compiled
+    // shape at `blockToShape`'s `parentId: 'page'` sentinel, `renderPageToSvg` draws only shapes
+    // whose `parentId` is the page id, so a compiled deck exported as an empty <svg>. The compiler
+    // now parents shapes to their page; with no `blocks` callback each block reaches the dashed
+    // placeholder (`renderPageToSvg` has no registry; `Deck`'s default callback, CMP1 /
+    // BACKLOG-demo Q9 step 3, draws the real blocks — `layout-slide.spec.ts`, `Deck.spec.ts`).
+    it('on the document exactly as deckSpecToDocument hands it back, every block reaches the placeholder (shapes are parented to their page)', () => {
       for (const slide of SLIDES) {
         const out = renderPageToSvgDefault(slide.page)
         const shapeIds = slide.blocks.map((b) => b.shape.id)
-        const contentBytes = out.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')
-        // eslint-disable-next-line no-console
-        console.log(
-          `${slide.slideId}: renderPageToSvg(page, {}) body length=${contentBytes.length} ` +
-            `(0 = fully empty); ${slide.blocks.length} compiled shapes, all parentId=` +
-            `${JSON.stringify(Array.from(new Set(slide.blocks.map((b) => b.shape.parentId))))} vs page.id=${slide.slideId}`
-        )
-        expect(shapeIds.length).toBeGreaterThan(0) // sanity: there ARE blocks to have gone missing
-        expect(contentBytes.trim()).toBe('') // the actual finding: nothing rendered, not a placeholder
+        const parents = Array.from(new Set(slide.blocks.map((b) => b.shape.parentId)))
+        expect(shapeIds.length).toBeGreaterThan(0)
+        expect(parents).toEqual([slide.slideId])
+        for (const b of slide.blocks) expect(out).toContain(`Component: ${escapeForCheck(b.shape.componentId)}`)
       }
     })
 

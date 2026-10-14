@@ -27,15 +27,22 @@ import { around, slot } from '../_motion'
 export const MIN_CARD_W = 180
 const GAP = 14
 const MAX_CARD_W = 280
-const STEM = 14
+const STEM0 = 14
 
 type Mode = { vertical: boolean; alternate: boolean }
 
 /** Card width that keeps same-side neighbours apart; the spec's `capacity` minimum is MIN_CARD_W. */
-export function horizontalCardWidth(W: number, n: number, alternate: boolean): number {
+export function horizontalCardWidth(W: number, n: number, alternate: boolean, maxW = MAX_CARD_W): number {
   const raw = alternate ? (2 * W - GAP * (n - 1)) / (n + 1) : (W - GAP * (n - 1)) / Math.max(1, n)
-  return Math.min(MAX_CARD_W, raw)
+  return Math.min(maxW, raw)
 }
+
+/** AC3 pre-item: the roomy tier (body dates, subheading titles, body notes, wider cards, a bigger
+ *  node and stem) for a horizontal timeline alone in a tall box. The block fills its box, so the
+ *  tier follows its height. */
+const ROOMY_MIN_H = 480
+const ROOMY_MAX_CARD_W = 420
+const ROOMY_MIN_CARD_W = 240
 
 export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
@@ -54,10 +61,13 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const now = rawNow !== null && Math.round(rawNow) >= 0 ? Math.min(N - 1, Math.round(rawNow)) : -1
   const past = (i: number) => now < 0 || i <= now
 
-  const dateS = style(ctx, 'footnote', c.accent)
-  const titleS = style(ctx, 'caption', c.text)
-  const textS = mutedStyle(ctx, 'footnote')
-  const D = nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40
+  const roomy = !mode.vertical && H >= ROOMY_MIN_H && horizontalCardWidth(W, N, mode.alternate, ROOMY_MAX_CARD_W) >= ROOMY_MIN_CARD_W
+  const dateS = style(ctx, roomy ? 'body' : 'footnote', c.accent)
+  const titleS = style(ctx, roomy ? 'subheading' : 'caption', c.text)
+  const textS = mutedStyle(ctx, roomy ? 'body' : 'footnote')
+  const D = (nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40) * (roomy ? 1.5 : 1)
+  const STEM = roomy ? 2 * STEM0 : STEM0
+  const cardGap = roomy ? 8 : 2
   const nodes: LayoutNode[] = []
   const cards: LayoutNode[][] = events.map(() => [])
 
@@ -92,30 +102,30 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     const w = Math.max(8, box.width)
     let dh = withDate && e.date ? lineH(dS) : 0
     // Not even date + one title line fit: drop the date rather than overflow.
-    if (dh && dh + 2 + lineH(tS) > maxH + 0.5) dh = 0
-    const titleLines = Math.max(1, Math.min(2, Math.floor((maxH - (dh ? dh + 2 : 0)) / lineH(tS))))
+    if (dh && dh + cardGap + lineH(tS) > maxH + 0.5) dh = 0
+    const titleLines = Math.max(1, Math.min(2, Math.floor((maxH - (dh ? dh + cardGap : 0)) / lineH(tS))))
     const th = linesHeight(ctx, e.title, tS, w, titleLines)
-    const room = maxH - dh - (dh ? 2 : 0) - th - 4
+    const room = maxH - dh - (dh ? cardGap : 0) - th - 2 * cardGap
     const nl = showText && e.text ? Math.max(0, Math.min(5, Math.floor((room + 1) / lineH(textS)))) : 0
     const xh = nl > 0 ? linesHeight(ctx, e.text, textS, w, nl) : 0
-    const total = dh + (dh ? 2 : 0) + th + (xh ? 4 + xh : 0)
+    const total = dh + (dh ? cardGap : 0) + th + (xh ? 2 * cardGap + xh : 0)
     let y = anchor === 'top' ? box.y : box.y - total
     const inner = { x: box.x, width: w }
     const group: LayoutNode[] = []
     if (dh) {
       group.push(...placeLines(ctx, e.date, dS, { ...inner, y }, align, 1, `date[${i}]`).nodes)
-      y += dh + 2
+      y += dh + cardGap
     }
     group.push(...placeLines(ctx, e.title, tS, { ...inner, y }, align, titleLines, `title[${i}]`).nodes)
     y += th
-    if (xh) group.push(...placeLines(ctx, e.text, textS, { ...inner, y: y + 4 }, align, nl, `text[${i}]`).nodes)
+    if (xh) group.push(...placeLines(ctx, e.text, textS, { ...inner, y: y + 2 * cardGap }, align, nl, `text[${i}]`).nodes)
     // RVM4: the date / title / note of event i in its own slot (`card[i]`).
     cards[i].push(...group)
     return total
   }
 
   if (!mode.vertical) {
-    const cardW = Math.max(60, horizontalCardWidth(W, N, mode.alternate))
+    const cardW = Math.max(60, horizontalCardWidth(W, N, mode.alternate, roomy ? ROOMY_MAX_CARD_W : MAX_CARD_W))
     const span = Math.max(0, W - cardW)
     const x = (i: number) => (N === 1 ? W / 2 : cardW / 2 + (span * i) / (N - 1))
     const stemColor = (i: number) => (past(i) ? c.accent : c.track)
@@ -128,7 +138,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       const allowed = Math.max(0, H - D - STEM)
       const measure = (i: number) => {
         const e = events[i]
-        return (e.date ? lineH(dateS) + 2 : 0) + linesHeight(ctx, e.title, titleS, cardW, 2) + (showText && e.text ? 4 + linesHeight(ctx, e.text, textS, cardW, 5) : 0)
+        return (e.date ? lineH(dateS) + cardGap : 0) + linesHeight(ctx, e.title, titleS, cardW, 2) + (showText && e.text ? 2 * cardGap + linesHeight(ctx, e.text, textS, cardW, 5) : 0)
       }
       cardsH = Math.min(allowed, Math.max(...events.map((_, i) => measure(i))))
       axisY = Math.max(D / 2, (H - (D + STEM + cardsH)) / 2 + D / 2)
@@ -141,10 +151,10 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       const left = clamp(nx - cardW / 2, 0, Math.max(0, W - cardW))
       if (above) {
         nodes.push(solidRect({ x: nx - 1, y: axisY - D / 2 - STEM, width: 2, height: STEM }, stemColor(i), `stem[${i}]`))
-        drawCard(i, { x: left, y: axisY - D / 2 - STEM - 2, width: cardW }, 'center', cardsH, 'bottom', true)
+        drawCard(i, { x: left, y: axisY - D / 2 - STEM - cardGap, width: cardW }, 'center', cardsH, 'bottom', true)
       } else {
         nodes.push(solidRect({ x: nx - 1, y: axisY + D / 2, width: 2, height: STEM }, stemColor(i), `stem[${i}]`))
-        drawCard(i, { x: left, y: axisY + D / 2 + STEM + 2, width: cardW }, 'center', Math.max(0, cardsH), 'top', true)
+        drawCard(i, { x: left, y: axisY + D / 2 + STEM + cardGap, width: cardW }, 'center', Math.max(0, cardsH), 'top', true)
       }
       drawNode(i, nx, axisY)
     }

@@ -28,10 +28,14 @@ import type {
   SpaceToken,
 } from '../types'
 import type { DeckTheme } from '~types'
+import { MAX_NESTING_DEPTH } from '../types'
 import type { BlockRegistry } from '../registry'
 import type { MeasureTextProvider } from './measure'
-import { estimateMetrics } from './measure'
-import { resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+import { editorMetrics } from './measure'
+import { imageSurface, isColorRole, resolveColor as solveColor, surfaceFromPaint } from '../tokens'
+import { guardInk, opaqueHex } from './ink-guard'
+import { collectPaint, greyOfLuminance, parseInk } from './paint-model'
+import { relativeLuminance, rgbToHex } from '../color-math'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -56,7 +60,7 @@ export interface CreateLayoutContextOptions {
   surface: SurfaceContext
   /** Block registry for `layoutChild` lookups. */
   registry?: BlockRegistry
-  /** Text measurement provider. Defaults to `estimateMetrics`. */
+  /** Text measurement provider. Defaults to `editorMetrics` (browser-calibrated `tableMetrics`, LO6). */
   measureText?: MeasureTextProvider
   /** Colour resolution. Receives the effective surface this context resolves against, so the
    *  default (and any injected solver) can contrast-solve against the block's own background
@@ -81,6 +85,129 @@ export interface CreateLayoutContextOptions {
   theme?: DeckTheme
   /** Memo cache for `measureIntrinsicSize`, scoped to one compile pass. */
   intrinsicSizeCache?: Map<string, Size>
+  /** CMP1 — a deck style's knob defaults per block type. `layoutChild` fills them into an
+   *  authored nested child's props, as the compiler fills them into a slide-level block's props.
+   *  Propagated to every child context. */
+  blockDefaults?: Record<string, Record<string, unknown>>
+  /** CMP1 — authored nesting level of the block this context lays out (region block = 1).
+   *  Internal: set by `layoutChild`; absent = 1 (+ `depth`). */
+  nestLevel?: number
+  /** CMP1 — is the block this context lays out authored (in the document), rather than built by
+   *  its parent's layout (a composite's spec tree, a card's inner stack)? Internal; absent = true. */
+  authoredBlock?: boolean
+  /** CMP1 — the authored child specs seen in this layout pass (by identity). Internal. */
+  authored?: WeakSet<object>
+  /** CMP2 — the authored literal colours `resolveColor` was asked for in this layout pass (an
+   *  `on: '#…'`, a prop colour; opaque upper-case hex). The ink guard never re-solves these.
+   *  Internal; shared with every child. */
+  literalInks?: Set<string>
+  /** CMP2 — paint `style.surface` behind this block (see `layoutBlock`). Absent = paint it when
+   *  the style sets one; `layoutChild` passes `false` when the surface came only from a
+   *  composite's private `$block.style` (a surface *context*, not a request to paint). */
+  paintSurface?: boolean
+}
+
+/** CMP1 — the per-context nesting state `layoutChild` / `layoutBlock` share (never on `ctx`). */
+interface NestState {
+  level: number
+  authoredBlock: boolean
+  authored: WeakSet<object>
+  blockDefaults?: Record<string, Record<string, unknown>>
+  /** CMP2: authored literal colours of this layout pass (`CreateLayoutContextOptions.literalInks`). */
+  literalInks: Set<string>
+}
+const NEST = new WeakMap<LayoutContext, NestState>()
+/** CMP2 — does this context lay out an authored block (one in the document, not a composite's own
+ *  spec tree)? A card / section packs an authored block's children (`tls.l.stack` `pack`); a
+ *  composite's cards keep their geometry. */
+export function isAuthoredContext(ctx: LayoutContext): boolean {
+  return NEST.get(ctx)?.authoredBlock ?? true
+}
+
+/** CMP4 — shared tracks a row/grid passed to a peer card or stack (`peer-tracks.ts`). Internal. */
+const TRACKS = new WeakMap<LayoutContext, number[]>()
+
+/** CMP4 — the tracks this context's block was given by its row/grid, if any. */
+export function contextTracks(ctx: LayoutContext): number[] | undefined {
+  return TRACKS.get(ctx)
+}
+
+/** CS1 — the type step a row/grid gave its peer shapes (`peerShapeSteps`). Internal. */
+const PEER_STEP = new WeakMap<LayoutContext, number>()
+
+/** CS1 — the lowest label step this context's `tls.m.shape` may use, set by its row/grid so peer
+ *  shapes of one size share one type size; `undefined` = none (the shape's own step). */
+export function contextPeerStep(ctx: LayoutContext): number | undefined {
+  return PEER_STEP.get(ctx)
+}
+
+/** CMP2 — the options a context was built from (to rebuild it with another surface). */
+const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
+
+/**
+ * CMP2 — blocks whose own layout paints `style.surface` (a container's fill, a takeaway's tint, the
+ * hero's field). Every other block with an authored `style.surface` gets it painted by
+ * `layoutBlock` as a rect behind its content (a solid panel, or a `scrim` over a photo).
+ */
+export const SURFACE_PAINTERS: ReadonlySet<string> = new Set([
+  'tls.l.card',
+  'tls.l.section',
+  'tls.l.overlay',
+  'tls.l.field',
+  'tls.t.takeaway',
+  'tls.c.hero',
+])
+
+/** The internal options that carry a context's nesting state into a rebuilt context. */
+function nestOptions(ctx: LayoutContext): Partial<CreateLayoutContextOptions> {
+  const st = NEST.get(ctx)
+  return st
+    ? { nestLevel: st.level, authoredBlock: st.authoredBlock, authored: st.authored, literalInks: st.literalInks, ...(st.blockDefaults ? { blockDefaults: st.blockDefaults } : {}) }
+    : {}
+}
+
+/**
+ * CMP1 — record the child specs of an authored block as authored (by identity), so `layoutChild`
+ * counts them as a nesting level and fills their defaults. Reads every `blocks`-kind slot of the
+ * schema (and `children`).
+ */
+function registerAuthoredChildren(def: BlockDefinition, props: Record<string, unknown> | undefined, set: WeakSet<object>): void {
+  if (!props || typeof props !== 'object') return
+  const slots = new Set<string>(['children'])
+  for (const [name, slot] of Object.entries(def.schema ?? {})) if (slot?.type?.kind === 'blocks') slots.add(name)
+  for (const name of slots) {
+    const v = props[name]
+    if (Array.isArray(v)) for (const c of v) if (c && typeof c === 'object') set.add(c)
+  }
+}
+
+/** CMP1 — a nested child's style: `spec.style` wins over the composites' private `$block.style`. */
+function childStyleOf(spec: BlockSpec): BlockStyleSpec | undefined {
+  const meta = (spec.props as Record<string, unknown> | undefined)?.$block as Record<string, unknown> | undefined
+  const legacy = meta?.style as BlockStyleSpec | undefined
+  const own = spec.style && typeof spec.style === 'object' ? spec.style : undefined
+  if (!legacy) return own
+  if (!own) return legacy
+  return { ...legacy, ...own }
+}
+
+/**
+ * CMP1 — the deck style's knob defaults under an authored child's props, exactly as the compiler
+ * fills them under a slide-level block's (`applyStyleBlockDefaults`): a block looks the same at
+ * any nesting level. Schema `defaults` are deliberately *not* filled at any level: they are the
+ * gallery's sample content (a timeline's four example events, `alternate: true`), and filling
+ * them would inject sample text and change a nested block's look against the same block at the
+ * top. Every block defaults its own option props instead — pinned by `defaults-sweep.spec.ts`.
+ */
+function filledProps(def: BlockDefinition, props: Record<string, unknown>, blockDefaults?: Record<string, Record<string, unknown>>): Record<string, unknown> {
+  const own = props && typeof props === 'object' ? props : {}
+  const fill: Record<string, unknown> = {}
+  const src = blockDefaults?.[def.type]
+  if (src && typeof src === 'object') {
+    for (const [k, v] of Object.entries(src)) if (!(k in own) && v !== undefined) fill[k] = v
+  }
+  if (!Object.keys(fill).length) return own
+  return { ...(JSON.parse(JSON.stringify(fill)) as Record<string, unknown>), ...own }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -113,6 +240,9 @@ function defaultResolveColor(
  * font family from the resolved tokens (which comes from the theme, or the built-in
  * default when the theme doesn't set one).
  */
+/** AC3: type tokens set in the heading family; every other token uses the body family. */
+export const HEADING_TOKENS: ReadonlySet<TypeToken> = new Set<TypeToken>(['display', 'title', 'heading', 'subheading'])
+
 function defaultResolveText(
   token: TypeToken,
   over: Partial<TextStyleSpec> | undefined,
@@ -121,7 +251,9 @@ function defaultResolveText(
   const entry = tokens.type[token]
   const size = over?.size ?? entry.size
   const lineHeight = over?.lineHeight ?? entry.lineHeight
-  const family = over?.family ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
+  // AC3: heading tokens take the heading family, the rest the body family (F4).
+  const tokenFamily = HEADING_TOKENS.has(token) ? tokens.headingFamily : tokens.bodyFamily
+  const family = over?.family ?? tokenFamily ?? tokens.fontFamily ?? DEFAULT_FONT_FAMILY
   const letterSpacing = over?.letterSpacing ?? -0.03
   return {
     family,
@@ -133,11 +265,22 @@ function defaultResolveText(
   }
 }
 
+/** enhance L5: a block style's `textScale`, clamped to 0.5-2; `undefined` when absent or invalid. */
+export function textScaleOf(style: BlockStyleSpec | undefined): number | undefined {
+  const k = style?.textScale
+  return typeof k === 'number' && Number.isFinite(k) && k > 0 ? Math.min(2, Math.max(0.5, k)) : undefined
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* createLayoutContext                                                             */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-const MAX_DEPTH = 4
+/**
+ * Recursion safety net in layout hops (every `layoutChild` call, a composite's internal ones
+ * included) — like the validator's `HARD_DEPTH_CAP`, it never fires for a tree within
+ * `MAX_NESTING_DEPTH`: a composite or a card adds at most a few internal hops per level.
+ */
+const MAX_LAYOUT_HOPS = 32
 
 /**
  * Build a real `LayoutContext` from tokens, surface, box, and injectable providers.
@@ -167,11 +310,16 @@ export function createLayoutContext(
     },
     density: options.tokens.density,
     fontFamily: options.tokens.fontFamily,
+    ...(options.tokens.headingFamily !== undefined ? { headingFamily: options.tokens.headingFamily } : {}),
+    ...(options.tokens.bodyFamily !== undefined ? { bodyFamily: options.tokens.bodyFamily } : {}),
+    ...(options.tokens.surface !== undefined ? { surface: { ...options.tokens.surface } } : {}),
+    ...(options.tokens.locale !== undefined ? { locale: options.tokens.locale } : {}),
+    ...(options.tokens.textScale !== undefined ? { textScale: options.tokens.textScale } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }
 
-  const measureText: MeasureTextProvider = options.measureText ?? estimateMetrics
+  const measureText: MeasureTextProvider = options.measureText ?? editorMetrics
 
   // Deep copy the instance style so the context is structurally isolated.
   const instanceStyle: BlockStyleSpec | undefined = options.style
@@ -192,14 +340,42 @@ export function createLayoutContext(
     )
   }
 
-  const resolveColorFn =
+  const baseResolveColor =
     options.resolveColor ??
     ((role: ColorRole | string, surface: SurfaceContext) =>
       defaultResolveColor(role, surface, tokens, options.theme))
+  // CMP2: remember the literal colours asked for in this pass (an authored `on: '#…'`, a prop
+  // colour) — the ink guard re-solves derived ink, never an author's pinned colour.
+  const literalInks = options.literalInks ?? new Set<string>()
+  // Only an authored block's literals are the author's: a composite's own spec tree passes colours
+  // it derived (an on-accent ink) as literal props, and those may be re-solved.
+  const authoredHere = options.authoredBlock ?? true
+  const resolveColorFn = (role: ColorRole | string, surface: SurfaceContext): ResolvedColor => {
+    const res = baseResolveColor(role, surface)
+    if (authoredHere && !isColorRole(role)) {
+      const hex = opaqueHex(res.color)
+      if (hex) literalInks.add(hex)
+    }
+    return res
+  }
 
-  const resolveTextFn =
-    options.resolveText ??
-    ((token: TypeToken, over?: Partial<TextStyleSpec>) => defaultResolveText(token, over, tokens))
+  // enhance L5: `style.textScale` scales every type size, relative to the deck's and once — a
+  // nested context built from already scaled tokens (a child, `withBox`, a measure probe) keeps them.
+  const textScale = textScaleOf(instanceStyle)
+  const scaleBy = textScale !== undefined ? textScale / (options.tokens.textScale ?? 1) : 1
+  if (Math.abs(scaleBy - 1) > 1e-6) {
+    for (const v of Object.values(tokens.type)) v.size = Math.round(v.size * scaleBy * 100) / 100
+    tokens.textScale = textScale
+  }
+  const givenResolveText = options.resolveText
+  const resolveTextFn: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle = givenResolveText
+    ? Math.abs(scaleBy - 1) > 1e-6
+      ? (token, over) => {
+          const r = givenResolveText(token, over)
+          return over?.size !== undefined ? r : { ...r, size: Math.round(r.size * scaleBy * 100) / 100 }
+        }
+      : givenResolveText
+    : (token, over) => defaultResolveText(token, over, tokens)
 
   const assetFn = options.asset ?? (() => undefined)
   const resolveAssetFn = options.resolveAsset
@@ -207,6 +383,13 @@ export function createLayoutContext(
   const depth = options.depth ?? 0
   const headless = options.headless ?? false
   const registry = options.registry
+  const nest: NestState = {
+    level: options.nestLevel ?? 1 + depth,
+    authoredBlock: options.authoredBlock ?? true,
+    authored: options.authored ?? new WeakSet<object>(),
+    ...(options.blockDefaults ? { blockDefaults: options.blockDefaults } : {}),
+    literalInks,
+  }
 
   // Wrap resolveColor with instance style overrides: when the instance specifies
   // `on`, `accent`, or `surface` as a literal hex / role string, honour it.
@@ -249,51 +432,58 @@ export function createLayoutContext(
     resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
-    layoutChild: (spec: BlockSpec, box: Box): LayoutNode => {
+    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode => {
       const newDepth = depth + 1
-      if (newDepth > MAX_DEPTH) {
-        // Depth overflow: return a lint-style error node. Not a throw, not a stack overflow.
+      // X2: the wrapper group names the child block (id + type) for exporters and the report.
+      const ident = {
+        ...(typeof spec?.id === 'string' && spec.id ? { blockId: spec.id } : {}),
+        ...(typeof spec?.type === 'string' ? { type: spec.type } : {}),
+      }
+      // CMP1: only authored nesting counts toward `MAX_NESTING_DEPTH`; a composite's own spec
+      // tree and a card's inner stack stay on their author's level.
+      const authoredChild = !!spec && typeof spec === 'object' && nest.authored.has(spec)
+      const childLevel = authoredChild ? nest.level + 1 : nest.level
+      if (childLevel > MAX_NESTING_DEPTH || newDepth > MAX_LAYOUT_HOPS) {
+        // Too deep: an empty lint group (the layout report calls it `block/dropped`). Not a
+        // throw, not a stack overflow.
         return {
           k: 'group',
           box,
           part: 'lint/depth-overflow',
+          ...ident,
           children: [],
         }
       }
 
       if (!registry) {
         // No registry: return an empty placeholder.
-        return { k: 'group', box, children: [] }
+        return { k: 'group', box, ...ident, children: [] }
       }
 
       const def = registry.get(spec.type)
       if (!def) {
         // Unknown block type: return an empty placeholder.
-        return { k: 'group', box, children: [] }
+        return { k: 'group', box, ...ident, children: [] }
       }
 
       // Build a child context with incremented depth.
       // Child sees only Size (width/height) — its coordinates are always
       // relative to the group that layoutChild wraps around it.
-      // Extract the child's own $block.style if present.
-      const childMeta = (spec.props as Record<string, unknown>)?.$block as
-        | Record<string, unknown>
-        | undefined
-      const childStyle = childMeta?.style as BlockStyleSpec | undefined
+      // CMP1: the child's own `style` (falling back to the composites' `$block.style`).
+      const childStyle = childStyleOf(spec)
 
       // A gradient (or solid) parent fill is position-dependent: resample the parent's *raw*
       // Paint at this child's own `box`, rather than forwarding the parent's already-sampled
       // `effectiveSurface`. Two children at opposite ends of a gradient card must not receive
       // identical `ctx.surface` — that is the light-on-light-text bug R4's Watch-out predicted.
-      const parentPaint = instanceStyle?.surface
-      const childSurface: SurfaceContext =
-        parentPaint !== undefined && typeof parentPaint !== 'string'
-          ? surfaceFromPaint(parentPaint, box, {
-              x: 0,
-              y: 0,
-              width: options.box.width,
-              height: options.box.height,
-            })
+      // CMP1: a container that paints its own surface under the child (a card's fill, an
+      // overlay's surface) passes it, and the child solves against that paint instead.
+      const parentBounds = { x: 0, y: 0, width: options.box.width, height: options.box.height }
+      const parentPaint = childOpts?.surface ?? instanceStyle?.surface
+      const childSurface: SurfaceContext = childOpts?.overImage
+        ? imageSurface()
+        : parentPaint !== undefined && typeof parentPaint !== 'string'
+          ? surfaceFromPaint(parentPaint, box, parentBounds)
           : effectiveSurface
 
       const childCtx = createLayoutContext({
@@ -304,7 +494,7 @@ export function createLayoutContext(
         measureText,
         // Pass the *base* (surface-aware) resolver down, not this context's wrapped one: the
         // child's own style overrides must not inherit the parent's `on`/`accent`/`surface`.
-        resolveColor: resolveColorFn,
+        resolveColor: baseResolveColor,
         resolveText: resolveTextFn,
         asset: assetFn,
         resolveAsset: resolveAssetFn,
@@ -314,10 +504,26 @@ export function createLayoutContext(
         style: childStyle,
         theme: options.theme,
         intrinsicSizeCache: options.intrinsicSizeCache, // F3.1: propagate memo cache
+        nestLevel: childLevel,
+        authoredBlock: authoredChild,
+        authored: nest.authored,
+        ...(nest.blockDefaults ? { blockDefaults: nest.blockDefaults } : {}),
+        literalInks: nest.literalInks,
+        // CMP2: only an authored `BlockSpec.style.surface` is painted; a composite's private
+        // `$block.style` surface is the context it already painted under the child.
+        paintSurface: !!spec.style && typeof spec.style === 'object' && spec.style.surface !== undefined,
       })
+      // CMP4: the shared tracks a row/grid computed for its peer cards (`peer-tracks.ts`)
+      if (childOpts?.tracks) TRACKS.set(childCtx, childOpts.tracks)
+      // CS1: the shared label step a row/grid computed for its peer shapes
+      if (childOpts?.peerStep !== undefined) PEER_STEP.set(childCtx, childOpts.peerStep)
 
-      const childNode = layoutBlock(def, spec.props as Record<string, unknown>, childCtx)
-      return { k: 'group' as const, box, children: [childNode] }
+      // CMP1: an authored child gets the deck style's knob defaults, as a slide-level block does
+      // (generated specs are their builder's business).
+      const raw = spec.props as Record<string, unknown>
+      const props = authoredChild ? filledProps(def, raw, nest.blockDefaults) : raw
+      const childNode = layoutBlock(def, props, childCtx)
+      return { k: 'group' as const, box, ...ident, children: [childNode] }
     },
     // G8.5: bound the same way `layoutChild` above is — `registry` stays a closure variable,
     // never a raw field a block can read off `ctx` (matches this file's own `layoutChild`
@@ -335,11 +541,18 @@ export function createLayoutContext(
      * `createLayoutContext` call (not a spread) so closure-bound methods resample against the
      * new box, fixing the padding-too-wide trap recorded in B3-H6.
      */
-    withBox: (size: Size): LayoutContext =>
-      createLayoutContext({
+    withBox: (size: Size): LayoutContext => {
+      const next = createLayoutContext({
         ...options,
         box: size,
-      }),
+      })
+      // CMP4: a padded peer card keeps the tracks its row gave it
+      const tracks = TRACKS.get(ctx)
+      if (tracks) TRACKS.set(next, tracks)
+      const step = PEER_STEP.get(ctx)
+      if (step !== undefined) PEER_STEP.set(next, step)
+      return next
+    },
     asset: assetFn,
     resolveAsset: resolveAssetFn,
     icon: iconFn,
@@ -348,6 +561,8 @@ export function createLayoutContext(
     intrinsicSizeCache: options.intrinsicSizeCache, // F3.1: scoped memo cache
   }
 
+  NEST.set(ctx, nest)
+  OPTIONS.set(ctx, options)
   return ctx
 }
 
@@ -392,20 +607,40 @@ function hashValue(value: unknown): string {
 
 export function measureIntrinsicSize(
   spec: BlockSpec,
-  ctx: LayoutContext,
+  ctxIn: LayoutContext,
   registry?: BlockRegistry
 ): Size {
-  // F3.1: Depth guard — refuse to measure past MAX_DEPTH.
+  let ctx = ctxIn
+  // F3.1: Depth guard — refuse to measure past the recursion safety net.
   // This prevents runaway recursion when nested containers measure each other.
-  if (ctx.depth !== undefined && ctx.depth > MAX_DEPTH) {
+  if (ctx.depth !== undefined && ctx.depth > MAX_LAYOUT_HOPS) {
     return { width: 100, height: 100 }
   }
+
+  // CMP1: measure the child as `layoutChild` lays it out — with its own style (not the
+  // container's: a padded card used to add its padding to every child it measured), its filled
+  // defaults when authored, and its nesting level.
+  const outer = ctx
+  const st = NEST.get(outer)
+  const authoredChild = !!st && !!spec && typeof spec === 'object' && st.authored.has(spec)
+  const childStyle = spec ? childStyleOf(spec) : undefined
+  ctx = createLayoutContext({
+    ...outer,
+    box: { width: outer.box.width, height: outer.box.height },
+    registry,
+    style: childStyle,
+    ...nestOptions(outer),
+    ...(st ? { nestLevel: authoredChild ? st.level + 1 : st.level, authoredBlock: authoredChild } : {}),
+    depth: outer.depth + 1,
+  })
+  const def = registry?.get(spec.type)
+  const props = def && authoredChild ? filledProps(def, spec.props as Record<string, unknown>, st?.blockDefaults) : spec.props
 
   // F3.1: Memo — key by (type, props-hash, style-hash, box). Scoped to one compile pass
   // via the cache carried on LayoutContext. Style must be in the key because two children with
   // the same props but different padding share a cache slot otherwise (B3-H2).
   const boxKey = `${ctx.box.width}:${ctx.box.height}`
-  const cacheKey = `${spec.type}:${hashValue(spec.props)}:${hashValue(ctx.style ?? null)}:${boxKey}`
+  const cacheKey = `${spec.type}:${hashValue(props)}:${hashValue(ctx.style ?? null)}:${boxKey}`
 
   if (ctx.intrinsicSizeCache) {
     const cached = ctx.intrinsicSizeCache.get(cacheKey)
@@ -414,11 +649,9 @@ export function measureIntrinsicSize(
     }
   }
 
-  const def = registry?.get(spec.type)
-
   // First, check if the block definition has an intrinsicSize function.
   if (def?.intrinsicSize) {
-    let result = def.intrinsicSize(spec.props, ctx)
+    let result = def.intrinsicSize(props, ctx)
     // B3-H2: add padding to the intrinsic size so containers distribute space correctly.
     if (ctx.style?.padding !== undefined) {
       const [padV, padH] = resolvePadding(ctx.style.padding, ctx.tokens.space)
@@ -431,15 +664,11 @@ export function measureIntrinsicSize(
   }
 
   // Fallback: derive from layoutBlock with a minimal probe box (B3: layoutBlock applies padding).
-  const probeBox: Size = { width: ctx.box.width, height: ctx.box.height }
-  const probeCtx = createLayoutContext({
-    ...ctx,
-    box: probeBox,
-  })
+  const probeCtx = ctx
 
   if (def?.layout) {
     try {
-      const node = layoutBlock(def, spec.props as Record<string, unknown>, probeCtx)
+      const node = layoutBlock(def, props as Record<string, unknown>, probeCtx)
       const result = { width: node.box.width, height: node.box.height }
       if (ctx.intrinsicSizeCache) {
         ctx.intrinsicSizeCache.set(cacheKey, { ...result })
@@ -613,6 +842,93 @@ export function layoutBlock(
   props: Record<string, unknown>,
   ctx: LayoutContext
 ): LayoutNode {
+  const node = layoutBlockInner(def, props, ctx)
+  // CMP2: a slide-level block (depth 0, authored level 1) — the ink guard re-solves derived ink
+  // that fails contrast on what the block itself painted under it.
+  const nest = NEST.get(ctx)
+  if (ctx.depth === 0 && (!nest || nest.level <= 1)) guardInk(node, ctx.surface, nest?.literalInks ?? new Set())
+  return node
+}
+
+/**
+ * CMP2 — `style.surface` as the paint `layoutBlock` puts behind a block that does not paint it
+ * itself (a role or a literal → solid; a `Paint` as is), with the surface its content then sits on.
+ */
+function paintedSurface(ctx: LayoutContext, surface: NonNullable<BlockStyleSpec['surface']>): { paint: Paint; under: SurfaceContext } {
+  const paint: Paint = typeof surface === 'string' ? { type: 'solid', color: ctx.resolveColor('surface').color } : surface
+  const box = { x: 0, y: 0, width: ctx.box.width, height: ctx.box.height }
+  const colors = paint.type === 'solid' ? [paint.color] : paint.stops.map((st) => st.color)
+  const parsed = colors.map((c) => parseInk(c))
+  const translucent = parsed.some((c) => !c || c.alpha < 0.999)
+  if (!translucent) return { paint, under: surfaceFromPaint(paint, box, box) }
+  // A translucent scrim: over a photo a dark one keeps the photo surface (ink solves light), a light
+  // one reads as its own colour; elsewhere it is blended over what is behind the block.
+  const dark = parsed.every((c) => !!c && relativeLuminance(c.rgb) < 0.18)
+  if (ctx.surface.overImage && dark) return { paint, under: { ...ctx.surface } }
+  const first = parsed.find((c) => !!c)
+  if (!first) return { paint, under: { ...ctx.surface } }
+  const behind = ctx.surface.overImage ? first.rgb : surfaceRgb(ctx.surface)
+  const a = first.alpha
+  const mix = { r: first.rgb.r * a + behind.r * (1 - a), g: first.rgb.g * a + behind.g * (1 - a), b: first.rgb.b * a + behind.b * (1 - a) }
+  const hex = rgbToHex(mix)
+  return { paint, under: surfaceFromPaint({ type: 'solid', color: hex }, box, box) }
+}
+
+function surfaceRgb(surface: SurfaceContext): { r: number; g: number; b: number } {
+  if (surface.behind?.type === 'solid') {
+    const c = parseInk(surface.behind.color)
+    if (c) return c.rgb
+  }
+  return greyOfLuminance(surface.luminance)
+}
+
+function layoutBlockInner(
+  def: BlockDefinition,
+  props: Record<string, unknown>,
+  ctx: LayoutContext
+): LayoutNode {
+  // CMP1: an authored block's child specs are authored too (one nesting level deeper).
+  const nest = NEST.get(ctx)
+  if (nest?.authoredBlock) registerAuthoredChildren(def, props, nest.authored)
+
+  // CMP2: an authored `style.surface` on a block that does not paint it itself is painted here, as
+  // a rect behind the block (radius from `style.radius`); the block's content solves its ink on it.
+  const opts = OPTIONS.get(ctx)
+  const own = ctx.style?.surface
+  if (own !== undefined && opts && opts.paintSurface !== false && !SURFACE_PAINTERS.has(def.type)) {
+    const { paint, under } = paintedSurface(ctx, own)
+    const { surface: _drop, ...rest } = ctx.style as BlockStyleSpec
+    void _drop
+    const inner = createLayoutContext({ ...opts, box: { width: ctx.box.width, height: ctx.box.height }, surface: under, style: rest, paintSurface: false, ...nestOptions(ctx) })
+    const node = layoutBlockInner(def, props, inner)
+    const radiusOpt = ctx.style?.radius
+    const radius = typeof radiusOpt === 'number' ? radiusOpt : radiusOpt ? ctx.tokens.radius[radiusOpt] ?? 0 : 0
+    const height = node.box.height
+    // the panel hugs the content across (plus the block's own horizontal padding): a kicker's
+    // scrim is a label, not a full-width band, and an anchored block keeps its natural width
+    // CMP4: and down (plus the vertical padding): a lockup packed at the top of a taller box keeps
+    // a panel its own height, so the block still has a natural size (an anchored scrimmed stack
+    // measured as filling any box it got, and fell back to the preferred 800 × 480)
+    const [padV, padH] = ctx.style?.padding !== undefined ? resolvePadding(ctx.style.padding, ctx.tokens.space) : [0, 0]
+    const painted = collectPaint(node)
+    const xs = [...painted.ops.map((o) => o.box), ...painted.inks.map((i) => (i.node.k === 'text' ? { ...i.box, width: Math.max(0, ...i.node.lines.map((l) => l.width)) } : i.box))]
+    const x0 = xs.length ? Math.max(0, Math.min(...xs.map((bx) => bx.x)) - padH) : 0
+    const x1 = xs.length ? Math.min(ctx.box.width, Math.max(...xs.map((bx) => bx.x + bx.width)) + padH) : ctx.box.width
+    const y0 = xs.length ? Math.max(0, Math.min(...xs.map((bx) => bx.y)) - padV) : 0
+    const y1 = xs.length ? Math.min(height, Math.max(...xs.map((bx) => bx.y + bx.height)) + padV) : height
+    const part = node.part
+    node.part = undefined
+    return {
+      k: 'group',
+      box: { x: 0, y: 0, width: ctx.box.width, height },
+      part,
+      children: [
+        { k: 'rect', box: { x: x0, y: y0, width: Math.max(0, x1 - x0), height: Math.max(0, y1 - y0) }, part: 'surface', fill: paint, ...(radius ? { radius } : {}) },
+        node,
+      ],
+    }
+  }
+
   const style = ctx.style
   const hasPadding = style !== undefined && style.padding !== undefined
   const hasAlign = style !== undefined && style.align !== undefined && style.align !== 'start'
@@ -654,6 +970,7 @@ export function layoutBlock(
           headless: ctx.headless,
           style: ctx.style,
           intrinsicSizeCache: ctx.intrinsicSizeCache,
+          ...nestOptions(ctx),
         })
       })()
 

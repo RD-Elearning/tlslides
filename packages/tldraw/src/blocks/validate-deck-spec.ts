@@ -12,18 +12,22 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`, no network.
  */
 
+import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import { SLIDE_ASPECT_PRESETS } from '~constants'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
+import { BUILT_IN_STYLES, getDeckStyle, stylePaletteIds } from './styles'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
-import { MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES } from './types'
+import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
+import { CONNECTOR_BLOCK_TYPE } from './connectors'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -133,8 +137,8 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
     }
   }
 
-  // theme
-  const themeIds = BUILT_IN_DECK_THEMES.map((t) => t.id)
+  // theme (AC1: a style palette id is a theme id too)
+  const themeIds = [...BUILT_IN_DECK_THEMES.map((t) => t.id), ...stylePaletteIds().filter((id) => !BUILT_IN_DECK_THEMES.some((t) => t.id === id))]
   if (typeof s.theme === 'string') {
     if (!themeIds.includes(s.theme)) {
       const suggestion = nearestName(s.theme, themeIds)
@@ -158,6 +162,46 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
         s.theme
       )}.`,
     })
+  }
+
+  // enhance F1: the deck motif is a subject doodle
+  if (s.motif !== undefined && !(typeof s.motif === 'string' && (SUBJECT_SHAPES as readonly string[]).includes(s.motif))) {
+    findings.push({
+      level: 'warning',
+      rule: 'deck/unknown-motif',
+      path: 'motif',
+      message: `Motif ${stringifyForMessage(s.motif)} is not a subject doodle (${SUBJECT_SHAPES.join(', ')}); it is ignored.`,
+    })
+  }
+
+  // AC1: style
+  if (s.style !== undefined) {
+    const styleIds = BUILT_IN_STYLES.map((st) => st.id)
+    const style = getDeckStyle(s.style as string)
+    if (!style) {
+      const suggestion = typeof s.style === 'string' ? nearestName(s.style, styleIds) : undefined
+      findings.push({
+        level: 'error',
+        rule: 'style/unknown',
+        path: 'style',
+        message:
+          `Style ${stringifyForMessage(s.style)} is not a known deck style.` +
+          (suggestion ? ` Did you mean "${suggestion}"?` : '') +
+          ` Available styles: ${styleIds.join(', ')}.`,
+        suggestion,
+      })
+    } else if (typeof s.theme === 'string' && !style.palettes.some((p) => p.id === s.theme)) {
+      const palettes = style.palettes.map((p) => p.id)
+      findings.push({
+        level: 'warning',
+        rule: 'style/theme-mismatch',
+        path: 'theme',
+        message:
+          `Theme "${s.theme}" is not a palette of style "${style.id}"; the style's default ` +
+          `"${palettes[0]}" is used instead. Write one of: ${palettes.join(', ')}.`,
+        suggestion: palettes[0],
+      })
+    }
   }
 
   // aspect
@@ -332,8 +376,12 @@ function validateSlide(
       blocksRaw.forEach((blockRaw, bi) => {
         validateBlockTree(blockRaw, `${regionPath}[${bi}]`, reg, seenBlockIds, findings, [], [], 1, tokens)
       })
+      validateRegionAnchors(blocksRaw, regionName, regionPath, findings)
     }
   }
+
+  // CMP3: connectors (after the blocks: endpoints refer to them)
+  validateConnectors(slide, slidePath, slideLabel, findings)
 
   // free[]
   if (slide.free !== undefined) {
@@ -386,6 +434,111 @@ function validateSlide(
   }
 }
 
+const CONNECTOR_KEYS = ['id', 'from', 'to', 'route', 'head', 'tone', 'weight', 'dash', 'label']
+const CONNECTOR_ENUMS: Record<string, readonly string[]> = {
+  route: ['straight', 'elbow', 'curved'],
+  head: ['end', 'both', 'none'],
+  tone: ['line', 'accent', 'text'],
+  weight: ['hairline', 'md', 'bold'],
+}
+const CONNECTOR_SIDES = ['auto', 'top', 'right', 'bottom', 'left']
+/** `ConnectorSpec.label` limit (chars). */
+export const CONNECTOR_LABEL_MAX = 24
+
+/** Every block id on a slide: region blocks, free[] blocks and everything nested in them. */
+function slideBlockIds(slide: Record<string, unknown>): string[] {
+  const out: string[] = []
+  const visit = (b: unknown, depth: number) => {
+    if (!isRecord(b) || depth > MAX_NESTING_DEPTH + 2) return
+    if (typeof b.id === 'string') out.push(b.id)
+    if (isRecord(b.props)) for (const v of Object.values(b.props)) if (Array.isArray(v)) for (const c of v) if (isRecord(c) && typeof c.type === 'string') visit(c, depth + 1)
+  }
+  if (isRecord(slide.regions)) for (const bs of Object.values(slide.regions)) if (Array.isArray(bs)) bs.forEach((b) => visit(b, 1))
+  if (Array.isArray(slide.free)) for (const e of slide.free) if (isRecord(e)) visit(e.block, 1)
+  return out
+}
+
+/**
+ * CMP3 — `SlideSpec.connectors`: an array of `{ id, from: { block, side? }, to: { block, side? },
+ * route?, head?, tone?, weight?, dash?, label? }`. Errors: not an array / not an object / missing
+ * id or ends / bad enum value (`connector/malformed`); an id shared with a block or another
+ * connector (`connector/duplicate-id`); an endpoint id that is not a block on this slide, or the
+ * same block at both ends (`connector/unresolved`). Warnings: an unknown key, a label over
+ * `CONNECTOR_LABEL_MAX` chars (`connector/malformed`).
+ */
+function validateConnectors(slide: Record<string, unknown>, slidePath: string, slideLabel: string, findings: DeckFinding[]): void {
+  if (slide.connectors === undefined) return
+  const base = `${slidePath}.connectors`
+  if (!Array.isArray(slide.connectors)) {
+    findings.push({ level: 'error', rule: 'connector/malformed', path: base, message: `Slide "${slideLabel}"'s "connectors" must be an array; got ${describeType(slide.connectors)}.` })
+    return
+  }
+  const ids = slideBlockIds(slide)
+  const known = new Set(ids)
+  const seen = new Set<string>()
+  slide.connectors.forEach((raw, i) => {
+    const path = `${base}[${i}]`
+    if (!isRecord(raw)) {
+      findings.push({ level: 'error', rule: 'connector/malformed', path, message: `Connector ${i} on slide "${slideLabel}" is not an object (got ${describeType(raw)}).` })
+      return
+    }
+    const id = typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : undefined
+    const label = id ? `"${id}"` : `${i}`
+    if (!id) {
+      findings.push({ level: 'error', rule: 'deck/missing-field', path: `${path}.id`, message: `Connector ${i} on slide "${slideLabel}" is missing a required "id".` })
+    } else if (known.has(id) || seen.has(id)) {
+      findings.push({ level: 'error', rule: 'connector/duplicate-id', path: `${path}.id`, message: `Connector id "${id}" is already used by ${known.has(id) ? 'a block' : 'another connector'} on slide "${slideLabel}"; give the connector its own id.` })
+    }
+    if (id) seen.add(id)
+    for (const key of Object.keys(raw)) {
+      if (!CONNECTOR_KEYS.includes(key)) {
+        findings.push({ level: 'warning', rule: 'connector/malformed', path: `${path}.${key}`, message: `Connector ${label} has an unknown key "${key}" (ignored). Keys: ${CONNECTOR_KEYS.join(', ')}.` })
+      }
+    }
+    const ends: string[] = []
+    for (const k of ['from', 'to'] as const) {
+      const e = raw[k]
+      if (!isRecord(e) || typeof e.block !== 'string' || e.block.length === 0) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}`, message: `Connector ${label} needs "${k}": { "block": "<block id>" } (optionally "side": ${CONNECTOR_SIDES.join(' | ')}).` })
+        continue
+      }
+      ends.push(e.block)
+      if (!known.has(e.block)) {
+        const suggestion = nearestName(e.block, ids)
+        findings.push({
+          level: 'error',
+          rule: 'connector/unresolved',
+          path: `${path}.${k}.block`,
+          message: `Connector ${label}: "${e.block}" is not a block on slide "${slideLabel}"; the connector would not be drawn.` + (suggestion ? ` Did you mean "${suggestion}"?` : ''),
+          ...(suggestion ? { suggestion } : {}),
+        })
+      }
+      if (e.side !== undefined && !CONNECTOR_SIDES.includes(e.side as string)) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}.side`, message: `Connector ${label}: side "${stringifyForMessage(e.side)}" is not one of ${CONNECTOR_SIDES.join(', ')}.` })
+      }
+    }
+    if (ends.length === 2 && ends[0] === ends[1]) {
+      findings.push({ level: 'error', rule: 'connector/unresolved', path, message: `Connector ${label} starts and ends at the same block "${ends[0]}".` })
+    }
+    for (const [k, values] of Object.entries(CONNECTOR_ENUMS)) {
+      const v = raw[k]
+      if (v !== undefined && !values.includes(v as string)) {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.${k}`, message: `Connector ${label}: ${k} "${stringifyForMessage(v)}" is not one of ${values.join(', ')}.` })
+      }
+    }
+    if (raw.dash !== undefined && typeof raw.dash !== 'boolean') {
+      findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.dash`, message: `Connector ${label}: "dash" must be true or false.` })
+    }
+    if (raw.label !== undefined) {
+      if (typeof raw.label !== 'string') {
+        findings.push({ level: 'error', rule: 'connector/malformed', path: `${path}.label`, message: `Connector ${label}: "label" must be a string.` })
+      } else if (raw.label.length > CONNECTOR_LABEL_MAX) {
+        findings.push({ level: 'warning', rule: 'connector/malformed', path: `${path}.label`, message: `Connector ${label}: the label is ${raw.label.length} characters; keep it to ${CONNECTOR_LABEL_MAX} (one to three words).` })
+      }
+    }
+  })
+}
+
 /** P7 — `motionStyle` must be one of `MOTION_STYLES`; anything else is ignored at compile time. */
 function checkMotionStyle(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
   if (value === undefined || isMotionStyle(value)) return
@@ -407,11 +560,14 @@ function checkMotionStyle(value: unknown, path: string, owner: string, findings:
 /* Block-tree validation                                                            */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-/** Findings beyond this depth stop being restated at every deeper level. */
-const MAX_NESTING_DEPTH = 6
+// CMP1: `MAX_NESTING_DEPTH` (types.ts) is the one limit — the layout engine stops drawing at the
+// same level (`lint/depth-overflow`, reported as `block/dropped`). Findings beyond it stop being
+// restated at every deeper level.
 /** Absolute recursion cutoff — a safety net independent of the depth finding above, so a
  *  pathological (but acyclic) chain can never grow the call stack without bound. */
 const HARD_DEPTH_CAP = 200
+/** CMP1: the container whose children may set `layer` / `anchor`. */
+const OVERLAY_TYPE = 'tls.l.overlay'
 
 function validateBlockTree(
   blockRaw: unknown,
@@ -422,7 +578,8 @@ function validateBlockTree(
   ancestorIds: string[],
   ancestorRefs: unknown[],
   depth: number,
-  tokens: ResolvedTokens
+  tokens: ResolvedTokens,
+  parentType?: string
 ): void {
   if (!isRecord(blockRaw)) {
     findings.push({
@@ -510,6 +667,15 @@ function validateBlockTree(
     })
   } else {
     def = reg.get(type)
+    if (type === CONNECTOR_BLOCK_TYPE) {
+      // CMP3: the compiled form of a slide connector, never authored as a block.
+      findings.push({
+        level: 'warning',
+        rule: 'connector/malformed',
+        path: `${path}.type`,
+        message: `Block ${label} is a "${CONNECTOR_BLOCK_TYPE}", which only the compiler creates. Write the line as a slide connector instead: "connectors": [{ "id": "…", "from": { "block": "<id>" }, "to": { "block": "<id>" } }].`,
+      })
+    }
     if (!def) {
       const suggestion = nearestBlockType(type, reg.list())
       findings.push({
@@ -538,7 +704,9 @@ function validateBlockTree(
   }
 
   if (def) {
-    validateProps(block.props, def, path, reg, seenBlockIds, findings, ancestorIds, ancestorRefs, depth, tokens)
+    // CMP1: the props recursion carries this block as an ancestor (cycle guard) and stops past
+    // the nesting limit, like the `children` recursion below.
+    validateProps(block.props, def, path, reg, seenBlockIds, findings, id ? [...ancestorIds, id] : ancestorIds, [...ancestorRefs, blockRaw], depth, tokens)
     validateStyle(block.style, def.type, `${path}.style`, tokens, findings)
   } else if (block.props !== undefined && !isRecord(block.props)) {
     findings.push({
@@ -549,7 +717,78 @@ function validateBlockTree(
     })
   }
 
+  // LO2 — paint layer: closed vocabulary. Out-of-flow placement only happens for a slide-level
+  // region block; inside a container it just classifies overlaps.
+  if (block.layer !== undefined) {
+    if (!isBlockLayer(block.layer)) {
+      findings.push({
+        level: 'error',
+        rule: 'block/layer',
+        path: `${path}.layer`,
+        message:
+          `Block ${label}'s "layer" is ${stringifyForMessage(block.layer)}; it must be one of ${BLOCK_LAYERS.map((l) => `"${l}"`).join(', ')}.` +
+          ` Use "backdrop" to put a block behind the other blocks of its region, "overlay" to put it on top.`,
+      })
+    } else if (depth > 1 && block.layer !== 'content' && parentType !== OVERLAY_TYPE) {
+      findings.push({
+        level: 'warning',
+        rule: 'block/layer-nested',
+        path: `${path}.layer`,
+        message: `Block ${label} sets layer "${block.layer}" inside a container; only a block placed directly in a slide region, or a child of tls.l.overlay, is layered. Move it to the region, or into a tls.l.overlay.`,
+      })
+    }
+  }
+
+  // LO2.1 — anchor of a layered block: closed vocabulary; placement only for a region block with
+  // an explicit backdrop/overlay layer (checked per region, where `anchorTo` can be resolved).
+  if (block.anchor !== undefined && !isBlockAnchor(block.anchor)) {
+    findings.push({
+      level: 'error',
+      rule: 'block/anchor',
+      path: `${path}.anchor`,
+      message:
+        `Block ${label}'s "anchor" is ${stringifyForMessage(block.anchor)}; it must be one of ${BLOCK_ANCHORS.map((a) => `"${a}"`).join(', ')}.`,
+    })
+  }
+  if (block.anchorTo !== undefined && (typeof block.anchorTo !== 'string' || block.anchorTo === '')) {
+    findings.push({
+      level: 'error',
+      rule: 'block/anchor-target',
+      path: `${path}.anchorTo`,
+      message: `Block ${label}'s "anchorTo" must be the id of another block in the same region; got ${describeType(block.anchorTo)}.`,
+    })
+  } else if (depth > 1 && (block.anchorTo !== undefined || (block.anchor !== undefined && parentType !== OVERLAY_TYPE))) {
+    findings.push({
+      level: 'warning',
+      rule: 'block/anchor-unused',
+      path: `${path}.${block.anchorTo !== undefined ? 'anchorTo' : 'anchor'}`,
+      message:
+        block.anchorTo !== undefined
+          ? `Block ${label} sets "anchorTo" inside a container; only a layered block directly in a slide region is anchored to another block (its target may be nested). It is ignored here.`
+          : `Block ${label} sets an anchor inside a container that is not tls.l.overlay; anchors place a layered region block or a child of tls.l.overlay. It is ignored here.`,
+    })
+  }
+
+  // CMP1: `bleed` lets a backdrop leave the frame on purpose (no `slide/overflow`).
+  if (block.bleed !== undefined && typeof block.bleed !== 'boolean') {
+    findings.push({
+      level: 'error',
+      rule: 'block/malformed',
+      path: `${path}.bleed`,
+      message: `Block ${label}'s "bleed" must be true or false; got ${describeType(block.bleed)}.`,
+    })
+  }
+
   if (block.children !== undefined) {
+    // CMP1: one children slot. No layout reads `BlockSpec.children`; a block that sets it renders
+    // without those children. Say so (the children are still validated below). An empty array
+    // loses nothing.
+    if (!Array.isArray(block.children) || block.children.length > 0) findings.push({
+      level: 'error',
+      rule: 'block/malformed',
+      path: `${path}.children`,
+      message: `Block ${label} puts child blocks in "children" at the block level, which no layout reads (they would not render). Move them to "props.children"${def && def.schema?.children ? '' : ` — and use a container type (tls.l.stack, tls.l.row, tls.l.card, …): "${type ?? '?'}" takes no children`}.`,
+    })
     if (!Array.isArray(block.children)) {
       findings.push({
         level: 'error',
@@ -570,7 +809,8 @@ function validateBlockTree(
           nextAncestorIds,
           nextAncestorRefs,
           depth + 1,
-          tokens
+          tokens,
+          type
         )
       })
     }
@@ -627,13 +867,13 @@ function validateProps(
       continue
     }
     if (value !== undefined && value !== null) {
-      checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings)
+      checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings, (def.looks ?? []).includes(slotName))
       checkIcons(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
       // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
-      if (slotSpec.type.kind === 'blocks' && Array.isArray(value)) {
-        const nextAncestorIds = typeof props.id === 'string' && props.id.length > 0 ? [...ancestorIds, props.id] : ancestorIds
+      if (slotSpec.type.kind === 'blocks' && Array.isArray(value) && depth <= MAX_NESTING_DEPTH && depth < HARD_DEPTH_CAP) {
+        const nextAncestorIds = ancestorIds
         const nextAncestorRefs = [...ancestorRefs, propsRaw]
         value.forEach((childRaw, ci) => {
           validateBlockTree(
@@ -645,7 +885,8 @@ function validateProps(
             nextAncestorIds,
             nextAncestorRefs,
             depth + 1,
-            tokens
+            tokens,
+            def.type
           )
         })
       }
@@ -653,6 +894,9 @@ function validateProps(
   }
 
   for (const propName of Object.keys(props)) {
+    // `$block` is the composites' private per-child channel (`onSurface`); `BlockSpec.style` is
+    // the public one (CMP1) — not an unknown prop.
+    if (propName === '$block') continue
     if (!slotNames.includes(propName)) {
       findings.push({
         level: 'warning',
@@ -801,7 +1045,9 @@ function checkBudget(
   path: string,
   blockType: string,
   slotName: string,
-  findings: DeckFinding[]
+  findings: DeckFinding[],
+  /** AC8: the slot is one of the block's look knobs (`BlockDefinition.looks`). */
+  look = false
 ): void {
   const slotType = slotSpec.type
 
@@ -897,14 +1143,35 @@ function checkBudget(
       break
     }
     case 'enum': {
-      if (typeof value === 'string' && !slotType.values.includes(value)) {
+      // AC8: on a look knob — the planner's customisation surface — any value outside the enum is an
+      // error with the nearest valid value. Elsewhere a string outside the enum stays a warning (some
+      // structural slots take raw numbers, e.g. a stack's `gap`).
+      const bad = look
+        ? value !== undefined && value !== null && !(typeof value === 'string' && slotType.values.includes(value))
+        : typeof value === 'string' && !slotType.values.includes(value)
+      if (bad) {
+        const suggestion = typeof value === 'string' ? nearestName(value, slotType.values) : undefined
         findings.push({
-          level: 'warning',
+          level: look ? 'error' : 'warning',
           rule: 'slot/invalid-enum',
           path,
-          message: `Block "${blockType}"'s "${slotName}" is "${value}", which is not one of: ${slotType.values.join(
-            ', '
-          )}.`,
+          message:
+            `Block "${blockType}"'s "${slotName}" is ${JSON.stringify(value)}, which is not one of: ${slotType.values.join(', ')}.` +
+            (suggestion ? ` Did you mean "${suggestion}"?` : ''),
+          ...(suggestion ? { suggestion } : {}),
+        })
+      }
+      break
+    }
+    case 'boolean': {
+      // AC8: an on/off look knob takes true or false, never "true" or "yes".
+      if (look && value !== undefined && value !== null && typeof value !== 'boolean') {
+        findings.push({
+          level: 'error',
+          rule: 'slot/invalid-boolean',
+          path,
+          message: `Block "${blockType}"'s "${slotName}" is ${JSON.stringify(value)}; it takes true or false.`,
+          ...(value === 'true' || value === 'false' ? { suggestion: value } : {}),
         })
       }
       break
@@ -1081,4 +1348,58 @@ function stringifyForMessage(value: unknown): string {
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
+}
+
+/**
+ * LO2.1 — region-level anchor checks: `anchor`/`anchorTo` only place a block with an explicit
+ * `layer: "backdrop" | "overlay"`, and `anchorTo` must name a *stacked* block of the same region
+ * (the compiler resolves it in one pass after the stack is placed; anything else falls back to the
+ * region box).
+ */
+function validateRegionAnchors(blocks: unknown[], regionName: string, regionPath: string, findings: DeckFinding[]): void {
+  const layered = (b: Record<string, unknown>) => b.layer === 'backdrop' || b.layer === 'overlay'
+  const stacked = blocks.filter((b): b is Record<string, unknown> => isRecord(b) && !layered(b))
+  const stackedIds = stacked.filter((b) => typeof b.id === 'string').map((b) => b.id as string)
+  // CMP1: `anchorTo` may name a block nested inside a stacked block (a badge on card 2 of a grid).
+  const nestedIds: string[] = []
+  const walk = (b: unknown, depth: number): void => {
+    if (!isRecord(b) || depth > MAX_NESTING_DEPTH || !isRecord(b.props)) return
+    for (const v of Object.values(b.props)) {
+      if (!Array.isArray(v)) continue
+      for (const c of v) {
+        if (!isRecord(c) || typeof c.type !== 'string') continue
+        if (typeof c.id === 'string') nestedIds.push(c.id)
+        walk(c, depth + 1)
+      }
+    }
+  }
+  stacked.forEach((b) => walk(b, 1))
+  const targetIds = [...stackedIds, ...nestedIds]
+  blocks.forEach((b, bi) => {
+    if (!isRecord(b) || (b.anchor === undefined && b.anchorTo === undefined)) return
+    const path = `${regionPath}[${bi}]`
+    const label = typeof b.id === 'string' ? `"${b.id}"` : `at ${path}`
+    if (!layered(b)) {
+      findings.push({
+        level: 'warning',
+        rule: 'block/anchor-unused',
+        path: `${path}.${b.anchorTo !== undefined ? 'anchorTo' : 'anchor'}`,
+        message: `Block ${label} sets an anchor but no "layer"; a stacked block ignores it. Add "layer": "overlay" (or "backdrop") to place it by its anchor.`,
+      })
+      return
+    }
+    if (typeof b.anchorTo !== 'string' || b.anchorTo === '') return
+    if (!targetIds.includes(b.anchorTo)) {
+      const suggestion = nearestName(b.anchorTo, targetIds)
+      findings.push({
+        level: 'error',
+        rule: 'block/anchor-target',
+        path: `${path}.anchorTo`,
+        message:
+          `Block ${label}'s "anchorTo" is "${b.anchorTo}", which is not a stacked block of region "${regionName}" (or a block nested in one); it falls back to the region box.` +
+          (stackedIds.length ? ` Stacked blocks here: ${stackedIds.join(', ')}.` : ' This region has no stacked block.'),
+        ...(suggestion ? { suggestion } : {}),
+      })
+    }
+  })
 }

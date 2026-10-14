@@ -204,3 +204,67 @@ describe('RV02 — honest size (review G02)', () => {
     }
   })
 })
+
+describe('AC8.6 — size: fit', () => {
+  const textOf = (node: any): any => (node.k === 'text' ? node : node.children?.map(textOf).find(Boolean))
+  const at = (text: string, width: number) => {
+    const ctx = rv02Ctx({ width, height: 888 })
+    return { ctx, leaf: textOf(tlsTTitle.layout({ text, size: 'fit' } as any, ctx)) }
+  }
+
+  it('declares fit as a size value', () => {
+    expect((tlsTTitle.schema.size.type as any).values).toContain('fit')
+  })
+
+  it('a short title that wraps cleanly takes display type', () => {
+    const { ctx, leaf } = at('Why now', 1200)
+    expect(leaf.style.size).toBe(ctx.tokens.type.display.size)
+  })
+
+  it('never leaves a one-word first or last line; steps down instead', () => {
+    for (const text of ['Why mid-market, why now', 'Expanding Pulse analytics to mid-market teams', 'Budget, two hires and one design partner']) {
+      for (const width of [1200, 1000, 800]) {
+        const { leaf } = at(text, width)
+        const n = leaf.lines.length
+        const words = (i: number) => leaf.lines[i].text.trim().split(/\s+/).length
+        expect([text, width, n === 1 || (words(0) >= 2 && words(n - 1) >= 2) || leaf.style.size === at(text, width).ctx.tokens.type.heading.size]).toEqual([text, width, true])
+      }
+    }
+  })
+})
+
+describe('tls.t.title / tls.t.body align (spro demo T16)', () => {
+  const registry = makeRegistry()
+  const texts = (node: any) => (node.children as any[]).filter((c) => c.k === 'text')
+
+  it('a centred title draws each line centred, an end-aligned one flush right; start is one node', () => {
+    const W = 960
+    const centre = texts(tlsTTitle.layout({ text: 'Short title', align: 'center' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(centre.length).toBeGreaterThanOrEqual(1)
+    for (const t of centre) {
+      const mid = t.box.x + t.box.width / 2
+      expect(Math.abs(mid - W / 2)).toBeLessThan(2)
+      expect(t.part).toBe('text')
+      expect(t.propPath).toBe('text')
+    }
+    const end = texts(tlsTTitle.layout({ text: 'Short title', align: 'end' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(Math.abs(end[0].box.x + end[0].box.width - W)).toBeLessThan(2)
+    const start = texts(tlsTTitle.layout({ text: 'Short title' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(start).toHaveLength(1)
+    expect(start[0].box.x).toBe(0)
+  })
+
+  it('a centred title centres its rule too', () => {
+    const W = 960
+    const node: any = tlsTTitle.layout({ text: 'Short title', align: 'center', rule: true } as any, makeCtx({ width: W, height: 300 }, registry))
+    const rule = node.children.find((c: any) => c.part === 'rule')
+    expect(rule.box.x + rule.box.width / 2).toBeCloseTo(W / 2)
+  })
+
+  it('a one-column body follows its align', () => {
+    const { tlsTBody } = jest.requireActual('../tls-t-body') as { tlsTBody: typeof tlsTTitle }
+    const W = 960
+    const lines = texts(tlsTBody.layout({ text: 'One short line', align: 'center' } as any, makeCtx({ width: W, height: 300 }, registry)))
+    expect(Math.abs(lines[0].box.x + lines[0].box.width / 2 - W / 2)).toBeLessThan(2)
+  })
+})

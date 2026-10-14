@@ -100,7 +100,7 @@ const composite = defineCompositeBlock({
   size: { preferred: [520, 700], min: [340, 420] },
   describe: {
     when: 'Introducing one person in detail: speaker bio, lecturer, team lead.',
-    avoid: 'A row of people (use tls.m.avatar-group or a grid of tls.m.avatar); only a name and role (use tls.m.avatar).',
+    avoid: 'A row of people (use tls.c.team, or tls.m.avatar-group for faces only); only a name and role (use tls.m.avatar).',
     example: {
       id: 'b_profile_card',
       type: 'tls.c.profile-card',

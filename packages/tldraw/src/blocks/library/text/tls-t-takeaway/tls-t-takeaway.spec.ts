@@ -164,3 +164,46 @@ describe('RV02 — honest size (review G02)', () => {
     expect(DEF.describe!.avoid).toContain('tls.t.callout')
   })
 })
+
+describe('AC2 — size knob', () => {
+  const DEF = tlsTTakeaway
+  const textOf = (n: any): any => (n.children ?? []).find((c: any) => c.part === 'text')
+
+  it('lists the size knob with body, lead and (AC8.5) column', () => {
+    expect((DEF.schema.size.type as any).values).toEqual(['body', 'lead', 'column'])
+  })
+
+  it('AC8.5 size column: alone in a tall column it takes a big rung, centred, and fits the box', () => {
+    const props = { ...(DEF.describe!.example.props as any), size: 'column' }
+    const tree = DEF.layout(props, makeCtx({ width: 840, height: 758 }, makeRegistry())) as any
+    const text = tree.children.find((c: any) => c.part === 'text')
+    expect(text.style.size).toBeGreaterThanOrEqual(44)
+    expect(tree.box.height).toBeLessThanOrEqual(758.5)
+    const surface = tree.children.find((c: any) => c.part === 'surface')
+    expect(surface.box.y).toBeGreaterThan(100)
+  })
+
+  it.each([
+    ['preferred', DEF.size.preferred],
+    ['min', DEF.size.min],
+  ])('size: lead fits size.%s (lead tier at preferred, body when the box is too short)', (label, [w, h]) => {
+    const props = { ...(DEF.describe!.example.props as any), size: 'lead' }
+    const lead: any = DEF.layout(props, rv02Ctx({ width: w, height: h }))
+    const body: any = DEF.layout({ ...props, size: 'body' }, rv02Ctx({ width: w, height: h }))
+    expect(lead.box.height).toBeLessThanOrEqual(h + 0.5)
+    const t = textOf(lead)
+    expect(t.box.y + t.box.height).toBeLessThanOrEqual(h + 0.5)
+    expect(t.box.x + t.box.width).toBeLessThanOrEqual(w + 0.5)
+    if (label === 'preferred') expect(t.style.size).toBeGreaterThan(textOf(body).style.size)
+    else expect(t.style.size).toBeGreaterThanOrEqual(textOf(body).style.size)
+  })
+
+  it('size: lead picks the lead tier whenever the box has the height', () => {
+    const props = { ...(DEF.describe!.example.props as any), size: 'lead' }
+    const [w] = DEF.size.min
+    const lead: any = DEF.layout(props, rv02Ctx({ width: w, height: 400 }))
+    const body: any = DEF.layout({ ...props, size: 'body' }, rv02Ctx({ width: w, height: 400 }))
+    expect(textOf(lead).style.size).toBeGreaterThan(textOf(body).style.size)
+    expect(lead.box.height).toBeLessThanOrEqual(400)
+  })
+})

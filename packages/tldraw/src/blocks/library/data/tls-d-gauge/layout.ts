@@ -43,11 +43,11 @@ export function layout(props: GaugeProps, ctx0: LayoutContext): LayoutNode {
   const tlh = lineH(tickStyle)
   const labelStyle = style(ctx, 'caption', c.text)
   const labelH = label ? lineH(labelStyle) : 0
-  const valueText = fmtNum(value, props.format)
+  const valueText = fmtNum(value, props.format, ctx.tokens.locale)
 
   // Vertical budget: arc, then value, then label.
   let vs = style(ctx, 'heading', c.text)
-  const tickW = showTicks ? Math.ceil(Math.max(ctx.measureText(fmtNum(lo, props.format), tickStyle).width, ctx.measureText(fmtNum(hi, props.format), tickStyle).width)) + 12 : 0
+  const tickW = showTicks ? Math.ceil(Math.max(ctx.measureText(fmtNum(lo, props.format, ctx.tokens.locale), tickStyle).width, ctx.measureText(fmtNum(hi, props.format, ctx.tokens.locale), tickStyle).width)) + 12 : 0
   const gapV = sp['2xs']
   const topMargin = showTicks ? tlh + 6 : 4
   // The pointer hub (radius 0.072 R) sits on the baseline, so the value starts below it; R is
@@ -102,7 +102,7 @@ export function layout(props: GaugeProps, ctx0: LayoutContext): LayoutNode {
       const cs = Math.cos(a)
       const sn = Math.sin(a)
       nodes.push(pathNode(ctx, `M${cx + (R + 3) * cs} ${cy + (R + 3) * sn}L${cx + (R + 12) * cs} ${cy + (R + 12) * sn}`, `tick[${i}]`, { stroke: c.muted, strokeWidth: 2 }))
-      const txt = fmtNum(v, props.format)
+      const txt = fmtNum(v, props.format, ctx.tokens.locale)
       const tw = ctx.measureText(txt, tickStyle).width
       const px = cx + (R + 18) * cs
       const py = cy + (R + 18) * sn

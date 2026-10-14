@@ -397,7 +397,7 @@ describe('renderPageToSvg — Phase 17 typography', () => {
     })
     const svg = renderPageToSvg(pageOf([rect]), { theme })
     // ivory-editorial's heading face is Serif ("Crimson Pro").
-    expect(svg).toContain('font-family="Crimson Pro"')
+    expect(svg).toContain('font-family="&quot;Crimson Pro&quot;, &quot;Crimson Pro Variable&quot;, serif"')
   })
 
   it('a fontToken has NO effect on a bare TextShape — see TextUtil/renderText\'s own comment for why', () => {

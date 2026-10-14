@@ -437,14 +437,153 @@ describe('DeckViewer navigation', () => {
       act(() => { jest.runOnlyPendingTimers() })
       expect(viewer.dataset.buildStep).toBe(viewer.dataset.buildStepCount)
 
-      // Retreat once: should land back on step 2 (b2's step un-revealed again) — and STAY
-      // there. Running any pending timers must not snap it forward again.
+      // Retreat once: undoes the last click — b1's step and the 'afterPrevious' b2 that chained
+      // after it (spro demo T12) — landing on step 1, and STAYS there. Running any pending
+      // timers must not snap it forward again.
       fireEvent.keyDown(viewer, { key: 'ArrowLeft' })
       act(() => { jest.runOnlyPendingTimers() })
-      expect(viewer.dataset.buildStep).toBe('2')
+      expect(viewer.dataset.buildStep).toBe('1')
       expect(viewer.dataset.buildStep).not.toBe(viewer.dataset.buildStepCount)
     } finally {
       jest.useRealTimers()
     }
+  })
+})
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* spro demo T12 — click halves, host slide changes                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+describe('click halves and host-controlled slides (spro demo T12)', () => {
+  // two slides, each with two click steps after the first (auto) one
+  const built: DeckSpec = {
+    version: 1,
+    id: 'halves-test',
+    title: 'Halves test',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: ['s0', 's1'].map((id) => ({
+      id,
+      layout: 'blank',
+      regions: {
+        content: [
+          titleBlock(`${id}a`, `${id} one`, { order: 1 }),
+          titleBlock(`${id}b`, `${id} two`, { order: 2, trigger: 'onClick' }),
+          titleBlock(`${id}c`, `${id} three`, { order: 3, trigger: 'onClick' }),
+        ],
+      },
+    })),
+  }
+  const stepCount = computeBuildSteps(Object.values(deckSpecToDocument(built).document.pages)[0]).length
+
+  /** A host that follows `onSlideChange` (the way spro's workspace does). */
+  function Host(props: { entry?: 'start' | 'built'; jump?: (go: (i: number) => void) => void }) {
+    const [index, setIndex] = React.useState(0)
+    React.useEffect(() => props.jump?.(setIndex), [])
+    return <DeckViewer spec={built} slideIndex={index} onSlideChange={setIndex} driver={NOOP_DRIVER} clickNavigation="halves" slideEntry={props.entry} />
+  }
+
+  const viewerOf = (c: HTMLElement) => c.querySelector('[data-testid="deck-viewer"]') as HTMLElement
+  /** jsdom lays nothing out: give the viewer a 1000 px wide box to click in. */
+  function sized(el: HTMLElement) {
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 560, right: 1000, bottom: 560, x: 0, y: 0, toJSON: noop }) as DOMRect
+    return el
+  }
+
+  it('the right half advances a step, then the slide; the left half goes back', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    const start = Number(viewer.dataset.buildStep)
+    fireEvent.click(viewer, { clientX: 800 })
+    const one = Number(viewer.dataset.buildStep)
+    fireEvent.click(viewer, { clientX: 800 })
+    expect(Number(viewer.dataset.buildStep)).toBe(one + 1)
+    expect(one).toBeGreaterThan(start)
+    expect(viewer.dataset.slideIndex).toBe('0')
+    // back undoes that click only
+    fireEvent.click(viewer, { clientX: 200 })
+    expect(Number(viewer.dataset.buildStep)).toBe(one)
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+  })
+
+  it('back with nothing clicked yet on a slide leaves it (the entry step is part of arriving)', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+    fireEvent.click(viewer, { clientX: 800 }) // slide 1's entry step
+    fireEvent.click(viewer, { clientX: 100 })
+    expect(viewer.dataset.slideIndex).toBe('0')
+  })
+
+  it('going back to the previous slide under a controlling host lands on it fully built', () => {
+    mockMatchMedia(true)
+    const { container } = render(<Host />)
+    const viewer = sized(viewerOf(container))
+    for (let i = 0; i < stepCount + 1; i++) fireEvent.click(viewer, { clientX: 800 })
+    expect(viewer.dataset.slideIndex).toBe('1')
+    // back past slide 1's steps: the host follows to slide 0, which must stay built
+    for (let i = 0; i < 4 && viewer.dataset.slideIndex === '1'; i++) fireEvent.click(viewer, { clientX: 100 })
+    expect(viewer.dataset.slideIndex).toBe('0')
+    expect(viewer.dataset.buildStep).toBe(String(stepCount))
+  })
+
+  it('a host jump lands at the start by default and fully built with slideEntry="built"', () => {
+    mockMatchMedia(true)
+    let go: (i: number) => void = noop
+    const a = render(<Host jump={(g) => (go = g)} />)
+    act(() => go(1))
+    expect(viewerOf(a.container).dataset.slideIndex).toBe('1')
+    expect(Number(viewerOf(a.container).dataset.buildStep)).toBeLessThan(stepCount)
+    a.unmount()
+
+    const b = render(<Host entry="built" jump={(g) => (go = g)} />)
+    act(() => go(1))
+    expect(viewerOf(b.container).dataset.buildStep).toBe(String(stepCount))
+  })
+})
+
+describe('halves: pointer hint and swipes (spro demo T12)', () => {
+  const two: DeckSpec = {
+    version: 1,
+    id: 'swipe-test',
+    title: 'Swipe test',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: ['a', 'b'].map((id) => ({ id, layout: 'blank', regions: { content: [titleBlock(`${id}t`, `slide ${id}`)] } })),
+  }
+  const box = (el: HTMLElement) => {
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 560, right: 1000, bottom: 560, x: 0, y: 0, toJSON: noop }) as DOMRect
+    return el
+  }
+
+  it('the cursor points the way a click goes', () => {
+    const { container } = render(<DeckViewer spec={two} driver={NOOP_DRIVER} clickNavigation="halves" />)
+    const v = box(container.querySelector('[data-testid="deck-viewer"]') as HTMLElement)
+    fireEvent.mouseMove(v, { clientX: 100 })
+    expect(v.dataset.clickSide).toBe('left')
+    expect(v.style.cursor).toBe('w-resize')
+    fireEvent.mouseMove(v, { clientX: 900 })
+    expect(v.style.cursor).toBe('e-resize')
+  })
+
+  it('a swipe left goes forward, a swipe right goes back; the click a swipe ends with is ignored', () => {
+    const { container } = render(<DeckViewer spec={two} driver={NOOP_DRIVER} clickNavigation="halves" />)
+    const v = box(container.querySelector('[data-testid="deck-viewer"]') as HTMLElement)
+    fireEvent.touchStart(v, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 600, clientY: 310 }] })
+    fireEvent.click(v, { clientX: 600 })
+    expect(v.dataset.slideIndex).toBe('1')
+    fireEvent.touchStart(v, { touches: [{ clientX: 200, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 400, clientY: 300 }] })
+    expect(v.dataset.slideIndex).toBe('0')
+    // a tap is still a click
+    fireEvent.touchStart(v, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 805, clientY: 300 }] })
+    fireEvent.click(v, { clientX: 805 })
+    expect(v.dataset.slideIndex).toBe('1')
   })
 })

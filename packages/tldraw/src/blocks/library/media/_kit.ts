@@ -2,7 +2,9 @@
  * P4 media kit: the small pure helpers the `tls.m.*` image, people and brand blocks share.
  *
  * Rules baked in: an image that cannot be resolved is still emitted as an `image` node (without a
- * `url`), so both renderers draw their dashed placeholder with the alt text, never a broken box;
+ * `url`), so both renderers draw their dashed placeholder with the alt text, never a broken box; a
+ * resolved image gets a tinted backing (or, for an avatar, its initials disc) under it, shown when
+ * the image fails to load (AC4);
  * avatars degrade to initials on a disc tinted from `surfaceAlt` toward the accent; every colour is a role or a mix of roles.
  * The `image` node has no clip path, filter or blend, so shapes are limited to `radius`
  * (a circle is `radius = size / 2`).
@@ -28,10 +30,12 @@ export const side = (v: number) => (isNum(v) ? Math.max(0, v) : 0)
 /**
  * Initials of a name: the first letter of each of the first two words, upper-cased, keeping the
  * combining marks of a decomposed letter (so "Đặng Ánh" gives "ĐÁ"). One word gives one letter;
- * no letters at all gives an empty string.
+ * no letters at all gives an empty string. A leading abbreviated title ("Dr.", "Prof.") is skipped.
  */
 export function initialsOf(name: unknown): string {
-  const words = str(name).normalize('NFC').split(/\s+/).filter(Boolean)
+  const all = str(name).normalize('NFC').split(/\s+/).filter(Boolean)
+  // an abbreviated title before the name ("Dr.", "Prof.") is not an initial
+  const words = all.length > 2 && /^\p{L}{1,4}\.$/u.test(all[0]) ? all.slice(1) : all
   const out: string[] = []
   for (const w of words) {
     const m = w.match(/\p{L}\p{M}*/u)
@@ -134,24 +138,37 @@ export function avatarLeaves(ctx: LayoutContext, o: AvatarOpts): LayoutNode[] {
   }
   const radius = avatarRadius(ctx, o.shape, inner.size)
   const box = { x: inner.x, y: inner.y, width: inner.size, height: inner.size }
-  if (hasImage(ctx, o.src)) {
-    out.push(imageLeaf(ctx, o.src, o.name, box, { part: o.part, radius }))
-    return out
-  }
   // A disc tinted toward the accent: a plain surfaceAlt disc vanishes on a card that is itself surfaceAlt.
+  // AC4: with a photo the disc and initials are painted *under* it, so a photo that does not load
+  // (offline, a dead link; the DOM hides a failed <img>) leaves the initials disc, never alt text.
+  const photo = hasImage(ctx, o.src)
   const accent = ctx.resolveColor('accent').color
   const disc = tintOf(surfaceAlt, accent, 0.22)
-  out.push({ k: 'rect', part: o.part, box, fill: { type: 'solid', color: disc }, radius })
+  // (under a photo the fallback's parts are `<part>-fallback…`, so `<part>` names the photo alone)
+  const fb = photo ? `${o.part}-fallback` : o.part
+  out.push({ k: 'rect', part: fb, box, fill: { type: 'solid', color: disc }, radius })
   const letters = initialsOf(o.name)
   if (letters) {
     // overlapped avatars (`edge`) keep their letters clear of the next disc: smaller initials
     const base = ctx.resolveText('body', { size: Math.max(10, Math.round(inner.size * (o.edge ? 0.3 : 0.38))) })
     const style = { ...base, color: readableOn(accent, disc) }
-    const p = placeText(ctx, letters, style, { x: inner.x, y: inner.y, width: inner.size }, 'center', { part: `${o.part}.initials` })
+    const p = placeText(ctx, letters, style, { x: inner.x, y: inner.y, width: inner.size }, 'center', { part: `${fb}.initials` })
     const dy = Math.max(0, (inner.size - lineH(style)) / 2)
     out.push(...p.nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode))
   }
+  if (photo) out.push(imageLeaf(ctx, o.src, o.name, box, { part: o.part, radius }))
   return out
+}
+
+/**
+ * AC4 — the tinted backing under a resolved, cover-fit image: what shows when the image does not
+ * load (offline, a dead link — the DOM hides a failed <img>, the SVG `<image>` draws nothing), so a
+ * slot never shows broken alt text. Empty when the image has no URL (the renderers' placeholder).
+ */
+export function imageBacking(ctx: LayoutContext, src: unknown, box: { x: number; y: number; width: number; height: number }, part: string, radius?: number): LayoutNode[] {
+  if (!hasImage(ctx, src) || box.width <= 0 || box.height <= 0) return []
+  const fill = tintOf(ctx.resolveColor('surfaceAlt').color, ctx.resolveColor('accent').color, 0.22)
+  return [{ k: 'rect', part, box: { ...box }, fill: { type: 'solid', color: fill }, ...(radius ? { radius } : {}) }]
 }
 
 /** `alt/missing` warnings for image items: an image that is content needs a description. */

@@ -17,10 +17,12 @@
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, type CompileFinding } from './slide-compiler'
-import { resolveTokens } from './tokens'
-import type { DeckSpec } from './types'
+import { resolveTokens, type DeckTokens } from './tokens'
+import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
+import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
+import { resolveMaster } from './master-renderer'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -76,11 +78,31 @@ export function resolveDeckFrame(aspect: DeckSpec['aspect']): { width: number; h
  *   undefined` that the type doesn't allow but a non-TS caller (FastAPI, a hand-built payload)
  *   could still send.
  */
-export function resolveDeckTheme(theme: DeckSpec['theme']): DeckTheme {
+export function resolveDeckTheme(theme: DeckSpec['theme'], styleId?: string, tokens?: DeckTokens): DeckTheme {
+  return withBrandAccents(resolveBaseTheme(theme, styleId), tokens)
+}
+
+function resolveBaseTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme {
+  // AC1: a styled deck uses one of its style's palettes (the default when `theme` names none).
+  const styled = styleTheme(getDeckStyle(styleId), theme)
+  if (styled) return styled
   if (typeof theme === 'string') {
-    return BUILT_IN_DECK_THEMES.find((t) => t.id === theme) ?? DEFAULT_DECK_THEME
+    return BUILT_IN_DECK_THEMES.find((t) => t.id === theme) ?? stylePaletteById(theme) ?? DEFAULT_DECK_THEME
   }
   return activeDeckTheme(theme)
+}
+
+/**
+ * A brand colour (`tokens.color.accent` / `accent2`) is the theme's accent everywhere, not only
+ * where a block asks for the `accent` role: style chrome paints `theme:accent1` literals (swiss's
+ * block, a section bar) and the chart ramp is built from `accent1`/`accent2`, so without this a
+ * branded deck showed the palette's blue beside the brand's teal (spro demo 2026-10-11).
+ */
+function withBrandAccents(theme: DeckTheme, tokens?: DeckTokens): DeckTheme {
+  const a1 = tokens?.color?.accent
+  const a2 = tokens?.color?.accent2
+  if (!a1 && !a2) return theme
+  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}) } }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -91,6 +113,39 @@ export interface DeckDocumentResult {
   document: TDDocument
   /** Concatenated `CompileFinding`s from every slide's `compileSlide` call, in slide order. */
   findings: CompileFinding[]
+}
+
+/**
+ * AC1/AC4 — what a style master adds to one slide: the master id (`style:cover|section|content`,
+ * by role), its background (used when the slide sets none) and its blocks (mesh, grain, motifs) as
+ * locked `style:<page>:<n>` shapes with `childIndex` in (0, 1), under the content's 1..n. Shared by
+ * `deckSpecToDocument` and the editor's `Deck.addSlideFromSpec`, so both paths paint the same page.
+ * Empty when the deck has no style, the slide authors a `masterId`, or the style has no such master.
+ */
+export function styleMasterPage(
+  style: DeckStyle | undefined,
+  slideSpec: SlideSpec,
+  pageId: string,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
+  motif?: string
+): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
+  const masterId = styleMasterFor(style, slideSpec)
+  const master = masterId ? styleMasters(style, motif).find((m) => m.name === masterId) : undefined
+  if (!masterId || !master) return { shapes: [] }
+  const shapes: ComponentShape[] = []
+  // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
+  if (Object.keys(master.blocks).length) {
+    const named = { ...master, blocks: Object.fromEntries(Object.entries(master.blocks).map(([k, b]) => [k, { ...b, id: `${STYLE_MASTER_PREFIX}${k}` }])) }
+    const m = resolveMaster(masterId, { [masterId]: named }, frame, tokens)
+    const n = m?.shapes.length ?? 0
+    m?.shapes.forEach((sh, i) => {
+      const id = `${STYLE_MASTER_PREFIX}${pageId}:${i}`
+      shapes.push({ ...sh, id, childIndex: (i + 1) / (n + 1), isLocked: true })
+    })
+  }
+  return { masterId, ...(master.background ? { background: JSON.parse(JSON.stringify(master.background)) } : {}), shapes }
 }
 
 /**
@@ -105,8 +160,12 @@ export interface DeckDocumentResult {
  */
 export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   const frame = resolveDeckFrame(spec.aspect)
-  const theme = resolveDeckTheme(spec.theme)
-  const tokens = resolveTokens(theme, spec.tokens)
+  const theme = resolveDeckTheme(spec.theme, spec.style, deckSpecTokens(spec))
+  // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
+  const style = getDeckStyle(spec.style)
+  const tokens = resolveTokens(theme, deckSpecTokens(spec))
+  const masterList = styleMasters(style, spec.motif)
+  const motionStyle = spec.motionStyle ?? style?.motionStyle
   const findings: CompileFinding[] = []
 
   // Shared registry for intrinsic-height measurement during compileSlide.
@@ -118,12 +177,22 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
 
   spec.slides.forEach((slideSpec, index) => {
     const pageId = slideSpec.id
-    const result = compileSlide(slideSpec, frame, tokens, registry, { motionStyle: spec.motionStyle })
+    const result = compileSlide(slideSpec, frame, tokens, registry, {
+      motionStyle,
+      ...(style ? { blockDefaults: style.blockDefaults } : {}),
+    })
+    // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
+    // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif)
     findings.push(...result.findings)
 
+    // CMP1: shapes are top-level children of their page (`parentId` = page id). `blockToShape`
+    // defaults it to `'page'`, and `renderPageToSvg` (static export) draws only shapes whose
+    // `parentId` is the page's id — a compiled deck exported blank.
     const shapes: Record<string, ComponentShape> = {}
+    for (const sh of sm.shapes) shapes[sh.id] = { ...sh, parentId: pageId }
     for (const shape of result.shapes) {
-      shapes[shape.id] = shape
+      shapes[shape.id] = { ...shape, parentId: pageId }
     }
 
     const page: TDPage = {
@@ -133,14 +202,15 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      background: result.background,
+      background: result.background ?? sm.background,
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,
       slideSpecId: result.slideSpecId,
-      masterId: result.masterId,
+      masterId: result.masterId ?? sm.masterId,
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
+    if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     pages[pageId] = page
 
     pageStates[pageId] = {
@@ -160,12 +230,15 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     defaultPageSize: [frame.width, frame.height],
     theme,
     tokens: spec.tokens,
-    masters: spec.masters
-      ? Object.fromEntries(spec.masters.map((m) => [m.name, m]))
-      : undefined,
+    masters:
+      spec.masters || masterList.length
+        ? Object.fromEntries([...(spec.masters ?? []), ...masterList].map((m) => [m.name, m]))
+        : undefined,
   }
 
   if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
+  if (style) document.styleId = style.id
+  if (spec.motif !== undefined) document.motif = spec.motif
 
   return { document, findings }
 }

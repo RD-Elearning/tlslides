@@ -8,6 +8,7 @@
  */
 
 import type { LayoutNode, Paint, MarkerSpec } from './types'
+import { rectShadowSpec, shadowFilterSvg } from './shadow'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Gradient-def collection state                                                  */
@@ -160,10 +161,18 @@ function renderNodeInner(
       const attrs: string[] = []
       if (node.name) attrs.push(`id="${node.name}"`)
       if (node.opacity !== undefined) attrs.push(`opacity="${node.opacity}"`)
+      // LO8: a group's children are relative to its origin — the DOM renderer nests them in a
+      // positioned div. The SVG translates the group the same way (before, a group at x/y ≠ 0
+      // drew its children at the parent's origin: e.g. tls.t.statement's emphasis marks).
+      const translated = node.box.x !== 0 || node.box.y !== 0
+      if (translated) attrs.push(`transform="translate(${node.box.x} ${node.box.y})"`)
       if (node.clip) {
         const clipId = makeId(collector, `${prefix}cp`)
+        // In the group's own (translated) user space, the clip is its box at the origin.
+        const cx = translated ? 0 : node.box.x
+        const cy = translated ? 0 : node.box.y
         collector.defs.push(
-          `<clipPath id="${clipId}"><rect x="${node.box.x}" y="${node.box.y}" width="${node.box.width}" height="${node.box.height}"/></clipPath>`,
+          `<clipPath id="${clipId}"><rect x="${cx}" y="${cy}" width="${node.box.width}" height="${node.box.height}"/></clipPath>`,
         )
         attrs.push(`clip-path="url(#${clipId})"`)
       }
@@ -197,9 +206,17 @@ function renderNodeInner(
       if (node.stroke) {
         styles.push(`stroke:${node.stroke.color}`)
         styles.push(`stroke-width:${node.stroke.width}`)
+        if (node.stroke.dash && node.stroke.dash.length > 0) styles.push(`stroke-dasharray:${node.stroke.dash.join(' ')}`)
       }
       if (styles.length > 0) {
         elAttrs.push(styleAttr(styles.join(';')))
+      }
+      // AC4: drop shadow as an feDropShadow filter (DOM: box-shadow).
+      const shadow = rectShadowSpec(node.shadow, node.stroke?.color)
+      if (shadow) {
+        const fid = makeId(collector, `${prefix}sh`)
+        collector.defs.push(shadowFilterSvg(fid, shadow))
+        elAttrs.push(`filter="url(#${fid})"`)
       }
       return `<rect ${elAttrs.join(' ')}/>`
     }
@@ -217,6 +234,7 @@ function renderNodeInner(
       if (node.stroke) {
         styles.push(`stroke:${node.stroke.color}`)
         styles.push(`stroke-width:${node.stroke.width}`)
+        if (node.stroke.dash && node.stroke.dash.length > 0) styles.push(`stroke-dasharray:${node.stroke.dash.join(' ')}`)
       }
       return `<path d="${node.d}" ${styleAttr(styles.join(';'))}/>`
     }
@@ -304,6 +322,9 @@ function renderNodeInner(
         styles.push('fill:none')
         styles.push(`stroke:${node.fill}`)
         styles.push(`stroke-width:${node.strokeWidth}`)
+        // Lucide and Tabler outlines are drawn for round caps (a dot is `h.01`)
+        styles.push('stroke-linecap:round')
+        styles.push('stroke-linejoin:round')
       } else {
         styles.push(`fill:${node.fill}`)
       }
@@ -318,7 +339,9 @@ function renderNodeInner(
 
     /* ── line ──────────────────────────────────────────────────────────────── */
     case 'line': {
-      const lineStyles = `stroke:${node.stroke.color};stroke-width:${node.stroke.width}`
+      const lineStyles =
+        `stroke:${node.stroke.color};stroke-width:${node.stroke.width}` +
+        (node.stroke.dash && node.stroke.dash.length > 0 ? `;stroke-dasharray:${node.stroke.dash.join(' ')}` : '')
       let markerAttrs = ''
       if (node.marker) {
         const id = markerId(node.marker, prefix)
@@ -338,7 +361,12 @@ function renderNodeInner(
       // If the node carries a poster subtree, render that instead of the placeholder.
       // R2 supplies posters; until then, the dashed placeholder is the fallback.
       if (node.poster) {
-        return renderNodeInner(node.poster, collector, prefix)
+        // LO8: the poster is laid out in the host's own box (DOM: the template inside the host
+        // div), so a host placed at x/y ≠ 0 (an html block inside a composite) translates it.
+        const inner = renderNodeInner(node.poster, collector, prefix)
+        return node.box.x !== 0 || node.box.y !== 0
+          ? `<g transform="translate(${node.box.x} ${node.box.y})">${inner}</g>`
+          : inner
       }
       return (
         `<rect x="${node.box.x}" y="${node.box.y}" ` +

@@ -57,7 +57,7 @@ const SCRIMS = ['medium', 'strong'] as const
 const MIN_ALPHA = { medium: 0.55, strong: 0.75 } as const
 
 /** Parse `rgba(r,g,b,a)` or a hex colour into black-or-colour + alpha. */
-function parseScrim(c: unknown): { rgb: [number, number, number]; a: number } {
+export function parseScrim(c: unknown): { rgb: [number, number, number]; a: number } {
   if (typeof c === 'string') {
     const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/)
     if (m) return { rgb: [Number(m[1]), Number(m[2]), Number(m[3])], a: m[4] === undefined ? 1 : Math.max(0, Math.min(1, Number(m[4]))) }

@@ -40,6 +40,7 @@ import type {
   ResolvedColor,
   ResolvedTokens,
   SpaceToken,
+  StyleSurface,
   SurfaceContext,
   TypeScaleValue,
   TypeToken,
@@ -91,6 +92,13 @@ export interface DeckTokens {
   /** Shifts every internal spacing gap one step (`applyDensity` in `scales.ts`). Defaults to
    *  `'default'` (no shift) when absent. */
   density?: 'compact' | 'default' | 'roomy'
+  /** AC4 — the deck's card surface (ai-curation §3.2): how card-like blocks paint their cards
+   *  (`cardPaint` in `library/composite/_kit.ts`). A style supplies it (`DeckStyle.surface`);
+   *  absent = every block keeps its own card look. Missing fields default to `filled`, `none`, 0. */
+  surface?: Partial<StyleSurface>
+  /** The deck's language for numbers (`'vi'`, `'en'`, …): data blocks format "4,2 triệu",
+   *  "12,4%", "1.240" for `vi`. Absent = English formatting, as before. */
+  locale?: string
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -199,8 +207,19 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
   // Resolve the deck's primary font family from the theme's heading/body family fields.
   // Falls back to the built-in default when the theme doesn't set one.
   const fontFamily = theme.fonts?.headingFamily ?? theme.fonts?.bodyFamily ?? DEFAULT_FONT_FAMILY
+  // AC3 (F4): a serif or display heading face with a sans body — each type token picks its family.
+  const headingFamily = fontFamily
+  const bodyFamily = theme.fonts?.bodyFamily ?? theme.fonts?.headingFamily ?? DEFAULT_FONT_FAMILY
 
-  return { color, categorical, space, radius, type, elevation, motion, density, fontFamily }
+  const surface: StyleSurface | undefined = tokens?.surface
+    ? { card: tokens.surface.card ?? 'filled', stroke: tokens.surface.stroke ?? 'none', shadow: tokens.surface.shadow ?? 0, ...(tokens.surface.render ? { render: { ...tokens.surface.render } } : {}) }
+    : undefined
+
+  return {
+    color, categorical, space, radius, type, elevation, motion, density, fontFamily, headingFamily, bodyFamily,
+    ...(surface ? { surface } : {}),
+    ...(tokens?.locale ? { locale: tokens.locale } : {}),
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -215,6 +234,16 @@ export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTo
 // under-specification rather than silently picking one reading.)
 const TEXT_CONTRAST_FLOOR = 4.5
 const LINE_CONTRAST_FLOOR = 1.4
+/**
+ * AC8.5: the floor for `text` when the theme's text colour sits on the wrong side of the surface
+ * (dark ink on a dark page — consulting's navy section page). The 4.5 floor then lands on a pale
+ * mid-tone that passes but reads washed out; a flipped text role goes to a clear light (or dark)
+ * ink instead (when one reaches 7:1 on that surface; else the 4.5 solution as before). Muted text
+ * and lines keep their floors (they are meant to recede).
+ * AC8.6: first 12:1 (near-white on navy: the 7:1 ink still read as a pale lavender under a
+ * display section title), then 7:1, then the 4.5 floor.
+ */
+const TEXT_FLIP_FLOORS = [12, 7] as const
 
 const COLOR_ROLES: readonly ColorRole[] = [
   'surface',
@@ -231,7 +260,7 @@ const COLOR_ROLES: readonly ColorRole[] = [
   'scrim',
 ]
 
-function isColorRole(value: string): value is ColorRole {
+export function isColorRole(value: string): value is ColorRole {
   return (COLOR_ROLES as readonly string[]).includes(value)
 }
 
@@ -269,8 +298,28 @@ export function resolveColor(
 
   if (role === 'text' || role === 'textMuted' || role === 'line') {
     const floor = role === 'line' ? LINE_CONTRAST_FLOOR : TEXT_CONTRAST_FLOOR
-    if (!tryHexToRgb(base)) return { color: base, ratio: 1, ok: false }
-    return solveForContrast(base, ctx.luminance, floor)
+    const rgb = tryHexToRgb(base)
+    if (!rgb) return { color: base, ratio: 1, ok: false }
+    const baseLum = relativeLuminance(rgb)
+    // CMP1: over a photo (`overImage`) the luminance is unknowable; foreground solves *light*, as
+    // on a dark scrim — text on a photo reads light, and the layout report asks for the scrim.
+    const lum = ctx.overImage ? OVER_IMAGE_TEXT_LUMINANCE : ctx.luminance
+    if (ctx.overImage && role === 'text') {
+      // Near-white on a photo (18:1 against black ≈ #EEE), not the barely-clear grey a plain
+      // flip would pick: a photo is busier than a flat dark fill.
+      for (const f of OVER_IMAGE_TEXT_FLOORS) {
+        const clear = solveForContrast(base, lum, f)
+        if (clear.ok) return clear
+      }
+    }
+    const flipped = role === 'text' && contrastRatio(baseLum, lum) < floor && (baseLum < 0.18) === (lum < 0.18)
+    if (flipped) {
+      for (const f of TEXT_FLIP_FLOORS) {
+        const clear = solveForContrast(base, lum, f)
+        if (clear.ok) return clear
+      }
+    }
+    return solveForContrast(base, lum, floor)
   }
 
   const rgb = tryHexToRgb(base)
@@ -288,6 +337,9 @@ export function resolveColor(
 // knowable without decoding it") — a plain mid-grey that never reads as an alarming colour and
 // never masquerades as a real measurement.
 const NEUTRAL_SURFACE_COLOR = '#9AA1AB'
+/** CMP1: the luminance foreground roles solve against over a photo — that of a black scrim. */
+const OVER_IMAGE_TEXT_LUMINANCE = 0
+const OVER_IMAGE_TEXT_FLOORS = [18, 12]
 const NEUTRAL_IMAGE_LUMINANCE = 0.5
 
 function solidSurface(color: string): SurfaceContext {
@@ -404,6 +456,19 @@ function paintLuminanceAt(paint: Paint, t: number): number {
 }
 
 /**
+ * The surface of a block that sits on a photo (an image slide background, or — CMP1 — a region
+ * whose layered backdrop is an image): luminance is unknowable, so a neutral mid value and
+ * `overImage: true` (a contrast check then asks for a scrim rather than trusting the ink).
+ */
+export function imageSurface(): SurfaceContext {
+  return {
+    behind: { type: 'solid', color: NEUTRAL_SURFACE_COLOR },
+    luminance: NEUTRAL_IMAGE_LUMINANCE,
+    overImage: true,
+  }
+}
+
+/**
  * Build a `SurfaceContext` from a `TDPage.background`, sampled at `box` (the block's own box, in
  * slide units) within a page of size `pageSize`. For a gradient this samples luminance **at
  * `box`**, not the slide centre — the fix for the mono-grid/teal-gradient bug. For an image
@@ -426,20 +491,14 @@ export function surfaceFromBackground(
   const resolved: SlideBackground =
     typeof background === 'string' ? { type: 'solid', color: background } : background
 
-  if (resolved.type === 'image') {
-    return {
-      behind: { type: 'solid', color: NEUTRAL_SURFACE_COLOR },
-      luminance: NEUTRAL_IMAGE_LUMINANCE,
-      overImage: true,
-    }
-  }
+  if (resolved.type === 'image') return imageSurface()
 
   const paint = paintFromBackground(resolved, theme)
   if (paint.type === 'solid') return solidSurface(paint.color)
 
   const { x, y } = normalizedCenter(box, pageSize[0], pageSize[1])
   const t = projectOntoGradient(paint, x, y)
-  return { behind: paint, luminance: paintLuminanceAt(paint, t), overImage: false }
+  return { behind: paint, luminance: paintLuminanceAt(paint, t), overImage: false, place: { x: box.x, y: box.y, page: [pageSize[0], pageSize[1]] } }
 }
 
 /**

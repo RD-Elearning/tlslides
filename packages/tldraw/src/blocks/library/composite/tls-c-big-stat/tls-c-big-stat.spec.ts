@@ -15,7 +15,7 @@
 
 import { tlsCBigStat } from './index'
 import { makeCtx, SIZES, assertValidNode } from '../../text/test-helpers'
-import { formatValue } from './schema'
+import { BIG_STAT_LARGE, BIG_STAT_SPLIT_LABEL, formatValue, isLargeTier } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { validateDeckSpec } from '../../../validate-deck-spec'
@@ -487,11 +487,12 @@ describe('tls.c.big-stat', () => {
   describe('size derived from defaults', () => {
     it('size.preferred is set from the poster of defaults, not by hand', () => {
       const c = ctx({ width: 1920, height: 1080 })
-      const p = poster(tlsCBigStat.defaults as BigStatProps, c)
+      // AC2: in its tallest look (the accent variant's rule sits above the number).
+      const p = poster({ ...(tlsCBigStat.defaults as BigStatProps), variant: 'accent' }, c)
       const posterHeight = p.box.height
 
       expect(tlsCBigStat.size.preferred[0]).toBe(1920)
-      expect(tlsCBigStat.size.preferred[1]).toBe(posterHeight)
+      expect(tlsCBigStat.size.preferred[1]).toBe(Math.ceil(posterHeight))
     })
   })
 
@@ -558,5 +559,160 @@ describe('RV04 — example fits its box (review G04)', () => {
     tlsCBigStat.html!.animate!(root, { driver: driver as any, gsap: { timeline: () => { throw new Error('no timeline in subtle') } }, timing, reducedMotion: false, style: 'subtle', onComplete: done })
     expect(played).toHaveLength(3)
     expect(root.querySelector('[data-part=value]')!.textContent).toBe('$4.2M')
+  })
+})
+
+describe('AC2 — look knobs (variant, align)', () => {
+  const DEF = tlsCBigStat
+  const leaves = (n: LayoutNode, ox = 0, oy = 0, out: Array<{ x: number; y: number; w: number; h: number; part?: string; k: string }> = []) => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: (n as any).part, k: n.k })
+    if (n.k === 'group') for (const c of n.children) leaves(c, x, y, out)
+    return out
+  }
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['variant: accent', { variant: 'accent' }],
+    ['variant: split', { variant: 'split' }],
+    ['align: center', { align: 'center' }],
+    ['accent + center', { variant: 'accent', align: 'center' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.variant.type as any).values).toEqual(['plain', 'accent', 'split'])
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...props, ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('split puts the label beside the number (same column in template and poster); narrow boxes stack', () => {
+    const c = ctx({ width: 1728, height: 600 })
+    const node = poster({ ...props, variant: 'split' }, c)
+    const ls = leaves(node)
+    const value = ls.find((l) => l.part === 'value')!
+    const label = ls.find((l) => l.part === 'label')!
+    expect(label.x).toBeGreaterThan(value.x + value.w)
+    // The number is right-aligned against the centre line; the label column starts past the gap.
+    const valueW = label.x - 48
+    expect(valueW).toBeGreaterThanOrEqual((1728 - 48) / 2)
+    expect(Math.abs(value.x + value.w - valueW)).toBeLessThan(2)
+    // The live host passes the poster (LO7); the template paints its geometry.
+    const html = template({ ...props, variant: 'split' }, { ...tplCtx(c), poster: node } as any)
+    expect(html).toContain(`margin-left:48px;`)
+    expect(html).toContain(`width:${valueW}px;`)
+    expect(html).toContain('text-align:right;')
+    const narrow = leaves(poster({ ...props, variant: 'split' }, ctx({ width: 520, height: 400 })))
+    expect(narrow.find((l) => l.part === 'label')!.x).toBe(0)
+  })
+
+  it('center centres every line and the accent rule; accent paints the number in the accent colour', () => {
+    const c = ctx({ width: 1200, height: 600 })
+    const node = poster({ ...props, variant: 'accent', align: 'center' }, c)
+    const ls = leaves(node)
+    const value = ls.find((l) => l.part === 'value')!
+    expect(Math.abs(value.x + value.w / 2 - 600)).toBeLessThan(2)
+    const rule = ls.find((l) => l.k === 'rect' && l.w === 96)!
+    expect(rule.x).toBeCloseTo(552, 0)
+    const html = template({ ...props, variant: 'accent', align: 'center' }, tplCtx(c) as any)
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('color:var(--tls-accent)')
+  })
+
+  it('defaults keep the plain start look (no rule, no centring)', () => {
+    const html = template(props, tplCtx(ctx({ width: 1200, height: 600 })) as any)
+    expect(html).not.toContain('text-align:center')
+    expect(html).not.toContain('width:96px')
+  })
+})
+
+describe('AC2 lead review — the number grows with the box (large tier)', () => {
+  const DEF = tlsCBigStat
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const textLeaf = (n: LayoutNode, part: string): Extract<LayoutNode, { k: 'text' }> | undefined => {
+    if (n.k === 'text' && n.part === part) return n
+    if (n.k === 'group') for (const c of n.children) { const t = textLeaf(c, part); if (t) return t }
+    return undefined
+  }
+  const LOOKS: Array<[string, Record<string, unknown>]> = [
+    ['plain', {}],
+    ['accent + center', { variant: 'accent', align: 'center' }],
+    ['split', { variant: 'split' }],
+  ]
+
+  for (const [name, knobs] of LOOKS) {
+    it(`${name}: a full-slide region paints a ~2x number with the label at lead; laid out again at its own height it keeps that size`, () => {
+      const c = ctx({ width: 1728, height: 888 })
+      const display = c.tokens.type.display.size
+      const node = poster({ ...props, ...knobs }, c)
+      const value = textLeaf(node, 'value')!
+      expect(value.style.size).toBeGreaterThanOrEqual(Math.min(display * 2, 280))
+      expect(value.style.size).toBeLessThanOrEqual(BIG_STAT_LARGE.maxSize)
+      // AC8.6: beside the number (split) the label takes the largest of title/heading/subheading
+      // that wraps without an orphan; stacked, it stays at lead.
+      const label = textLeaf(node, 'label')!.style.size
+      if (name === 'split') expect(BIG_STAT_SPLIT_LABEL.ladder.map((t) => c.tokens.type[t].size)).toContain(label)
+      else expect(label).toBe(c.tokens.type.lead.size)
+      expect(node.box.height).toBeLessThanOrEqual(888)
+      // The live host lays the block out again in a box of its content height (rounded up).
+      const again = poster({ ...props, ...knobs }, ctx({ width: 1728, height: Math.ceil(node.box.height) }))
+      expect(textLeaf(again, 'value')!.style.size).toBe(value.style.size)
+      expect(textLeaf(again, 'label')!.style.size).toBe(label)
+      expect(again.box.height).toBe(node.box.height)
+      // The template paints the poster's size and the large gap.
+      const html = template({ ...props, ...knobs }, { ...tplCtx(c), poster: node } as any)
+      expect(html).toContain(`font-size:${value.style.size}px`)
+      if (name !== 'split') expect(html).toContain(`margin-bottom:${BIG_STAT_LARGE.valueGap}px`)
+    })
+  }
+
+  it('a short box keeps the compact tier (display number, body label) exactly as before', () => {
+    const [w, h] = DEF.size.min
+    const c = ctx({ width: w, height: h })
+    const node = poster(props, c)
+    expect(textLeaf(node, 'value')!.style.size).toBe(c.tokens.type.display.size)
+    expect(textLeaf(node, 'label')!.style.size).toBe(c.tokens.type.body.size)
+    expect(isLargeTier(c.tokens.type.display.size, c.tokens.type.display.size)).toBe(false)
+  })
+
+  it('the large number never wraps: a tall box sizes a long number by the width', () => {
+    const c = ctx({ width: 1400, height: 900 })
+    const node = poster({ ...props, value: 123456789, format: 'plain' }, c)
+    const value = textLeaf(node, 'value')!
+    expect(isLargeTier(value.style.size, c.tokens.type.display.size)).toBe(true)
+    expect(value.lines).toHaveLength(1)
+    expect(value.lines[0].width).toBeLessThanOrEqual(1400)
+  })
+})
+
+describe('AC8.6 — the split label balances a large number', () => {
+  const props = { ...(tlsCBigStat.defaults as BigStatProps), label: 'Net retention reached 118%', context: 'Existing accounts keep expanding after year one', variant: 'split' } as BigStatProps
+  const leaf = (n: LayoutNode, part: string): any => (n.k === 'text' && n.part === part ? n : n.k === 'group' ? n.children.map((c) => leaf(c, part)).find(Boolean) : undefined)
+
+  it('in a full-slide box the label is larger than lead, with no one-word last line', () => {
+    const c = ctx({ width: 1728, height: 888 })
+    const node = poster(props, c)
+    const label = leaf(node, 'label')
+    expect(label.style.size).toBeGreaterThan(c.tokens.type.lead.size)
+    const words = label.lines[label.lines.length - 1].text.trim().split(/\s+/).length
+    expect(label.lines.length === 1 || words >= 2).toBe(true)
+    expect(node.box.height).toBeLessThanOrEqual(888)
+  })
+
+  it('a compact split (short box) keeps the body label', () => {
+    const c = ctx({ width: 900, height: 300 })
+    expect(leaf(poster(props, c), 'label').style.size).toBe(c.tokens.type.body.size)
   })
 })

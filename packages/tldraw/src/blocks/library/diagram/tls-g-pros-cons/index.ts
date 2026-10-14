@@ -25,8 +25,8 @@ export const tlsGProsCons: BlockDefinition = {
       id: 'b_pros_cons',
       type: 'tls.g.pros-cons',
       props: {
-        pros: ['Faster launch', 'Lower cost'],
-        cons: ['Less control'],
+        pros: ['Live in weeks, not quarters', 'Lower two-year cost', 'Vendor carries upkeep'],
+        cons: ['Less control over the roadmap', 'Data leaves our cloud'],
         verdict: 'Worth it if speed matters most.',
       },
     },

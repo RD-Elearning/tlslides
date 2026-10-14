@@ -34,6 +34,8 @@ import { tlsCKineticTitle } from './tls-c-kinetic-title'
 import { tlsCStatSpotlight } from './tls-c-stat-spotlight'
 import { tlsCJourney } from './tls-c-journey'
 import { tlsCFeatureReveal } from './tls-c-feature-reveal'
+import { tlsCBento } from './tls-c-bento'
+import { tlsCImageFull } from './tls-c-image-full'
 
 /** All built-in composite block definitions. */
 export const compositeBlocks: BlockDefinition[] = [
@@ -67,6 +69,8 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCStatSpotlight,
   tlsCJourney,
   tlsCFeatureReveal,
+  tlsCBento,
+  tlsCImageFull,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -95,3 +99,5 @@ export { tlsCCaseStudy } from './tls-c-case-study'
 export { tlsCProblemSolution } from './tls-c-problem-solution'
 export { tlsCContact } from './tls-c-contact'
 export { tlsCQuoteImage } from './tls-c-quote-image'
+export { tlsCBento } from './tls-c-bento'
+export { tlsCImageFull } from './tls-c-image-full'

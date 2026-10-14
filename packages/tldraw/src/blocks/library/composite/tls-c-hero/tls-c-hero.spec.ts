@@ -273,8 +273,9 @@ describe('tls.c.hero', () => {
 
       // The preferred width should match the reference frame width
       expect(tlsCHero.size.preferred[0]).toBe(1920)
-      // The preferred height should equal the poster's measured height
-      expect(tlsCHero.size.preferred[1]).toBe(posterHeight)
+      // The preferred height is the poster's measured height, never below size.min (catalog
+      // contract min ≤ preferred; LO6: with true widths the default poster is 317 < min 472).
+      expect(tlsCHero.size.preferred[1]).toBe(Math.max(posterHeight, tlsCHero.size.min[1]))
       // It should not be the old hardcoded value of 600
       expect(tlsCHero.size.preferred[1]).not.toBe(600)
     })
@@ -550,18 +551,29 @@ describe('tls.c.hero', () => {
       expect(out).toMatch(/^<div style="display:flex;flex-direction:column;justify-content:center;height:100%;">/)
     })
 
-    it('poster output is unchanged regardless of variant', () => {
+    it('poster output is unchanged by classic/gradient-sweep; split paints its two halves', () => {
       const c = ctx({ width: 1920, height: 1080 })
 
-      // Poster does not read variant — it produces the same LayoutNode tree
+      // classic and gradient-sweep lay the text out identically — same LayoutNode tree
       const pNoVariant = poster(tlsCHero.defaults as any, c)
       const pClassic = poster({ ...tlsCHero.defaults, variant: 'classic' } as any, c)
       const pSplit = poster({ ...tlsCHero.defaults, variant: 'split' } as any, c)
       const pGrad = poster({ ...tlsCHero.defaults, variant: 'gradient-sweep' } as any, c)
 
       expect(pClassic).toEqual(pNoVariant)
-      expect(pSplit).toEqual(pNoVariant)
       expect(pGrad).toEqual(pNoVariant)
+
+      // LO7: the split template paints the title as two blocks (each half starts a line), so the
+      // poster does too — one `title` group with the two halves, nothing else changes.
+      const titleOf = (p: any) => p.children.find((n: any) => n.part === 'title')
+      const split = titleOf(pSplit)
+      expect(split.k).toBe('group')
+      expect(split.children).toHaveLength(2)
+      const halves = split.children.map((n: any) => n.lines.map((l: any) => l.text).join('').trim())
+      expect(halves.join(' ')).toBe(richTextToPlain(tlsCHero.defaults.title as any).trim())
+      const others = (p: any) => p.children.filter((n: any) => n.part && n.part !== 'title').map((n: any) => n.part)
+      expect(others(pSplit)).toEqual(others(pNoVariant))
+      expect(pSplit.box.height).toBeGreaterThanOrEqual(pNoVariant.box.height)
 
       // Deep copy assertion: not.toBe ensures no reference aliasing
       expect(pClassic).not.toBe(pNoVariant)
@@ -986,3 +998,89 @@ function collectTextNodes(node: LayoutNode): Array<{ part?: string; lines: any[]
   walk(node)
   return result
 }
+
+describe('AC2 — look knobs (align, decoration)', () => {
+  const DEF = tlsCHero
+  const leaves = (n: LayoutNode, ox = 0, oy = 0, out: Array<{ x: number; y: number; w: number; h: number; part?: string; k: string }> = []) => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    // A text leaf is measured by its ink (the line's width), not its box: alignText keeps a few % of
+    // wrap slack on the right of a small centred label (AC8), and the line still starts at box.x.
+    const w = n.k === 'text' && (n as any).lines?.length === 1 && (n as any).lines[0].width ? Math.min(n.box.width, (n as any).lines[0].width) : n.box.width
+    if (n.k !== 'group') out.push({ x, y, w, h: n.box.height, part: (n as any).part, k: n.k })
+    if (n.k === 'group') for (const c of n.children) leaves(c, x, y, out)
+    return out
+  }
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any), cta: 'Read the plan' }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['align: center', { align: 'center' }],
+    ['decoration: rule', { decoration: 'rule' }],
+    ['center + rule + split', { align: 'center', decoration: 'rule', variant: 'split' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+    expect((DEF.schema.decoration.type as any).values).toEqual(['none', 'rule'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...(DEF.defaults as any), ...(DEF.describe!.example.props as any), ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('center centres the lines, the CTA pill and the rule, in template and poster', () => {
+    const c = ctx({ width: 1600, height: 900 })
+    const ls = leaves(poster({ ...props, align: 'center', decoration: 'rule' }, c))
+    const mid = (l: { x: number; w: number }) => l.x + l.w / 2
+    for (const part of ['kicker', 'title', 'subtitle', 'cta-bg']) {
+      const l = ls.find((x) => x.part === part)!
+      expect([part, Math.abs(mid(l) - 800) < 2]).toEqual([part, true])
+    }
+    const rule = ls.find((l) => l.k === 'rect' && l.w === 96)!
+    expect(mid(rule)).toBeCloseTo(800, 0)
+    const html = template({ ...props, align: 'center', decoration: 'rule' }, tplCtx(c) as any)
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('align-self:center')
+    expect(html).toContain('width:96px;height:8px;')
+  })
+
+  it('defaults keep the start look with no rule', () => {
+    const html = template(props, tplCtx(ctx({ width: 1600, height: 900 })) as any)
+    expect(html).not.toContain('text-align:center')
+    expect(html).not.toContain('width:96px')
+  })
+})
+
+describe('AC2 lead review — the CTA label reads on the accent pill', () => {
+  const lum = (hex: string) => {
+    const n = parseInt(hex.slice(1, 7), 16)
+    const ch = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
+    return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255)
+  }
+  const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05) }
+
+  it('poster paints the label in the on-accent colour (>= 3:1 on the pill), the template uses the same role', () => {
+    const c = ctx({ width: 1600, height: 900 })
+    const props = { ...(tlsCHero.defaults as any), cta: 'Read the plan' }
+    const node = poster(props, c)
+    const all = (n: LayoutNode): LayoutNode[] => (n.k === 'group' ? [n, ...n.children.flatMap(all)] : [n])
+    const bg = all(node).find((n) => n.part === 'cta-bg') as Extract<LayoutNode, { k: 'rect' }>
+    const label = all(node).find((n) => n.part === 'cta') as Extract<LayoutNode, { k: 'text' }>
+    const fill = (bg.fill as { color: string }).color
+    expect(ratio(label.style.color as string, fill)).toBeGreaterThanOrEqual(3)
+    expect([c.resolveColor('surface').color, c.resolveColor('text').color]).toContain(label.style.color)
+    // The template paints the poster's colour; without a poster the surface colour variable.
+    const live = template(props, { ...tplCtx(c), poster: node } as any)
+    expect(live).toMatch(new RegExp(`data-part="cta" style="[^"]*color:${label.style.color};`))
+    expect(template(props, tplCtx(c) as any)).toMatch(/data-part="cta" style="[^"]*color:var\(--tls-surface-color\);/)
+  })
+})

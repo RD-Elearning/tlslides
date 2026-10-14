@@ -9,6 +9,7 @@
  */
 
 import * as React from 'react'
+import { rectShadowSpec, shadowCss } from './shadow'
 import type {
   LayoutNode,
   Paint,
@@ -26,6 +27,7 @@ import type { BlockDefinition } from './types'
 import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
 import { HostRegistryContext } from '../hooks/useHostRegistry'
 import { useBlockRegistry } from '../hooks/useBlockRegistry'
+import { posterTextSignature } from './html-block'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Host layout context — carries tokens/surface/props for host nodes               */
@@ -51,6 +53,11 @@ export const HostLayoutContext = React.createContext<HostLayoutContextValue | un
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /** Convert a `Paint` to inline CSS properties (background / backgroundImage). */
+/** AC4: hides an <img> that failed to load (its alt text would otherwise paint). */
+function hideBrokenImage(e: React.SyntheticEvent<HTMLImageElement>): void {
+  e.currentTarget.style.visibility = 'hidden'
+}
+
 export function paintToCSS(paint: Paint): React.CSSProperties {
   switch (paint.type) {
     case 'solid':
@@ -65,8 +72,10 @@ export function paintToCSS(paint: Paint): React.CSSProperties {
       const stops = paint.stops
         .map((s) => `${s.color} ${s.at * 100}%`)
         .join(', ')
+      // AC4: the SVG renderer's `<radialGradient>` (objectBoundingBox, r = 50%) is an ellipse with
+      // radii half the box's width and height; CSS `circle` (farthest-corner) was ~1.4x larger.
       return {
-        background: `radial-gradient(circle at ${paint.cx * 100}% ${paint.cy * 100}%, ${stops})`,
+        background: `radial-gradient(ellipse 50% 50% at ${paint.cx * 100}% ${paint.cy * 100}%, ${stops})`,
       }
     }
   }
@@ -75,7 +84,8 @@ export function paintToCSS(paint: Paint): React.CSSProperties {
 /** Convert a `Stroke` to inline CSS border properties. */
 function strokeToCSS(stroke: Stroke): React.CSSProperties {
   return {
-    borderStyle: 'solid',
+    // CMP3: a dashed border (CSS cannot set the pattern; the SVG renderer draws the exact dash).
+    borderStyle: stroke.dash && stroke.dash.length > 0 ? 'dashed' : 'solid',
     borderWidth: `${stroke.width}px`,
     borderColor: stroke.color,
   }
@@ -130,6 +140,8 @@ export const HOST_CSS_VARS = [
   '--tls-accent',
   '--tls-text-muted',
   '--tls-font-family',
+  '--tls-font-heading',
+  '--tls-font-body',
   '--tls-type-display',
   '--tls-type-title',
   '--tls-type-heading',
@@ -159,7 +171,7 @@ function hostCssVarStyle(
     surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
   } else if (behind.type === 'radialGradient') {
     const stops = behind.stops.map((s) => `${s.color} ${s.at * 100}%`).join(', ')
-    surfaceCss = `radial-gradient(circle at ${behind.cx * 100}% ${behind.cy * 100}%, ${stops})`
+    surfaceCss = `radial-gradient(ellipse 50% 50% at ${behind.cx * 100}% ${behind.cy * 100}%, ${stops})`
     surfaceColor = behind.stops[0]?.color ?? tokens.color.surface
   } else {
     surfaceCss = tokens.color.surface
@@ -172,6 +184,9 @@ function hostCssVarStyle(
     '--tls-accent': tokens.color.accent,
     '--tls-text-muted': tokens.color.textMuted,
     '--tls-font-family': tokens.fontFamily,
+    // AC3: the heading / body pair for html templates (`--tls-font-family` stays = heading).
+    '--tls-font-heading': tokens.headingFamily ?? tokens.fontFamily,
+    '--tls-font-body': tokens.bodyFamily ?? tokens.fontFamily,
     '--tls-type-display': `${tokens.type.display.size}px`,
     '--tls-type-title': `${tokens.type.title.size}px`,
     '--tls-type-heading': `${tokens.type.heading.size}px`,
@@ -220,6 +235,7 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
         },
         box: hctx.box,
         tokens: hctx.tokens,
+        ...(hctx.poster ? { poster: hctx.poster } : {}),
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
@@ -260,6 +276,7 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
         },
         box: hctx.box,
         tokens: hctx.tokens,
+        ...(hctx.poster ? { poster: hctx.poster } : {}),
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
@@ -293,6 +310,8 @@ interface HostMountProps {
   props?: Record<string, unknown>
   /** Per-instance CSS custom property overrides. Merged into the inline style after hostCssVarStyle. */
   vars?: Record<string, string>
+  /** LO7: the host node's poster (same layout pass), handed to html templates. */
+  poster?: LayoutNode
 }
 
 /**
@@ -318,6 +337,7 @@ const HostMount = React.memo(function HostMount({
   part,
   props: nodeProps,
   vars: nodeVars,
+  poster,
 }: HostMountProps) {
   const registry = React.useContext(HostRegistryContext)
   const blockRegistry = useBlockRegistry()
@@ -347,7 +367,8 @@ const HostMount = React.memo(function HostMount({
     surface: surface as SurfaceContext,
     props: hostProps,
     headless,
-  }), [box, tokens, surface, hostProps, headless])
+    ...(poster ? { poster } : {}),
+  }), [box, tokens, surface, hostProps, headless, poster])
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current
@@ -400,7 +421,9 @@ const HostMount = React.memo(function HostMount({
 
     const propsJson = JSON.stringify(hostProps)
     const varsJson = JSON.stringify(nodeVars ?? {})
-    const boxSize = `${box.width}x${box.height}`
+    // LO7: a template that paints the poster's lines must re-render when they change (e.g. a
+    // theme with another type scale), even if props and box did not.
+    const boxSize = `${box.width}x${box.height}|${posterTextSignature(poster)}`
 
     // Skip if nothing structurally changed
     if (
@@ -425,7 +448,7 @@ const HostMount = React.memo(function HostMount({
     prevBoxSizeRef.current = boxSize
 
     renderer.update(root, ctx)
-  }, [hostProps, nodeVars, box.width, box.height])
+  }, [hostProps, nodeVars, box.width, box.height, poster])
 
   const hasRenderer = (registry?.has(render) ?? false) || (() => {
     if (!blockRegistry) return false
@@ -472,6 +495,9 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           key={part ?? undefined}
           style={groupStyle}
           {...(part ? { 'data-part': part } : {})}
+          // CMP3: a nested block's wrapper (CMP1 X2) — nested motion finds the child's recipe by it.
+          {...(node.blockId !== undefined ? { 'data-nested-id': node.blockId } : {})}
+          {...(node.type !== undefined ? { 'data-nested-type': node.type } : {})}
         >
           {node.children.map((child, i) => (
             // The key must include the index. `part` alone is not unique: a block is free to
@@ -489,11 +515,13 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
     }
 
     case 'rect': {
+      const shadow = rectShadowSpec(node.shadow, node.stroke?.color)
       const rectStyle: React.CSSProperties = {
         ...pos,
         ...(node.fill ? paintToCSS(node.fill) : {}),
         ...(node.stroke ? strokeToCSS(node.stroke) : {}),
         borderRadius: radiusToCSS(node.radius),
+        ...(shadow ? { boxShadow: shadowCss(shadow) } : {}),
       }
       return (
         <div
@@ -526,7 +554,11 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               fill: fillCSS as string,
               ...(node.stroke
-                ? { stroke: node.stroke.color, strokeWidth: node.stroke.width }
+                ? {
+                    stroke: node.stroke.color,
+                    strokeWidth: node.stroke.width,
+                    ...(node.stroke.dash && node.stroke.dash.length > 0 ? { strokeDasharray: node.stroke.dash.join(' ') } : {}),
+                  }
                 : {}),
             }}
           />
@@ -536,7 +568,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
 
     case 'text': {
       // Text container uses position:relative as the positioning context for lines.
-      // Lines use position:absolute with cumulative baselines (from A1's estimateMetrics).
+      // Lines use position:absolute with cumulative baselines (from the layout's text metrics, `editorMetrics` since LO6).
       const textStyle: React.CSSProperties = {
         ...pos,
         position: 'absolute',
@@ -607,6 +639,10 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             src={node.url}
             alt={node.alt}
             style={imgStyle}
+            // AC4: an image that fails to load (offline, a dead link) is hidden, never drawn as
+            // broken alt text; the block's fallback painted under it (initials disc, tinted
+            // backing) shows instead. The SVG export's <image> draws nothing in that case.
+            onError={hideBrokenImage}
             {...(part ? { 'data-part': part } : {})}
           />
         )
@@ -651,7 +687,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               fill: node.fill,
               ...(node.strokeWidth
-                ? { stroke: node.fill, strokeWidth: node.strokeWidth, fill: 'none' }
+                ? { stroke: node.fill, strokeWidth: node.strokeWidth, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }
                 : {}),
             }}
           />
@@ -681,6 +717,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
             style={{
               stroke: node.stroke.color,
               strokeWidth: node.stroke.width,
+              ...(node.stroke.dash && node.stroke.dash.length > 0 ? { strokeDasharray: node.stroke.dash.join(' ') } : {}),
             }}
             markerEnd={node.marker ? `url(#${renderMarkerId(node.marker)})` : undefined}
           />
@@ -697,6 +734,7 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           part={node.part}
           props={node.props}
           vars={node.vars}
+          poster={node.poster}
         />
       )
     }

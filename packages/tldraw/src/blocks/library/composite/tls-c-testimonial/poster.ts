@@ -7,125 +7,151 @@
  * using existing text measurement primitives (no DOM, pure layout).
  */
 
-import type { LayoutContext, LayoutNode, RichText } from '../../../types'
+import type { LayoutContext, LayoutNode, ResolvedTextStyle, RichText } from '../../../types'
 import type { TestimonialProps } from './schema'
-import { richTextToPlain, getInitials, isSafeAvatarUrl } from './schema'
+import { getInitials, isSafeAvatarUrl, photoGeometry, photoPlaceholder, testimonialScale, initialsInk, LG_SCALES, TESTIMONIAL as T, type TestimonialScale } from './schema'
+import { cssTextHeight } from '../../../html-block'
+import { alignText, cardNodes, cardPaint } from '../_kit'
+import { backdrop } from '../_showcase'
 
+/**
+ * LO7: the template's flex column (padding `T.pad`, every part centred, its margins), with the
+ * template's text metrics; the template paints these lines, so this is the live geometry. The
+ * root is the column's height, so the template's `justify-content:center` is a no-op.
+ */
 export function poster(props: TestimonialProps, ctx: LayoutContext): LayoutNode {
+  if (props.variant === 'photo') return photoPoster(props, ctx)
+  // AC8.5 `size: lg`: the largest rung whose column fits the box height (the template paints the
+  // poster's lines and sizes, so it follows)
+  if (props.size === 'lg') {
+    for (let rung = 0; rung < LG_SCALES.length; rung++) {
+      const tree = centredPoster(props, ctx, testimonialScale(props, rung))
+      if (rung === LG_SCALES.length - 1 || !(ctx.box.height > 0) || tree.box.height <= ctx.box.height + 0.5) return tree
+    }
+  }
+  return centredPoster(props, ctx, testimonialScale(props))
+}
+
+function centredPoster(props: TestimonialProps, ctx: LayoutContext, sc: TestimonialScale): LayoutNode {
   const children: LayoutNode[] = []
   const w = ctx.box.width
-  const centerX = 0
-  const avatarSize = 72
+  const inner = Math.max(1, w - T.pad * 2)
+  let y = T.pad
 
-  // Start vertically centred with some top padding
-  let y = ctx.tokens.space.xl
-
-  // Quote (required)
-  if (props.quote) {
-    const quoteStyle = ctx.resolveText('subheading')
-    const quoteColor = ctx.resolveColor('text').color
-    const quoteResolved = { ...quoteStyle, color: quoteColor }
-    const quoteText = `"${richTextToPlain(props.quote as string | RichText)}"`
-    const mQuote = ctx.measureText(quoteText, quoteResolved, w - ctx.tokens.space.xl * 2)
-    children.push({
-      k: 'text',
-      part: 'quote',
-      box: { x: centerX, y, width: w, height: mQuote.height },
-      lines: mQuote.lines,
-      style: quoteResolved,
-    })
-    y += mQuote.height + ctx.tokens.space.lg
+  const text = (key: string, value: string | RichText, style: ResolvedTextStyle): number => {
+    const m = ctx.measureText(value, style, inner)
+    const h = cssTextHeight(m.lines.length, style)
+    const node: LayoutNode = { k: 'text', part: key, propPath: key, box: { x: T.pad, y, width: inner, height: h }, lines: m.lines, style }
+    children.push(...alignText([node], 'center'))
+    return h
   }
 
-  // Avatar (optional)
+  // Quote (required): the quotation marks are runs of their own, as in the template.
+  if (props.quote) {
+    const style = { ...ctx.resolveText(sc.quote, { letterSpacing: 0, lineHeight: T.quoteLH }), color: ctx.resolveColor('text').color }
+    const runs = typeof props.quote === 'string' ? [{ text: props.quote }] : (props.quote as RichText).runs
+    y += text('quote', { runs: [{ text: '"' }, ...runs, { text: '"' }] }, style) + T.quoteGap
+  }
+
+  // Avatar: a circle (the poster loads no image), initials on it when there is no safe URL.
   const avatarUrl = typeof props.avatar === 'string' ? props.avatar : ''
-  if (isSafeAvatarUrl(avatarUrl)) {
-    // For the poster, render a circle placeholder (no DOM image loading)
-    children.push({
-      k: 'rect',
-      part: 'avatar',
-      box: {
-        x: centerX + (w - avatarSize) / 2,
-        y,
-        width: avatarSize,
-        height: avatarSize,
-      },
-      fill: { type: 'solid', color: ctx.resolveColor('accent').color },
-      radius: avatarSize / 2,
-    })
-  } else {
-    // Initials fallback frame
-    children.push({
-      k: 'rect',
-      part: 'avatar',
-      box: {
-        x: centerX + (w - avatarSize) / 2,
-        y,
-        width: avatarSize,
-        height: avatarSize,
-      },
-      fill: { type: 'solid', color: ctx.resolveColor('accent').color },
-      radius: avatarSize / 2,
-    })
-    // Initials text on top of the avatar circle
+  const av = sc.avatar
+  const ax = (w - av) / 2
+  children.push({
+    k: 'rect',
+    part: 'avatar',
+    box: { x: ax, y, width: av, height: av },
+    fill: { type: 'solid', color: ctx.resolveColor('accent').color },
+    radius: av / 2,
+  })
+  if (!isSafeAvatarUrl(avatarUrl)) {
     const initials = getInitials(props.name || '')
     if (initials) {
-      const initStyle = ctx.resolveText('body')
-      const initColor = ctx.resolveColor('text').color
-      const mInit = ctx.measureText(initials, { ...initStyle, color: initColor }, avatarSize)
+      const initStyle = { ...ctx.resolveText(sc.name), color: initialsInk(ctx.tokens.color as unknown as Record<string, string>) ?? ctx.resolveColor('text').color }
+      const mInit = ctx.measureText(initials, initStyle, av)
       children.push({
         k: 'text',
-        box: {
-          x: centerX + (w - avatarSize) / 2,
-          y: y + (avatarSize - mInit.height) / 2,
-          width: avatarSize,
-          height: mInit.height,
-        },
+        box: { x: ax, y: y + (av - mInit.height) / 2, width: av, height: mInit.height },
         lines: mInit.lines,
-        style: { ...initStyle, color: initColor },
+        style: initStyle,
       })
     }
   }
-  y += avatarSize + ctx.tokens.space.md
+  y += av + T.avatarGap
 
-  // Name (required)
+  // Name (required; weight 600, measured bold)
   if (props.name) {
-    const nameStyle = ctx.resolveText('body')
-    const nameColor = ctx.resolveColor('text').color
-    const nameResolved = { ...nameStyle, color: nameColor }
-    const mName = ctx.measureText(props.name, nameResolved, w - ctx.tokens.space.xl * 2)
-    children.push({
-      k: 'text',
-      part: 'name',
-      box: { x: centerX, y, width: w, height: mName.height },
-      lines: mName.lines,
-      style: nameResolved,
-    })
-    y += mName.height + ctx.tokens.space.xs
+    const style = { ...ctx.resolveText(sc.name, { letterSpacing: 0, lineHeight: T.nameLH }), color: ctx.resolveColor('text').color }
+    y += text('name', { runs: [{ text: props.name, bold: true }] }, style) + T.nameGap
   }
 
   // Role (required)
   if (props.role) {
-    const roleStyle = ctx.resolveText('caption')
-    const roleColor = ctx.resolveColor('textMuted').color
-    const roleResolved = { ...roleStyle, color: roleColor }
-    const mRole = ctx.measureText(props.role, roleResolved, w - ctx.tokens.space.xl * 2)
-    children.push({
-      k: 'text',
-      part: 'role',
-      box: { x: centerX, y, width: w, height: mRole.height },
-      lines: mRole.lines,
-      style: roleResolved,
-    })
-    y += mRole.height
+    const style = { ...ctx.resolveText(sc.role, { letterSpacing: 0, lineHeight: T.roleLH }), color: ctx.resolveColor('textMuted').color }
+    y += text('role', props.role, style)
   }
 
-  const totalHeight = y + ctx.tokens.space.xl
+  const totalHeight = y + T.pad
 
   return {
     k: 'group',
     box: { x: 0, y: 0, width: w, height: totalHeight },
     part: 'root',
-    children,
+    // A transparent full-box rect first: the SVG export's extent is the host box (the parity
+    // probe compares the two), and nothing paints under the parts.
+    children: [backdrop(w, totalHeight), ...deckCard(ctx, w, totalHeight), ...children],
+  }
+}
+
+/** AC4: with a deck surface the testimonial sits on a card (`cardPaint`); without one, as before. */
+function deckCard(ctx: LayoutContext, w: number, h: number): LayoutNode[] {
+  const cp = cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
+  return cp.styled ? cardNodes(cp, { x: 0, y: 0, width: w, height: h }, ctx.tokens.radius.lg, 'card') : []
+}
+
+/**
+ * AC2 `variant: 'photo'`: the template's flex row — the avatar as a photo (rounded, full inner
+ * height) on the left, the quote, name and role left-aligned in a column centred vertically on the
+ * right. Same paddings and text metrics as the centred variant; no initials disc.
+ */
+function photoPoster(props: TestimonialProps, ctx: LayoutContext): LayoutNode {
+  const w = ctx.box.width
+  const { photoW, colX, colW } = photoGeometry(w)
+  const texts: LayoutNode[] = []
+  let y = 0
+  const text = (key: string, value: string | RichText, style: ResolvedTextStyle): number => {
+    const m = ctx.measureText(value, style, colW)
+    const h = cssTextHeight(m.lines.length, style)
+    texts.push({ k: 'text', part: key, propPath: key, box: { x: colX, y, width: colW, height: h }, lines: m.lines, style })
+    return h
+  }
+  if (props.quote) {
+    const style = { ...ctx.resolveText('subheading', { letterSpacing: 0, lineHeight: T.quoteLH }), color: ctx.resolveColor('text').color }
+    const runs = typeof props.quote === 'string' ? [{ text: props.quote }] : (props.quote as RichText).runs
+    y += text('quote', { runs: [{ text: '"' }, ...runs, { text: '"' }] }, style)
+    if (props.name || props.role) y += T.quoteGap
+  }
+  if (props.name) {
+    const style = { ...ctx.resolveText('body', { letterSpacing: 0, lineHeight: T.nameLH }), color: ctx.resolveColor('text').color }
+    y += text('name', { runs: [{ text: props.name, bold: true }] }, style)
+    if (props.role) y += T.nameGap
+  }
+  if (props.role) {
+    const style = { ...ctx.resolveText('caption', { letterSpacing: 0, lineHeight: T.roleLH }), color: ctx.resolveColor('textMuted').color }
+    y += text('role', props.role, style)
+  }
+  const total = Math.max(T.photoMinH, y + 2 * T.pad)
+  const dy = (total - y) / 2
+  const shifted = texts.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode)
+  const avatarUrl = typeof props.avatar === 'string' ? props.avatar : ''
+  const photoBox = { x: T.pad, y: T.pad, width: photoW, height: total - 2 * T.pad }
+  const photo: LayoutNode = isSafeAvatarUrl(avatarUrl)
+    ? { k: 'image', part: 'avatar', box: photoBox, assetId: '', url: avatarUrl, alt: '', fit: 'cover', radius: T.photoRadius }
+    : { k: 'rect', part: 'avatar', box: photoBox, fill: { type: 'solid', color: photoPlaceholder(ctx.tokens.color as unknown as Record<string, string>) }, radius: T.photoRadius }
+  return {
+    k: 'group',
+    box: { x: 0, y: 0, width: w, height: total },
+    part: 'root',
+    children: [backdrop(w, total), ...deckCard(ctx, w, total), photo, ...shifted],
   }
 }

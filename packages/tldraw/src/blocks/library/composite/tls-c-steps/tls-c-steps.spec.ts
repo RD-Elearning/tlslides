@@ -615,3 +615,64 @@ describe('tls.c.steps adapts to its region (RV07)', () => {
     assertContained(node, size)
   })
 })
+
+describe('tls.c.steps align center and a shared centred region (spro demo T19)', () => {
+  const STEPS = [
+    { title: 'Collect', desc: 'Gather and clean the data.' },
+    { title: 'Train', desc: 'Fit and compare models.' },
+    { title: 'Ship', desc: 'Deploy and monitor.' },
+  ]
+  const leaves = (node: any, out: any[] = [], ox = 0, oy = 0): any[] => {
+    const x = ox + node.box.x
+    const y = oy + node.box.y
+    if (!node.children) out.push({ part: node.part, x, y, w: node.box.width, h: node.box.height })
+    for (const c of node.children ?? []) leaves(c, out, node.k === 'group' ? x : ox, node.k === 'group' ? y : oy)
+    return out
+  }
+
+  it('centres each badge over its column and runs the rail between the badges', () => {
+    const { makeCtx } = jest.requireActual('../../text/test-helpers') as typeof import('../../text/test-helpers')
+    const { tlsCSteps } = jest.requireActual('./index') as { tlsCSteps: { layout: (p: unknown, c: unknown) => any } }
+    const W = 1500
+    const ls = leaves(tlsCSteps.layout({ steps: STEPS, align: 'center' }, makeCtx({ width: W, height: 400 })))
+    const badges = ls.filter((l) => /^step\[\d\]\.badge$/.test(l.part))
+    const col = (W - 2 * 32) / 3 // three columns, two `lg` gaps of the default tokens (approx.)
+    const mids = badges.map((b) => b.x + b.w / 2)
+    expect(mids[1] - mids[0]).toBeCloseTo(mids[2] - mids[1], 0)
+    expect(Math.abs(mids[0] - col / 2)).toBeLessThan(40)
+    expect(Math.abs(mids[1] - W / 2)).toBeLessThan(2)
+    const rail = ls.find((l) => l.part === 'connector[0]')
+    expect(rail.x).toBeGreaterThan(badges[0].x + badges[0].w)
+    expect(rail.x + rail.w).toBeLessThan(badges[1].x)
+  })
+
+  it('a timeline region of steps + takeaway is placed as one centred group', () => {
+    const { analyzeDeck } = jest.requireActual('../../../layout-report') as typeof import('../../../layout-report')
+    const deck = {
+      version: 1,
+      id: 'd',
+      aspect: 'widescreen',
+      slides: [
+        {
+          id: 's',
+          layout: 'timeline',
+          regions: {
+            title: [{ id: 't', type: 'tls.t.title', props: { text: 'A process' } }],
+            timeline: [
+              { id: 'st', type: 'tls.c.steps', props: { steps: STEPS, align: 'center' } },
+              { id: 'tk', type: 'tls.t.takeaway', props: { text: 'Measure success first.' } },
+            ],
+          },
+        },
+      ],
+    }
+    const [r] = analyzeDeck(deck as never)
+    const region = r.regions.timeline
+    const st = r.blocks.find((b) => b.id === 'st')!.painted!
+    const tk = r.blocks.find((b) => b.id === 'tk')!.painted!
+    const above = st.y - region.y
+    const below = region.y + region.height - (tk.y + tk.height)
+    expect(Math.abs(above - below)).toBeLessThan(60) // was ~170 above vs ~190 between and 0 below
+    expect(tk.y - (st.y + st.height)).toBeLessThan(120)
+  })
+})

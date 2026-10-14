@@ -16,6 +16,8 @@ export const tlsXWatermark: BlockDefinition = {
   keywords: ['watermark', 'draft', 'confidential', 'stamp', 'chrome'],
   category: 'chrome',
   scope: 'element',
+  // LO2: faint text across the slide, behind the content.
+  layer: 'backdrop',
   shortDescription: 'Large faint text such as DRAFT or CONFIDENTIAL across the slide',
   related: ['tls.t.statement', 'tls.x.footer-text'],
   describe: {

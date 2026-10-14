@@ -17,7 +17,7 @@ import { isShown } from '../../../schema-helpers'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { onColor } from '../../text/_engine/color'
-import { composeFlat, measureHeights, onSurface, pick, pickToken, plainOf, toMeasurable, SCRIM_SURFACE, type Piece } from '../_kit'
+import { composeFlat, measureHeights, onSurface, pick, stableWrap, plainOf, toMeasurable, SCRIM_SURFACE, type Piece } from '../_kit'
 
 export interface CoverProps extends Record<string, unknown> {
   kicker?: string
@@ -122,8 +122,7 @@ export function layoutCover(props: CoverProps, ctx: LayoutContext): LayoutNode {
   const inset = bleed ? ctx.tokens.space['2xl'] : 0
   const centered = variant === 'centered'
 
-  const tw = centered ? Math.min(W, 1280) : bleed ? Math.min(W - 2 * inset, 1100) : Math.max(120, W * 0.5 - gap * 2)
-  const tx = centered ? (W - tw) / 2 : inset
+  const tw0 = centered ? Math.min(W, 1280) : bleed ? Math.min(W - 2 * inset, 1100) : Math.max(120, W * 0.5 - gap * 2)
   const align = centered ? 'center' : 'start'
   const darkBg: Record<string, unknown> | undefined = bleed
     ? onSurface(wantImage ? SCRIM_SURFACE : { type: 'solid', color: ctx.resolveColor('accent').color })
@@ -131,7 +130,22 @@ export function layoutCover(props: CoverProps, ctx: LayoutContext): LayoutNode {
   const fg = bleed ? onColor(ctx, wantImage ? '#000000' : ctx.resolveColor('accent').color) : undefined
   const sizes: Array<'display' | 'title' | 'heading'> = centered ? ['display', 'title', 'heading'] : ['title', 'heading']
   const maxLines = centered ? 3 : 4
-  const start = Math.max(0, sizes.indexOf(pickToken(ctx, props.title, tw, sizes, maxLines) as (typeof sizes)[number]))
+  // AC8.5: the first (size, column width) with a stable wrap — no title on a break the browser
+  // could take otherwise (the gradient dry-run cover drew 3 lines where the browser wraps 2). The
+  // split column only narrows (the photo is beside it); the others may also widen a little.
+  const widths = split ? [tw0, tw0 * 0.94] : [tw0, Math.min(W - 2 * inset, tw0 * 1.07), tw0 * 0.94]
+  let start = sizes.length - 1
+  let tw = tw0
+  search: for (let k = 0; k < sizes.length; k++) {
+    for (const w of widths) {
+      if (stableWrap(ctx, props.title, w, sizes[k], maxLines, false)) {
+        start = k
+        tw = w
+        break search
+      }
+    }
+  }
+  const tx = centered ? (W - tw) / 2 : inset
   // Step the title down until the whole column fits the box height (or the smallest size is reached).
   let s = specsOf(props, centered, sizes[start], darkBg, fg)
   let text: BlockSpec[] = []

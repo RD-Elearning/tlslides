@@ -8,6 +8,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { tintOf } from '../../text/_engine/color'
 
 export interface FeatureCell {
   icon: string
@@ -19,6 +20,12 @@ export interface FeatureGridProps extends Record<string, unknown> {
   cells: FeatureCell[]
   columns?: 2 | 3 | 4
   gap?: number
+  /** AC2: `plain` (default) or `card` — each cell on a tinted rounded card. */
+  cell?: 'plain' | 'card'
+  /** AC2: `start` (default) or `center` — icon and text centred in the cell. */
+  align?: 'start' | 'center'
+  /** AC2: `plain` (default) or `circle` — the icon on a tinted disc. */
+  iconStyle?: 'plain' | 'circle'
 }
 
 export const schema: BlockSchema = {
@@ -32,7 +39,7 @@ export const schema: BlockSchema = {
             type: { kind: 'icon' },
             role: 'content',
             label: 'Icon',
-            help: 'Icon id, e.g. "zap". Unresolvable ids degrade to a labelled frame.',
+            help: 'Icon id, e.g. "zap".',
           },
           title: {
             type: { kind: 'text', maxChars: 40 },
@@ -56,21 +63,34 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Feature cells',
     required: true,
-    guidance:
-      'List of 2–6 feature cells, each with icon (icon id string), title (short, 1–4 words), ' +
-      'and desc (one sentence). Describe features, benefits, or capabilities.',
+    guidance: '2–6 features, benefits or capabilities.',
   },
   columns: {
     type: { kind: 'number', min: 2, max: 4 },
     role: 'option',
     label: 'Columns',
-    guidance: 'Number of columns: 2, 3, or 4. Default is 3.',
+    guidance: 'Default 3.',
   },
   gap: {
     type: { kind: 'number', min: 8, max: 48 },
     role: 'option',
     label: 'Gap',
-    guidance: 'Gap between cells in slide units. Default 24.',
+    guidance: 'Slide units. Default 24.',
+  },
+  cell: {
+    type: { kind: 'enum', values: ['plain', 'card'] },
+    role: 'option',
+    label: 'Cell',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Alignment',
+  },
+  iconStyle: {
+    type: { kind: 'enum', values: ['plain', 'circle'] },
+    role: 'option',
+    label: 'Icon style',
   },
 }
 
@@ -92,4 +112,56 @@ export function effectiveColumns(width: number, columns: number | undefined, gap
   const want = Math.max(1, Math.min(4, Math.round(Number(columns) || 3)))
   const fit = Math.max(1, Math.floor((width + gap) / (MIN_CELL_WIDTH + gap)))
   return Math.max(1, Math.min(want, fit, Math.max(1, count)))
+}
+
+/** AC2 card cell: inner padding and corner radius (template and poster). */
+export const FG_CARD_PAD = 28
+export const FG_CARD_RADIUS = 16
+/** AC2 `iconStyle: circle`: the glyph size inside the 48-unit disc (the smallest disc). */
+export const FG_CIRCLE_GLYPH = 28
+
+/**
+ * AC2 `iconStyle: circle`: disc and glyph scale with the cell width (a fixed 28-unit glyph read
+ * small at 1920): disc 15% of the cell, 48..80 units, glyph 60% of the disc. 384-wide cells
+ * (size.preferred, 3 columns) get a 58 disc and a 35 glyph. Template and poster share it.
+ */
+export function circleIcon(cellW: number): { disc: number; glyph: number } {
+  const disc = Math.max(48, Math.min(80, Math.round(cellW * 0.15)))
+  return { disc, glyph: Math.max(FG_CIRCLE_GLYPH, Math.round(disc * 0.6)) }
+}
+
+/**
+ * AC3 pre-item: the grid's tiers. `roomy` (heading titles, lead descriptions, a 64 icon, 40 card
+ * padding, card rows stretched 1.25x) is taken when the grid fits its box at that size, so a
+ * feature grid alone under a title is not a thin band in a tall region; else `base`, the AC2 look.
+ * The poster chooses (it measures); the template reads the choice back from the poster.
+ */
+export interface FgTier {
+  roomy: boolean
+  title: 'heading' | 'subheading'
+  desc: 'lead' | 'body'
+  icon: number
+  pad: number
+  /** Card rows are this many times their content (claimed up front, so the choice is a fixed point). */
+  stretch: number
+}
+export const FG_TIERS: readonly FgTier[] = [
+  { roomy: true, title: 'heading', desc: 'lead', icon: 64, pad: 40, stretch: 1.25 },
+  { roomy: false, title: 'subheading', desc: 'body', icon: 48, pad: FG_CARD_PAD, stretch: 1 },
+]
+/** Cells narrower than this keep the base tier (heading titles need the measure). */
+export const FG_ROOMY_MIN_CELL = 400
+/** The disc for a tier: the roomy tier's discs are 1.25x (still ≤ 96). */
+export function tierCircleIcon(cellW: number, tier: FgTier): { disc: number; glyph: number } {
+  const base = circleIcon(cellW)
+  if (!tier.roomy) return base
+  const disc = Math.min(96, Math.round(base.disc * 1.25))
+  return { disc, glyph: Math.round(disc * 0.6) }
+}
+
+/** Card background and disc tint, from the resolved tokens (same colours in template and poster). */
+export function featureGridColors(color: Record<string, string> | undefined): { card: string; disc: string } {
+  const surface = color?.surface ?? '#ffffff'
+  const accent = color?.accent ?? '#2563eb'
+  return { card: color?.surfaceAlt ?? tintOf(surface, accent, 0.06), disc: tintOf(surface, accent, 0.16) }
 }

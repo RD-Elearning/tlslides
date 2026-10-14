@@ -19,6 +19,7 @@ import { TYPE_SCALE } from '../scales'
 import { insetBox, anchorBox, splitBox } from './box-model'
 import { estimateMetrics } from './measure'
 import { createLayoutContext } from './layout-child'
+import { MAX_NESTING_DEPTH } from '../types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Test fixtures                                                                   */
@@ -401,18 +402,34 @@ describe('layoutChild depth capping', () => {
     expect(node4.children[0].k).toBe('rect')
   })
 
-  it('rejects depth 5 with a lint error node, not a throw', () => {
-    // At depth 4, layoutChild with a newDepth of 5 should be rejected.
-    const ctx4 = makeCtx({ registry, depth: 4 })
+  // CMP1 (deliberate change): the limit is `MAX_NESTING_DEPTH` (6) *authored* levels, shared with
+  // the validator — no longer 4 layout hops. Hops a block makes internally do not count.
+  it('rejects an authored child past MAX_NESTING_DEPTH with a lint error node, not a throw', () => {
+    const child = { id: 'c3', type: 'test.child', props: {} }
+    const authored = new WeakSet<object>([child])
+    const ctx6 = makeCtx({ registry, nestLevel: MAX_NESTING_DEPTH, authored })
     const box: Box = { x: 0, y: 0, width: 200, height: 200 }
     let node: LayoutNode | undefined
     expect(() => {
-      node = ctx4.layoutChild({ id: 'c3', type: 'test.child', props: {} }, box)
+      node = ctx6.layoutChild(child, box)
     }).not.toThrow()
     expect(node).toBeDefined()
     expect(node!.k).toBe('group')
     expect((node as any).part).toBe('lint/depth-overflow')
+    expect((node as any).blockId).toBe('c3')
+    expect((node as any).type).toBe('test.child')
     expect((node as any).children).toEqual([])
+    // One level up it is drawn.
+    const ctx5 = makeCtx({ registry, nestLevel: MAX_NESTING_DEPTH - 1, authored })
+    expect((ctx5.layoutChild(child, box) as any).part).toBeUndefined()
+  })
+
+  it('does not count a block-built (non-authored) child as a nesting level', () => {
+    const ctx6 = makeCtx({ registry, nestLevel: MAX_NESTING_DEPTH, depth: 5 })
+    const box: Box = { x: 0, y: 0, width: 200, height: 200 }
+    const node = ctx6.layoutChild({ id: '$inner', type: 'test.child', props: {} }, box)
+    expect((node as any).part).toBeUndefined()
+    expect((node as any).children[0].k).toBe('rect')
   })
 
   it('does not recurse infinitely — returns immediately at overflow', () => {

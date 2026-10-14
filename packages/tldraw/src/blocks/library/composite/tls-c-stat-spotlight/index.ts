@@ -17,7 +17,7 @@ export const motion: MotionRecipe = {
 }
 
 function layout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.stat-spotlight', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.stat-spotlight', props, ctx, { posterGeometry: true })
 }
 
 export const tlsCStatSpotlight: BlockDefinition = {
@@ -38,7 +38,7 @@ export const tlsCStatSpotlight: BlockDefinition = {
     example: {
       id: 'b_spot',
       type: 'tls.c.stat-spotlight',
-      props: { value: '87%', progress: 87, label: 'Tỉ lệ hoàn thành', stats: [{ value: '312', label: 'Sinh viên' }] },
+      props: { value: '87%', progress: 87, label: 'Pilots converted', stats: [{ value: '312', label: 'Active teams' }, { value: '4.6', label: 'Seats' }] },
     },
   },
   schema,

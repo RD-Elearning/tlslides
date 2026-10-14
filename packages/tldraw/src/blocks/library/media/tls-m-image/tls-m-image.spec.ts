@@ -83,7 +83,9 @@ describe('tls.m.image', () => {
         { src: 'my-photo', alt: 'A photo' } as any,
         ctxWithResolver,
       )
-      const imgNode = node.children[0] as any
+      // AC4: a tinted backing rect is painted under a resolved image, so find the image node by kind
+      const imgNode = node.children.find((c: any) => c.k === 'image') as any
+      expect((node as any).children[0].k).toBe('rect')
       expect(imgNode.url).toBe('/assets/my-photo.png')
     })
 
@@ -269,5 +271,30 @@ describe('tls.m.image', () => {
       const imgNode = node.children[0] as any
       expect(imgNode.alt).toBe('')
     })
+  })
+})
+
+describe('IM4 — a contained figure at its own shape, framed', () => {
+  const leavesOf = (n: any): any[] => (n.children ?? []).flatMap((c: any) => [c, ...leavesOf(c)])
+  const lay = (props: Record<string, unknown>, w = 800, h = 600) => tlsMImage.layout({ src: 'fig:f1', alt: 'A tree', fit: 'contain', ...props } as any, makeCtx({ width: w, height: h }))
+  it('the picture keeps its aspect, centred in the box', () => {
+    const img = leavesOf(lay({ aspect: 2 })).find((l) => l.k === 'image')
+    expect(img.box.width / img.box.height).toBeCloseTo(2, 3)
+    expect(img.box.width).toBeCloseTo(800, 0)
+    expect(img.box.y).toBeCloseTo((600 - 400) / 2, 0)
+  })
+  it.each(['card', 'tape', 'polaroid'])('%s: a panel around the picture, inside the box', (frame) => {
+    const leaves = leavesOf(lay({ aspect: 1.5, frame }))
+    const panel = leaves.find((l) => l.part === 'frame')
+    const img = leaves.find((l) => l.k === 'image')
+    expect(panel.box.x).toBeLessThan(img.box.x)
+    expect(panel.box.y + panel.box.height).toBeGreaterThan(img.box.y + img.box.height)
+    expect(panel.box.x + panel.box.width).toBeLessThanOrEqual(800.5)
+    expect(panel.box.y + panel.box.height).toBeLessThanOrEqual(600.5)
+    if (frame === 'tape') expect(leaves.filter((l) => l.part === 'frame.tape')).toHaveLength(2)
+  })
+  it('without an aspect (or with cover) the image fills the box as before', () => {
+    expect(leavesOf(lay({ frame: 'card' })).find((l) => l.k === 'image').box).toEqual({ x: 0, y: 0, width: 800, height: 600 })
+    expect(leavesOf(lay({ fit: 'cover', aspect: 2, frame: 'card' })).some((l) => l.part === 'frame')).toBe(false)
   })
 })

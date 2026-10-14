@@ -4,7 +4,8 @@
  *
  * Pros carry a positive tick in a filled circle, cons a negative cross. `columns` draws a heading
  * with a coloured rule and a hairline between the columns; `cards` puts each column on a tinted card.
- * `auto` balance gives the column with more text more width. Rows are as tall as their clipped text;
+ * `auto` balance gives the column with more text more width. Rows are as tall as their clipped text and the
+ * composition is content-sized and centred vertically in the box (AC1.5);
  * the allowed lines per point shrink (3 -> 1) so a full list always fits the box.
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
@@ -19,9 +20,13 @@ import type { ProsConsProps } from './schema'
 import { PROS_CONS_MAX } from './schema'
 import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, onColor, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
 import { withRealWidths } from '../../data/_chart/kit'
+import { cardNodes, cardPaint } from '../../composite/_kit'
 
 const COL_GAP = 40
 const ROW_GAP_MAX = 14
+const ROW_GAP_BODY = 32
+/** Space between the columns and the verdict band. */
+const VERDICT_GAP = 32
 
 const items = (v: unknown): string[] => asArr(v).map(str).filter((s) => s.trim() !== '').slice(0, PROS_CONS_MAX)
 
@@ -39,7 +44,10 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   const cards = enumOf(props.style, ['columns', 'cards'] as const, 'columns') === 'cards'
   const auto = enumOf(props.balance, ['equal', 'auto'] as const, 'equal') === 'auto'
   const verdict = isShown(props, 'showVerdict') ? str(props.verdict).trim() : ''
-  const headS = style(ctx, 'subheading', c.text)
+  // AC3 pre-item: the roomy tier (heading column titles, lead points, lead verdict) for pros/cons
+  // alone in a tall, wide box — only when its points get the lead size; otherwise the AC1.5 budget
+  // (the heading titles would squeeze dense points to one ellipsised line). The block fills its box,
+  // so the tier follows the box size.
   const bigS = style(ctx, 'caption', c.text)
   const nodes: LayoutNode[] = []
 
@@ -54,46 +62,78 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
 
   // Vertical budget.
   const pad = cards ? 20 : 0
-  const headH = Math.min(headS.size * headS.lineHeight, 60)
   const ruleGap = cards ? 12 : 16
-  const headBlock = headH + ruleGap + (cards ? 0 : 3 + 8)
-  let verdictH = 0
-  let verdictLines = 0
-  const vS = style(ctx, 'caption', c.text)
-  const vPad = 14
-  if (verdict) {
-    verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
-    verdictH = linesHeight(ctx, verdict, vS, Math.max(10, W - 2 * (vPad + 12)), verdictLines) + 2 * vPad
-  }
-  const bodyTop = pad + headBlock
-  const bodyH = Math.max(1, H - verdictH - (verdict ? 20 : 0) - bodyTop - pad)
   const maxRows = Math.max(1, pros.length, cons.length)
-  // Dense lists drop to the smaller text size and a tighter gap so every point stays on the block.
-  const pitch = bodyH / maxRows
-  const textS = pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
+  const bodyS = style(ctx, 'body', c.text)
+  const leadS = style(ctx, 'lead', c.text)
+  const budget = (roomy: boolean) => {
+    const headS = style(ctx, roomy ? 'heading' : 'subheading', c.text)
+    const headH = roomy ? headS.size * headS.lineHeight : Math.min(headS.size * headS.lineHeight, 60)
+    const headBlock = headH + ruleGap + (cards ? 0 : 3 + 8)
+    let verdictH = 0
+    let verdictLines = 0
+    // AC1.5: the verdict is the slide's conclusion — body size, not caption.
+    const vS = style(ctx, roomy ? 'lead' : H >= 400 ? 'body' : 'caption', c.text)
+    const vPad = H >= 400 ? 22 : 14
+    if (verdict) {
+      verdictLines = Math.max(1, Math.min(2, Math.floor((H * 0.22 - 2 * vPad) / lineH(vS))))
+      verdictH = linesHeight(ctx, verdict, vS, Math.max(10, W - 2 * (vPad + 12)), verdictLines) + 2 * vPad
+    }
+    const bodyTop = pad + headBlock
+    const bodyH = Math.max(1, H - verdictH - (verdict ? VERDICT_GAP : 0) - bodyTop - pad)
+    // AC1.5: points read at body size when the box has room; dense lists step down to caption, then
+    // footnote, with a tighter gap, so every point stays on the block.
+    const pitch = bodyH / maxRows
+    const big = roomy && pitch >= lineH(leadS) + 2 * ROW_GAP_BODY
+    return { headS, headH, verdictH, verdictLines, vS, vPad, bodyTop, pitch, big }
+  }
+  const tried = H >= 480 && W >= 1200 ? budget(true) : undefined
+  const { headS, headH, verdictH, verdictLines, vS, vPad, bodyTop, pitch, big } = tried && tried.big ? tried : budget(false)
+  const textS = big ? leadS : pitch >= lineH(bodyS) + 12 ? bodyS : pitch < lineH(bigS) + 8 ? style(ctx, 'footnote', c.text) : bigS
   const lh = lineH(textS)
-  const ROW_GAP = clamp(pitch - lh, 3, ROW_GAP_MAX)
-  const linesAllowed = clamp(Math.floor((pitch - ROW_GAP) / lh), 1, 3)
-  const MARK = Math.round(clamp(Math.min(lh * 0.95, pitch - ROW_GAP), 14, 30))
-  const colH = H - verdictH - (verdict ? 20 : 0)
+  const ROW_GAP = clamp(pitch - lh, 3, big ? 1.25 * ROW_GAP_BODY : textS === bodyS ? ROW_GAP_BODY : ROW_GAP_MAX)
+  let linesAllowed = clamp(Math.floor((pitch - ROW_GAP) / lh), 1, 3)
+  const MARK = Math.round(clamp(Math.min(lh * 0.95, pitch - ROW_GAP), 14, big ? 40 : 30))
+
+  // AC1.5: content-sized — the columns are as tall as their rows (no tall empty boxes), the verdict
+  // follows them, and the whole composition is centred vertically in the box.
+  const rowHeights = (list: string[], w: number, n = linesAllowed) => {
+    const tw = Math.max(10, w - 2 * pad - MARK - 14)
+    return list.map((text) => Math.max(linesHeight(ctx, text, textS, tw, n), MARK))
+  }
+  const listH = (hs: number[]) => hs.reduce((n, h) => n + h, 0) + Math.max(0, hs.length - 1) * ROW_GAP
+  // AC5: the even per-row budget gives every point the same line allowance, so one long point was
+  // ellipsised (seen on the style decks) while the short ones left the room unused. Allow more
+  // lines whenever both measured lists still fit the body height.
+  const bodyH = pitch * maxRows
+  for (let n = 3; n > linesAllowed; n--) {
+    if (Math.max(listH(rowHeights(pros, colW[0], n)), listH(rowHeights(cons, colW[1], n))) <= bodyH) {
+      linesAllowed = n
+      break
+    }
+  }
+  const colH = Math.min(H - verdictH - (verdict ? VERDICT_GAP : 0), bodyTop + Math.max(listH(rowHeights(pros, colW[0])), listH(rowHeights(cons, colW[1]))) + pad + (cards ? 0 : 4))
+  const contentH = colH + (verdict ? VERDICT_GAP + verdictH : 0)
+  const dy = Math.max(0, Math.round((H - contentH) / 2))
 
   const column = (idx: 0 | 1, title: string, list: string[], color: string, kind: 'pro' | 'con') => {
     const x = colX[idx]
     const w = colW[idx]
     const name = kind === 'pro' ? 'pros' : 'cons'
     const out: LayoutNode[] = []
-    if (cards) out.push({ k: 'rect', part: `${name}[card]`, box: { x, y: 0, width: w, height: colH }, fill: { type: 'solid', color: tintOf(c.surface, color, 0.1) }, stroke: { color: tintOf(c.surface, color, 0.5), width: 2 }, radius: 16 })
+    // AC5: under a deck surface the column card takes it (`cardPaint`: glass, hard shadow, …)
+    if (cards) out.push(...cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: tintOf(c.surface, color, 0.1) }, stroke: { color: tintOf(c.surface, color, 0.5), width: 2 } }), { x, y: dy, width: w, height: colH }, 16, `${name}[card]`))
     const ix = x + pad
     const iw = Math.max(10, w - 2 * pad)
-    out.push(...placeLines(ctx, title, { ...headS, color: kind === 'pro' ? color : color }, { x: ix, y: pad, width: iw }, 'start', 1, `${name}[title]`).nodes)
-    if (!cards) out.push(solidRect({ x: ix, y: pad + headH + 8, width: iw, height: 3 }, color, `${name}[rule]`))
+    out.push(...placeLines(ctx, title, { ...headS, color: kind === 'pro' ? color : color }, { x: ix, y: dy + pad, width: iw }, 'start', 1, `${name}[title]`).nodes)
+    if (!cards) out.push(solidRect({ x: ix, y: dy + pad + headH + 8, width: iw, height: 3 }, color, `${name}[rule]`))
     const tx = ix + MARK + 14
     const tw = Math.max(10, iw - MARK - 14)
-    let y = bodyTop
+    let y = dy + bodyTop
     list.forEach((text, i) => {
       const h = linesHeight(ctx, text, textS, tw, linesAllowed)
       const rowH = Math.max(h, MARK)
-      out.push(dot(ix + MARK / 2, y + Math.min(lh, rowH) / 2 + (rowH > lh ? 0 : 0), MARK / 2, color, `${name}[mark][${i}]`))
+      out.push(dot(ix + MARK / 2, y + Math.min(lh, rowH) / 2, MARK / 2, color, `${name}[mark][${i}]`))
       const gx = ix + MARK * 0.2
       const gy = y + Math.min(lh, rowH) / 2 - MARK / 2 + MARK * 0.2
       const gs = MARK * 0.6
@@ -108,11 +148,11 @@ export function layout(props: ProsConsProps, ctx0: LayoutContext): LayoutNode {
   column(0, str(props.prosTitle).trim() || 'Pros', pros, positive, 'pro')
   column(1, str(props.consTitle).trim() || 'Cons', cons, negative, 'con')
 
-  if (!cards && colH > 40) nodes.push(solidRect({ x: colW[0] + COL_GAP / 2 - 1, y: 0, width: 2, height: colH }, c.line, 'divider'))
+  if (!cards && colH > 40) nodes.push(solidRect({ x: colW[0] + COL_GAP / 2 - 1, y: dy, width: 2, height: colH }, c.line, 'divider'))
 
   if (verdict) {
     const vout: LayoutNode[] = []
-    const y = H - verdictH
+    const y = dy + colH + VERDICT_GAP
     vout.push({ k: 'rect', part: 'verdict[band]', box: { x: 0, y, width: W, height: verdictH }, fill: { type: 'solid', color: tintOf(c.surface, c.accent, 0.16) }, stroke: { color: c.accent, width: 2 }, radius: 14 })
     const vw = Math.max(10, W - 2 * (vPad + 12))
     const th = linesHeight(ctx, verdict, vS, vw, verdictLines)

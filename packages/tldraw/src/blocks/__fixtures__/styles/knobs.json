@@ -1,0 +1,741 @@
+{
+  "version": 1,
+  "id": "style-knobs",
+  "title": "AC2 look knobs",
+  "theme": "corporate-navy",
+  "style": "corporate",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "kn_01",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k1t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three numbers that moved this year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k1a",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                {
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "label": "Revenue",
+                  "polarity": "upGood",
+                  "format": "compact"
+                },
+                {
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "label": "Churn %",
+                  "polarity": "downGood",
+                  "format": "percent"
+                },
+                {
+                  "value": 64,
+                  "delta": 9,
+                  "label": "NPS",
+                  "polarity": "upGood",
+                  "format": "plain"
+                }
+              ],
+              "tile": "card"
+            }
+          },
+          {
+            "id": "k1b",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "Growth came from retention, not new logos.",
+              "label": "So what",
+              "size": "lead"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_02",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k2t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Roadmap for next year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k2a",
+            "type": "tls.g.roadmap",
+            "props": {
+              "periods": [
+                "Q1",
+                "Q2",
+                "Q3",
+                "Q4"
+              ],
+              "lanes": [
+                {
+                  "name": "Product",
+                  "items": [
+                    {
+                      "label": "Redesign",
+                      "start": 0,
+                      "end": 1,
+                      "status": "done"
+                    },
+                    {
+                      "label": "Mobile app",
+                      "start": 1.5,
+                      "end": 3,
+                      "status": "active"
+                    }
+                  ]
+                },
+                {
+                  "name": "Platform",
+                  "items": [
+                    {
+                      "label": "Migration",
+                      "start": 0.5,
+                      "end": 2,
+                      "status": "active"
+                    }
+                  ]
+                }
+              ],
+              "todayAt": 1.5
+            }
+          },
+          {
+            "id": "k2b",
+            "type": "tls.t.takeaway",
+            "props": {
+              "text": "The mobile app ships before the Q4 renewals.",
+              "label": "Key milestone",
+              "size": "lead"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_03",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k3t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Revenue grew 42% in a year"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k3a",
+            "type": "tls.c.chart-insight",
+            "props": {
+              "chart": {
+                "kind": "bar",
+                "categories": [
+                  "Q1",
+                  "Q2",
+                  "Q3",
+                  "Q4"
+                ],
+                "series": [
+                  {
+                    "name": "Revenue ($M)",
+                    "values": [
+                      8.1,
+                      9.4,
+                      10.2,
+                      11.5
+                    ]
+                  }
+                ]
+              },
+              "insight": "Revenue **grew 42%**, led by team plans.",
+              "insightSize": "lead",
+              "source": "Source: finance, FY2026"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_04",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k4t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Four principles"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k4a",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "target",
+                  "title": "Focus",
+                  "text": "One question per session, answered with data."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Evidence",
+                  "text": "Real datasets, small enough to explore."
+                },
+                {
+                  "icon": "check",
+                  "title": "Honesty",
+                  "text": "Say what a result does not show."
+                },
+                {
+                  "icon": "users",
+                  "title": "Together",
+                  "text": "Every review is done in pairs."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_05",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k5t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Why teams switch (card, centred, disc)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k5a",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                {
+                  "icon": "zap",
+                  "title": "Fast",
+                  "desc": "Optimised for speed at every layer of the stack."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Secure",
+                  "desc": "End-to-end encryption keeps your data safe."
+                },
+                {
+                  "icon": "globe",
+                  "title": "Global",
+                  "desc": "Deployed across 30+ regions worldwide."
+                }
+              ],
+              "cell": "card",
+              "align": "center",
+              "iconStyle": "circle"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_06",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k6t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Why teams switch (cards, 2 columns)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k6a",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                {
+                  "icon": "zap",
+                  "title": "Fast",
+                  "desc": "Optimised for speed at every layer of the stack."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Secure",
+                  "desc": "End-to-end encryption keeps your data safe."
+                },
+                {
+                  "icon": "globe",
+                  "title": "Global",
+                  "desc": "Deployed across 30+ regions worldwide."
+                },
+                {
+                  "icon": "users",
+                  "title": "Shared",
+                  "desc": "Every report can be shared with a link."
+                }
+              ],
+              "columns": 2,
+              "cell": "card",
+              "iconStyle": "circle"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_07",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k7a",
+            "type": "tls.c.testimonial",
+            "props": {
+              "quote": {
+                "runs": [
+                  {
+                    "text": "We moved every board review to this deck format and "
+                  },
+                  {
+                    "text": "cut prep time in half",
+                    "bold": true
+                  },
+                  {
+                    "text": "."
+                  }
+                ]
+              },
+              "name": "Linh Tran",
+              "role": "COO, Northwind",
+              "avatar": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAFCAIAAADtz9qMAAAAQklEQVR42mPecOTcu0tHlaXEQiu6WBgYGGbUZT178mzLHwaWE+cuibA8Y2BgYGBgYNSx8mNgYPjy4Q0DAwMThIIAAGILFhqOMDSsAAAAAElFTkSuQmCC",
+              "variant": "photo"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_08",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k8t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Alumni survey (plain number, stats beside)"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k8a",
+            "type": "tls.c.stat-spotlight",
+            "props": {
+              "value": "1.250",
+              "label": "Alumni surveyed",
+              "context": "class of 2025, six months after graduation",
+              "stats": [
+                {
+                  "value": "92%",
+                  "label": "Employed"
+                },
+                {
+                  "value": "4,6/5",
+                  "label": "Programme rating"
+                },
+                {
+                  "value": "+18%",
+                  "label": "Versus class of 2020"
+                }
+              ],
+              "visual": "plain",
+              "statsPlacement": "side"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_09",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k9a",
+            "type": "tls.c.big-stat",
+            "props": {
+              "value": 4200000,
+              "label": "Total revenue",
+              "context": "up 12% on last year",
+              "format": "compact",
+              "prefix": "$",
+              "variant": "accent",
+              "align": "center"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_10",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k10a",
+            "type": "tls.c.big-stat",
+            "props": {
+              "value": 0.94,
+              "label": "Enrolment rate",
+              "context": "of admitted students enrolled in September",
+              "format": "percent",
+              "variant": "split"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_11",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k11a",
+            "type": "tls.c.hero",
+            "props": {
+              "kicker": "Annual review",
+              "title": {
+                "runs": [
+                  {
+                    "text": "A year of "
+                  },
+                  {
+                    "text": "steady growth",
+                    "bold": true
+                  }
+                ]
+              },
+              "subtitle": "Board meeting, October 2026",
+              "cta": "Read the plan",
+              "align": "center",
+              "decoration": "rule"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_12",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k12t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Today's agenda"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k12a",
+            "type": "tls.c.agenda",
+            "props": {
+              "items": [
+                {
+                  "title": "Where we are",
+                  "note": "Revenue, customers and retention"
+                },
+                {
+                  "title": "What we learned",
+                  "note": "Three signals from the market"
+                },
+                {
+                  "title": "Options",
+                  "note": "Build, partner or buy"
+                },
+                {
+                  "title": "The ask",
+                  "note": "Budget and next steps"
+                }
+              ],
+              "current": 1,
+              "variant": "cards",
+              "numbering": "badge"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_13",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k13t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Build or buy the analytics layer"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k13a",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Build in-house",
+                  "items": [
+                    "Full control of the roadmap",
+                    "Nine months to first release",
+                    "Two extra engineers a year"
+                  ]
+                },
+                {
+                  "title": "Buy a platform",
+                  "items": [
+                    "Live with customers in one quarter",
+                    "$180K a year in licences",
+                    "Vendor owns the data model"
+                  ]
+                }
+              ],
+              "highlight": 1,
+              "style": "versus"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_14",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k14t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three ways to reach mid-market teams"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k14a",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Direct sales",
+                  "items": [
+                    "Highest win rate",
+                    "Slow to hire for",
+                    "Costly per account"
+                  ]
+                },
+                {
+                  "title": "Partners",
+                  "items": [
+                    "400 accounts on day one",
+                    "Shared margin",
+                    "Less control"
+                  ]
+                },
+                {
+                  "title": "Self-serve",
+                  "items": [
+                    "Cheapest to run",
+                    "Needs product polish",
+                    "Small first deals"
+                  ]
+                }
+              ],
+              "highlight": 1,
+              "style": "cards"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_15",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k15t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Four numbers for the board"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k15a",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                {
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "label": "Revenue",
+                  "polarity": "upGood",
+                  "format": "compact"
+                },
+                {
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "label": "Churn %",
+                  "polarity": "downGood",
+                  "format": "percent"
+                },
+                {
+                  "value": 64,
+                  "delta": 9,
+                  "label": "NPS",
+                  "polarity": "upGood",
+                  "format": "plain"
+                },
+                {
+                  "value": 1250,
+                  "delta": 180,
+                  "label": "Active teams",
+                  "polarity": "upGood",
+                  "format": "plain"
+                }
+              ],
+              "tile": "accent-bar"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_16",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k16a",
+            "type": "tls.c.closing",
+            "props": {
+              "title": "Thank you",
+              "text": "Approve the partner pilot and a $1.2M budget.",
+              "cta": "Decide by April 15",
+              "contacts": [
+                "strategy@northwind.example",
+                "northwind.example/plan"
+              ],
+              "person": {
+                "name": "Mai Tran",
+                "role": "Head of Strategy"
+              },
+              "variant": "big-type"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_17",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "k17t",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Three steps to a pilot"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "k17a",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "number": "01",
+                  "title": "Pick one team",
+                  "text": "A team of 20 to 50 people with a weekly report."
+                },
+                {
+                  "number": "02",
+                  "title": "Run six weeks",
+                  "text": "Shared dashboards replace the spreadsheet."
+                },
+                {
+                  "number": "03",
+                  "title": "Decide together",
+                  "text": "Keep, change or stop, with the numbers in hand."
+                }
+              ],
+              "lead": "number",
+              "numeral": "giant"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "kn_18",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "k18a",
+            "type": "tls.c.kinetic-title",
+            "props": {
+              "kicker": "Part two",
+              "title": "Where we win next",
+              "highlight": "win next",
+              "subtitle": "Three markets, one product, eighteen months",
+              "align": "start",
+              "tone": "accent"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

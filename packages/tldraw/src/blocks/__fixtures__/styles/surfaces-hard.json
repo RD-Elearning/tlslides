@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "id": "style-surfaces-hard",
+  "title": "Surfaces — hard shadow",
+  "theme": "corporate-navy",
+  "style": "corporate",
+  "aspect": "widescreen",
+  "tokens": {
+    "surface": {
+      "card": "filled",
+      "stroke": "bold",
+      "shadow": "hard"
+    }
+  },
+  "slides": [
+    {
+      "id": "su_01",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_01",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Cards on the deck surface"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_cards",
+            "type": "tls.c.cards",
+            "props": {
+              "cards": [
+                {
+                  "icon": "target",
+                  "title": "Clear goals",
+                  "text": "Every session starts from one question the data can answer."
+                },
+                {
+                  "icon": "chart-bar",
+                  "title": "Hands-on data",
+                  "text": "Real datasets, small enough to explore in class."
+                },
+                {
+                  "icon": "check",
+                  "title": "Honest results",
+                  "text": "Learn what a result does and does not show."
+                }
+              ],
+              "lead": "icon"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_02",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_02",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Feature grid, card cells"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_feature_grid",
+            "type": "tls.c.feature-grid",
+            "props": {
+              "cells": [
+                {
+                  "icon": "zap",
+                  "title": "Fast",
+                  "desc": "Optimised for speed at every layer."
+                },
+                {
+                  "icon": "shield",
+                  "title": "Secure",
+                  "desc": "End-to-end encryption by default."
+                },
+                {
+                  "icon": "globe",
+                  "title": "Global",
+                  "desc": "Deployed across 30+ regions."
+                }
+              ],
+              "columns": 3,
+              "gap": 24,
+              "cell": "card"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_03",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_03",
+            "type": "tls.t.title",
+            "props": {
+              "text": "KPI tiles"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_kpi_row",
+            "type": "tls.c.kpi-row",
+            "props": {
+              "tiles": [
+                {
+                  "value": 4200000,
+                  "delta": 12.5,
+                  "label": "Revenue",
+                  "polarity": "upGood",
+                  "format": "compact"
+                },
+                {
+                  "value": 3.1,
+                  "delta": -0.8,
+                  "label": "Churn %",
+                  "polarity": "downGood",
+                  "format": "percent"
+                },
+                {
+                  "value": 892,
+                  "delta": 42,
+                  "label": "NPS",
+                  "polarity": "upGood",
+                  "format": "plain"
+                }
+              ],
+              "gap": "md",
+              "tile": "card"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_04",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_04",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Pricing"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_pricing",
+            "type": "tls.d.pricing",
+            "props": {
+              "plans": [
+                {
+                  "name": "Starter",
+                  "price": "Free",
+                  "features": [
+                    "1 project",
+                    "Community support"
+                  ],
+                  "cta": "Start"
+                },
+                {
+                  "name": "Team",
+                  "price": "$29",
+                  "period": "/ month",
+                  "description": "For teams",
+                  "features": [
+                    "Unlimited projects",
+                    "Priority support"
+                  ],
+                  "cta": "Try",
+                  "featured": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_05",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_05",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Team"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_team",
+            "type": "tls.c.team",
+            "props": {
+              "people": [
+                {
+                  "image": "/demo/portrait-1.svg",
+                  "name": "Dr. Tran Thi Lan",
+                  "role": "Head of Data Science",
+                  "bio": "Leads the analytics group."
+                },
+                {
+                  "image": "/demo/portrait-2.svg",
+                  "name": "Nguyen Van An",
+                  "role": "Senior lecturer",
+                  "bio": "Teaches inference."
+                },
+                {
+                  "image": "/demo/portrait-3.svg",
+                  "name": "Le Minh Chau",
+                  "role": "Postdoc",
+                  "bio": "Works on causal models."
+                },
+                {
+                  "image": "/demo/portrait-4.svg",
+                  "name": "Pham Quoc Bao",
+                  "role": "PhD student",
+                  "bio": "Builds forecasting tools."
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_06",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_06",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Comparison cards"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_comparison",
+            "type": "tls.c.comparison",
+            "props": {
+              "columns": [
+                {
+                  "title": "Build In-House",
+                  "items": [
+                    "Full control",
+                    "Higher upfront cost",
+                    "Longer timeline"
+                  ]
+                },
+                {
+                  "title": "Buy SaaS",
+                  "items": [
+                    "Quick setup",
+                    "Lower upfront cost",
+                    "Vendor lock-in risk"
+                  ]
+                },
+                {
+                  "title": "Hybrid",
+                  "items": [
+                    "Balanced approach",
+                    "Moderate cost",
+                    "Flexible roadmap"
+                  ]
+                }
+              ],
+              "highlight": 2,
+              "style": "cards"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_07",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "b_testimonial",
+            "type": "tls.c.testimonial",
+            "props": {
+              "quote": "This product transformed how our team works. We shipped 3× faster in the first quarter.",
+              "name": "Jane Doe",
+              "role": "VP of Engineering",
+              "avatar": ""
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_08",
+      "layout": "timeline",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_08",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Chart look"
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_chart_insight",
+            "type": "tls.c.chart-insight",
+            "props": {
+              "chart": {
+                "kind": "line",
+                "categories": [
+                  "Q1",
+                  "Q2",
+                  "Q3"
+                ],
+                "series": [
+                  {
+                    "name": "Users",
+                    "values": [
+                      12,
+                      18,
+                      27
+                    ]
+                  }
+                ]
+              },
+              "insight": "Users **doubled** in two quarters.",
+              "source": "Source: product analytics"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_09",
+      "layout": "grid-3x2",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_09",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Motifs"
+            }
+          }
+        ],
+        "c1": [
+          {
+            "id": "m1",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "orb",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "c2": [
+          {
+            "id": "m2",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "star",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "c3": [
+          {
+            "id": "m3",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "sparkle",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "c4": [
+          {
+            "id": "m4",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "squiggle",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "c5": [
+          {
+            "id": "m5",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "zigzag",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "c6": [
+          {
+            "id": "m6",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "triangle",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "su_10",
+      "layout": "four-up",
+      "regions": {
+        "title": [
+          {
+            "id": "t_su_10",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Motifs and backdrops"
+            }
+          }
+        ],
+        "q1": [
+          {
+            "id": "m7",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "half-circle",
+              "tone": "accent",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "q2": [
+          {
+            "id": "m8",
+            "type": "tls.m.decoration",
+            "props": {
+              "shape": "frame",
+              "tone": "accent2",
+              "opacity": "strong",
+              "rotation": 0
+            }
+          }
+        ],
+        "q3": [
+          {
+            "id": "p1",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "mesh",
+              "opacity": "medium"
+            }
+          }
+        ],
+        "q4": [
+          {
+            "id": "p2",
+            "type": "tls.m.pattern",
+            "props": {
+              "pattern": "grain",
+              "opacity": "medium",
+              "tone": "accent"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

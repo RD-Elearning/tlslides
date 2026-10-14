@@ -183,6 +183,13 @@ export interface TDDocument {
   masters?: Record<string, MasterSpec>
   // P7 — the deck's authored `DeckSpec.motionStyle`, carried for the round trip only.
   motionStyle?: 'static' | 'subtle' | 'expressive'
+  // AC1 — the deck's `DeckSpec.style` (a `BUILT_IN_STYLES` id), stored so a re-compile and every
+  // token reader (`documentDeckTokens`) find the style; the style's tokens/masters are NOT copied
+  // into `tokens`/`masters`' authored part, so `documentToDeckSpec` returns what was authored.
+  styleId?: string
+  // enhance F1 — the deck's `DeckSpec.motif` (a subject doodle), carried for the masters and the
+  // round trip.
+  motif?: string
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -261,6 +268,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   // P7 — the slide's authored `SlideSpec.motionStyle`, carried so `documentToDeckSpec` can
   // return it. Playback does not read it: the compiler already baked it into each shape.
   motionStyle?: 'static' | 'subtle' | 'expressive'
+  // enhance L1 — the authored `SlideSpec.valign`, carried back by `documentToDeckSpec`.
+  valign?: 'start' | 'auto'
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

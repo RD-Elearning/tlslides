@@ -20,7 +20,7 @@ export const tlsGCycle: BlockDefinition = {
   related: ['tls.g.chevrons', 'tls.g.steps', 'tls.g.hub-spoke'],
   describe: {
     when: 'Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.',
-    avoid: 'A process with a clear end (use tls.g.chevrons or tls.g.steps).',
+    avoid: 'A process with a clear end (use tls.g.chevrons or tls.g.steps). By default prefer tls.c.steps for ordered steps.',
     example: {
       id: 'b_cycle',
       type: 'tls.g.cycle',

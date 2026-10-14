@@ -20,6 +20,7 @@ import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-d
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
 import { layoutBlock } from '~blocks/layout/layout-child'
+import { treatTree } from '~blocks/paint-treatment'
 import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
@@ -76,6 +77,14 @@ export interface DeckViewerProps {
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
   autoAdvanceMs?: number
+  /** What a click on the slide does: `advance` (default) always moves forward; `halves` moves back
+   *  on the left half and forward on the right half (a build step, then the next slide). */
+  clickNavigation?: 'advance' | 'halves'
+  /** Where a slide change made by the HOST (a new `slideIndex` prop, step uncontrolled) lands:
+   *  `start` (default) = before the first build step; `built` = every step shown, like a
+   *  thumbnail jump in a presentation app. The viewer's own navigation is unaffected (back
+   *  lands built, forward at the start). */
+  slideEntry?: 'start' | 'built'
   /** Optional block registry override. When absent, the module-level `sharedRegistry` is used. */
   registry?: BlockRegistry
   /** Optional host registry for `k: 'host'` layout nodes. */
@@ -89,6 +98,9 @@ export interface DeckViewerProps {
 
 const sharedRegistry = new BlockRegistry()
 registerBuiltInBlocks(sharedRegistry)
+
+/** A touch that moves at least this far sideways (and mostly sideways) is a swipe, not a tap. */
+const SWIPE_MIN_PX = 40
 
 /** A layout effect in the browser (runs before paint), a plain effect during SSR. */
 const useIsoLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect
@@ -204,12 +216,15 @@ function BlockContent({
   blockDef,
   props,
   ctx,
+  paintKey = '',
 }: {
   blockDef: BlockDefinition
   props: Record<string, unknown>
   ctx: LayoutContext
+  /** enhance S2: seeds the style's render treatment (`${type}|${id}`, as the editor and export). */
+  paintKey?: string
 }) {
-  return <React.Fragment>{renderNodeToDom(layoutBlock(blockDef, props, ctx))}</React.Fragment>
+  return <React.Fragment>{renderNodeToDom(treatTree(layoutBlock(blockDef, props, ctx), ctx.tokens.surface?.render, paintKey))}</React.Fragment>
 }
 
 interface BlockBoundaryState {
@@ -271,6 +286,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   driver,
   gsap,
   autoAdvanceMs,
+  clickNavigation = 'advance',
+  slideEntry = 'start',
   registry: registryProp,
   hostRegistry,
   className,
@@ -334,8 +351,14 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   /* --- Navigation state transitions --------------------------------------------------- */
 
+  // The slide index the viewer itself last asked a controlling host for: when the host follows
+  // with that index, the step this viewer set (a retreat lands on the previous slide fully built)
+  // must stand — before, the host-change reset below wiped it back to 0 (spro demo T12).
+  const selfRequestedSlideRef = React.useRef<number | undefined>(undefined)
+
   const setSlide = React.useCallback(
     (index: number, step: number) => {
+      selfRequestedSlideRef.current = index
       if (isSlideControlled) onSlideChange?.(index)
       else setInnerSlideIndex(index)
       if (isStepControlled) onBuildStepChange?.(step)
@@ -373,8 +396,15 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   const retreat = React.useCallback(() => {
     navDirectionRef.current = 'backward'
-    if (currentBuildStep > 0) {
-      setStep(currentBuildStep - 1)
+    // Back undoes the last CLICK, as in a presentation app: the latest revealed step that waited
+    // for one, with the auto steps that chained after it. Steps that revealed themselves on entry
+    // (step 0 is always auto) are part of arriving, so with nothing clicked yet back leaves the
+    // slide. Stepping back one auto step at a time looked like "back does nothing" on a deck
+    // whose builds all chain (spro demo T12).
+    let group = Math.min(currentBuildStep, steps.length) - 1
+    while (group > 0 && steps[group].auto) group--
+    if (group > 0) {
+      setStep(group)
       return
     }
     const prev = prevPresentableIndex(pages, currentSlideIndex)
@@ -383,7 +413,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       const prevSteps = prevPage ? computeBuildSteps(prevPage) : []
       setSlide(prev, prevSteps.length)
     }
-  }, [currentBuildStep, pages, currentSlideIndex, setStep, setSlide])
+  }, [currentBuildStep, steps, pages, currentSlideIndex, setStep, setSlide])
 
   const goHome = React.useCallback(() => {
     navDirectionRef.current = 'forward'
@@ -405,10 +435,14 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const prevControlledSlideRef = React.useRef(slideIndex)
   React.useEffect(() => {
     if (isSlideControlled && !isStepControlled && prevControlledSlideRef.current !== slideIndex) {
-      setInnerBuildStep(0)
+      if (selfRequestedSlideRef.current !== slideIndex) {
+        const target = pages[clampIndex(slideIndex as number, pages.length)]
+        setInnerBuildStep(slideEntry === 'built' && target ? computeBuildSteps(target).length : 0)
+      }
     }
+    selfRequestedSlideRef.current = undefined
     prevControlledSlideRef.current = slideIndex
-  }, [slideIndex, isSlideControlled, isStepControlled])
+  }, [slideIndex, isSlideControlled, isStepControlled, slideEntry, pages])
 
   /* --- Build-step visual sync ---------------------------------------------------------- */
 
@@ -645,7 +679,55 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     [advance, retreat, goHome, goEnd]
   )
 
-  const handleClick = React.useCallback(() => advance(), [advance])
+  // `halves`: the pointer says which way a click goes (‹ on the left half, › on the right); a
+  // horizontal swipe on a touch screen goes the same way, and the click it ends with is ignored
+  const [side, setSide] = React.useState<'left' | 'right'>('right')
+  const swipeRef = React.useRef<{ x: number; y: number; swiped: boolean } | null>(null)
+  const handleMouseMove = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (clickNavigation !== 'halves') return
+      const rect = e.currentTarget.getBoundingClientRect()
+      setSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right')
+    },
+    [clickNavigation]
+  )
+  const handleTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const t = e.touches[0]
+    swipeRef.current = t ? { x: t.clientX, y: t.clientY, swiped: false } : null
+  }, [])
+  const handleTouchEnd = React.useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const start = swipeRef.current
+      const t = e.changedTouches[0]
+      if (!start || !t || clickNavigation !== 'halves') return
+      const dx = t.clientX - start.x
+      const dy = t.clientY - start.y
+      if (Math.abs(dx) >= SWIPE_MIN_PX && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        start.swiped = true
+        if (dx < 0) advance()
+        else retreat()
+      }
+    },
+    [advance, retreat, clickNavigation]
+  )
+
+  const handleClick = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (swipeRef.current?.swiped) {
+        swipeRef.current = null
+        return
+      }
+      if (clickNavigation === 'halves') {
+        const rect = e.currentTarget.getBoundingClientRect()
+        if (e.clientX - rect.left < rect.width / 2) {
+          retreat()
+          return
+        }
+      }
+      advance()
+    },
+    [advance, retreat, clickNavigation]
+  )
 
   /* --- Viewport scale-to-fit -------------------------------------------------------------- */
 
@@ -735,7 +817,18 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       aria-live="polite"
       onKeyDown={handleKeyDown}
       onClick={handleClick}
-      style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', outline: 'none' }}
+      onMouseMove={handleMouseMove}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      data-click-side={clickNavigation === 'halves' ? side : undefined}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        outline: 'none',
+        ...(clickNavigation === 'halves' ? { cursor: side === 'left' ? 'w-resize' : 'e-resize', touchAction: 'pan-y' } : {}),
+      }}
       data-testid="deck-viewer"
       data-slide-index={currentSlideIndex}
       data-slide-count={pages.length}
@@ -792,7 +885,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                       props: blockSpec.props,
                       headless: false,
                     }}>
-                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} />
+                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} />
                     </HostLayoutContext.Provider>
                   ) : (
                     <UnknownBlockPlaceholder type={shape.componentId} />

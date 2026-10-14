@@ -38,8 +38,8 @@ export function layout(props: SlopeProps, ctx0: LayoutContext): LayoutNode {
   const mode = enumOf(props.highlight, ['none', 'risers', 'fallers'] as const, 'none')
   const nodes: LayoutNode[] = []
 
-  const leftText = items.map((it) => `${it.name}  ${fmtNum(it.start, fmt)}`)
-  const rightText = items.map((it) => `${fmtNum(it.end, fmt)}  ${it.name}`)
+  const leftText = items.map((it) => `${it.name}  ${fmtNum(it.start, fmt, ctx.tokens.locale)}`)
+  const rightText = items.map((it) => `${fmtNum(it.end, fmt, ctx.tokens.locale)}  ${it.name}`)
   const maxSide = W * 0.36
   const wOf = (t: string) => ctx.measureText(t, ts).width * 1.08
   const leftW = Math.min(maxSide, Math.ceil(Math.max(...leftText.map(wOf))))
@@ -89,8 +89,8 @@ export function layout(props: SlopeProps, ctx0: LayoutContext): LayoutNode {
   items.forEach((it, i) => {
     const ink = { ...ts, color: emphasised(it) ? c.text : c.muted }
     // Clip the NAME, never the number: "Product A…  80" reads, "Product A ..." does not.
-    const vL = fmtNum(it.start, fmt)
-    const vR = fmtNum(it.end, fmt)
+    const vL = fmtNum(it.start, fmt, ctx.tokens.locale)
+    const vR = fmtNum(it.end, fmt, ctx.tokens.locale)
     const nameL = ellipsize(ctx, it.name, ts, Math.max(10, leftW / 1.04 - ctx.measureText(`  ${vL}`, ts).width))
     const nameR = ellipsize(ctx, it.name, ts, Math.max(10, rightW / 1.04 - ctx.measureText(`${vR}  `, ts).width))
     const lt = `${nameL}  ${vL}`

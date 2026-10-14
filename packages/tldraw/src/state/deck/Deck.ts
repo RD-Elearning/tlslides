@@ -1,15 +1,18 @@
 import { Utils } from '@tlslides/core'
 import { compileSlide } from '~blocks/slide-compiler'
+import { styleMasterPage } from '~blocks/deck-document'
+import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { resolveTokens } from '~blocks/tokens'
 import type { SlideSpec } from '~blocks/types'
 import { BlockRegistry } from '~blocks/registry'
 import { registerBuiltInBlocks } from '~blocks/library'
+import { defaultBlockSvg } from '~blocks/layout-slide'
 import { activeDeckTheme, BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { defaultStyle } from '~state/shapes/shared/shape-styles'
 import { BUILT_IN_TEMPLATES } from '~state/templates'
 import { renderPageToSvg, renderSvgToPng, resolvePageSize, toBase64Utf8 } from '~state/render'
 import { TDShapeType } from '~types'
-import type { ComponentShape, DeckTheme, SlideBackground, TDDocument, TDPage, Template } from '~types'
+import type { ComponentShape, DeckTheme, SlideBackground, TDDocument, TDPage, TDShape, Template } from '~types'
 import type { TldrawApp } from '../internal'
 import type {
   AddBlockOptions,
@@ -73,6 +76,17 @@ export class Deck {
    *  `opts.blocks` takes precedence). Set by `<Tldraw blocks>` so a host can supply one callback
    *  for the entire editor lifetime without passing it on every thumbnail/export call. */
   blocks?: (shape: ComponentShape) => string | undefined
+
+  /** CMP1 (Q9 step 3) — the registry the *default* `blocks` callback lays blocks out with (set by
+   *  `<Tldraw blockRegistry>`); absent = the built-in blocks. */
+  blockRegistry?: BlockRegistry
+
+  /** CMP1 (Q9 step 3): with no host callback, blocks export as real blocks (`defaultBlockSvg`):
+   *  laid out headlessly with the document's tokens and the page background. A type the registry
+   *  does not know still falls through to the placeholder. */
+  private blocksFor(page: TDPage): (shape: ComponentShape) => string | undefined {
+    return this.blocks ?? defaultBlockSvg(this.app.document, page, this.blockRegistry)
+  }
 
   constructor(app: TldrawApp) {
     this.app = app
@@ -170,18 +184,30 @@ export class Deck {
     // 3. Resolve tokens from the document's theme + token overrides.
     const tokens = resolveTokens(
       activeDeckTheme(this.app.document.theme),
-      this.app.document.tokens
+      documentDeckTokens(this.app.document)
     )
+    const deckStyle = getDeckStyle(this.app.document.styleId)
 
     // 4. Compile the spec into shapes + metadata.
     const registry = new BlockRegistry()
     registerBuiltInBlocks(registry)
-    const result = compileSlide(spec, frame, tokens, registry, { motionStyle: this.app.document.motionStyle })
+    const result = compileSlide(spec, frame, tokens, registry, {
+      motionStyle: this.app.document.motionStyle ?? deckStyle?.motionStyle,
+      ...(deckStyle ? { blockDefaults: deckStyle.blockDefaults } : {}),
+    })
+
+    // AC4: the style master of this slide (as `deckSpecToDocument` adds it): its background when
+    // the spec sets none and its blocks (mesh, grain, motifs) as locked `style:` shapes
+    // under the content.
+    const sm = styleMasterPage(deckStyle, spec, slideId, frame, tokens, this.app.document.motif)
 
     // 5. Apply page-level metadata.
-    if (result.background !== undefined) {
-      this.app.setPageBackground(slideId, result.background as SlideBackground)
+    const background = result.background ?? sm.background
+    if (background !== undefined) {
+      this.app.setPageBackground(slideId, background as SlideBackground)
     }
+    // (`page.masterId` is not set: there is no page command for it, and the page already paints
+    // the master's background and blocks, which is all `masterId` would add.)
     if (result.notes !== undefined) {
       this.app.setPageNotes(slideId, result.notes)
     }
@@ -189,7 +215,11 @@ export class Deck {
       this.app.setPageSkipInPresentation(slideId, result.skipInPresentation)
     }
 
-    // 6. Insert the compiled shapes.
+    // 6. Insert the style master's shapes (ids kept: the decompiler and the SVG export know them
+    // by their `style:` prefix), then the compiled shapes above them.
+    if (sm.shapes.length > 0) {
+      this.app.create(sm.shapes.map((sh) => ({ ...sh, parentId: slideId })) as unknown as TDShape[])
+    }
     if (result.shapes.length > 0) {
       this.app.insertContent(
         { shapes: result.shapes },
@@ -300,7 +330,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
-      blocks: opts.blocks ?? this.blocks,
+      blocks: opts.blocks ?? this.blocksFor(page),
       masters: this.app.document.masters,
     })
     if (opts.format === 'svg') return svg
@@ -325,7 +355,7 @@ export class Deck {
       assets: this.app.document.assets,
       theme: this.app.document.theme,
       defaultPageSize: this.app.document.defaultPageSize,
-      blocks: opts.blocks ?? this.blocks,
+      blocks: opts.blocks ?? this.blocksFor(page),
       masters: this.app.document.masters,
     })
     return renderSvgToPng(svg, width, height, opts)

@@ -37,6 +37,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Icon colour',
   },
+  size: {
+    type: { kind: 'enum', values: ['body', 'fit'] },
+    role: 'option',
+    label: 'Text size',
+    help: 'fit: biggest type that fills a tall column, centred.',
+  },
   spacing: {
     type: { kind: 'enum', values: ['default', 'compact', 'roomy'] },
     role: 'option',
@@ -61,6 +67,8 @@ export interface IconListProps extends Record<string, unknown> {
   iconStyle?: 'plain' | 'circle' | 'square'
   iconTone?: 'accent' | 'accent2' | 'text'
   spacing?: 'default' | 'compact' | 'roomy'
+  /** AC8.5 */
+  size?: 'body' | 'fit'
   showText?: boolean
 }
 

@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
+import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
 import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
@@ -36,11 +36,52 @@ interface BlockMetadata {
   style?: BlockStyleSpec
   motion?: BlockMotionSpec
   children?: BlockSpec[]
+  /** LO2 — the instance's explicit paint layer (`BlockSpec.layer`). */
+  layer?: BlockLayer
+  /** LO2.1 — `BlockSpec.anchor` / `BlockSpec.anchorTo`. */
+  anchor?: BlockAnchor
+  anchorTo?: string
+  /** CMP1 — `BlockSpec.bleed` (a backdrop that may leave the frame). */
+  bleed?: boolean
+  /** CMP1 — set by `compileSlide` on a block whose region has a layered image backdrop: it sits on
+   *  a photo, so its context surface is an image surface (`overImage: true`). Never authored,
+   *  never returned by `shapeToBlock`. */
+  overImage?: boolean
   /** P7 — motion derived from the slide's `motionStyle` by `compileSlide`. Never authored, never
    *  returned by `shapeToBlock`; playback reads it through `shapeToRevealBlock`. */
   styleMotion?: BlockMotionSpec
   /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
   motionStyle?: 'subtle' | 'expressive'
+  /** LO8 — where `compileSlide` placed a layered (backdrop/overlay) block: its box, and whether
+   *  it came from a region (anchored) or from `free[]`. Never authored, never returned by
+   *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
+   *  (keep the move, `free[]`) from "untouched" (re-anchor). */
+  placed?: ShapePlacement
+  /** AC1 — the deck style's knob defaults `compileSlide` filled into the top-level props (keys the
+   *  block did not author). Never authored: `shapeToBlock` keeps them (renderers need the look),
+   *  `shapeToAuthoredBlock` (the decompiler) drops a filled key whose value is still the default,
+   *  so the round trip returns the authored props. */
+  styleDefaults?: Record<string, unknown>
+  /** enhance L5 — the `style.textScale` `compileSlide` gave the block to grow a balanced slide's
+   *  content into its page (`growText`). Never authored: `shapeToBlock` keeps the scale (renderers
+   *  need it), `shapeToAuthoredBlock` drops it while it is still this value. */
+  grown?: number
+}
+
+/** LO8 — see `BlockMetadata.placed`. */
+export interface ShapePlacement {
+  box: Box
+  from: 'region' | 'free'
+}
+
+/** LO8 — where the compiler placed a layered block (`$block.placed`), if recorded. */
+export function shapePlacement(shape: unknown): ShapePlacement | undefined {
+  const meta = (shape as { props?: Record<string, unknown> } | null)?.props?.[BLOCK_PROP_KEY] as BlockMetadata | undefined
+  const p = meta?.placed
+  const b = p?.box
+  if (!p || !b || typeof b !== 'object' || (p.from !== 'region' && p.from !== 'free')) return undefined
+  const ok = [b.x, b.y, b.width, b.height].every((n) => typeof n === 'number' && Number.isFinite(n))
+  return ok ? { box: { x: b.x, y: b.y, width: b.width, height: b.height }, from: p.from } : undefined
 }
 
 /**
@@ -93,6 +134,12 @@ export function blockToShape(
   if (spec.children !== undefined) {
     metadata.children = JSON.parse(JSON.stringify(spec.children))
   }
+  if (spec.layer !== undefined) {
+    metadata.layer = spec.layer
+  }
+  if (spec.anchor !== undefined) metadata.anchor = spec.anchor
+  if (spec.anchorTo !== undefined) metadata.anchorTo = spec.anchorTo
+  if (spec.bleed !== undefined) metadata.bleed = spec.bleed
 
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
@@ -238,10 +285,36 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   if (meta.children !== undefined) {
     spec.children = JSON.parse(JSON.stringify(meta.children))
   }
+  if (meta.layer !== undefined) {
+    spec.layer = meta.layer
+  }
+  if (meta.anchor !== undefined) spec.anchor = meta.anchor
+  if (meta.anchorTo !== undefined) spec.anchorTo = meta.anchorTo
+  if (meta.bleed !== undefined) spec.bleed = meta.bleed
   if (shapeObj.slot !== undefined) {
     spec.slot = shapeObj.slot as string
   }
 
+  return spec
+}
+
+/**
+ * AC1 — `shapeToBlock` minus the deck style's knob defaults (`$block.styleDefaults`) that are still
+ * at their filled value: what the author wrote. The decompiler's read; renderers use `shapeToBlock`.
+ */
+export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
+  const spec = shapeToBlock(shape)
+  const grown = blockMetaOf(shape)?.grown
+  if (spec?.style && typeof grown === 'number' && spec.style.textScale === grown) {
+    const { textScale: _grown, ...rest } = spec.style
+    if (Object.keys(rest).length) spec.style = rest
+    else delete spec.style
+  }
+  const filled = blockMetaOf(shape)?.styleDefaults
+  if (!spec || !filled || typeof filled !== 'object') return spec
+  for (const [key, value] of Object.entries(filled)) {
+    if (key in spec.props && JSON.stringify(spec.props[key]) === JSON.stringify(value)) delete spec.props[key]
+  }
   return spec
 }
 

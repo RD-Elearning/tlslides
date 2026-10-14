@@ -9,7 +9,7 @@
  * and the two registries serve different layers.
  */
 
-import type { Box, ResolvedTokens, SurfaceContext, BlockMotionRuntime } from './types'
+import type { Box, ResolvedTokens, SurfaceContext, BlockMotionRuntime, LayoutNode } from './types'
 
 /**
  * Resolved block motion (from R5); undefined until that phase lands.
@@ -46,6 +46,8 @@ export interface HostRenderContext {
   blockMotion?: BlockMotionRuntime
   /** True when rendering for export/thumbnail rather than the live editor. */
   headless: boolean
+  /** LO7: the host node's poster (the same layout pass), for html templates that paint its lines. */
+  poster?: LayoutNode
 }
 
 /**

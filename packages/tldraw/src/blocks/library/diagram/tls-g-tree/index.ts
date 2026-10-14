@@ -16,7 +16,7 @@ export const tlsGTree: BlockDefinition = {
   keywords: ['tree', 'org chart', 'hierarchy', 'taxonomy', 'breakdown', 'structure'],
   category: 'hierarchy',
   scope: 'group',
-  shortDescription: 'Org chart or hierarchy of boxes linked from one root, top-down or left-right',
+  shortDescription: 'Org chart or hierarchy of nodes linked from one root, down or sideways',
   related: ['tls.g.flow', 'tls.g.hub-spoke', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.mindmap'],
   describe: {
     when: 'Parent/child: org charts, taxonomies, the decomposition of a goal into parts.',

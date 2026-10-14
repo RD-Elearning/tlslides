@@ -17,7 +17,7 @@ import { bandScale, multiSeriesDomain } from '../_engine/multi-series'
 import { layoutLegend } from '../_engine/legend'
 import type { LegendPlacement } from '../_engine/legend'
 import {
-  AXIS_W, GRID_W, categoryLabels, chartColors, clamp, clipLines, dimmed, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData,
+  AXIS_W, categoryLabels, chartLook, chartColors, clamp, clipLines, dimmed, emptyState, enumOf, fmtNum, isNum, lineH, mutedStyle, niceAxis, noData,
   onColor, readCategories, readSeries, root, seriesColors, solidRect, textAligned, TEXT_SLACK, valueAxisLeft,
 withRealWidths, } from './kit'
 import type { Series } from './kit'
@@ -120,7 +120,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
   const showTotals = kind === 'stacked' && (props.totals === true || props.valueLabels === 'end') && mode !== 'grouped'
   const vlMode = enumOf(props.valueLabels, ['none', 'end', 'inside'] as const, 'none')
   const gridlines = props.gridlines !== 'none'
-  const labelOf = (seg: Seg) => (mode === 'percent' ? `${Math.round(seg.shown)}%` : fmtNum(seg.shown, fmt))
+  const look = chartLook(ctx)
+  const labelOf = (seg: Seg) => (mode === 'percent' ? `${Math.round(seg.shown)}%` : fmtNum(seg.shown, fmt, ctx.tokens.locale))
   const labelW = (txt: string) => ctx.measureText(txt, ls).width * TEXT_SLACK
 
   const place = (t: ReturnType<typeof textAligned>) => nodes.push(...t.nodes)
@@ -155,6 +156,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
         box: { x, y, width: barW, height: h },
         fill: { type: 'solid', color: colorOf(sg.s, sg.c) },
         ...(mode !== 'grouped' ? { stroke: { color: c.surface, width: 1 } } : {}),
+        // AC4 chart look: rounded single / grouped bars (stacked segments share edges)
+        ...(mode === 'grouped' && look.barRadius > 0 ? { radius: Math.min(look.barRadius, barW * 0.3) } : {}),
       })
       const txt = labelOf(sg)
       const tw = labelW(txt)
@@ -170,7 +173,7 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
     if (showTotals) {
       cats.forEach((_, i) => {
         const total = mode === 'percent' ? rawTotals[i] : segs.filter((sg) => sg.c === i && sg.to >= sg.from).reduce((t, sg) => Math.max(t, sg.to), 0)
-        const txt = fmtNum(mode === 'percent' ? rawTotals[i] : total, props.format)
+        const txt = fmtNum(mode === 'percent' ? rawTotals[i] : total, props.format, ctx.tokens.locale)
         const tw = labelW(txt)
         if (tw > bands.step * 0.98) return
         const top = mode === 'percent' ? ax.y(100) : ax.y(total)
@@ -183,7 +186,7 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
     const catW = clamp(Math.ceil(Math.max(...words) * TEXT_SLACK), 20, W * 0.34)
     const valueTexts = segs.map(labelOf)
     const endRoom = (vlMode === 'end' && mode === 'grouped') || showTotals ? Math.ceil(Math.max(0, ...valueTexts.map((t) => labelW(t))) + 8) : 0
-    const rightPad = Math.max(endRoom, labelW(fmtNum(axis.max, fmt)) / 2 + 2)
+    const rightPad = Math.max(endRoom, labelW(fmtNum(axis.max, fmt, ctx.tokens.locale)) / 2 + 2)
     const bottomH = lh + 8
     const plot: Box = {
       x: area.x + catW + 10,
@@ -195,8 +198,9 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
     axis.ticks.forEach((t, i) => {
       const x = xv(t)
       const isBase = Math.abs(t - Math.max(axis.min, Math.min(0, axis.max))) < 1e-9
-      if (gridlines || isBase) nodes.push(solidRect({ x: x - (isBase ? AXIS_W : GRID_W) / 2, y: plot.y, width: isBase ? AXIS_W : GRID_W, height: plot.height }, isBase ? c.line : c.grid, `grid[${i}]`))
-      const txt = fmtNum(t, fmt)
+      const gw = isBase ? AXIS_W : look.gridWidth
+      if (gridlines || isBase) nodes.push(solidRect({ x: x - gw / 2, y: plot.y, width: gw, height: plot.height }, isBase ? c.line : c.grid, `grid[${i}]`))
+      const txt = fmtNum(t, fmt, ctx.tokens.locale)
       const tw = labelW(txt)
       const tx = clamp(x - tw / 2, 0, Math.max(0, W - tw))
       place(textAligned(ctx, txt, ls, { x: tx, y: plot.y + plot.height + 6, width: tw }, 'center', `xtick[${i}]`))
@@ -227,6 +231,8 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
         box: { x, y, width: w, height: barH },
         fill: { type: 'solid', color: colorOf(sg.s, sg.c) },
         ...(mode !== 'grouped' ? { stroke: { color: c.surface, width: 1 } } : {}),
+        // AC4 chart look: rounded single / grouped bars (stacked segments share edges)
+        ...(mode === 'grouped' && look.barRadius > 0 ? { radius: Math.min(look.barRadius, barH * 0.3) } : {}),
       })
       const txt = labelOf(sg)
       const tw = labelW(txt)
@@ -241,7 +247,7 @@ export function barFamilyLayout(kind: BarKind, props: BarFamilyProps, ctx0: Layo
     if (showTotals) {
       cats.forEach((_, i) => {
         const total = mode === 'percent' ? rawTotals[i] : segs.filter((sg) => sg.c === i && sg.to >= sg.from).reduce((t, sg) => Math.max(t, sg.to), 0)
-        const txt = fmtNum(total, props.format)
+        const txt = fmtNum(total, props.format, ctx.tokens.locale)
         const tw = labelW(txt)
         const x = (mode === 'percent' ? xv(100) : xv(total)) + 6
         place(textAligned(ctx, txt, { ...ls, color: c.text }, { x: Math.min(x, Math.max(0, W - tw)), y: bands.start(i) + bands.bandwidth / 2 - lh / 2, width: tw }, 'start', `total[${i}]`))

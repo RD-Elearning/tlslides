@@ -114,3 +114,18 @@ describe('RV05 — example fits its box (review G05)', () => {
     expect(wideSentence.x).toBeGreaterThan(900)
   })
 })
+
+describe('AC2 — insightSize knob', () => {
+  it.each([
+    ['preferred', tlsCChartInsight.size.preferred],
+    ['min', tlsCChartInsight.size.min],
+  ])('insightSize: lead fits size.%s and passes size lead to the takeaway', (_label, [w, h]) => {
+    const props = { ...EX, insightSize: 'lead' }
+    const tree = layoutAt(tlsCChartInsight, props, w, h)
+    assertContained(tree, { width: w, height: h })
+    expect(tree.box.height).toBeLessThanOrEqual(h + 0.5)
+    const lead = leavesOf(tree, 'insight').filter((l) => l.k === 'text').map((l) => (l.node as any).style.size)
+    const body = leavesOf(layoutAt(tlsCChartInsight, EX, w, h), 'insight').filter((l) => l.k === 'text').map((l) => (l.node as any).style.size)
+    expect(Math.max(...lead)).toBeGreaterThan(Math.max(...body))
+  })
+})

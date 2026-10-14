@@ -20,7 +20,7 @@ export const tlsMAvatarGroup: BlockDefinition = {
   related: ['tls.m.avatar', 'tls.c.profile-card'],
   describe: {
     when: 'Who is involved at a glance: contributors, attendees, a project team.',
-    avoid: 'Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card).',
+    avoid: 'Names and roles matter (use tls.m.avatar one by one or a grid of tls.c.profile-card). By default prefer tls.c.team.',
     example: {
       id: 'b_avatar_group',
       type: 'tls.m.avatar-group',

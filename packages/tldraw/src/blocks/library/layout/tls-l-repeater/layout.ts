@@ -8,12 +8,13 @@
 import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RepeaterProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
 
 export function layout(props: RepeaterProps, ctx: LayoutContext): LayoutNode {
   const count = Math.max(1, Math.floor(props.count ?? 3))
   const direction = (props.direction ?? 'y') as 'x' | 'y'
   const gapToken = (props.gap ?? 'sm') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.sm) // CMP1: style.gap wins
   const children = props.children ?? []
   const template = children.length > 0 ? children[0] : null
 

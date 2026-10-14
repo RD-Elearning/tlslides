@@ -552,7 +552,8 @@ describe('compileSlide', () => {
     it('three blocks: middle block is 2× the others, all boxes disjoint and ordered', () => {
       // Use tls.t.body blocks (Tier A, always measures via layout()).
       const shortBlock: BlockSpec = { type: 'tls.t.body', id: 'short-a', props: { text: 'Short A' } }
-      const tallBlock: BlockSpec = { type: 'tls.t.body', id: 'tall-b', props: { text: 'Tall B — this text block should measure approximately 2× the height of a short block because it has twice the content and explicit sizing.' } }
+      // LO6: long enough to wrap with true text widths (the old estimate wrapped the first sentence alone).
+      const tallBlock: BlockSpec = { type: 'tls.t.body', id: 'tall-b', props: { text: 'Tall B — this text block should measure approximately 2× the height of a short block because it has twice the content and explicit sizing. It carries a second sentence so that it wraps.' } }
       const shortBlock2: BlockSpec = { type: 'tls.t.body', id: 'short-c', props: { text: 'Short C' } }
 
       const spec: SlideSpec = {
@@ -784,5 +785,172 @@ describe('compileSlide', () => {
       // At minimum, we verify alignment was applied (not just top-aligned).
       expect(offsetFromCenter).toBeLessThan(quoteBox.height / 2)
     })
+  })
+})
+
+/* ── LO0: natural region height survives an unmeasurable block ──────────────── */
+
+describe('compileSlide — natural height with an unmeasurable block (LO0)', () => {
+  it('a block that fails to measure does not reset the region total, so the region still re-flows', () => {
+    const registry = new BlockRegistry()
+    registerBuiltInBlocks(registry)
+    const long = 'Design systems scale because every decision is made once and reused everywhere. '.repeat(6)
+    const tall: BlockSpec = { type: 'tls.t.body', id: 'tall', props: { text: long } }
+    // `tls.text` is not registered: it measures as -1. Listed *after* the tall block, the old
+    // reduce `(sum, h) => (h > 0 ? sum + h : 0)` reset the region's natural height to 0 here.
+    const unknown: BlockSpec = { type: 'tls.text', id: 'unknown', props: { text: 'x' } }
+    const sub: BlockSpec = { type: 'tls.t.caption', id: 'sub', props: { text: 'Subtitle' } }
+    const spec: SlideSpec = { id: 's', layout: 'title', regions: { title: [tall, unknown], subtitle: [sub] } }
+    const result = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const byId = (id: string) => result.shapes.find((s) => (s.props.$block as { id?: string }).id === id)!
+    const tallShape = byId('tall')
+    const subShape = byId('sub')
+    // The subtitle region is re-flowed below the title region's real content.
+    expect(subShape.point[1]).toBeGreaterThanOrEqual(tallShape.point[1] + tallShape.size[1])
+  })
+})
+
+/* ── LO1.5: compiler flow fixes (layout-oracle README §LO1.5) ───────────────── */
+
+describe('compileSlide — LO1.5 flow fixes', () => {
+  const registry = new BlockRegistry()
+  registerBuiltInBlocks(registry)
+  const gap = TEST_TOKENS.space.md
+  // LO6: sized for true (browser-calibrated) text widths — 12 repeats fit the left column since the
+  // editor stopped over-estimating widths.
+  const long = 'Design systems scale because every decision is made once and reused everywhere. '.repeat(16)
+  const byId = (r: CompileSlideResult, id: string) => r.shapes.find((s) => (s.props.$block as { id?: string }).id === id)!
+  const bottom = (r: CompileSlideResult, id: string) => byId(r, id).point[1] + byId(r, id).size[1]
+  const regionsOf = (layout: string) => getSlideLayout(layout as 'blank')!.compile(DEFAULT_FRAME, TEST_TOKENS)
+  const STEPS = {
+    steps: [
+      { label: 'Plan', description: 'Scope the work' },
+      { label: 'Build', description: 'Ship the slice' },
+      { label: 'Review', description: 'Check it in the app' },
+    ],
+  }
+
+  it('an overfull left column does not push the right column down (column-aware re-flow)', () => {
+    const spec: SlideSpec = {
+      id: 'cols',
+      layout: 'two-column',
+      regions: {
+        title: [{ type: 'tls.t.title', id: 't', props: { text: 'Why tokens' } }],
+        left: [{ type: 'tls.t.body', id: 'body', props: { text: long } }],
+        right: [{ type: 'tls.t.caption', id: 'cap', props: { text: 'Source: internal survey' } }],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const regions = regionsOf('two-column')
+    expect(byId(r, 'body').size[1]).toBeGreaterThan(regions.left.height) // the overflow is real
+    expect(byId(r, 'cap').point[1]).toBe(regions.right.y)
+  })
+
+  it('an overfull full-width region still pushes the regions below it that it overlaps', () => {
+    const spec: SlideSpec = {
+      id: 'stack',
+      layout: 'quote',
+      regions: {
+        quote: [{ type: 'tls.t.body', id: 'q', props: { text: long } }],
+        attribution: [{ type: 'tls.t.caption', id: 'cap', props: { text: 'Source: internal survey' } }],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    expect(byId(r, 'cap').point[1]).toBeGreaterThanOrEqual(bottom(r, 'q') + gap)
+  })
+
+  it('a region that fits does not move the regions below it', () => {
+    const spec: SlideSpec = {
+      id: 'fits',
+      layout: 'two-column',
+      regions: {
+        title: [{ type: 'tls.t.title', id: 't', props: { text: 'Short' } }],
+        left: [{ type: 'tls.t.body', id: 'body', props: { text: 'One line.' } }],
+        right: [{ type: 'tls.t.caption', id: 'cap', props: { text: 'Caption' } }],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const regions = regionsOf('two-column')
+    expect(byId(r, 'body').point[1]).toBe(regions.left.y)
+    expect(byId(r, 'cap').point[1]).toBe(regions.right.y)
+  })
+
+  it('a fill block stacked with siblings gets the height they leave, and nothing leaves the region', () => {
+    // Demo sl_08: title + donut + steps in `blank`. The donut (fill) used to take the full 888.
+    const spec: SlideSpec = {
+      id: 'fill',
+      layout: 'blank',
+      regions: {
+        content: [
+          { type: 'tls.t.title', id: 't', props: { text: 'Where the budget goes' } },
+          {
+            type: 'tls.d.donut',
+            id: 'donut',
+            props: { data: [{ label: 'A', value: 3 }, { label: 'B', value: 2 }, { label: 'C', value: 1 }] },
+          },
+          { type: 'tls.g.steps', id: 'steps', props: STEPS },
+        ],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const content = regionsOf('blank').content
+    const [t, donut, steps] = ['t', 'donut', 'steps'].map((id) => byId(r, id))
+    // Stacked in order with gaps, the last one ends at the region bottom (not past the frame).
+    expect(donut.point[1]).toBeCloseTo(bottom(r, 't') + gap, 5)
+    expect(steps.point[1]).toBeCloseTo(bottom(r, 'donut') + gap, 5)
+    expect(bottom(r, 'steps')).toBeLessThanOrEqual(content.y + content.height + 1)
+    // The non-fill siblings keep their natural heights; the donut gets the rest, ≥ its min.
+    expect(t.size[1]).toBeLessThan(content.height / 4)
+    expect(steps.size[1]).toBeGreaterThanOrEqual(registry.get('tls.g.steps')!.size.min[1])
+    expect(steps.size[1]).toBeLessThan(content.height / 2)
+    expect(donut.size[1]).toBeCloseTo(content.height - t.size[1] - steps.size[1] - 2 * gap, 5)
+    expect(donut.size[1]).toBeGreaterThanOrEqual(registry.get('tls.d.donut')!.size.min[1])
+  })
+
+  it('two fill blocks in one region share it', () => {
+    const data = { data: [{ label: 'A', value: 3 }, { label: 'B', value: 2 }] }
+    const spec: SlideSpec = {
+      id: 'two-fill',
+      layout: 'blank',
+      regions: {
+        content: [
+          { type: 'tls.d.bar', id: 'a', props: data },
+          { type: 'tls.d.bar', id: 'b', props: data },
+        ],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const content = regionsOf('blank').content
+    expect(byId(r, 'a').size[1]).toBeCloseTo((content.height - gap) / 2, 5)
+    expect(byId(r, 'b').size[1]).toBeCloseTo((content.height - gap) / 2, 5)
+    expect(bottom(r, 'b')).toBeLessThanOrEqual(content.y + content.height + 1)
+  })
+
+  it('with no fill block, a region-sized content block takes what its siblings leave', () => {
+    // Colorful sl_06/20/24/25/27/28: title + a block whose root is the whole region.
+    const spec: SlideSpec = {
+      id: 'content',
+      layout: 'blank',
+      regions: {
+        content: [
+          { type: 'tls.t.title', id: 't', props: { text: 'How we ship' } },
+          { type: 'tls.g.steps', id: 'steps', props: STEPS },
+        ],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const content = regionsOf('blank').content
+    expect(bottom(r, 'steps')).toBeCloseTo(content.y + content.height, 5)
+  })
+
+  it('a single region-sized block keeps the whole region (unchanged)', () => {
+    const spec: SlideSpec = {
+      id: 'single',
+      layout: 'blank',
+      regions: { content: [{ type: 'tls.g.steps', id: 'steps', props: STEPS }] },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const content = regionsOf('blank').content
+    expect(byId(r, 'steps').size[1]).toBe(content.height)
   })
 })

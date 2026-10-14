@@ -1,6 +1,7 @@
 import * as React from 'react'
 import type { BlockCategory, BlockDefinition, BlockFamily } from './types'
 import { BLOCK_CATEGORIES } from './types'
+import { rememberBlockDefinition } from './motion/play-reveal'
 
 /**
  * Runtime registry for block definitions. Blocks must be registered before they can
@@ -33,6 +34,9 @@ export class BlockRegistry {
     }
 
     this.definitions.set(definition.type, definition)
+    // CMP3: nested motion plays a child block's recipe inside its container; the viewer hands
+    // `playBlockReveal` only the container's definition, so registered definitions are known here.
+    rememberBlockDefinition(definition)
   }
 
   /**

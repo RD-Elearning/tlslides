@@ -13,9 +13,9 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
-import { onColor } from '../../text/_engine/color'
+import { onColor, readableOn } from '../../text/_engine/color'
 import { objs, str } from '../../media/_kit'
-import { composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
+import { cardNodes, cardPaint, composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
 
 export const CARDS_MIN = 2
 export const CARDS_MAX = 4
@@ -33,6 +33,8 @@ export interface CardsProps extends Record<string, unknown> {
   lead?: 'icon' | 'number' | 'image' | 'none'
   tone?: 'surface' | 'alt' | 'outline' | 'accent-first'
   align?: 'start' | 'center'
+  /** AC2: with `lead: number`, `plain` (default, heading size) or `giant` (display size). */
+  numeral?: 'plain' | 'giant'
 }
 
 export const schema: BlockSchema = {
@@ -60,6 +62,7 @@ export const schema: BlockSchema = {
   lead: enumSlot(['icon', 'number', 'image', 'none'], 'Lead', 'What tops each card.'),
   tone: enumSlot(['surface', 'alt', 'outline', 'accent-first'], 'Tone', 'accent-first fills only the first card.'),
   align: enumSlot(['start', 'center'], 'Alignment'),
+  numeral: enumSlot(['plain', 'giant'], 'Numeral', 'giant: display-size numbers (lead number).'),
 }
 
 export const defaults: CardsProps = {
@@ -74,13 +77,20 @@ export const defaults: CardsProps = {
 }
 
 const LEADS = ['icon', 'number', 'image', 'none'] as const
+
+/** AC2 `numeral: giant`: the numeral's type steps, biggest first; a box too short for either keeps
+ *  the plain heading numeral. */
+const GIANT_STEPS = ['display', 'title'] as const
+type NumeralStep = (typeof GIANT_STEPS)[number] | 'heading'
 const TONES = ['surface', 'alt', 'outline', 'accent-first'] as const
 
 const itemsOf = (props: CardsProps): CardItem[] =>
   objs(props.cards)
     .filter((c) => str(c.title) !== '')
     .slice(0, CARDS_MAX)
-    .map((c) => ({ icon: str(c.icon) || undefined, number: str(c.number) || undefined, image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined }))
+    // AC5: with `lead: number` a card that names no number is numbered by its position ("01", "02", …),
+    // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content.
+    .map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined }))
 
 /** The reference tree (a row of card > stack > leaves): 4 levels at most. Used for depth and measure checks. */
 export function buildCards(props: CardsProps): BlockSpec {
@@ -88,7 +98,7 @@ export function buildCards(props: CardsProps): BlockSpec {
   const cards: BlockSpec[] = itemsOf(props).map((c, i) => {
     const kids: BlockSpec[] = []
     if (lead === 'icon' && c.icon) kids.push({ id: `icon-${i}`, type: 'tls.m.icon', props: { icon: c.icon, color: 'accent' } })
-    if (lead === 'number' && c.number) kids.push({ id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: 'accent' } })
+    if (lead === 'number' && c.number) kids.push({ id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: props.numeral === 'giant' ? 'display' : 'heading', color: 'accent' } })
     if (lead === 'image' && c.image) kids.push({ id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } })
     kids.push({ id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })
     if (c.text) kids.push({ id: `text-${i}`, type: 'tls.t.body', props: { text: c.text } })
@@ -107,9 +117,52 @@ interface Plan {
   titleH: number[]
   textH: number[]
   needed: number
+  /** Card text at caption size (4+ cards with a narrow measure); body otherwise. */
+  small: boolean
+  /** AC2: the `lead: number` numeral's type step. */
+  numeral: NumeralStep
+  /** AC3 pre-item: the roomy tier (lead-size text, bigger icon, heading titles for ≤ 3 cards). */
+  roomy: boolean
+  titleSize: 'heading' | 'subheading'
+  iconSize: number
 }
 
+/** AC2: four or more cards keep body-size text when each card's text column is at least this wide. */
+const BODY_MIN_INNER = 280
+
 function plan(props: CardsProps, ctx: LayoutContext): Plan {
+  // AC2 `numeral: giant`: the biggest numeral step whose cards fit the box.
+  if (props.numeral === 'giant' && pick(props.lead, LEADS, 'icon') === 'number') {
+    for (const step of GIANT_STEPS) {
+      const p = planText(props, ctx, step)
+      if (!(ctx.box.height > 0) || p.needed <= ctx.box.height) return p
+    }
+  }
+  return planText(props, ctx, 'heading')
+}
+
+/** AC3 pre-item: the roomy tier is taken when its stretched cards fill no more than the box. A
+ *  ladder of fixed-height candidates (roomy, body, caption), first that fits: laid out again at its
+ *  own height the block picks the same candidate. */
+const ROOMY_STRETCH = 1.3
+
+function planText(props: CardsProps, ctx: LayoutContext, numeral: NumeralStep): Plan {
+  const H = ctx.box.height
+  if (H > 0) {
+    const big = planAt(props, ctx, false, numeral, true)
+    if (big.needed <= H + 0.5) return big
+  }
+  // AC2: four or more cards read at body size when the measure is wide enough and the taller cards
+  // still fit the box; otherwise caption, as before.
+  const roomy = planAt(props, ctx, false, numeral)
+  if (!roomy.small && roomy.items.length >= 4 && H > 0 && roomy.needed > H) return planAt(props, ctx, true, numeral)
+  return roomy
+}
+
+/** The numeral's text style (AC2 giant steps; accent unless the card is filled). */
+const numeralStyle = (ctx: LayoutContext, step: NumeralStep, color: string) => ({ ...ctx.resolveText(step, { lineHeight: 1.05, letterSpacing: -0.02 }), color })
+
+function planAt(props: CardsProps, ctx: LayoutContext, forceSmall: boolean, numeral: NumeralStep = 'heading', roomy = false): Plan {
   const items = itemsOf(props)
   const n = Math.max(1, items.length)
   const lead = pick(props.lead, LEADS, 'icon')
@@ -120,13 +173,31 @@ function plan(props: CardsProps, ctx: LayoutContext): Plan {
   const pad = Math.max(ctx.tokens.space.md, Math.min(n >= 4 ? ctx.tokens.space.lg : ctx.tokens.space.xl, Math.round(cw * 0.09)))
   const inner = Math.max(0, cw - 2 * pad)
   const hasLead = lead !== 'none' && items.some((c) => (lead === 'icon' ? c.icon : lead === 'number' ? c.number : c.image))
-  const leadH = !hasLead ? 0 : lead === 'icon' ? 72 : lead === 'number' ? Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight) : Math.min(260, Math.round(inner * 0.6))
-  const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading' } })), inner)
-  const textH = measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: n >= 4 ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
+  // AC2 `numeral: giant`: the giant numerals' measured line box.
+  const giant = (): number => {
+    const st = numeralStyle(ctx, numeral, '')
+    return Math.ceil(Math.max(1, ...items.filter((c) => c.number).map((c) => ctx.measureText(c.number as string, st, inner).height)))
+  }
+  // the plain numeral is a `tls.t.title` (heading): its measured height, which a face with a
+  // taller line box than the token's line height (Playfair Display) would otherwise shrink to fit
+  const numberH = (): number =>
+    Math.max(Math.round(ctx.tokens.type.heading.size * ctx.tokens.type.heading.lineHeight), ...measureHeights(ctx, items.filter((c) => c.number).map((c, i) => ({ id: `n${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading' } })), inner))
+  const iconSize = roomy ? 72 : 56
+  const titleSize: Plan['titleSize'] = roomy && n <= 3 ? 'heading' : 'subheading'
+  const leadH = !hasLead ? 0 : lead === 'icon' ? iconSize + 16 : lead === 'number' ? (numeral !== 'heading' ? giant() : numberH()) : Math.min(260, Math.round(inner * 0.6))
+  const titleH = measureHeights(ctx, items.map((c, i) => ({ id: `t${i}`, type: 'tls.t.title', props: { text: c.title, size: titleSize } })), inner)
+  const small = !roomy && n >= 4 && (forceSmall || inner < BODY_MIN_INNER)
+  const leadStyle = ctx.resolveText('lead')
+  const textH = roomy
+    ? items.map((c) => (c.text ? ctx.measureText(c.text, leadStyle, inner).height : 0))
+    : measureHeights(ctx, items.map((c, i) => ({ id: `x${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text ?? ' ' } })), inner)
   const sm = ctx.tokens.space.sm
   const body = Math.max(0, ...items.map((c, i) => titleH[i] + (c.text ? sm + textH[i] : 0)))
-  const needed = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
-  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed }
+  const content = 2 * pad + (leadH ? leadH + sm * 1.5 : 0) + body
+  // The roomy tier claims its stretch up front (cards ≤ the box), so it never overflows a box.
+  const needed = roomy ? Math.round(content * ROOMY_STRETCH) : content
+  if (roomy && inner < BODY_MIN_INNER) return { items, cw, gap, pad, inner, leadH, titleH, textH, needed: Infinity, small, numeral, roomy, titleSize, iconSize }
+  return { items, cw, gap, pad, inner, leadH, titleH, textH, needed, small, numeral, roomy, titleSize, iconSize }
 }
 
 /** Place the cards. Exported for tests. */
@@ -140,10 +211,10 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const n = p.items.length
   const sm = ctx.tokens.space.sm
   // Cards hug their content with a little air; a tall region no longer stretches them to 460 (RV03).
-  const total = Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
+  const total = p.roomy ? p.needed : Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
-  const small = n >= 4
+  const small = p.small
 
   p.items.forEach((c, i) => {
     const x = i * (p.cw + p.gap)
@@ -151,20 +222,29 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     const fillRole = tone === 'surface' ? 'surface' : 'surfaceAlt'
     const fillColor = filled ? accent : ctx.resolveColor(fillRole).color
     const fg = filled ? onColor(ctx, accent) : undefined
-    const surf: Paint = { type: 'solid', color: tone === 'outline' ? ctx.resolveColor('surface').color : fillColor }
+    const cardBox = { x, y: 0, width: p.cw, height: total }
+    // AC4: a neutral card (tone alt / surface, the non-accent cards of accent-first) takes the deck
+    // surface (`cardPaint`); `outline` and the accent card keep the look their knob asks for.
+    const cp =
+      tone === 'outline'
+        ? undefined
+        : filled
+          ? undefined
+          : cardPaint(ctx, { fill: { type: 'solid', color: fillColor }, ...(tone === 'surface' ? { stroke: { color: ctx.resolveColor('line').color, width: 2 } } : {}) })
+    const surf: Paint = cp ? cp.surface : { type: 'solid', color: tone === 'outline' ? ctx.resolveColor('surface').color : fillColor }
     const on = onSurface(surf)
     const col = fg ? { color: fg } : {}
-    const bg: LayoutNode = {
-      k: 'rect',
-      box: { x, y: 0, width: p.cw, height: total },
-      radius: ctx.tokens.radius.lg,
-      ...(tone === 'outline'
-        ? { stroke: { color: accent, width: 3 } }
-        : tone === 'surface'
-          ? { fill: surf, stroke: { color: ctx.resolveColor('line').color, width: 2 } }
-          : { fill: surf }),
-    } as LayoutNode
-    pieces.push({ id: `card[${i}]`, raw: [bg], box: { x, y: 0, width: p.cw, height: total } })
+    const bg: LayoutNode[] = cp
+      ? cardNodes(cp, cardBox, ctx.tokens.radius.lg)
+      : [
+          {
+            k: 'rect',
+            box: cardBox,
+            radius: ctx.tokens.radius.lg,
+            ...(tone === 'outline' ? { stroke: { color: accent, width: 3 } } : { fill: surf }),
+          } as LayoutNode,
+        ]
+    pieces.push({ id: `card[${i}]`, raw: bg, box: cardBox })
 
     const ix = x + p.pad
     let y = p.pad
@@ -172,18 +252,30 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     if (p.leadH) {
       const lbox = { x: ix, y, width: p.inner, height: p.leadH }
       if (lead === 'icon' && c.icon) {
-        const size = 56
+        const size = p.iconSize
         pieces.push({ id: `lead[${i}]`, raw: [iconLeaf(c.icon, { x: center ? ix + (p.inner - size) / 2 : ix, y: y + (p.leadH - size) / 2, width: size, height: size }, fg ?? accent)], box: lbox })
       } else if (lead === 'number' && c.number) {
-        pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? 'accent', ...on } }, box: lbox, align: al })
+        if (p.numeral !== 'heading') {
+          const st = numeralStyle(ctx, p.numeral, fg ?? accent)
+          const m = ctx.measureText(c.number, st, p.inner)
+          pieces.push({ id: `lead[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: lbox, align: al })
+        } else {
+          pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? 'accent', ...on } }, box: lbox, align: al })
+        }
       } else if (lead === 'image' && c.image) {
         pieces.push({ id: `lead[${i}]`, spec: { id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } }, box: lbox })
       }
       y += p.leadH + sm * 1.5
     }
-    pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: 'subheading', ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
+    pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: p.titleSize, ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
     y += p.titleH[i] + sm
-    if (c.text) {
+    if (c.text && p.roomy) {
+      // Roomy tier: lead-size text as a leaf (no body block takes the lead step).
+      const surfHex = surf.type === 'solid' ? surf.color : ctx.resolveColor('surface').color
+      const st = { ...ctx.resolveText('lead'), color: fg ?? readableOn(ctx.resolveColor('text').color, surfHex) }
+      const m = ctx.measureText(c.text, st, p.inner)
+      pieces.push({ id: `text[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: { x: ix, y, width: p.inner, height: p.textH[i] }, align: al })
+    } else if (c.text) {
       pieces.push({
         id: `text[${i}]`,
         spec: { id: `text-${i}`, type: small ? 'tls.t.caption' : 'tls.t.body', props: { text: c.text, ...(fg ? { color: fg } : {}), ...on } },

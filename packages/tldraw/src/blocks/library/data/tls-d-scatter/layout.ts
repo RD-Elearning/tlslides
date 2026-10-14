@@ -80,7 +80,7 @@ export function layout(props: ScatterProps, ctx0: LayoutContext): LayoutNode {
   const py = yaxis.y
 
   // X tick labels (every n-th when they would crowd).
-  const xt = ax.ticks.map((t) => fmtNum(t, props.format))
+  const xt = ax.ticks.map((t) => fmtNum(t, props.format, ctx.tokens.locale))
   const maxW = Math.max(...xt.map((t) => ctx.measureText(t, ls).width)) * TEXT_SLACK
   const spacing = ax.ticks.length > 1 ? plot.width / (ax.ticks.length - 1) : plot.width
   const stride = Math.max(1, Math.ceil((maxW + 8) / Math.max(1, spacing)))

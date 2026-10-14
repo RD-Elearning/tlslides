@@ -14,11 +14,13 @@
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no `Math.random()`.
  */
 
+import { STYLE_MASTER_PREFIX, documentDeckTokens, getDeckStyle, styleMasters } from './styles'
 import type { DeckTheme, TDDocument, TDPage } from '~types'
 import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
-import type { BlockSpec, Box, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
-import { shapeToBlock } from './shape-bridge'
+import type { BlockSpec, Box, ConnectorSpec, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
+import { connectorFromBlock, CONNECTOR_BLOCK_TYPE } from './connectors'
+import { shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
 
@@ -37,6 +39,7 @@ export interface DecompileFinding {
     | 'shape/non-block'
     | 'shape/no-region-match'
     | 'aspect/free-block-drift'
+    | 'shape/layered-moved'
   /** The slide/page id. */
   slideId?: string
   /** The shape id that triggered the finding. */
@@ -120,6 +123,44 @@ function matchToRegion(
 }
 
 /**
+ * LO2.1 — a layered region block (`layer` backdrop/overlay) placed by an `anchor` has its natural
+ * size, not the region's width, so `shapeMatchesRegion` cannot find it. It belongs to the region
+ * whose x-range contains it (within `tolerance`) and whose top it does not start above; the
+ * nearest such top wins. Recompiling re-derives its box from `anchor`/`anchorTo`.
+ */
+function matchLayeredToRegion(
+  shape: { point: number[]; size: number[] },
+  regionBoxes: Record<string, Box>,
+  tolerance: number
+): string | undefined {
+  let bestName: string | undefined
+  let bestDist = Infinity
+  for (const [name, box] of Object.entries(regionBoxes)) {
+    const inX = shape.point[0] >= box.x - tolerance && shape.point[0] + shape.size[0] <= box.x + box.width + tolerance
+    const inY = shape.point[1] >= box.y - tolerance
+    if (!inX || !inY) continue
+    const dist = Math.abs(shape.point[1] - box.y)
+    if (dist < bestDist) {
+      bestDist = dist
+      bestName = name
+    }
+  }
+  return bestName
+}
+
+/** LO8 — tolerance (slide units) for "the shape is still where the compiler placed it". */
+const PLACED_TOLERANCE = 1
+
+function movedFrom(placed: Box, point: number[], size: number[]): boolean {
+  return (
+    Math.abs(point[0] - placed.x) > PLACED_TOLERANCE ||
+    Math.abs(point[1] - placed.y) > PLACED_TOLERANCE ||
+    Math.abs(size[0] - placed.width) > PLACED_TOLERANCE ||
+    Math.abs(size[1] - placed.height) > PLACED_TOLERANCE
+  )
+}
+
+/**
  * Derive a `DeckSpec.aspect` from a `[width, height]` page size.
  *
  * Matches against `SLIDE_ASPECT_PRESETS` by value comparison; returns the named
@@ -163,7 +204,7 @@ function aspectsEqual(a: DeckSpec['aspect'], b: DeckSpec['aspect']): boolean {
  *    finding. Never guess a layout from geometry.
  * 2. Re-compile the region boxes via `getSlideLayout(page.layout).compile(frame, tokens)`.
  * 3. For each shape, in `childIndex` order:
- *    - `shapeToBlock(shape)` → `BlockSpec | undefined`. `undefined` means a non-block
+ *    - `shapeToAuthoredBlock(shape)` (AC1: `shapeToBlock` minus style knob defaults) → `BlockSpec | undefined`. `undefined` means a non-block
  *      shape: emit a `shape/non-block` finding and drop it (cannot be represented as
  *      BlockSpec; carrying it as opaque free[] would corrupt the round-trip).
  *    - Match the shape's `{point, size}` against every region box within `tolerance`.
@@ -171,7 +212,9 @@ function aspectsEqual(a: DeckSpec['aspect'], b: DeckSpec['aspect']): boolean {
  *    - When a region holds several blocks, sort by `point[1]` (vertical order).
  *
  * Known limitation: a block moved *within* its region's tolerance is snapped back to
- * region order on the round trip — its exact pixel offset is not preserved.
+ * region order on the round trip — its exact pixel offset is not preserved. Layered
+ * (backdrop/overlay) region blocks are the exception (LO8): one whose box differs from the
+ * compiler's `$block.placed.box` was moved by hand and is kept at its box in `free[]`.
  *
  * @param page   The TDPage to decompile.
  * @param tokens Resolved design tokens for the deck.
@@ -218,9 +261,14 @@ export function pageToSlideSpec(
   }
   const regionEntries: Record<string, RegionEntry[]> = {}
   const free: PlacedBlock[] = []
+  // CMP3: compiled connector shapes go back to `SlideSpec.connectors`, in their compiled order.
+  const connectors: ConnectorSpec[] = []
 
   for (const shape of allShapes) {
-    const blockSpec = shapeToBlock(shape)
+    // AC4: style-master shapes (`style:<page>:<n>`, painted by `deckSpecToDocument`) belong to the
+    // style, not the slide: never written back into the SlideSpec.
+    if (shape.id.startsWith(STYLE_MASTER_PREFIX)) continue
+    const blockSpec = shapeToAuthoredBlock(shape)
 
     if (!blockSpec) {
       // Non-block shape (arrow, hand-placed text): emit finding and drop.
@@ -235,6 +283,11 @@ export function pageToSlideSpec(
       })
       continue
     }
+    if (blockSpec.type === CONNECTOR_BLOCK_TYPE) {
+      const c = connectorFromBlock(blockSpec)
+      if (c) connectors.push(c)
+      continue
+    }
 
     // Match against region boxes. All shapes have `point` (from TLShape), but only
     // ComponentShape has `size`. Shapes without `size` cannot be matched to regions.
@@ -245,7 +298,38 @@ export function pageToSlideSpec(
       continue
     }
     const shapeForMatch = { point: shapePoint, size: shapeSize }
-    const matchedRegion = matchToRegion(shapeForMatch, regionBoxes, tolerance)
+    const layered = blockSpec.layer === 'backdrop' || blockSpec.layer === 'overlay'
+
+    // LO8: a layered block the user moved or resized in the editor keeps that box. The compiler
+    // records where it placed it (`$block.placed`); a region block no longer there was placed by
+    // hand, so it becomes a free block at its current box (layer kept: z stays under/over the
+    // flow) and its anchor is dropped — re-anchoring it would snap the user's move back. A layered
+    // block compiled from `free[]` stays free (else the next round trip would re-anchor it).
+    const placement = layered ? shapePlacement(shape) : undefined
+    if (placement?.from === 'free') {
+      free.push({ block: blockSpec, box: { x: shapePoint[0], y: shapePoint[1], width: shapeSize[0], height: shapeSize[1] } })
+      continue
+    }
+    const placed = placement?.box
+    if (placed && movedFrom(placed, shapePoint, shapeSize)) {
+      delete blockSpec.anchor
+      delete blockSpec.anchorTo
+      free.push({
+        block: blockSpec,
+        box: { x: shapePoint[0], y: shapePoint[1], width: shapeSize[0], height: shapeSize[1] },
+      })
+      findings.push({
+        level: 'info',
+        rule: 'shape/layered-moved',
+        slideId,
+        blockId: blockSpec.id,
+        message: `Layered block "${blockSpec.id}" was moved or resized off its compiled place; kept at its box in free[] (anchor dropped).`,
+      })
+      continue
+    }
+    const matchedRegion =
+      matchToRegion(shapeForMatch, regionBoxes, tolerance) ??
+      (layered ? matchLayeredToRegion(shapeForMatch, regionBoxes, tolerance) : undefined)
 
     if (matchedRegion) {
       if (!regionEntries[matchedRegion]) regionEntries[matchedRegion] = []
@@ -288,6 +372,7 @@ export function pageToSlideSpec(
   if (free.length > 0) {
     spec.free = free
   }
+  if (connectors.length > 0) spec.connectors = connectors
 
   // Propagate optional metadata.
   if (page.background !== undefined) {
@@ -305,6 +390,9 @@ export function pageToSlideSpec(
   }
   if (page.motionStyle !== undefined) {
     spec.motionStyle = page.motionStyle
+  }
+  if (page.valign !== undefined) {
+    spec.valign = page.valign
   }
 
   return { spec, findings }
@@ -335,7 +423,7 @@ export function documentToDeckSpec(
 
   // 1. Resolve tokens from the document's theme + token overrides.
   const theme: DeckTheme = activeDeckTheme(doc.theme)
-  const tokens: ResolvedTokens = resolveTokens(theme, doc.tokens)
+  const tokens: ResolvedTokens = resolveTokens(theme, documentDeckTokens(doc))
 
   // 2. Derive aspect from defaultPageSize.
   const pageSize = doc.defaultPageSize ?? [...DEFAULT_SLIDE_SIZE]
@@ -347,9 +435,16 @@ export function documentToDeckSpec(
   )
 
   const slides: SlideSpec[] = []
+  const style = getDeckStyle(doc.styleId)
 
   for (const page of pages) {
     const { spec, findings: pageFindings } = pageToSlideSpec(page, tokens, opts)
+    // AC1: a `style:*` master and its background were filled in by `deckSpecToDocument`, not authored.
+    if (style && spec.masterId?.startsWith(STYLE_MASTER_PREFIX)) {
+      const master = styleMasters(style).find((m) => m.name === spec.masterId)
+      if (master?.background && JSON.stringify(master.background) === JSON.stringify(spec.background)) delete spec.background
+      delete spec.masterId
+    }
     slides.push(spec)
     findings.push(...pageFindings)
 
@@ -378,9 +473,12 @@ export function documentToDeckSpec(
     theme: (doc.theme ?? theme) as unknown as DeckSpec['theme'],
     aspect,
     tokens: doc.tokens as Record<string, unknown> | undefined,
-    masters: doc.masters ? Object.values(doc.masters) : undefined,
+    masters: doc.masters ? Object.values(doc.masters).filter((m) => !m.name.startsWith(STYLE_MASTER_PREFIX)) : undefined,
     slides,
   }
+  if (deckSpec.masters && !deckSpec.masters.length) delete deckSpec.masters
   if (doc.motionStyle !== undefined) deckSpec.motionStyle = doc.motionStyle
+  if (doc.styleId !== undefined) deckSpec.style = doc.styleId
+  if (doc.motif !== undefined) deckSpec.motif = doc.motif
   return { spec: deckSpec, findings }
 }

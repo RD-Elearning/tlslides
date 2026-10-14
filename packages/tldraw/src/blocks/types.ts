@@ -5,7 +5,7 @@
  * definitions live in `@tlslides/blocks`.
  */
 
-import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme } from '~types'
+import type { TDShape, AnimationEffect, AnimationTrigger, DeckTheme, FontStyle } from '~types'
 // Schema v1 (`reviews/blocks/BACKLOG-demo.md` §2.2). `DeckTokens` is defined in `./tokens`, which
 // itself imports type-only from this file — both directions are `import type`, so this is a
 // type-only circular reference, erased entirely at compile time. No runtime cycle exists.
@@ -38,11 +38,89 @@ export interface BlockSpec {
   style?: BlockStyleSpec
   /** Motion overrides. Absent = the definition's default recipe, which may itself be "none". */
   motion?: BlockMotionSpec
-  /** Only meaningful for container blocks (`family: 'layout'`). */
+  /** Not read by any layout: child blocks go in **`props.children`**, the one canonical slot
+   *  (every container's schema declares it, `kind: 'blocks'`). The validator rejects a block that
+   *  sets this field (`block/malformed`, CMP1); kept in the type only so older documents still
+   *  parse and round-trip through the shape bridge. */
   children?: BlockSpec[]
   /** Bridges to the Phase 13 template slot system. */
   slot?: string
+  /**
+   * LO2 — paint layer of this instance; overrides the definition's `layer`. In a slide *region*,
+   * an explicit `'backdrop'` or `'overlay'` takes the block out of the region's vertical stack:
+   * it gets the whole region box and paints behind (`backdrop`) or on top of (`overlay`) every
+   * stacked block — the AI-writable way to layer blocks into one composite look.
+   * `'content'` (or absent) = stacked as usual. In `free[]` and inside containers it only
+   * classifies overlaps for the layout report; z there is the array order.
+   */
+  layer?: BlockLayer
+  /**
+   * LO2.1 — where a layered region block (`layer: 'backdrop' | 'overlay'`) sits inside its
+   * anchor box. `'fill'` = the whole box (LO2 behaviour); any other value = the block's natural
+   * size (`measureBlock`, clamped to `size.min` and the anchor box) at that edge/corner. Absent =
+   * the definition's `anchor`, else `'fill'`. Ignored for stacked (content) blocks.
+   */
+  anchor?: BlockAnchor
+  /**
+   * LO2.1 — id of a *stacked* block in the same region whose painted box is the anchor box
+   * (instead of the region's box), e.g. a trend badge on a card's corner. Corner/edge anchors
+   * are inset by `space.sm` inside that block. Only meaningful with an explicit backdrop/overlay
+   * `layer`; an unknown or non-stacked target falls back to the region box.
+   */
+  anchorTo?: string
+  /**
+   * CMP1 — a backdrop that may leave the slide frame on purpose (an orb or band cut by the edge).
+   * The layout report then does not call its off-frame part `slide/overflow`. Only meaningful with
+   * `layer: 'backdrop'` (or a block whose definition layer is `backdrop`); ignored otherwise.
+   */
+  bleed?: boolean
 }
+
+/**
+ * CMP1 — the one nesting limit: a block tree may be at most this many levels deep (a region
+ * block is level 1, its `props.children` level 2, …). The validator reports deeper blocks
+ * (`block/nesting-depth`), the layout engine does not draw them (an empty `lint/depth-overflow`
+ * group) and the layout report calls that `block/dropped`. Levels a block builds internally (a
+ * composite's own spec tree, a card's inner stack) do not count — only authored nesting does.
+ */
+export const MAX_NESTING_DEPTH = 6
+
+/**
+ * LO2.1 — anchor of a layered block inside its anchor box (region, or `anchorTo` block).
+ */
+export type BlockAnchor =
+  | 'fill'
+  | 'top-left'
+  | 'top'
+  | 'top-right'
+  | 'left'
+  | 'center'
+  | 'right'
+  | 'bottom-left'
+  | 'bottom'
+  | 'bottom-right'
+
+export const BLOCK_ANCHORS: readonly BlockAnchor[] = [
+  'fill',
+  'top-left',
+  'top',
+  'top-right',
+  'left',
+  'center',
+  'right',
+  'bottom-left',
+  'bottom',
+  'bottom-right',
+]
+
+/**
+ * LO2 — paint layer. `backdrop` sits behind content and may be overlapped (shapes, bands,
+ * patterns); `content` must not overlap other content; `overlay` sits on top and may cover
+ * content but none of its text (badges, stickers, annotation arrows).
+ */
+export type BlockLayer = 'backdrop' | 'content' | 'overlay'
+
+export const BLOCK_LAYERS: readonly BlockLayer[] = ['backdrop', 'content', 'overlay']
 
 /**
  * Style overrides for a block. Deliberately small: anything a block needs that is not
@@ -68,7 +146,11 @@ export interface BlockStyleSpec {
   elevation?: 0 | 1 | 2
   /** Content alignment. */
   align?: 'start' | 'center' | 'end'
-  /** Density: visual compactness. */
+  /** enhance L5: every type size of the block (and its children) times this, 1-1.5. `compileSlide`
+   *  sets it on the content of a balanced slide that would float in its page (`growText`); an
+   *  author may set it too. */
+  textScale?: number
+  /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
 
@@ -210,6 +292,12 @@ export interface HtmlTemplateContext {
   box: Box
   /** Resolved design tokens for this deck. */
   tokens: ResolvedTokens
+  /** LO7: the block's poster, laid out by the same layout pass at `box` (the host node's
+   *  `poster`). A template whose host node sets `posterGeometry` paints its text parts with this
+   *  tree's line breaks and text metrics (`posterText` in `html-block.ts`), so the live HTML has
+   *  the poster's geometry by construction. Absent when the caller has no layout pass (a direct
+   *  `template()` call): the template then lets the browser wrap. */
+  poster?: LayoutNode
 }
 
 /**
@@ -287,6 +375,21 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   scope?: BlockScope
   /** Sibling block types worth considering instead. Each must resolve in the registry. */
   related?: string[]
+  /** LO2 — paint layer. Absent = derived: category `decoration` → `backdrop`, else `content`.
+   *  Set it only where the derivation is wrong. See `BlockLayer`. */
+  layer?: BlockLayer
+  /** LO2.1 — default `BlockSpec.anchor` when an instance is layered out of the stack. Absent =
+   *  `'fill'`. Set it for a block with a natural size of its own (a badge → `'top-right'`). */
+  anchor?: BlockAnchor
+  /** AC0 — AI curation. 1 = in the default (tier-1) AI index; 2 = listed by name only, detail on
+   *  request. Filled for every built-in from `library/ai-curation.ts`. */
+  aiTier?: 1 | 2
+  /** AC0 — tier-2 types this block replaces by default (each absorbed block's `describe.avoid`
+   *  names this block). */
+  absorbs?: string[]
+  /** AC0 — the look knobs: `enum`/`boolean` option slot names whose values change the look, not
+   *  the content, in the order an LLM should try them. */
+  looks?: string[]
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide
@@ -307,8 +410,10 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   defaults: P
 
   /** Sizing. `preferred` is what the inserter drops; `min` is enforced on resize.
-   *  All in slide units (1920×1080 frame). */
-  size: { preferred: [number, number]; min: [number, number]; aspect?: number }
+   *  All in slide units (1920×1080 frame). `hug`: in a region it shares with other blocks and
+   *  that is centred / bottom-aligned, the block keeps its content height instead of taking the
+   *  leftover (for a block that only centres itself in a taller box — spro demo T19). */
+  size: { preferred: [number, number]; min: [number, number]; aspect?: number; hug?: boolean }
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
    *  This is the single source of truth for what the block looks like.
@@ -438,6 +543,9 @@ export interface SlotSpec {
   /** B4: when set, this boolean slot toggles the visibility of the element named by
    *  this `part` value. The slot key must start with `show` (e.g. `showKicker`). */
   toggles?: string
+  /** enhance S4: the enum values the tier-1 index's knob hint lists (default: all). The others
+   *  stay valid; they are planned elsewhere (the art direction's subject doodles). */
+  indexValues?: string[]
 }
 
 /**
@@ -506,14 +614,78 @@ export interface LintContext {
  * Both DOM and SVG renderers consume the same tree, which is why they cannot disagree.
  */
 export type LayoutNode =
-  | { k: 'group'; box: Box; name?: string; part?: string; clip?: boolean; opacity?: number; children: LayoutNode[] }
-  | { k: 'rect'; box: Box; part?: string; fill?: Paint; stroke?: Stroke; radius?: number | number[] }
+  | {
+      k: 'group'
+      box: Box
+      name?: string
+      part?: string
+      /**
+       * Clip policy (CMP1, export-ready X6): `clip: true` clips the group's children to its own
+       * box, a plain rectangle — never a rounded or path clip. Containers set it only where content
+       * may spill on purpose (`tls.l.overlay`, image crops). An exporter without group clips
+       * (PPTX) pre-clips: an image is cropped to the intersection (`srcRect`), a rect is
+       * intersected with the box, any other leaf that crosses the edge is baked.
+       */
+      clip?: boolean
+      opacity?: number
+      /** CMP1 (X2): on the wrapper group `layoutChild` puts around a child block — that block's
+       *  `id` and `type`. Lets an exporter, connectors and the report find a nested block. */
+      blockId?: string
+      type?: string
+      children: LayoutNode[]
+    }
+  | {
+      k: 'rect'
+      box: Box
+      part?: string
+      fill?: Paint
+      stroke?: Stroke
+      radius?: number | number[]
+      /** AC4: drop shadow under the rect — elevation 1 / 2, or `'hard'` (solid offset in the stroke
+       *  colour). Paint only: outside the box, never a layout leaf (`blocks/shadow.ts`). */
+      shadow?: 0 | 1 | 2 | 'hard'
+    }
   | { k: 'path'; box: Box; part?: string; d: string; fill?: Paint; stroke?: Stroke }
-  | { k: 'text'; box: Box; part?: string; lines: TextLine[]; style: ResolvedTextStyle; propPath?: string }
+  | {
+      k: 'text'
+      box: Box
+      part?: string
+      lines: TextLine[]
+      style: ResolvedTextStyle
+      propPath?: string
+      /** CMP1 (X3): the paragraph's horizontal alignment. Geometry is already aligned (a centred
+       *  paragraph is still emitted as one node per line); this only tells an exporter that the
+       *  lines belong to one centred / end-aligned paragraph. Absent = start. Renderers ignore it. */
+      align?: 'start' | 'center' | 'end'
+      /** CMP1 (X3): the paragraph's font weight (400 regular, 700 when every run is bold), set by
+       *  `layoutSlide`. Renderers draw weight per run (`TextRun.bold`) and ignore this field. */
+      weight?: number
+      /** CMP2: the ink guard re-solved this leaf's colour for contrast (`layout/ink-guard.ts`); an
+       *  html template paints the poster's colour for such a leaf (`posterText().color`). */
+      solved?: true
+      /** enhance: the block cut this text to fit (an ellipsis, dropped lines) — the reader does not
+       *  see all of it (`text/truncated`). */
+      truncated?: true
+    }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
-  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number }
+  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
-  | { k: 'host'; box: Box; part?: string; render: string; poster?: LayoutNode; props?: Record<string, unknown>; vars?: Record<string, string> }
+  | {
+      k: 'host'
+      box: Box
+      part?: string
+      render: string
+      poster?: LayoutNode
+      props?: Record<string, unknown>
+      vars?: Record<string, string>
+      /** LO7 (layout oracle): the html template paints every text part with this poster's lines
+       *  and text metrics (`posterText` in `html-block.ts`) and places its parts where the poster
+       *  does, so the poster *is* the live geometry and the layout report measures the block with
+       *  confidence `high`. Absent = the browser wraps the template's own text; the poster is an
+       *  approximation (confidence `medium`, the block always needs a screenshot). Set through
+       *  `htmlHostNode(…, { posterGeometry: true })`; pinned by `html-poster-geometry.spec.ts`. */
+      posterGeometry?: boolean
+    }
 
 /**
  * A 2D box: origin at top-left, measured in slide units (1920×1080 frame).
@@ -555,6 +727,12 @@ export type Paint =
 export interface Stroke {
   color: string
   width: number
+  /** CMP3 (P14): a dash pattern in slide units, SVG `stroke-dasharray` order (`[8, 4]` a flow
+   *  connector, `[4, 4]` a separator). Absent = solid. Both renderers draw it on `path` and `line`
+   *  strokes (a `rect` border: SVG dash, DOM `border-style: dashed`); an exporter maps it to
+   *  DrawingML `a:prstDash` (`dash` / `sysDash`). A draw-on (`draw-path`) of a dashed stroke grows
+   *  the dash pattern along the path (`playBlockReveal`). */
+  dash?: number[]
 }
 
 /**
@@ -672,8 +850,14 @@ export interface LayoutContext {
   resolveText(token: TypeToken, over?: Partial<TextStyleSpec>): ResolvedTextStyle
   /** The ONLY text measurement primitive. Deterministic, available in Node. */
   measureText(text: string | RichText, style: ResolvedTextStyle, maxWidth?: number): TextMetrics
-  /** Lay a child block out inside `box`, returning its node. Containers only. */
-  layoutChild(spec: BlockSpec, box: Box): LayoutNode
+  /** Lay a child block out inside `box`, returning its node (wrapped in a group carrying the
+   *  child's `blockId`/`type`). Containers only. `opts.surface` (CMP1): the paint the container
+   *  drew under the child — the child's text solves its ink against it (a dark card on a light
+   *  slide gets light text). `opts.overImage`: the child sits on a photo another child paints
+   *  (`tls.l.overlay` over an image) — an image surface, text solves light. Absent = what is
+   *  behind the container. `opts.tracks` (CMP4): shared child heights for peer cards.
+   *  `opts.peerStep` (CS1): the lowest label step for a peer `tls.m.shape`. */
+  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode
   /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
    *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
    *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
@@ -695,7 +879,8 @@ export interface LayoutContext {
   resolveAsset?(id: string): string | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
-  /** Current nesting depth. Capped at 4; deeper trees are an error. */
+  /** Layout hops from the slide-level block (every `layoutChild` call, internal ones included).
+   *  The authored nesting limit is `MAX_NESTING_DEPTH`; hops are only a recursion safety net. */
   depth: number
   /** True when laying out for export/thumbnail; false for live editor. */
   headless: boolean
@@ -760,6 +945,9 @@ export interface ResolvedTokens {
   radius: Record<RadiusToken, number>
   /** Typography scale: size + line-height per named step. */
   type: Record<TypeToken, TypeScaleValue>
+  /** enhance L5: the `style.textScale` already applied to `type` (absent = 1), so a nested
+   *  context built from these tokens does not scale them twice. */
+  textScale?: number
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */
@@ -770,8 +958,21 @@ export interface ResolvedTokens {
   density: 'compact' | 'default' | 'roomy'
   /** The deck's primary font family for block text, resolved from the theme's
    *  `headingFamily`/`bodyFamily` (or the built-in default when the theme doesn't set one).
-   *  `defaultResolveText` reads this to replace the hardcoded fallback. */
+   *  `defaultResolveText` reads this to replace the hardcoded fallback. Since AC3 it is the
+   *  heading family, kept for old callers; text leaves read `headingFamily` / `bodyFamily`. */
   fontFamily: string
+  /** AC3: the family for `display`, `title`, `heading`, `subheading` text (theme `headingFamily`,
+   *  else `bodyFamily`, else the default). Optional only so hand-built token objects stay valid;
+   *  `resolveTokens` always sets it. */
+  headingFamily?: string
+  /** AC3: the family for `lead`, `body`, `caption`, `footnote` text (theme `bodyFamily`, else
+   *  `headingFamily`, else the default). */
+  bodyFamily?: string
+  /** AC4: the deck card surface (`DeckTokens.surface` resolved, every field set). Absent when the
+   *  deck sets none: card-like blocks then keep their own look (`cardPaint`). */
+  surface?: StyleSurface
+  /** `DeckTokens.locale`, when the deck sets one: number formatting (`localizeNumber`). */
+  locale?: string
 }
 
 /**
@@ -792,6 +993,9 @@ export interface SurfaceContext {
   /** True if the surface is an image (forces a scrim decision — doc 02 §2.6 — rather than a
    *  contrast-solved text colour, since `luminance` above is a guess, not a measurement). */
   overImage: boolean
+  /** CMP2: for a slide-gradient surface, where the block sits on the page (`behind` spans the
+   *  page) — lets the ink guard sample the gradient under each leaf, not only at the block centre. */
+  place?: { x: number; y: number; page: [number, number] }
 }
 
 /**
@@ -942,6 +1146,10 @@ export interface SlideSpec {
   role?: 'cover' | 'section' | 'content' | 'closing'
   /** Rhythm hint for the slide. */
   rhythm?: 'anchor' | 'dense' | 'breath'
+  /** spro enhance PLAN.md L1 — vertical placement of the content regions. `auto` centres every
+   *  non-title region whose layout sets no alignment of its own, so a short column sits in the
+   *  middle of the page instead of leaving its lower half empty. Absent = `start` (top). */
+  valign?: 'start' | 'auto'
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -956,6 +1164,50 @@ export interface SlideSpec {
   masterId?: string
   /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
   motionStyle?: MotionStyle
+  /** CMP3 (B2, X10) — lines between blocks, by block id (nested ids too), never by coordinates.
+   *  Compiled after layout into one overlay `tls.g.connector` shape each (on top of every block);
+   *  the round trip returns them here. */
+  connectors?: ConnectorSpec[]
+}
+
+/** CMP3 — which side of an endpoint block a connector leaves / enters. `auto` (default) = the
+ *  side facing the other endpoint. */
+export type ConnectorSide = 'auto' | 'top' | 'right' | 'bottom' | 'left'
+
+/** CMP3 — one end of a connector: a block id on the slide (a region block, a `free[]` block or a
+ *  block nested in a container's `props.children`) and the side to attach to. */
+export interface ConnectorEnd {
+  block: string
+  side?: ConnectorSide
+}
+
+/**
+ * CMP3 (B2, X10) — a line from one block to another (`SlideSpec.connectors`). Endpoints are block
+ * ids, so a connector survives re-layout, a theme change and an aspect change. The route attaches
+ * to the endpoints' painted boxes, with a small gap; the arrowhead sits on that gap.
+ *
+ * Maps 1:1 to a PPTX bound connector (`p:cxnSp`, `a:stCxn`/`a:endCxn` on the endpoint shapes):
+ * `straight` → `straightConnector1`, `elbow` → `bentConnector3`, `curved` → `curvedConnector3`;
+ * `head` → `a:tailEnd`/`a:headEnd type="triangle"`; `dash` → `a:prstDash val="dash"`.
+ */
+export interface ConnectorSpec {
+  /** Unique on the slide (shared namespace with block ids). */
+  id: string
+  from: ConnectorEnd
+  to: ConnectorEnd
+  /** `straight` (default; kept level when the boxes face each other), `elbow` (right angles with
+   *  rounded corners) or `curved` (a smooth S-curve). */
+  route?: 'straight' | 'elbow' | 'curved'
+  /** Arrowheads: `end` (default, at `to`), `both`, `none`. */
+  head?: 'end' | 'both' | 'none'
+  /** Colour: `line` (default, recessive), `accent`, `text`. */
+  tone?: 'line' | 'accent' | 'text'
+  /** Stroke: `hairline` 2, `md` 3 (default), `bold` 5 slide units. */
+  weight?: 'hairline' | 'md' | 'bold'
+  /** A dashed (flow) line. */
+  dash?: boolean
+  /** A short label at the middle of the line (≤ 24 chars), on a small pill. */
+  label?: string
 }
 
 /**
@@ -972,6 +1224,9 @@ export interface MasterSpec {
   background?: Paint
   /** Default layout name. */
   layout?: string
+  /** enhance F1: the key of the `blocks` entry a deck's `motif` replaces (a style master's main
+   *  motif on the cover and section pages: doodle's big star becomes the deck's tree). */
+  signature?: string
 }
 
 /**
@@ -1003,4 +1258,100 @@ export interface DeckSpec {
   slides: SlideSpec[]
   /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
   motionStyle?: MotionStyle
+  /** AC1 — a deck style id (one of `BUILT_IN_STYLES`, e.g. `'corporate'`). The style supplies the
+   *  default palette, token overrides, masters (`style:*`), knob defaults per block type and the
+   *  motion style, each under what this spec authors (`reviews/blocks/ai-curation/README.md`
+   *  §3.2). `theme` should name one of the style's palettes (`style/theme-mismatch`). */
+  style?: string
+  /** enhance F1: the deck's signature motif, a subject doodle (`tree`, `flask`, … —
+   *  `SUBJECT_SHAPES`). A style whose concept has `subjects` draws it in place of its masters'
+   *  `signature` motif on the cover and section pages; other styles ignore it. */
+  motif?: string
+}
+
+/** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */
+export interface FontRef {
+  /** CSS family name, e.g. `'Inter'`. */
+  family: string
+  /** The bundled face to fall back to when the family is not loaded. */
+  fallback: FontStyle
+  /** Width-table key the layout oracle measures with (`'inter'` until AC3 adds tables). */
+  metricsKey: string
+}
+
+/** AC4 — card surface treatment a style asks card-like blocks for (`DeckTokens.surface`, read by
+ *  `cardPaint`): `filled` (the block's own fill), `outline` (no fill, a stroke), `glass`
+ *  (translucent white + a light hairline), `ghost` (no fill or border; a stroke becomes a top rule),
+ *  `raised` (surface fill, lifted). `stroke` and `shadow` refine it. */
+export interface StyleSurface {
+  card: 'filled' | 'outline' | 'glass' | 'ghost' | 'raised'
+  stroke: 'none' | 'hairline' | 'bold'
+  shadow: 0 | 1 | 2 | 'hard'
+  /** spro enhance S2 — how the style draws what the layout placed (`paint-treatment.ts`): `stroke:
+   *  'rough'` sketches borders, rules and connectors by hand, `fill: 'hachure'` pen-hatches filled
+   *  panels. Paint only; geometry is unchanged. Absent = crisp vector drawing. */
+  render?: { stroke?: 'crisp' | 'rough'; fill?: 'flat' | 'hachure'; roughness?: number; emphasis?: 'bold' | 'highlighter'; highlight?: string }
+}
+
+/**
+ * The style's concept for a slide the LLM composes (spro compose PLAN.md §4 B4/B6): how much
+ * decoration the style wants, which decorative blocks suit it and where they may sit, how icons
+ * are drawn and how the accent colour is spent. Read by `styleConceptCard`; the model picks the
+ * decoration per slide inside it, the engine draws it. Absent = derived (`styleConcept`).
+ */
+export interface StyleConcept {
+  /** How often a content slide carries a decorative element. */
+  decoration: 'none' | 'sparse' | 'rich'
+  /** Decorative blocks that suit the style, as `type` or `type:shape` (`tls.m.decoration:squiggle`). */
+  motifs: string[]
+  /** Where a decorative element may sit. */
+  zones: Array<'corner' | 'behind-title' | 'beside-visual' | 'watermark' | 'under-heading'>
+  /** How icons are drawn: `disc` (tinted circle), `plain`, or `none` (a typographic style). */
+  icons: 'disc' | 'plain' | 'none' | 'tile' | 'sticker' | 'blob'
+  /** One sentence: how the accent colour is spent on a slide. */
+  accent: string
+  /** enhance S4: subject doodles suit the style (`tls.m.decoration` tree, flask, globe…): the art
+   *  direction may pick the one that draws the deck's topic. */
+  subjects?: boolean
+}
+
+/**
+ * AC1 — a deck style preset (`reviews/blocks/ai-curation/README.md` §3.2): data, not code. Lives
+ * in `blocks/styles/<id>.ts`, registered in `BUILT_IN_STYLES`. Every part resolves *under* what
+ * the `DeckSpec` authors and is never written back into it.
+ */
+export interface DeckStyle {
+  id: string
+  family: 'premium' | 'modern' | 'playful' | 'professional'
+  name: string
+  /** ≤ 240 chars, given to the LLM verbatim (style card). */
+  brief: string
+  /** 1–3 palettes; `[0]` is the default. Ids are `<style>-<name>` or an existing built-in theme. */
+  palettes: DeckTheme[]
+  fonts: { heading: FontRef; body: FontRef }
+  /** Token overrides under `DeckSpec.tokens`. */
+  tokens: DeckTokens
+  /** AC4 — surface treatment, resolved as `DeckTokens.surface` under `DeckSpec.tokens.surface`. */
+  surface?: StyleSurface
+  /** Masters appended as `style:<name>` (`cover` | `content` | `section`). */
+  masters: MasterSpec[]
+  /** Deck default motion style, under `DeckSpec.motionStyle`. */
+  motionStyle: MotionStyle
+  /** Knob defaults per block type, filled under authored props at compile time. */
+  blockDefaults: Record<string, Record<string, unknown>>
+  /** Tier-2 types promoted to full index lines / types dropped from the index. */
+  prefer: string[]
+  avoid: string[]
+  /** ≤ 4 short composition rules for the LLM and the critic. */
+  rules: string[]
+  /** AC8 — the knob values this style accepts and encourages beyond its `blockDefaults`, per
+   *  block type and look knob (the default value is always accepted). The variety picker rotates
+   *  slides only inside them; a knob the style sets and does not list here stays fixed. Shown to
+   *  the LLM as the style card's `Vary:` line. */
+  variety?: Record<string, Record<string, Array<string | boolean>>>
+  /** The concept a composed slide follows (`StyleConcept`). */
+  concept?: StyleConcept
+  /** spro enhance S1 — the family style this one is a variant of (`'doodle'` for
+   *  `doodle-geo3d`); absent = a family's own base style. */
+  variantOf?: string
 }

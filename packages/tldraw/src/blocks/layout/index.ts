@@ -10,6 +10,7 @@ export {
   estimateMetrics,
   canvasMetrics,
   tableMetrics,
+  editorMetrics,
   createMetricsProvider,
   isCJK,
 } from './measure'

@@ -27,10 +27,10 @@ export const tlsCAgenda: BlockDefinition = {
   keywords: ['agenda', 'toc', 'table of contents', 'outline', 'topics', 'schedule', 'items'],
   category: 'agenda',
   scope: 'slide',
-  shortDescription: 'Numbered agenda items with notes; current item highlighted',
+  shortDescription: 'Numbered agenda items with notes; one can be marked current',
   related: ['tls.c.divider', 'tls.c.objectives'],
   describe: {
-    when: 'Use for a table-of-contents or agenda slide listing 3–8 topics. Set `current` to highlight the active topic.',
+    when: 'Use for a table-of-contents or agenda slide listing 3–8 topics. Set `current` only to mark where a returning agenda is ("you are here") or when asked; leave it unset for a plain contents slide.',
     avoid: 'Do not use for more than 8 items (split into two sections), for a dated sequence (use tls.c.steps) or nested in another block: it fills the whole slide.',
     example: {
       id: 'b_agenda',
@@ -42,7 +42,6 @@ export const tlsCAgenda: BlockDefinition = {
           { title: 'Strategy', note: 'Next quarter priorities' },
           { title: 'Q&A', note: 'Questions and discussion' },
         ],
-        current: 1,
       },
     },
   },

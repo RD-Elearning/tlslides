@@ -83,7 +83,46 @@ export function placeText(
       lines: [{ ...line, top: 0, baseline: line.baseline - top }],
       style,
       ...(opts.propPath ? { propPath: opts.propPath } : {}),
+      // CMP1 (X3): the lines are one centred / end-aligned paragraph (renderers ignore it).
+      align,
     } as LayoutNode
   })
   return { nodes, height: m.height, lineCount: m.lines.length, lines }
 }
+
+/**
+ * Already-measured lines (a title's autofit / truncation result) as aligned text nodes, the way
+ * `placeText` emits them: one node for `start`, else one per line offset to its aligned x. Every
+ * line keeps `part` and `propPath` (motion targets the part; a double-click edits the whole slot).
+ * spro demo T16: `tls.t.title` and a one-column `tls.t.body` declared `align` and ignored it.
+ */
+export function alignedTextNodes(
+  lines: TextLine[],
+  style: ResolvedTextStyle,
+  box: { x: number; y: number; width: number; height: number },
+  align: HAlign,
+  part: string,
+  propPath?: string
+): LayoutNode[] {
+  const path = propPath ? { propPath } : {}
+  if (align === 'start' || lines.length === 0) {
+    return [{ k: 'text', part, box, lines, style, ...path } as LayoutNode]
+  }
+  const width = Math.max(1, box.width)
+  const lineH = style.size * (style.scale ?? 1) * style.lineHeight
+  return lines.map((line, i) => {
+    const lw = Math.min(width, line.width)
+    const x = alignedX(box.x, width, lw, align)
+    const top = line.top ?? i * lineH
+    return {
+      k: 'text',
+      part,
+      box: { x, y: box.y + top, width: Math.max(1, Math.min(lw + 1, box.x + width - x)), height: lineH },
+      lines: [{ ...line, top: 0, baseline: line.baseline - top }],
+      style,
+      ...path,
+      align,
+    } as LayoutNode
+  })
+}
+

@@ -17,6 +17,7 @@ import { tlsMDeviceMock } from './tls-m-device-mock'
 import { tlsMAvatarGroup } from './tls-m-avatar-group'
 import { tlsMDecoration } from './tls-m-decoration'
 import { tlsMPattern } from './tls-m-pattern'
+import { tlsMShape } from './tls-m-shape'
 
 /** All built-in media block definitions. */
 export const mediaBlocks: BlockDefinition[] = [
@@ -33,6 +34,7 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMAvatarGroup,
   tlsMDecoration,
   tlsMPattern,
+  tlsMShape,
 ]
 
 export { tlsMImage } from './tls-m-image'
@@ -46,5 +48,6 @@ export { tlsMLogoWall } from './tls-m-logo-wall'
 export { tlsMImageCompare } from './tls-m-image-compare'
 export { tlsMDeviceMock } from './tls-m-device-mock'
 export { tlsMAvatarGroup } from './tls-m-avatar-group'
+export { tlsMShape } from './tls-m-shape'
 export { tlsMDecoration } from './tls-m-decoration'
 export { tlsMPattern } from './tls-m-pattern'

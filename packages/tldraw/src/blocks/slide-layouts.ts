@@ -38,14 +38,21 @@ function gutter(tokens: ResolvedTokens): number {
 }
 
 /** The safe-margin inset box: the usable content area of the frame. */
-function contentArea(frame: { width: number; height: number }, tokens: ResolvedTokens): Box {
+export function contentArea(frame: { width: number; height: number }, tokens: ResolvedTokens): Box {
   const m = margin(tokens)
   return { x: m, y: m, width: Math.max(0, frame.width - 2 * m), height: Math.max(0, frame.height - 2 * m) }
 }
 
-/** Title-band height: roughly the type `heading` size plus some breathing room. */
+/**
+ * Title-band height: one line of the `title` type token (what `tls.t.title` sets by default) plus
+ * `space.3xs` of measuring slack (the editor's `estimateMetrics` reports a line as
+ * `round(size × lineHeight) + 2`), and never less than the old `heading` size plus breathing room.
+ * LO2.1: the band used to be `heading + md` (88 at the default scale), shorter than one 104-unit
+ * title line, so every default-size title autofit-shrank in it.
+ */
 function titleBand(tokens: ResolvedTokens): number {
-  return tokens.type.heading.size + tokens.space.md
+  const titleLine = Math.ceil(tokens.type.title.size * tokens.type.title.lineHeight) + tokens.space['3xs']
+  return Math.max(tokens.type.heading.size + tokens.space.md, titleLine)
 }
 
 /** Small title-band height for `section`. */
@@ -88,6 +95,21 @@ function layoutSection(frame: { width: number; height: number }, tokens: Resolve
     title: { x: ca.x, y: startY, width: ca.width, height: sectionTitleRegionH },
     subtitle: { x: ca.x, y: startY + sectionTitleRegionH + g, width: ca.width, height: sectionSubtitleRegionH },
   }
+}
+
+/**
+ * AC8.6 — `section-stack`: the section page's text column. One `content` region, start-aligned at
+ * the safe margin, at most `SECTION_STACK_MAX_W` wide and the full content height, its blocks
+ * stacked and centred vertically (`regionAlign`). The cap keeps a display-size section title and
+ * its message clear of the style motifs that sit on the section page right of x 1380 (the same
+ * 1200 column `tls.c.divider` uses), and the region grows with the stack, unlike `section`'s fixed
+ * title-size band (a display title autofit-shrank and overflowed there).
+ */
+export const SECTION_STACK_MAX_W = 1200
+
+function layoutSectionStack(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  return { content: { x: ca.x, y: ca.y, width: Math.min(ca.width, SECTION_STACK_MAX_W), height: ca.height } }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -346,6 +368,15 @@ function layoutKpiRow(frame: { width: number; height: number }, tokens: Resolved
 /* 16. blank — just the safe margin, one content region                           */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * AC6 — `full-bleed`: one `content` region over the whole frame, no safe margin (closes S13: a
+ * full-bleed photo slide in `blank` stopped at the margins). For blocks that paint edge to edge
+ * (`tls.c.image-full`, `tls.c.quote-image`) and keep their own text inset.
+ */
+function layoutFullBleed(frame: { width: number; height: number }): Record<string, Box> {
+  return { content: { x: 0, y: 0, width: frame.width, height: frame.height } }
+}
+
 function layoutBlank(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
   return {
     content: contentArea(frame, tokens),
@@ -357,6 +388,28 @@ function layoutBlank(frame: { width: number; height: number }, tokens: ResolvedT
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
 /** Split a rectangular region horizontally (left/right) at a given ratio with a gutter. */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* enhance L2 — sidebar-title, band                                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** The title in a left column (30 %) the full height, centred; the content beside it. */
+function layoutSidebarTitle(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens) * 2
+  const [title, content] = splitX(ca.x, ca.y, ca.width, ca.height, 0.3, g)
+  return { title, content }
+}
+
+/** The title band, one wide band (60 % of the body) and a foot under it for the takeaway. */
+function layoutBand(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const bodyTop = ca.y + tH + g
+  const [band, foot] = splitY(ca.x, bodyTop, ca.width, ca.height - tH - g, 0.66, g)
+  return { title: { x: ca.x, y: ca.y, width: ca.width, height: tH }, band, foot }
+}
+
 function splitX(
   x: number, y: number, width: number, height: number,
   ratio: number, g: number,
@@ -447,6 +500,10 @@ export type SlideLayoutId =
   | 'quote'
   | 'kpi-row'
   | 'blank'
+  | 'full-bleed'
+  | 'section-stack'
+  | 'sidebar-title'
+  | 'band'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -466,7 +523,7 @@ export interface SlideLayout {
 }
 
 /**
- * All 16 shipped slide layouts. Each is a pure `compile(frame, tokens) → Record<string, Box>`.
+ * All 18 shipped slide layouts (AC6 added `full-bleed`, AC8.6 `section-stack`). Each is a pure `compile(frame, tokens) → Record<string, Box>`.
  */
 export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'title', name: 'Title', compile: layoutTitle },
@@ -481,10 +538,14 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'grid-3x2', name: 'Grid 3×2', compile: layoutGrid3x2 },
   { id: 'grid-2x3', name: 'Grid 2×3', compile: layoutGrid2x3 },
   { id: 'comparison', name: 'Comparison', compile: layoutComparison },
-  { id: 'timeline', name: 'Timeline', compile: layoutTimeline },
+  { id: 'timeline', name: 'Timeline', compile: layoutTimeline, regionAlign: { timeline: 'center' } },
   { id: 'quote', name: 'Quote', compile: layoutQuote, regionAlign: { quote: 'center', attribution: 'start' } },
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
-  { id: 'blank', name: 'Blank', compile: layoutBlank },
+  { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
+  { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
+  { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'center', content: 'center' } },
+  { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' } },
+  { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

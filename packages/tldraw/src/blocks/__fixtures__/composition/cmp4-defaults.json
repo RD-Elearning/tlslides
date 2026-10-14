@@ -1,0 +1,82 @@
+{
+  "id": "cmp4-defaults",
+  "style": "minimal",
+  "slides": [
+    {
+      "id": "c4_nested",
+      "layout": "two-column",
+      "regions": {
+        "title": [
+          {
+            "id": "t4",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Style defaults reach nested blocks"
+            }
+          }
+        ],
+        "left": [
+          {
+            "id": "c4card",
+            "type": "tls.l.card",
+            "props": {
+              "children": [
+                {
+                  "id": "c4t",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "A title inside a card"
+                  }
+                },
+                {
+                  "id": "c4tk",
+                  "type": "tls.t.takeaway",
+                  "props": {
+                    "text": "No tone set: the minimal style’s muted default."
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "right": [
+          {
+            "id": "c4st",
+            "type": "tls.l.stack",
+            "props": {
+              "children": [
+                {
+                  "id": "c4t2",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Same title, nested in a stack"
+                  }
+                },
+                {
+                  "id": "c4b",
+                  "type": "tls.t.body",
+                  "props": {
+                    "text": "Composite channel ($block) style still works.",
+                    "$block": {
+                      "style": {
+                        "on": "#B42318"
+                      }
+                    }
+                  }
+                },
+                {
+                  "id": "c4tk2",
+                  "type": "tls.t.takeaway",
+                  "props": {
+                    "text": "An explicit tone wins over the style default.",
+                    "tone": "accent"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

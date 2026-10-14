@@ -104,16 +104,21 @@ interface DeckProfile {
 
 ### 3.1 The initial set
 
+"Layout & block mix" names **recipe ids** from `packages/tldraw/src/blocks/recipes.ts` (AC0): each
+recipe is a real `SLIDE_LAYOUTS` id plus tier-1 blocks per region, proven clean by
+`recipes.spec.ts`. Before AC0 this column named `title-body`, `hero`, `big-stat`, `image-full`,
+`bullets` and `steps` as layouts; none of them is a layout id (`ai-curation/README.md` F9).
+
 | Profile | Who asks for it | Density (words/slide) | Layout & block mix | Motion | Distinguishing rules |
 |---|---|---|---|---|---|
-| **teach-lecture** | teachers, trainers; students follow along | 60–120 | `title-body`, `two-column`, `bullets`, `steps`, `image-text`, definitions as `takeaway`; a `section` every 4–6 slides, a **recap** every section | `stepwise` — bullets reveal one by one, 2–5 build steps | numbered structure, a learning objective on slide 2, worked example before exercise, "check your understanding" slide per section, speaker notes as a script, evidence required for facts |
-| **keynote-pitch** | founders, speakers; a visual talk | 5–25 | `title`, `hero`, `big-stat`, `quote`, `image-full`, `kpi-row`; one idea per slide | `expressive` — hero reveals, count-ups, 1–2 steps | title never a full sentence, no bullets over 3 items, at least 40% slides with a visual block, a "one-liner" closing slide |
-| **business-report** | managers; QBR, status, board | 30–70 | `two-column` chart + takeaway, `kpi-row`, `comparison`, `agenda`, `timeline` | `minimal` — chart bars grow, else none | every chart has a takeaway block, numbers carry units and period, agenda + summary mandatory, consistent number formatting, evidence required |
-| **workshop-training** | facilitators; interactive sessions | 20–60 | `agenda`, `steps`, `two-column`, exercise slides (`takeaway` + `bullets`), timeboxes | `stepwise` | timing per section in the notes, an exercise every 3–5 slides, instructions as imperative steps |
-| **academic-seminar** | lecturers, researchers | 50–110 | `title-body`, `two-column`, `comparison`, `image-text` for figures, `quote` for definitions | `minimal` | citations block on each evidence slide, references slide, figure captions with source |
-| **sales-product** | sales, product marketing | 15–45 | `hero`, `feature-grid`, `comparison`, `pricing`, `testimonial`, `kpi-row`, CTA | `expressive` | problem → solution → proof → ask order enforced, one CTA slide, social proof present |
-| **status-update** | team leads; weekly/monthly | 30–60 | `agenda`, `kpi-row`, `timeline`, `bullets` with owner tags, `comparison` for plan vs actual | `none` | RAG status per item, dates absolute not relative, next-steps slide mandatory |
-| **story-portfolio** | designers, creators | 5–30 | `image-full`, `image-text`, `quote`, `hero` | `expressive` | image-led, text is captions, theme from the person's brand kit if given |
+| **teach-lecture** | teachers, trainers; students follow along | 60–120 | `content-bullets-image`, `content-cards`, `process-steps`, `content-image-text`, definitions as `tls.t.takeaway`; `section-divider` every 4–6 slides, a **recap** every section (`tls.c.recap`, tier 2, promoted) | `stepwise` — bullets reveal one by one, 2–5 build steps | numbered structure, a learning objective on slide 2, worked example before exercise, "check your understanding" slide per section, speaker notes as a script, evidence required for facts |
+| **keynote-pitch** | founders, speakers; a visual talk | 5–25 | `cover-hero`, `cover-kinetic`, `data-big-stat`, `content-statement`, `quote-pull`, `data-kpi-row`; photo slides via `tls.c.cover` `variant=bleed` until AC6 ships `tls.c.image-full`; one idea per slide | `expressive` — hero reveals, count-ups, 1–2 steps | title never a full sentence, no bullets over 3 items, at least 40% slides with a visual block, a "one-liner" closing slide |
+| **business-report** | managers; QBR, status, board | 30–70 | `data-chart-insight`, `data-bar-takeaway`, `data-kpi-row`, `comparison-options`, `agenda-full`, `process-timeline`, `data-table` | `minimal` — chart bars grow, else none | every chart has a takeaway block, numbers carry units and period, agenda + summary mandatory, consistent number formatting, evidence required |
+| **workshop-training** | facilitators; interactive sessions | 20–60 | `agenda-full`, `process-steps`, `content-bullets-image`, exercise slides (`two-column`: `tls.t.takeaway` + `tls.t.bullets`), timeboxes | `stepwise` | timing per section in the notes, an exercise every 3–5 slides, instructions as imperative steps |
+| **academic-seminar** | lecturers, researchers | 50–110 | `content-bullets-image`, `comparison-options`, `content-image-text` for figures, `quote-pull` for definitions, `data-table` (table + footnote source) | `minimal` | citations block on each evidence slide, references slide, figure captions with source |
+| **sales-product** | sales, product marketing | 15–45 | `cover-hero`, `content-feature-grid`, `comparison-options`, `comparison-pricing`, `people-testimonial`, `data-kpi-row`, `closing-centered` (CTA) | `expressive` | problem → solution → proof → ask order enforced, one CTA slide, social proof present |
+| **status-update** | team leads; weekly/monthly | 30–60 | `agenda-full`, `data-kpi-row`, `process-timeline`, `tls.t.bullets` with owner tags, `comparison-options` for plan vs actual | `none` | RAG status per item, dates absolute not relative, next-steps slide mandatory |
+| **story-portfolio** | designers, creators | 5–30 | `content-image-text`, `cover-split-image`, `quote-pull`, `cover-hero` (`tls.c.image-full` after AC6) | `expressive` | image-led, text is captions, theme from the person's brand kit if given |
 
 Two axes summarise the table and are what the intake step actually classifies:
 
@@ -158,6 +163,22 @@ assumptions[], questions[] }`.
   passages** are saved so later stages cite them rather than re-reading the PDF.
 - Duration → slide count: teach ≈ 1.5–2 min/slide, keynote ≈ 1 min/slide, report ≈ 2–3
   min/slide. Store the formula with the profile.
+- **Style pick (AC7).** The deck's look is a `DeckStyle` (`BUILT_IN_STYLES`), chosen by the
+  person in the UI style picker; the default is the profile's style candidates (first entry).
+  The model never invents one. S0 outputs `style` (a style id) and `theme` (one of that style's
+  palette ids; the first is the style's default), saved as `DeckSpec.style` / `DeckSpec.theme`
+  and passed to every later stage. Styles are orthogonal to profiles: the profile decides
+  density and structure, the style decides the look. The ten ids, by family:
+
+  | Family | Style ids (palettes) |
+  |---|---|
+  | Premium | `luxury` (luxury-noir, luxury-ivory), `minimal` (minimal-white, minimal-stone), `editorial` (editorial-ink, ivory-editorial) |
+  | Modern | `gradient` (gradient-night, gradient-dawn), `glass` (glass-violet, glass-pastel), `swiss` (swiss-red, swiss-blue) |
+  | Playful | `doodle` (doodle-paper, doodle-kids), `memphis` (memphis-pop) |
+  | Corporate | `corporate` (corporate-navy, midnight, mono-grid), `consulting` (consulting-ink) |
+
+  (The `family` field in code reads `premium`, `modern`, `playful` and `professional`.) A UI
+  that has no picker passes no style and gets today's unstyled behaviour.
 
 ### S1 · Outline — the thing a person reviews
 
@@ -200,8 +221,165 @@ two-tier digest. Both tiers are generated from the live registry
   compact example for those blocks only (at most 12k chars for any 8 types). Layout region
   tables, colour roles, style and motion vocabulary stay in the unfiltered
   `capabilityDigest(reg)`, which is still available but is no longer size-capped by a test.
+  With a deck style, "this style sets: <blockDefaults>" is appended to the detail of each
+  shortlisted type (the `blockDefaults` entry for that type from the style card's "Already set by
+  the style" line): the model must not repeat those knob values, and a knob it sets itself wins.
   If the detail shows that a pick does not fit (the item count is outside the range, or `avoid`
   names a better sibling listed in `related`), the model may swap the type once before fill.
+- **Tier 1 + recipes (AC0).** S2a's default input is now the curated index
+  `capabilityIndex(reg, { tier: 1, roles?, profile? })` (≤ 16k chars, snapshot in
+  `capability-digest.spec.ts`): the same header, then the **recipes** for the slide's role(s)
+  (`RECIPES` in `blocks/recipes.ts`: `id · layout — region: blocks — when`, each a known-good
+  slide that `analyzeSlide` reports clean with example content), then per category the ~45
+  tier-1 blocks as full lines with a `knobs:` hint (`BlockDefinition.looks`, the enum/boolean
+  slots that change the look) and the tier-2 blocks as one `also:` line of bare names the model
+  may still shortlist. `profile.prefer` promotes tier-2 types to full lines, `profile.avoid`
+  drops types and the recipes that use them (AC1's deck style feeds the same shape). The model
+  picks a recipe first, keeps its layout and regions, then swaps a block only when the content's
+  relationship demands it. `capabilityIndexData(reg, { tier: 1 })` returns the same set as JSON
+  with `aiTier`, `looks`, `absorbs`; `RECIPES` / `recipeSlide()` are exported for the backend.
+  The unfiltered `capabilityIndex(reg)` (all 129 blocks, ≤ 20k) is unchanged.
+- **Style-aware S2a (AC7).** With a deck style the S2a prompt is three things, all generated
+  from the live code: the **style card** (`styleCard(style)`, about 0.9-1.1k chars), the
+  **recipes for the slide's role** (`recipesFor(role)` or the `## Recipes` section of the index,
+  one `recipeLine` each) and the **style-filtered tier-1 index**
+  (`capabilityIndex(reg, { tier: 1, style, roles })`). A style's `avoid` drops the types from the
+  index and every recipe that uses them; its `prefer` promotes tier-2 types to full lines.
+  Real output for `corporate`, trimmed:
+
+  ```text
+  ## Style: corporate — Corporate
+  Clean business deck: white slides, navy text, one blue accent, small radii, numbers and charts first. ...
+  Palettes (write one as `theme`): corporate-navy, midnight, mono-grid (first = default).
+  Fonts: Inter / Inter (text width vs Inter: heading ×1.00, body ×1.00). Motion: subtle (deck default).
+  Rules: Every chart or table has a one-line takeaway. Consistent number formats across a slide. One accent use per slide; no decoration.
+  Prefer: tls.g.roadmap, tls.c.dashboard
+  Avoid: tls.c.kinetic-title, tls.m.decoration, tls.m.pattern
+  Already set by the style (do not repeat): tls.c.cover(variant=centered,decoration=none) tls.c.divider(variant=field,align=start) ...
+  ```
+
+  ```text
+  ### data
+  data-chart-insight · timeline+title — timeline: tls.c.chart-insight(insightSize=lead) — one chart, takeaway and source
+  data-kpi-row · timeline+title — timeline: tls.c.kpi-row(tile=card) + tls.t.takeaway(size=lead) — 2–5 headline KPIs and what they mean
+  data-table · timeline+title — timeline: tls.d.table + tls.t.footnote — exact values in rows, with a source
+  ```
+
+  ```text
+  ## Metric
+  tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile, gap
+  also: tls.c.dashboard, tls.c.kpi-tile, ...
+  ```
+
+  The model picks a recipe, keeps its layout and regions, swaps content, and turns knobs. The
+  backend gives it one recipe id per slide plus `why`; the deterministic post-check rejects an
+  id outside `recipesFor(role)` filtered by the style. The reference implementation of this pick
+  (without a model) is `tools/layout-report/dry-run.js`: it rotates through the role's eligible
+  recipes, `eligibleRecipes(role, style, registry)` in `blocks/pipeline/dryRun.ts`.
+
+  **Measured prompt budget** (dry run, chars; target = ai-curation README §5.2; the index is the
+  tier-1 index with `{ style }`, the card is `styleCard`; "header" is the index preamble plus its
+  one-line `## Styles` section):
+
+  | Section | Target | Measured (10 styles) | Verdict |
+  |---|---|---|---|
+  | Header (picking, scope, size, layer, motion rules) | ~1.2k | 2,430-2,503 | over: the layer, size and motion lines were added after the target was set |
+  | Style card | <= 1.2k | 897-1,118 | within |
+  | Recipes, all 10 roles | <= 3k | 3,819-4,055 | over; with the slide's own role only: 935 (`content`, the largest) |
+  | Tier-1 lines (45 + bento, image-full) | ~7k | 6,649-7,493 | around the target; doodle, consulting, gradient and editorial a little over |
+  | Tier-2 names | <= 1.5k | 1,315-1,389 | within |
+  | Icons | ~1.3k | 796 | within |
+  | **Total, all roles** | **<= 16k** | **16,219-17,100** | **over by 219-1,100** |
+  | **Total, slide's own role** | <= 16k | 13,315-14,087 | within |
+
+  The 16k ceiling holds when S2a sends only the slide's own role's recipes
+  (`roles: [role]`), which is what the backend should do: a slide has one role, and the saving
+  (2.9-3.1k) is larger than the overshoot. The full index with all roles is for the one-shot
+  planner. `dry-run.spec.ts` asserts the per-role total.
+
+- **Variety (AC8).** Two decks with one style and similar content must not be clones, and slides
+  of one role inside a deck must not repeat a design. The backend runs the deterministic
+  **variety pick** before S3 (reference: `blocks/pipeline/variety.ts`, called by
+  `pipeline/dryRun.ts`; mirror it or call the package):
+  - **Look signature** of a slide = layout + per region each block's type and the resolved value of
+    every look knob (authored, else the style's `blockDefaults`, else the block default).
+    Content never enters it. `lookSignature(slide, style, registry)`.
+  - **Candidates** for a role = the role's eligible recipes × their `variants` (named designs:
+    other knob values, a mirrored layout, swapped regions; `recipeLine` shows them as
+    `looks: a|b`), filtered by the style's `variety` (a knob the style sets stays at its value
+    unless `variety[type][knob]` lists the alternative), de-duplicated by signature.
+    `lookCandidates(recipes, style, registry, deckLook)`.
+  - **Pick**: `pickOrder(candidates, styleId, role, seed, nth, { used, avoid, previousRecipe })`
+    rotates from `hash(style, role) + seed × stride + nth` (stride coprime with the candidate
+    count, so seeds 1, 2, 3 start on different recipes) and orders: fresh signature, not in
+    `avoid`, another recipe than the previous slide; then fresh; then anything. The first
+    candidate the S4.1 oracle accepts wins.
+  - **Deck look**: knobs that must stay consistent inside one deck (the title treatment, from the
+    style's `variety['tls.t.title']`) are fixed once per deck from the seed: `deckLook(style, seed)`.
+  - **Inputs from the backend**: `seed` (a per-user deck counter works best: nearby seeds give
+    maximally different decks) and `avoidSignatures` (the signatures of the user's recent decks;
+    honoured while an alternative exists). Same seed + outline + style = the same deck.
+  - **The LLM's part**: S2a may name `recipe/look` instead of a bare recipe; S3 may turn any look
+    knob to a value listed in the tier-1 line (`knobs: variant=a|b, align=start|center, toggle`) or
+    the style card's `Knobs` line. Any other value is a `slot/invalid-enum` /
+    `slot/invalid-boolean` **error** with the nearest valid value (`suggestion`), so a repair round
+    fixes it in one step.
+  - Measured (dry run, 3 seeds × 10 styles, 12 slides): 0 errors, 0 warnings, 0 repeated signature
+    inside a deck, 92–100 % of slides differ between any two seeds of a style (before AC8: 0 %, the
+    picker had no seed); after the AC8.5 quality gate and asset filter, 75–92 %. ai-curation
+    README §8 and §8.9 have the numbers.
+  - **Budget after AC8** (chars): header 1.15–1.18k (was 2.43–2.50k), style card 1.03–1.19k,
+    tier-1 index 16.0–17.0k (ceiling raised 16k → 17k, recorded), S2a with the slide's own role
+    13.8–14.8k (≤ 16k, spec). All-roles S2a 16.9–18.0k: send per-role recipes.
+
+- **Content assets (AC8.5).** The picker only offers a design whose assets the slide's content
+  actually has. S1 records, per deck and optionally per slide, which of four asset kinds exist:
+  `assets: { images, logos, portraits, chartData }` (`SlideAssets`, booleans; a kind left out is
+  absent). Designs declare needs through their blocks (`designNeeds(recipe, variant)`: a photo
+  slot → `images`, `tls.m.logo-wall` → `logos`, bar/table/chart-insight → `chartData`; the cover's
+  split/bleed and the quote's `image` look need `images`). Blocks that degrade well need nothing:
+  `tls.c.team` and `tls.c.testimonial` fall back to initials discs without portraits, `tls.c.bento`
+  drops an empty photo tile, a logo with no image is set as a wordmark of its brand name.
+  `assetsAllow(recipe, variant, assets)` filters the candidates before the pick; if no design of the
+  role qualifies, all are offered (the oracle still decides). The dry run's default is
+  `DRY_RUN_ASSETS = { images: true, logos: false, portraits: true, chartData: true }`; an outline
+  entry's `assets` overrides it per slide (`OutlineEntry.assets`, `DryRunOptions.assets`). The
+  backend derives the flags from the user's uploads and the S1 outline (a client list with no logo
+  files is `logos: false`).
+- **Quality gate (AC8.5, S4.1).** Besides the oracle's errors and warnings, every filled slide runs
+  `slideQuality(report, { titleSize })` (`blocks/pipeline/quality.ts`): **fill** (painted union of
+  the content blocks / safe area) ≥ 30 % (≥ 15 % for a type-led slide whose largest text is
+  ≥ 1.5 × the deck's title size), **region fill** of every large non-title region ≥ 30 %, and the
+  **lead type** ≥ 0.9 × the style's slide-title size. A finding is repaired like a warning, but
+  only by moving to the next design (never by cutting the headline). The dry run reaches 0
+  findings on all 30 decks (3 seeds × 10 styles); `deckQuality(deck)` re-checks a finished deck.
+
+- **Composition (CMP4, [composition/README.md](composition/README.md)).** Beyond recipes, a slide
+  can take a **composition pattern** (`blocks/patterns.ts`). There are 19 patterns with 41 looks:
+  cover photo-scrim / type-rule / facts, agenda cards / rail / path, section marker / questions /
+  photo / numeral, icon cards, hub, marker flow, team cards / quote / roles, next steps / photo /
+  contacts.
+  - **In the picker.** Each pattern is a recipe of its role (`PATTERN_RECIPES`, `findDesign`). It
+    is built from containers, atoms, layers and connectors, and held to the oracle and the
+    quality gate in all ten styles (`patterns.spec.ts`). The tier-1 index lists them as one
+    `patterns: id(look|look) · …` line per role; the model names `id/look` exactly like a recipe
+    design. The variety picker offers them with the recipes. Look signatures read the whole tree
+    and the connectors. After a dense slide (design weight ≥ 8) a calm one (≤ 4) comes first
+    (`designWeight`, P12 rhythm).
+  - **Variety.** Every role now has ≥ 8 designs in every style (8–25), and seeds differ on 100 %
+    of the dry-run slides.
+  - **Free composition.** When no recipe or pattern fits the content's relationship, S2b may
+    compose: `capabilityDigest(reg, { types, composition: true })` appends the **composition
+    card** (`compositionCard()`, ≤ 2.5k, the grammar, containers, atoms with sizes, layers and
+    anchors, connector syntax, one example). The result goes through `validateFreeComposition`
+    (the validator plus `grammar/container|depth|leaves|scope|peers|style`), the oracle and the
+    quality gate.
+  - **Fallback.** A composition that fails falls back to `nearestPattern(slide, role, …)`: the
+    role's pattern sharing the most leaf types. The random-composition dry run
+    (`tools/layout-report/compose-run.js`, 200 × 10 styles) passes 94 %, and every rejection is a
+    quality verdict (sparse, thin region, small type), never an engine fault.
+  - **Budget after CMP4.** The tier-1 index is 17.6k (ceiling 17.7k, recorded). The per-role S2a
+    prompt is ≤ 14.7k. The card costs only the composing calls.
 - **Fill** (S3) then proceeds per slide with only the detail of that slide's blocks.
 
 - Separating plan from fill matters for three reasons: a wrong block choice is cheap to fix
@@ -231,6 +409,13 @@ two-tier digest. Both tiers are generated from the live registry
 - The model outputs `key`s; the backend assigns `id`s (`sl_03`, `b_03_title`) deterministically
   from keys so re-runs produce the same ids.
 - Effort `medium` is usually enough here; measure per profile.
+- **Per-style size cards (AC7).** The height hints the fill stage gets for the chosen types are
+  sampled with the deck's style (its default palette or `theme`, its tokens and its knob
+  defaults), not with the default theme:
+  `node tools/layout-report/cli.js --metrics --style <id> [--theme <palette>] [--types a,b]`
+  (the same data as `buildBlockMetrics(reg, { tokens, blockDefaults })`). A style with another
+  type scale or font changes heights, so use these cards, not the committed
+  `__generated__/block-metrics.json`, for a styled deck.
 
 ### S4 · Deterministic checks and repair
 
@@ -248,6 +433,129 @@ Run, in order, collecting `DeckFinding[]`:
 each with its findings, and returns replacement `SlideSpec`s for those keys. Two rounds maximum;
 a slide still failing after that is flagged in the report and rendered with the fallback layout
 so the deck is never broken. Every repair round is one version (`source: 'repair'`).
+
+### S4.1 · Layout oracle loop — geometry without screenshots (LO3/LO4)
+
+Design and status: [layout-oracle/README.md](layout-oracle/README.md). Every block's look is a
+pure `layout()` tree with real Inter glyph metrics, so whether content fits, overlaps or runs
+off the frame is *computed* in Node, in milliseconds. A screenshot is taken only for what the
+report itself flags as uncertain.
+
+```
+S2 plan ── reads size cards (index hints `[h≈…]`, full cards on demand)
+   │
+S3 fill ── DeckSpec
+   │
+   ▼
+analyze (CLI / exported analyzeDeck, ~5-20 ms/slide)
+   │ findings with severity error|warning ──► repair call with formatLayoutReport text
+   │                                           (failing slides only) ──► analyze again
+   │                                           max 2 rounds (same budget as S4 repair)
+   ▼ clean, or rounds exhausted
+screenshot only slides whose report.needsVisualCheck is non-empty (S5 critic)
+```
+
+**1. Planning — size cards.** `buildBlockMetrics()` is sampled from `measureBlock`, never
+authored. The committed copy is `packages/tldraw/src/blocks/__generated__/block-metrics.json`
+(also `node tools/layout-report/cli.js --metrics [--types a,b] [--theme <id>]`; the committed
+cards use the default theme, `--theme` samples them with a deck theme's type scale). The capability
+index carries a terse hint per block: `[h≈0+104/L@840]` (base + per line of the main text, at width
+840), `[h≈-18+59/item@840]` (per list item), `[h≈43@840]` (fixed), `[h 164–222@840]` (poor linear
+fit: the sampled range — the card's `samples` then lists every measured `[x, height]`), `[h=fill]`
+(takes whatever height it is given). `atMin: {h, fits}` is the example in exactly its `size.min`
+box (LO8). Smoke test of the built package as a plain-node consumer:
+`node tools/layout-report/smoke-dist.js` (after `build:packages`). The planner turns text into
+lines with `lines ≈ ceil(chars / (0.85 · cpl))` (cpl from the card; the 0.85 absorbs word-wrap
+loss and errs on the long side). One card (one JSON line per block):
+
+```json
+"tls.t.callout": {"kind":"layout","scope":"element","category":"emphasis","layer":"content",
+  "size":{"preferred":[800,200],"min":[480,180]},"fill":false,
+  "text":{"title":{"fontSize":28,"lineHeight":40.6,"cpl":[101,46,27]},
+          "text":{"fontSize":28,"lineHeight":40.6,"cpl":[100,45,26]}},
+  "model":{"var":"lines","slot":"text","at":{
+     "544":{"base":98,"per":40.4,"err":1,"x":[1,4],"h":[138,259]},
+     "840":{"base":97,"per":40.5,"err":1,"x":[1,5],"h":[138,300]},
+     "1728":{"base":97,"per":40.5,"err":1,"x":[1,3],"h":[138,219]}}},
+  "confidence":"high"}
+```
+
+Shape (`BlockMetricsFile`): `{version:1, theme, metrics:"table", widths:[1728,840,544],
+blocks:{[type]: {kind, scope, category, layer, size:{preferred,min,aspect?}, fill,
+text:{[slot]: {fontSize, lineHeight, cpl:(number|null)[]}}, model: null | {var:"lines"|"items"|"fixed",
+slot?, at:{[width]: null | {base, per, err, x:[min,max], h:[min,max], poor?:true}}},
+confidence:"high"|"medium"|"low", note?}}}`. `cpl`/`at` entries follow `widths`; `null` = below
+the block's min width, fills its box there, or unmeasurable. Other props keep the block's
+`describe.example` values, so an `items` model assumes example-length items. Numbers are for
+the default theme; a theme with a larger type scale needs the oracle, not the card.
+
+**2. Checking — the report.** FastAPI calls the CLI as a subprocess (or a Next.js route that
+imports `analyzeDeck`/`formatLayoutReport` from `@tlslides/tldraw`):
+
+```bash
+node tools/layout-report/cli.js deck.json --format json          # whole deck, JSON
+node tools/layout-report/cli.js deck.json --slide sl_05 --no-map # one slide, prompt text
+cat deck.json | node tools/layout-report/cli.js - --format json  # stdin
+```
+
+JSON received: `{deck, slides: LayoutReport[], summary:{slides, errors, warnings,
+needsVisualCheck: slideId[]}}`. `LayoutReport = {slideId, layout, frame, metrics, regions,
+blocks: BlockReport[], findings: LayoutFinding[], margins, freeSpace, needsVisualCheck: {blockId, reason}[]}`;
+`LayoutFinding = {code, severity:"error"|"warning"|"info", blockIds, message, fix?}`; `BlockReport`
+has `id, path, type, region, layer, z, box, natural, elastic, painted, contentOverflow, text[],
+capacity?, confidence`. Exit status 0 = report printed (findings do not change it), 2 = bad input.
+Measured: 0.3-0.8 s per call for a whole fixture deck (8-46 slides), most of it bundling.
+
+**3. Fixing — the prompt.** Only slides with an `error` or `warning` go back, as
+`formatLayoutReport` text (≤ 2.5k chars a slide with the map; `--no-map` for a tighter prompt):
+
+```text
+The slide below does not fit. Return a replacement SlideSpec for slide sl_05 only (JSON, nothing
+else). Apply each FIX; prefer shortening text over changing blocks, and changing blocks over
+changing the layout. Keep ids.
+
+SLIDE sl_05 layout=quote frame=1920x1080 metrics=table | 2 blocks | 0 errors, 2 warnings
+regions: quote 355,427 1210x140 | attribution 355,615 1210x38
+blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
+A b_05_quote tls.t.quote @quote 355,427 1210x237 fill | text 2L×52 ~61c/L, attribution 1L×41 ~91c/L
+B b_05_cap tls.t.caption @attribution 355,688 1210x33 nat 274x31 | text 1L×31 ~123c/L
+findings:
+W region/overflow Block "b_05_quote" measures 237 slide units tall, exceeding the "quote" region height of 140 slide units. FIX: shrink b_05_quote by 97 units (…): cut `text` to ≤ 1 line (~61 chars/line, ≤ 61 chars; now 2 lines, 67 chars)
+W region/displaced b_05_cap was moved out of its region `attribution` (y 615-653) to y 688 by the compiler's region re-flow. FIX: fix the overflow of region `quote`; b_05_cap then returns to `attribution`
+margins t459 r432 b361 l355 | free 89%
+
+Current SlideSpec: {…}
+```
+
+Stop when a slide has no `error`/`warning`, or after **N = 2** repair rounds (then keep the best
+round by error count and flag the slide). `info` findings (`text/shrunk`, intended layering) never
+trigger a round; nor do the LO5b composition hints (`layout/unbalanced`, `region/empty` — info,
+each with a numeric fix — and `layout/crowded`, a warning), which a planner may still act on. Then
+screenshot only `summary.needsVisualCheck` slides. Per block the report says why (LO5, calibrated
+against Chromium): confidence ≠ high (html-kind blocks measured from their poster, ±5% height;
+hosts without one), the editor wraps/paints the text differently from its true width (the editor
+still lays out with `estimateMetrics`), or painted content ends within the calibrated error margin
+of the frame edge / the next block. On the fixtures that is 21 of 95 slides.
+
+**Reference implementation (AC7).** `tools/layout-report/dry-run.js` runs S2a → S3 → S4.1 for
+all ten styles without a model: a fixed 12-slide outline, a deterministic recipe pick per slide,
+the headline written into the recipe's title slot, `analyzeDeck`, then at most three repair
+rounds (next eligible recipe for the role, then a shorter headline), and it measures the S2a
+prompt per section. The logic is the pure module `packages/tldraw/src/blocks/pipeline/dryRun.ts`
+(`runDryRun`, `eligibleRecipes`, `fillSlide`, `measurePrompt`); port its shape, not its picker.
+
+**Findings added by the composition plan** (all in the same `LayoutReport` and the same repair loop;
+the design checks also feed the quality gate):
+- CMP1: `block/dropped`.
+- CMP2 design checks: `layout/misaligned`, `layout/unequal-peers`, `layout/narrow-child`,
+  `nesting/too-deep` (LLM-authored slides, ≤ 3 levels), `type/too-many-sizes`, `accent/overuse`,
+  `contrast/low` (on the real paint under the ink, photos and scrims included),
+  `text/long-measure` (info), `motion/stagger-total`, `motion/too-many-heroes`.
+- CMP3 connectors: `connector/unresolved`, `connector/crosses-text`, `connector/too-short`.
+- CMP4: the validator's `grammar/*` rules for a free composition.
+
+The fixes the messages name are concrete (which child to widen, which ink to use, which pattern
+to fall back to).
 
 ### S5 · Render and review — the critic
 
@@ -300,6 +608,31 @@ Six dimensions, each scored 1–5 with a one-line justification, weights from th
 | **Density** | Right amount of content for the audience and profile? | 3 | 3 | 2 |
 | **Evidence** | Are numbers sourced, charts labelled, claims supported? | 2 | 1 | 3 |
 | **Consistency** | Same terminology, number format, tone, layout rhythm as neighbours? | 1 | 2 | 3 |
+
+**Per-style lines (AC7).** The critic gets the deck style's `rules` (the style card's "Rules"
+line) and the checks below on top of the six dimensions. They come from each style's `rules` /
+`avoid` in `packages/tldraw/src/blocks/styles/*.ts`:
+
+| Family | Style | Check the critic adds |
+|---|---|---|
+| Premium | `luxury` | Count accent uses: at most one per slide. At most 40 words per slide. Images full-bleed or absent; no scatter, bubble or heatmap charts, no tag pills. |
+| | `minimal` | One idea per slide; white space dominates. Grey and black only, an accent on one word at most; no decoration or pattern blocks. |
+| | `editorial` | Kicker, title, rule: type carries the page. A pull quote beats a bullet list. No glass, orbs, pills or gradients. |
+| Modern | `gradient` | Dark first, one glow per slide; headlines short and big; lists as cards, not bare text. |
+| | `glass` | Content sits on glass cards over the glow, never bare on the background. At most three chart series; no tables. |
+| | `swiss` | Everything flush left on an asymmetric grid; red for one thing per slide. No blobs, orbs, gradients or centred text. |
+| Playful | `doodle` | Short friendly sentences; one motif per slide, in the margin. Icons and pictures over dense text; no tables or scatter. |
+| | `memphis` | At most three motifs per slide, never over text. Flat bright colours with black outlines; short punchy headlines; no tables. |
+| Corporate | `corporate` | Every chart or table has a one-line takeaway. Number formats consistent across a slide. One accent use per slide, no decoration. |
+| | `consulting` | The title is an action title: one full sentence that states the insight. A source on every data slide. One message per slide. |
+
+**Composition lines (CMP4).** Alignment, equal peers, contrast and stagger are gated before the
+critic sees a slide (S4.1), so the critic judges what geometry cannot:
+- **balance**: does a centred group sit where the eye expects, and is a photo lockup clear of
+  the subject?
+- **peer weight**: does one card shout over the others without a reason?
+- **rhythm across slides**: dense and calm alternate, and no two neighbours share a design
+  (the picker's signatures and `designWeight` make this the default; the critic flags what slipped).
 
 Plus a **deck-level** pass on the contact sheet (all slides as a grid): rhythm, repetition,
 whether the story arc matches the profile's structure, whether the opening and closing carry
@@ -374,6 +707,8 @@ Ordered by how much they change output quality per unit of effort.
 4. **Give the model roles and presets, never numbers.** No coordinates (ban `free[]` in the
    prompt *and* strip it in the backend), no hex, no milliseconds. This is what makes the output
    theme-switchable and editable.
+   CMP4 keeps the ban: composition goes through regions, containers, layers, anchors and
+   connectors **by block id**, never through `free[]` or a coordinate (`composition-grammar.ts`).
 5. **Findings are the repair prompt.** `DeckFinding.message` is already written for the model;
    send the array, ask for replacements by key. Do not paraphrase findings into prose.
 6. **Patch, don't regenerate.** Revision and repair return replacement slides by id. Keeps the
@@ -474,6 +809,31 @@ interface DeckVersion { id; deckId; spec: DeckSpec; source: VersionSource; paren
 
 interface GenerationTrace { id; deckId; versionId?; stage; slideKey?; model; effort; promptHash; inputTokens; cachedTokens; outputTokens; latencyMs; stopReason; findingsBefore: number; findingsAfter: number }
 ```
+
+AC7 additions, all optional and as they exist in code:
+
+```ts
+// DeckSpec (blocks/types.ts) gains one field: a BUILT_IN_STYLES id. `theme` is then a palette id of that style.
+interface DeckSpec { /* ... */ style?: string }
+
+// capabilityIndexData(reg, opts?) → CapabilityIndexEntry[] (blocks/capability-digest.ts); AC0 added:
+interface CapabilityIndexEntry {
+  /* type, category, scope, range?, shortDescription, related?, layer?, size? ... */
+  aiTier?: 1 | 2          // 1 = full line in the default index, 2 = by name
+  looks?: string[]        // enum/boolean knob slots that change the look, in the order to try them
+  absorbs?: string[]      // tier-2 types this block replaces by default
+}
+// opts: { categories?, scopes?, tier?: 1, profile?: { prefer?, avoid? }, roles?: RecipeRole[], style?: string }
+```
+
+`capabilityIndexData` returns blocks only. **The styles and the recipes are not fields of that
+JSON** (the AC plan §5.2 sketched `styles` and `recipes` arrays; they were not built): the
+backend reads them from the same package: `BUILT_IN_STYLES` (each a `DeckStyle`: `id`, `family`,
+`name`, `brief`, `palettes`, `fonts`, `tokens`, `surface`, `masters`, `motionStyle`,
+`blockDefaults`, `prefer`, `avoid`, `rules`), `styleCard(style)`, `styleLine(style)`, and
+`RECIPES` / `recipesFor(role)` / `recipeLine(r)` / `recipeSlide(r, registry)` (a `SlideRecipe` is
+`{ id, role, layout, regions: Record<string, { type, knobs? }[]>, when }`). A Python backend
+calls them through the Node sidecar, as for the layout oracle.
 
 `SlideRole = 'opener' | 'objective' | 'agenda' | 'section' | 'content' | 'data' | 'example' |
 'exercise' | 'recap' | 'quote' | 'summary' | 'cta' | 'references' | 'closing'`.

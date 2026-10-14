@@ -81,7 +81,7 @@ export function layout(props: HeatmapProps, ctx0: LayoutContext): LayoutNode {
     nodes.push(...textAligned(ctx, text, ls, { x: 0, y: y + (ch - lh) / 2, width: labelW }, 'start', `row[${i}]`).nodes.slice(0, 1))
   })
 
-  const texts = grid.map((r) => r.map((v) => (v === null ? '' : fmtNum(v, props.format))))
+  const texts = grid.map((r) => r.map((v) => (v === null ? '' : fmtNum(v, props.format, ctx.tokens.locale))))
   const widest = Math.max(...texts.flat().map((t) => ctx.measureText(t, vs).width), 0)
   const showValues = props.showValues !== false && widest * TEXT_SLACK + 6 <= cw && lineH(vs) <= ch
   grid.forEach((r, i) =>
@@ -106,8 +106,8 @@ export function layout(props: HeatmapProps, ctx0: LayoutContext): LayoutNode {
     const y = Math.min(H - lh - 4, gridBottom + sp.sm)
     const sw = 28
     const swH = Math.min(14, lineH(ls) - 4)
-    const loT = fmtNum(lo, props.format)
-    const hiT = fmtNum(hi, props.format)
+    const loT = fmtNum(lo, props.format, ctx.tokens.locale)
+    const hiT = fmtNum(hi, props.format, ctx.tokens.locale)
     const loW = Math.ceil(ctx.measureText(loT, ls).width * TEXT_SLACK) + 2
     const hiW = Math.ceil(ctx.measureText(hiT, ls).width * TEXT_SLACK) + 2
     const total = loW + sp.xs + sw * 5 + sp.xs + hiW

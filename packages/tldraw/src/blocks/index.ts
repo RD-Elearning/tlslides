@@ -5,7 +5,7 @@
 
 export * from './types'
 export { BlockRegistry, createBlockComponents } from './registry'
-export { blockToShape, shapeToBlock, BLOCK_PROP_KEY } from './shape-bridge'
+export { blockToShape, shapeToBlock, shapeToAuthoredBlock, BLOCK_PROP_KEY } from './shape-bridge'
 export { isShown } from './schema-helpers'
 // P19 — design tokens v2 (`reviews/blocks/02-design-language.md`).
 export type { DeckTokens } from './tokens'
@@ -28,6 +28,7 @@ export {
   estimateMetrics,
   canvasMetrics,
   tableMetrics,
+  editorMetrics,
   createMetricsProvider,
   isCJK,
   createLayoutContext,
@@ -47,6 +48,10 @@ export type {
   ListOpts,
   CompositeBlockConfig,
 } from './layout'
+// AC3 — measured font families (the oracle's width tables; the host loads the fonts).
+export { FONT_FACES, faceForFamily, faceByKey, faceKernEm, textWidthRatio } from './layout/font-metrics'
+export type { FaceMetrics } from './layout/font-metrics'
+export { tableFaceFor } from './layout/measure'
 export { renderNodeToDom, paintToCSS, BlockRenderer, HOST_CSS_VARS } from './render-dom'
 export type { BlockRendererProps, HostLayoutContextValue } from './render-dom'
 export { HostRegistry } from './host-registry'
@@ -160,8 +165,9 @@ export type {
 // `BUILT_IN_BLOCKS` and `SLIDE_LAYOUTS` so it cannot drift from the library the way a
 // hand-written prompt fragment would.
 export { validateDeckSpec, defaultBlockRegistry } from './validate-deck-spec'
+export { deckSpecJsonSchema } from './deck-spec-json-schema'
 export type { DeckFinding } from './validate-deck-spec'
-export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+export { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData, compositionCard } from './capability-digest'
 export type {
   CapabilityDigest,
   CapabilityBlockDigest,
@@ -170,10 +176,139 @@ export type {
   CapabilityIndexEntry,
   CapabilityIndexOptions,
   CapabilityDetailOptions,
+  CapabilityPreference,
 } from './capability-digest'
+// AC0 — slide recipes per planner role (`reviews/blocks/ai-curation/README.md` §5.1).
+export { RECIPES, RECIPE_ROLES, recipesFor, recipeLine, recipeSlide, findVariant, variantIds, BASE_VARIANT, ASSET_KINDS, blockNeeds, designNeeds, assetsAllow, eachBlock, composedSlide } from './recipes'
+// CMP4 — composition patterns (`reviews/blocks/composition/README.md` CMP4).
+export { COMPOSITION_PATTERNS, PATTERN_RECIPES, ALL_DESIGNS, findDesign, patternRecipe, patternsFor } from './patterns'
+export type { CompositionPattern, ComposedSlide } from './patterns'
+export { checkGrammar, nearestPattern, validateFreeComposition, GRAMMAR_CONTAINERS, GRAMMAR_MAX_DEPTH, GRAMMAR_MAX_CHILDREN, GRAMMAR_STYLE_FIELDS } from './composition-grammar'
+export type { GrammarFinding } from './composition-grammar'
+export { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
+export { iconsFor, queryWords } from './icons/search'
+export { composeKit, composeCard, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
+export { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
+export type { SlideShape, ComposeKit, ComposeKitOptions } from './compose-kit'
+export type { Composition, ComposeKind, ComposeRunResult } from './pipeline/composeRun'
+export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
+export { AI_CURATION } from './library/ai-curation'
+export { runDryRun, runStyle, runVariety, signatureDiffer, measurePrompt, eligibleRecipes, fillSlide, prefixIds, shortenHeadline, DRY_RUN_OUTLINE, DRY_RUN_ASSETS, PROMPT_BUDGET } from './pipeline/dryRun'
+export type { StyleRunResult, PromptSections, OutlineEntry, Repair, VarietyReport, VarietyOptions, DryRunOptions } from './pipeline/dryRun'
+export {
+  lookSignature,
+  blockLook,
+  lookCandidates,
+  pickOrder,
+  deckLook,
+  applyDeckLook,
+  knobAllowed,
+  styleAllows,
+  seedStride,
+  hashString,
+  DECK_LOOK_TYPES,
+  designWeight,
+  DENSE_WEIGHT,
+  CALM_WEIGHT,
+} from './pipeline/variety'
+export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
+export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, geometryProblems, slideProblems } from './pipeline/quality'
+// CS0 — content stress + design capacity (`reviews/blocks/content-stress/README.md`).
+export { STRESS_LEVELS, STRESS_TEXT, stressSlide, soloDeck, soloProblems, designCapacity, runContentStress, plainText } from './pipeline/contentStress'
+export type { StressLevel, StressLang, StressCase, StressRow, DesignCapacity, ListCapacity } from './pipeline/contentStress'
+export type { SlideQuality, QualityFinding, QualityCode } from './pipeline/quality'
+
+// LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
+// geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact
+// LLM-facing text (`reviews/blocks/layout-oracle/README.md`). Package-level export is LO4.
+export {
+  measureBlock,
+  collectPaintedLeaves,
+  paintedBounds,
+  pathBounds,
+  unionBox,
+  DEFAULT_PROBE_HEIGHT,
+} from './layout/measure-block'
+export type {
+  BlockMeasure,
+  MeasureBlockOptions,
+  MeasureConfidence,
+  PaintedLeaf,
+  TextLeafMeasure,
+  CollectedLeaves,
+} from './layout/measure-block'
+export {
+  analyzeSlide,
+  analyzeDeck,
+  formatLayoutReport,
+  layoutMap,
+  blockLayer,
+  classifyOverlap,
+  MAP_CELL,
+  NEAR_MARGIN,
+} from './layout-report'
+export type {
+  LayoutReport,
+  BlockReport,
+  TextLeafReport,
+  LayoutFinding,
+  LayoutFindingCode,
+  BlockLayer,
+  OverlapParty,
+  AnalyzeSlideOptions,
+  VisualCheck,
+} from './layout-report'
+// CMP1 — export-ready contract: headless final-frame slide layout (X1), the default `blocks`
+// callback for `renderPageToSvg` (Q9 step 3), colour + alpha parsing (X5).
+export { layoutSlide, layoutDeck, layoutPage, defaultBlockSvg } from './layout-slide'
+export type { LaidOutSlide, LaidOutBlock, LayoutSlideContext } from './layout-slide'
+export { parseColorAlpha } from './color-math'
+// LO3 — size cards: per-block planning data sampled from `measureBlock` (committed as
+// `__generated__/block-metrics.json`, regenerated by `tools/layout-report/gen-block-metrics.js`).
+export {
+  buildBlockMetrics,
+  stringifyBlockMetrics,
+  sizeHint,
+  blockSizeHints,
+  stringifySizeHints,
+  METRICS_WIDTHS,
+} from './block-metrics'
+export type {
+  BlockMetrics,
+  BlockMetricsFile,
+  BuildBlockMetricsOptions,
+  HeightFit,
+  HeightModel,
+  HeightModelVar,
+  TextSlotMetrics,
+} from './block-metrics'
+// LO2 — paint layers (`BlockSpec.layer` / `BlockDefinition.layer`).
+export { definitionLayer, isBlockLayer } from './block-layer'
+export { splitLayeredBlocks } from './slide-compiler'
+export type { LayeredSplit, LayeredRegionBlock } from './slide-compiler'
 
 // Shared nearest-name suggestion, used by both `compileSlide`'s region findings and
 // `validateDeckSpec`'s — so the same misspelled name gets the same suggested fix from both.
 export { levenshtein, nearestName } from './nearest-name'
 
 export type { DeckSpec } from './types'
+
+// AC1 — deck styles (`reviews/blocks/ai-curation/README.md` §3).
+export {
+  BUILT_IN_STYLES,
+  STYLE_MASTER_PREFIX,
+  getDeckStyle,
+  stylePaletteById,
+  stylePaletteIds,
+  styleTheme,
+  mergeDeckTokens,
+  deckSpecTokens,
+  documentDeckTokens,
+  styleMasters,
+  styleMasterFor,
+  applyStyleBlockDefaults,
+  styleLine,
+  styleCard,
+  stylePreference,
+} from './styles'
+export type { DeckStyle, FontRef, StyleConcept, StyleSurface } from './types'

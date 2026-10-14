@@ -58,7 +58,7 @@ export function layout(props: RankingProps, ctx0: LayoutContext): LayoutNode {
   const y0 = Math.max(0, (H - n * rowH) / 2)
   const disc = Math.min(Math.round(lh * 1.15), rowH - 8)
   const rankW = disc
-  const valueTexts = items.map((it) => fmtNum(it.value, props.format))
+  const valueTexts = items.map((it) => fmtNum(it.value, props.format, ctx.tokens.locale))
   const valueW = Math.ceil(Math.max(...valueTexts.map((t) => ctx.measureText(t, vs).width)) * TEXT_SLACK) + 2
   const labelMax = Math.max(...items.map((it) => ctx.measureText(it.label, ls).width), ...items.map((it) => ctx.measureText(it.note, ns).width))
   const gap = sp.sm

@@ -12,16 +12,23 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`, no network.
  */
 
+import { BUILT_IN_STYLES, getDeckStyle, styleLine } from './styles'
 import { DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import type { BlockRegistry } from './registry'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { resolveTokens } from './tokens'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import type { BlockCategory, BlockDefinition, BlockScope, ColorRole, ResolvedTokens, SlotSpec, SlotType } from './types'
+import type { BlockLayer } from './types'
 import { BLOCK_CATEGORIES, CATEGORY_INFO } from './types'
-import { ICONS } from './icons'
+import { definitionLayer } from './block-layer'
+import { BLOCK_SIZE_HINTS } from './__generated__/block-size-hints'
+import { CORE_ICON_NAMES, ICONS } from './icons'
 import { MOTION_PRESETS, PRESET_IDS } from './motion/presets'
 import { DURATION_TOKENS } from './motion/tokens'
+import { RECIPES, composedSlide, eachBlock, recipeLine } from './recipes'
+import { PATTERN_RECIPES } from './patterns'
+import type { RecipeRole } from './recipes'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -54,6 +61,10 @@ export interface CapabilityBlockDigest {
   avoid?: string
   /** R7: a filled example BlockSpec. */
   example?: unknown
+  /** LO2: paint layer, only when not `content`. */
+  layer?: BlockLayer
+  /** AC0: tier-2 types this block replaces by default. */
+  absorbs?: string[]
 }
 
 /** One entry of the compact catalog index (tier 1 of the two-tier digest). */
@@ -65,17 +76,87 @@ export interface CapabilityIndexEntry {
   range?: string
   shortDescription: string
   related?: string[]
+  /** LO2: paint layer, only when not `content`. */
+  layer?: BlockLayer
+  /** LO3: height hint from the size cards (`block-metrics.json`), e.g. `h≈0+104/L@840`. Absent
+   *  for blocks without a card (a host block) or without an honest number. */
+  size?: string
+  /** AC0: AI tier (1 = default index, 2 = by name, detail on request). */
+  aiTier?: 1 | 2
+  /** AC0: look knobs (enum/boolean option slots), in the order to try them. */
+  looks?: string[]
+  /** AC8: the values of each look knob (enum values; `boolean` for a toggle), so the planner can
+   *  set a knob by name without the detail digest. */
+  lookValues?: Record<string, string[] | 'boolean'>
+  /** AC0: tier-2 types this block replaces by default. */
+  absorbs?: string[]
+}
+
+/** AC0 — a promote/drop list, as a deck style (AC1) or a planner profile (LLM-ARCHITECTURE §3) carries. */
+export interface CapabilityPreference {
+  /** Tier-2 types promoted to full index lines. */
+  prefer?: string[]
+  /** Types dropped from the index entirely. */
+  avoid?: string[]
 }
 
 export interface CapabilityIndexOptions {
   categories?: BlockCategory[]
   scopes?: BlockScope[]
+  /** AC0: `1` = the curated tier-1 index — tier-1 blocks as full lines (with a `knobs:` hint),
+   *  tier-2 blocks as one `also:` line of bare names per category, plus the slide recipes.
+   *  Absent = every block as a full line (the pre-AC0 index, unchanged). */
+  tier?: 1
+  /** AC0: promote/drop lists (only read with `tier: 1`). AC1's deck style feeds the same shape. */
+  profile?: CapabilityPreference
+  /** AC0: recipes for these roles only (only read with `tier: 1`; default all). */
+  roles?: RecipeRole[]
+  /** AC1: a deck style id (only read with `tier: 1`): its prefer/avoid lists are merged into
+   *  `profile`, and its compact line heads the Styles section. Full card: `styleCard`. */
+  style?: string
 }
+
+/** CMP3 — how a slide draws lines between its blocks (`SlideSpec.connectors`), for the full digest. */
+export const CONNECTORS_LINE =
+  'Lines between blocks of one slide, by block id (a nested child id works too), never coordinates: ' +
+  '`"connectors": [{ "id": "k1", "from": { "block": "a" }, "to": { "block": "b" } }]` on the slide. ' +
+  'Optional: `side` on an end (auto | top | right | bottom | left; auto faces the other block), `route` ' +
+  'straight (default; level when the blocks face each other) | elbow | curved, `head` end | both | none, ' +
+  '`tone` line | accent | text, `weight` hairline | md | bold, `dash` true (a flow), `label` (≤ 24 chars). ' +
+  'The line draws on after the later endpoint appears. Keep the ends apart (≥ 40 units of line) and other ' +
+  'text out of its path. Never place `tls.g.connector` yourself.'
+
+/** AC1 — editor-only guides the AI never places (AC0 deferred item). */
+export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector']
 
 export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
   types?: string[]
   categories?: BlockCategory[]
+  /** CMP4: append the composition card (`compositionCard`), for an S2b call that composes freely. */
+  composition?: boolean
+}
+
+/**
+ * CMP4 — the composition card: how to compose a slide from containers, atoms, layers and
+ * connectors under the grammar (`composition-grammar.ts`). It goes only into the S2b detail call
+ * when the planner composes freely (`capabilityDigest(…, { composition: true })`), under its own
+ * budget (≤ 2.5k chars, `capability-digest.spec`). Every feature it names is one the engine reads.
+ */
+export function compositionCard(): string {
+  return [
+    '## Composing a slide',
+    'Prefer a pattern (`patterns:`); compose only when none fits. The validator checks the grammar (`grammar/*`).',
+    '- Containers (children in `props.children`): `tls.l.stack` (top-down, `sizing: content`), `tls.l.row` / `tls.l.grid` (`columns`, `rows`; peers: ONE child type, so wrap mixed content in `tls.l.card` or `tls.l.stack`), `tls.l.split` (`ratio` 0.3-0.7, two children), `tls.l.card` (a padded surface, `padding`), `tls.l.overlay`.',
+    '- At most 3 levels (a region block is 1) and 6 children per container. Inside a container only element blocks; a composite (`tls.c.*`) stands alone in a region.',
+    '- Atoms: `tls.t.title` (a card heading: `size: subheading|heading`), `tls.t.body` (`size: body|lead`), `tls.t.kicker`, `tls.t.badge` (`tone`), `tls.t.marker` (`value`; circle 48/72/104 or `variant: numeral`), `tls.m.icon` (`iconStyle: disc`), `tls.m.shape` (circle|rounded|hexagon, 160/220/300, `label`, `icon`), `tls.t.hero-number`, `tls.m.avatar`, `tls.m.image`, `tls.x.rule` (`dash`).',
+    '- Peer cards of one structure line up their children and share one height; a card is as tall as its content, and a lone container is centred by its region.',
+    '- Layers: a region block with `layer: backdrop` fills the region behind (a photo); `layer: overlay` + `anchor` (top-left … bottom-right, center) sits on top at its own size. Text on a photo: `style: { surface: scrim, padding: xl }`. `anchorTo: <id>` pins an overlay to a stacked block (a badge on a card corner).',
+    '- `style`: surface, on, accent (`text` = neutral), tone, radius, padding, gap, elevation, align. Nothing else is read.',
+    '- Connectors: `slide.connectors: [{ id, from: { block }, to: { block }, route: straight|elbow|curved, head: end|both|none, tone: line|accent|text, weight, dash, label }]` by block id (nested ids too), never coordinates; each draws on after its later block.',
+    '- Motion: a container staggers its children (300 ms in all); a hero number in a card counts up; at most 2 showy reveals a slide.',
+    'Example (timeline layout): `{"id":"r","type":"tls.l.row","props":{"children":[{"id":"c1","type":"tls.l.card","props":{"children":[{"id":"m1","type":"tls.t.marker","props":{"value":"1"}},{"id":"h1","type":"tls.t.title","props":{"text":"Pilot","size":"heading"}},{"id":"b1","type":"tls.t.body","props":{"text":"Two partners, eight weeks."}}]}}, …]}}` + `"connectors":[{"id":"k1","from":{"block":"c1"},"to":{"block":"c2"}}]`',
+  ].join('\n')
 }
 
 export interface CapabilityLayoutDigest {
@@ -231,6 +312,8 @@ export function capabilityDigestData(registry?: BlockRegistry, opts?: Capability
       slots: Object.entries(def.schema ?? {}).map(([name, slot]) => describeSlot(name, slot)),
       ...(def.kind === 'html' && def.motion?.parts ? { parts: [...def.motion.parts] } : {}),
       ...(def.describe ? { when: def.describe.when, avoid: def.describe.avoid, example: def.describe.example } : {}),
+      ...layerField(def),
+      ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
     }))
 
   const layouts: CapabilityLayoutDigest[] = SLIDE_LAYOUTS.map((layout) => {
@@ -253,17 +336,18 @@ export function capabilityDigestData(registry?: BlockRegistry, opts?: Capability
 
   // Style
   const style: CapabilityStyleDigest = {
+    // CMP1: only fields a layout reads (density is gone; tone/radius/elevation act on the
+    // card-like containers, gap on every container).
     fields: [
-      'surface: ColorRole | string — block background',
-      'on: ColorRole | string — foreground colour (derived from surface when absent)',
-      'accent: ColorRole | string — emphasis colour',
-      "tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — visual tone",
-      "radius: RadiusToken | number — corner radius (none | sm | md | lg | xl | pill)",
+      "surface: ColorRole | string | Paint — background; children solve ink on it",
+      "on: ColorRole | string — text colour (else solved against surface)",
+      "accent: ColorRole | string — emphasis colour",
+      "tone: 'filled' | 'outline' | 'ghost' | 'inverted' | 'gradient' — card look (tls.l.card, tls.l.section)",
+      "radius: RadiusToken | number — card corner radius (none|sm|md|lg|xl|pill)",
       "padding: SpaceToken | number | [number, number] — inner padding",
-      "gap: SpaceToken | number — gap between children",
-      "elevation: 0 | 1 | 2 — shadow level",
+      "gap: SpaceToken | number — gap between a container's children",
+      "elevation: 0 | 1 | 2 — card shadow",
       "align: 'start' | 'center' | 'end' — content alignment",
-      "density: 'compact' | 'default' | 'roomy' — visual compactness",
     ],
     gradient: "Paint: { type: 'solid', color } | { type: 'linearGradient', angle, stops: [{color, at}] } | { type: 'radialGradient', cx, cy, stops: [{color, at}] }",
   }
@@ -338,6 +422,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
     lines.push(`Gradient shape: \`${data.style.gradient}\``)
     lines.push('')
+    lines.push(LAYER_LINE)
+    lines.push('')
 
     // ── Motion ──
     lines.push('## Motion')
@@ -370,19 +456,26 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     }
     lines.push('')
 
+    // ── Connectors (CMP3) ──
+    lines.push('## Connectors')
+    lines.push('')
+    lines.push(CONNECTORS_LINE)
+    lines.push('')
   }
 
   // ── Blocks ──
   lines.push('## Blocks')
   lines.push('')
   for (const b of data.blocks) {
-    const kindTag = b.kind ? ` [${b.kind}]` : ''
+    const kindTag = (b.kind ? ` [${b.kind}]` : '') + (b.layer ? ` [${b.layer}]` : '')
     lines.push(`### \`${b.type}\` — ${b.name}${kindTag}`)
     lines.push('')
     lines.push(filtered ? b.summary : `${b.summary} _(family: ${b.family}; keywords: ${b.keywords.join(', ') || '—'})_`)
     lines.push('')
     if (b.when) lines.push(`**When:** ${b.when}`)
     if (b.avoid) lines.push(`**Avoid:** ${b.avoid}`)
+    // AC0: `absorbs` stays in the structured detail only — the 8-type detail budget (12k) has no room
+    // for it in markdown, and the absorbed blocks' own `avoid` already points back here.
     if (b.when || b.avoid) lines.push('')
     if (b.parts && b.parts.length) {
       lines.push(`**Parts:** ${b.parts.map((p) => `\`${p}\``).join(', ')}`)
@@ -408,6 +501,13 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
     lines.push('')
   }
 
+  // The detail is what a model fills a slide from: with an icon slot and no names it guesses, and
+  // a guessed icon renders as a placeholder (spro llm-eval 2026-10-12: git-commit, box-select).
+  if (filtered && data.blocks.some((b) => b.slots.some((s) => /(^icon$|\bicon\b.*\))/.test(s.type)))) {
+    lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
+    lines.push('')
+  }
+
   if (!filtered) {
     lines.push('## Worked example — a valid slide')
     lines.push('')
@@ -423,6 +523,8 @@ export function capabilityDigest(registry?: BlockRegistry, opts?: CapabilityDeta
 
   }
 
+  // CMP4: the composition card, only when the planner composes freely
+  if (opts?.composition) lines.push('', compositionCard())
   return lines.join('\n')
 }
 
@@ -488,9 +590,66 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         ...(range ? { range } : {}),
         shortDescription: def.shortDescription ?? def.summary,
         ...(def.related && def.related.length ? { related: [...def.related] } : {}),
+        ...layerField(def),
+        ...(BLOCK_SIZE_HINTS[def.type] ? { size: BLOCK_SIZE_HINTS[def.type] } : {}),
+        ...(def.aiTier ? { aiTier: def.aiTier } : {}),
+        ...(def.looks && def.looks.length ? { looks: [...def.looks], lookValues: lookValues(def) } : {}),
+        ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
       }
     })
+    .filter((e) => !opts?.tier || inTierOne(e, opts.profile))
 }
+
+/** AC8 — each look knob's values (enum values, or `boolean`). */
+function lookValues(def: BlockDefinition): Record<string, string[] | 'boolean'> {
+  const out: Record<string, string[] | 'boolean'> = {}
+  for (const k of def.looks ?? []) {
+    const t = def.schema[k]?.type
+    if (t?.kind === 'enum') out[k] = [...(def.schema[k]?.indexValues ?? t.values)]
+    else if (t?.kind === 'boolean') out[k] = 'boolean'
+  }
+  return out
+}
+
+/**
+ * AC8 — the compact knob hint of a tier-1 line: `variant=classic|split, align=start|center, showCta`
+ * (a bare name is an on/off toggle). Values come from the schema, so the hint cannot drift.
+ */
+export function knobHint(e: Pick<CapabilityIndexEntry, 'looks' | 'lookValues'>): string {
+  return (e.looks ?? [])
+    .map((k) => {
+      const v = e.lookValues?.[k]
+      return Array.isArray(v) ? `${k}=${v.join('|')}` : k
+    })
+    .join(', ')
+}
+
+/** AC0 — does an entry get a full line in the tier-1 index? Tier 1 or promoted, and not dropped. */
+function inTierOne(e: { type: string; aiTier?: 1 | 2 }, profile?: CapabilityPreference): boolean {
+  if (profile?.avoid?.includes(e.type)) return false
+  return e.aiTier === 1 || !!profile?.prefer?.includes(e.type)
+}
+
+/** LO2 — `{ layer }` for a non-content block, `{}` otherwise (keeps the digest compact). */
+function layerField(def: BlockDefinition): { layer?: BlockLayer } {
+  const layer = definitionLayer(def)
+  return layer === 'content' ? {} : { layer }
+}
+
+/** LO2 — how the planner layers blocks into one composite look. */
+const LAYER_LINE =
+  'Layers: to stack blocks, put them in the same region and set `layer` on the block: `"backdrop"` takes the ' +
+  'whole region box behind the region\'s other blocks (a field, pattern or decoration under a card), `"overlay"` ' +
+  'takes it on top (a badge, an arrow) and must not cover text. Neither takes stacking space. `anchor` ' +
+  '(`fill` or `top-left`…`bottom-right`, `center`) puts it at natural size on that corner/edge; `anchorTo: "<id>"` ' +
+  'anchors to a stacked block of the region (a badge on a card corner). Blocks marked ' +
+  '`backdrop`/`overlay` below default to that layer only for overlap checks; `layer` still has to be set to stack.'
+
+/** LO3 — how to read the `[h…]` size hints. */
+const SIZE_LINE =
+  'Height hints (slide units, 1920×1080 frame, default theme, at the width after `@`): `h≈B+P/L` = B + P per ' +
+  'line of the main text, `h≈B+P/item` = per list item, `h≈B` = fixed, `h X–Y` = varies (sampled range), ' +
+  '`h=fill` = takes the height it is given; the layout report checks the fit.'
 
 /** P7 — one line telling the planner how to use deck/slide motion styles. */
 const MOTION_STYLE_LINE =
@@ -504,6 +663,7 @@ const MOTION_STYLE_LINE =
  * `capabilityDigest(registry, { types })` for the shortlist only.
  */
 export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndexOptions): string {
+  if (opts?.tier === 1) return tierOneIndex(registry, opts)
   const entries = capabilityIndexData(registry, opts)
   const lines: string[] = []
   lines.push('# Slide block index')
@@ -519,7 +679,11 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   lines.push('- `group`: a self-contained unit. One per region; may sit inside `tls.l.card` or `tls.l.section`.')
   lines.push('- `slide`: fills the whole content area. One per slide, alone in the main region. Never nest it.')
   lines.push('')
-  lines.push('Line format: `type · category · scope · item range — what the viewer sees`. Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('Line format: `type · category · scope · item range · layer — what the viewer sees [height]` (layer only when not content). Ask for the detail digest of the shortlisted types before filling props.')
+  lines.push('')
+  lines.push(SIZE_LINE)
+  lines.push('')
+  lines.push(LAYER_LINE)
   lines.push('')
   lines.push(MOTION_STYLE_LINE)
   lines.push('')
@@ -529,13 +693,136 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
     lines.push(`## ${CATEGORY_INFO[cat].label} — ${CATEGORY_INFO[cat].description}`)
     lines.push('')
     for (const e of inCat) {
-      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''} — ${e.shortDescription}`)
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}`)
     }
     lines.push('')
   }
   lines.push('## Icons')
   lines.push('')
-  lines.push(`Valid icon names: ${Object.keys(ICONS).join(', ')}`)
+  lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
+  lines.push('')
+  return lines.join('\n')
+}
+
+/**
+ * AC0 — the curated index (`reviews/blocks/ai-curation/README.md` §2.1, §5.2): the same header,
+ * then the slide recipes, then per category the tier-1 blocks as full lines with a `knobs:` hint
+ * and the tier-2 blocks as one `also:` line of bare type names (the planner can still ask for
+ * their detail). Budget: ≤ 16k chars (spec).
+ */
+function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityIndexOptions): string {
+  const style = getDeckStyle(given.style)
+  const opts: CapabilityIndexOptions = style
+    ? {
+        ...given,
+        profile: {
+          prefer: [...(given.profile?.prefer ?? []), ...style.prefer],
+          avoid: [...(given.profile?.avoid ?? []), ...style.avoid],
+        },
+      }
+    : given
+  const all = capabilityIndexData(registry, { categories: opts.categories, scopes: opts.scopes })
+  const dropped = new Set([...(opts.profile?.avoid ?? []), ...AI_HIDDEN_TYPES])
+  const lines: string[] = []
+  lines.push('# Slide block index — core set')
+  lines.push('')
+  // AC8: the header is the compact form of the full index's rules (the AC7 header was 2.45k against
+  // a 1.2k target; the room pays for the knob values and the recipe looks).
+  lines.push(
+    "Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → " +
+      '`timeline`, ordered → `process`, options → `comparison`, numbers on axes → `chart`, 1–4 headline numbers → `metric`.'
+  )
+  lines.push('Scope: `element` combines with others; `group` is one per region; `slide` sits alone in the main region, never nested.')
+  lines.push(
+    // AC8.6: a few words trimmed to pay for the section-title recipe line (17k ceiling)
+    'Lines: `type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle`. Knobs change the ' +
+      'look: turn them before switching block; other values are rejected. `also:` more blocks by ' +
+      "name. Get a type's detail before filling its props."
+  )
+  lines.push(
+    'Height `[h…]` (1920×1080 units, width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` = ' +
+      'the given height, `X–Y` varies.'
+  )
+  lines.push(
+    'Layers: in one region, `layer: "backdrop"` paints behind, `"overlay"` on top (never over text); `anchor` ' +
+      'fill|corner|edge|center; `anchorTo: "<id>"`. Motion: `motionStyle` on deck/slide — expressive, subtle, static.'
+  )
+  lines.push('')
+  // AC1: deck styles — one compact line each (or the chosen style's), full card on demand.
+  lines.push('## Styles')
+  if (style) {
+    // AC8: the brief, rules, knob defaults and `Vary:` live in the style card sent with this index
+    lines.push(`Deck style: ${styleLine(style)}. Follow its style card (brief, rules, knob defaults, Vary).`)
+  } else {
+    lines.push('Set `style` and one of its palettes as `theme`; get its style card first.')
+    // AC5: ten styles — one line per family, `style (palettes)` (the per-style line cost the budget)
+    const families: string[] = []
+    for (const st of BUILT_IN_STYLES) if (!families.includes(st.family)) families.push(st.family)
+    // enhance S3: the family base styles only — a variant (`variantOf`) is picked in the brief
+    // (the catalogue) and reaches the model as `Deck style:` with its own card (the budget holds)
+    for (const fam of families)
+      lines.push(`${fam}: ${BUILT_IN_STYLES.filter((st) => st.family === fam && !st.variantOf).map((st) => `${st.id} (${st.palettes.map((p) => p.id).join(', ')})`).join('; ')}`)
+  }
+  lines.push('')
+  // A recipe that uses a dropped type is dropped with it (a style that avoids `tls.t.footnote`
+  // loses `data-table`).
+  const recipes = RECIPES.filter(
+    (r) =>
+      (!opts.roles || opts.roles.includes(r.role)) &&
+      !Object.values(r.regions).some((blocks) => blocks.some((blk) => dropped.has(blk.type)))
+  )
+  if (recipes.length) {
+    lines.push('## Recipes')
+    lines.push('')
+    lines.push(
+      // AC8.6: trimmed (~40 chars) to pay for the section-title line within the 17k ceiling
+      // CMP3: trimmed (", clean with example content") to pay for the three atoms' `also:` names
+        'Known-good slides per role (`id · layout — region: blocks — when · looks`). ' +
+        '`+title` = `tls.t.title` in the `title` region; no region name = the main region. ' +
+        '`looks:` other designs (`id/look`); `patterns:` composed designs, picked the same way. Swap content, keep the rest; never repeat a design in a deck.'
+    )
+    lines.push('')
+    // CMP4: per role, its composition patterns on one line (`id(look|look)`), picked like recipes
+    const patternsOf = (role: string) =>
+      PATTERN_RECIPES.filter((r) => r.role === role && (!opts.roles || opts.roles.includes(r.role))).filter((r) => {
+        let ok = true
+        eachBlock(composedSlide(r, 'base').regions, (b) => {
+          if (dropped.has(b.type)) ok = false
+        })
+        return ok
+      })
+    let role: string | undefined
+    const flush = () => {
+      const ps = role ? patternsOf(role) : []
+      if (ps.length) lines.push(`patterns: ${ps.map((p) => `${p.id}${p.variants?.length ? `(${p.variants.map((v) => v.id).join('|')})` : ''}`).join(' · ')}`)
+    }
+    for (const r of recipes) {
+      if (r.role !== role) {
+        flush()
+        role = r.role
+        lines.push(`### ${role}`)
+      }
+      lines.push(recipeLine(r))
+    }
+    flush()
+    lines.push('')
+  }
+  for (const cat of BLOCK_CATEGORIES) {
+    const inCat = all.filter((e) => e.category === cat && !dropped.has(e.type))
+    const full = inCat.filter((e) => inTierOne(e, opts.profile))
+    const also = inCat.filter((e) => !inTierOne(e, opts.profile))
+    if (!full.length && !also.length) continue
+    lines.push(`## ${CATEGORY_INFO[cat].label}`)
+    for (const e of full) {
+      const knobs = e.looks ? ` knobs: ${knobHint(e)}` : ''
+      lines.push(`${e.type} · ${e.category} · ${e.scope}${e.range ? ` · ${e.range}` : ''}${e.layer ? ` · ${e.layer}` : ''} — ${e.shortDescription}${e.size ? ` [${e.size}]` : ''}${knobs}`)
+    }
+    if (also.length) lines.push(`also: ${also.map((e) => e.type).join(', ')}`)
+    lines.push('')
+  }
+  lines.push('## Icons')
+  lines.push('')
+  lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
   lines.push('')
   return lines.join('\n')
 }

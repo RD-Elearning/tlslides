@@ -1,16 +1,19 @@
 /**
- * Text measurement for the block layout system. The `estimateMetrics` provider is the default
- * (Node + browser) — it adapts Phase 15's `estimateTextSize` heuristic to produce full
- * `TextMetrics` with a `lines` array and optional line-breaking when `maxWidth` is provided.
+ * Text measurement for the block layout system. `editorMetrics` (= the browser-calibrated
+ * `tableMetrics`, LO6) is the default for every `createLayoutContext` (Node + browser): compile,
+ * DOM + SVG renderers, export, autofit. `estimateMetrics` adapts Phase 15's `estimateTextSize`
+ * heuristic (one average glyph width) and stays exported as an opt-in provider.
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  *
- * Three providers will eventually exist behind the `MeasureTextProvider` interface (§4.6):
- * `estimateMetrics` (this file), `canvasMetrics` (browser), and `tableMetrics` (Node).
- * Only `estimateMetrics` is implemented for A1.
+ * Three providers exist behind the `MeasureTextProvider` interface (§4.6): `estimateMetrics`,
+ * `canvasMetrics` (browser only) and `tableMetrics` (Node + browser; `editorMetrics` is its shared
+ * instance).
  */
 
 import type { RichText, ResolvedTextStyle, TextLine, TextMetrics } from '../types'
+import { INTER_BOLD_FACTOR, interCharEm } from './inter-metrics'
+import { faceByKey, faceCharEm, faceForFamily, faceKernEm, familyStack, INTER_METRICS, type FaceMetrics } from './font-metrics'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Generated font metrics from Inter Regular font (Phase 3)                       */
@@ -792,107 +795,121 @@ const ADVANCE_WIDTH_TABLES: Record<string, { default: number; chars: Record<stri
 }
 
 /**
- * Look up the advance width of a character in em for a given font face key.
- * Falls back to the face's default width for unlisted characters.
+ * Look up the advance width of a character in em for a legacy face key (`serif` / `mono` /
+ * `script`, the pre-AC3 hand tables), used only for a family stack with no measured table.
  */
 function tableCharWidth(char: string, faceKey: string): number {
+  if (faceKey === 'inter') return interCharEm(char)
   const table = ADVANCE_WIDTH_TABLES[faceKey]
   if (!table) return CUSTOM_FONT_AVG_CHAR_WIDTH_EM
   return table.chars[char] ?? table.default
 }
 
 /**
- * Map a CSS font-family string to the closest built-in face key for tableMetrics.
- * Returns 'sans' as the neutral fallback.
+ * AC3: the face `tableMetrics` measures a `font-family` stack with. The first family in the stack
+ * that has a browser-measured table (`font-metrics/`, Inter included) wins; a stack with none falls
+ * back by its CSS generic family to the old hand tables (`monospace` → mono, `serif` → serif,
+ * `cursive` → script) and otherwise to Inter, the font the app loads. Before AC3 this sniffed
+ * substrings of the name, so "Crimson Pro" (no "serif" in it) was measured as Inter (F5).
  */
-function tableFaceKey(family: string): string {
-  const lower = family.toLowerCase()
-  if (lower.includes('mono') || lower.includes('source code')) return 'mono'
-  // Inter is the default font for tlslides - use generated metrics
-  if (lower.includes('inter') || lower.includes('source sans') || lower.includes('sans')) return 'inter'
-  if (lower.includes('serif') && !lower.includes('sans')) return 'serif'
-  if (lower.includes('script') || lower.includes('caveat')) return 'script'
-  return 'inter' // Default to Inter since it's loaded
+export type TableFace = FaceMetrics | 'serif' | 'mono' | 'script'
+
+export function tableFaceFor(family: string): TableFace {
+  const face = faceForFamily(family)
+  if (face) return face
+  const generic = familyStack(family).map((n) => n.toLowerCase())
+  if (generic.includes('monospace')) return 'mono'
+  if (generic.includes('serif')) return 'serif'
+  if (generic.includes('cursive')) return 'script'
+  return INTER_METRICS
+}
+
+function faceFromKey(key: string): TableFace {
+  if (key === 'serif' || key === 'mono' || key === 'script') return key
+  return faceByKey(key) ?? INTER_METRICS
+}
+
+/** Advance of `char` in em for a resolved face (bold: the 700 table / Inter's bold factor). */
+function faceEm(face: TableFace, char: string, bold: boolean): number {
+  if (typeof face === 'string') return tableCharWidth(char, face) * (bold ? INTER_BOLD_FACTOR : 1)
+  return faceCharEm(face, char, bold)
 }
 
 /**
- * Measure the width of a text string using per-character advance-width tables.
+ * Per-character run attributes from rich-text runs: `bold` and the run `size` multiplier.
+ * `undefined` when no run changes a width (or the runs do not line up with the plain text).
  */
-function measureTableStringWidth(str: string, faceKey: string, fontSize: number): number {
-  let w = 0
-  for (let i = 0; i < str.length; i++) {
-    const ch = str[i]
-    if (isCJK(ch)) {
-      w += fontSize * CJK_WIDTH_EM
-    } else {
-      w += tableCharWidth(ch, faceKey) * fontSize
+function runAttributes(
+  runs: Array<{ text: string; bold?: boolean; size?: number }> | undefined,
+  length: number
+): { bold: boolean[]; size: number[] } | undefined {
+  if (!runs || !runs.some((r) => r.bold || (r.size !== undefined && r.size !== 1))) return undefined
+  const bold: boolean[] = []
+  const size: number[] = []
+  for (const run of runs) {
+    for (let i = 0; i < run.text.length; i++) {
+      bold.push(!!run.bold)
+      size.push(run.size ?? 1)
     }
   }
-  return w
+  return bold.length === length ? { bold, size } : undefined
 }
 
 /**
- * Break a line using table-based widths. Same line-breaking algorithm as
- * `breakLineWithWidth` but using `measureTableStringWidth` for character widths.
+ * Greedy line breaking over `[start, end)` of `text` with per-character widths `charW(i)`.
+ * Same algorithm as `breakLineWithWidth` (break after whitespace / CJK; a word wider than the
+ * line is broken at the character). Returns `[start, end)` pairs.
  */
-function breakLineWithTableWidth(
-  logical: string,
+function breakRangeByWidth(
+  text: string,
+  start: number,
+  end: number,
   maxWidth: number,
-  faceKey: string,
-  fontSize: number,
-): string[] {
-  if (!logical) return ['']
-
-  const lines: string[] = []
-  let currentStart = 0
+  charW: (i: number) => number
+): Array<[number, number]> {
+  if (start >= end) return [[start, end]]
+  const lines: Array<[number, number]> = []
+  let currentStart = start
   let currentWidth = 0
   let lastBreakPos = -1
 
-  for (let i = 0; i < logical.length; i++) {
-    const ch = logical[i]
-    const cw = isCJK(ch) ? fontSize * CJK_WIDTH_EM : tableCharWidth(ch, faceKey) * fontSize
-
+  for (let i = start; i < end; i++) {
+    const cw = charW(i)
     if (currentWidth + cw > maxWidth && currentStart < i) {
       if (lastBreakPos > currentStart) {
-        const lineText = logical.slice(currentStart, lastBreakPos + 1)
-        lines.push(lineText)
+        lines.push([currentStart, lastBreakPos + 1])
         currentStart = lastBreakPos + 1
-        currentWidth = 0
         lastBreakPos = -1
-        for (let j = currentStart; j <= i; j++) {
-          const cj = logical[j]
-          currentWidth += isCJK(cj) ? fontSize * CJK_WIDTH_EM : tableCharWidth(cj, faceKey) * fontSize
-        }
+        currentWidth = 0
+        for (let j = currentStart; j <= i; j++) currentWidth += charW(j)
       } else {
         const breakAt = Math.max(currentStart + 1, i)
-        lines.push(logical.slice(currentStart, breakAt))
+        lines.push([currentStart, breakAt])
         currentStart = breakAt
-        currentWidth = 0
         lastBreakPos = -1
         currentWidth = cw
       }
     } else {
       currentWidth += cw
     }
-
-    const nextCh = i + 1 < logical.length ? logical[i + 1] : undefined
-    if (isBreakOpportunity(ch, nextCh)) {
-      lastBreakPos = i
-    }
+    const nextCh = i + 1 < end ? text[i + 1] : undefined
+    if (isBreakOpportunity(text[i], nextCh)) lastBreakPos = i
   }
-
-  if (currentStart < logical.length) {
-    lines.push(logical.slice(currentStart))
-  }
-
-  return lines.length > 0 ? lines : ['']
+  if (currentStart < end) lines.push([currentStart, end])
+  return lines.length > 0 ? lines : [[start, end]]
 }
 
 /**
  * Table-based text measurement provider. Uses per-face advance-width lookup tables
- * for the 4 built-in font families (script, sans, serif, mono). This is a middle
- * ground between `estimateMetrics` (single avg-char-width) and `canvasMetrics`
+ * for the built-in font families (Inter — browser-measured —, serif, mono, script). This is a
+ * middle ground between `estimateMetrics` (single avg-char-width) and `canvasMetrics`
  * (actual font rasteriser).
+ *
+ * LO5 (browser calibration, `reviews/blocks/layout-oracle/README.md`): widths include CSS
+ * `letter-spacing` (the DOM renderer sets `letterSpacing` em on every text node; the default is
+ * -0.03 em, which CSS adds after every character), `bold` runs (`INTER_BOLD_FACTOR`) and run
+ * `size` multipliers. Before LO5 the Inter table was ~10% narrow per glyph and letter-spacing was
+ * ignored: lines came out ~5% narrow (p95 22%).
  *
  * Pure and DOM-free: suitable for Node.js server-side rendering.
  *
@@ -918,32 +935,43 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
 
     const fontSize = style.size || 28
     const lineHeight = (style.lineHeight || DEFAULT_LINE_HEIGHT) * fontSize
-    const resolvedFace = faceKey ?? tableFaceKey(style.family || '')
+    const face = faceKey ? faceFromKey(faceKey) : tableFaceFor(style.family || '')
+    const spacing = (style.letterSpacing || 0) * fontSize
+    const attrs = runAttributes(runs, plain.length)
+    // AC3: measured faces kern (the pair with the previous character, as the browser does).
+    const kernFace = typeof face === 'string' ? undefined : face
+    const charW = (i: number): number => {
+      const ch = plain[i]
+      const bold = attrs ? attrs.bold[i] : false
+      let em = isCJK(ch) ? CJK_WIDTH_EM * (bold ? INTER_BOLD_FACTOR : 1) : faceEm(face, ch, bold)
+      if (kernFace && i > 0) em += faceKernEm(kernFace, plain[i - 1], ch)
+      return em * fontSize * (attrs ? attrs.size[i] : 1) + spacing
+    }
+    const rangeW = (s: number, e: number): number => {
+      let w = 0
+      for (let i = s; i < e; i++) w += charW(i)
+      return w
+    }
 
-    const logicalLines = plain.split('\n')
-    const visualLines: string[] = []
-
-    if (maxWidth != null && maxWidth > 0 && fontSize > 0) {
-      for (const logical of logicalLines) {
-        const lineWidth = measureTableStringWidth(logical, resolvedFace, fontSize)
-        if (lineWidth <= maxWidth) {
-          visualLines.push(logical)
-        } else {
-          const broken = breakLineWithTableWidth(logical, maxWidth, resolvedFace, fontSize)
-          visualLines.push(...broken)
-        }
-      }
-    } else {
-      for (const line of logicalLines) {
-        visualLines.push(line)
+    // Logical lines as [start, end) ranges of `plain`, then visual lines.
+    const ranges: Array<[number, number]> = []
+    let at = 0
+    for (const logical of plain.split('\n')) {
+      const s = at
+      const e = at + logical.length
+      at = e + 1
+      if (maxWidth != null && maxWidth > 0 && fontSize > 0 && rangeW(s, e) > maxWidth) {
+        ranges.push(...breakRangeByWidth(plain, s, e, maxWidth, charW))
+      } else {
+        ranges.push([s, e])
       }
     }
 
     const withinLineBaseline = lineHeight * 0.8
     const runsForLine = runs ? [...runs] : undefined
 
-    const lines: TextLine[] = visualLines.map((lineText, i) => {
-      const lineWidth = measureTableStringWidth(lineText, resolvedFace, fontSize)
+    const lines: TextLine[] = ranges.map(([s, e], i) => {
+      const lineText = plain.slice(s, e)
       const lineRuns = runsForLine
         ? sliceRunsForLine(runsForLine, lineText)
         : undefined
@@ -951,7 +979,7 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
         text: lineText,
         top: Math.round(i * lineHeight),
         baseline: Math.round(i * lineHeight + withinLineBaseline),
-        width: Math.round(lineWidth),
+        width: Math.round(rangeW(s, e)),
         runs: lineRuns,
       }
     })
@@ -966,6 +994,15 @@ export function tableMetrics(faceKey?: string): MeasureTextProvider {
     }
   }
 }
+
+/**
+ * The layout of record (LO6, `reviews/blocks/layout-oracle/README.md`): the one text metric every
+ * `createLayoutContext` uses unless a caller injects another — compile, editor, DOM + SVG
+ * renderers, export, autofit and the layout-oracle report. One shared instance, so callers can
+ * test `ctx.measureText === editorMetrics`. Browser-calibrated Inter widths (LO5): line widths
+ * within ±5% of Chromium at p95, 0.1% of text leaves wrap differently from the browser.
+ */
+export const editorMetrics: MeasureTextProvider = tableMetrics()
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* createMetricsProvider — factory                                                 */

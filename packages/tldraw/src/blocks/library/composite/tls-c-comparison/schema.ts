@@ -20,6 +20,10 @@ export interface ComparisonProps extends Record<string, unknown> {
   columns: ComparisonColumn[]
   /** Index of the highlighted column (0-based), or null for none. */
   highlight?: number | null
+  /** AC2: `plain` (default), `cards` (every column on a card, the highlighted one outlined in
+   *  the accent) or `versus` (two columns as cards with an accent "VS" disc between them; three
+   *  columns are drawn as `cards`). */
+  style?: 'plain' | 'cards' | 'versus'
 }
 
 export const schema: BlockSchema = {
@@ -63,6 +67,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Highlighted column',
     help: 'Index (0-based) of the column to highlight with accent colour. Omit or null for none.',
+  },
+  style: {
+    type: { kind: 'enum', values: ['plain', 'cards', 'versus'] },
+    role: 'option',
+    label: 'Style',
+    guidance: '`versus`: two rivals with a VS disc.',
   },
 }
 

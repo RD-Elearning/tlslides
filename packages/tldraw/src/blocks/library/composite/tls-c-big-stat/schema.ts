@@ -10,6 +10,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
+import { localizeNumber } from '../../data/_engine/format-value'
 
 export interface BigStatProps extends Record<string, unknown> {
   /** The headline number. */
@@ -26,6 +27,11 @@ export interface BigStatProps extends Record<string, unknown> {
   prefix?: string
   /** Optional suffix after the formatted number (e.g. "%", "M", "B"). */
   suffix?: string
+  /** AC2: `plain` (default), `accent` (accent number under a short accent rule) or `split`
+   *  (number left, label and context beside it). */
+  variant?: 'plain' | 'accent' | 'split'
+  /** AC2: `start` (default) or `center` (stacked variants). */
+  align?: 'start' | 'center'
 }
 
 /**
@@ -34,7 +40,7 @@ export interface BigStatProps extends Record<string, unknown> {
  *
  * This is the single source of truth for how the value appears on screen.
  */
-export function formatValue(props: BigStatProps): string {
+export function formatValue(props: BigStatProps, locale?: string): string {
   const { value, format = 'plain', prefix = '', suffix = '' } = props
   let formatted: string
 
@@ -67,13 +73,14 @@ export function formatValue(props: BigStatProps): string {
     default: {
       // Default: format with up to 10 significant digits, dropping trailing zeros.
       // Special-case zero so it does not become an empty string.
-      const num = Number(value.toFixed(10))
-      formatted = num === 0 ? '0' : num.toString().replace(/\.?0+$/, '')
+      // Number#toString already drops a decimal's trailing zeros; stripping zeros from the
+      // string as well turned 300 into "3" and 120000 into "12".
+      formatted = String(Number(value.toFixed(10)))
       break
     }
   }
 
-  return prefix + formatted + suffix
+  return prefix + localizeNumber(formatted, locale) + suffix
 }
 
 export const schema: BlockSchema = {
@@ -82,7 +89,7 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Value',
     required: true,
-    guidance: 'The headline number to display. Any numeric value.',
+    guidance: 'The headline number.',
   },
   label: {
     type: { kind: 'text', maxChars: 40 },
@@ -115,7 +122,9 @@ export const schema: BlockSchema = {
     type: { kind: 'enum', values: ['plain', 'compact', 'percent', 'currency'] },
     role: 'option',
     label: 'Format',
-    guidance: 'Number format: plain (default), compact (1.2K/3.4M), percent (12%), currency (1,234).',
+    // spro demo T13: "percent (12%)" read as "write 12" and drew 9500% for 95; this block takes a
+    // fraction (charts and KPI tiles take the percentage itself)
+    guidance: 'Number format: plain (default), compact (1.2K/3.4M), percent (0.12 → 12%), currency (1,234).',
   },
   prefix: {
     type: { kind: 'text', maxChars: 4 },
@@ -129,6 +138,77 @@ export const schema: BlockSchema = {
     label: 'Suffix',
     guidance: 'Optional suffix after the number (e.g. "%", "M"). Max 4 chars.',
   },
+  variant: {
+    type: { kind: 'enum', values: ['plain', 'accent', 'split'] },
+    role: 'option',
+    label: 'Variant',
+    guidance: '`accent`: accent number under a rule; `split`: label beside the number.',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Align',
+    guidance: '`center` for a stat alone on the slide.',
+  },
+}
+
+/** AC2 `variant: accent`: the rule above the number (template and poster). */
+export const BIG_STAT_RULE = { width: 96, height: 8, gap: 24 } as const
+/**
+ * AC2 (lead review) — the large tier. A big-stat with the room for it grows its number with the
+ * box: the largest size (at most `maxGain`× the display token and `maxSize`) whose stack fits the
+ * box height and whose number fits the width, with the label at `lead` and the context at `body`. Below
+ * `minGain`× display the block keeps the compact tier (display / body / caption), unchanged.
+ * Fixed point: laid out again at its own content height the block picks the same size (the stack
+ * is linear in the size and the compiler rounds heights up).
+ */
+export const BIG_STAT_LARGE = { minGain: 1.25, maxGain: 2.25, maxSize: 320, valueGap: 24, fitW: 0.95 } as const
+
+/** The large-tier number size for a stack of `fixedH` + `size × perSize` in `boxH` and a number
+ *  `width0` wide at `size0` in `boxW`; `null` when the box only holds the compact tier. */
+export function largeValueSize(size0: number, boxH: number, fixedH: number, perSize: number, boxW: number, width0: number): number | null {
+  const byH = (boxH - fixedH) / perSize
+  const byW = width0 > 0 ? (size0 * boxW * BIG_STAT_LARGE.fitW) / width0 : Infinity
+  const s = Math.floor(Math.min(size0 * BIG_STAT_LARGE.maxGain, BIG_STAT_LARGE.maxSize, byH, byW) + 1e-6)
+  return s >= size0 * BIG_STAT_LARGE.minGain ? s : null
+}
+
+/** True when a value painted at `valueSize` is the large tier (template side: read off the poster). */
+export function isLargeTier(valueSize: number | undefined, displaySize: number): boolean {
+  return valueSize !== undefined && valueSize >= displaySize * BIG_STAT_LARGE.minGain - 0.5
+}
+
+/**
+ * AC8.6 — the large-tier split label: the type tokens tried for the label beside a large number
+ * (largest first), and its most lines; a rung that leaves a one-word last line is skipped. AC8.5
+ * judged the lead-size label beside a ~300-unit number small; the label now scales with the number
+ * (context at lead, or body when lead leaves a one-word last line).
+ */
+export const BIG_STAT_SPLIT_LABEL = { ladder: ['title', 'heading', 'subheading'] as const, maxLines: 3 } as const
+
+/** AC2 `variant: split`: the number's share of the width (at most), the gap, the narrowest column. */
+const SPLIT = { share: 0.55, gap: 48, minCol: 220 } as const
+
+/**
+ * AC2 `variant: split` geometry, shared by template and poster: the number right-aligned in the
+ * left half (wider when the number needs it, shrunk to fit `share` of the width), then the
+ * label/context column from the centre line, so the pair sits across the middle of the box. `null`
+ * when the box is too narrow for the column: the block then stacks as `plain`.
+ */
+export function splitGeometry(
+  width: number,
+  valueText: string,
+  display: { size: number },
+  tracking: number,
+  measure: (text: string, style: { size: number; letterSpacing: number }) => number
+): { valueW: number; valueSize: number; colX: number; colW: number; gap: number } | null {
+  const rw = measure(valueText, { size: display.size, letterSpacing: tracking }) * 1.04 + 4
+  const max = width * SPLIT.share
+  const valueSize = rw > max ? (display.size * max) / rw : display.size
+  const valueW = Math.ceil(Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
+  const colX = valueW + SPLIT.gap
+  const colW = width - colX
+  return colW >= SPLIT.minCol ? { valueW, valueSize, colX, colW, gap: SPLIT.gap } : null
 }
 
 export const defaults: BigStatProps = {

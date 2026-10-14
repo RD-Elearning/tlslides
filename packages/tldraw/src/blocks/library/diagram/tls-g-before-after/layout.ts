@@ -28,13 +28,16 @@ export function layout(props: BeforeAfterProps, ctx0: LayoutContext): LayoutNode
   const c = chartColors(ctx)
   const arrow = enumOf(props.arrow, ['arrow', 'chevron', 'none'] as const, 'arrow')
   const emphasis = enumOf(props.emphasis, ['after', 'none'] as const, 'after') === 'after'
-  const tagS = mutedStyle(ctx, 'footnote')
-  const titleS = style(ctx, 'subheading', c.text)
-  const textS = style(ctx, 'caption', c.text)
-
   const gap = arrow === 'none' ? 32 : clamp(W * 0.1, 64, 130)
   const pw = Math.max(20, (W - gap) / 2)
-  const pad0 = clamp(Math.min(pw, H) * 0.06, 12, PAD)
+  // AC3 pre-item: the roomy tier (caption tag, heading title, lead text, 40 padding, panels at
+  // least half the box) for a before/after alone in a tall box. The block fills its box, so the
+  // tier follows the box height.
+  const roomy = H >= 480 && pw >= 520
+  const tagS = mutedStyle(ctx, roomy ? 'caption' : 'footnote')
+  const titleS = style(ctx, roomy ? 'heading' : 'subheading', c.text)
+  const textS = style(ctx, roomy ? 'lead' : 'caption', c.text)
+  const pad0 = roomy ? 40 : clamp(Math.min(pw, H) * 0.06, 12, PAD)
   /** Height a panel needs for its content (images take 42% of the block). */
   const need = (p: Record<string, unknown> | undefined): number => {
     const iw = Math.max(10, pw - 2 * pad0)
@@ -46,7 +49,7 @@ export function layout(props: BeforeAfterProps, ctx0: LayoutContext): LayoutNode
     return h
   }
   // Panels hug their content (never shorter than 38% of the block) and are centred vertically.
-  const panelH = clamp(Math.max(need(b), need(a)) + pad0, Math.min(H, H * 0.38), H)
+  const panelH = clamp(Math.max(need(b), need(a)) + pad0, Math.min(H, H * (roomy ? 0.52 : 0.38)), H)
   const panelY = (H - panelH) / 2
   const panelBox = (i: 0 | 1): Box => ({ x: i * (pw + gap), y: panelY, width: pw, height: panelH })
 

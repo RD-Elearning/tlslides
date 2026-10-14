@@ -15,7 +15,7 @@ import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { objs, str } from '../../media/_kit'
 import { slotItems } from '../_slots'
-import { composeFlat, measureHeights, pick, type Piece } from '../_kit'
+import { cardNodes, cardPaint, composeFlat, measureHeights, pick, type Piece } from '../_kit'
 
 export const TEAM_MIN = 2
 export const TEAM_MAX = 8
@@ -62,7 +62,7 @@ export const schema: BlockSchema = {
 
 export const defaults: TeamProps = {
   people: [
-    { name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the applied analytics group.' },
+    { name: 'Dr. Tran Thi Lan', role: 'Data science lead', bio: 'Leads the applied analytics group.' },
     { name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches probability and inference.' },
     { name: 'Pham Thu Ha', role: 'Teaching assistant', bio: 'Runs the weekly lab sessions.' },
   ],
@@ -94,7 +94,7 @@ export function colsFor(n: number, cols: unknown, width?: number, gap = 0): numb
   return k
 }
 
-const avatarSpec = (m: TeamMember, i: number, size: 'md' | 'lg'): BlockSpec => ({
+const avatarSpec = (m: TeamMember, i: number, size: 'md' | 'lg' | 'xl'): BlockSpec => ({
   id: `person-${i}`,
   type: 'tls.m.avatar',
   props: { image: m.image ?? '', name: m.name, role: m.role ?? '', size, layout: 'stacked', align: 'center' },
@@ -124,40 +124,45 @@ interface Plan {
   gap: number
   pad: number
   inner: number
-  size: 'md' | 'lg'
+  size: 'md' | 'lg' | 'xl'
   small: boolean
   showBio: boolean
   avatarH: number[]
   bioH: number[]
   cellH: number
+  /** AC3 pre-item: the roomy tier's cards are 1.25x their content, the content centred in them. */
+  dy: number
   needed: number
 }
 
-function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = false): Plan {
+function plan(props: TeamProps, ctx: LayoutContext, compact = false, dropBio = false, roomy = false): Plan {
   const people = membersOf(props)
   const n = Math.max(1, people.length)
   const W = Math.max(0, ctx.box.width) || 0
   const gap = ctx.tokens.space.lg
   const cols = colsFor(n, props.cols, W, gap)
   const rows = Math.max(1, Math.ceil(n / cols))
-  const pad = props.card === 'plain' ? 0 : ctx.tokens.space.lg
+  const pad = props.card === 'plain' ? 0 : ctx.tokens.space[roomy && cols <= 3 ? 'xl' : roomy ? 'md' : 'lg']
   const cw = Math.max(0, (W - gap * (cols - 1)) / cols)
   const inner = Math.max(0, cw - 2 * pad)
-  const size = compact || cols >= 4 || cw < 380 ? 'md' : 'lg'
-  const small = cols >= 3
+  const size = roomy ? (cols >= 4 ? 'lg' : 'xl') : compact || cols >= 4 || cw < 380 ? 'md' : 'lg'
+  const small = !roomy && cols >= 3
   const showBio = isShown(props, 'showBio') && !dropBio
   const avatarH = measureHeights(ctx, people.map((m, i) => avatarSpec(m, i, size)), inner)
   const bioH = measureHeights(ctx, people.map((m, i) => bioSpec(m, i, small) ?? { id: `b${i}`, type: 'tls.t.caption', props: { text: ' ' } }), inner)
   const sm = ctx.tokens.space.sm
   const content = Math.max(0, ...people.map((m, i) => avatarH[i] + (showBio && m.bio ? sm + bioH[i] : 0)))
-  const cellH = content + 2 * pad
-  return { people, cols, rows, cw, gap, pad, inner, size, small, showBio, avatarH, bioH, cellH, needed: rows * cellH + gap * (rows - 1) }
+  const cellH = roomy ? Math.round((content + 2 * pad) * 1.25) : content + 2 * pad
+  const dy = (cellH - content - 2 * pad) / 2
+  return { people, cols, rows, cw, gap, pad, inner, size, small, showBio, avatarH, bioH, cellH, dy, needed: rows * cellH + gap * (rows - 1) }
 }
 
 export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
   const H = Math.max(0, ctx.box.height) || 0
-  // big portraits first; when the grid is taller than the box, smaller ones
-  let p = plan(props, ctx)
+  // AC3 pre-item: the roomy tier (xl portraits, lg with four columns, body bios, xl padding) when one row of wide cards fits
+  // the box that way; then big portraits; when the grid is taller than the box, smaller ones.
+  const r = H > 0 ? plan(props, ctx, false, false, true) : undefined
+  let p = r && r.rows === 1 && r.cw >= 380 && r.needed <= H + 0.5 ? r : plan(props, ctx)
   if (p.size === 'lg' && H > 0 && p.needed > H) p = plan(props, ctx, true)
   // still too tall (half-width region): the bios are the secondary part, drop them before clipping
   if (H > 0 && p.needed > H && p.showBio) p = plan(props, ctx, true, true)
@@ -174,14 +179,15 @@ export function layoutTeam(props: TeamProps, ctx: LayoutContext): LayoutNode {
     if (frame) {
       pieces.push({
         id: `card[${i}]`,
-        raw: [{ k: 'rect', box: { x, y, width: p.cw, height: p.cellH }, fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color }, radius: ctx.tokens.radius.lg } as LayoutNode],
+        // AC4: the deck surface (`cardPaint`).
+        raw: cardNodes(cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } }), { x, y, width: p.cw, height: p.cellH }, ctx.tokens.radius.lg),
         box: { x, y, width: p.cw, height: p.cellH },
       })
     }
     const ix = x + p.pad
-    pieces.push({ id: `person[${i}]`, spec: avatarSpec(m, i, p.size), box: { x: ix, y: y + p.pad, width: p.inner, height: p.avatarH[i] } })
+    pieces.push({ id: `person[${i}]`, spec: avatarSpec(m, i, p.size), box: { x: ix, y: y + p.dy + p.pad, width: p.inner, height: p.avatarH[i] } })
     const bio = showBio ? bioSpec(m, i, p.small) : undefined
-    if (bio) pieces.push({ id: `bio[${i}]`, spec: bio, box: { x: ix, y: y + p.pad + p.avatarH[i] + sm, width: p.inner, height: p.bioH[i] }, align: 'center' })
+    if (bio) pieces.push({ id: `bio[${i}]`, spec: bio, box: { x: ix, y: y + p.dy + p.pad + p.avatarH[i] + sm, width: p.inner, height: p.bioH[i] }, align: 'center' })
   })
   return motionSlots(composeFlat(ctx, pieces, total), p.people.length)
 }
@@ -241,7 +247,7 @@ const composite = defineCompositeBlock<TeamProps>({
       type: 'tls.c.team',
       props: {
         people: [
-          { image: '/demo/portrait-1.svg', name: 'Dr. Tran Thi Lan', role: 'Head of Data Science', bio: 'Leads the analytics group.' },
+          { image: '/demo/portrait-1.svg', name: 'Dr. Lan Tran', role: 'Data science lead', bio: 'Leads the analytics group.' },
           { image: '/demo/portrait-2.svg', name: 'Nguyen Van An', role: 'Senior lecturer', bio: 'Teaches inference.' },
           { image: '/demo/portrait-3.svg', name: 'Le Minh Chau', role: 'Postdoc', bio: 'Works on causal models.' },
           { image: '/demo/portrait-4.svg', name: 'Pham Quoc Bao', role: 'PhD student', bio: 'Builds forecasting tools.' },

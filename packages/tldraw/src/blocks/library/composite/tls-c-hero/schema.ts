@@ -25,6 +25,10 @@ export interface HeroProps extends Record<string, unknown> {
   cta?: string
   showCta?: boolean
   variant?: HeroVariant
+  /** AC2: `start` (default) or `center`. */
+  align?: 'start' | 'center'
+  /** AC2: `none` (default) or `rule` — a short accent bar above the text. */
+  decoration?: 'none' | 'rule'
 }
 
 export const schema: BlockSchema = {
@@ -78,12 +82,23 @@ export const schema: BlockSchema = {
     type: { kind: 'enum', values: ['classic', 'split', 'gradient-sweep'] },
     role: 'option',
     label: 'Variant',
-    guidance:
-      'Visual style: "classic" (default) standard hero with staggered part reveal; ' +
-      '"split" split-title reveal where halves slide in from opposite sides; ' +
-      '"gradient-sweep" a decorative gradient sweeps in behind the title on reveal.',
+    guidance: 'Reveal: classic (default), split (title halves slide in), gradient-sweep (gradient behind).',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Align',
+  },
+  decoration: {
+    type: { kind: 'enum', values: ['none', 'rule'] },
+    role: 'option',
+    label: 'Decoration',
+    guidance: '`rule`: accent bar above the text.',
   },
 }
+
+/** AC2 `decoration: rule`: the accent bar above the text (template and poster). */
+export const HERO_RULE = { width: 96, height: 8 } as const
 
 /**
  * Extract plain text from a rich-text value for poster/template purposes.

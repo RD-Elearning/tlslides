@@ -9,7 +9,9 @@
 
 import type { MotionRecipe } from '../../../types'
 
-const STEP = 60
+// CMP2: 40 ms (was 60): nine items of a two-column comparison staggered 480 ms, past the 400 ms
+// `motion/stagger-total` cap (05-motion §5.9, T2); 40 ms is the token stagger.
+const STEP = 40
 
 export const motion: MotionRecipe = {
   parts: ['col[*].title', 'col[*].bullet[*]', 'col[*].item[*]'],

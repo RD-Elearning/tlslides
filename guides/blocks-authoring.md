@@ -240,7 +240,21 @@ export const tlsCFeatureGrid: BlockDefinition = { …, tier: 'B', kind: 'html', 
 
 What stays the same as a layout block: schema with guidance, parts, defaults, the digest entry,
 `validateDeckSpec`. What is different: the parity test compares the **poster** to the SVG
-renderer and a jsdom test checks the template's text equals the poster's text. Three rules:
+renderer and a jsdom test checks the template's text equals the poster's text.
+
+**The poster is the live geometry (LO7).** The layout oracle (§2.10) measures an html block from its
+poster, so the template must paint what the poster laid out. `HostMount` hands the host node's
+poster to the template as `ctx.poster`; the template reads it with `posterText(ctx)` from
+`html-block.ts` and, per text part, uses `pt.css(key, fallbackCss)` (font-size, line-height,
+letter-spacing, `white-space:nowrap`) and `pt.html(key, fallbackHtml)` (the poster's lines joined by
+`<br>`), where `key` is the poster text node's `propPath` (else `part`). The poster in turn uses the
+template's own numbers — one exported constant set per block (`HERO_LH`, `SPOT`, `REVEAL`, …) for
+line-heights, tracking and gaps — and advances by CSS line boxes (`cssTextHeight`, not the
+measured `height`, which carries +2 of slack). Only then pass `{ posterGeometry: true }` to
+`htmlHostNode`: the report then trusts the block (confidence `high`, no screenshot). A block
+without the flag stays `medium` and is always listed in `needsVisualCheck`.
+`html-poster-geometry.spec.tsx` checks every built-in html block line for line; the LO5 browser
+harness (`tools/layout-report/calibrate/run.js`) checks the positions per `data-part`. Three rules:
 
 - The template is code in the registry. The `DeckSpec` never carries markup; everything from
   `props` goes through `ctx.esc()`.
@@ -352,6 +366,215 @@ same thing everywhere: `legend` (top/bottom/right/none), `valueLabels` (none/end
 `gridlines` (none/major), `format`, `highlightIndex`, `sort`, `axisTitleX`, `axisTitleY`.
 Design rules live in the engine: one series gets direct labels, not a legend; bars have a zero
 baseline; at most one recessive gridline set; no 3D, no dual axis.
+
+### 2.10 Layer, fill and size cards — what the layout oracle reads
+
+The AI plans with **size cards** and checks with the **layout report**
+([reviews/blocks/layout-oracle/README.md](../reviews/blocks/layout-oracle/README.md),
+LLM side in [LLM-ARCHITECTURE.md](../reviews/blocks/LLM-ARCHITECTURE.md) §S4.1). Both are read off
+your `layout()` tree, so an author's job is mostly to keep the tree honest:
+
+- **Layer.** Default: category `decoration` → `backdrop`, else `content`. Set `layer` on the
+  definition only when the block is meant to be drawn under content (`'backdrop'`: a field, a
+  watermark) or over it (`'overlay'`: a badge, an arrow). Overlays must not paint over text; a
+  default `anchor` (LO2.1) says where a layered instance sits at natural size.
+- **Fill.** A block whose painted content follows its box (chart, image, donut, a stretched grid)
+  is detected as *fill* by `measureBlock`; its card has no height model and the index shows
+  `[h=fill]`. Do not fake a natural height — but a *content* block should not return a root box
+  taller than what it paints unless it centres or stretches on purpose, or it is reported as fill.
+- **Name your text.** Give text nodes `propPath` (the slot path, `items.${i}.text`) or a `part`;
+  the cards key `fontSize`/`lineHeight`/chars-per-line by it, and the report's fixes ("cut `text`
+  to ≤ 1 line") name it.
+- **`describe.example` is the sample.** Every model varies one prop (the first required content
+  list, else the largest text slot) and keeps the example for the rest, so a realistic example
+  gives a realistic card.
+- **Keep the cards fresh.** Changing a block's layout, sizes, schema or example changes its
+  card. `block-metrics.spec.ts` fails with the command to run:
+
+  ```bash
+  node tools/layout-report/gen-block-metrics.js   # rewrites __generated__/block-metrics.json + block-size-hints.ts
+  ```
+
+  Commit both files with the block change. To check one slide while authoring:
+  `node tools/layout-report/cli.js deck.json --slide <id>`.
+
+### 2.11 Adding a deck style
+
+A deck style (`DeckSpec.style`) is data, not code: a palette set, two fonts, token overrides, a
+card surface, masters, knob defaults per block and a few rules. The ten built-ins (corporate,
+minimal, gradient, luxury, editorial, glass, swiss, doodle, memphis, consulting) are the
+templates; copy the closest one. Design background: [reviews/blocks/ai-curation/README.md](../reviews/blocks/ai-curation/README.md) §3.
+
+**1. Files to create or touch** (all under `packages/tldraw/src/blocks/`):
+
+- `styles/<id>.ts` exports `<ID>_STYLE: DeckStyle` (`types.ts`). Use `styles/corporate.ts` as the
+  skeleton; `styles/_place.ts` holds the helpers masters use to place motifs.
+- `styles/index.ts`: import it and add it to `BUILT_IN_STYLES`. Nothing else enumerates styles:
+  the digest, the validator, the JSON Schema, `cli.js --style` and the dry run all read that array.
+- `__fixtures__/styles/<id>.json`: the fixture deck (below).
+
+**2. What a style controls** (the `DeckStyle` fields, §3.2 of the AC plan):
+
+| Field | Controls |
+|---|---|
+| `palettes` | 1-3 `DeckTheme`s; `[0]` is the default. Ids are `<style>-<name>` or an existing built-in theme. The AI writes one as `DeckSpec.theme`. |
+| `fonts` | `{ heading, body }` as `{ family, fallback, metricsKey }`; see Fonts below. |
+| `tokens` | Type-scale, radius, elevation, density, motion overrides, under `DeckSpec.tokens`. |
+| `surface` | How card-like blocks paint: `card` (`filled`, `outline`, `glass`, `ghost`, `raised`), `stroke`, `shadow`. |
+| `masters` | `cover` / `content` / `section` masters (background paint, backdrop blocks such as mesh, grain, motifs). A slide with no `masterId` gets one by role. |
+| `motionStyle` | The deck's default motion style. |
+| `blockDefaults` | Knob values per block type, filled under the authored props at compile time (never written into the authored spec). |
+| `variety` (AC8) | Per block type and look knob, the values the style also accepts beyond its `blockDefaults`. The variety picker (`pipeline/variety.ts`) rotates slides and decks only inside them; a knob the style sets and does not list stays fixed. List an alternative only after looking at it against the style's masters (a split hero ran into swiss's cover block). |
+| `prefer` / `avoid` | Tier-2 types promoted to index lines / types dropped from the index and from every recipe that uses them. |
+| `brief`, `rules` | Shown verbatim on the style card (`styleCard`), and the critic's rubric. Keep `brief` at 240 characters or fewer and at most 4 short rules. |
+
+Resolution order, lowest to highest: palette default, style tokens, `DeckSpec.tokens`, masters,
+`blockDefaults` under authored props, motion styles. A deck whose `theme` names none of the
+style's palettes gets `style/theme-mismatch` from the validator.
+
+**3. Fonts.** Use families that are OFL-licensed and ship a `vietnamese` subset (the sample
+serves the Latin, Latin-ext and Vietnamese subsets of each; check the package metadata before
+adding one). The layout oracle sizes copy from a per-family advance-width table, so a new family
+needs one:
+
+1. add the fontsource package to `examples/nextjs-sample/package.json` and import it in
+   `examples/nextjs-sample/app/layout.tsx`;
+2. add an entry (`key`, `family`, `pkg`, `css`, `generic`) to `FONT_SET` in
+   `tools/layout-report/calibrate/fonts.js`;
+3. measure it: `node tools/layout-report/calibrate/font-widths.js --keys <key>` writes
+   `packages/tldraw/src/blocks/layout/font-metrics/<key>.ts` (needs headless Chromium:
+   `node node_modules/playwright/cli.js install chromium-headless-shell`). Re-check all tables
+   with `font-widths.js --check` (exit 1 when a stored entry is more than 0.001 em off);
+4. register the table in `layout/font-metrics/index.ts` (`FONT_FACES`);
+5. use the same `key` as `metricsKey` in the style's `fonts`.
+
+The style card shows the result to the model as `text width vs Inter: heading x1.08`, so it can
+shorten copy for a wide face.
+
+**4. Fixture deck.** `__fixtures__/styles/<id>.json` is a DeckSpec with `style: "<id>"` and the
+default palette as `theme`: 8 slides (cover, agenda, section, content, data, comparison, quote,
+closing) with the same content as the others, so the styles compare like for like.
+`styles/styles.spec.ts` loads `__fixtures__/styles/<id>.json` for every entry of
+`BUILT_IN_STYLES` (a missing file fails the spec) and requires that it validates with 0 findings,
+reports clean in `analyzeDeck`, and round-trips through `deckSpecToDocument` /
+`documentToDeckSpec` without leaking style defaults.
+
+**5. Specs that gate a style** (all in `styles/styles.spec.ts` unless noted):
+
+- *contrast*: every palette, `text` on `background` at 4.5:1 or more and `textMuted` at 3:1 or more;
+- *size cards*: for every palette, each tier-1 block's `describe.example` still fits its
+  `size.min` under the style's tokens and `blockDefaults` (a style whose type scale or font breaks
+  a block is the wrong style);
+- *data*: 1-3 palettes with unique ids, `brief` at most 240 characters, at most 4 rules, `prefer` / `avoid` / `blockDefaults` / `variety` name real blocks and valid enum or boolean knobs (`variety` only look knobs), the style card at most 1,200 characters;
+- `capability-digest.spec.ts`: the tier-1 index per style stays within its 16k ceiling.
+
+**6. Verify** (no browser unless noted):
+
+```bash
+node tools/layout-report/cli.js packages/tldraw/src/blocks/__fixtures__/styles/<id>.json   # 0 errors, 0 warnings
+node tools/layout-report/cli.js --metrics --style <id>                                      # the size cards the model gets for this style
+node tools/layout-report/dry-run.js --style <id>                                            # 12-slide pipeline run + prompt budget; exit 1 on errors
+cd packages/tldraw && ../../node_modules/.bin/jest src/blocks/styles src/blocks/dry-run.spec.ts --maxWorkers=1
+# browser (Chromium): render the fixture and LOOK at the PNGs
+node tools/layout-report/calibrate/run.js --decks <id>=styles/<id>.json --shots st_01,st_04
+```
+
+`run.js` needs a prior `next dev` or `next build` of `examples/nextjs-sample` (it reuses the
+fonts from `.next/static`), or `--font-css FILE`. Open the shots: the oracle does not see
+contrast on a painted backdrop, a motif crossing text, or a wrap it measured differently from the
+browser (`needsVisualCheck` lists the blocks worth a look). Run only one heavy job at a time on a
+4 GB machine.
+
+### 2.12 Adding a composition pattern
+
+A **composition pattern** is a named slide design built from parts — containers, atoms, layers,
+anchors, connectors — rather than one composite block. The picker treats it like a recipe of its
+role, so every pattern you add is one more design the AI can choose. Background:
+[reviews/blocks/composition/README.md](../reviews/blocks/composition/README.md) (CMP4).
+
+1. **Add an entry to `COMPOSITION_PATTERNS`** in `packages/tldraw/src/blocks/patterns.ts`:
+   `{ id, role, layout, when, ref, looks?, needs?, build(look) → { regions, connectors? } }`.
+   - `id`: unique across recipes and patterns; `<role>-<name>`.
+   - `ref`: the rule it follows (ppt-master P2 relationship, P13 device, ui-ux-pro-max U1–U3).
+   - `looks`: other designs of the same content (`base` is implied). Each look must differ in
+     its look signature.
+   - `needs`: asset kinds (`images`, `portraits`, `logos`, `chartData`) the design cannot do
+     without.
+   - Use the file's builders (`title`, `heading`, `body`, `card`, `row`, `grid`, `stack`, `split`,
+     `image`, `link`) and its sample content. Ids only need to be unique within the slide; the
+     picker prefixes them.
+2. **Rules that keep it clean in all ten styles:**
+   - At most 3 levels (region block = 1); the grammar and `patterns.spec` check it.
+   - A card or column heading is `heading(…)`: a `tls.t.title` in the text colour, one or two
+     steps down. Never a second slide title in accent.
+   - Peers in a row or grid share one structure. The engine then aligns their children and gives
+     them one height (peer tracks); cards are as tall as their content.
+   - A lone container is centred by its region. Use `section-stack` for a type-led column clear
+     of the styles' motifs (swiss's red block, gradient's orb).
+   - Text on a photo: a stack with `layer: 'overlay'`, an `anchor`, and
+     `style: { surface: 'scrim', padding: 'xl', radius: 'md' }`.
+   - Do not force `size: 'display'` in a half column (it breaks words); use `fit`.
+   - Keep the accent budget: satellites or secondary shapes take `style: { accent: 'text' }`.
+   - On a glass page prefer a badge to a bare kicker (open contrast item, Notes — CMP4).
+3. **Check, then look:**
+   - `node tools/layout-report/pattern-check.js <id> [--out <dir>]` (validator + oracle + gate per
+     look × style; `--out` writes decks and sheet specs for a contact sheet), or the spec:
+     `jest --config jest.config.js --maxWorkers=1 src/blocks/patterns`. Every look × 10 styles
+     must be valid, with 0 oracle findings and a silent quality gate.
+   - Render a contact sheet: one page per look × 10 styles. Look at it: the gate passes things
+     that are not yet beautiful (a lockup hugging the top, tiny type in a roomy row).
+4. **Nothing else to wire:**
+   - `eligibleRecipes` picks the pattern up.
+   - The tier-1 index lists it on the role's `patterns:` line.
+   - The dry run uses it (`node tools/layout-report/dry-run.js`); re-run it and keep 0 findings.
+
+### 2.13 Adding an atom
+
+An **atom** is a small element block the LLM composes with (`tls.t.badge`, `tls.t.marker`,
+`tls.m.shape`, `tls.m.icon` `iconStyle: disc`). Add one like any block (§2.1–2.5). In addition:
+
+- **Paint.** Use `atomPaint(ctx, tone, color)` (`library/text/_engine/atom.ts`): tones
+  `solid | soft | outline`, the style's border and hard shadow (doodle, memphis), glass frost. Its
+  ink is solved on the paint as drawn.
+- **Size.** Steps `sm | md | lg`. A label keeps its size's type step and steps down only when it
+  does not fit, so peers share one size.
+- **Register** it as `aiTier: 2` in `library/ai-curation.ts`. Its name joins the index's `also:`
+  line within the 17.7k ceiling. Regenerate the size cards:
+  `node tools/layout-report/gen-block-metrics.js` (see §2.10).
+- **Composition card.** If the LLM should compose with it, name it in `compositionCard()`
+  (`capability-digest.ts`, ≤ 2.5k). The spec checks every name it mentions exists.
+- **Checks.** Run the atom's spec, `catalog-conformance`, `defaults-sweep`, `capability-digest`,
+  `block-metrics` and the parity trio. Look at it in all ten styles: the CMP3 atom sheet is the
+  model.
+
+### 2.14 Connectors
+
+A connector joins two blocks on a slide by **id**, never by coordinates:
+
+```json
+"connectors": [{ "id": "k1", "from": { "block": "c1" }, "to": { "block": "c2", "side": "left" },
+                 "route": "elbow", "head": "end", "tone": "line", "weight": "md", "dash": true, "label": "approve" }]
+```
+
+- **Endpoints.** Any block id on the slide, nested ones included (a marker inside a card).
+  - `side`: `auto` (default), `top`, `right`, `bottom` or `left`.
+  - `route`: `straight` (level when the boxes face each other), `elbow` (rounded right angles) or
+    `curved`.
+  - `head`: `end`, `both` or `none`.
+  - `tone`: `line` (recessive, solved to 3:1), `accent` or `text`.
+  - `weight`: `hairline`, `md` or `bold`.
+- **Compiling.** After layout the compiler turns each connector into one overlay
+  `tls.g.connector` shape (`connectors.ts`, `layout/connector-route.ts`). Renderers, Present,
+  motion and export need no new node kind. The decompiler returns it to `SlideSpec.connectors`.
+- **Checks.**
+  - The validator: `connector/malformed`, `connector/duplicate-id`, `connector/unresolved`.
+  - The oracle: `connector/unresolved`, `connector/crosses-text`, `connector/too-short` (also
+    when the ends overlap).
+  - Give a labelled connector at least twice the label's width between its blocks.
+- **Motion.** A connector draws on after the later of its two endpoints, over 400 ms smoothOut. A
+  dashed line grows its pattern, the head fades in at the end, and the label's mask is there from
+  the first frame. Static output (PNG, SVG, PPTX later) shows it fully drawn.
+- **Export.** One `p:cxnSp` per connector ([composition/PPTX-MAPPING.md](../reviews/blocks/composition/PPTX-MAPPING.md) §4).
 
 ## 3. FastAPI + LLM integration — how a model picks blocks
 

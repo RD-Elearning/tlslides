@@ -1,0 +1,295 @@
+{
+  "id": "cmp8-nested-motion",
+  "title": "CMP3 nested motion: count-up inside cards, a ring sweep and bars growing inside tiles, connectors after their container",
+  "version": 1,
+  "style": "corporate",
+  "theme": "corporate-navy",
+  "aspect": "widescreen",
+  "motionStyle": "expressive",
+  "slides": [
+    {
+      "id": "nm_cards",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t1",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Two numbers that moved"
+            },
+            "motion": {
+              "preset": "fade-up"
+            }
+          },
+          {
+            "id": "g1",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 2,
+              "rows": 1,
+              "gap": "xl",
+              "children": [
+                {
+                  "id": "c1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "h1",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "42%",
+                          "unit": "growth"
+                        }
+                      },
+                      {
+                        "id": "p1",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Revenue grew in every region this year."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "c2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "h2",
+                        "type": "tls.t.hero-number",
+                        "props": {
+                          "value": "1,250",
+                          "unit": "teams"
+                        }
+                      },
+                      {
+                        "id": "p2",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Teams on the new plan, up from 300."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "nm_tiles",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t2",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Where the quarter landed"
+            }
+          },
+          {
+            "id": "g2",
+            "type": "tls.l.grid",
+            "props": {
+              "columns": 3,
+              "rows": 1,
+              "gap": "xl",
+              "children": [
+                {
+                  "id": "d1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "ring",
+                        "type": "tls.d.progress-ring",
+                        "props": {
+                          "value": 72,
+                          "label": "of target"
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "bar",
+                        "type": "tls.d.bar",
+                        "props": {
+                          "categories": [
+                            "Q1",
+                            "Q2",
+                            "Q3"
+                          ],
+                          "series": [
+                            {
+                              "name": "Revenue",
+                              "values": [
+                                12,
+                                18,
+                                26
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "d3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "bd",
+                        "type": "tls.t.badge",
+                        "props": {
+                          "text": "On track",
+                          "icon": "check"
+                        }
+                      },
+                      {
+                        "id": "p3",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Hiring is ahead of plan; churn is flat."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "nm_flow",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "t3",
+            "type": "tls.t.title",
+            "props": {
+              "text": "How a request moves"
+            }
+          },
+          {
+            "id": "r3",
+            "type": "tls.l.row",
+            "props": {
+              "gap": "3xl",
+              "children": [
+                {
+                  "id": "f1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "m1",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "1",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "q1",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "A customer asks in chat."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "f2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "m2",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "2",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "q2",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "The router picks a team."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "f3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "m3",
+                        "type": "tls.t.marker",
+                        "props": {
+                          "value": "3",
+                          "size": "sm"
+                        }
+                      },
+                      {
+                        "id": "q3",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "An expert answers in minutes."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "connectors": [
+        {
+          "id": "n1",
+          "from": {
+            "block": "f1"
+          },
+          "to": {
+            "block": "f2"
+          },
+          "tone": "accent"
+        },
+        {
+          "id": "n2",
+          "from": {
+            "block": "f2"
+          },
+          "to": {
+            "block": "f3"
+          },
+          "tone": "accent"
+        }
+      ]
+    }
+  ]
+}

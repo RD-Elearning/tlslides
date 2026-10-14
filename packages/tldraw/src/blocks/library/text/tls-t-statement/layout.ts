@@ -38,7 +38,10 @@ export function runWidth(text: string, style: ResolvedTextStyle, bold = false): 
   }
 }
 
-export const LADDER: Array<{ id: 'xl' | 'lg' | 'md'; token: TypeToken }> = [
+export const LADDER: Array<{ id: 'display' | 'xl' | 'lg' | 'md'; token: TypeToken }> = [
+  // AC8.5: the display rung, for a statement alone on a slide (`content-statement`): title-size
+  // type on an empty slide reads unfinished. Taken only while the text keeps to 3 lines.
+  { id: 'display', token: 'display' },
   { id: 'xl', token: 'title' },
   { id: 'lg', token: 'heading' },
   { id: 'md', token: 'subheading' },
@@ -47,9 +50,12 @@ export const LADDER: Array<{ id: 'xl' | 'lg' | 'md'; token: TypeToken }> = [
 /** Hint reported to the planner when the text cannot fit even at md. */
 export const SHORTEN_HINT_CHARS = 100
 
+/** Most lines the display rung may take before the ladder steps down to xl. */
+export const DISPLAY_MAX_LINES = 3
+
 function rung(size: unknown): number {
   const i = LADDER.findIndex((l) => l.id === size)
-  return i >= 0 ? i : 1
+  return i >= 0 ? i : LADDER.findIndex((l) => l.id === 'lg')
 }
 
 function alignOf(props: StatementProps): HAlign {
@@ -96,7 +102,8 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     const placed = placeText(ctx, measurable, style, { x: 0, y: markBlock, width }, align, { part: 'text', propPath: 'text' })
     result = { placed, style }
     chosen = r
-    if (markBlock + placed.height + attrBlock <= height + 0.5) break
+    const tooLong = LADDER[r].id === 'display' && placed.lineCount > DISPLAY_MAX_LINES && r < LADDER.length - 1
+    if (!tooLong && markBlock + placed.height + attrBlock <= height + 0.5) break
   }
   const { placed, style } = result!
   const total = markBlock + placed.height + attrBlock
@@ -150,10 +157,14 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
           const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
           if (emphasis === 'highlight') {
             const padX = Math.round(size * 0.08)
+            // Clamped to the block box: a marked run that starts (or ends) a line would otherwise
+            // push its pad past the box edge (LO6: true widths wrap the example's run to a line start).
+            const hx0 = Math.max(0, cursor - padX)
+            const hx1 = Math.min(width, cursor + sw + padX)
             marks.push({
               k: 'rect',
               part: `emphasis[${li}.${ri}]`,
-              box: { x: cursor - padX, y: g.y + size * 0.06, width: sw + padX * 2, height: g.height - size * 0.12 },
+              box: { x: hx0, y: g.y + size * 0.06, width: Math.max(0, hx1 - hx0), height: g.height - size * 0.12 },
               fill: { type: 'solid', color: tint },
               radius: Math.round(size * 0.12),
             })

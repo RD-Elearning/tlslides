@@ -15,6 +15,7 @@ export interface StepItem {
 export interface StepsProps extends Record<string, unknown> {
   steps: StepItem[]
   orientation?: 'horizontal' | 'vertical'
+  align?: 'start' | 'center'
 }
 
 export const schema: BlockSchema = {
@@ -51,6 +52,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Orientation',
     help: 'Layout direction: horizontal (left to right) or vertical (top to bottom).',
+  },
+  align: {
+    type: { kind: 'enum', values: ['start', 'center'] },
+    role: 'option',
+    label: 'Alignment',
+    help: 'Horizontal steps: start = badge and text at the column start; center = badge over the middle, text centred.',
   },
 }
 

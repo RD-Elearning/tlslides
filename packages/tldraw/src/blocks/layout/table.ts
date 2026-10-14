@@ -137,7 +137,7 @@ function prepareCell(cell: TableCell, style: ResolvedTextStyle, ctx: LayoutConte
     case 'text':
       return { prep: textCell(c.text, style, ctx, part), defaultAlign: 'start' }
     case 'number':
-      return { prep: textCell(formatValue(c.value, c.format), style, ctx, part), defaultAlign: 'end' }
+      return { prep: textCell(formatValue(c.value, c.format, { locale: ctx.tokens.locale }), style, ctx, part), defaultAlign: 'end' }
     case 'check': {
       const def = CHECK_ICON[normalizeCheck(c.value)]
       const size = Math.round(style.size * 1.1)

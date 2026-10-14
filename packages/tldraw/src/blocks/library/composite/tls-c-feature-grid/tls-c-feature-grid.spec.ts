@@ -564,7 +564,8 @@ describe('tls.c.feature-grid', () => {
 
       // RV03: 1200 wide (was 1920: a drop spanned the whole slide), the height of the example
       expect(tlsCFeatureGrid.size.preferred[0]).toBe(1200)
-      expect(tlsCFeatureGrid.size.preferred[1]).toBe(Math.ceil(posterHeight + 36))
+      // LO8: never below the min height (min ≤ preferred; min = the example's height at 1120).
+      expect(tlsCFeatureGrid.size.preferred[1]).toBe(Math.max(tlsCFeatureGrid.size.min[1], Math.ceil(posterHeight + 36)))
     })
 
     it('changing defaults changes the derived height', () => {
@@ -731,5 +732,100 @@ describe('RV03 — fits its box, reflows, releases every part', () => {
     }
     DEF.html!.animate!(root, rt)
     expect(played.sort()).toEqual([...parts].sort())
+  })
+})
+
+describe('AC2 — look knobs (cell, align, iconStyle)', () => {
+  const DEF = tlsCFeatureGrid
+  const leaves = (n: any, ox = 0, oy = 0, out: any[] = []): any[] => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k !== 'group') out.push({ x, y, w: n.box.width, h: n.box.height, part: n.part, k: n.k })
+    for (const c of n.children ?? []) leaves(c, x, y, out)
+    return out
+  }
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['cell: card', { cell: 'card' }],
+    ['align: center', { align: 'center' }],
+    ['iconStyle: circle', { iconStyle: 'circle' }],
+    ['card + center + circle', { cell: 'card', align: 'center', iconStyle: 'circle' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.cell.type as any).values).toEqual(['plain', 'card'])
+    expect((DEF.schema.align.type as any).values).toEqual(['start', 'center'])
+    expect((DEF.schema.iconStyle.type as any).values).toEqual(['plain', 'circle'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = poster({ ...(DEF.describe!.example.props as any), ...knobs }, ctx({ width: w, height: h }))
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.x + l.w).toBeLessThanOrEqual(w + 0.5)
+        expect(l.y + l.h).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('circle: disc and glyph scale with the cell (>= 56 disc / >= 32 glyph at preferred), template = poster', () => {
+    const props = { ...(DEF.describe!.example.props as any), iconStyle: 'circle' }
+    const sizeAt = (w: number) => {
+      const node = poster(props, ctx({ width: w, height: 900 }))
+      const ls = leaves(node)
+      const disc = ls.find((l) => l.part === 'cell[0].icon' && l.k === 'rect')!
+      const glyph = ls.find((l) => l.k === 'icon')!
+      // AC3 pre-item: the template reads the tier back from its poster (the host passes it).
+      const html = template(props, { ...makeTemplateCtx(ctx({ width: w, height: 900 })), box: { x: 0, y: 0, width: w, height: 900 }, poster: node } as any)
+      expect(html).toContain(`width:${disc.w}px;height:${disc.w}px;`)
+      expect(html).toContain(`width="${glyph.w}" height="${glyph.w}"`)
+      return { disc: disc.w, glyph: glyph.w }
+    }
+    const pref = sizeAt(DEF.size.preferred[0])
+    expect(pref.disc).toBeGreaterThanOrEqual(56)
+    expect(pref.glyph).toBeGreaterThanOrEqual(32)
+    const wide = sizeAt(1728)
+    expect(wide.disc).toBeGreaterThan(pref.disc)
+    // AC3 pre-item: 1728 wide and 900 tall takes the roomy tier, whose disc is 1.25x (cap 96).
+    expect(wide.disc).toBeLessThanOrEqual(96)
+  })
+
+  it('card paints one card per cell; center centres the icon; circle paints a disc', () => {
+    const props = { ...(DEF.describe!.example.props as any), cell: 'card', align: 'center', iconStyle: 'circle' }
+    const node = poster(props, ctx({ width: 1200, height: 600 }))
+    const ls = leaves(node)
+    const n = props.cells.length
+    expect(ls.filter((l) => /^cell\[\d+\]\.card$/.test(l.part ?? '')).length).toBe(n)
+    const disc = ls.find((l) => l.part === 'cell[0].icon' && l.k === 'rect')!
+    const card = ls.find((l) => l.part === 'cell[0].card')!
+    expect(Math.abs(disc.x + disc.w / 2 - (card.x + card.w / 2))).toBeLessThan(1)
+    const html = template(props, { ...makeTemplateCtx(ctx({ width: 1200, height: 600 })), box: { x: 0, y: 0, width: 1200, height: 600 } } as any)
+    expect(html).toContain('border-radius:50%')
+    expect(html).toContain('text-align:center')
+    expect(html).toContain('align-items:stretch')
+  })
+})
+
+describe('AC4 fix — poster icons fill their box (SVG export)', () => {
+  const { pathBounds } = require('../../../layout/measure-block')
+  const icons = (n: any, out: any[] = []): any[] => {
+    if (n.k === 'icon') out.push(n)
+    for (const c of n.children ?? []) icons(c, out)
+    return out
+  }
+  it.each([['plain', {}], ['circle', { iconStyle: 'circle' }]] as const)('%s: the glyph path spans most of its icon box', (_n, knobs) => {
+    const c = makeCtx({ width: 1728, height: 600 })
+    const found = icons(poster({ ...(tlsCFeatureGrid.describe!.example.props as any), ...knobs }, c))
+    expect(found.length).toBeGreaterThan(0)
+    for (const ic of found) {
+      const b = pathBounds(ic.icon)!
+      // a 24-unit Lucide glyph spans ~18–22 of its 24; unscaled it spanned ≤ 24 units of a 64+ box
+      expect(Math.max(b.width, b.height)).toBeGreaterThan(0.6 * ic.box.width)
+      expect(b.x + b.width).toBeLessThanOrEqual(ic.box.width + 1)
+      expect(ic.strokeWidth).toBeUndefined()
+    }
   })
 })

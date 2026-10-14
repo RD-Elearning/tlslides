@@ -14,7 +14,7 @@
  */
 
 import type { BlockDefinition, LayoutContext, LayoutNode, BlockMotionRuntime } from '../../../types'
-import { schema, defaults, type FeatureGridProps } from './schema'
+import { schema, defaults, FG_CARD_PAD, type FeatureGridProps } from './schema'
 import { poster } from './poster'
 import { template } from './template'
 import { motion } from './motion'
@@ -48,7 +48,7 @@ function featureGridLayout(
   props: Record<string, unknown>,
   ctx: LayoutContext,
 ): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-grid', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.feature-grid', props, ctx, { posterGeometry: true })
 }
 
 /**
@@ -56,6 +56,11 @@ function featureGridLayout(
  * LayoutContext at 1920-wide with the default theme's tokens and calls poster()
  * to get the real intrinsic height.
  */
+/** LO8: the example at 1120 wraps a cell title to 2 lines and is 251 tall (min was 242: the size
+ *  card's `atMin` showed it overflowing its own min box). */
+// AC2: + the card cell's padding (2 × FG_CARD_PAD), so every knob value fits its own min box.
+const MIN_SIZE: [number, number] = [1120, 251 + 2 * FG_CARD_PAD]
+
 function derivePreferredSize(): [number, number] {
   const REFERENCE_WIDTH = 1200
   const REFERENCE_HEIGHT = 1080
@@ -66,9 +71,11 @@ function derivePreferredSize(): [number, number] {
     tokens,
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
-  const posterNode = poster(EXAMPLE_PROPS as FeatureGridProps, ctx)
+  // AC2: measured with card cells, the tallest look (padding on every side).
+  const posterNode = poster({ ...(EXAMPLE_PROPS as FeatureGridProps), cell: 'card' }, ctx)
   // + one description line: the real theme's body type runs larger than the test measure.
-  return [REFERENCE_WIDTH, Math.ceil(posterNode.box.height + 36)]
+  // Never below the min height (catalog conformance: min ≤ preferred).
+  return [REFERENCE_WIDTH, Math.max(MIN_SIZE[1], Math.ceil(posterNode.box.height + 36))]
 }
 
 /**
@@ -210,7 +217,7 @@ export const tlsCFeatureGrid: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [1120, 242] },
+  size: { preferred: derivePreferredSize(), min: MIN_SIZE },
   layout: featureGridLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: featureGridAnimate },

@@ -39,8 +39,8 @@ export function layout(props: StatCompareProps, ctx0: LayoutContext): LayoutNode
   const midW = showMid ? clamp(W * 0.24, Math.min(W * 0.34, 100), 260) : 0
   const colW = Math.max(1, (W - midW) / 2)
 
-  const lText = L.value === null ? '–' : fmtNum(L.value, fmt)
-  const rText = R.value === null ? '–' : fmtNum(R.value, fmt)
+  const lText = L.value === null ? '–' : fmtNum(L.value, fmt, ctx.tokens.locale)
+  const rText = R.value === null ? '–' : fmtNum(R.value, fmt, ctx.tokens.locale)
   let vs: ResolvedTextStyle = style(ctx, 'title', c.text)
   for (let k = 0; k < 14; k++) {
     const widest = Math.max(ctx.measureText(lText, vs).width, ctx.measureText(rText, vs).width)
@@ -97,7 +97,7 @@ export function layout(props: StatCompareProps, ctx0: LayoutContext): LayoutNode
     const good = diff === 0 || polarity === 'neutral' ? null : polarity === 'upGood' ? diff > 0 : diff < 0
     const role = good === null ? 'neutral' : good ? 'positive' : 'negative'
     const base = ctx.resolveColor(role).color
-    const txt = delta === 'percent' ? `${fmtSigned(((R.value as number) - (L.value as number)) / Math.abs(L.value as number) * 100)}%` : fmtSigned(diff, fmt)
+    const txt = delta === 'percent' ? `${fmtSigned(((R.value as number) - (L.value as number)) / Math.abs(L.value as number) * 100, undefined, ctx.tokens.locale)}%` : fmtSigned(diff, fmt, ctx.tokens.locale)
     let ds = style(ctx, 'caption')
     const padX = ds.size * 0.6
     for (let k = 0; k < 8; k++) {

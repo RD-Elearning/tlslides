@@ -31,6 +31,8 @@ describe('tls.m.avatar', () => {
       ['', ''],
       ['   ', ''],
       ['(Dr.) Lê', 'DL'],
+      ['Dr. Tran Thi Lan', 'TT'],
+      ['Dr. Lan', 'DL'],
     ])('%j gives %j', (name, expected) => {
       expect(initialsOf(name)).toBe(expected)
     })
@@ -74,6 +76,17 @@ describe('tls.m.avatar', () => {
     const tree = lay({ image: 'gone', name: 'Lan Tran' })
     expect(absoluteLeaves(tree).some((l) => l.k === 'image')).toBe(false)
     expect(textOf(tree, 'photo.initials')).toBe('LT')
+  })
+
+  it('AC4: a photo is painted over its initials disc, so a photo that fails to load shows the initials', () => {
+    const tree = lay({ image: 'me', name: 'Lan Tran' }, 420, 240, true)
+    const leaves = absoluteLeaves(tree)
+    const img = leaves.findIndex((l) => l.k === 'image')
+    const disc = leaves.findIndex((l) => l.part === 'photo-fallback')
+    expect(img).toBeGreaterThan(-1)
+    expect(disc).toBeGreaterThan(-1)
+    expect(disc).toBeLessThan(img)
+    expect(textOf(tree, 'photo-fallback.initials')).toBe('LT')
   })
 
   it('shape: circle is fully round, rounded is not, square has no radius', () => {

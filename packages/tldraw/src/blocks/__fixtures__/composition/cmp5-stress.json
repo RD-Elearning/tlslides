@@ -1,0 +1,248 @@
+{
+  "id": "cmp5-stress",
+  "slides": [
+    {
+      "id": "c5_overflow",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "row3",
+            "type": "tls.l.row",
+            "props": {
+              "children": [
+                {
+                  "id": "o1",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "o1b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "o2",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "o2b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "A short card."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "o3",
+                  "type": "tls.l.card",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "o3b",
+                        "type": "tls.t.body",
+                        "props": {
+                          "text": "Another short card."
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c5_deep6",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "deep6_s1",
+            "type": "tls.l.stack",
+            "props": {
+              "children": [
+                {
+                  "id": "deep6_s2",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "deep6_s3",
+                        "type": "tls.l.stack",
+                        "props": {
+                          "children": [
+                            {
+                              "id": "deep6_s4",
+                              "type": "tls.l.stack",
+                              "props": {
+                                "children": [
+                                  {
+                                    "id": "deep6_s5",
+                                    "type": "tls.l.stack",
+                                    "props": {
+                                      "children": [
+                                        {
+                                          "id": "deep6",
+                                          "type": "tls.t.body",
+                                          "props": {
+                                            "text": "Six levels deep: drawn."
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c5_deep7",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "deep7_s1",
+            "type": "tls.l.stack",
+            "props": {
+              "children": [
+                {
+                  "id": "deep7_s2",
+                  "type": "tls.l.stack",
+                  "props": {
+                    "children": [
+                      {
+                        "id": "deep7_s3",
+                        "type": "tls.l.stack",
+                        "props": {
+                          "children": [
+                            {
+                              "id": "deep7_s4",
+                              "type": "tls.l.stack",
+                              "props": {
+                                "children": [
+                                  {
+                                    "id": "deep7_s5",
+                                    "type": "tls.l.stack",
+                                    "props": {
+                                      "children": [
+                                        {
+                                          "id": "deep7_s6",
+                                          "type": "tls.l.stack",
+                                          "props": {
+                                            "children": [
+                                              {
+                                                "id": "deep7",
+                                                "type": "tls.t.body",
+                                                "props": {
+                                                  "text": "Seven levels deep: dropped."
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "c5_row6",
+      "layout": "blank",
+      "regions": {
+        "content": [
+          {
+            "id": "row6",
+            "type": "tls.l.row",
+            "props": {
+              "children": [
+                {
+                  "id": "r6_0",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Strategy review",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "r6_1",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Operations review",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "r6_2",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Marketing review",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "r6_3",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Finance review",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "r6_4",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "People review",
+                    "size": "heading"
+                  }
+                },
+                {
+                  "id": "r6_5",
+                  "type": "tls.t.title",
+                  "props": {
+                    "text": "Technology review",
+                    "size": "heading"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -48,6 +48,12 @@ export const schema: BlockSchema = {
     label: 'Spacing',
     help: 'Vertical spacing between items.',
   },
+  size: {
+    type: { kind: 'enum', values: ['body', 'lead', 'fit'] },
+    role: 'option',
+    label: 'Text size',
+    help: 'fit: biggest type that fills a tall column, centred.',
+  },
   color: {
     type: { kind: 'color' },
     role: 'option',
@@ -66,6 +72,8 @@ export interface BulletsProps extends Record<string, unknown> {
   marker?: string
   indentLevels?: boolean
   spacing?: string
+  /** AC8.5 */
+  size?: 'body' | 'lead' | 'fit'
   color?: string
 }
 

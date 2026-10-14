@@ -31,7 +31,8 @@ export const tlsGTimeline: BlockDefinition = {
           { date: '2023', title: 'Series A', text: 'Team grows to thirty' },
           { date: '2024', title: 'Global launch', text: 'Available in twelve countries' },
         ],
-        nowIndex: 2,
+        // no now marker in the example: designs are built from it, and every filled timeline
+        // greyed the events after the third (spro demo T10, as the agenda's `current`)
       },
     },
   },

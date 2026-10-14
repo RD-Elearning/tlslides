@@ -10,6 +10,8 @@
  *   Request:  { cmd: 'quit' }
  */
 
+import * as fs from 'fs'
+import * as path from 'path'
 import { chromium } from 'playwright'
 import type { Browser, Page } from 'playwright'
 
@@ -29,6 +31,25 @@ interface PartResult {
 
 let browser: Browser | null = null
 let page: Page | null = null
+
+/*
+ * LO8 — the probe paints text in Inter, the face the layout's `tableMetrics` measures (and the app
+ * serves). Without it Chromium fell back to its default sans, ~3-5% wider than the widths the layout
+ * wrapped and sized with, so an html host's poster text ran past the host box in the SVG and the
+ * probe compared that overflow, not the renderers (tls.c.stat-spotlight 49.8, kinetic-title 2.7).
+ * The face is the repo's committed Inter-Regular.ttf (bold is synthesised; the table models bold as
+ * ×1.05). Missing file → the old fallback font, and the probe says so on stderr.
+ */
+const INTER_TTF = path.resolve(__dirname, '../../../../examples/nextjs-sample/public/fonts/Inter-Regular.ttf')
+const FONT_FACE_CSS = (() => {
+  try {
+    const b64 = fs.readFileSync(INTER_TTF).toString('base64')
+    return `@font-face{font-family:"Inter";src:url(data:font/ttf;base64,${b64}) format("truetype");font-weight:100 900;font-display:block}`
+  } catch {
+    process.stderr.write(`parity-worker: ${INTER_TTF} not found; probing with the browser's default sans\n`)
+    return ''
+  }
+})()
 
 async function ensureBrowser(): Promise<Page> {
   if (!page) {
@@ -204,13 +225,16 @@ async function handleRequest(msg: Record<string, unknown>): Promise<Record<strin
       // Mount in page
       await p.setContent(
         `<!DOCTYPE html><html><head>` +
-          `<style>*{margin:0;padding:0;box-sizing:border-box}body{overflow:hidden}</style>` +
+          `<style>${FONT_FACE_CSS}*{margin:0;padding:0;box-sizing:border-box}body{overflow:hidden}</style>` +
           `</head><body>` +
           `<div id="dom-mount">${html}</div>` +
           `<div id="svg-mount" style="position:relative;width:${box.width}px;height:${box.height}px;overflow:hidden">${svgHtml}</div>` +
           `</body></html>`,
         { waitUntil: 'domcontentloaded' },
       )
+
+      // Wait for the faces the page uses (the data: URL Inter decodes asynchronously).
+      await p.evaluate(() => document.fonts.ready.then(() => undefined))
 
       // Annotate SVG with data-part attributes
       await annotateSvg(p, '#svg-mount', treeJson)
@@ -244,6 +268,13 @@ process.on('message', async (msg: Record<string, unknown>) => {
     const err = e instanceof Error ? e : new Error(String(e))
     send({ ok: false, error: err.message, id: msg.id })
   }
+})
+
+// LO8: the parent (jest) went away — close Chromium and exit instead of lingering as an orphan.
+process.on('disconnect', () => {
+  const done = () => process.exit(0)
+  if (browser) browser.close().then(done, done)
+  else done()
 })
 
 send({ ready: true })

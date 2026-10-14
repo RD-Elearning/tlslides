@@ -92,7 +92,7 @@ export function layout(props: ProgressRingProps, ctx: LayoutContext): LayoutNode
 
   // Centre value, scaled down until it sits inside the hole.
   const fmt = enumOf(props.format, ['percent', 'plain', 'compact', 'currency'] as const, 'percent')
-  const text = fmt === 'percent' ? `${Math.round(pct)}%` : fmtNum(value, fmt)
+  const text = fmt === 'percent' ? `${Math.round(pct)}%` : fmtNum(value, fmt, ctx.tokens.locale)
   let vs = style(ctx, 'heading', c.text)
   const inner = Math.max(1, Ri * 2 * 0.82)
   for (let k = 0; k < 8; k++) {

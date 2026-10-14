@@ -8,6 +8,8 @@ import { tryHexToRgb } from '../../../color-math'
 import { backdrop, centerLines, color, safe } from '../_showcase'
 import type { JourneyProps } from './schema'
 import { geometry, labelTokens, milestonesOf } from './schema'
+import { cssTextHeight } from '../../../html-block'
+import { JOURNEY_LABEL as L } from './template'
 
 function alpha(hex: string, a: number): string {
   const rgb = tryHexToRgb(hex)
@@ -28,9 +30,10 @@ export function poster(props: JourneyProps, ctx: LayoutContext): LayoutNode {
   if (items.length > 0) children.push({ k: 'path', part: 'track', box: full, d: g.d, stroke: { color: color(ctx, 'line'), width: g.stroke } })
   if (items.length > 0) children.push({ k: 'path', part: 'path', box: full, d: g.d, stroke: { color: accent, width: g.stroke } })
 
-  const whenStyle: ResolvedTextStyle = { ...ctx.resolveText('caption', { letterSpacing: 0.06 }), color: accent }
-  const titleStyle: ResolvedTextStyle = { ...ctx.resolveText(tok.title), lineHeight: 1.25, color: color(ctx, 'text') }
-  const textStyle: ResolvedTextStyle = { ...ctx.resolveText(tok.text), color: color(ctx, 'textMuted') }
+  // LO7: the template's metrics (it paints these lines); heights are CSS line boxes.
+  const whenStyle: ResolvedTextStyle = { ...ctx.resolveText('caption', { letterSpacing: L.whenTracking, lineHeight: L.whenLH }), color: accent }
+  const titleStyle: ResolvedTextStyle = { ...ctx.resolveText(tok.title, { letterSpacing: 0, lineHeight: L.titleLH }), color: color(ctx, 'text') }
+  const textStyle: ResolvedTextStyle = { ...ctx.resolveText(tok.text, { letterSpacing: 0, lineHeight: L.textLH }), color: color(ctx, 'textMuted') }
 
   items.forEach((m, i) => {
     const n = g.nodes[i]
@@ -41,20 +44,22 @@ export function poster(props: JourneyProps, ctx: LayoutContext): LayoutNode {
 
     const x = n.x - g.labelW / 2
     const rich = (text: string): RichText => ({ runs: [{ text, bold: true }] })
-    const pieces: Array<{ m: ReturnType<LayoutContext['measureText']>; style: ResolvedTextStyle; gap: number; bold: boolean }> = [
-      { m: ctx.measureText(rich(m.when.toUpperCase()), whenStyle, g.labelW), style: whenStyle, gap: 0, bold: true },
-      { m: ctx.measureText(rich(m.title), titleStyle, g.labelW), style: titleStyle, gap: 4, bold: true },
-    ]
-    if (m.text) pieces.push({ m: ctx.measureText(m.text, textStyle, g.labelW), style: textStyle, gap: 6, bold: false })
-    const total = pieces.reduce((s, p) => s + p.gap + p.m.height, 0)
+    const key = `milestones.${i}`
+    const piece = (prop: string, value: string | RichText, style: ResolvedTextStyle, gap: number, bold: boolean) => {
+      const mm = ctx.measureText(value, style, g.labelW)
+      return { lines: mm.lines, height: cssTextHeight(mm.lines.length, style), style, gap, bold, propPath: `${key}.${prop}` }
+    }
+    const pieces = [piece('when', rich(m.when.toUpperCase()), whenStyle, 0, true), piece('title', rich(m.title), titleStyle, L.titleGap, true)]
+    if (m.text) pieces.push(piece('text', m.text, textStyle, L.textGap, false))
+    const total = pieces.reduce((s, p) => s + p.gap + p.height, 0)
     // Above the path the stack ends at the node gap; below it starts there. Clamp into the box.
     let y = n.above ? n.y - g.gap - total : n.y + g.gap
     y = Math.max(0, Math.min(y, H - total))
     for (const p of pieces) {
       y += p.gap
-      const node = { k: 'text', part: `label[${i}]`, box: { x, y, width: g.labelW, height: p.m.height }, lines: p.m.lines, style: p.style } as Extract<LayoutNode, { k: 'text' }>
+      const node = { k: 'text', part: `label[${i}]`, propPath: p.propPath, box: { x, y, width: g.labelW, height: p.height }, lines: p.lines, style: p.style } as Extract<LayoutNode, { k: 'text' }>
       children.push(...centerLines(node, p.bold))
-      y += p.m.height
+      y += p.height
     }
   })
 

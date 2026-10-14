@@ -124,8 +124,12 @@ export function layout(props: ImageTextProps, ctx: LayoutContext): LayoutNode {
     // Delegate the image to tls.m.image
     const imageNode = ctx.layoutChild(imageSpec, imageBox)
 
-    // Render text cluster directly
-    const textNodes = buildTextCluster(props, textW, H, ctx)
+    // Render text cluster directly. AC8.5: centred on the image's height (it sat at the top of a
+    // full-height column beside the photo, the lower half of the slide empty).
+    const cluster = buildTextCluster(props, textW, H, ctx)
+    const clusterH = cluster.reduce((m, n) => Math.max(m, n.box.y + n.box.height), 0)
+    const dy = Math.max(0, (H - clusterH) / 2)
+    const textNodes = cluster.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode)
     const textGroup: LayoutNode = {
       k: 'group',
       box: textBox,

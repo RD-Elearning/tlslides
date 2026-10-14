@@ -31,7 +31,7 @@ export function layout(props: TrendBadgeProps, ctx0: LayoutContext): LayoutNode 
   // A box shorter than the pill shrinks the type until the pill fits (never overflows its box).
   for (let k = 0; k < 8 && lineH(ts) * 1.56 > H; k++) ts = { ...ts, size: ts.size * 0.85 }
   const lh = lineH(ts)
-  const txt = fmtSigned(delta, props.format === 'percent' ? undefined : props.format) + (props.format === 'percent' ? '%' : '')
+  const txt = fmtSigned(delta, props.format === 'percent' ? undefined : props.format, ctx.tokens.locale) + (props.format === 'percent' ? '%' : '')
   const tw = Math.ceil(ctx.measureText(txt, ts).width) + 2
   const padX = Math.round(ts.size * 0.6)
   const padY = Math.round(ts.size * 0.28)

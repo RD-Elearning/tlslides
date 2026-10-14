@@ -8,7 +8,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { CapacityReport, ColorRole, LayoutContext, LayoutNode, ResolvedTextStyle, Size } from '../../../types'
+import type { CapacityReport, ColorRole, LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import type { IconListProps } from './schema'
 import { ICON_LIST_MAX_ITEMS } from './schema'
 import { asArray, spacingGap, str } from '../../text/_engine/rich'
@@ -23,16 +23,20 @@ function field(item: unknown, key: 'icon' | 'title' | 'text'): string {
   return item && typeof item === 'object' ? str((item as Record<string, unknown>)[key]) : ''
 }
 
-function compute(props: IconListProps, ctx: LayoutContext, width: number) {
+/** AC8.5 `size: fit`: title / description tokens, largest first; the list may take this share. */
+export const FIT_RUNGS: Array<[TypeToken, TypeToken]> = [['subheading', 'lead'], ['lead', 'body'], ['body', 'caption']]
+export const FIT_SHARE = 0.6
+
+function compute(props: IconListProps, ctx: LayoutContext, width: number, rung: [TypeToken, TypeToken] = ['body', 'caption']) {
   const items = asArray<unknown>(props.items)
-  const body = ctx.resolveText('body')
+  const body = ctx.resolveText(rung[0])
   const titleStyle: ResolvedTextStyle = { ...body, color: ctx.resolveColor('text').color }
-  const textStyle: ResolvedTextStyle = { ...ctx.resolveText('caption'), color: ctx.resolveColor('textMuted').color }
+  const textStyle: ResolvedTextStyle = { ...ctx.resolveText(rung[1]), color: ctx.resolveColor('textMuted').color }
   const showText = isShown(props, 'showText')
   const style = props.iconStyle === 'plain' || props.iconStyle === 'square' ? props.iconStyle : 'circle'
   const shape = Math.round(body.size * 2)
   const glyph = style === 'plain' ? Math.round(shape * 0.72) : Math.round(shape * 0.5)
-  const gap = spacingGap(ctx, props.spacing)
+  const gap = rung[0] === 'body' ? spacingGap(ctx, props.spacing) : Math.round(body.size * 0.7)
   const colGap = ctx.tokens.space.md
   const textX = shape + colGap
   const textW = Math.max(1, width - textX)
@@ -89,6 +93,17 @@ function compute(props: IconListProps, ctx: LayoutContext, width: number) {
 }
 
 export function layout(props: IconListProps, ctx: LayoutContext): LayoutNode {
+  if (props.size === 'fit') {
+    const H = ctx.box.height
+    for (let i = 0; i < FIT_RUNGS.length; i++) {
+      const r = compute(props, ctx, ctx.box.width, FIT_RUNGS[i])
+      if (i < FIT_RUNGS.length - 1 && r.height > H * FIT_SHARE) continue
+      // centred in the box: a short list beside a full-height photo sits at its middle
+      const dy = Math.max(0, (H - r.height) / 2)
+      const children = r.nodes.map((c) => ({ ...c, box: { ...c.box, y: c.box.y + dy } }) as LayoutNode)
+      return { k: 'group', part: 'root', box: { x: 0, y: 0, width: ctx.box.width, height: Math.max(H, r.height) }, children }
+    }
+  }
   const { nodes, height } = compute(props, ctx, ctx.box.width)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: ctx.box.width, height }, children: nodes }
 }

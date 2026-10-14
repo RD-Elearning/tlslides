@@ -275,10 +275,13 @@ describe('tls.c.agenda', () => {
         c,
       )
       assertValidNode(node)
-      // index + title + the (empty) note slot every item gets for the motion stagger (RVM5)
-      expect(node.children).toHaveLength(3)
-      expect((node as any).children[2].part).toBe('note[0]')
-      expect((node as any).children[2].children).toHaveLength(0)
+      // AC3 pre-item: a box this tall takes the roomy tier, whose list draws a structural hairline
+      // (no part) over each item: hairline + index + title + the (empty) note slot every item gets
+      // for the motion stagger (RVM5)
+      expect(node.children).toHaveLength(4)
+      expect((node as any).children[0].part).toBeUndefined()
+      expect((node as any).children[3].part).toBe('note[0]')
+      expect((node as any).children[3].children).toHaveLength(0)
     })
 
     it('handles 9+ items without throwing', () => {
@@ -286,8 +289,8 @@ describe('tls.c.agenda', () => {
       const items = Array.from({ length: 12 }, (_, i) => ({ title: `Item ${i + 1}` }))
       const node = tlsCAgenda.layout({ items } as any, c)
       assertValidNode(node)
-      // 12 items × 3 children each (index + title + an empty note slot, RVM5) = 36
-      expect(node.children).toHaveLength(36)
+      // 12 items × 4 children each (roomy hairline + index + title + an empty note slot, RVM5) = 48
+      expect(node.children).toHaveLength(48)
     })
 
     it('handles a 400-char title without throwing', () => {
@@ -312,8 +315,8 @@ describe('tls.c.agenda', () => {
         c,
       )
       assertValidNode(node)
-      // 2 items × 3 parts each (index + title + note) = 6
-      expect(node.children).toHaveLength(6)
+      // 2 items × (roomy hairline + index + title + note) = 8
+      expect(node.children).toHaveLength(8)
       const parts = collectParts(node)
       expect(parts).toContain('item[0].index')
       expect(parts).toContain('item[0].title')
@@ -457,4 +460,86 @@ describe('tls.c.agenda', () => {
       await assertParity(tlsCAgenda, defaults as any, { width: 960, height: 540 }, undefined, { registry })
     }, 30000)
   })
+})
+
+describe('AC2 — look knobs (variant, numbering)', () => {
+  const DEF = tlsCAgenda
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const leaves = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {
+    if (n.k === 'group') n.children.forEach((c) => leaves(c, out))
+    else out.push(n)
+    return out
+  }
+  const LOOKS: Array<[string, Record<string, unknown>]> = [
+    ['variant: cards', { variant: 'cards' }],
+    ['numbering: badge', { numbering: 'badge' }],
+    ['numbering: none', { numbering: 'none' }],
+    ['cards + badge', { variant: 'cards', numbering: 'badge' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.variant.type as any).values).toEqual(['list', 'cards'])
+    expect((DEF.schema.numbering.type as any).values).toEqual(['plain', 'badge', 'none'])
+  })
+
+  for (const [name, knobs] of LOOKS) {
+    it.each([
+      ['preferred', DEF.size.preferred],
+      ['min', DEF.size.min],
+    ])(`${name} fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+      const node = DEF.layout({ ...props, ...knobs }, ctx({ width: w, height: h }))
+      assertValidNode(node)
+      expect(node.box.height).toBeLessThanOrEqual(h + 0.5)
+      for (const l of leaves(node)) {
+        expect(l.box.x + l.box.width).toBeLessThanOrEqual(w + 0.5)
+        expect(l.box.y + l.box.height).toBeLessThanOrEqual(h + 0.5)
+      }
+    })
+  }
+
+  it('cards: one card per item, as wide as its column, every card in a row as tall as the row; text inset', () => {
+    const node = DEF.layout({ ...props, variant: 'cards' }, ctx({ width: 1728, height: 758 }))
+    const cards = leaves(node).filter((l) => l.k === 'rect')
+    expect(cards).toHaveLength(4)
+    for (const c of cards) expect(c.box.width).toBeCloseTo(cards[0].box.width, 5)
+    // two columns: the second column's cards end at the right edge
+    expect(cards[2].box.x).toBeGreaterThan(cards[0].box.x + cards[0].box.width)
+    expect(cards[2].box.x + cards[2].box.width).toBeCloseTo(1728, 5)
+    expect(cards[0].box.height).toBe(cards[2].box.height)
+    const title = leaves(node).find((l) => l.part === 'item[0].title')!
+    expect(title.box.x).toBeGreaterThan(cards[0].box.x)
+    expect(title.box.y).toBeGreaterThan(cards[0].box.y)
+  })
+
+  it('badge: the number sits in a disc (the index part), filled with the accent for the current item', () => {
+    const c = ctx({ width: 1200, height: 660 })
+    const node = DEF.layout({ ...props, numbering: 'badge', current: 1 }, c)
+    const groups = (n: LayoutNode, out: LayoutNode[] = []): LayoutNode[] => {
+      if (n.k === 'group') { out.push(n); n.children.forEach((k) => groups(k, out)) }
+      return out
+    }
+    const badges = groups(node).filter((g) => /^item\[\d+\]\.index$/.test(g.part ?? ''))
+    expect(badges).toHaveLength(4)
+    const disc = (g: LayoutNode) => (g as any).children.find((k: LayoutNode) => k.k === 'rect')
+    expect(disc(badges[1]).fill.color).toBe(c.resolveColor('accent').color)
+    expect(disc(badges[0]).fill.color).not.toBe(c.resolveColor('accent').color)
+    expect(disc(badges[0]).box.width).toBe(disc(badges[0]).box.height)
+  })
+
+  it('cards: a box too short for cards keeps the list (no card rects), as size.min does', () => {
+    const [w, h] = DEF.size.min
+    const node = DEF.layout({ ...props, items: [...props.items, { title: 'Wrap-up', note: 'Decisions' }], variant: 'cards' }, ctx({ width: w, height: h }))
+    expect(leaves(node).some((l) => l.k === 'rect')).toBe(false)
+  })
+
+  it('none: no number column, the titles start at the left edge', () => {
+    const node = DEF.layout({ ...props, numbering: 'none' }, ctx({ width: 1200, height: 660 }))
+    expect(collectParts(node).some((p) => /\.index$/.test(p))).toBe(false)
+    expect(leaves(node).find((l) => l.part === 'item[0].title')!.box.x).toBe(0)
+  })
+
+  it('cards + badge: DOM and SVG agree', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(DEF, { ...props, variant: 'cards', numbering: 'badge' } as any, { width: 1200, height: 660 }, undefined, { registry })
+  }, 30000)
 })

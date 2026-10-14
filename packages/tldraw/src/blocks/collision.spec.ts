@@ -86,14 +86,13 @@ describe('G5 — slide-level collision gate', () => {
           expect(collisions).toEqual([])
         })
 
-        // G8.1a (regression guard only — see BACKLOG-visual-fix-2.md §9 G8.1 notes for why this
-        // isn't a full-fixture frame-bounds gate): checking every shape's box against the frame
-        // for every slide immediately reproduces the same fill-vs-intrinsic-height bug on 7 other
-        // blocks this phase didn't target (colorful-blocks-demo sl_02/sl_06/sl_07/sl_08/sl_09,
-        // demo-deck sl_07/sl_08) — the same class G5 chose not to gate `overlap-audit` on for the
-        // analogous reason (a known, disclosed, out-of-scope defect shouldn't turn a real gate
-        // permanently red). So this only re-checks the slide this phase actually fixed.
-        if (pageId === 'sl_05') {
+        // G8.1a started this as a regression guard for `sl_05` only, because checking every
+        // slide reproduced the fill-vs-intrinsic-height compiler bug elsewhere. At LO1.5's start
+        // 8 slides still failed (colorful-blocks-demo sl_06/08/20/24/25/27/28, demo-deck sl_08).
+        // LO1.5 (layout-oracle README) fixed the
+        // compiler (fill blocks share the height their siblings leave; column-aware re-flow), so
+        // the gate now covers every slide of every fixture. Ratchet: never narrow it again.
+        {
           it(`slide "${pageId}" has no block extending past the frame bounds`, () => {
             const shapes = Object.values(page.shapes).filter(
               (s): s is ComponentShape => s.type === 'component'

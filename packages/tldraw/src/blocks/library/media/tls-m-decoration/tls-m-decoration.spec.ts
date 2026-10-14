@@ -117,3 +117,135 @@ describe('tls.m.decoration', () => {
     }
   })
 })
+
+describe('AC4 decoration motifs', () => {
+  const MOTIFS = ['orb', 'squiggle', 'star', 'sparkle', 'zigzag', 'triangle', 'half-circle', 'frame'] as const
+  const leafOf = (tree: any) => absoluteLeaves(tree)[0]
+
+  it('the schema lists every motif; the definition stays a backdrop decoration', () => {
+    const values = (tlsMDecoration.schema.shape.type as any).values as string[]
+    for (const m of MOTIFS) expect(values).toContain(m)
+    expect(tlsMDecoration.category).toBe('decoration')
+  })
+
+  it.each(MOTIFS)('%s: one leaf named shape, deterministic, inside the box for any rotation and box', (shape) => {
+    expect(JSON.stringify(lay({ shape, seed: 4 }))).toBe(JSON.stringify(lay({ shape, seed: 4 })))
+    for (const [w, h] of [[480, 480], [900, 300], [300, 900], [61, 60]]) {
+      for (const rotation of [0, 37, 90, 180, 271]) {
+        const leaves = absoluteLeaves(lay({ shape, rotation }, w, h))
+        expect(leaves).toHaveLength(1)
+        const l = leaves[0]
+        expect(l.part).toBe('shape')
+        const b = l.k === 'path' ? pathBounds((l.node as any).d) : { x: l.x, y: l.y, width: l.width, height: l.height }
+        const sw = l.k === 'path' && (l.node as any).stroke ? (l.node as any).stroke.width / 2 : 0
+        expect(b.x - sw).toBeGreaterThanOrEqual(-1)
+        expect(b.y - sw).toBeGreaterThanOrEqual(-1)
+        expect(b.x + b.width + sw).toBeLessThanOrEqual(w + 1)
+        expect(b.y + b.height + sw).toBeLessThanOrEqual(h + 1)
+      }
+    }
+  })
+
+  it('orb is a round rect with a top-left-lit radial gradient (pseudo-3D), at least 0.85 opaque', () => {
+    const t: any = lay({ shape: 'orb', tone: 'accent', opacity: 'soft' }, 400, 300)
+    const n = leafOf(t).node as any
+    expect(n.k).toBe('rect')
+    expect(n.box.width).toBe(n.box.height)
+    expect(n.radius).toBe(n.box.width / 2)
+    expect(n.fill.type).toBe('radialGradient')
+    expect(n.fill.cx).toBeLessThan(0.5)
+    expect(n.fill.stops).toHaveLength(3)
+    expect(t.opacity).toBeGreaterThanOrEqual(0.85)
+  })
+
+  it('squiggle, zigzag and frame are strokes; star, sparkle, triangle and half-circle fills', () => {
+    for (const shape of ['squiggle', 'zigzag', 'frame']) expect((leafOf(lay({ shape })).node as any).stroke.width).toBeGreaterThan(0)
+    for (const shape of ['star', 'sparkle', 'triangle', 'half-circle']) expect((leafOf(lay({ shape })).node as any).fill).toBeDefined()
+  })
+
+  it('rotation: star/sparkle/triangle turn freely; squiggle/zigzag/half-circle snap; orb/frame ignore it', () => {
+    for (const shape of ['star', 'sparkle', 'triangle']) expect(dOf(lay({ shape, rotation: 20 }))).not.toBe(dOf(lay({ shape, rotation: 0 })))
+    for (const shape of ['squiggle', 'zigzag', 'half-circle']) {
+      expect(dOf(lay({ shape, rotation: 10 }))).toBe(dOf(lay({ shape, rotation: 0 })))
+      expect(dOf(lay({ shape, rotation: 90 }))).not.toBe(dOf(lay({ shape, rotation: 0 })))
+    }
+    expect(dOf(lay({ shape: 'frame', rotation: 90 }))).toBe(dOf(lay({ shape: 'frame', rotation: 0 })))
+    expect(JSON.stringify(lay({ shape: 'orb', rotation: 90 }))).toBe(JSON.stringify(lay({ shape: 'orb', rotation: 0 })))
+  })
+
+  it.each(MOTIFS)('%s: DOM and SVG agree (parity probe)', async (shape) => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsMDecoration, { ...(tlsMDecoration.defaults as any), shape, tone: 'accent2', opacity: 'strong', rotation: 30 }, { width: 480, height: 320 })
+  }, 30000)
+})
+
+describe('AC5 — hand-drawn motifs through Rough.js', () => {
+  const { starPath, sparklePath, squigglePath } = require('./layout')
+  it.each(['star', 'sparkle', 'squiggle'])('%s is a seeded Rough.js sketch: same seed same path, another seed another', (shape) => {
+    const a = dOf(lay({ shape, seed: 11 }))
+    expect(dOf(lay({ shape, seed: 11 }))).toBe(a)
+    expect(dOf(lay({ shape, seed: 12 }))).not.toBe(a)
+    // only absolute M / L / C / Z commands (what pathBounds and both renderers measure exactly)
+    expect(a.replace(/[-\d.,\s]/g, '')).toMatch(/^[MLCZ]+$/)
+  })
+  it('the sketch is not the smooth path', () => {
+    const W = 480
+    expect(dOf(lay({ shape: 'star', seed: 1 }, W, W))).not.toBe(starPath(W / 2, W / 2, (W / 2) * 0.92, 5, 0.45, 0))
+    expect(dOf(lay({ shape: 'sparkle', seed: 1 }, W, W))).not.toBe(sparklePath(W / 2, W / 2, (W / 2) * 0.92, 0))
+    void squigglePath
+  })
+})
+
+describe('tls.m.decoration — isometric solids (spro enhance S4)', () => {
+  const SOLIDS = ['cube', 'cylinder', 'cone', 'pyramid', 'slab'] as const
+  const paths = (n: any): any[] => (n.k === 'path' ? [n] : n.children ? n.children.flatMap(paths) : [])
+  it.each(SOLIDS)('%s: tinted faces under an ink outline, inside its box, no arcs', (shape) => {
+    const t: any = lay({ shape, tone: 'accent', opacity: 'soft' }, 300, 300)
+    expect(t.opacity).toBeGreaterThanOrEqual(0.85)
+    const all = paths(t)
+    const faces = all.filter((p) => p.fill)
+    const edges = all.filter((p) => p.stroke)
+    expect(faces.length).toBeGreaterThanOrEqual(2)
+    expect(edges.length).toBeGreaterThanOrEqual(1)
+    expect(new Set(faces.map((p) => p.fill.color)).size).toBeGreaterThanOrEqual(2)
+    for (const p of all) {
+      expect(p.d).not.toMatch(/[aA]/)
+      const nums = (p.d.match(/-?\d*\.?\d+/g) ?? []).map(Number)
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        expect(nums[i]).toBeGreaterThanOrEqual(-0.5)
+        expect(nums[i]).toBeLessThanOrEqual(300.5)
+        expect(nums[i + 1]).toBeGreaterThanOrEqual(-0.5)
+        expect(nums[i + 1]).toBeLessThanOrEqual(300.5)
+      }
+    }
+  })
+})
+
+describe('subject doodles (enhance S4)', () => {
+  const subjects = ['tree', 'graph', 'gear', 'book', 'flask', 'globe', 'bulb', 'chart', 'code']
+  it.each(subjects)('%s: tinted faces under an outline, inside the box, the same every time', (shape) => {
+    const a = lay({ shape, tone: 'accent', opacity: 'strong' }, 300, 200)
+    expect(JSON.stringify(a)).toBe(JSON.stringify(lay({ shape, tone: 'accent', opacity: 'strong' }, 300, 200)))
+    const leaves = absoluteLeaves(a).filter((l) => l.k === 'path')
+    const faces = leaves.filter((l) => (l.node as any).fill)
+    const edges = leaves.filter((l) => (l.node as any).stroke)
+    expect(faces.length).toBeGreaterThan(0)
+    expect(edges.length).toBeGreaterThan(0)
+    for (const l of leaves) {
+      const d = (l.node as any).d as string
+      expect(d).not.toMatch(/[aAqQsStThHvV]/) // M/L/C/Z only: the render treatment can sketch it
+      const b = pathBounds(d)!
+      expect(b.x).toBeGreaterThanOrEqual(-0.5)
+      expect(b.y).toBeGreaterThanOrEqual(-0.5)
+      expect(b.x + b.width).toBeLessThanOrEqual(300.5)
+      expect(b.y + b.height).toBeLessThanOrEqual(200.5)
+    }
+    if (process.env.DOODLE_SVG) {
+      const svg = leaves.map((l) => {
+        const n = l.node as any
+        return `<path d="${n.d}" fill="${n.fill?.color ?? 'none'}" stroke="${n.stroke?.color ?? 'none'}" stroke-width="${n.stroke?.width ?? 0}" stroke-linejoin="round" stroke-linecap="round"/>`
+      })
+      require('fs').writeFileSync(`${process.env.DOODLE_SVG}/${shape}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" style="background:#fff">${svg.join('')}</svg>`)
+    }
+  })
+})

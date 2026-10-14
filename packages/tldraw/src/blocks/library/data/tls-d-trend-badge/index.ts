@@ -16,11 +16,15 @@ export const tlsDTrendBadge: BlockDefinition = {
   keywords: ['trend', 'badge', 'delta', 'change', 'arrow', 'up', 'down'],
   category: 'metric',
   scope: 'element',
+  // LO2: a badge is meant to sit on a card or number corner.
+  layer: 'overlay',
+  // LO2.1: layered out of the stack it keeps its pill size, in the anchor box's top-right corner.
+  anchor: 'top-right',
   shortDescription: 'Small pill with an up or down arrow and a change value',
   related: ['tls.c.kpi-tile', 'tls.d.stat-compare'],
   describe: {
     when: 'Annotating a number elsewhere on the slide with its trend.',
-    avoid: 'A standalone metric (use tls.c.kpi-tile).',
+    avoid: 'A standalone metric (use tls.c.kpi-tile). By default prefer the delta of tls.c.kpi-row.',
     example: {
       id: 'b_trend',
       type: 'tls.d.trend-badge',

@@ -12,15 +12,17 @@ export const schema: BlockSchema = {
     type: { kind: 'richText' },
     role: 'content',
     label: 'Title',
-    help: 'The slide title. Supports inline bold and italic. 1–12 words.',
+    // CS2 (content-stress README §2): measured capacity, not a word count — a content slide holds one
+    // line at title size (p10 41 characters over 596 designs); "1–12 words" broke 377 of 618 designs.
+    help: 'The slide title. Supports inline bold and italic. Count characters, not words: at most 40 on content, data, process, comparison and closing slides (one line at title size), at most 60 on a cover or section.',
     required: true,
-    guidance: 'A concise slide title. Bold one key word for emphasis. Never a full sentence.',
+    guidance: 'One line: at most 40 characters (60 on a cover or section). Bold one key word. Never a full sentence.',
   },
   size: {
-    type: { kind: 'enum', values: ['display', 'title', 'heading', 'subheading'] },
+    type: { kind: 'enum', values: ['display', 'title', 'heading', 'subheading', 'fit'] },
     role: 'option',
     label: 'Size',
-    help: 'Type scale step for the title.',
+    help: 'Type scale step for the title. `fit`: the largest of display/title/heading that wraps cleanly (≤ 3 lines, no one-word line).',
   },
   align: {
     type: { kind: 'enum', values: ['start', 'center', 'end'] },

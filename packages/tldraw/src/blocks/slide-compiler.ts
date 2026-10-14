@@ -19,19 +19,47 @@
  * - Pass 2: Re-flow y-positions within vertical runs when blocks are measured
  *   (registry provided). Fallback equal-split keeps original behavior unchanged.
  *
+ * LO1.5 (layout-oracle README) — two flow fixes found by `analyzeSlide`:
+ * - The re-flow is column-aware: a region is pushed down only by an overflowing (or pushed)
+ *   region above it that horizontally overlaps it (`reflowRegions`).
+ * - In a region with 2+ blocks, a block whose root claims the whole region is re-measured:
+ *   fill blocks (charts, images) share the height left after their siblings' natural heights,
+ *   content blocks shrink to what they paint (`measureRegionBlocks`).
+ *
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no side effects.
  */
 
 import type { ComponentShape } from '~types'
-import type { BlockDefinition, BlockSpec, Box, MotionStyle, Paint, ResolvedTokens, SlideSpec, Size, SurfaceContext } from './types'
+import type {
+  BlockAnchor,
+  BlockDefinition,
+  BlockSpec,
+  BlockStyleSpec,
+  DeckStyle,
+  Box,
+  LayoutContext,
+  LayoutNode,
+  MotionStyle,
+  Paint,
+  ResolvedTokens,
+  SlideSpec,
+  Size,
+  SurfaceContext,
+} from './types'
 import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
-import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
+import { contentArea, getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { nearestName } from './nearest-name'
 import type { BlockRegistry } from './registry'
 import { createLayoutContext } from './layout'
-import { layoutBlock } from './layout/layout-child'
+import { layoutBlock, textScaleOf } from './layout/layout-child'
+import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
+import { blockAnchor } from './block-layer'
+import { applyStyleBlockDefaults } from './styles'
+import { MAX_NESTING_DEPTH } from './types'
+import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
+import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -39,7 +67,7 @@ import { deriveShapeAnimation } from './motion/resolve-motion'
 
 export interface CompileFinding {
   level: 'error' | 'warning'
-  rule: 'region/unknown' | 'region/overflow' | 'block/unregistered'
+  rule: 'region/unknown' | 'region/overflow' | 'block/unregistered' | 'connector/unresolved'
   slideId: string
   region?: string
   blockId?: string
@@ -106,6 +134,176 @@ export function compileSlide(
   registry?: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
+  const result = (registry && growText(spec, frame, tokens, registry, opts)) || compileSlideBlocks(spec, frame, tokens, registry, opts)
+  // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
+  if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
+  return compileConnectors(spec, result, tokens, registry, opts)
+}
+
+/** enhance L5: below this share of the content regions' area, a balanced slide's content floats. */
+export const GROW_BELOW = 0.5
+/** The text scales tried, largest first (≈ one type-scale step and halves of it). */
+export const GROW_STEPS: readonly number[] = [1.3, 1.2, 1.1]
+/** A grown slide's content may cover at most this share of the content regions' height. */
+export const GROW_MAX_HEIGHT = 0.9
+
+/**
+ * enhance L5 — content grows into the space. A balanced slide (`valign: 'auto'`, the content
+ * slides spro composes) whose content paints under `GROW_BELOW` of its content regions reads as
+ * "small content in a large empty page" (the golden rubric's most common note). Its in-flow
+ * content blocks (every region but the title) are compiled again with one shared
+ * `style.textScale` — one step for every size, so the slide keeps its count of text sizes and
+ * peers keep one size — and the largest step whose content still paints inside its boxes (nothing
+ * cut, nothing shrunk to fit, the group under `GROW_MAX_HEIGHT`) wins. The scale is recorded as
+ * `$block.grown`, so the decompiler returns the authored style. `null` = compile as authored.
+ */
+function growText(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult | null {
+  if (spec.valign !== 'auto' || opts?.growText === false) return null
+  const grows = (name: string, b: BlockSpec | undefined) =>
+    name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && !GROW_SKIP.has(b.type) && textScaleOf(b.style) === undefined
+  const ids = new Set<string>()
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (Array.isArray(blocks)) for (const b of blocks) if (grows(name, b)) ids.add(b.id as string)
+  }
+  if (!ids.size) return null
+  // an html block (big-stat, hero…) sizes its own type in its template; scaled tokens and the DOM
+  // would disagree (golden e8 seminar: a 34.7 % big-stat drawn as overlapping glyphs) — the slide
+  // is compiled as authored
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (name !== 'title' && Array.isArray(blocks) && blocks.some((b) => b && !b.layer && registry.get(b.type)?.kind === 'html')) return null
+  }
+  const { regionBoxes } = resolveRegions(spec.layout, frame, tokens)
+  const area = unionBox(
+    Object.entries(regionBoxes)
+      .filter(([name]) => name !== 'title' && (spec.regions?.[name] ?? []).some((b) => b && ids.has(b.id as string)))
+      .map(([, box]) => box)
+  )
+  if (!area) return null
+  const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
+  const before = paintedContent(base, ids, tokens, registry, opts)
+  if (!before.ok || !before.box || before.box.width * before.box.height >= GROW_BELOW * area.width * area.height) return null
+  for (const k of GROW_STEPS) {
+    const scaled: SlideSpec = {
+      ...spec,
+      regions: Object.fromEntries(
+        Object.entries(spec.regions ?? {}).map(([name, blocks]) => [
+          name,
+          Array.isArray(blocks) ? blocks.map((b) => (grows(name, b) ? { ...b, style: { ...(b.style ?? {}), textScale: k } } : b)) : blocks,
+        ])
+      ),
+    }
+    const result = compileSlideBlocks(scaled, frame, tokens, registry, opts)
+    const overflow = (r: CompileSlideResult) => r.findings.filter((f) => f.rule === 'region/overflow').length
+    if (overflow(result) > overflow(base)) continue
+    const after = paintedContent(result, ids, tokens, registry, opts)
+    if (!after.ok || !after.box || after.box.height > GROW_MAX_HEIGHT * area.height || after.box.width > area.width + FLOW_TOL) continue
+    if (after.box.y < area.y - FLOW_TOL || after.box.y + after.box.height > area.y + area.height + FLOW_TOL) continue
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      if (meta && typeof meta.id === 'string' && ids.has(meta.id)) meta.grown = k
+    }
+    return result
+  }
+  return null
+}
+
+/** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
+const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image'])
+
+/**
+ * The painted union of the shapes `ids` names, in slide units, and `ok: false` when one of them
+ * paints outside its box, cuts a text or shrinks one to fit (a grown slide must not).
+ */
+function paintedContent(
+  result: CompileSlideResult,
+  ids: ReadonlySet<string>,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): { box: Box | null; ok: boolean } {
+  const boxes: Box[] = []
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; style?: BlockStyleSpec } | undefined
+    if (!meta || typeof meta.id !== 'string' || !ids.has(meta.id)) continue
+    const def = registry.get(shape.componentId as string)
+    if (!def) continue
+    const size = { width: shape.size[0], height: shape.size[1] }
+    const props = { ...shape.props }
+    delete props[BLOCK_PROP_KEY]
+    let painted: Box | null
+    try {
+      const ctx = createLayoutContext({
+        box: size,
+        tokens,
+        surface: MINIMAL_SURFACE,
+        registry,
+        ...(meta.style ? { style: meta.style } : {}),
+        ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
+      })
+      const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false }
+      painted = paintedBounds(c)
+    } catch {
+      return { box: null, ok: false }
+    }
+    if (!painted) continue
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false }
+    boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
+  }
+  return { box: unionBox(boxes), ok: true }
+}
+
+/** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */
+function compileSlideBlocks(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry?: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  if (!opts?.blockDefaults) return compileSlideUnstyled(spec, frame, tokens, registry, opts)
+  // AC1: fill the style's knob defaults under each top-level block's authored props (measure and
+  // render see them), then record what was filled as `$block.styleDefaults` so `shapeToBlock`
+  // returns the authored props only.
+  const filledById = new Map<string, Record<string, unknown>>()
+  const style = (b: BlockSpec): BlockSpec => {
+    const { block, filled } = applyStyleBlockDefaults(b, opts.blockDefaults)
+    if (filled && typeof b.id === 'string') filledById.set(b.id, filled)
+    return block
+  }
+  const styled: SlideSpec = {
+    ...spec,
+    regions: Object.fromEntries(Object.entries(spec.regions ?? {}).map(([r, blocks]) => [r, (blocks ?? []).map(style)])),
+    ...(spec.free ? { free: spec.free.map((e) => ({ ...e, block: style(e.block) })) } : {}),
+  }
+  const result = compileSlideUnstyled(styled, frame, tokens, registry, opts)
+  if (filledById.size) {
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const filled = meta && typeof meta.id === 'string' ? filledById.get(meta.id) : undefined
+      if (meta && filled) meta.styleDefaults = JSON.parse(JSON.stringify(filled))
+    }
+  }
+  return result
+}
+
+function compileSlideUnstyled(
+  spec: SlideSpec,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry?: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  // LO2: blocks with an explicit `layer: 'backdrop' | 'overlay'` in a region are out of flow.
+  const layered = splitLayeredBlocks(spec)
+  if (layered) return compileLayered(layered, frame, tokens, registry, opts)
+
   const findings: CompileFinding[] = []
   // P7: blocks with no own `motion` that a slide/deck motion style may animate.
   const styleCandidates: StyleCandidate[] = []
@@ -125,116 +323,43 @@ export function compileSlide(
 
   // 2. Get vertical alignment map from the resolved layout.
   const regionAlignMap = resolvedLayout?.regionAlign
+  // L1: `valign: 'auto'` centres the content regions the layout leaves at the top
+  const alignOf = (name: string): 'start' | 'center' | 'end' =>
+    regionAlignMap?.[name] ?? (spec.valign === 'auto' && name !== 'title' ? 'center' : 'start')
 
   // V2.1: Two-pass region resolution.
-  // Pre-compute natural heights when registry is provided.
+  // Pass 1 — measure every region's blocks once (LO1.5: fill-aware, see `measureRegionBlocks`);
+  // the same heights feed both the re-flow below and the placement loop.
   const regionNaturalHeights = new Map<string, number>()
+  const regionBlockHeights = new Map<string, number[]>()
   const knownRegionNames = Object.keys(regionBoxes)
   const gap = tokens.space.md
 
-  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
-  // Pre-measure blocks and compute natural heights (Pass 1 of V2.1).
   // F3.1: one fresh memo cache per compile pass.
   const intrinsicSizeCache = new Map<string, Size>()
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
       const blocks = spec.regions[regionName] ?? []
-
       if (blocks.length === 0 || !regionBox) continue
 
-      const measureCtx = createLayoutContext({
-        box: { width: regionBox.width, height: regionBox.height },
-        tokens,
-        surface: MINIMAL_SURFACE,
-        registry,
-        intrinsicSizeCache, // F3.1: scoped memo cache
-      })
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName))
+      regionBlockHeights.set(regionName, blockHeights)
 
-      const blockHeights = blocks.map((block) => {
-        const def = registry.get(block.type)
-        if (!def) return -1
-        try {
-          // B3-H1: if the block has instance style overrides (padding/align), build a
-          // per-block ctx so layoutBlock can apply them. Otherwise keep the shared ctx.
-          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style` —
-          // that reserved key only exists on rendered editor shapes, see block-authoring
-          // README pitfall #3/#5).
-          const blockStyle = block.style
-          const usePerBlock =
-            blockStyle !== undefined &&
-            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
-          const ctx = usePerBlock
-            ? createLayoutContext({
-                box: { width: regionBox.width, height: regionBox.height },
-                tokens,
-                surface: MINIMAL_SURFACE,
-                registry,
-                intrinsicSizeCache,
-                style: blockStyle,
-              })
-            : measureCtx
-          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
-          return node.box.height
-        } catch {
-          return -1
-        }
-      })
-
-      // Compute natural height (measured blocks + gaps)
+      // Natural height = measured blocks + gaps.
       const gapsTotal = blocks.length > 1 ? (blocks.length - 1) * gap : 0
-      const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : 0), 0)
+      // LO0: skip a block that failed to measure (-1); never reset the running sum.
+      const measuredTotal = blockHeights.reduce((sum, h) => (h > 0 ? sum + h : sum), 0)
       regionNaturalHeights.set(regionName, measuredTotal + gapsTotal)
     }
   }
 
-  // V2.1: Re-flow region y-positions based on natural heights (Pass 2).
-  // Sort regions by their layout y-position to identify vertical runs.
-  const regionYPositions = new Map<string, number>()
-  const regionYHeights = new Map<string, number>()
-
-  if (registry && regionNaturalHeights.size > 0) {
-    // Build a map of region -> naturalHeight for quick lookup
-    const needsReFlow = Object.keys(regionBoxes).some((regionName) => {
-      const naturalHeight = regionNaturalHeights.get(regionName)
-      const regionBox = regionBoxes[regionName]
-      return regionBox && naturalHeight && naturalHeight > regionBox.height
-    })
-
-    if (needsReFlow) {
-      const sortedByY = [...knownRegionNames].sort((a, b) => {
-        const boxA = regionBoxes[a]
-        const boxB = regionBoxes[b]
-        if (!boxA || !boxB) return 0
-        return boxA.y - boxB.y
-      })
-
-      // Find the first region with content to determine run start
-      const firstRegionWithContent = sortedByY.find((name) => {
-        const boxes = spec.regions[name] ?? []
-        return boxes.length > 0
-      })
-
-      if (firstRegionWithContent) {
-        let currentY = regionBoxes[firstRegionWithContent]?.y ?? 0
-        for (const regionName of sortedByY) {
-          const regionBox = regionBoxes[regionName]
-          if (!regionBox) continue
-
-          const blocks = spec.regions[regionName] ?? []
-          if (blocks.length === 0) continue
-
-          const naturalHeight = regionNaturalHeights.get(regionName) ?? regionBox.height
-          const effectiveHeight = Math.max(naturalHeight, regionBox.height)
-
-          regionYPositions.set(regionName, currentY)
-          regionYHeights.set(regionName, effectiveHeight)
-
-          currentY = currentY + effectiveHeight + gap
-        }
-      }
-    }
-  }
+  // Pass 2 — re-flow. LO1.5: column-aware. A region is pushed down only by the regions *above*
+  // it that horizontally overlap it and actually grew or moved; side-by-side columns flow
+  // independently (an overfull `left` no longer pushes `right` below it).
+  const regionYPositions = registry
+    ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (spec.regions[name] ?? []).length > 0, gap)
+    : new Map<string, number>()
 
   // 3. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
@@ -257,7 +382,7 @@ export function compileSlide(
       continue
     }
 
-    const regionAlign = regionAlignMap?.[regionName] ?? 'start'
+    const regionAlign = alignOf(regionName)
 
     if (blocks.length === 0) {
       // Empty region — no shapes.
@@ -274,44 +399,7 @@ export function compileSlide(
     let blockHeights: number[]
 
     if (registry && blocks.length > 0) {
-      // Build a measurement context for this region.
-      const measureCtx = createLayoutContext({
-        box: { width: regionBox.width, height: regionBox.height },
-        tokens,
-        surface: MINIMAL_SURFACE,
-        registry,
-        intrinsicSizeCache, // F3.1: reuse scoped memo cache
-      })
-
-      blockHeights = blocks.map((block) => {
-        const def = registry.get(block.type)
-        if (!def) {
-          // Unknown block type: fallback to equal split height (computed below).
-          return -1
-        }
-        try {
-          // B3-H1: per-block ctx when instance style overrides are present.
-          // `style` is a top-level BlockSpec field in deck JSON (not `props.$block.style`).
-          const blockStyle = block.style
-          const usePerBlock =
-            blockStyle !== undefined &&
-            (blockStyle.padding !== undefined || blockStyle.align !== undefined)
-          const ctx = usePerBlock
-            ? createLayoutContext({
-                box: { width: regionBox.width, height: regionBox.height },
-                tokens,
-                surface: MINIMAL_SURFACE,
-                registry,
-                intrinsicSizeCache,
-                style: blockStyle,
-              })
-            : measureCtx
-          const node = layoutBlock(def, block.props as Record<string, unknown>, ctx)
-          return node.box.height
-        } catch {
-          return -1
-        }
-      })
+      blockHeights = regionBlockHeights.get(regionName) ?? blocks.map(() => -1)
     } else {
       blockHeights = blocks.map(() => -1) // all fallback
     }
@@ -329,7 +417,11 @@ export function compileSlide(
 
     // V2.1: Use natural height when registry provided for effective region height.
     const hasRegistry = registry !== undefined
-    const regionEffectiveHeight = hasRegistry ? (regionNaturalHeights.get(regionName) ?? regionBox.height) : regionBox.height
+    // LO2.1: align within the layout box (or the natural height when that is taller). Aligning
+    // within the natural height alone left no leftover, so `center`/`end` never took effect.
+    const regionEffectiveHeight = hasRegistry
+      ? Math.max(regionBox.height, regionNaturalHeights.get(regionName) ?? regionBox.height)
+      : regionBox.height
     const totalAssigned = finalHeights.reduce((sum, h) => sum + h, 0) + gapsTotal
     const leftoverInRegion = regionEffectiveHeight - totalAssigned
 
@@ -388,6 +480,7 @@ export function compileSlide(
   }
 
   // 4. Handle spec.free[] — place them directly using their explicit box.
+  const freeShapes = new Set<ComponentShape>()
   if (spec.free) {
     for (const entry of spec.free) {
       const blockDef = registry?.get(entry.block.type)
@@ -396,6 +489,12 @@ export function compileSlide(
         definitionMotion: blockDef?.motion,
       })
       shapes.push(shape)
+      freeShapes.add(shape)
+      // LO8: a layered free block stays free on the round trip (`slide-decompiler.ts`).
+      if (entry.block?.layer === 'backdrop' || entry.block?.layer === 'overlay') {
+        const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+        meta.placed = { box: { ...entry.box }, from: 'free' }
+      }
       if (blockDef && entry.block.motion === undefined) {
         styleCandidates.push({ shape, block: entry.block, def: blockDef, box: entry.box })
       }
@@ -405,6 +504,19 @@ export function compileSlide(
   // 5. P7 — motion style. Only when a style is set; absent = the output above, untouched.
   const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
   if (motionStyle) applyMotionStyle(motionStyle, styleCandidates)
+
+  // LO8: a free block with `layer: 'backdrop'` (e.g. a layered block the user dragged, which the
+  // decompiler keeps in `free[]`) paints under every other shape, as it did in the region.
+  if (spec.free?.some((e) => e.block?.layer === 'backdrop')) {
+    const isFreeBackdrop = (sh: ComponentShape): boolean =>
+      (sh.props[BLOCK_PROP_KEY] as { layer?: string } | undefined)?.layer === 'backdrop' &&
+      freeShapes.has(sh)
+    const reordered = [...shapes.filter(isFreeBackdrop), ...shapes.filter((sh) => !isFreeBackdrop(sh))]
+    reordered.forEach((sh, i) => {
+      sh.childIndex = i + 1
+    })
+    shapes.splice(0, shapes.length, ...reordered)
+  }
 
   return {
     shapes,
@@ -426,6 +538,10 @@ export function compileSlide(
 export interface CompileSlideOptions {
   /** The deck's `motionStyle`; the slide's own `motionStyle` wins over it. */
   motionStyle?: MotionStyle
+  /** AC1 — the deck style's `blockDefaults`, filled under authored props (`$block.styleDefaults`). */
+  blockDefaults?: DeckStyle['blockDefaults']
+  /** enhance L5 — `false` compiles a balanced slide as authored (no `growText`). */
+  growText?: boolean
 }
 
 interface StyleCandidate {
@@ -454,6 +570,237 @@ function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[]): voi
     meta.styleMotion = motion
     meta.motionStyle = style
   }
+}
+
+/** Rounding slack (slide units) for "claims the whole region" and overlap tests. */
+const FLOW_TOL = 1
+/** Verification passes when shrinking a content-sized block to its painted height. */
+const CONTENT_FIT_PASSES = 3
+
+/** LO1.5 — how a block's height is decided inside a multi-block region. */
+interface RegionSizing {
+  /** `rigid`: content-sized root, kept as measured. `content`: root claims the whole region but
+   *  its painted content is smaller. `fill`: content follows the box (chart, image, donut). */
+  kind: 'rigid' | 'content' | 'fill'
+  /** Height before distribution (rigid: root; content: painted height; fill: its min). */
+  height: number
+  /** Never taller than the root it returned at the full region height. */
+  cap: number
+  /** `content` block whose definition sets `size.hug` (keeps its height in a centred region). */
+  hug?: boolean
+}
+
+/**
+ * Measure every block of one region. Returns one height per block, `-1` for a block that could
+ * not be measured (unregistered / layout threw → equal-split fallback in the placement loop).
+ *
+ * A single block keeps the height its layout returns at the region box (as before LO1.5). With
+ * two or more blocks, a block whose root claims the whole region (`>= region height`) would push
+ * every sibling off the region, so it is re-measured with `measureBlock`:
+ * - `elastic` (fills its box: charts, images, a donut) → a `fill` block;
+ * - otherwise (the root is `max(region, content)` or the block centres its content) → a
+ *   `content` block at its painted height, verified by laying it out at that height.
+ * Then the region height left after rigid/content blocks and gaps is shared among the fill
+ * blocks (each at least `def.size.min[1]`); with no fill block, the leftover is shared among the
+ * `content` blocks instead, so a block that was designed to take the region still does, minus
+ * its siblings — except a `size.hug` block in a centred / end-aligned region, which keeps its
+ * own height so the placement aligns the group. Pure: same input, same heights.
+ */
+function measureRegionBlocks(
+  blocks: BlockSpec[],
+  regionBox: Box,
+  gap: number,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  intrinsicSizeCache: Map<string, Size>,
+  blockDefaults?: Record<string, Record<string, unknown>>,
+  align: 'start' | 'center' | 'end' = 'start'
+): number[] {
+  const regionSize = { width: regionBox.width, height: regionBox.height }
+  // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
+  const bd = blockDefaults ? { blockDefaults } : {}
+  const sharedCtx = createLayoutContext({
+    box: regionSize,
+    tokens,
+    surface: MINIMAL_SURFACE,
+    registry,
+    intrinsicSizeCache, // F3.1: scoped memo cache
+    ...bd,
+  })
+  // B3-H1: a per-block ctx when instance style overrides (padding/align) are present. `style` is
+  // a top-level BlockSpec field in deck JSON (not `props.$block.style` — that reserved key only
+  // exists on rendered editor shapes, see block-authoring README pitfall #3/#5).
+  const ctxFor = (block: BlockSpec): LayoutContext => {
+    const blockStyle = block.style
+    const usePerBlock =
+      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined || blockStyle.textScale !== undefined)
+    return usePerBlock
+      ? createLayoutContext({
+          box: regionSize,
+          tokens,
+          surface: MINIMAL_SURFACE,
+          registry,
+          intrinsicSizeCache,
+          style: blockStyle,
+          ...bd,
+        })
+      : sharedCtx
+  }
+
+  const roots = blocks.map((block) => {
+    const def = registry.get(block.type)
+    if (!def) return -1
+    try {
+      return layoutBlock(def, block.props as Record<string, unknown>, ctxFor(block)).box.height
+    } catch {
+      return -1
+    }
+  })
+  if (blocks.length < 2) {
+    // CMP4: an authored container alone in its region (a row of cards, a grid of atoms) whose
+    // content does not fill the region takes its painted height, so the region's alignment places
+    // it (a card row centred under the title, not hugging the top over an empty half).
+    const only = blocks[0]
+    if (only && roots[0] > 0 && SIZED_CONTAINERS.has(only.type)) {
+      const def = registry.get(only.type)!
+      const ctx = ctxFor(only)
+      const props = only.props as Record<string, unknown>
+      const m = measureBlock(def, props, regionBox.width, ctx, { height: regionBox.height })
+      if (!m.elastic && !m.reason && m.natural.height > 0 && m.natural.height < roots[0] - FLOW_TOL) {
+        // what the container paints at the region's size, its cards' own fills included (a card
+        // that hugs its content paints a rect `measureBlock` sets aside as a backdrop)
+        let bottom = 0
+        try {
+          const c = collectPaintedLeaves(layoutBlock(def, props, ctx), regionSize)
+          for (const l of [...c.leaves, ...c.backdrops]) bottom = Math.max(bottom, l.box.y + l.box.height)
+        } catch {
+          bottom = roots[0]
+        }
+        const natural = Math.max(m.natural.height, bottom)
+        if (natural < roots[0] - FLOW_TOL) {
+          const fitted = fitContentHeight(def, props, ctx, regionBox.width, natural, roots[0])
+          return [Math.min(roots[0], fitted)]
+        }
+      }
+    }
+    return roots
+  }
+
+  const sizing: Array<RegionSizing | null> = blocks.map((block, i) => {
+    const root = roots[i]
+    if (root < 0) return null
+    if (root < regionBox.height - FLOW_TOL) return { kind: 'rigid', height: root, cap: root }
+    const def = registry.get(block.type)!
+    const props = block.props as Record<string, unknown>
+    const ctx = ctxFor(block)
+    const minH = Math.min(def.size.min?.[1] ?? 0, root)
+    const m = measureBlock(def, props, regionBox.width, ctx, { height: regionBox.height })
+    if (m.reason?.startsWith('layout threw')) return { kind: 'rigid', height: root, cap: root }
+    if (m.elastic) return { kind: 'fill', height: minH, cap: root }
+    const fitted = fitContentHeight(def, props, ctx, regionBox.width, m.natural.height, root)
+    const height = Math.min(root, Math.max(fitted, minH))
+    return { kind: 'content', height, cap: root, hug: def.size.hug === true }
+  })
+
+  const fixedTotal = sizing.reduce((sum, s) => sum + (s && s.kind !== 'fill' ? s.height : 0), 0)
+  const gapsTotal = (blocks.length - 1) * gap
+  const flexKind: RegionSizing['kind'] = sizing.some((s) => s?.kind === 'fill') ? 'fill' : 'content'
+  const flexIdx = sizing.map((s, i) => (s !== null && s.kind === flexKind ? i : -1)).filter((i) => i >= 0)
+  const flex = flexIdx.map((i) => sizing[i]!)
+  const flexTypes = flexIdx.map((i) => blocks[i].type)
+  // Failed blocks (-1) take an equal split of what is left in the placement loop; leave them out.
+  const flexBase = flexKind === 'content' ? flex.reduce((sum, s) => sum + s.height, 0) : 0
+  const room = regionBox.height - gapsTotal - (fixedTotal - flexBase)
+  if (flex.length > 0) {
+    if (flexKind === 'fill') {
+      const share = room / flex.length
+      for (const s of flex) s.height = Math.min(s.cap, Math.max(s.height, share))
+    } else {
+      // spro demo T19: in a centred (or bottom-aligned) region, a `size.hug` block (a row of steps
+      // that only centres itself in a taller box) keeps its own height, so the region places the
+      // blocks as one group — sharing the leftover gave such a row a tall box, with one gap above
+      // it and another between it and the takeaway under it. enhance L1 (2026-10-13): the same
+      // for an authored container (`SIZED_CONTAINERS`) — a `tls.l.row` of cards with a takeaway
+      // under it took 577 of the region's 731 units and painted 309, a 30 % empty band between the
+      // two. A chart or a diagram still takes the leftover: it draws larger in a larger box.
+      const taking = align === 'start' ? flex : flex.filter((s, i) => !s.hug && !SIZED_CONTAINERS.has(flexTypes[i]))
+      const extra = Math.max(0, room - flexBase) / Math.max(1, taking.length)
+      for (const s of taking) s.height = Math.min(s.cap, s.height + extra)
+    }
+  }
+  return sizing.map((s, i) => (s ? s.height : roots[i]))
+}
+
+/**
+ * Height at which a content-sized block paints entirely inside its box: start from its painted
+ * height (`measureBlock`'s tall probe) and grow by whatever spills out (a top inset, a card's
+ * padding) until it fits, at most `cap` (its height at the full region).
+ */
+function fitContentHeight(
+  def: BlockDefinition,
+  props: Record<string, unknown>,
+  ctx: LayoutContext,
+  width: number,
+  natural: number,
+  cap: number
+): number {
+  let h = Math.min(cap, Math.max(1, Math.ceil(natural)))
+  for (let i = 0; i < CONTENT_FIT_PASSES && h < cap; i++) {
+    const size = { width, height: h }
+    let bounds: Box | null
+    try {
+      const node = layoutBlock(def, props, ctx.withBox ? ctx.withBox(size) : ctx)
+      bounds = paintedBounds(collectPaintedLeaves(node, size))
+    } catch {
+      return cap
+    }
+    if (!bounds) return h
+    const spill = Math.max(0, bounds.y + bounds.height - h) + Math.max(0, -bounds.y)
+    if (spill <= FLOW_TOL) return h
+    h = Math.min(cap, Math.ceil(h + spill))
+  }
+  return h
+}
+
+/**
+ * LO1.5 — column-aware region re-flow. Regions are visited top to bottom; a region moves down
+ * only when a region *above it that horizontally overlaps it* ends lower than its layout box did
+ * (it overflowed, or was itself pushed). It then starts below that region's flowed bottom plus
+ * `min(gap, layout spacing)`; regions that originally overlapped vertically keep their offset.
+ * A region's flowed height is `max(natural, layout height)`. Returns region → flowed y; regions
+ * that do not move are left out (callers fall back to the layout y).
+ */
+function reflowRegions(
+  names: string[],
+  regionBoxes: Record<string, Box>,
+  naturalHeights: Map<string, number>,
+  hasContent: (name: string) => boolean,
+  gap: number
+): Map<string, number> {
+  const out = new Map<string, number>()
+  const order = names
+    .filter((n) => regionBoxes[n] && hasContent(n))
+    .sort((a, b) => regionBoxes[a].y - regionBoxes[b].y || regionBoxes[a].x - regionBoxes[b].x)
+  const flowed: Array<{ box: Box; y: number; height: number }> = []
+  for (const name of order) {
+    const box = regionBoxes[name]
+    let y = box.y
+    for (const p of flowed) {
+      if (p.box.y >= box.y) continue // not above
+      const overlapsX = p.box.x < box.x + box.width - FLOW_TOL && box.x < p.box.x + p.box.width - FLOW_TOL
+      if (!overlapsX) continue
+      const origBottom = p.box.y + p.box.height
+      const bottom = p.y + p.height
+      const grew = bottom - origBottom
+      if (grew <= FLOW_TOL) continue
+      const spacing = box.y - origBottom
+      y = spacing < 0 ? Math.max(y, box.y + grew) : Math.max(y, bottom + Math.min(gap, spacing))
+    }
+    const height = Math.max(naturalHeights.get(name) ?? box.height, box.height)
+    flowed.push({ box, y, height })
+    if (y !== box.y) out.set(name, y)
+  }
+  return out
 }
 
 /** Minimal surface context for measurement — neutral white, no image. */
@@ -495,4 +842,512 @@ function resolveRegions(
  */
 function nearestRegion(target: string, knownRegions: string[]): string | undefined {
   return nearestName(target, knownRegions)
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* LO2 — layered region blocks (backdrop / overlay)                                 */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** One region block taken out of the vertical stack by an explicit `layer`. */
+export interface LayeredRegionBlock {
+  region: string
+  /** Index in the authored `spec.regions[region]` array. */
+  index: number
+  block: BlockSpec
+  layer: 'backdrop' | 'overlay'
+}
+
+export interface LayeredSplit {
+  /** The slide with every layered block removed from its region (region keys kept). */
+  flow: SlideSpec
+  backdrops: LayeredRegionBlock[]
+  overlays: LayeredRegionBlock[]
+}
+
+/**
+ * Split a slide's region blocks into the stacked flow and the out-of-flow layered blocks
+ * (`BlockSpec.layer` explicitly `'backdrop'` or `'overlay'`). `undefined` when there are none, so
+ * a slide without layers compiles through exactly the code path it always did.
+ */
+export function splitLayeredBlocks(spec: SlideSpec): LayeredSplit | undefined {
+  const backdrops: LayeredRegionBlock[] = []
+  const overlays: LayeredRegionBlock[] = []
+  const regions: Record<string, BlockSpec[]> = {}
+  for (const [region, blocks] of Object.entries(spec.regions)) {
+    if (!Array.isArray(blocks)) {
+      regions[region] = blocks
+      continue
+    }
+    regions[region] = []
+    blocks.forEach((block, index) => {
+      const layer = block?.layer
+      if (layer === 'backdrop') backdrops.push({ region, index, block, layer })
+      else if (layer === 'overlay') overlays.push({ region, index, block, layer })
+      else regions[region].push(block)
+    })
+  }
+  if (backdrops.length === 0 && overlays.length === 0) return undefined
+  return { flow: { ...spec, regions }, backdrops, overlays }
+}
+
+/**
+ * Compile a slide with layered region blocks, deterministically:
+ * 1. the flow (everything else) compiles exactly as `compileSlide` always does;
+ * 2. each layered block gets its region's box — the layout box, grown to cover the region's
+ *    stacked blocks when they overflow or were re-flowed — or, with `anchorTo`, the painted box
+ *    of that stacked block of the same region (LO2.1); `anchor: 'fill'` takes that whole box,
+ *    any other anchor the block's natural size at that edge/corner (`anchoredBox`). It does not
+ *    take part in stacking;
+ * 3. z: every backdrop paints under every other shape, every overlay over every other shape
+ *    (authored order within each layer). `childIndex` is renumbered 1..n in that order and the
+ *    returned `shapes` array is in that order.
+ * Layered blocks keep their own/definition motion; the slide's `motionStyle` does not stagger
+ * them (it would renumber the flow's reading order).
+ */
+function compileLayered(
+  split: LayeredSplit,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  opts: CompileSlideOptions | undefined
+): CompileSlideResult {
+  const result = compileSlideBlocks(split.flow, frame, tokens, registry, opts)
+  const { regionBoxes } = resolveRegions(split.flow.layout, frame, tokens)
+
+  const regionExtent = (region: string): Box | undefined => {
+    const rb = regionBoxes[region]
+    if (!rb) return undefined
+    const ids = new Set((split.flow.regions[region] ?? []).map((b) => b.id))
+    let x1 = rb.x
+    let y1 = rb.y
+    let x2 = rb.x + rb.width
+    let y2 = rb.y + rb.height
+    for (const shape of result.shapes) {
+      const id = (shape.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id
+      if (id === undefined || !ids.has(id)) continue
+      x1 = Math.min(x1, shape.point[0])
+      y1 = Math.min(y1, shape.point[1])
+      x2 = Math.max(x2, shape.point[0] + shape.size[0])
+      y2 = Math.max(y2, shape.point[1] + shape.size[1])
+    }
+    return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 }
+  }
+
+  const blockDefaults = opts?.blockDefaults
+  // LO2.1: the painted box of a stacked block in the same region, for `anchorTo`.
+  // CMP1: or of a block nested inside one (a badge on card 2 of a grid) — found by the `blockId`
+  // the engine stamps on every child wrapper group.
+  const targetBox = (l: LayeredRegionBlock): Box | undefined => {
+    const targetId = l.block.anchorTo
+    if (typeof targetId !== 'string') return undefined
+    const stacked = split.flow.regions[l.region] ?? []
+    const target = stacked.find((b) => b.id === targetId) ?? stacked.find((b) => containsBlockId(b, targetId))
+    if (!target) return undefined
+    const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === target.id)
+    if (!shape) return undefined
+    const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+    const nested = target.id === targetId ? undefined : targetId
+    const painted = registry ? paintedBoxOf(target, box, tokens, registry, blockDefaults, nested) : null
+    return painted ?? (nested ? undefined : box)
+  }
+
+  // CMP1: a region whose layered backdrop is an image (`tls.m.image`) puts its stacked and overlay
+  // blocks over a photo: their shapes carry `$block.overImage`, so the editor and the layout report
+  // solve their text against an image surface (and CMP2's contrast check asks for a scrim).
+  const imageRegions = new Set(split.backdrops.filter((l) => l.block.type === IMAGE_TYPE).map((l) => l.region))
+
+  const place = (l: LayeredRegionBlock): ComponentShape[] => {
+    const region = regionExtent(l.region)
+    // Unknown region: the flow compile already reported `region/unknown` for it.
+    if (!region) return []
+    const def = registry?.get(l.block.type)
+    const target = targetBox(l)
+    // CMP2: an anchored (not `fill`) block keeps the slide's safe margin — a region that reaches the
+    // frame edge (`full-bleed`) would put a corner kicker on the edge. Identity for every region that
+    // already lies inside the safe area.
+    const safe = contentArea(frame, tokens)
+    const anchored = !target && blockAnchor(l.block, def) !== 'fill'
+    const inSafe = anchored ? intersectBox(region, safe) : undefined
+    const container = target ?? inSafe ?? region
+    const box = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
+    const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
+    // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
+    const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+    meta.placed = { box: { ...box }, from: 'region' }
+    if (l.layer === 'overlay' && imageRegions.has(l.region)) meta.overImage = true
+    return [shape]
+  }
+
+  if (imageRegions.size) {
+    for (const shape of result.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const id = typeof meta?.id === 'string' ? meta.id : undefined
+      if (!meta || id === undefined) continue
+      const inImageRegion = [...imageRegions].some((r) => (split.flow.regions[r] ?? []).some((b) => b.id === id))
+      if (inImageRegion) meta.overImage = true
+    }
+  }
+
+  const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
+  shapes.forEach((shape, i) => {
+    shape.childIndex = i + 1
+  })
+  return { ...result, shapes }
+}
+
+/** Visible extent of a placed block — painted leaves *and* full-box backdrops (a card's surface
+ *  is its corner), slide coordinates; `null` when it paints nothing or throws. */
+function paintedBoxOf(
+  block: BlockSpec,
+  box: Box,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  blockDefaults?: Record<string, Record<string, unknown>>,
+  nestedId?: string
+): Box | null {
+  const def = registry.get(block.type)
+  if (!def) return null
+  const size = { width: box.width, height: box.height }
+  try {
+    const ctx = createLayoutContext({
+      box: size,
+      tokens,
+      surface: MINIMAL_SURFACE,
+      registry,
+      ...(block.style ? { style: block.style } : {}),
+      ...(blockDefaults ? { blockDefaults } : {}),
+    })
+    const root = layoutBlock(def, block.props as Record<string, unknown>, ctx)
+    let local: Box | null
+    if (nestedId) {
+      // CMP1: the nested block's wrapper group, in the block's own coordinates.
+      const found = findBlockGroup(root, nestedId)
+      if (!found) return null
+      const inner = { width: found.box.width, height: found.box.height }
+      const c = collectPaintedLeaves({ ...found.group, box: { x: 0, y: 0, ...inner } }, inner)
+      const painted = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+      if (!painted) return null
+      const cx1 = Math.max(0, painted.x)
+      const cy1 = Math.max(0, painted.y)
+      const cx2 = Math.min(inner.width, painted.x + painted.width)
+      const cy2 = Math.min(inner.height, painted.y + painted.height)
+      if (cx2 <= cx1 || cy2 <= cy1) return null
+      local = { x: found.box.x + cx1, y: found.box.y + cy1, width: cx2 - cx1, height: cy2 - cy1 }
+    } else {
+      const c = collectPaintedLeaves(root, size)
+      local = unionBox([...c.leaves, ...c.backdrops].map((l) => l.box))
+    }
+    if (!local) return null
+    // Clip to the block's own box: an anchor never follows content that overflows it.
+    const x1 = Math.max(box.x, box.x + local.x)
+    const y1 = Math.max(box.y, box.y + local.y)
+    const x2 = Math.min(box.x + box.width, box.x + local.x + local.width)
+    const y2 = Math.min(box.y + box.height, box.y + local.y + local.height)
+    return x2 > x1 && y2 > y1 ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : null
+  } catch {
+    return null
+  }
+}
+
+function intersectBox(a: Box, b: Box): Box | undefined {
+  const x1 = Math.max(a.x, b.x)
+  const y1 = Math.max(a.y, b.y)
+  const x2 = Math.min(a.x + a.width, b.x + b.width)
+  const y2 = Math.min(a.y + a.height, b.y + b.height)
+  return x2 > x1 && y2 > y1 ? { x: x1, y: y1, width: x2 - x1, height: y2 - y1 } : undefined
+}
+
+/** CMP4 — authored containers that take their content's height when alone in a region. */
+const SIZED_CONTAINERS: ReadonlySet<string> = new Set(['tls.l.row', 'tls.l.grid', 'tls.l.stack', 'tls.l.card', 'tls.l.split'])
+
+/** Passes `anchoredSize` may grow a box by before it accepts what the block paints. */
+const ANCHOR_FIT_PASSES = 6
+
+/**
+ * LO2.1 — the box of a layered block inside `container` (its region's extent, or the visible box
+ * of its `anchorTo` block). `'fill'` → the container. Any other anchor → the block's natural size
+ * (sized within `bounds`, default the container: a badge on a small target keeps its own size)
+ * at that edge/corner of the container shrunk by `inset`. Pure and deterministic.
+ */
+export function anchoredBox(
+  block: BlockSpec,
+  def: BlockDefinition | undefined,
+  container: Box,
+  inset: number,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  bounds: Box = container,
+  blockDefaults?: Record<string, Record<string, unknown>>
+): Box {
+  const anchor: BlockAnchor = blockAnchor(block, def)
+  if (anchor === 'fill' || !def || !registry) return container
+  const inner =
+    container.width > 2 * inset && container.height > 2 * inset
+      ? { x: container.x + inset, y: container.y + inset, width: container.width - 2 * inset, height: container.height - 2 * inset }
+      : container
+  const { width: w, height: h } = anchoredSize(block, def, bounds, tokens, registry, blockDefaults)
+  const [col, row] = ANCHOR_GRID[anchor]
+  return {
+    x: inner.x + ((inner.width - w) * col) / 2,
+    y: inner.y + ((inner.height - h) * row) / 2,
+    width: w,
+    height: h,
+  }
+}
+
+/** Anchor → [column, row] in halves: 0 = start, 1 = centre, 2 = end. */
+const ANCHOR_GRID: Record<Exclude<BlockAnchor, 'fill'>, [number, number]> = {
+  'top-left': [0, 0],
+  top: [1, 0],
+  'top-right': [2, 0],
+  left: [0, 1],
+  center: [1, 1],
+  right: [2, 1],
+  'bottom-left': [0, 2],
+  bottom: [1, 2],
+  'bottom-right': [2, 2],
+}
+
+/**
+ * Natural size of a layered block inside `inner`: `measureBlock`'s painted size, then grown until
+ * the block paints that size inside the box (a badge shrinks its type in a box only as tall as
+ * its pill). Elastic blocks (no natural size) and blocks whose layout throws get
+ * `size.preferred`. Always clamped to `inner`.
+ */
+function anchoredSize(
+  block: BlockSpec,
+  def: BlockDefinition,
+  inner: Box,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  blockDefaults?: Record<string, Record<string, unknown>>
+): Size {
+  const props = block.props as Record<string, unknown>
+  const ctxAt = (size: Size) =>
+    createLayoutContext({
+      box: size,
+      tokens,
+      surface: MINIMAL_SURFACE,
+      registry,
+      ...(block.style ? { style: block.style } : {}),
+      ...(blockDefaults ? { blockDefaults } : {}),
+    })
+  const clampW = (v: number) => Math.max(1, Math.min(inner.width, Math.ceil(v)))
+  const clampH = (v: number) => Math.max(1, Math.min(inner.height, Math.ceil(v)))
+  const m = measureBlock(def, props, inner.width, ctxAt({ width: inner.width, height: inner.height }), { height: inner.height })
+  if (m.elastic || m.reason?.startsWith('layout threw') || m.natural.height <= 0) {
+    return { width: clampW(def.size.preferred[0]), height: clampH(def.size.preferred[1]) }
+  }
+  let want = m.natural
+  let w0 = want.width
+  // CMP4: the natural height was measured at the container's width; at the narrower natural width
+  // text can re-wrap (a stack holding a display title: 2 lines at 1728, 4 at 800, since the painted
+  // width of wrapped text is its longest line and laid out at exactly that width the same text can
+  // break one word earlier). When it does, the box takes a small slack.
+  if (want.width < inner.width - FLOW_TOL) {
+    const exact = measureBlock(def, props, clampW(want.width), ctxAt({ width: clampW(want.width), height: inner.height }), { height: inner.height })
+    if (!exact.elastic && exact.natural.height > want.height + FLOW_TOL) {
+      const at = clampW(want.width * 1.02 + 4)
+      const m2 = measureBlock(def, props, at, ctxAt({ width: at, height: inner.height }), { height: inner.height })
+      // only when the slack restores the measured height (an autofit title can re-wrap at any
+      // width near its natural one: then the box keeps the old sizing rule)
+      if (!m2.elastic && m2.natural.height > 0 && m2.natural.height <= want.height + FLOW_TOL) w0 = at
+    }
+  }
+  let w = clampW(w0)
+  let h = clampH(want.height)
+  for (let i = 0; i < ANCHOR_FIT_PASSES; i++) {
+    let b: Box | null
+    try {
+      b = paintedBounds(collectPaintedLeaves(layoutBlock(def, props, ctxAt({ width: w, height: h })), { width: w, height: h }))
+    } catch {
+      break
+    }
+    if (!b) break
+    const spillH = Math.max(0, b.y + b.height - h) + Math.max(0, -b.y)
+    const spillW = Math.max(0, b.x + b.width - w) + Math.max(0, -b.x)
+    const shortH = Math.max(0, want.height - b.height)
+    const shortW = Math.max(0, want.width - b.width)
+    // Height first: a box too short shrinks type, which also narrows what is painted.
+    if ((spillH > FLOW_TOL || shortH > FLOW_TOL) && h < inner.height) h = clampH(h + Math.max(spillH, shortH))
+    else if ((spillW > FLOW_TOL || shortW > FLOW_TOL) && w < inner.width) w = clampW(w + Math.max(spillW, shortW))
+    else break
+  }
+  return { width: w, height: h }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CMP1 — nested block lookup                                                       */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+const IMAGE_TYPE = 'tls.m.image'
+
+/** Does `block` hold a block with this id anywhere in its `blocks`-kind props (`props.children`, …)? */
+export function containsBlockId(block: BlockSpec, id: string, depth = 0): boolean {
+  if (!block || typeof block !== 'object' || depth > MAX_NESTING_DEPTH) return false
+  const props = block.props
+  if (!props || typeof props !== 'object') return false
+  for (const v of Object.values(props)) {
+    if (!Array.isArray(v)) continue
+    for (const c of v) {
+      if (!c || typeof c !== 'object' || typeof (c as BlockSpec).type !== 'string') continue
+      if ((c as BlockSpec).id === id || containsBlockId(c as BlockSpec, id, depth + 1)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * The wrapper group `layoutChild` drew for block `id` (its `blockId`), and its box in `root`'s
+ * coordinates (group offsets summed). `undefined` when the tree does not hold it.
+ */
+export function findBlockGroup(root: LayoutNode, id: string): { group: Extract<LayoutNode, { k: 'group' }>; box: Box } | undefined {
+  const walk = (n: LayoutNode, ox: number, oy: number): { group: Extract<LayoutNode, { k: 'group' }>; box: Box } | undefined => {
+    if (n.k !== 'group') return undefined
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.blockId === id) return { group: n, box: { x, y, width: n.box.width, height: n.box.height } }
+    for (const c of n.children) {
+      const hit = walk(c, x, y)
+      if (hit) return hit
+    }
+    return undefined
+  }
+  // The root's own box is the block's origin (0,0); its children are relative to it.
+  if (root.k !== 'group') return undefined
+  for (const c of root.children) {
+    const hit = walk(c, root.box.x, root.box.y)
+    if (hit) return hit
+  }
+  return undefined
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
+/* CMP3 — connectors                                                                */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** An endpoint resolved to the painted box of its block on the slide. */
+export interface ResolvedConnectorEnd {
+  box: Box
+  /** The slide-level shape that holds the endpoint (itself, or the container it is nested in). */
+  shape: ComponentShape
+  /** The endpoint's own spec (style defaults filled). */
+  block: BlockSpec
+  round: boolean
+}
+
+/**
+ * Resolve a block id to the painted box of that block on the compiled slide: a slide-level block
+ * (region, layered or free) by its shape, a nested block (a container's child, CMP1 X2 wrapper
+ * `blockId`) inside the slide-level block that holds it. `undefined` = no such block drawn.
+ */
+export function resolveConnectorEnd(
+  spec: SlideSpec,
+  shapes: ComponentShape[],
+  id: string,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  blockDefaults?: Record<string, Record<string, unknown>>
+): ResolvedConnectorEnd | undefined {
+  if (typeof id !== 'string' || id === '') return undefined
+  const authored: BlockSpec[] = [
+    ...Object.values(spec.regions ?? {}).flatMap((bs) => (Array.isArray(bs) ? bs : [])),
+    ...(spec.free ?? []).map((e) => e.block),
+  ].filter((b): b is BlockSpec => !!b && typeof b === 'object')
+  const top = authored.find((b) => b.id === id) ?? authored.find((b) => containsBlockId(b, id))
+  if (!top) return undefined
+  const shape = shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === top.id)
+  if (!shape) return undefined
+  const filled = blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top
+  const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+  const nested = top.id === id ? undefined : id
+  const painted = registry ? paintedBoxOf(filled, box, tokens, registry, blockDefaults, nested) : nested ? null : box
+  if (!painted) return undefined
+  const own = findBlockSpec(filled, id) ?? filled
+  return { box: painted, shape, block: own, round: isRoundBlock(own) }
+}
+
+/** Padding around a connector's painted route inside its shape (anti-aliasing, label slack). */
+const CONNECTOR_PAD = 6
+
+/**
+ * Append one overlay `tls.g.connector` shape per authored connector (after every block, authored
+ * order), sized to its route. An endpoint that does not resolve (unknown id, a block not drawn) is
+ * a `connector/unresolved` error finding and draws nothing. The connector's reveal follows the
+ * later endpoint's (`connectorMotion`).
+ */
+function compileConnectors(
+  spec: SlideSpec,
+  result: CompileSlideResult,
+  tokens: ResolvedTokens,
+  registry: BlockRegistry | undefined,
+  opts: CompileSlideOptions | undefined
+): CompileSlideResult {
+  const shapes = [...result.shapes]
+  const findings = [...result.findings]
+  const def = registry?.get(CONNECTOR_BLOCK_TYPE)
+  const style = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
+  let childIndex = shapes.reduce((m, sh) => Math.max(m, sh.childIndex), 0) + 1
+  for (const c of spec.connectors ?? []) {
+    if (!c || typeof c !== 'object' || typeof c.id !== 'string') continue
+    const fromId = c.from?.block
+    const toId = c.to?.block
+    const a = resolveConnectorEnd(spec, result.shapes, fromId, tokens, registry, opts?.blockDefaults)
+    const b = resolveConnectorEnd(spec, result.shapes, toId, tokens, registry, opts?.blockDefaults)
+    if (!a || !b || fromId === toId) {
+      const missing = [!a ? fromId : undefined, !b ? toId : undefined].filter((x) => x !== undefined)
+      findings.push({
+        level: 'error',
+        rule: 'connector/unresolved',
+        slideId: spec.id,
+        blockId: c.id,
+        message:
+          fromId === toId
+            ? `Connector "${c.id}" starts and ends at the same block "${String(fromId)}".`
+            : `Connector "${c.id}": no block ${missing.map((m) => `"${String(m)}"`).join(' or ')} is drawn on this slide; the connector is not drawn.`,
+      })
+      continue
+    }
+    const width = CONNECTOR_WEIGHT[c.weight === 'hairline' || c.weight === 'bold' ? c.weight : 'md']
+    const g = connectorRoute({
+      from: { box: a.box, side: c.from.side, round: a.round },
+      to: { box: b.box, side: c.to.side, round: b.round },
+      route: c.route,
+      head: c.head,
+      width,
+    })
+    let bx = g.bounds
+    if (typeof c.label === 'string' && c.label.trim()) {
+      // Room for the label pill around the midpoint (caption type, ~0.6 em per character).
+      const size = tokens.type.caption?.size ?? 22
+      const lw = Math.min(40, c.label.trim().length) * size * 0.62 + size * 1.4
+      const lh = size * 2
+      bx = unionBox([bx, { x: g.mid.x - lw / 2, y: g.mid.y - lh / 2, width: lw, height: lh }]) ?? bx
+    }
+    const box: Box = {
+      x: Math.floor(bx.x - CONNECTOR_PAD),
+      y: Math.floor(bx.y - CONNECTOR_PAD),
+      width: Math.ceil(bx.width + 2 * CONNECTOR_PAD),
+      height: Math.ceil(bx.height + 2 * CONNECTOR_PAD),
+    }
+    const local = (r: Box): Box => ({ x: r.x - box.x, y: r.y - box.y, width: r.width, height: r.height })
+    const block: BlockSpec = {
+      id: c.id,
+      type: CONNECTOR_BLOCK_TYPE,
+      props: { ...connectorProps(c), fromBox: local(a.box), toBox: local(b.box), ...(a.round ? { fromRound: true } : {}), ...(b.round ? { toRound: true } : {}) },
+    }
+    const shape = blockToShape(block, box, { childIndex: childIndex++, ...(def ? { definitionMotion: def.motion } : {}) })
+    const motion = def ? connectorMotion([a.shape.animation, b.shape.animation], style) : undefined
+    if (motion && def) {
+      const animation = deriveShapeAnimation(motion, def.motion)
+      if (animation) {
+        shape.animation = animation
+        const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
+        meta.styleMotion = motion
+        if (style === 'subtle' || style === 'expressive') meta.motionStyle = style
+      }
+    }
+    shapes.push(shape)
+  }
+  return { ...result, shapes, findings }
 }

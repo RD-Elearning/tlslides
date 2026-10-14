@@ -28,6 +28,12 @@ export const schema: BlockSchema = {
     label: 'Alignment',
     help: 'Text alignment.',
   },
+  size: {
+    type: { kind: 'enum', values: ['body', 'lead', 'subheading'] },
+    role: 'option',
+    label: 'Size',
+    help: 'Type step: `body` (default), `lead`, or `subheading` (a message line under a display title).',
+  },
   autoFit: {
     type: { kind: 'boolean' },
     role: 'option',
@@ -46,6 +52,8 @@ export interface BodyProps extends Record<string, unknown> {
   text: string | { runs: Array<{ text: string; bold?: boolean; italic?: boolean; color?: string; size?: number }> }
   columns?: number
   align?: string
+  /** AC8.6: `body` (default), `lead` or `subheading`. */
+  size?: 'body' | 'lead' | 'subheading'
   autoFit?: boolean
   color?: string
 }

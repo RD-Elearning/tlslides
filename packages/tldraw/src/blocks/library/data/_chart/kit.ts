@@ -17,7 +17,7 @@
 import type { Box, CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import { placeText } from '../../text/_engine/text-place'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
-import { formatValue } from '../_engine/format-value'
+import { formatValue, localizeNumber } from '../_engine/format-value'
 import { MAX_HUES } from '../_engine/series-color'
 import { realWidth, wrapReal } from './inter-width'
 
@@ -92,7 +92,11 @@ export function noData(series: ReadonlyArray<Series>): boolean {
 const trim = (s: string) => (s.includes('.') ? s.replace(/\.?0+$/, '') : s)
 
 /** Axis / label number: trimmed (no "50.0"), grouped thousands, shared format vocabulary. */
-export function fmtNum(v: number, format?: string): string {
+export function fmtNum(v: number, format?: string, locale?: string): string {
+  return localizeNumber(fmtNumEn(v, format), locale)
+}
+
+function fmtNumEn(v: number, format?: string): string {
   if (!isNum(v)) return ''
   const r = Math.round(v * 1e6) / 1e6
   switch (format) {
@@ -113,8 +117,8 @@ export function fmtNum(v: number, format?: string): string {
 }
 
 /** Signed variant: "+12", "-3" (a true minus is avoided: it is missing from some fonts). */
-export function fmtSigned(v: number, format?: string): string {
-  const s = fmtNum(Math.abs(v), format)
+export function fmtSigned(v: number, format?: string, locale?: string): string {
+  const s = fmtNum(Math.abs(v), format, locale)
   return v > 0 ? `+${s}` : v < 0 ? `-${s}` : s
 }
 
@@ -369,6 +373,31 @@ export const GRID_W = 2
 export const AXIS_W = 3
 export const PLOT_PAD = 8
 
+/**
+ * AC4 chart look (ai-curation §2.3 rank 7), read from the deck tokens — no new token group: the
+ * deck card surface (`DeckTokens.surface`) and the radius scale already say how heavy and how round
+ * a style is. With no surface every value is the pre-AC4 constant, so an unstyled deck is unchanged.
+ * - `barRadius`: `radius.sm` (corporate 4, minimal 6, gradient 12), capped by the bar (single and
+ *   grouped bars; stacked segments stay square, they share edges);
+ * - `lineWidth`: 5; a `bold` stroke style 7, a `hairline` one 4;
+ * - `gridWidth`: 2; quiet surfaces (`ghost`, `outline`) 1, a `bold` stroke 3.
+ */
+export interface ChartLook {
+  barRadius: number
+  lineWidth: number
+  gridWidth: number
+}
+
+export function chartLook(ctx: LayoutContext): ChartLook {
+  const s = ctx.tokens.surface
+  if (!s) return { barRadius: 0, lineWidth: 5, gridWidth: GRID_W }
+  return {
+    barRadius: ctx.tokens.radius.sm,
+    lineWidth: s.stroke === 'bold' ? 7 : s.stroke === 'hairline' ? 4 : 5,
+    gridWidth: s.stroke === 'bold' ? 3 : s.card === 'ghost' || s.card === 'outline' ? 1 : GRID_W,
+  }
+}
+
 export interface YAxis {
   /** Plot box (after the label column on the left). */
   plot: Box
@@ -389,7 +418,7 @@ export function valueAxisLeft(
   o: { format?: string; gridlines: boolean; rightPad?: number; c: ChartColors }
 ): YAxis {
   const s = mutedStyle(ctx, 'footnote')
-  const labels = axis.ticks.map((t) => fmtNum(t, o.format))
+  const labels = axis.ticks.map((t) => fmtNum(t, o.format, ctx.tokens.locale))
   const colW = Math.min(area.width * 0.3, Math.ceil(Math.max(0, ...labels.map((l) => ctx.measureText(l, s).width)) * 1.2) + 2)
   const plot: Box = {
     x: area.x + colW + PLOT_PAD,
@@ -406,7 +435,8 @@ export function valueAxisLeft(
     const zeroInRange = axis.min < -1e-9 && axis.max > 1e-9
     const isBase = zeroInRange ? Math.abs(t) < 1e-9 : i === 0
     if (o.gridlines || isBase) {
-      nodes.push(solidRect({ x: plot.x, y: ty - (isBase ? AXIS_W : GRID_W) / 2, width: plot.width, height: isBase ? AXIS_W : GRID_W }, isBase ? o.c.line : o.c.grid, `grid[${i}]`))
+      const gw = isBase ? AXIS_W : chartLook(ctx).gridWidth
+      nodes.push(solidRect({ x: plot.x, y: ty - gw / 2, width: plot.width, height: gw }, isBase ? o.c.line : o.c.grid, `grid[${i}]`))
     }
     const lab = textAligned(ctx, labels[i], s, { x: area.x, y: ty - lh / 2, width: colW }, 'end', `ytick[${i}]`)
     nodes.push(...lab.nodes)

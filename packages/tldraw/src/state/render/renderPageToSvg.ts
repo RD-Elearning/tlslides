@@ -227,7 +227,11 @@ export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {})
   // are ephemeral (never added to page.shapes) and cannot be selected. Editor-only blocks
   // are filtered out here so they never appear in any export path.
   let masterSvg = ''
-  if (page.masterId && opts.masters) {
+  // AC4: a styled deck's page already carries its style master's blocks as `style:` shapes
+  // (`deckSpecToDocument`); drawing the master again would paint them twice.
+  // Only shapes this function draws count (top-level: `parentId === page.id`).
+  const pageHasMaster = Object.values(page.shapes).some((sh) => sh.id.startsWith('style:') && sh.parentId === page.id)
+  if (page.masterId && opts.masters && !pageHasMaster) {
     const tokens = resolveTokens(theme)
     const masterResult = resolveMaster(
       page.masterId,

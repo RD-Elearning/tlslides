@@ -5,6 +5,7 @@
 import { tlsTStatement } from './index'
 import { makeCtx as rv02Ctx } from '../test-helpers'
 import { runWidth } from './layout'
+import { estimateMetrics } from '../../../layout/measure'
 import { makeCtx, makeRegistry } from '../test-helpers'
 import { standardBlockSuite, leavesOf, absoluteLeaves } from '../standard-suite'
 
@@ -155,8 +156,8 @@ describe('tls.t.statement', () => {
       expect(Math.abs(runWidth('growth engine', style, true) - 428)).toBeLessThan(428 * 0.05)
       const pad = Math.round(style.size * 0.08)
       expect(rect.x + pad).toBeCloseTo(text.x + prefix, 0)
-      // The estimate would have put it >200 units further right.
-      expect(c.measureText('Retention, not acquisition, is our ', style).width - prefix).toBeGreaterThan(200)
+      // The old average-width estimate (the editor's metric before LO6) would have put it >200 units further right.
+      expect(estimateMetrics('Retention, not acquisition, is our ', style).width - prefix).toBeGreaterThan(200)
     })
   })
 })

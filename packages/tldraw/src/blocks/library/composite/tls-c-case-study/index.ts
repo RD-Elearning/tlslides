@@ -226,7 +226,7 @@ const composite = defineCompositeBlock<CaseStudyProps>({
   size: { preferred: [1500, 640], min: [820, 520] },
   describe: {
     when: 'Success stories, project showcases and references.',
-    avoid: 'A generic 3-point list: tls.c.cards.',
+    avoid: 'A generic 3-point list: tls.c.cards. By default prefer tls.c.comparison for 2–3 options.',
     example: {
       id: 'b_case',
       type: 'tls.c.case-study',

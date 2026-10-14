@@ -19,6 +19,8 @@ export const tlsLGridGuide: BlockDefinition = {
   keywords: ['grid', 'guide', 'alignment', 'editor'],
   category: 'structure',
   scope: 'element',
+  // LO2: editing-aid lines under the content.
+  layer: 'backdrop',
   shortDescription: 'Light alignment lines at equal divisions (editing aid)',
   related: ['tls.l.safe-area'],
   describe: {

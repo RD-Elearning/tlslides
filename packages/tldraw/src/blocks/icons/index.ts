@@ -31,6 +31,8 @@ export interface Icon {
   source?: string
 }
 
+import { TABLER_ICONS, TABLER_SOURCE } from './tabler'
+
 const LUCIDE_SOURCE = 'Lucide, ISC License - https://lucide.dev (path data copied by hand; multi-element icons merged into one path, dots drawn as tiny circles because the renderers use butt caps)'
 
 /** Build an icon entry from hand-copied Lucide path data. */
@@ -42,56 +44,19 @@ function lucide(name: string, path: string): Icon {
  * Map of icon name → icon data for lookup.
  */
 export const ICONS: Record<string, Icon> = {
-  zap: {
-    name: 'Zap',
-    path: 'M13 3L1 9v10.56l8.5 4.11L21 9V9l-8-6zM11 10.5V17l-5.5 2.73V11l5.5-2.73v4.66l3.5-1.73L11 10.5z',
-    source: 'Tabler Icons, MIT License - https://tablericons.com',
-  },
-  shield: {
-    name: 'Shield',
-    path: 'M12 2L2 7v10l10 5 10-5V7L12 2zm0 17.27L4.63 12l.29-.17 7.05-4.11 7.45 4.11zM5.33 11l6.67-3.85 6.67 3.85v6.27l-6.67 3.85L5.33 17.27v-6.27z',
-    source: 'Tabler Icons, MIT License - https://tablericons.com',
-  },
-  globe: {
-    name: 'Globe',
-    path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.54-1.9-1.54h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.87 3.97-2.32 5.42z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
-  check: {
-    name: 'Check',
-    path: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
-  'arrow-right': {
-    name: 'Arrow Right',
-    path: 'M8.59 16.59L10.17 18l6-6-6-6L6.76 7.41 12.59 13z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
-  'trending-up': {
-    name: 'Trending Up',
-    path: 'M3 3v18h18V3H3zm10.27 9.76l-3.77-3.77L14 9.31l2.72 2.72 6.55-6.55L20.19 4.7l-6.92 6.92z',
-    source: 'Tabler Icons, MIT License - https://tablericons.com',
-  },
-  'trending-down': {
-    name: 'Trending Down',
-    path: 'M3 3v18h18V3H3zm10.27-1.27l-3.77 3.77L14 9.31l2.72-2.72 6.55 6.55L20.19 19.3l-6.92-6.92z',
-    source: 'Tabler Icons, MIT License - https://tablericons.com',
-  },
-  users: {
-    name: 'Users',
-    path: 'M16 11v1m-2-2h2m-2 2h2m-2 2h2M9 11h6V9a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-1a2 2 0 01-2-2v-2a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 00-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h3.82a1 1 0 01.96.8L16 11z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
-  clock: {
-    name: 'Clock',
-    path: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-2-9H11V5h2v4zm0 4H11V9h2v4z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
-  alert: {
-    name: 'Alert',
-    path: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
-    source: 'Google Material Icons, Apache-2.0 License - https://fonts.google.com/icons',
-  },
+  // AC5: the original ten were filled Material/Tabler shapes (or hand-made paths) that the outline
+  // renderers stroke, so they drew as garbled glyphs (users, clock, zap) or doubled outlines; now
+  // Lucide outlines like the rest.
+  zap: lucide('Zap', 'M13 2L3 14h9l-1 8 10-12h-9l1-8z'),
+  shield: lucide('Shield', 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'),
+  globe: lucide('Globe', 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z'),
+  check: lucide('Check', 'M20 6L9 17l-5-5'),
+  'arrow-right': lucide('Arrow Right', 'M5 12h14M12 5l7 7-7 7'),
+  'trending-up': lucide('Trending Up', 'M22 7l-8.5 8.5-5-5L2 17M16 7h6v6'),
+  'trending-down': lucide('Trending Down', 'M22 17l-8.5-8.5-5 5L2 7M16 17h6v-6'),
+  users: lucide('Users', 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'),
+  clock: lucide('Clock', 'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0zM12 6v6l4 2'),
+  alert: lucide('Alert', 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12.25 17a0.25 0.25 0 1 1-0.5 0 0.25 0.25 0 0 1 0.5 0z'),
 
   // ── Lucide (ISC) icons, P0.5 ─────────────────────────────────────────────
   'arrow-left': lucide('Arrow Left', 'M12 19l-7-7 7-7M19 12H5'),
@@ -173,10 +138,26 @@ export const ICONS: Record<string, Icon> = {
   'mic': lucide('Mic', 'M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3ZM19 10v2a7 7 0 0 1-14 0v-2M12 19v3'),
 }
 
-/**
- * Icon names grouped for pickers (inspector, gallery). Every icon in `ICONS` is in exactly one group.
- */
-export const ICON_GROUPS: Record<string, string[]> = {
+/** The hand-picked Lucide set: what a prompt lists when it does not search by meaning. */
+export const CORE_ICON_NAMES: readonly string[] = Object.keys(ICONS)
+
+// spro enhance I-1: the curated Tabler outline set (same 24 grid and 2-unit stroke); a Lucide icon
+// of the same name, or of the same drawing, stays the one drawn.
+{
+  const drawn = new Set(Object.values(ICONS).map((i) => i.path))
+  for (const [name, [title, path]] of Object.entries(TABLER_ICONS)) {
+    if (name in ICONS || drawn.has(path)) continue
+    ICONS[name] = { name: title, path, source: TABLER_SOURCE }
+    drawn.add(path)
+  }
+}
+
+/** Search words of an icon (Tabler's tags; the Lucide set has its name only). */
+export function iconTags(name: string): string[] {
+  return TABLER_ICONS[name]?.[3] ?? []
+}
+
+const LUCIDE_GROUPS: Record<string, string[]> = {
   'arrows-status': ['arrow-right', 'check', 'alert', 'trending-up', 'trending-down', 'arrow-left', 'arrow-up', 'arrow-down', 'chevron-right', 'refresh', 'check-circle', 'x-circle', 'alert-triangle', 'info', 'help-circle', 'plus', 'minus'],
   'business': ['briefcase', 'building', 'chart-bar', 'chart-line', 'chart-pie', 'target', 'trophy', 'award', 'dollar', 'wallet', 'credit-card', 'shopping-cart', 'handshake', 'rocket', 'flag', 'gauge'],
   'people': ['users', 'user', 'user-plus', 'heart', 'smile', 'message', 'mail', 'phone'],
@@ -185,6 +166,21 @@ export const ICON_GROUPS: Record<string, string[]> = {
   'time-place': ['clock', 'globe', 'calendar', 'hourglass', 'map-pin', 'home'],
   'misc': ['zap', 'star', 'sparkles', 'leaf', 'sun', 'eye', 'search', 'filter', 'link', 'download', 'share', 'image', 'video', 'mic'],
 }
+
+/**
+ * Icon names grouped by meaning, for pickers (inspector, gallery) and the compose kit. Every icon
+ * in `ICONS` is in exactly one group: the Lucide groups first, then the Tabler icons by theirs.
+ */
+export const ICON_GROUPS: Record<string, string[]> = (() => {
+  const groups: Record<string, string[]> = Object.fromEntries(Object.entries(LUCIDE_GROUPS).map(([g, n]) => [g, [...n]]))
+  const placed = new Set(Object.values(groups).flat())
+  for (const [name, [, , group]] of Object.entries(TABLER_ICONS)) {
+    if (placed.has(name) || !(name in ICONS)) continue
+    ;(groups[group] ??= []).push(name)
+    placed.add(name)
+  }
+  return groups
+})()
 
 
 /**

@@ -11,8 +11,10 @@ import type { BlockRegistry } from './registry'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { SLIDE_LAYOUTS } from './slide-layouts'
 import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
+import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
+import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
-import { MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -42,7 +44,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
     })
   }
 
-  const themeIds = BUILT_IN_DECK_THEMES.map((t) => t.id)
+  const themeIds = [...BUILT_IN_DECK_THEMES.map((t) => t.id), ...stylePaletteIds().filter((id) => !BUILT_IN_DECK_THEMES.some((t) => t.id === id))]
   const layoutIds = SLIDE_LAYOUTS.map((l) => l.id)
 
   const schema: Record<string, unknown> = {
@@ -58,7 +60,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
       title: { type: 'string', description: 'Deck title.' },
       theme: {
         oneOf: [
-          { type: 'string', enum: themeIds, description: 'A built-in theme id.' },
+          { type: 'string', enum: themeIds, description: 'A built-in theme id or a deck-style palette id.' },
           { type: 'object', description: 'A full DeckTheme object (brand kit).' },
         ],
       },
@@ -79,6 +81,16 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         items: slideSchema(reg, blockTypeSchemas, layoutIds),
       },
       motionStyle: MOTION_STYLE_SCHEMA,
+      style: {
+        type: 'string',
+        enum: BUILT_IN_STYLES.map((st) => st.id),
+        description: 'AC1 — a deck style id; `theme` should then be one of its palettes.',
+      },
+      motif: {
+        type: 'string',
+        enum: [...SUBJECT_SHAPES],
+        description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
+      },
     },
     additionalProperties: false,
   }
@@ -103,6 +115,7 @@ function slideSchema(
       layout: { type: 'string', enum: layoutIds },
       role: { type: 'string', enum: ['cover', 'section', 'content', 'closing'] },
       rhythm: { type: 'string', enum: ['anchor', 'dense', 'breath'] },
+      valign: { type: 'string', enum: ['start', 'auto'] },
       regions: {
         type: 'object',
         additionalProperties: {
@@ -135,9 +148,42 @@ function slideSchema(
       skip: { type: 'boolean' },
       masterId: { type: 'string' },
       motionStyle: MOTION_STYLE_SCHEMA,
+      connectors: CONNECTORS_SCHEMA,
     },
     additionalProperties: false,
   }
+}
+
+const CONNECTOR_END_SCHEMA = {
+  type: 'object',
+  properties: {
+    block: { type: 'string', description: 'Id of a block on this slide (a nested child id works too).' },
+    side: { type: 'string', enum: ['auto', 'top', 'right', 'bottom', 'left'] },
+  },
+  required: ['block'],
+  additionalProperties: false,
+}
+
+/** CMP3 — `SlideSpec.connectors`: lines between blocks by id. */
+const CONNECTORS_SCHEMA = {
+  type: 'array',
+  description: 'Lines between blocks of this slide, by block id; drawn after layout, never by coordinates.',
+  items: {
+    type: 'object',
+    properties: {
+      id: { type: 'string' },
+      from: CONNECTOR_END_SCHEMA,
+      to: CONNECTOR_END_SCHEMA,
+      route: { type: 'string', enum: ['straight', 'elbow', 'curved'] },
+      head: { type: 'string', enum: ['end', 'both', 'none'] },
+      tone: { type: 'string', enum: ['line', 'accent', 'text'] },
+      weight: { type: 'string', enum: ['hairline', 'md', 'bold'] },
+      dash: { type: 'boolean' },
+      label: { type: 'string', maxLength: 24 },
+    },
+    required: ['id', 'from', 'to'],
+    additionalProperties: false,
+  },
 }
 
 /**
@@ -170,9 +216,37 @@ function blockSchema(
       children: {
         type: 'array',
         items: childrenItems,
-        description: 'Child blocks (container blocks only).',
+        description:
+          'Not read by any layout (validateDeckSpec: block/malformed error): child blocks go in props.children, ' +
+          'the one slot every container reads.',
       },
       slot: { type: 'string' },
+      layer: {
+        enum: [...BLOCK_LAYERS],
+        description:
+          'Paint layer. In a slide region, "backdrop" is placed (see anchor) behind the stacked blocks and ' +
+          '"overlay" on top of them (both leave the vertical stack); "content"/absent = stacked. ' +
+          'Default is the block type\'s own layer (decoration blocks are backdrops).',
+      },
+      anchor: {
+        enum: [...BLOCK_ANCHORS],
+        description:
+          'With layer "backdrop"/"overlay" in a region: where the block sits in its anchor box (the region, ' +
+          'or the anchorTo block). "fill" = the whole box; any other value = the block\'s natural size at that ' +
+          'edge/corner. Default is the block type\'s anchor (trend badge: "top-right"), else "fill". ' +
+          'A child of tls.l.overlay is placed the same way inside the overlay box (inset space.lg).',
+      },
+      anchorTo: {
+        type: 'string',
+        description:
+          'Only with layer "backdrop"/"overlay": id of a stacked block in the same region, or of a block nested ' +
+          'inside one (card 2 of a grid), whose painted box is the anchor box (e.g. a badge on a card corner, ' +
+          'inset by space.sm).',
+      },
+      bleed: {
+        type: 'boolean',
+        description: 'A backdrop that may leave the slide frame on purpose (no slide/overflow finding).',
+      },
     },
     additionalProperties: false,
     oneOf: blockTypeSchemas,
@@ -188,7 +262,8 @@ const MOTION_STYLE_SCHEMA: Record<string, unknown> = {
     'section openers), subtle (dense content), static (print/handout).',
 }
 
-/** Keeps the recursive `children` schema finite (and the object graph acyclic). */
+/** Keeps the recursive (legacy, unread) `children` schema finite and the object graph acyclic.
+ *  Not a layout limit — that is `MAX_NESTING_DEPTH` (types.ts), on `props.children`. */
 const MAX_BLOCK_NESTING_DEPTH = 4
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

@@ -41,8 +41,16 @@ const HERO_SUMMARY =
  * export; the host renderer supplies the live DOM.
  */
 function heroLayout(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
-  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.hero', props, ctx)
+  return htmlHostNode(poster as (p: Record<string, unknown>, c: LayoutContext) => LayoutNode, 'tls.c.hero', props, ctx, { posterGeometry: true })
 }
+
+/** Honest minimum (RV10): at 1280 wide the default title wraps; anything smaller clips it.
+ *  LO7: 472 → 490 — the poster now measures the title at the template's line-height (1.1, was
+ *  the display token's 1.02), i.e. the height the live hero always painted at 1280. */
+// AC2: + the `decoration: rule` bar (8 + md 24). AC3: 522 → 660 — the default theme (mono-grid)
+// sets its headings in Source Code Pro, now measured with its real widths (it was Inter-wide in the
+// poster's wrap), so the title takes another line at 1280 (the size card's atMin showed 657).
+const HERO_MIN: [number, number] = [1280, 660]
 
 /**
  * Derive `size.preferred` from the poster of the defaults. Builds a reference
@@ -59,8 +67,12 @@ function derivePreferredSize(): [number, number] {
     tokens,
     surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1, overImage: false },
   })
-  const posterNode = poster(defaults, ctx)
-  return [REFERENCE_WIDTH, posterNode.box.height]
+  // AC2: measured with the rule decoration, the tallest look.
+  const posterNode = poster({ ...defaults, decoration: 'rule' }, ctx)
+  // Never below `size.min` (catalog contract min ≤ preferred). With browser-true text widths (LO6)
+  // the default title is one line at 1920 (poster 317 tall); the min height is the 1280-wide case,
+  // where it wraps (RV10).
+  return [REFERENCE_WIDTH, Math.max(HERO_MIN[1], posterNode.box.height)]
 }
 
 /* ── GSAP helper types ────────────────────────────────────────────────────── */
@@ -286,11 +298,7 @@ export const tlsCHero: BlockDefinition = {
   shortDescription: 'Opening title with kicker, subtitle and optional call to action',
   related: ['tls.t.title', 'tls.c.cover', 'tls.c.kinetic-title'],
   describe: {
-    when:
-      'Use as a title/cover slide — one idea in the title, date/audience in the subtitle. ' +
-      'Pick variant "classic" for a standard hero, "split" when you want the title to ' +
-      'reveal from two halves sliding in from opposite sides, or "gradient-sweep" for a ' +
-      'decorative background gradient that sweeps in behind the title on reveal.',
+    when: 'Use as a title/cover slide — one idea in the title, date/audience in the subtitle.',
     avoid: 'Content slides (use tls.t.title); a cover with photo, logo or meta line (use tls.c.cover); nesting: it fills the slide.',
     example: {
       id: 'b_hero',
@@ -305,7 +313,7 @@ export const tlsCHero: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: derivePreferredSize(), min: [1280, 472] },
+  size: { preferred: derivePreferredSize(), min: HERO_MIN },
   layout: heroLayout as BlockDefinition['layout'],
   poster,
   html: { template, animate: heroAnimate },

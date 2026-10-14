@@ -7,6 +7,7 @@
 
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { TitleProps } from './schema'
+import { alignedTextNodes } from '../_engine/text-place'
 
 /**
  * Effective font size, accounting for the style's scale multiplier.
@@ -56,8 +57,32 @@ function truncateLines(
   return { lines: kept, truncated: true }
 }
 
+/**
+ * AC8.6 — `size: fit`: the largest step of `ladder` whose wrap in the box is stable (at most
+ * `maxLines` lines, the same line count at 98.5 % and 104 % of the width, so the browser cannot wrap
+ * it otherwise) and leaves no one-word first or last line; else the last step. The rule
+ * `tls.c.divider` applies to its title (`stableWrap`), for a title that leads a slide alone
+ * (`section-title`): display type when the words allow it, never "Why / mid-market, / why now".
+ */
+export const TITLE_FIT = { ladder: ['display', 'title', 'heading'] as const, maxLines: 3 } as const
+
+export function fitToken(text: TitleProps['text'], ctx: LayoutContext): TypeToken {
+  const w = Math.max(1, ctx.box.width)
+  for (const token of TITLE_FIT.ladder) {
+    const style = ctx.resolveText(token, { letterSpacing: -0.03 })
+    const lines = ctx.measureText(text, style, w).lines
+    if (lines.length > TITLE_FIT.maxLines) continue
+    if (ctx.measureText(text, style, w * 0.985).lines.length !== lines.length) continue
+    if (ctx.measureText(text, style, w * 1.04).lines.length !== lines.length) continue
+    const words = (i: number) => lines[i].text.trim().split(/\s+/).filter(Boolean).length
+    if (lines.length > 1 && (words(0) < 2 || words(lines.length - 1) < 2)) continue
+    return token
+  }
+  return TITLE_FIT.ladder[TITLE_FIT.ladder.length - 1]
+}
+
 export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
-  const typeToken = (props.size ?? 'title') as TypeToken
+  const typeToken = (props.size === 'fit' ? fitToken(props.text, ctx) : props.size ?? 'title') as TypeToken
   const textColor = props.color ?? 'text'
 
   const style = ctx.resolveText(typeToken, { letterSpacing: -0.03 })
@@ -97,17 +122,11 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
     ? finalLines.length * effectiveFontSize(scaledStyle) * scaledStyle.lineHeight
     : m.height
 
-  const nodes: LayoutNode[] = [{
-    k: 'text',
-    part: 'text',
-    // G8.4: report the true measured height, not clamped to the given box — a clamp here
-    // defeats V2.1's two-pass reflow, which relies on this value to know a region needs to
-    // grow (BACKLOG-visual-fix-2.md §8.0/§8.4).
-    box: { ...inner, height: textHeight },
-    lines: finalLines,
-    style: scaledStyle,
-    propPath: 'text',
-  }]
+  // G8.4: report the true measured height, not clamped to the given box — a clamp here
+  // defeats V2.1's two-pass reflow, which relies on this value to know a region needs to
+  // grow (BACKLOG-visual-fix-2.md §8.0/§8.4).
+  const align = props.align === 'center' || props.align === 'end' ? props.align : 'start'
+  const nodes: LayoutNode[] = alignedTextNodes(finalLines, scaledStyle, { ...inner, height: textHeight }, align, 'text', 'text')
 
   // Optional decorative rule
   if (props.rule) {
@@ -115,7 +134,8 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
     nodes.push({
       k: 'rect',
       part: 'rule',
-      box: { x: inner.x, y: ruleY, width: 120, height: 6 },
+      // under the title's first line start, its centre or its end, as the text is aligned
+      box: { x: align === 'center' ? inner.x + (inner.width - 120) / 2 : align === 'end' ? inner.x + inner.width - 120 : inner.x, y: ruleY, width: 120, height: 6 },
       fill: { type: 'solid', color: ctx.resolveColor('accent').color },
       radius: 3,
     })

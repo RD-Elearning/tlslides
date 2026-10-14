@@ -10,7 +10,9 @@
 
 import * as fs from 'fs'
 import * as path from 'path'
-import { capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData } from './capability-digest'
+import { knobHint, AI_HIDDEN_TYPES, capabilityDigest, capabilityDigestData, capabilityIndex, capabilityIndexData, compositionCard } from './capability-digest'
+import { PATTERN_RECIPES } from './patterns'
+import { BUILT_IN_STYLES, styleCard, styleLine } from './styles'
 import { deckSpecJsonSchema } from './deck-spec-json-schema'
 import { validateDeckSpec } from './validate-deck-spec'
 import { BlockRegistry } from './registry'
@@ -476,6 +478,11 @@ describe('R7 — capability digest v2', () => {
         range: '2–5 items',
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
+        size: 'h 150–260@544', // AC3: card rows stretch with the box (a range); default theme body in Inter
+        aiTier: 1,
+        looks: ['tile', 'gap'],
+        lookValues: { tile: ['plain', 'card', 'accent-bar'], gap: ['xs', 'sm', 'md', 'lg'] }, // AC8
+        absorbs: ['tls.c.kpi-tile', 'tls.c.stat-card', 'tls.d.stat-compare', 'tls.d.trend-badge'],
       })
       const ranks = data.map((e) => BLOCK_CATEGORIES.indexOf(e.category))
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
@@ -514,10 +521,127 @@ describe('R7 — capability digest v2', () => {
       expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12000)
     })
 
+    it('the detail names the valid icons when a block has an icon slot (spro llm-eval: guessed icons)', () => {
+      const grid = capabilityDigest(reg, { types: ['tls.c.feature-grid'] })
+      expect(grid).toContain('Valid icon names: zap, shield')
+      expect(grid).toContain('git-branch')
+      expect(capabilityDigest(reg, { types: ['tls.t.title'] })).not.toContain('Valid icon names')
+    })
+
+    it('CMP4: the composition card is ≤ 2.5k, names only real blocks, and joins the detail call on request', () => {
+      const card = compositionCard()
+      expect(card.length).toBeLessThanOrEqual(2500)
+      for (const t of card.match(/tls\.[a-z]\.[a-z-]+/g) ?? []) expect([t, !!reg.get(t)]).toEqual([t, true])
+      const types = ['tls.t.badge', 'tls.t.marker', 'tls.m.shape', 'tls.l.card']
+      expect(capabilityDigest(reg, { types })).not.toContain('## Composing a slide')
+      expect(capabilityDigest(reg, { types, composition: true })).toContain(card)
+      // the tier-1 index lists the patterns per role (ids and looks), not the card
+      const tier1 = capabilityIndex(reg, { tier: 1 })
+      expect(tier1).not.toContain('## Composing a slide')
+      for (const p of PATTERN_RECIPES) expect(tier1).toContain(p.id)
+    })
+
     it('capabilityDigest(categories) filters by category', () => {
       const md = capabilityDigest(reg, { categories: ['chart'] })
       expect(md).toContain('### `tls.d.bar`')
       expect(md).not.toContain('### `tls.t.title`')
+    })
+
+    // AC0 — the curated core-set index (reviews/blocks/ai-curation/README.md §2.1, §5.2).
+    describe('tier-1 index (AC0)', () => {
+      const tier1 = capabilityIndex(reg, { tier: 1 })
+      const fullLine = (md: string, type: string) => md.split('\n').filter((l) => l.startsWith(`${type} · `))
+      const alsoNames = (md: string) =>
+        md.split('\n').filter((l) => l.startsWith('also: ')).flatMap((l) => l.slice(6).split(', '))
+
+      // AC8 budget decision (ai-curation README §8): the knob values and recipe looks raised the
+      // tier-1 index ceiling from 16k to 17k (the brief's allowance); the S2a prompt with the
+      // slide's own role stays <= 16k (dry-run.spec).
+      // CMP4 budget decision (composition README §4): one `patterns:` line per role (+630 chars,
+      // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
+      it('stays within 17.7k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(17700)
+        expect(tier1).toMatchSnapshot()
+      })
+
+      it('gives every tier-1 block one full line with its knobs, every tier-2 block one `also:` name', () => {
+        const also = alsoNames(tier1)
+        for (const def of BUILT_IN_BLOCKS) {
+          if (def.aiTier === 1) {
+            const lines = fullLine(tier1, def.type)
+            expect(lines).toHaveLength(1)
+            expect(lines[0]).toContain(`— ${def.shortDescription}`)
+            // AC8: knobs carry their values (`k=a|b`, a bare name is a toggle)
+            if (def.looks?.length) expect(lines[0]).toContain(` knobs: ${knobHint({ looks: def.looks, lookValues: lookValuesOf(def) })}`)
+            expect(also).not.toContain(def.type)
+          } else if (AI_HIDDEN_TYPES.includes(def.type)) {
+            // AC1: editor-only guides are never offered to the AI.
+            expect(tier1).not.toContain(def.type)
+          } else {
+            expect(fullLine(tier1, def.type)).toHaveLength(0)
+            expect(also.filter((t) => t === def.type)).toHaveLength(1)
+          }
+        }
+      })
+
+      it('carries the recipes and the shared header', () => {
+        expect(tier1).toContain('## Recipes')
+        expect(tier1).toContain('cover-hero · blank — tls.c.hero — ')
+        expect(tier1).toContain('tls.t.quote(variant=big) — a pull quote · looks: card|side|image')
+        expect(tier1).toContain('Dated → `timeline`')
+        expect(tier1).toContain('## Icons')
+        expect(capabilityIndex(reg, { tier: 1, roles: ['cover'] })).not.toContain('data-big-stat ·')
+      })
+
+      it('a profile promotes tier-2 types to full lines and drops avoided ones', () => {
+        const md = capabilityIndex(reg, { tier: 1, profile: { prefer: ['tls.d.pie'], avoid: ['tls.t.footnote', 'tls.l.grid-guide'] } })
+        expect(fullLine(md, 'tls.d.pie')).toHaveLength(1)
+        expect(alsoNames(md)).not.toContain('tls.d.pie')
+        expect(md).not.toContain('tls.t.footnote')
+        expect(md).not.toContain('tls.l.grid-guide')
+      })
+
+      it('capabilityIndexData({ tier: 1 }) returns the core set with aiTier/looks/absorbs', () => {
+        const data = capabilityIndexData(reg, { tier: 1 })
+        expect(data.map((e) => e.type).sort()).toEqual(BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).map((d) => d.type).sort())
+        expect(data.every((e) => e.aiTier === 1)).toBe(true)
+        expect(data.find((e) => e.type === 'tls.d.line')?.absorbs).toEqual(['tls.d.area', 'tls.d.sparkline', 'tls.d.slope'])
+      })
+
+      it('the default call is unchanged: every block a full line, no recipes, within 20k', () => {
+        const md = capabilityIndex(reg)
+        expect(md.length).toBeLessThanOrEqual(20000)
+        expect(md).not.toContain('## Recipes')
+        expect(md).not.toContain(' knobs: ')
+        expect(md).not.toContain('also: ')
+        expect(capabilityIndexData(reg)).toHaveLength(BUILT_IN_BLOCKS.length)
+      })
+
+      it('AC1: lists every style with its palettes (AC5: one line per family), within 16k', () => {
+        expect(tier1).toContain('## Styles')
+        // enhance S3: variants are chosen in the brief and named by `{ style }` (next test)
+        for (const st of BUILT_IN_STYLES.filter((s) => !s.variantOf)) {
+          const line = tier1.split('\n').find((l) => l.startsWith(`${st.family}: `))
+          expect(line).toBeDefined()
+          expect(line).toContain(`${st.id} (${st.palettes.map((p) => p.id).join(', ')})`)
+        }
+      })
+
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17.7k (AC8, CMP4)', () => {
+        for (const st of BUILT_IN_STYLES) {
+          const md = capabilityIndex(reg, { tier: 1, style: st.id })
+          expect(md.length).toBeLessThanOrEqual(17700)
+          expect(md).toContain(`Deck style: ${styleLine(st)}`)
+          for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
+          for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)
+          for (const t of st.prefer) expect(fullLine(md, t)).toHaveLength(1)
+          expect(styleCard(st).length).toBeLessThanOrEqual(1200)
+        }
+      })
+
+      it('the structured detail names what a tier-1 block absorbs', () => {
+        expect(capabilityDigestData(reg, { types: ['tls.d.donut'] }).blocks[0].absorbs).toEqual(['tls.d.pie'])
+      })
     })
 
     it('no-argument calls keep the full vocabulary sections', () => {
@@ -668,5 +792,27 @@ describe('R7 — no hand-written catalog text', () => {
       expect(b.avoid).toBe(def!.describe?.avoid)
       expect(b.example).toEqual(def!.describe?.example)
     }
+  })
+})
+
+/** AC8 — the look values of a definition, as `capabilityIndexData` reports them. */
+function lookValuesOf(def: { looks?: string[]; schema: Record<string, { type: { kind: string; values?: string[] }; indexValues?: string[] }> }): Record<string, string[] | 'boolean'> {
+  const out: Record<string, string[] | 'boolean'> = {}
+  // enhance S4: `indexValues` narrows what the index lists (the decoration's subject doodles)
+  for (const k of def.looks ?? []) out[k] = def.schema[k].type.kind === 'enum' ? [...(def.schema[k].indexValues ?? def.schema[k].type.values!)] : 'boolean'
+  return out
+}
+
+describe('AC8 — knob values in the tier-1 index', () => {
+  it('a hero line names its knob values', () => {
+    const md = capabilityIndex(freshBuiltInRegistry(), { tier: 1 })
+    expect(md).toContain('knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule')
+    expect(md).toContain('tls.t.title · heading · element')
+    expect(md).toMatch(/tls\.t\.title .* knobs: size=display\|title\|heading\|subheading\|fit, align=start\|center\|end, rule/)
+  })
+  it('the style card lists its knob defaults first and the accepted alternatives after them', () => {
+    const card = styleCard(BUILT_IN_STYLES.find((s) => s.id === 'corporate')!)
+    expect(card).toContain('c.closing(variant=centered|split)')
+    expect(card).toContain('t.title(rule=false|true)')
   })
 })

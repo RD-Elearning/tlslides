@@ -178,6 +178,9 @@ interface PartPlay {
   /** A radial sweep (M1b): the target's clip-path is a sector about this centre, written each
    *  frame from 12 o'clock clockwise by a proxy tween's progress. */
   sweep?: { cx: number; cy: number; rect: { left: number; top: number; width: number; height: number }; start: number; turn: number }
+  /** CMP3: a dashed stroke drawn on by growing its dash pattern (a proxy tween writes
+   *  `stroke-dasharray` each frame; the last frame restores the authored pattern). */
+  dashed?: { dash: number[]; len: number }
 }
 
 /**
@@ -357,25 +360,57 @@ function swapAxis(kf: MotionKeyframes, to: 'x' | 'y'): MotionKeyframes {
 /** The left-to-right wipe a filled part gets in place of a draw-on (equal four-term insets). */
 const DRAW_FALLBACK_WIPE = ['inset(0% 100% 0% 0%)', 'inset(0% 0% 0% 0%)']
 
+/** CMP3: the inline `stroke-dasharray` a stroke had before a draw-on prepared it (`L L`), so a
+ *  replay or a settle restores it instead of reading the prepared value as an authored dash. */
+const drawPrepared = new WeakMap<Element, string>()
+/** The strokes among them whose draw-on grows a dash pattern (a settle restores the pattern). */
+const dashedPrepared = new WeakSet<Element>()
+
+/** Restore what a draw-on wrote on a stroke (its own dash pattern, no offset). */
+function restoreStroke(g: Element): void {
+  const original = drawPrepared.get(g)
+  if (original === undefined) return
+  const st = (g as HTMLElement).style
+  st.strokeDasharray = original
+  st.strokeDashoffset = ''
+  drawPrepared.delete(g)
+  dashedPrepared.delete(g)
+}
+
+/** One stroke a draw-on traces: its length and, for a dashed stroke (CMP3), its dash pattern. */
+interface Stroked {
+  el: SVGElement
+  len: number
+  /** The authored dash pattern (px), when the stroke is dashed: the draw grows the pattern. */
+  dash?: number[]
+}
+
 /**
  * The stroked geometry a draw-on can trace inside `el` (the element itself or its SVG
  * descendants), each with its length; `undefined` when there is none, or when any of it is
- * filled (a stroke draw-on would leave the fill popping in) or already dashed (the draw would
- * replace its dash pattern).
+ * filled (a stroke draw-on would leave the fill popping in). CMP3: a dashed stroke is traced too
+ * (its pattern grows along the path, `dashedDraw`); a pattern a previous draw-on wrote is undone
+ * first, so a replay measures the stroke as authored.
  */
-function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undefined {
+function strokedGeometry(el: Element): Stroked[] | undefined {
   const all = [el, ...Array.from(el.querySelectorAll('path, line, polyline, polygon, circle, ellipse'))]
   const geom = all.filter(
     (n) => typeof (n as unknown as { getTotalLength?: unknown }).getTotalLength === 'function'
   ) as SVGElement[]
   if (geom.length === 0 || typeof getComputedStyle !== 'function') return undefined
-  const out: { el: SVGElement; len: number }[] = []
+  const out: Stroked[] = []
   for (const g of geom) {
+    restoreStroke(g)
     const cs = getComputedStyle(g)
     const stroked = !!cs.stroke && cs.stroke !== 'none' && parseFloat(cs.strokeWidth || '1') > 0
     const filled = !!cs.fill && cs.fill !== 'none' && parseFloat(cs.fillOpacity || '1') > 0
     if (!stroked || filled) return undefined
-    if (cs.strokeDasharray && cs.strokeDasharray !== 'none') return undefined
+    let dash: number[] | undefined
+    if (cs.strokeDasharray && cs.strokeDasharray !== 'none') {
+      dash = cs.strokeDasharray.split(/[ ,]+/).map((v) => parseFloat(v)).filter((v) => Number.isFinite(v) && v >= 0)
+      if (dash.length === 0 || dash.every((v) => v === 0)) return undefined
+      if (dash.length % 2 === 1) dash = [...dash, ...dash]
+    }
     let len = 0
     try {
       len = (g as unknown as { getTotalLength(): number }).getTotalLength()
@@ -383,9 +418,32 @@ function strokedGeometry(el: Element): { el: SVGElement; len: number }[] | undef
       return undefined
     }
     if (!(len > 0)) return undefined
-    out.push({ el: g, len })
+    out.push({ el: g, len, ...(dash ? { dash } : {}) })
   }
   return out
+}
+
+/**
+ * CMP3 — the dash array that shows the first `progress` of a dashed stroke `len` long: the
+ * pattern repeated up to `progress × len`, then one gap over the rest. At 1 → the pattern itself.
+ */
+export function dashedDraw(dash: number[], len: number, progress: number): string {
+  if (progress >= 1) return dash.join(' ')
+  const shown = Math.max(0, progress) * len
+  const out: number[] = []
+  let at = 0
+  for (let i = 0; at < shown && out.length < 4000; i++) {
+    const seg = dash[i % dash.length]
+    // the last dash (or gap) is cut where the drawn length ends
+    out.push(Math.min(seg, shown - at))
+    at += seg
+  }
+  // An odd count ends on a dash: close with the gap over the rest (an even count ends on a gap:
+  // lengthen it).
+  if (out.length % 2 === 1) out.push(len + 1)
+  else if (out.length > 0) out[out.length - 1] += len + 1
+  else out.push(0, len + 1)
+  return out.map((v) => Math.round(v * 100) / 100).join(' ')
 }
 
 /**
@@ -419,7 +477,10 @@ function partPlays(
     }
     return [{ target: partEl, keyframes: { ...rest, clipPath: DRAW_FALLBACK_WIPE }, origin }]
   }
-  const plays: PartPlay[] = strokes.map(({ el, len }) => {
+  const plays: PartPlay[] = strokes.map(({ el, len, dash }) => {
+    drawPrepared.set(el, el.style.strokeDasharray)
+    if (dash) dashedPrepared.add(el)
+    if (dash) return { target: el, keyframes: {}, dashed: { dash, len } }
     el.style.strokeDasharray = `${len} ${len}`
     return { target: el, keyframes: { strokeDashoffset: [String(len), '0'] } }
   })
@@ -433,6 +494,97 @@ function escapeRegExp(s: string): string {
 
 function cssEscapeAttr(s: string): string {
   return s.replace(/["\\]/g, '\\$&')
+}
+
+// --- CMP3: nested motion and the stagger cap -----------------------------------
+
+/** T2 (05-motion §5.4, SURVEY T2): one indexed family's whole stagger lasts at most this long; a
+ *  longer list steps faster instead of trailing on. */
+export const STAGGER_CAP_MS = 300
+
+/** The per-item step of an indexed family of `count` elements under the cap. */
+export function cappedStagger(step: number, count: number): number {
+  if (!(step > 0) || count < 2) return Math.max(0, step || 0)
+  return Math.min(step, STAGGER_CAP_MS / (count - 1))
+}
+
+/** Definitions every `BlockRegistry` registered (nested motion resolves a child's recipe here:
+ *  the viewer passes `playBlockReveal` only the container's definition). */
+const knownDefinitions = new Map<string, BlockDefinition>()
+
+/** Called by `BlockRegistry.register`. */
+export function rememberBlockDefinition(def: BlockDefinition): void {
+  knownDefinitions.set(def.type, def)
+}
+
+/** The part presets a nested child plays inside its container (its "own" choreography): data and
+ *  draw reveals. A child's plain fades are left to the container's stagger. */
+export const NESTED_PART_PRESETS: ReadonlySet<string> = new Set([
+  'count-up',
+  'sweep',
+  'draw-path',
+  'grow-bars-x',
+  'grow-bars-y',
+  'grow-segments',
+  'sweep-nodes',
+  'pop-points',
+  'wipe-x',
+  'wipe-y',
+  'wipe-down',
+])
+
+/** Ids of the blocks authored inside `spec` (every `blocks`-kind prop, depth first). */
+export function authoredChildIds(spec: BlockSpec, out = new Set<string>(), depth = 0): Set<string> {
+  if (depth > 8 || !spec || typeof spec !== 'object') return out
+  const props = spec.props
+  if (!props || typeof props !== 'object') return out
+  for (const v of Object.values(props)) {
+    if (!Array.isArray(v)) continue
+    for (const c of v) {
+      if (!c || typeof c !== 'object' || typeof (c as BlockSpec).type !== 'string') continue
+      if (typeof (c as BlockSpec).id === 'string') out.add((c as BlockSpec).id)
+      authoredChildIds(c as BlockSpec, out, depth + 1)
+    }
+  }
+  return out
+}
+
+/** Does the block play its recipe's showy preset (the condition `partMotion` plays under)? */
+function playsShowy(spec: BlockSpec, def: BlockDefinition): boolean {
+  const showy = def.motion.expressive ?? def.motion.preset
+  const preset = spec.motion?.preset ?? def.motion.preset ?? 'fade'
+  return !!showy && showy !== 'none' && preset === showy && spec.motion?.preset !== 'fade'
+}
+
+/** One nested child's part motions that play inside the container: the wrapper element, its
+ *  definition and the parts (its `NESTED_PART_PRESETS` under its own showy preset). */
+interface NestedPlan {
+  wrapper: HTMLElement
+  parts: ResolvedPartMotion[]
+}
+
+/**
+ * CMP3 (F11) — the authored children of a container (`props.children`, any depth) whose own recipe
+ * has a data or draw reveal: a hero number counting up inside a card, a ring sweeping inside a bento
+ * tile. Only while the container plays its showy preset (expressive), never under `fade` (subtle),
+ * reduced motion or a static slide. A child's wrapper is the group the engine stamped with its id
+ * (`data-nested-id`, CMP1 X2); the child's definition comes from the registered definitions.
+ */
+function nestedPlans(el: HTMLElement, spec: BlockSpec, def: BlockDefinition): NestedPlan[] {
+  if (!playsShowy(spec, def) || typeof el.querySelectorAll !== 'function') return []
+  const ids = authoredChildIds(spec)
+  if (ids.size === 0) return []
+  const out: NestedPlan[] = []
+  for (const wrapper of Array.from(el.querySelectorAll<HTMLElement>('[data-nested-id]'))) {
+    if (!ids.has(wrapper.getAttribute('data-nested-id') ?? '')) continue
+    const child = knownDefinitions.get(wrapper.getAttribute('data-nested-type') ?? '')
+    if (!child || child.kind === 'html' || !child.motion) continue
+    const showy = child.motion.expressive ?? child.motion.preset
+    if (!showy || showy === 'none') continue
+    const parts = resolvePartMotion({ preset: showy }, child.motion).filter((pm) => !!pm.presetId && NESTED_PART_PRESETS.has(pm.presetId) && !pm.isAmbient)
+    if (parts.length) out.push({ wrapper, parts })
+  }
+  return out
 }
 
 // --- Public API ---------------------------------------------------------------
@@ -490,6 +642,46 @@ export function playBlockReveal(
       })),
     }
   })
+  // CMP3 (F11): nested children's own data / draw reveals play inside the container's stagger —
+  // each starts with the container part that carries the child (its wrapper or the nearest planned
+  // ancestor), plus the child's own part delay. Elements the container already plays are left to it.
+  const startOf = new Map<Element, number>()
+  for (const { pm, els: planEls, indexed, slots } of planned) {
+    const step = indexed ? cappedStagger(pm.staggerMs ?? 0, planEls.length) : 0
+    planEls.forEach(({ partEl }, i) => startOf.set(partEl, pm.delayMs + (indexed ? (slots?.[i] ?? i) * step : 0)))
+  }
+  for (const nest of nestedPlans(el, spec, def)) {
+    let base = blockMotion.delayMs
+    for (let a: Element | null = nest.wrapper; a && a !== el; a = a.parentElement) {
+      const t = startOf.get(a)
+      if (t !== undefined) {
+        base = t
+        break
+      }
+    }
+    for (const pmIn of nest.parts) {
+      const found = partElements(nest.wrapper, pmIn.partName)
+      const els = found.els.filter((e) => !startOf.has(e))
+      if (els.length === 0) continue
+      const pm: ResolvedPartMotion = { ...pmIn, delayMs: base + pmIn.delayMs }
+      const grow = zeroLineOrigins(els, pm, el)
+      const pmG = grow.keyframes ? { ...pm, keyframes: grow.keyframes } : pm
+      const u = pmG.presetId === 'sweep' ? paintedUnion(els) : undefined
+      const [fx, fy] = (pmG.sweep?.centre ?? '50% 50%').split(/\s+/).map((v) => (parseFloat(v) || 0) / 100)
+      const centre = u ? { x: u.left + (u.right - u.left) * fx, y: u.top + (u.bottom - u.top) * (fy ?? 0.5) } : undefined
+      planned.push({
+        pm: pmG,
+        indexed: found.indexed,
+        slots: grow.slots,
+        els: els.map((partEl, i) => ({
+          partEl,
+          plays: pmG.presetId === 'count-up' && countTarget(partEl) ? [] : partPlays(partEl, pmG, grow.origins[i], centre),
+        })),
+      })
+      els.forEach((e) => startOf.set(e, pm.delayMs))
+    }
+  }
+
   for (const { pm, els } of planned) {
     for (const { partEl, plays } of els) {
       if (plays.length === 0) driver.set(partEl, hiddenStateFromKeyframes(pm.keyframes))
@@ -498,6 +690,10 @@ export function playBlockReveal(
         if (p.sweep) {
           sweepHandles.get(p.target)?.cancel()
           hidden.clipPath = sectorClip(p.sweep.cx, p.sweep.cy, p.sweep.rect, 0, p.sweep.start, p.sweep.turn)
+        }
+        if (p.dashed) {
+          sweepHandles.get(p.target)?.cancel()
+          ;(p.target as HTMLElement).style.strokeDasharray = dashedDraw(p.dashed.dash, p.dashed.len, 0)
         }
         if (Object.keys(hidden).length > 0) driver.set(p.target, hidden)
       }
@@ -523,7 +719,8 @@ export function playBlockReveal(
     planEls.forEach(({ partEl, plays }, elementIndex) => {
       // P7: indexed elements of one part stagger by the preset's step (exact matches keep
       // the part's own delay, as before). M3: stacked segments stagger by column.
-      const fullDelay = pm.delayMs + (indexed ? (slots?.[elementIndex] ?? elementIndex) * (pm.staggerMs ?? 0) : 0)
+      // CMP3 (T2): the family's whole stagger is capped (`STAGGER_CAP_MS`).
+      const fullDelay = pm.delayMs + (indexed ? (slots?.[elementIndex] ?? elementIndex) * cappedStagger(pm.staggerMs ?? 0, planEls.length) : 0)
       // M6 (E-M5-1): an image part waits (hidden) until its image is decoded, at most
       // IMAGE_WAIT_MS, so a photo never pops in at 0.7–1.0 opacity after its fade; the wait is
       // taken out of its delay. A newer reveal or settle of the block cancels the late start.
@@ -591,6 +788,25 @@ export function playBlockReveal(
                 ...(p.origin ? { origin: p.origin } : {}),
               })
             }
+            if (p.dashed) {
+              // CMP3: a dash pattern cannot be tweened as a pair either: a detached proxy carries
+              // the eased progress and each frame writes the grown pattern; the last frame (and a
+              // settle) puts the authored pattern back.
+              const { dash, len } = p.dashed
+              const target = p.target as HTMLElement
+              const proxy = typeof document !== 'undefined' ? document.createElement('div') : target
+              const handle = driver.play(proxy, { opacity: [0, 1] }, {
+                duration: pm.durationMs,
+                delay,
+                easing: pm.easing,
+                fill: 'forwards',
+                onUpdate: (progress: number) => {
+                  if (progress >= 1) restoreStroke(target)
+                  else target.style.strokeDasharray = dashedDraw(dash, len, progress)
+                },
+              })
+              sweepHandles.set(target, handle)
+            }
             if (p.sweep) {
               // The sector is not a keyframe pair any interpolator can tween, so a detached proxy
               // carries the eased progress and each frame writes the sector. Settling the part
@@ -653,9 +869,12 @@ function imagesReady(imgs: HTMLImageElement[], timeoutMs: number): Promise<void>
  */
 export function settleBlockParts(el: HTMLElement, spec: BlockSpec, def: BlockDefinition, driver: MotionDriver): void {
   revealTokens.set(el, (revealTokens.get(el) ?? 0) + 1)
-  for (const pm of resolvePartMotion(spec.motion, def.motion)) {
+  // CMP3: the nested children's parts a reveal may have hidden settle too.
+  const groups: Array<{ root: HTMLElement; pms: ResolvedPartMotion[] }> = [{ root: el, pms: resolvePartMotion(spec.motion, def.motion) }]
+  for (const nest of nestedPlans(el, spec, def)) groups.push({ root: nest.wrapper, pms: nest.parts })
+  for (const { root, pms } of groups) for (const pm of pms) {
     const kf = pm.keyframes
-    for (const partEl of partElements(el, pm.partName).els) {
+    for (const partEl of partElements(root, pm.partName).els) {
       sweepHandles.get(partEl)?.cancel()
       sweepHandles.delete(partEl)
       const state: MotionState = { opacity: 1, translate: '0px 0px', scale: 1 }
@@ -664,9 +883,16 @@ export function settleBlockParts(el: HTMLElement, spec: BlockSpec, def: BlockDef
         state.scaleY = 1
       }
       if (kf.clipPath || kf.strokeDashoffset || partEl.style.clipPath) state.clipPath = 'none'
+      // spro demo T18: a blur entrance (words-in, lines-in, quote-in) cut short by the next build
+      // step kept its from-state `blur(3px)` — the title stayed soft once the content had come in
+      if (kf.filter || partEl.style.filter) state.filter = 'none'
       driver.set(partEl, state)
       for (const g of [partEl, ...Array.from(partEl.querySelectorAll<SVGElement>('path, line, polyline, polygon, circle, ellipse'))]) {
+        sweepHandles.get(g)?.cancel()
+        sweepHandles.delete(g)
         if ((g as HTMLElement).style?.strokeDasharray) driver.set(g, { strokeDashoffset: '0' })
+        // CMP3: a dashed draw-on cut short gets its authored pattern back
+        if (dashedPrepared.has(g)) restoreStroke(g)
       }
     }
   }

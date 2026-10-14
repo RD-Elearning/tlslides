@@ -85,7 +85,10 @@ export function isThemeToken(value: string | undefined): boolean {
 // contrast and a heading/body font pairing drawn from this fork's four bundled `FontStyle` faces.
 // Every theme now sets `fonts.headingFamily`/`bodyFamily` (Phase 17's arbitrary-font-family
 // override, resolved by `resolveFont` in `shape-styles.ts`): Inter for the neutral sans themes,
-// Crimson Pro for the serif editorial themes, Source Code Pro for the mono theme.
+// Crimson Pro for the serif editorial themes, Source Code Pro for the mono theme. Full stacks, like
+// the AC styles': a host that loads the @fontsource-variable packages registers "<X> Variable"
+// only, and a bare '"Crimson Pro"' then fell back to a wider default font in the browser while
+// the engine measured Crimson — titles overflowed in the viewer (spro demo 2026-10-11).
 // `shapeDefaults` is intentionally light-touch: a rounded corner and a filled default so a freshly
 // theme-instantiated panel doesn't need every template to repeat the same two style fields.
 // Phase 19 — `positive`/`negative`/`warning` per built-in theme (doc `reviews/blocks/
@@ -112,7 +115,7 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       negative: '#F87171',
       warning: '#FBBF24',
     },
-    fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+    fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter", "Inter Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
     shapeDefaults: { isFilled: true, cornerRadius: 24 },
   },
   {
@@ -129,7 +132,7 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       negative: '#A3342A',
       warning: '#C08A17',
     },
-    fonts: { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Crimson Pro"', bodyFamily: '"Inter"' },
+    fonts: { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Crimson Pro", "Crimson Pro Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
     shapeDefaults: { isFilled: true, cornerRadius: 8 },
   },
   {
@@ -146,7 +149,7 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       negative: '#E63946',
       warning: '#F4A736',
     },
-    fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter"', bodyFamily: '"Inter"' },
+    fonts: { heading: FontStyle.Sans, body: FontStyle.Sans, headingFamily: '"Inter", "Inter Variable", sans-serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
     shapeDefaults: { isFilled: true, cornerRadius: 32 },
   },
   {
@@ -163,7 +166,7 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       negative: '#9B3A2C',
       warning: '#B8862B',
     },
-    fonts: { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Crimson Pro"', bodyFamily: '"Inter"' },
+    fonts: { heading: FontStyle.Serif, body: FontStyle.Sans, headingFamily: '"Crimson Pro", "Crimson Pro Variable", serif', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
     shapeDefaults: { isFilled: true, cornerRadius: 4 },
   },
   {
@@ -180,7 +183,7 @@ export const BUILT_IN_DECK_THEMES: DeckTheme[] = [
       negative: '#D32F2F',
       warning: '#C77700',
     },
-    fonts: { heading: FontStyle.Mono, body: FontStyle.Sans, headingFamily: '"Source Code Pro"', bodyFamily: '"Inter"' },
+    fonts: { heading: FontStyle.Mono, body: FontStyle.Sans, headingFamily: '"Source Code Pro", "Source Code Pro Variable", monospace', bodyFamily: '"Inter", "Inter Variable", sans-serif' },
     shapeDefaults: { isFilled: true, cornerRadius: 0 },
   },
 ]

@@ -48,7 +48,15 @@ function formatMarker(index: number): string {
 function buildMarker(index: number, x: number, y: number, size: number, ctx: LayoutContext): LayoutNode[] {
   const text = formatMarker(index)
   const accent = ctx.resolveColor('accent').color
-  const style = { ...ctx.resolveText('body', { size: Math.round(size * 0.42) }), color: onColor(ctx, accent) }
+  // CMP2 (P5, `type/too-many-sizes`): a number within 15 % of the body size is set at the body size
+  // (72-unit badge: 30 → 28), so the slide does not carry two near-identical sizes.
+  const own = Math.round(size * 0.42)
+  const body = ctx.resolveText('body').size
+  // spro demo T19: a small badge's number (48 → 20) snaps to the caption size as it does to the
+  // body size — 20 next to the takeaway's 22 caption was a sixth size on a process-steps slide
+  const caption = ctx.resolveText('caption').size
+  const snapped = Math.abs(own - body) <= body * 0.15 ? body : own < body && Math.abs(own - caption) <= caption * 0.25 ? caption : own
+  const style = { ...ctx.resolveText('body', { size: snapped }), color: onColor(ctx, accent) }
   const w = Math.ceil(realWidth(text, style) * 1.04) + 1
   const lh = style.size * style.lineHeight
   const m = ctx.measureText(text, style, w + 8)
@@ -67,8 +75,15 @@ function buildMarker(index: number, x: number, y: number, size: number, ctx: Lay
 /**
  * Measure the intrinsic height of a title text (for layout positioning).
  */
-function measureTitleHeight(title: string, width: number, ctx: LayoutContext): number {
-  const style = ctx.resolveText(STEP_TITLE_TYPE_TOKEN, { letterSpacing: -0.03 })
+/** AC3 pre-item: the roomy tier (heading titles, a 72 badge, wider gaps) for horizontal steps alone
+ *  in a tall box. The block fills its box (root = box), so the tier follows the box height. */
+const ROOMY_MIN_H = 480
+const ROOMY_MIN_COL = 360
+const ROOMY_MARKER = 72
+type TitleToken = 'subheading' | 'heading'
+
+function measureTitleHeight(title: string, width: number, ctx: LayoutContext, token: TitleToken = STEP_TITLE_TYPE_TOKEN): number {
+  const style = ctx.resolveText(token, { letterSpacing: -0.03 })
   const m = ctx.measureText(title, style, width)
   return m.height
 }
@@ -93,11 +108,13 @@ function buildTitle(
   w: number,
   availableH: number,
   ctx: LayoutContext,
+  token: TitleToken = STEP_TITLE_TYPE_TOKEN,
+  align: 'start' | 'center' = 'start',
 ): LayoutNode {
   const spec: BlockSpec = {
     id: `step-${index}-title`,
     type: 'tls.t.title',
-    props: { text: title, size: STEP_TITLE_TYPE_TOKEN },
+    props: { text: title, size: token, ...(align === 'center' ? { align } : {}) },
   }
   const wrapper = ctx.layoutChild(spec, { x, y, width: w, height: availableH })
   // Override the wrapper group's part with our step-specific part name.
@@ -115,11 +132,12 @@ function buildDesc(
   w: number,
   availableH: number,
   ctx: LayoutContext,
+  align: 'start' | 'center' = 'start',
 ): LayoutNode {
   const spec: BlockSpec = {
     id: `step-${index}-desc`,
     type: 'tls.t.body',
-    props: { text: desc },
+    props: { text: desc, ...(align === 'center' ? { align } : {}) },
   }
   const wrapper = ctx.layoutChild(spec, { x, y, width: w, height: availableH })
   return { ...wrapper, part: `step[${index}].desc` } as LayoutNode
@@ -154,7 +172,7 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   if (n === 0) {
     return { k: 'group', box: { x: 0, y: 0, width: W, height: 0 }, part: 'root', children: [] }
   }
-  return slotSteps(orientation === 'horizontal' ? layoutHorizontal(steps, n, W, H, ctx) : layoutVertical(steps, n, W, H, ctx))
+  return slotSteps(orientation === 'horizontal' ? layoutHorizontal(steps, n, W, H, ctx, props.align === 'center' ? 'center' : 'start') : layoutVertical(steps, n, W, H, ctx))
 }
 
 /**
@@ -195,25 +213,36 @@ const RAIL_PAD = 8
  * rail from badge to badge. Columns narrower than MIN_COL wrap to a second row; the content block
  * is centred in the region's height.
  */
-function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: number, ctx: LayoutContext): LayoutNode {
+function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: number, ctx: LayoutContext, align: 'start' | 'center' = 'start'): LayoutNode {
   const GAP = ctx.tokens.space.lg
   const fit = Math.max(1, Math.floor((W + GAP) / (MIN_COL + GAP)))
   const rows = Math.ceil(n / Math.min(n, fit))
   const cols = Math.ceil(n / rows)
   const stepWidth = Math.max(10, (W - (cols - 1) * GAP) / cols)
-  const markerGap = ctx.tokens.space.sm
-
-  const heights = steps.map((s) => {
-    const t = measureTitleHeight(s.title, stepWidth, ctx)
-    const d = s.desc ? measureDescHeight(s.desc, stepWidth, ctx) : 0
-    return { t, d }
-  })
-  const rowH = (r: number) => {
-    const slice = heights.slice(r * cols, r * cols + cols)
-    return MARKER_SIZE + markerGap + Math.max(...slice.map((h) => h.t + h.d))
-  }
   const rowGap = ctx.tokens.space.xl
-  const total = Array.from({ length: rows }, (_, r) => rowH(r)).reduce((a, b) => a + b, 0) + (rows - 1) * rowGap
+  const plan = (roomy: boolean) => {
+    const markerGap = ctx.tokens.space[roomy ? 'lg' : 'sm']
+    const MARKER = roomy ? ROOMY_MARKER : MARKER_SIZE
+    const token: TitleToken = roomy ? 'heading' : STEP_TITLE_TYPE_TOKEN
+    const heights = steps.map((s) => {
+      const t = measureTitleHeight(s.title, stepWidth, ctx, token) + (roomy && s.desc ? ctx.tokens.space.xs : 0)
+      const d = s.desc ? measureDescHeight(s.desc, stepWidth, ctx) : 0
+      return { t, d }
+    })
+    const rowH = (r: number) => {
+      const slice = heights.slice(r * cols, r * cols + cols)
+      return MARKER + markerGap + Math.max(...slice.map((h) => h.t + h.d))
+    }
+    const total = Array.from({ length: rows }, (_, r) => rowH(r)).reduce((a, b) => a + b, 0) + (rows - 1) * rowGap
+    return { markerGap, MARKER, token, heights, rowH, total }
+  }
+  // The roomy tier when one row of wide columns has room for it — the room, not a fixed box
+  // height: a row sized to its content in a region it shares (steps + takeaway, spro demo T19)
+  // has a box exactly as tall as the roomy row and must not drop to the compact tier there.
+  const wide = rows === 1 && stepWidth >= ROOMY_MIN_COL
+  const roomyPlan = wide ? plan(true) : null
+  const roomy = !!roomyPlan && (H >= ROOMY_MIN_H || roomyPlan.total <= H + 1)
+  const { markerGap, MARKER, token, heights, rowH, total } = roomy ? roomyPlan! : plan(false)
 
   const children: LayoutNode[] = []
   let y0 = 0
@@ -223,15 +252,18 @@ function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: n
       if (i >= n) break
       const step = steps[i]
       const x = c * (stepWidth + GAP)
-      children.push(...buildMarker(i, x, y0, MARKER_SIZE, ctx))
-      const titleY = y0 + MARKER_SIZE + markerGap
-      children.push(buildTitle(i, step.title, x, titleY, stepWidth, heights[i].t, ctx))
-      if (step.desc) children.push(buildDesc(i, step.desc, x, titleY + heights[i].t, stepWidth, heights[i].d, ctx))
+      // `center` (spro demo T19): the badge over the middle of its column, the text centred under
+      // it, the rail from badge to badge — the row is symmetric instead of leaning left
+      const inset = align === 'center' ? (stepWidth - MARKER) / 2 : 0
+      children.push(...buildMarker(i, x + inset, y0, MARKER, ctx))
+      const titleY = y0 + MARKER + markerGap
+      children.push(buildTitle(i, step.title, x, titleY, stepWidth, heights[i].t, ctx, token, align))
+      if (step.desc) children.push(buildDesc(i, step.desc, x, titleY + heights[i].t, stepWidth, heights[i].d, ctx, align))
       // Rail to the next badge in the same row.
       if (c < cols - 1 && i < n - 1) {
-        const from = x + MARKER_SIZE + RAIL_PAD
-        const to = x + stepWidth + GAP - RAIL_PAD
-        children.push(buildConnector(i, from, y0 + (MARKER_SIZE - CONNECTOR_THICKNESS) / 2, Math.max(1, to - from), CONNECTOR_THICKNESS, ctx))
+        const from = x + inset + MARKER + RAIL_PAD
+        const to = x + stepWidth + GAP + inset - RAIL_PAD
+        children.push(buildConnector(i, from, y0 + (MARKER - CONNECTOR_THICKNESS) / 2, Math.max(1, to - from), CONNECTOR_THICKNESS, ctx))
       }
     }
     y0 += rowH(r) + rowGap

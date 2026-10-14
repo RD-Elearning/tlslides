@@ -1,7 +1,9 @@
 import { tlsCStatSpotlight } from './index'
 import { showcaseSuite, tplCtx, recordingDriver } from '../showcase-test'
-import { geometry, parseCount } from './schema'
+import { geometry, parseCount, SPOT_ROOMY } from './schema'
 import { arcPath } from './poster'
+import { makeCtx as roomyCtx } from '../../text/test-helpers'
+import { absoluteLeaves as roomyLeaves } from '../../text/standard-suite'
 
 showcaseSuite(tlsCStatSpotlight, {
   textProp: 'label',
@@ -70,4 +72,104 @@ describe('RV04 — example fits its box (review G04)', () => {
       }
     }
   })
+})
+
+describe('AC2 — look knobs (visual, statsPlacement)', () => {
+  const { makeCtx } = require('../../text/test-helpers')
+  const { absoluteLeaves } = require('../../text/standard-suite')
+  const DEF = tlsCStatSpotlight
+  const props = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any) }
+  const full = { ...(DEF.defaults as any) } // three stats
+  const VARIANTS: Array<[string, Record<string, unknown>]> = [
+    ['visual: plain', { visual: 'plain' }],
+    ['statsPlacement: side', { statsPlacement: 'side' }],
+    ['plain + side', { visual: 'plain', statsPlacement: 'side' }],
+  ]
+
+  it('declares the knobs as enums', () => {
+    expect((DEF.schema.visual.type as any).values).toEqual(['ring', 'plain'])
+    expect((DEF.schema.statsPlacement.type as any).values).toEqual(['below', 'side'])
+  })
+
+  for (const [name, knobs] of VARIANTS) {
+    for (const base of [props, full]) {
+      it.each([
+        ['preferred', DEF.size.preferred],
+        ['min', DEF.size.min],
+      ])(`${name} (${base.stats.length} stats) fits size.%s with nothing escaping it`, (_l, [w, h]) => {
+        const tree = DEF.poster!({ ...base, ...knobs }, makeCtx({ width: w, height: h }))
+        expect(tree.box.height).toBeLessThanOrEqual(h + 0.5)
+        for (const l of absoluteLeaves(tree)) {
+          const where = `${l.part ?? l.k} @${Math.round(l.x)},${Math.round(l.y)} ${Math.round(l.width)}x${Math.round(l.height)} in ${w}x${h}`
+          expect([where, l.x + l.width <= w + 1 && l.y + l.height <= h + 1]).toEqual([where, true])
+        }
+      })
+    }
+  }
+
+  it('plain paints no ring and a bigger number; template and poster agree', () => {
+    const ring = geometry(1728, 752, full)
+    const plain = geometry(1728, 752, { ...full, visual: 'plain' })
+    expect(plain.ring).toBe(false)
+    expect(plain.valueSize).toBeGreaterThan(ring.valueSize)
+    const { makeCtx } = require('../../text/test-helpers')
+    const parts = absoluteLeaves(DEF.poster!({ ...full, visual: 'plain' }, makeCtx({ width: 1728, height: 752 }))).map((l: any) => l.part)
+    expect(parts).not.toContain('ring')
+    expect(DEF.html!.template({ ...full, visual: 'plain' } as any, tplCtx())).not.toContain('data-part="ring"')
+  })
+
+  it('side stacks the stats in a right column at preferred; a box too short for it keeps them below', () => {
+    const side = geometry(1728, 752, { ...full, statsPlacement: 'side' })
+    expect(side.statsH).toBe(0)
+    expect(new Set(side.stats.map((s) => s.x)).size).toBe(1)
+    expect(side.stats[0].x).toBeGreaterThan(side.colX)
+    expect(side.colX + side.colW).toBeLessThanOrEqual(side.stats[0].x)
+    const html = DEF.html!.template({ ...full, statsPlacement: 'side' } as any, tplCtx(1728, 752))
+    expect(html).toContain(`left:${side.stats[0].x}px;top:${side.stats[1].y}px;`)
+    const short = geometry(640, 360, { ...full, statsPlacement: 'side' })
+    expect(short.statsH).toBeGreaterThan(0)
+  })
+})
+
+describe('AC8.6 — roomy tier', () => {
+  const makeCtx = roomyCtx
+  const absoluteLeaves = roomyLeaves
+  const DEF = tlsCStatSpotlight
+  const ex = { ...(DEF.defaults as any), ...(DEF.describe!.example.props as any), context: 'Existing accounts keep expanding after year one' }
+  const full = { ...(DEF.defaults as any) }
+  const find = (n: any, prop: string): any => (n.k === 'text' && n.propPath === prop ? n : (n.children ?? []).map((c: any) => find(c, prop)).find(Boolean))
+  const sizeOf = (tree: any, prop: string) => find(tree, prop)?.style?.size
+
+  it('a region-sized box takes the roomy tier: title label, title stat values, lead stat labels, taller bands', () => {
+    const c = makeCtx({ width: 1728, height: 752 })
+    const g = geometry(1728, 752, ex)
+    expect(g.roomy).toBe(true)
+    expect(g.statsH).toBe(SPOT_ROOMY.statsH)
+    const tree = DEF.poster!(ex, c)
+    expect(sizeOf(tree, 'label')).toBe(c.tokens.type.title.size)
+    expect(sizeOf(tree, 'stats.0.value')).toBe(c.tokens.type.title.size)
+    expect(sizeOf(tree, 'stats.0.label')).toBe(c.tokens.type.lead.size)
+  })
+
+  it('size.min keeps the compact tier exactly (heading label and values, caption stat labels)', () => {
+    const c = makeCtx({ width: 640, height: 360 })
+    expect(geometry(640, 360, ex).roomy).toBe(false)
+    const tree = DEF.poster!(ex, c)
+    expect(sizeOf(tree, 'label')).toBe(c.tokens.type.heading.size)
+    expect(sizeOf(tree, 'stats.0.value')).toBe(c.tokens.type.heading.size)
+    expect(sizeOf(tree, 'stats.0.label')).toBe(c.tokens.type.caption.size)
+  })
+
+  for (const knobs of [{}, { statsPlacement: 'side' }, { visual: 'plain' }]) {
+    for (const base of [ex, full]) {
+      it(`roomy ${JSON.stringify(knobs)} (${base.stats.length} stats) fits 1728x752 and the template paints the poster's bands`, () => {
+        const tree = DEF.poster!({ ...base, ...knobs }, makeCtx({ width: 1728, height: 752 }))
+        expect(tree.box.height).toBeLessThanOrEqual(752.5)
+        for (const l of absoluteLeaves(tree)) expect(l.x + l.width <= 1729 && l.y + l.height <= 753).toBe(true)
+        const g = geometry(1728, 752, { ...base, ...knobs })
+        const html = DEF.html!.template({ ...base, ...knobs } as any, { ...tplCtx(1728, 752), poster: tree } as any)
+        expect(html).toContain(`height:${g.stats[0].height}px;`)
+      })
+    }
+  }
 })

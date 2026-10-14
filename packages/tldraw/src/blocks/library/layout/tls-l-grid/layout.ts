@@ -11,12 +11,16 @@
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { GridProps } from './schema'
 import { tagChildren } from '../_motion'
+import { styleGap } from '../_style'
+import { isAuthoredContext } from '../../../layout/layout-child'
+import { peerTracks } from '../../../layout/peer-tracks'
+import { peerShapeSteps } from '../../media/tls-m-shape/layout'
 
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
   const rows = Math.max(1, Math.floor(props.rows ?? 2))
   const gapToken = (props.gap ?? 'md') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const sizingMode = props.sizing ?? 'equal'
   const children = (props as unknown as { children?: BlockSpec[] }).children ?? []
 
@@ -96,6 +100,20 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const limit = Math.min(children.length, cols * rows)
   const childNodes: LayoutNode[] = []
 
+  // CMP4: authored peer cards of one structure in a grid row share their children's tracks
+  const rowTracks: Array<number[] | undefined> = []
+  if (isAuthoredContext(ctx)) {
+    for (let r = 0; r * cols < limit; r++) {
+      const peers = children.slice(r * cols, Math.min(limit, (r + 1) * cols))
+      rowTracks[r] = peerTracks(peers, peers.map((_, c) => colWidths[c] ?? 0), ctx, rowHeights[r] ?? 0)
+    }
+  }
+
+  // CS1: peer shapes of one kind and size share one label step
+  const shapeSteps = isAuthoredContext(ctx)
+    ? peerShapeSteps(children.slice(0, limit), children.slice(0, limit).map((_, i) => ({ width: colWidths[i % cols] ?? 0, height: rowHeights[Math.floor(i / cols)] ?? 0 })), ctx)
+    : undefined
+
   for (let i = 0; i < limit; i++) {
     const col = i % cols
     const row = Math.floor(i / cols)
@@ -116,7 +134,9 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
       width: colWidths[col] ?? 0,
       height: rowHeights[row] ?? 0,
     }
-    childNodes.push(ctx.layoutChild(children[i], childBox))
+    const tracks = rowTracks[row]
+    const peerStep = shapeSteps?.[i]
+    childNodes.push(ctx.layoutChild(children[i], childBox, tracks || peerStep !== undefined ? { ...(tracks ? { tracks } : {}), ...(peerStep !== undefined ? { peerStep } : {}) } : undefined))
   }
 
   return {

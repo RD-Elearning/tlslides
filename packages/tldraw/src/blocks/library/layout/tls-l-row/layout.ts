@@ -10,11 +10,14 @@
 import type { BlockSpec, LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { RowProps } from './schema'
 import { tagChildren } from '../_motion'
-import { distributeSpace } from '../../../layout/layout-child'
+import { styleGap } from '../_style'
+import { distributeSpace, isAuthoredContext } from '../../../layout/layout-child'
+import { peerTracks } from '../../../layout/peer-tracks'
+import { peerShapeSteps } from '../../media/tls-m-shape/layout'
 
 export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
-  const gap = ctx.tokens.space[gapToken] ?? ctx.tokens.space.md
+  const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
   const sizingMode: 'equal' | 'content' = (props as { sizing?: 'equal' | 'content' }).sizing ?? 'equal'
   const children: BlockSpec[] = (props as { children?: BlockSpec[] }).children ?? []
 
@@ -76,6 +79,11 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
     }
   }
 
+  // CMP4: authored peer cards of one structure share their children's tracks (`peer-tracks.ts`)
+  const tracks = isAuthoredContext(ctx) ? peerTracks(children, sizes.map((s) => s.width), ctx, H) : undefined
+  // CS1: peer shapes of one kind and size share one label step
+  const shapeSteps = isAuthoredContext(ctx) ? peerShapeSteps(children, sizes.map((s) => ({ width: s.width, height: H })), ctx) : undefined
+
   // Position children
   const childNodes: LayoutNode[] = []
   
@@ -87,7 +95,8 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
       width,
       height: H,
     }
-    childNodes.push(ctx.layoutChild(children[i], childBox))
+    const peerStep = shapeSteps?.[i]
+    childNodes.push(ctx.layoutChild(children[i], childBox, tracks || peerStep !== undefined ? { ...(tracks ? { tracks } : {}), ...(peerStep !== undefined ? { peerStep } : {}) } : undefined))
   }
 
   return {

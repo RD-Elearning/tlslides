@@ -318,6 +318,33 @@ describe('Component shape', () => {
       expect(originalItems[1].text).toBe('Second item')
     })
 
+    it('a rich-text value ({ runs }) opens seeded with its text and is written back as runs', async () => {
+      const { app } = renderTitleBlock({
+        items: [{ text: { runs: [{ text: 'Plain ' }, { text: 'bold', bold: true }] } }, { text: 'x' }],
+        marker: 'dot',
+      })
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+      doubleClick(document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement)
+      const editor = await findEditor()
+      // the overlay is portalled to <body>, outside the transformed canvas
+      expect(editor.closest('[data-prop-path]')?.parentElement).toBe(document.body)
+      expect(editor.textContent).toBe('Plain **bold**')
+      editor.textContent = 'Plain **bolder**'
+      fireEvent.blur(editor)
+      const call = updateShapes.mock.calls[0][0] as unknown as { props: { items: Array<{ text: unknown }> } }
+      expect(call.props.items[0].text).toEqual({ runs: [{ text: 'Plain ' }, { text: 'bolder', bold: true }] })
+    })
+
+    it('a rich value with italic runs is not edited inline (the inspector keeps it intact)', async () => {
+      renderTitleBlock({
+        items: [{ text: { runs: [{ text: 'Slanted', italic: true }] } }, { text: 'x' }],
+        marker: 'dot',
+      })
+      doubleClick(document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement)
+      await new Promise((r) => setTimeout(r, 20))
+      expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+    })
+
     it('Escape cancels without calling updateShapes', async () => {
       const { app } = renderTitleBlock(bulletsProps)
       const updateShapes = jest.spyOn(app, 'updateShapes')

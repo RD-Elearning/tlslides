@@ -63,6 +63,19 @@ describe('tls.x.rule', () => {
     expect(rule(lay({ axis: 'vertical' }, 40, 600)).part).toBe('rule-v')
   })
 
+  it('CMP3: dash draws a stroked path with an equal dash pattern, same box and part', () => {
+    const solid = rule(lay({ weight: 'md' }))
+    const dashed = rule(lay({ weight: 'md', dash: true }))
+    expect(dashed.k).toBe('path')
+    expect(dashed.part).toBe('rule')
+    expect([dashed.width, dashed.height]).toEqual([solid.width, solid.height])
+    expect((dashed.node as any).stroke).toEqual({ color: ctx().resolveColor('line').color, width: 4, dash: [12, 12] })
+    const v = rule(lay({ axis: 'vertical', dash: true, tone: 'gradient' }, 40, 600))
+    expect(v.part).toBe('rule-v')
+    expect((v.node as any).stroke.color).toBe(ctx().resolveColor('accent').color)
+    expect(renderNodeToSvg(lay({ dash: true }))).toContain('stroke-dasharray:6 6')
+  })
+
   it('category is decoration (not chrome)', () => {
     expect(tlsXRule.category).toBe('decoration')
   })
@@ -71,5 +84,6 @@ describe('tls.x.rule', () => {
     const { assertParity } = await import('../../../parity-harness')
     await assertParity(tlsXRule, { axis: 'horizontal', weight: 'bold', tone: 'gradient', length: 'full' } as any, { width: 960, height: 40 })
     await assertParity(tlsXRule, { axis: 'vertical', weight: 'md', tone: 'gradient', length: 'short' } as any, { width: 40, height: 540 })
+    await assertParity(tlsXRule, { axis: 'horizontal', weight: 'md', tone: 'accent', length: 'full', dash: true } as any, { width: 960, height: 40 })
   }, 60000)
 })

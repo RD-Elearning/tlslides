@@ -86,3 +86,50 @@ describe('tls.c.closing', () => {
     slideScopeCompiles(tlsCClosing, 'blank', 'content')
   })
 })
+
+describe('AC2 — look knob (variant: big-type)', () => {
+  const BT = { ...EX, contacts: ['strategy@northwind.example', 'northwind.example/plan'], variant: 'big-type' }
+
+  it('declares big-type as a variant', () => {
+    expect((tlsCClosing.schema.variant.type as any).values).toEqual(['centered', 'split', 'big-type'])
+  })
+
+  it.each([
+    ['preferred', tlsCClosing.size.preferred],
+    ['min', tlsCClosing.size.min],
+  ])('big-type fits size.%s: nothing escapes, no text overlaps, every piece present', (_l, [w, h]) => {
+    const t = layoutAt(tlsCClosing, BT, w, h)
+    expect(t.box.height).toBeLessThanOrEqual(h + 0.5)
+    assertContained(t, { width: w, height: h })
+    assertNoTextOverlap(t)
+    for (const part of ['title', 'text', 'cta', 'person', 'contacts']) expect(hasPart(t, part)).toBe(true)
+  })
+
+  it('the title is one giant start-aligned line (2x display or more on a full slide); the footer sits at the bottom', () => {
+    const ctx = makeCtx({ width: 1728, height: 888 }, registry())
+    const t = layoutAt(tlsCClosing, BT, 1728, 888)
+    const title = leavesOf(t, 'title').filter((l) => l.k === 'text')
+    expect(title).toHaveLength(1)
+    expect(title[0].x).toBe(0)
+    expect((title[0].node as any).style.size).toBeGreaterThanOrEqual(2 * ctx.resolveText('display').size)
+    const contacts = leavesOf(t, 'contacts')[0]
+    expect(contacts.y + contacts.height).toBeCloseTo(888, 0)
+    expect(leavesOf(t, 'cta').find((l) => l.k === 'rect')!.x).toBe(0)
+  })
+
+  it('a long title steps down to fit the width (never wider than the box)', () => {
+    const t = layoutAt(tlsCClosing, { ...BT, title: 'Questions, ideas and objections welcome' }, 1600, 800)
+    for (const l of leavesOf(t, 'title')) expect(l.x + l.width).toBeLessThanOrEqual(1600 + 1)
+  })
+
+  it('toggles still remove their piece', () => {
+    for (const [key, part] of [['showCta', 'cta'], ['showContacts', 'contacts'], ['showPerson', 'person']]) {
+      expect(hasPart(layoutAt(tlsCClosing, { ...BT, [key]: false }, 1600, 800), part)).toBe(false)
+    }
+  })
+
+  it('big-type: DOM and SVG agree', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsCClosing, BT as any, { width: 1600, height: 800 }, undefined, { registry: registry() })
+  }, 30000)
+})

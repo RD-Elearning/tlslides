@@ -54,6 +54,13 @@ describe('tls.c.cards', () => {
     expect(leavesOf(num, 'text')).toHaveLength(3)
   })
 
+  it('AC5: lead number with no numbers numbers the cards by position; an authored number wins', () => {
+    const cards = [{ title: 'A', text: 'a' }, { number: '7', title: 'B', text: 'b' }, { title: 'C', text: 'c' }]
+    const t = layoutAt(tlsCCards, { cards, lead: 'number' }, 1500, 520)
+    expect(leavesOf(t, 'lead').map((l) => (l.node as any).lines[0].text)).toEqual(['01', '7', '03'])
+    expect(hasPart(layoutAt(tlsCCards, { cards, lead: 'icon' }, 1500, 520), 'lead')).toBe(false)
+  })
+
   it('a missing lead field leaves that card without a lead but keeps the layout aligned', () => {
     const t = layoutAt(tlsCCards, { cards: [{ title: 'A', text: 'a' }, { icon: 'target', title: 'B', text: 'b' }], lead: 'icon' }, 1500, 520)
     const [a, b] = [leavesOf(t, 'title[0]')[0], leavesOf(t, 'title[1]')[0]]
@@ -127,8 +134,73 @@ describe('RV03 — honest size', () => {
     }
   })
 
-  it('cards hug their content in a tall region instead of stretching to 460', () => {
+  it('cards hug their content in a tall region instead of stretching to it', () => {
+    // AC3 pre-item: a tall box takes the roomy tier (lead text, heading titles), stretched 1.3x its
+    // content; still well short of the region (it was < 520 with the body tier).
     const tall = layoutAt(tlsCCards, EX, 1500, 900)
-    expect(tall.box.height).toBeLessThan(520)
+    expect(tall.box.height).toBeLessThan(0.8 * 900)
+    // laid out again at its own height it picks the same tier (fixed point)
+    const again = layoutAt(tlsCCards, EX, 1500, tall.box.height)
+    expect(again.box.height).toBe(tall.box.height)
   })
+})
+
+describe('AC2 — look knob (numeral: giant)', () => {
+  const GIANT = {
+    cards: [
+      { number: '01', title: 'Pick one team', text: 'A team of 20 to 50 people with a weekly report.' },
+      { number: '02', title: 'Run six weeks', text: 'Shared dashboards replace the spreadsheet.' },
+      { number: '03', title: 'Decide together', text: 'Keep, change or stop, with the numbers in hand.' },
+      { number: '04', title: 'Roll out', text: 'Two more teams a quarter.' },
+    ],
+    lead: 'number',
+    numeral: 'giant',
+  }
+  const numeralSize = (t: any) => (leavesOf(t, 'lead').find((l) => l.k === 'text')!.node as any).style.size
+
+  it('declares the knob as an enum', () => {
+    expect((tlsCCards.schema.numeral.type as any).values).toEqual(['plain', 'giant'])
+  })
+
+  for (const n of [3, 4]) {
+    it.each([
+      ['preferred', tlsCCards.size.preferred],
+      ['min', tlsCCards.size.min],
+    ])(`giant numerals, ${n} cards, fit size.%s: contained, no text overlap`, (_l, [w, h]) => {
+      const t = layoutAt(tlsCCards, { ...GIANT, cards: GIANT.cards.slice(0, n) }, w, h)
+      expect(t.box.height).toBeLessThanOrEqual(h + 0.5)
+      assertContained(t, { width: w, height: h })
+      assertNoTextOverlap(t)
+    })
+  }
+
+  it('giant paints the numbers at display size, plain at heading size; the title sits under the numeral', () => {
+    const ctx = makeCtx({ width: 1500, height: 600 }, registry())
+    const giant = layoutAt(tlsCCards, GIANT, 1500, 600)
+    expect(numeralSize(giant)).toBe(ctx.resolveText('display').size)
+    // plain: the heading numeral (the title block may autofit it a few percent below the token)
+    const plain = numeralSize(layoutAt(tlsCCards, { ...GIANT, numeral: 'plain' }, 1500, 600))
+    expect(plain).toBeLessThanOrEqual(ctx.resolveText('heading').size)
+    expect(plain).toBeGreaterThan(0.9 * ctx.resolveText('heading').size)
+    const lead = leavesOf(giant, 'lead[0]').find((l) => l.k === 'text')!
+    const title = leavesOf(giant, 'title[0]')[0]
+    expect(title.y).toBeGreaterThanOrEqual(lead.y + lead.height - 1)
+  })
+
+  it('a short box steps the giant numeral down (display, then title) before the cards overflow', () => {
+    const ctx = makeCtx({ width: 1500, height: 400 }, registry())
+    const t = layoutAt(tlsCCards, GIANT, 1500, 400)
+    expect(numeralSize(t)).toBeLessThan(ctx.resolveText('display').size)
+    expect(t.box.height).toBeLessThanOrEqual(400.5)
+  })
+
+  it('numeral is ignored without lead: number (icons unchanged)', () => {
+    const ex = tlsCCards.describe!.example.props as Record<string, unknown>
+    expect(layoutAt(tlsCCards, { ...ex, numeral: 'giant' }, 1500, 400)).toEqual(layoutAt(tlsCCards, ex, 1500, 400))
+  })
+
+  it('giant: DOM and SVG agree', async () => {
+    const { assertParity } = await import('../../../parity-harness')
+    await assertParity(tlsCCards, { ...GIANT, cards: GIANT.cards.slice(0, 3) } as any, { width: 1500, height: 520 }, undefined, { registry: registry() })
+  }, 30000)
 })
