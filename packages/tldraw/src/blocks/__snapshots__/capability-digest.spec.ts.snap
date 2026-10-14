@@ -4193,7 +4193,7 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
 | \`icon\` | yes | icon | Choose a name from the icon list in the capability index. Unknown names render a placeholder. |
 | \`color\` | no | color (role or theme token — never hex) | Color role for the icon. Default uses accent color. |
 | \`size\` | no | enum: sm \\\\| md \\\\| lg \\\\| xl | sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone. |
-| \`iconStyle\` | no | enum: plain \\\\| disc | disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent). |
+| \`iconStyle\` | no | enum: plain \\\\| disc \\\\| tile \\\\| sticker \\\\| blob | disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent); tile a tinted rounded square; sticker a white disc with an ink ring and a hard shadow; blob a hand-drawn tinted blob. |
 
 \`\`\`json
 {

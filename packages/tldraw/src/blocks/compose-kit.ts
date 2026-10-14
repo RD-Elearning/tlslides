@@ -124,7 +124,7 @@ export function styleConceptCard(style: DeckStyle): string {
     `## Style concept: ${style.name}`,
     style.brief,
     `- Drawn by the style on every block you place (never set them): ${look}${r !== undefined ? `, corner radius ${r}` : ''}; fonts ${style.fonts.heading.family} / ${style.fonts.body.family}. Colours come from the palette and the person's primary colour — write roles (accent, text), never hex, sizes or borders.`,
-    `- Icons: ${c.icons === 'none' ? 'only where an item needs one; this style is typographic' : c.icons === 'disc' ? '`iconStyle: "disc"` beside card headings and list items; one icon per item, each fitting its item' : 'plain glyphs, no disc'}.`,
+    `- Icons: ${c.icons === 'none' ? 'only where an item needs one; this style is typographic' : c.icons === 'plain' ? 'plain glyphs, no disc' : `\`iconStyle: "${c.icons}"\` beside card headings and list items; one icon per item, each fitting its item`}.`,
     `- Decoration: ${c.decoration === 'none' ? 'none — this style relies on white space; a short rule under a heading at most' : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
   ]
   if (c.decoration !== 'none') lines.push('- Where decoration may sit: ' + c.zones.map((z) => ZONE_HOW[z]).join('; ') + '.')

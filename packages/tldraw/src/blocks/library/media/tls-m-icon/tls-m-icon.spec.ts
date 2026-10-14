@@ -121,3 +121,14 @@ describe('tls.m.icon', () => {
     })
   })
 })
+describe('I-3 — icon treatments', () => {
+  it.each(['tile', 'sticker', 'blob'])('%s: the icon centred on its backing, both inside the box', (iconStyle) => {
+    const node: any = tlsMIcon.layout({ icon: 'globe', size: 'lg', iconStyle } as any, ctxNoAssets(300, 300))
+    const back = node.children.find((c: any) => c.part === 'icon.disc')
+    const icon = node.children.find((c: any) => c.part === 'icon')
+    expect(back.box.width).toBeLessThanOrEqual(node.box.width)
+    expect(icon.box.x).toBeGreaterThan(0)
+    expect(icon.box.x + icon.box.width).toBeLessThan(node.box.width)
+    if (process.env.ICON_SVG) require('fs').writeFileSync(`${process.env.ICON_SVG}/icon-${iconStyle}.svg`, `<svg xmlns="http://www.w3.org/2000/svg" width="${node.box.width + 20}" height="${node.box.height + 20}"><g transform="translate(6 6)">${require('../../../render-svg').renderNodeToSvg(node)}</g></svg>`)
+  })
+})

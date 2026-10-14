@@ -30,10 +30,12 @@ export const schema: BlockSchema = {
     help: 'sm = 24 (inline glyph, default), md = 48, lg = 80, xl = 128 slide units. Use lg or xl for an icon that stands alone.',
   },
   iconStyle: {
-    type: { kind: 'enum', values: ['plain', 'disc'] },
+    type: { kind: 'enum', values: ['plain', 'disc', 'tile', 'sticker', 'blob'] },
     role: 'option',
     label: 'Icon style',
-    help: 'disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent).',
+    help: 'disc puts the icon on a tinted circle 1.75 x its size (a solid accent disc when the colour is onAccent); tile a tinted rounded square; sticker a white disc with an ink ring and a hard shadow; blob a hand-drawn tinted blob.',
+    // enhance I-3: the treatments reach a slide through the style concept (`concept.icons`)
+    indexValues: ['plain', 'disc'],
   },
 }
 
@@ -45,7 +47,7 @@ export interface IconProps extends Record<string, unknown> {
   /** Icon side: sm 24 (default), md 48, lg 80, xl 128. */
   size?: 'sm' | 'md' | 'lg' | 'xl'
   /** CMP3 — `disc`: the icon on a tinted circle (SURVEY A4 "icon in disc"). Default `plain`. */
-  iconStyle?: 'plain' | 'disc'
+  iconStyle?: 'plain' | 'disc' | 'tile' | 'sticker' | 'blob'
 }
 
 export const defaults: IconProps = {

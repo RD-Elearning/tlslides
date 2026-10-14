@@ -1307,7 +1307,7 @@ export interface StyleConcept {
   /** Where a decorative element may sit. */
   zones: Array<'corner' | 'behind-title' | 'beside-visual' | 'watermark' | 'under-heading'>
   /** How icons are drawn: `disc` (tinted circle), `plain`, or `none` (a typographic style). */
-  icons: 'disc' | 'plain' | 'none'
+  icons: 'disc' | 'plain' | 'none' | 'tile' | 'sticker' | 'blob'
   /** One sentence: how the accent colour is spent on a slide. */
   accent: string
   /** enhance S4: subject doodles suit the style (`tls.m.decoration` tree, flask, globe…): the art
