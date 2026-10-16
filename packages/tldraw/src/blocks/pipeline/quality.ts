@@ -142,8 +142,9 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
   for (const [name, box] of Object.entries(report.regions)) {
     if (name === 'title' || box.width * box.height < QUALITY_GATE.regionShare * W * H) continue
     const own = content.filter((b) => b.region === name && !b.outOfFlow)
-    if (!own.length) continue
-    const f = Math.min(1, area(union(own.map((b) => b.painted))) / Math.max(1, box.width * box.height))
+    // an empty large region is a thin one: a comparison slide with its one two-column block in
+    // `left` left the right half blank and passed (spro deck 5a45a329 s7)
+    const f = own.length ? Math.min(1, area(union(own.map((b) => b.painted))) / Math.max(1, box.width * box.height)) : 0
     if (f < regionFill) {
       regionFill = f
       thinRegion = name
@@ -182,7 +183,7 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
   // the single region of a blank or full-bleed slide is the slide: `fill` already judged it
   const sole = Object.keys(report.regions).length === 1
   if (!sole && regionFill < QUALITY_GATE.minRegionFill) {
-    findings.push({ code: 'quality/thin-region', region: thinRegion, message: `region "${thinRegion}" is ${pct(regionFill)} filled (minimum ${pct(QUALITY_GATE.minRegionFill)}): larger type, more items, or another design` })
+    findings.push({ code: 'quality/thin-region', region: thinRegion, message: regionFill === 0 ? `region "${thinRegion}" is empty: put a block in it, or a layout without it (one wide region: timeline or blank)` : `region "${thinRegion}" is ${pct(regionFill)} filled (minimum ${pct(QUALITY_GATE.minRegionFill)}): larger type, more items, or another design` })
   }
   if (opts.titleSize && lead > 0 && lead < opts.titleSize * QUALITY_GATE.leadOfTitle) {
     findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}` })

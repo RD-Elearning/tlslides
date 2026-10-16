@@ -954,3 +954,32 @@ describe('compileSlide — LO1.5 flow fixes', () => {
     expect(byId(r, 'steps').size[1]).toBe(content.height)
   })
 })
+
+describe('compileSlide — a block that centres a capped stack hugs it in a centred region', () => {
+  const registry = new BlockRegistry()
+  registerBuiltInBlocks(registry)
+  const byId = (r: CompileSlideResult, id: string) => r.shapes.find((s) => (s.props.$block as { id?: string }).id === id)!
+  it('tls.g.layers and the badge under it stay together (spro deck 5a45a329 s6)', () => {
+    const spec: SlideSpec = {
+      id: 'lay',
+      layout: 'sidebar-title',
+      regions: {
+        title: [{ type: 'tls.t.title', id: 't', props: { text: 'Bốn phần của một chương trình C' } }],
+        content: [
+          {
+            type: 'tls.g.layers',
+            id: 'lay',
+            props: { notes: 'side', layers: ['Thư viện', 'Biến tổng thể', 'Các hàm', 'Hàm main'].map((label) => ({ label, text: 'Ghi chú ngắn' })) },
+          },
+          { type: 'tls.t.badge', id: 'b', props: { text: 'Hàm main là bắt buộc' } },
+        ],
+      },
+    }
+    const r = compileSlide(spec, DEFAULT_FRAME, TEST_TOKENS, registry)
+    const lay = byId(r, 'lay')
+    const badge = byId(r, 'b')
+    // the stack paints 4 × 120 + 3 × 8 = 504 units: its box is that, not the region's leftover
+    expect(lay.size[1]).toBeLessThan(560)
+    expect(badge.point[1] - (lay.point[1] + lay.size[1])).toBeLessThan(80)
+  })
+})

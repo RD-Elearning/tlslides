@@ -20,7 +20,7 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
-import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
+import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec, SlotType } from './types'
 import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES } from './types'
 import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
@@ -869,6 +869,7 @@ function validateProps(
     if (value !== undefined && value !== null) {
       checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings, (def.looks ?? []).includes(slotName))
       checkIcons(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
+      if (slotSpec.role === 'content') checkShape(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
       // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
@@ -1213,6 +1214,71 @@ function checkIcons(
     for (const [k, spec] of Object.entries(type.fields)) {
       if (value[k] !== undefined) checkIcons(value[k], spec.type, `${path}.${k}`, blockType, findings)
     }
+  }
+}
+
+/**
+ * The value's shape against its slot type, at any depth inside list/object slots — the layouts
+ * read only what the schema declares, so a wrong shape draws wrong or nothing, with no error
+ * anywhere else (spro deck 5a45a329: `tls.t.numbered` items as `{title, description}` objects drew
+ * "[object Object]"; `tls.g.timeline` events as `{label, description}` drew bare dots).
+ * - `slot/wrong-type` (error): a text slot holding an object, a list slot holding a non-array, an
+ *   object slot holding a non-object.
+ * - `slot/missing` (error): an object item without one of its required fields (an image field
+ *   excepted: it draws a placeholder until an asset is set, as a top-level image does).
+ * Content slots only: option slots are knobs, some with a shape of their own (`tls.m.image`'s focal
+ * is a [fx, fy] pair).
+ * - `slot/unknown` (warning): an object item with a field its type does not declare.
+ */
+function checkShape(value: unknown, type: SlotType, path: string, blockType: string, findings: DeckFinding[]): void {
+  if (value === undefined || value === null) return
+  const wrong = (want: string) =>
+    findings.push({
+      level: 'error',
+      rule: 'slot/wrong-type',
+      path,
+      message: `Block "${blockType}" at "${path}" takes ${want}; got ${describeType(value)}${isRecord(value) ? ` with fields ${Object.keys(value).join(', ')}` : ''}.`,
+    })
+  switch (type.kind) {
+    case 'text':
+      if (typeof value !== 'string' && typeof value !== 'number') wrong('a string')
+      return
+    case 'richText':
+      if (typeof value !== 'string' && typeof value !== 'number' && !(isRecord(value) && Array.isArray(value.runs)))
+        wrong('a string (bold with **double asterisks**) or {runs: [{text, bold?}]}')
+      return
+    case 'list':
+      if (!Array.isArray(value)) return wrong('a list')
+      value.forEach((item, i) => checkShape(item, type.of, `${path}[${i}]`, blockType, findings))
+      return
+    case 'object': {
+      const names = Object.keys(type.fields)
+      if (!isRecord(value)) return wrong(`an object {${names.join(', ')}}`)
+      for (const [k, spec] of Object.entries(type.fields)) {
+        if (spec.required && spec.type.kind !== 'image' && isEmptyValue(value[k])) {
+          findings.push({
+            level: 'error',
+            rule: 'slot/missing',
+            path: `${path}.${k}`,
+            message: `Block "${blockType}" at "${path}" is missing its required "${k}" field (${spec.label}); fields: ${names.join(', ')}.` + (spec.guidance ? ` ${spec.guidance}` : ''),
+          })
+        } else checkShape(value[k], spec.type, `${path}.${k}`, blockType, findings)
+      }
+      for (const k of Object.keys(value)) {
+        if (names.includes(k)) continue
+        const suggestion = nearestName(k, names)
+        findings.push({
+          level: 'warning',
+          rule: 'slot/unknown',
+          path: `${path}.${k}`,
+          message: `Block "${blockType}" at "${path}" has an unknown field "${k}"; fields: ${names.join(', ')}.` + (suggestion ? ` Did you mean "${suggestion}"?` : ''),
+          ...(suggestion ? { suggestion } : {}),
+        })
+      }
+      return
+    }
+    default:
+      return
   }
 }
 

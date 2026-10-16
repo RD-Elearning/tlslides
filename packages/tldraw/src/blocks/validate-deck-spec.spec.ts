@@ -10,6 +10,7 @@
 
 import { validateDeckSpec, defaultBlockRegistry, type DeckFinding } from './validate-deck-spec'
 import { BlockRegistry } from './registry'
+import { BUILT_IN_BLOCKS } from './library'
 import { AnimationTrigger } from '~types'
 import type { BlockSpec, DeckSpec } from './types'
 
@@ -765,5 +766,63 @@ describe('validateDeckSpec: diagram blocks nested in containers', () => {
       findings = findingsOf(deck)
     }).not.toThrow()
     expect(findings.some((f) => f.rule === 'block/cyclic')).toBe(true)
+  })
+})
+
+describe('validateDeckSpec — slot shapes at every depth', () => {
+  function deckWith(blocks: unknown[]): DeckSpec {
+    const deck = JSON.parse(JSON.stringify(validDeck())) as DeckSpec
+    deck.slides[0].regions.left = blocks as BlockSpec[]
+    return deck
+  }
+
+  it('an object in a richText list is an error (spro deck 5a45a329 s3 drew "[object Object]")', () => {
+    const f = findingsOf(
+      deckWith([{ id: 'n', type: 'tls.t.numbered', props: { items: [{ title: 'Hiểu C', description: 'x' }, 'Viết chương trình'] } }])
+    )
+    const hits = byRule(f, 'slot/wrong-type')
+    expect(hits.map((h) => [h.level, h.path])).toEqual([['error', 'slides[0].regions.left[0].props.items[0]']])
+    expect(hits[0].message).toContain('title, description')
+  })
+
+  it('object items without their required fields are errors, with the near name (s4: timeline events as {label, description})', () => {
+    const f = findingsOf(
+      deckWith([
+        {
+          id: 'tl',
+          type: 'tls.g.timeline',
+          props: { events: [1, 2, 3].map((i) => ({ label: `E${i}`, description: 'd' })) },
+        },
+      ])
+    )
+    expect(byRule(f, 'slot/missing').map((h) => h.path)).toEqual(
+      [0, 1, 2].flatMap((i) => [`slides[0].regions.left[0].props.events[${i}].date`, `slides[0].regions.left[0].props.events[${i}].title`])
+    )
+    expect(byRule(f, 'slot/unknown').every((h) => h.level === 'warning')).toBe(true)
+  })
+
+  it('a list slot holding a string is an error; runs and numbers pass as text', () => {
+    const f = findingsOf(
+      deckWith([
+        { id: 'a', type: 'tls.t.numbered', props: { items: 'one, two' } },
+        { id: 'b', type: 'tls.t.numbered', props: { items: [{ runs: [{ text: 'Bold', bold: true }] }, 2] } },
+      ])
+    )
+    expect(byRule(f, 'slot/wrong-type').map((h) => h.path)).toEqual(['slides[0].regions.left[0].props.items'])
+  })
+
+  it('every built-in example and default passes the shape check', () => {
+    const bad: string[] = []
+    for (const def of BUILT_IN_BLOCKS) {
+      for (const props of [def.describe?.example?.props, def.defaults]) {
+        if (!props) continue
+        const f = findingsOf(deckWith([{ id: 'x', type: def.type, props }]))
+        // a nested slot/missing (an item's field) or a wrong shape; a top-level missing slot is the
+        // defaults' business (some defaults leave content empty on purpose)
+        const deep = (h: DeckFinding) => /props\.\w+[[.]/.test(h.path)
+        for (const h of f) if (h.rule === 'slot/wrong-type' || (h.rule === 'slot/missing' && deep(h))) bad.push(`${def.type}: ${h.message}`)
+      }
+    }
+    expect(bad).toEqual([])
   })
 })

@@ -35,7 +35,7 @@ export const tlsDFunnelChart: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [760, 440], min: [240, 160] },
+  size: { preferred: [760, 440], min: [240, 160], hug: true },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

@@ -74,3 +74,13 @@ describe('quality balance measures', () => {
     expect(judged.findings.map((f) => f.code)).toContain('quality/sparse')
   })
 })
+
+describe('an empty region', () => {
+  it('a comparison slide with its one block in `left` has an empty right half (spro deck 5a45a329 s7)', () => {
+    const cmp: BlockSpec = { id: 'c', type: 'tls.c.comparison', props: { columns: [{ title: 'Luôn phải có', items: ['Khai báo thư viện', 'Hàm main'] }, { title: 'Có thể không có', items: ['Biến tổng thể', 'Các hàm'] }] } }
+    const q = quality({ id: 's', layout: 'comparison', regions: { title: [T('Phần nào bắt buộc')], left: [cmp] } })
+    expect(q.regionFill).toBe(0)
+    expect(q.thinRegion).toBe('right')
+    expect(q.findings.find((f) => f.code === 'quality/thin-region')?.message).toContain('is empty')
+  })
+})

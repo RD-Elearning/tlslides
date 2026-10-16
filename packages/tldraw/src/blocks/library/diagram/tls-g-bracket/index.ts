@@ -29,7 +29,7 @@ export const tlsGBracket: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [900, 460], min: [520, 280] },
+  size: { preferred: [900, 460], min: [520, 280], hug: true },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],
