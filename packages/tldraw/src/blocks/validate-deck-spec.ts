@@ -1228,7 +1228,8 @@ function checkIcons(
  *   excepted: it draws a placeholder until an asset is set, as a top-level image does).
  * Content slots only: option slots are knobs, some with a shape of their own (`tls.m.image`'s focal
  * is a [fx, fy] pair).
- * - `slot/unknown` (warning): an object item with a field its type does not declare.
+ * An undeclared field inside an item is left alone: a layout may read past the schema (a tree's
+ * fourth level), and a warning would still send the slide back for a repair.
  */
 function checkShape(value: unknown, type: SlotType, path: string, blockType: string, findings: DeckFinding[]): void {
   if (value === undefined || value === null) return
@@ -1254,6 +1255,8 @@ function checkShape(value: unknown, type: SlotType, path: string, blockType: str
     case 'object': {
       const names = Object.keys(type.fields)
       if (!isRecord(value)) return wrong(`an object {${names.join(', ')}}`)
+      // all fields empty (`person: {name: '', role: ''}`) is no object: the block leaves it out
+      if (Object.values(value).every(isEmptyValue)) return
       for (const [k, spec] of Object.entries(type.fields)) {
         if (spec.required && spec.type.kind !== 'image' && isEmptyValue(value[k])) {
           findings.push({
@@ -1263,17 +1266,6 @@ function checkShape(value: unknown, type: SlotType, path: string, blockType: str
             message: `Block "${blockType}" at "${path}" is missing its required "${k}" field (${spec.label}); fields: ${names.join(', ')}.` + (spec.guidance ? ` ${spec.guidance}` : ''),
           })
         } else checkShape(value[k], spec.type, `${path}.${k}`, blockType, findings)
-      }
-      for (const k of Object.keys(value)) {
-        if (names.includes(k)) continue
-        const suggestion = nearestName(k, names)
-        findings.push({
-          level: 'warning',
-          rule: 'slot/unknown',
-          path: `${path}.${k}`,
-          message: `Block "${blockType}" at "${path}" has an unknown field "${k}"; fields: ${names.join(', ')}.` + (suggestion ? ` Did you mean "${suggestion}"?` : ''),
-          ...(suggestion ? { suggestion } : {}),
-        })
       }
       return
     }

@@ -785,7 +785,7 @@ describe('validateDeckSpec — slot shapes at every depth', () => {
     expect(hits[0].message).toContain('title, description')
   })
 
-  it('object items without their required fields are errors, with the near name (s4: timeline events as {label, description})', () => {
+  it('object items without their required fields are errors, naming the fields (s4: timeline events as {label, description})', () => {
     const f = findingsOf(
       deckWith([
         {
@@ -798,7 +798,12 @@ describe('validateDeckSpec — slot shapes at every depth', () => {
     expect(byRule(f, 'slot/missing').map((h) => h.path)).toEqual(
       [0, 1, 2].flatMap((i) => [`slides[0].regions.left[0].props.events[${i}].date`, `slides[0].regions.left[0].props.events[${i}].title`])
     )
-    expect(byRule(f, 'slot/unknown').every((h) => h.level === 'warning')).toBe(true)
+    expect(byRule(f, 'slot/missing')[0].message).toContain('fields: date, title, text, icon')
+  })
+
+  it('an object whose fields are all empty is no object (a closing slide without a person)', () => {
+    const f = findingsOf(deckWith([{ id: 'c', type: 'tls.c.closing', props: { title: 'Q&A', person: { name: '', role: '' } } }]))
+    expect(byRule(f, 'slot/missing')).toEqual([])
   })
 
   it('a list slot holding a string is an error; runs and numbers pass as text', () => {
