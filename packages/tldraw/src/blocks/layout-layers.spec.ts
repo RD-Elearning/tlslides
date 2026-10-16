@@ -232,6 +232,26 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     expect(has(two, 'text/collision', 'error', ['t', 't2'])).toBe(true)
   })
 
+  it('a strong decoration backdrop behind text → text/occluded; a soft one or tone alt is intended', () => {
+    // spro deck 63550faa s12: a repair made an occluding `book` doodle a backdrop to pass the check,
+    // but a subject doodle paints at ≥ 0.85 whatever its layer.
+    const doodle = (id: string, props: Record<string, unknown>): BlockSpec => ({ id, type: 'tls.m.decoration', layer: 'backdrop', props: { shape: 'book', ...props } })
+    const slide = (deco: BlockSpec): SlideSpec => ({
+      id: 's',
+      layout: 'two-column',
+      regions: { title: [title('t', 'Layered composite')], left: [deco, statCard('card')] },
+    })
+    const strong = analyzeSlide(slide(doodle('d', { opacity: 'soft' })))
+    const f = strong.findings.find((x) => x.code === 'text/occluded' && x.blockIds.includes('d'))!
+    expect([f.severity, f.blockIds.includes('card')]).toEqual(['error', true])
+    expect(f.message).toMatch(/backdrop d paints strongly behind text of card/)
+    for (const quiet of [blob('d', { layer: 'backdrop' }), doodle('d', { tone: 'alt' })]) {
+      const r = analyzeSlide(slide(quiet))
+      expect(r.findings.some((x) => x.code === 'text/occluded')).toBe(false)
+      expect(has(r, 'layout/overlap', 'info', ['d', 'card'])).toBe(true)
+    }
+  })
+
   it('a backdrop above content in z → error', () => {
     const slide: SlideSpec = {
       id: 's',

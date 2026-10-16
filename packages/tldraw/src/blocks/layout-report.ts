@@ -179,6 +179,9 @@ export interface BlockReport {
   elastic: boolean
   /** Painted union at the final box, slide coordinates. `null` = paints nothing. */
   painted: Box | null
+  /** The opacity the block's root paints at (absent = 1). A backdrop at 0.5 or more behind text
+   *  reads as a picture on top of the words, not as a texture (`classifyOverlap`). */
+  alpha?: number
   /** How far painted content leaves the box (0 = inside). */
   contentOverflow: { dx: number; dy: number }
   text: TextLeafReport[]
@@ -332,14 +335,24 @@ export interface OverlapParty {
   /** LO2: painted union, slide coordinates. An overlay covers text only where it paints (a
    *  region overlay's box is the whole region). Absent = the box overlap is used. */
   painted?: Box | null
+  /** A `tls.m.decoration`'s root opacity (absent = none set); see `STRONG_BACKDROP_ALPHA`. */
+  decorationAlpha?: number
 }
+
+/** A `tls.m.decoration` backdrop painting at this opacity or more behind another block's text is
+ *  `text/occluded`: a subject doodle or a 3D solid keeps ≥ 0.85, so `layer: backdrop` does not
+ *  quieten it (spro: a repair turned an occluding book into a backdrop to pass this check). Other
+ *  backdrops (a photo under a title) and a decoration in tone `alt` (no opacity: already quiet) are
+ *  left alone. */
+export const STRONG_BACKDROP_ALPHA = 0.5
 
 /**
  * Classify a box ∩ box overlap by layer policy (layout-oracle §LO2). Text ∩ text across blocks
  * is reported separately (`text/collision`): an error, `info` when one side is a backdrop behind (LO2.1).
  *
  * - content ∩ content → `layout/overlap` error (warning when the painted content does not meet);
- * - backdrop ∩ anything → allowed (`info`) when the backdrop paints *behind*, else error;
+ * - backdrop ∩ anything → allowed (`info`) when the backdrop paints *behind*, else error — and a
+ *   strong decoration (`STRONG_BACKDROP_ALPHA`) behind the other's text → `text/occluded` error;
  * - overlay ∩ content → allowed (`info`) unless it covers a text leaf → `text/occluded` error;
  * - overlay ∩ overlay → warning.
  */
@@ -355,6 +368,12 @@ export function classifyOverlap(
     const other = backdrop === a ? b : a
     if (a.layer === 'backdrop' && b.layer === 'backdrop') {
       return { code: 'layout/overlap', severity: 'info', note: 'two backdrops overlap' }
+    }
+    if (backdrop.z < other.z && (backdrop.decorationAlpha ?? 0) >= STRONG_BACKDROP_ALPHA) {
+      const cover = backdrop.painted ? intersect(backdrop.painted, overlap) : overlap
+      if (cover && other.text.some((t) => area(intersect(t, cover)) > MIN_TEXT_COLLISION)) {
+        return { code: 'text/occluded', severity: 'error', note: `backdrop ${backdrop.id} paints strongly behind text of ${other.id}` }
+      }
     }
     return backdrop.z < other.z
       ? { code: 'layout/overlap', severity: 'info', note: `backdrop ${backdrop.id} sits behind ${other.id} (intended)` }
@@ -613,6 +632,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       natural: measure.natural,
       elastic: measure.elastic,
       painted,
+      ...(rootAlpha(root) === undefined ? {} : { alpha: rootAlpha(root) }),
       contentOverflow,
       text,
       ...(capacity ? { capacity } : {}),
@@ -1319,8 +1339,20 @@ function backdropBehind(a: BlockReport, b: BlockReport): BlockReport | undefined
   return undefined
 }
 
+/** The opacity a block paints at: the product down its chain of single-child root groups (a block
+ *  wrapper around the block's own root); absent = 1. */
+function rootAlpha(root: LayoutNode | undefined): number | undefined {
+  let alpha = 1
+  let n = root
+  while (n && n.k === 'group') {
+    if (typeof n.opacity === 'number') alpha *= n.opacity
+    n = n.children.length === 1 ? n.children[0] : undefined
+  }
+  return alpha < 1 ? alpha : undefined
+}
+
 function party(b: BlockReport): OverlapParty {
-  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted }
+  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted, ...(b.type === 'tls.m.decoration' && b.alpha !== undefined ? { decorationAlpha: b.alpha } : {}) }
 }
 
 /** The smaller of the two moves that separates `b` from `a` (down or sideways). */
