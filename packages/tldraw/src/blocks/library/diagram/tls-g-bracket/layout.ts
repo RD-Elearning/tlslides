@@ -46,10 +46,12 @@ export function layout(props: BracketProps, ctx: LayoutContext): LayoutNode {
     const color = rampColor(ctx, 'gradient', i, N)
     itemNodes.push({ k: 'rect', part: `item[${i}]`, box, fill: { type: 'solid', color: tintOf(c.surface, color, 0.16) }, stroke: { color, width: 2 }, radius: Math.min(14, box.height / 3) })
     const pad = box.height < 48 ? 6 : 12
-    const w = Math.max(10, box.width - 2 * pad)
+    // Inline padding from the spacing scale, as tls.g.breakdown's parts (12 put the text on the edge).
+    const padX = box.height < 48 ? ctx.tokens.space.xs : ctx.tokens.space.md
+    const w = Math.max(10, box.width - 2 * padX)
     const lines = clamp(Math.floor((box.height - 2 * Math.min(pad, 6)) / lineH(itemS)), 1, 2)
     const h = linesHeight(ctx, items[i], itemS, w, lines)
-    itemNodes.push(...placeLines(ctx, items[i], itemS, { x: box.x + pad, y: box.y + (box.height - h) / 2, width: w }, 'start', lines, `item[${i}].text`).nodes)
+    itemNodes.push(...placeLines(ctx, items[i], itemS, { x: box.x + padX, y: box.y + (box.height - h) / 2, width: w }, 'start', lines, `item[${i}].text`).nodes)
   }
 
   if (side === 'top') {

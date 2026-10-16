@@ -51,8 +51,9 @@ export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
     } else {
       nodes.push({ k: 'rect', part: `layer[${i}]`, box: { x: 0, y, width: barW, height: rowH }, fill: { type: 'solid', color: fill }, radius: Math.min(14, rowH / 3) })
     }
-    // Content area inside the bar: avoid the slanted ends.
-    const pad = Math.max(10, skew + 12)
+    // Content area inside the bar: avoid the slanted ends. Inline padding from the spacing scale
+    // (12 units put the icon on a flat bar's edge: owner test, deck 63550faa s8).
+    const pad = Math.max(ctx.tokens.space.md, skew + ctx.tokens.space.xs)
     const cx0 = pad
     const cw = Math.max(20, barW - skew - 2 * pad + (persp ? skew * 0.4 : 0))
     const isz = l.icon && rowH >= 48 ? Math.min(34, rowH - 16) : 0
