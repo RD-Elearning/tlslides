@@ -94,7 +94,10 @@ export function layout(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
     const color = rampColor(ctx, 'gradient', i, N)
     const out: LayoutNode[] = [{ k: 'rect', part: `part[${i}].card`, box, fill: { type: 'solid', color: tintOf(c.surface, color, 0.16) }, stroke: { color, width: 2 }, radius: 14 }]
     const pad = box.height < 56 ? 6 : 12
-    const iw = Math.max(10, box.width - 2 * pad)
+    // Inline padding from the spacing scale: 12 units left the label on the card's edge, and a
+    // hand-drawn (rough) card edge wobbles inward by a few units (owner test, deck 63550faa s4).
+    const padX = box.height < 56 ? ctx.tokens.space.xs : ctx.tokens.space.md
+    const iw = Math.max(10, box.width - 2 * padX)
     const pct = share ? `${Math.round(share[i])}%` : ''
     if (!tb) {
       // label + note on the left, value (and share) on the right
@@ -104,8 +107,8 @@ export function layout(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
       const lh = linesHeight(ctx, p.label, labelS, lw, 1)
       const nh = nl ? linesHeight(ctx, p.note, noteS, lw, nl) : 0
       const top = box.y + (box.height - (lh + (nh ? 2 + nh : 0))) / 2
-      out.push(...placeLines(ctx, p.label, labelS, { x: box.x + pad, y: top, width: lw }, 'start', 1, `part[${i}].label`).nodes)
-      if (nh) out.push(...placeLines(ctx, p.note, noteS, { x: box.x + pad, y: top + lh + 2, width: lw }, 'start', nl, `part[${i}].note`).nodes)
+      out.push(...placeLines(ctx, p.label, labelS, { x: box.x + padX, y: top, width: lw }, 'start', 1, `part[${i}].label`).nodes)
+      if (nh) out.push(...placeLines(ctx, p.note, noteS, { x: box.x + padX, y: top + lh + 2, width: lw }, 'start', nl, `part[${i}].note`).nodes)
       if (vw) {
         // Short rows drop the value to the caption size so it still fits the card.
         const vS = box.height - 2 * Math.min(pad, 6) >= lineH(valueS) ? valueS : labelS
@@ -113,9 +116,9 @@ export function layout(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
         const showPct = pct && box.height - 2 * Math.min(pad, 6) >= vh + lineH(noteS)
         const total = vh + (showPct ? lineH(noteS) : 0)
         const vt = box.y + (box.height - total) / 2
-        out.push(...placeLines(ctx, p.value, { ...vS, color: c.text }, { x: box.x + box.width - pad - vw, y: vt, width: vw }, 'end', 1, `part[${i}].value`).nodes)
-        if (showPct) out.push(...placeLines(ctx, pct, noteS, { x: box.x + box.width - pad - vw, y: vt + vh, width: vw }, 'end', 1, `part[${i}].share`).nodes)
-      } else if (pct) out.push(...placeLines(ctx, pct, noteS, { x: box.x + box.width - pad - 60, y: box.y + (box.height - lineH(noteS)) / 2, width: 60 }, 'end', 1, `part[${i}].share`).nodes)
+        out.push(...placeLines(ctx, p.value, { ...vS, color: c.text }, { x: box.x + box.width - padX - vw, y: vt, width: vw }, 'end', 1, `part[${i}].value`).nodes)
+        if (showPct) out.push(...placeLines(ctx, pct, noteS, { x: box.x + box.width - padX - vw, y: vt + vh, width: vw }, 'end', 1, `part[${i}].share`).nodes)
+      } else if (pct) out.push(...placeLines(ctx, pct, noteS, { x: box.x + box.width - padX - 60, y: box.y + (box.height - lineH(noteS)) / 2, width: 60 }, 'end', 1, `part[${i}].share`).nodes)
     } else {
       // stacked: label, value, share, note
       let y = box.y + pad
@@ -123,7 +126,7 @@ export function layout(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
       const put = (text: string, s: typeof labelS, maxLines: number, name: string, color?: string) => {
         if (!text || bottom - y < lineH(s)) return
         const ml = clamp(Math.min(maxLines, Math.floor((bottom - y) / lineH(s))), 1, maxLines)
-        const pl = placeLines(ctx, text, color ? { ...s, color } : s, { x: box.x + pad, y, width: iw }, 'center', ml, name)
+        const pl = placeLines(ctx, text, color ? { ...s, color } : s, { x: box.x + padX, y, width: iw }, 'center', ml, name)
         out.push(...pl.nodes)
         y += pl.height + 4
       }

@@ -70,7 +70,7 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
   { id: 'three-column', regions: 'title, a, b, c', when: 'three parallel columns' },
   { id: 'image-left', regions: 'title, image, text', when: 'an image or a large visual first, text beside it' },
   { id: 'image-right', regions: 'title, text, image', when: 'text first, the visual beside it' },
-  { id: 'section-stack', regions: 'content', when: 'a centred stack, no title bar: a statement, a number, a question' },
+  { id: 'section-stack', regions: 'content', when: 'one short stack in a 1200-wide left column, no title bar: a statement, a number, a question — never cards, a recap or a list (the right third stays empty)' },
   { id: 'blank', regions: 'content', when: 'one region, the whole safe area' },
   { id: 'quote', regions: 'quote, attribution', when: 'a quotation and who said it' },
   { id: 'sidebar-title', regions: 'title, content', when: 'the title in a tall left column, one structure filling the right' },

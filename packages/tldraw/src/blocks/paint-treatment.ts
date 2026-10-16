@@ -62,6 +62,7 @@ function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment,
     seed,
     roughness: t.roughness ?? 1,
     margin: stroke ? stroke.width / 2 + 1 : 1,
+    fit: 'axes',
     ...(stroke ? { stroke: { color: stroke.color, width: stroke.width } } : {}),
     ...(hatch ? { hachure: { color: mixHex(fillHex!, '#000000', 0.12), gap: 14, weight: 1.5 } } : {}),
   })
@@ -70,7 +71,7 @@ function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment,
   const local = { x: 0, y: 0, width: W, height: H }
   const base: LayoutNode =
     rough && node.fill && !node.shadow
-      ? { k: 'path', box: local, d: roughOutline(d, W, H, { seed, roughness: (t.roughness ?? 1) * 0.6, margin: stroke!.width / 2 + 1 }), fill: node.fill, ...(node.part ? { part: node.part } : {}) }
+      ? { k: 'path', box: local, d: roughOutline(d, W, H, { seed, roughness: (t.roughness ?? 1) * 0.6, margin: stroke!.width / 2 + 1, fit: 'axes' }), fill: node.fill, ...(node.part ? { part: node.part } : {}) }
       : { k: 'rect', box: local, ...(node.fill ? { fill: node.fill } : {}), ...(node.radius !== undefined ? { radius: node.radius } : {}), ...(node.shadow ? { shadow: node.shadow } : {}), ...(node.part ? { part: node.part } : {}) }
   return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [base, ...sketch] }
 }
@@ -83,7 +84,7 @@ function treatLine(node: Extract<LayoutNode, { k: 'line' }>, t: RenderTreatment,
   const W = Math.abs(node.to.x - node.from.x) + 2 * pad
   const H = Math.abs(node.to.y - node.from.y) + 2 * pad
   const d = `M${node.from.x - x0} ${node.from.y - y0} L${node.to.x - x0} ${node.to.y - y0}`
-  const sketch = roughPaths(d, W, H, { seed, roughness: t.roughness ?? 1, margin: 1, stroke: { color: node.stroke.color, width: node.stroke.width } })
+  const sketch = roughPaths(d, W, H, { seed, roughness: t.roughness ?? 1, margin: 1, fit: 'axes', stroke: { color: node.stroke.color, width: node.stroke.width } })
   return { k: 'group', box: { x: x0, y: y0, width: W, height: H }, ...(node.part ? { part: node.part } : {}), children: sketch }
 }
 
@@ -93,7 +94,7 @@ function treatPath(node: Extract<LayoutNode, { k: 'path' }>, t: RenderTreatment,
   if (!/^[\sMLCZ\d.,eE+-]+$/.test(node.d)) return node // relative or arc commands: left crisp
   const { width: W, height: H } = node.box
   if (W < 2 && H < 2) return node
-  const sketch = roughPaths(node.d, Math.max(W, 4), Math.max(H, 4), { seed, roughness: t.roughness ?? 1, margin: 0, stroke: { color: node.stroke.color, width: node.stroke.width } })
+  const sketch = roughPaths(node.d, Math.max(W, 4), Math.max(H, 4), { seed, roughness: t.roughness ?? 1, margin: 0, fit: 'axes', stroke: { color: node.stroke.color, width: node.stroke.width } })
   return { k: 'group', box: { x: node.box.x, y: node.box.y, width: W, height: H }, ...(node.part ? { part: node.part } : {}), children: sketch.map((s) => ({ ...s, box: { x: 0, y: 0, width: W, height: H } })) }
 }
 
