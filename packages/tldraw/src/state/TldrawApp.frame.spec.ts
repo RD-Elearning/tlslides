@@ -1,6 +1,6 @@
 import { mockDocument, TldrawTestApp } from '~test'
 import { TDExport, TDExportTypes, TDDocument } from '~types'
-import { SLIDE_ASPECT_PRESETS, FIT_TO_SCREEN_PADDING } from '~constants'
+import { SLIDE_ASPECT_PRESETS, FIT_TO_SCREEN_PADDING, MAX_ZOOM_STEP, WHEEL_ZOOM_SPEED } from '~constants'
 import { TLDR } from '~state/TLDR'
 
 // `loadDocument`/`migrate` mutate the document object they're given in place (and `migrate`
@@ -245,18 +245,18 @@ describe('Zoom-out floor on a slide frame', () => {
 })
 
 describe('Wheel zoom step', () => {
-  it('zooms one mouse-wheel notch by at most 12%, and a trackpad tick gently', () => {
+  it('caps one mouse-wheel notch, and zooms a trackpad tick in proportion', () => {
     const app = new TldrawTestApp()
     app.loadDocument(freshDocument())
     app.updateBounds(VIEWPORT_BOUNDS)
     app.zoomTo(1)
     // zoomBy is throttled (16 ms): fake timers let the second call through
     jest.useFakeTimers()
-    app.zoomBy(-100 / 100, [500, 500]) // one notch in, ctrl+wheel deltaY -100
-    expect(app.pageState.camera.zoom).toBeCloseTo(1.12, 2)
+    app.zoomBy(-100 / WHEEL_ZOOM_SPEED, [500, 500]) // one notch in, ctrl+wheel deltaY -100
+    expect(app.pageState.camera.zoom).toBeCloseTo(Math.exp(MAX_ZOOM_STEP), 2)
     jest.advanceTimersByTime(20)
-    app.zoomBy(-4 / 100, [500, 500]) // a trackpad pinch tick
-    expect(app.pageState.camera.zoom).toBeCloseTo(1.12 * Math.exp(0.04), 2)
+    app.zoomBy(-4 / WHEEL_ZOOM_SPEED, [500, 500]) // a trackpad pinch tick
+    expect(app.pageState.camera.zoom).toBeCloseTo(Math.exp(MAX_ZOOM_STEP + 4 / WHEEL_ZOOM_SPEED), 2)
     jest.useRealTimers()
   })
 })

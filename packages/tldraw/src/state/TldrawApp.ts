@@ -2807,7 +2807,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   zoomBy = Utils.throttle((delta: number, center?: number[]): this => {
     const { zoom } = this.pageState.camera
     // exponential, so in and out by the same delta cancel out, and one step is capped: a mouse
-    // wheel notch (delta 100 px) moves ~12%, not the whole range at once
+    // wheel notch (delta 100 px) moves ~20%, not the whole range at once
     const step = Utils.clamp(-delta, -MAX_ZOOM_STEP, MAX_ZOOM_STEP)
     const nextZoom = TLDR.getCameraZoom(zoom * Math.exp(step))
     return this.zoomTo(nextZoom, center)
