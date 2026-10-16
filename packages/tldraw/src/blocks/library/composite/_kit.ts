@@ -207,9 +207,16 @@ export function strings(v: unknown, max: number): string[] {
   return (Array.isArray(v) ? v : []).filter((x): x is string => typeof x === 'string' && x.trim() !== '').slice(0, max)
 }
 
+/** A `list of richText` slot's non-empty items, strings and `{ runs }` alike (`strings` drops runs). */
+export function richItems(v: unknown, max: number): Array<string | RichText> {
+  return (Array.isArray(v) ? v : [])
+    .filter((x): x is string | RichText => (typeof x === 'string' || (!!x && typeof x === 'object' && Array.isArray((x as RichText).runs))) && plainOf(x).trim() !== '')
+    .slice(0, max)
+}
+
 /* ── slide-block helpers ──────────────────────────────────────────────────────────────── */
 
-import type { Paint, TypeToken } from '../../types'
+import type { Paint, RichText, TypeToken } from '../../types'
 import { plainOf, toMeasurable } from '../text/_engine/rich'
 
 export { plainOf, toMeasurable }
