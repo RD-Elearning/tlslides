@@ -195,3 +195,68 @@ describe('Frame-aware export', () => {
     expect(info.size).not.toEqual([1920, 1080])
   })
 })
+
+describe('Zoom-out floor on a slide frame', () => {
+  function fitted() {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    app.setPageSize(app.page.id, [...SLIDE_ASPECT_PRESETS.widescreen])
+    app.updateBounds(VIEWPORT_BOUNDS)
+    return app
+  }
+
+  it('is the fit-to-frame zoom', () => {
+    const app = fitted()
+    expect(app.minZoom).toBeCloseTo((1000 - FIT_TO_SCREEN_PADDING) / 1920)
+    expect(app.minZoom).toBeCloseTo(app.pageState.camera.zoom)
+  })
+
+  it('stops zoomOut, zoomTo and pinches there, with the slide centred', () => {
+    const app = fitted()
+    const fit = { ...app.pageState.camera }
+    app.zoomIn().zoomIn().pan([200, 50])
+    app.zoomOut().zoomOut().zoomOut().zoomOut()
+    expect(app.pageState.camera.zoom).toBeCloseTo(fit.zoom)
+    expect(app.pageState.camera.point[0]).toBeCloseTo(fit.point[0])
+    expect(app.pageState.camera.point[1]).toBeCloseTo(fit.point[1])
+
+    app.zoomTo(0.1)
+    expect(app.pageState.camera.zoom).toBeCloseTo(fit.zoom)
+    app.pinchZoom([500, 500], [0, 0], 0.05)
+    expect(app.pageState.camera.zoom).toBeCloseTo(fit.zoom)
+  })
+
+  it('still zooms in past the fit', () => {
+    const app = fitted()
+    const fitZoom = app.pageState.camera.zoom
+    app.zoomTo(2)
+    expect(app.pageState.camera.zoom).toBeCloseTo(2)
+    expect(fitZoom).toBeLessThan(2)
+  })
+
+  it('keeps the editor-wide minimum on a page without a frame', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    app.updateBounds(VIEWPORT_BOUNDS)
+    app.page.size = undefined
+    app.zoomTo(0.2)
+    expect(app.pageState.camera.zoom).toBeCloseTo(0.2)
+  })
+})
+
+describe('Wheel zoom step', () => {
+  it('zooms one mouse-wheel notch by at most 12%, and a trackpad tick gently', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    app.updateBounds(VIEWPORT_BOUNDS)
+    app.zoomTo(1)
+    // zoomBy is throttled (16 ms): fake timers let the second call through
+    jest.useFakeTimers()
+    app.zoomBy(-100 / 100, [500, 500]) // one notch in, ctrl+wheel deltaY -100
+    expect(app.pageState.camera.zoom).toBeCloseTo(1.12, 2)
+    jest.advanceTimersByTime(20)
+    app.zoomBy(-4 / 100, [500, 500]) // a trackpad pinch tick
+    expect(app.pageState.camera.zoom).toBeCloseTo(1.12 * Math.exp(0.04), 2)
+    jest.useRealTimers()
+  })
+})

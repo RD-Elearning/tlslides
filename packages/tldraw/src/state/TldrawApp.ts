@@ -75,6 +75,8 @@ import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
   USER_COLORS,
   FIT_TO_SCREEN_PADDING,
+  MAX_ZOOM_STEP,
+  WHEEL_ZOOM_SPEED,
   GRID_SIZE,
   IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
@@ -2628,9 +2630,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param zoomDelta The zoom detal
    */
   pinchZoom = (point: number[], delta: number[], zoom: number): this => {
+    if (this.atMinZoom(zoom)) return this.fitAtMinZoom(`pinch_zoomed`)
     const { camera } = this.pageState
     const nextPoint = Vec.sub(camera.point, Vec.div(delta, camera.zoom))
-    const nextZoom = zoom
+    const nextZoom = TLDR.getCameraZoom(zoom)
     const p0 = Vec.sub(Vec.div(point, camera.zoom), nextPoint)
     const p1 = Vec.sub(Vec.div(point, nextZoom), nextPoint)
     return this.setCamera(
@@ -2646,10 +2649,22 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param center The point to zoom towards (defaults to screen center).
    */
   zoomTo = (next: number, center = this.centerPoint): this => {
+    if (this.atMinZoom(next)) return this.fitAtMinZoom(`zoomed_camera`)
     const { zoom, point } = this.pageState.camera
     const p0 = Vec.sub(Vec.div(center, zoom), point)
     const p1 = Vec.sub(Vec.div(center, next), point)
     return this.setCamera(Vec.toFixed(Vec.add(point, Vec.sub(p1, p0))), next, `zoomed_camera`)
+  }
+
+  /** Whether `zoom` reaches the floor of a page with a slide frame (see `minZoom`). */
+  private atMinZoom = (zoom: number): boolean => !!this.page.size && zoom <= this.minZoom + 1e-6
+
+  /** The whole slide, centred, at `minZoom`: zooming out ends on the overview, not off to a side. */
+  private fitAtMinZoom = (reason: string): this => {
+    const fit = this.fitView()
+    if (!fit) return this
+    const zoom = this.minZoom
+    return this.setCamera(fit.pointAt(zoom), zoom, reason)
   }
 
   /**
@@ -2675,12 +2690,21 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * page's shapes, like `zoomToContent`, for a page with no frame.
    */
   zoomToFit = (): this => {
-    const {
-      shapes,
-      pageState: { camera },
-    } = this
+    const fit = this.fitView()
+    if (!fit) return this
+    const { camera } = this.pageState
+    const zoom = camera.zoom === fit.zoom || camera.zoom < 1 ? Math.min(1, fit.zoom) : fit.zoom
+    return this.setCamera(fit.pointAt(zoom), zoom, `zoomed_to_fit`)
+  }
+
+  /**
+   * The zoom that fits the page's slide frame (or, with no frame, its shapes) into the canvas, and
+   * the camera point that centres it at a given zoom. Null on an empty page with no frame.
+   */
+  private fitView = (): { zoom: number; pointAt: (zoom: number) => number[] } | null => {
     const frame = this.page.size
-    if (!frame && shapes.length === 0) return this
+    const { shapes } = this
+    if (!frame && shapes.length === 0) return null
     const { rendererBounds } = this
     const commonBounds = frame
       ? { minX: 0, minY: 0, maxX: frame[0], maxY: frame[1], width: frame[0], height: frame[1] }
@@ -2688,20 +2712,30 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     // the part of the canvas no docked panel covers (a too-narrow remainder ignores the panel)
     const inset = rendererBounds.width - this.fitInsets.right > rendererBounds.width / 2 ? this.fitInsets.right : 0
     const width = rendererBounds.width - inset
-    let zoom = TLDR.getCameraZoom(
+    const zoom = TLDR.getCameraZoom(
       Math.min(
         (width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
         (rendererBounds.height - FIT_TO_SCREEN_PADDING) / commonBounds.height
       )
     )
-    zoom = camera.zoom === zoom || camera.zoom < 1 ? Math.min(1, zoom) : zoom
-    const mx = (width - commonBounds.width * zoom) / 2 / zoom
-    const my = (rendererBounds.height - commonBounds.height * zoom) / 2 / zoom
-    return this.setCamera(
-      Vec.toFixed(Vec.sub([mx, my], [commonBounds.minX, commonBounds.minY])),
+    return {
       zoom,
-      `zoomed_to_fit`
-    )
+      pointAt: (z: number) => {
+        const mx = (width - commonBounds.width * z) / 2 / z
+        const my = (rendererBounds.height - commonBounds.height * z) / 2 / z
+        return Vec.toFixed(Vec.sub([mx, my], [commonBounds.minX, commonBounds.minY]))
+      },
+    }
+  }
+
+  /**
+   * The furthest the camera zooms out: on a page with a slide frame, the zoom that shows the
+   * whole slide (as `zoomToFit` lands on it) — zooming further only shrinks the slide into empty
+   * canvas. Pages without a frame keep the editor-wide minimum.
+   */
+  get minZoom(): number {
+    const fit = this.page.size ? this.fitView() : null
+    return fit ? Math.min(1, fit.zoom) : TLDR.getCameraZoom(0)
   }
 
   /**
@@ -2772,7 +2806,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    */
   zoomBy = Utils.throttle((delta: number, center?: number[]): this => {
     const { zoom } = this.pageState.camera
-    const nextZoom = TLDR.getCameraZoom(zoom - delta * zoom)
+    // exponential, so in and out by the same delta cancel out, and one step is capped: a mouse
+    // wheel notch (delta 100 px) moves ~12%, not the whole range at once
+    const step = Utils.clamp(-delta, -MAX_ZOOM_STEP, MAX_ZOOM_STEP)
+    const nextZoom = TLDR.getCameraZoom(zoom * Math.exp(step))
     return this.zoomTo(nextZoom, center)
   }, 16)
 
@@ -3835,7 +3872,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
 
   onZoom: TLWheelEventHandler = (info, e) => {
     if (this.state.appState.status !== TDStatus.Idle) return
-    const delta = info.delta[2] / 50
+    const delta = info.delta[2] / WHEEL_ZOOM_SPEED
     this.zoomBy(delta, info.point)
     this.onPointerMove(info, e as unknown as React.PointerEvent)
   }

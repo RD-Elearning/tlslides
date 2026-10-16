@@ -17,6 +17,11 @@ export const SVG_EXPORT_PADDING = 16
 export const BINDING_DISTANCE = 16
 export const CLONING_DISTANCE = 32
 export const FIT_TO_SCREEN_PADDING = 128
+// ctrl/⌘ + wheel and trackpad pinch: wheel pixels per e-fold of zoom (was a linear 1/50 per px,
+// which felt twitchy on a trackpad and jumped the whole range on one mouse-wheel notch)
+export const WHEEL_ZOOM_SPEED = 100
+// the most one wheel event may zoom, as a log step (ln 1.12: ±12%)
+export const MAX_ZOOM_STEP = Math.log(1.12)
 export const SNAP_DISTANCE = 5
 export const EMPTY_ARRAY = [] as any[]
 export const SLOW_SPEED = 10

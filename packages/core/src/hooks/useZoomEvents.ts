@@ -28,9 +28,11 @@ export function useZoomEvents<T extends HTMLElement>(zoom: number, ref: React.Re
   }, [])
 
   const handleWheel = React.useCallback<Handler<'wheel', WheelEvent>>(
-    ({ event: e }) => {
+    ({ event: e, last }) => {
       e.preventDefault()
-      if (inputs.isPinching) return
+      // use-gesture calls the handler once more when the wheel gesture ends, with the same last
+      // event: reading its delta again doubled the final notch (a single ctrl+wheel zoomed twice)
+      if (last || inputs.isPinching) return
 
       const { offset } = normalizeWheel(e)
 
