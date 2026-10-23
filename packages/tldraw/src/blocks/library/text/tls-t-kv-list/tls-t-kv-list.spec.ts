@@ -91,6 +91,29 @@ describe('tls.t.kv-list', () => {
     expect(r.fits).toBe(false)
     expect(r.remedy).toEqual([{ kind: 'reflow', to: "columns: '2'" }, { kind: 'truncate', slot: 'items' }])
   })
+
+  it('capacity: a key that wraps in two columns does not fit — reflow to one column (spro "Sáu mục tiêu")', () => {
+    const items = [
+      { key: '1. Hiểu khái niệm thông tin – tin học', value: 'Định nghĩa thông tin và tin học' },
+      { key: '2. Hiểu các đơn vị đo thông tin', value: 'Bit, Byte và các bội số' },
+      { key: '3. Hiểu các hệ cơ số đếm', value: 'Thực hiện trên các hệ đếm' },
+      { key: '4. Hiểu thuật toán', value: 'Chương trình, lập trình có cấu trúc' },
+    ]
+    const props = { ...(tlsTKvList.defaults as any), items, columns: '2', leader: 'rule' }
+    const two = tlsTKvList.capacity!(props, { width: 1000, height: 600 }, ctx(1000, 600))
+    expect(two.fits).toBe(false)
+    expect(two.budget.wrappedKeys.used).toBeGreaterThan(0)
+    expect(two.budget.lines).toBeUndefined()
+    expect(two.remedy[0]).toEqual({ kind: 'reflow', to: "columns: '1'" })
+    const one = tlsTKvList.capacity!({ ...props, columns: '1' }, { width: 1000, height: 600 }, ctx(1000, 600))
+    expect(one.fits).toBe(true)
+  })
+
+  it('capacity: short keys in two columns still fit', () => {
+    const items = [{ key: 'Region', value: 'EMEA' }, { key: 'Seats', value: '25' }, { key: 'Status', value: 'On track' }, { key: 'Budget', value: '$1.2M' }]
+    const r = tlsTKvList.capacity!({ ...(tlsTKvList.defaults as any), items, columns: '2' } as any, { width: 1000, height: 360 }, ctx(1000, 360))
+    expect(r.fits).toBe(true)
+  })
 })
 
 describe('tls.t.kv-list — the last rule is inside the box', () => {

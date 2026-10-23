@@ -58,6 +58,7 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
   const counts = splitCounts(items.length, columns)
   let index = 0
   let lines = 0
+  let wrappedKeys = 0
   const heights: number[] = []
   for (let c = 0; c < counts.length; c++) {
     const x0 = c * (gw + colGap)
@@ -72,6 +73,7 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
         propPath: `items.${i}.value`,
       })
       lines += km.lineCount + vm.lineCount
+      if (km.lineCount > 1) wrappedKeys++
       // A one-line key's box hugs its text so the leader can start right after it.
       const keyNode = km.nodes[0]
       if (km.lineCount === 1 && keyNode.k === 'text') keyNode.box = { ...keyNode.box, width: Math.min(keyW, km.lines[0].width + 1) }
@@ -113,7 +115,7 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
     heights.push(Math.max(0, y - rowGap + (leader === 'rule' && counts[c] > 0 ? Math.ceil(rowGap / 2 + 0.5) : 0)))
   }
   const height = Math.max(0, ...heights)
-  return { nodes, height, lines, items, columns, lineH }
+  return { nodes, height, lines, items, columns, lineH, wrappedKeys }
 }
 
 export function layout(props: KvListProps, ctx: LayoutContext): LayoutNode {
@@ -124,7 +126,7 @@ export function layout(props: KvListProps, ctx: LayoutContext): LayoutNode {
 
 export function capacity(props: KvListProps, box: Size, ctx: LayoutContext): CapacityReport {
   const r = compute(props, ctx, Math.max(1, box.width))
-  return markerCapacity({
+  const report = markerCapacity({
     rows: { nodes: [], height: r.height, lineCount: r.lines, columnHeights: [r.height] },
     itemCount: r.items.length,
     maxItems: KV_MAX_ITEMS,
@@ -133,4 +135,14 @@ export function capacity(props: KvListProps, box: Size, ctx: LayoutContext): Cap
     gap: spacingGap(ctx, 'default'),
     lineHeight: r.lineH,
   })
+  // two groups halve the key column: a key that wraps there reads as a four-column grid of broken
+  // phrases (spro deck "Sáu mục tiêu của chương 1") — one column, or shorter keys
+  if (r.columns === 2 && r.wrappedKeys > 0) {
+    return {
+      fits: false,
+      budget: { items: report.budget.items, wrappedKeys: { max: 0, used: r.wrappedKeys, unit: 'items' } },
+      remedy: [{ kind: 'reflow', to: "columns: '1'" }, ...report.remedy],
+    }
+  }
+  return report
 }

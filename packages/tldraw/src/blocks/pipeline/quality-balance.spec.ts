@@ -4,7 +4,7 @@
  */
 import { analyzeDeck } from '../layout-report'
 import type { BlockSpec, DeckSpec, SlideSpec } from '../types'
-import { slideQuality } from './quality'
+import { deckTitleSize, slideQuality } from './quality'
 
 const T = (text: string, props: Record<string, unknown> = {}): BlockSpec => ({ id: 't', type: 'tls.t.title', props: { text, ...props } })
 const B = (id: string, text: string): BlockSpec => ({ id, type: 'tls.t.body', props: { text } })
@@ -82,5 +82,43 @@ describe('an empty region', () => {
     expect(q.regionFill).toBe(0)
     expect(q.thinRegion).toBe('right')
     expect(q.findings.find((f) => f.code === 'quality/thin-region')?.message).toContain('is empty')
+  })
+})
+
+describe('a floating body', () => {
+  // spro deck "Sáu mục tiêu của chương 1": a two-column key-value list of six objectives, centred
+  // in the one wide region — fill 78 % and region fill 47 % by bounding boxes, yet a strip of
+  // body-size rows under a large empty band
+  const objectives: Array<[string, string]> = [
+    ['1. Hiểu khái niệm thông tin – tin học', 'Định nghĩa thông tin và tin học'],
+    ['2. Hiểu các đơn vị đo thông tin', 'Bit, Byte và các bội số'],
+    ['3. Hiểu các hệ cơ số đếm', 'Thực hiện trên các hệ đếm'],
+    ['4. Hiểu thuật toán', 'Chương trình, lập trình có cấu trúc'],
+    ['5. Xây dựng thuật toán', 'Cho bài toán cần giải quyết'],
+    ['6. Biểu diễn thuật toán', 'Trình bày thuật toán đã xây dựng'],
+  ]
+  const kv: BlockSpec = { id: 'k', type: 'tls.t.kv-list', props: { items: objectives.map(([key, value]) => ({ key, value })), columns: '2', leader: 'rule', valueAlign: 'start', keyTone: 'text' } }
+  const lecture = (slide: SlideSpec): DeckSpec => ({ version: 1, id: 'q', title: 'q', theme: 'academic-lecture-ivory', style: 'academic-lecture', aspect: 'widescreen', slides: [slide] }) as DeckSpec
+  const judge = (slide: SlideSpec, balance = true) => {
+    const d = lecture(slide)
+    return slideQuality(analyzeDeck(d)[0], { titleSize: deckTitleSize(d), balance })
+  }
+  const slide = (body: BlockSpec[]): SlideSpec => ({ id: 's', layout: 'timeline', valign: 'auto', regions: { title: [T('Sáu mục tiêu của chương 1')], timeline: body } })
+
+  it('a two-column key-value strip under a large title is flagged although its boxes fill the page', () => {
+    const q = judge(slide([kv]))
+    expect(q.fill).toBeGreaterThan(0.5)
+    expect(q.regionFill).toBeGreaterThan(0.3)
+    expect(q.bodyCover).toBeLessThan(0.55)
+    expect(q.findings.map((f) => f.code)).toContain('quality/floating-body')
+  })
+
+  it('a lead intro over the list is not a floating body', () => {
+    const intro: BlockSpec = { id: 'o', type: 'tls.c.objectives', props: { intro: 'Sau chương này, sinh viên có thể:', items: objectives.map(([k, v]) => `${k.slice(3)}: ${v}`) } }
+    expect(judge(slide([intro])).findings.map((f) => f.code)).not.toContain('quality/floating-body')
+  })
+
+  it('only judged on balance', () => {
+    expect(judge(slide([kv]), false).findings.map((f) => f.code)).not.toContain('quality/floating-body')
   })
 })

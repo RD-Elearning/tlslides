@@ -11,6 +11,8 @@
  * - **region fill**: for every non-title region that is a large part of the frame (≥ 15 %), the
  *   painted union of its blocks as a share of the region. Three short bullets at body size beside a
  *   full-height photo paint ~10 % of their column; a finished column ≥ 30 %.
+ * - **floating body** (balanced slides): the body's largest text against the title size, and its
+ *   painted union against the regions that hold it — a centred strip of body-size rows.
  * - **lead type**: the largest text on the slide. A slide whose biggest words are smaller than the
  *   deck's title size reads as unfinished (a `size: lg` statement alone on a slide). A type-led
  *   slide whose lead reaches 1.5 × the title size may cover less of the safe area (15 %).
@@ -31,7 +33,7 @@ import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | DesignCode
 
 export interface QualityFinding {
   code: QualityCode
@@ -58,6 +60,10 @@ export interface SlideQuality {
   /** The tallest empty horizontal band between the body's blocks (title excluded), as a share of
    *  the safe height. */
   innerGap: number
+  /** The body's largest painted font size (title region excluded), slide units; 0 = no body text. */
+  bodyLead: number
+  /** The body's painted union as a share of the regions that hold it (title excluded), 0-1. */
+  bodyCover: number
   /** The slide title's painted text (left x, top y, width, font size), for title drift across
    *  slides; absent when the slide has no `title` region text. */
   title?: { x: number; y: number; width: number; fontSize: number }
@@ -87,6 +93,15 @@ export const QUALITY_GATE = {
   maxInnerGap: 0.2,
   /** Minimum `fill` of a slide judged on balance (content slides spro composes). */
   balancedMinFill: 0.5,
+  /** A floating body (`balance` only): its largest text at most this share of the title size,
+   *  and its painted union under `floatingCover` of the regions that hold it — a strip of
+   *  body-size rows centred in a tall region. `fill` and `regionFill` measure bounding boxes, so
+   *  a wide table or a two-column key-value list in a strip passes both (spro deck "Sáu mục tiêu
+   *  của chương 1": fill 78 %, region 47 %, body 36 under an 80 title). On the 153 balanced spro
+   *  slides of 2026-10-23 it flags 9, 7 of them a thin strip of small text on a contact sheet; at
+   *  0.6 it also took cards and icon rows whose panels fill the band. */
+  floatingLead: 0.5,
+  floatingCover: 0.55,
 } as const
 
 interface Rect {
@@ -165,6 +180,14 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
   const innerGap = Math.min(1, largestGap(body.map((b) => b.painted!)) / safeH)
   const highest = body.reduce((y, b) => Math.min(y, b.painted!.y), H - m)
   const topGap = body.length ? Math.max(0, Math.min(1, (highest - titleBottom) / safeH)) : 0
+  let bodyLead = 0
+  for (const b of body) for (const t of b.text) bodyLead = Math.max(bodyLead, t.fontSize * (t.scale || 1))
+  const bodyRegions = union(
+    Object.entries(report.regions)
+      .filter(([name]) => name !== 'title' && body.some((b) => b.region === name))
+      .map(([, box]) => box)
+  )
+  const bodyCover = body.length ? Math.min(1, area(union(body.map((b) => b.painted))) / Math.max(1, area(bodyRegions))) : 0
   let title: SlideQuality['title']
   const titleText = content.filter((b) => b.region === 'title' && !DECORATIVE.has(b.type)).flatMap((b) => b.text)
   if (titleText.length) {
@@ -196,13 +219,19 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     } else if (innerGap > QUALITY_GATE.maxInnerGap) {
       findings.push({ code: 'quality/unbalanced', message: `an empty band of ${pct(innerGap)} of the page between blocks: keep the blocks of a region together, or put them side by side` })
     }
+    if (opts.titleSize && bodyLead > 0 && bodyLead <= opts.titleSize * QUALITY_GATE.floatingLead && bodyCover < QUALITY_GATE.floatingCover) {
+      findings.push({
+        code: 'quality/floating-body',
+        message: `the body is a strip of small text (largest ${Math.round(bodyLead)} units under a ${Math.round(opts.titleSize)} title) covering ${pct(bodyCover)} of its region: one column instead of two, a block that fills the region (cards, a grid, objectives), a split with a visual or an accent, or a lead size`,
+      })
+    }
   }
   // CMP2: the design checks the oracle ran (info, e.g. `text/long-measure`, stays advice)
   for (const f of report.findings) {
     if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
     findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
-  return { fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, ...(title ? { title } : {}), findings }
+  return { fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
 }
 
 /**

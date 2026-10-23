@@ -4906,11 +4906,11 @@ Small label above the title with case and tracking options. _(family: text; keyw
 Key and value pairs in aligned columns, with dotted or ruled leaders. _(family: text; keywords: specs, facts, key value, details, schedule, terms)_
 
 **When:** Specs, facts, terms and conditions, a schedule of times.
-**Avoid:** Multi-column data (use tls.d.table).
+**Avoid:** Multi-column data (use tls.d.table); learning objectives or numbered goals (use tls.c.objectives); keys longer than a few words.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`items\` | yes | list of object (key, value) (2–10 items) | Short labels as keys; keep values to a phrase or a number with its unit. |
+| \`items\` | yes | list of object (key, value) (2–10 items) | Short labels as keys (1-3 words, never numbered); keep values to a phrase or a number with its unit. |
 | \`leader\` | no | enum: none \\\\| dots \\\\| rule | dots join key to value; rule draws a hairline under each row. |
 | \`valueAlign\` | no | enum: end \\\\| start |  |
 | \`keyTone\` | no | enum: muted \\\\| text |  |
