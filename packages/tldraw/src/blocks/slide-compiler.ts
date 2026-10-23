@@ -56,6 +56,7 @@ import { layoutBlock, textScaleOf } from './layout/layout-child'
 import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
 import { deriveShapeAnimation } from './motion/resolve-motion'
+import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
@@ -146,15 +147,15 @@ export function compileSlide(
  * V2 (vivid PLAN.md §4) — a block that can loop (its definition's or spec's `motion.ambient`)
  * learns the motion style of its slide, layered blocks included (they take no part in the style's
  * build order, so `applyMotionStyle` leaves them without one). A still slide stamps nothing.
+ * Also run on a slide's style-master shapes (`styleMasterPage`): their motifs loop with the slide.
  */
-function stampAmbient(shapes: ComponentShape[], style: MotionStyle | undefined, registry: BlockRegistry | undefined): void {
+export function stampAmbient(shapes: ComponentShape[], style: MotionStyle | undefined, registry: BlockRegistry | undefined): void {
   if (style !== 'subtle' && style !== 'expressive') return
   for (const shape of shapes) {
     const meta = shape.props[BLOCK_PROP_KEY] as { motion?: BlockMotionSpec; ambientStyle?: string } | undefined
     if (!meta || !shape.componentId) continue
-    const own = meta.motion?.ambient?.preset
-    if (own === 'none') continue
-    if (own || meta.motion?.preset === 'ken-burns' || registry?.get(shape.componentId)?.motion?.ambient) meta.ambientStyle = style
+    const props = shape.props as Record<string, unknown>
+    if (mayLoop({ props, motion: meta.motion }, (t) => registry?.get(t), shape.componentId)) meta.ambientStyle = style
   }
 }
 

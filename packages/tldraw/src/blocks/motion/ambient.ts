@@ -116,6 +116,57 @@ export function resolveAmbient(
   }
 }
 
+/** The authored children of a container (`props.*[]` items with a `type`), any depth. */
+export function nestedBlockSpecs(spec: Pick<BlockSpec, 'props'>, out: BlockSpec[] = [], depth = 0): BlockSpec[] {
+  const props = spec?.props
+  if (depth > 8 || !props || typeof props !== 'object') return out
+  for (const v of Object.values(props)) {
+    if (!Array.isArray(v)) continue
+    for (const c of v) {
+      if (!c || typeof c !== 'object' || typeof (c as BlockSpec).type !== 'string') continue
+      out.push(c as BlockSpec)
+      nestedBlockSpecs(c as BlockSpec, out, depth + 1)
+    }
+  }
+  return out
+}
+
+/** Can this block, or one nested in it, loop? (Decides whether the compiler stamps a style.) */
+export function mayLoop(spec: Pick<BlockSpec, 'props' | 'motion'>, defOf: (type: string) => Pick<BlockDefinition, 'motion'> | undefined, type?: string): boolean {
+  const can = (s: Pick<BlockSpec, 'motion'>, t: string | undefined) => {
+    const own = s.motion?.ambient?.preset
+    if (own === 'none') return false
+    return !!own || s.motion?.preset === KEN_BURNS || !!(t && defOf(t)?.motion?.ambient)
+  }
+  return can(spec, type) || nestedBlockSpecs(spec).some((c) => can(c, c.type))
+}
+
+/**
+ * Every loop a placed block plays: its own on its paint root, and each nested child's (a motif in
+ * a style master's split, a decoration in a card) on the wrapper the engine stamped with the
+ * child's id (`data-nested-id`, CMP1 X2).
+ */
+export function blockAmbients(
+  root: Element,
+  spec: BlockSpec,
+  defOf: (type: string) => Pick<BlockDefinition, 'motion'> | undefined,
+  style: MotionStyle | undefined,
+  reducedMotion = false
+): Array<{ el: Element; ambient: ResolvedAmbient }> {
+  const out: Array<{ el: Element; ambient: ResolvedAmbient }> = []
+  const own = resolveAmbient(spec, defOf(spec.type), style, reducedMotion)
+  if (own) out.push({ el: root, ambient: own })
+  const children = nestedBlockSpecs(spec)
+  if (!children.length || typeof root.querySelectorAll !== 'function') return out
+  const byId = new Map(children.filter((c) => typeof c.id === 'string').map((c) => [c.id, c]))
+  for (const wrapper of Array.from(root.querySelectorAll('[data-nested-id]'))) {
+    const child = byId.get(wrapper.getAttribute('data-nested-id') ?? '')
+    const r = child ? resolveAmbient(child, defOf(child.type), style, reducedMotion) : null
+    if (r) out.push({ el: wrapper, ambient: r })
+  }
+  return out
+}
+
 /** The elements a loop moves: the parts `name` / `name[i]` in document order, else the paint root. */
 export function ambientTargets(root: Element, part: string | undefined): Element[] {
   if (!part) return [root]

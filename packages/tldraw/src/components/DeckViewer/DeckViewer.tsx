@@ -26,7 +26,7 @@ import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
 import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
 import { createGsapDriver, type GsapInstance } from '~blocks/motion/gsap-driver'
-import { resolveAmbient, startAmbient } from '~blocks/motion/ambient'
+import { blockAmbients, startAmbient } from '~blocks/motion/ambient'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { autoRunEnd, entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
@@ -673,9 +673,10 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       const style = ambientStyleOf(shape)
       if (!style) continue
       const spec = shapeToBlock(shape)
-      const resolved = spec ? resolveAmbient(spec, blockRegistry.get(spec.type), style) : null
       const root = elementsRef.current.get(sid)?.firstElementChild
-      if (!resolved || !root) continue
+      // its own loop and its nested children's (a style master's motifs sit in a split)
+      const loops = spec && root ? blockAmbients(root, spec, (t) => blockRegistry.get(t), style) : []
+      if (!loops.length) continue
       // a block that has just entered loops once its entrance is over; one already shown at once
       const entering = k !== undefined && prevShown >= 0 && k >= prevShown
       const anim = (shape as ComponentShape).animation
@@ -683,7 +684,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       const loop: { stop?: () => void; timer?: ReturnType<typeof setTimeout> } = {}
       loop.timer = setTimeout(() => {
         loop.timer = undefined
-        loop.stop = startAmbient(root, resolved, ambientDriver)
+        const stops = loops.map((l) => startAmbient(l.el, l.ambient, ambientDriver))
+        loop.stop = () => stops.forEach((s) => s())
       }, wait)
       ambientRef.current.set(sid, loop)
     }

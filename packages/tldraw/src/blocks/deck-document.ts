@@ -16,7 +16,8 @@
 
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
-import { compileSlide, type CompileFinding } from './slide-compiler'
+import { compileSlide, stampAmbient, type CompileFinding } from './slide-compiler'
+import { effectiveMotionStyle } from './motion/motion-style'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
@@ -184,6 +185,8 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
     const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif)
+    // vivid V3: the master's motifs (a corner sparkle, a doodle) loop with the slide's motion style
+    stampAmbient(sm.shapes, effectiveMotionStyle(slideSpec.motionStyle, motionStyle), registry)
     findings.push(...result.findings)
 
     // CMP1: shapes are top-level children of their page (`parentId` = page id). `blockToShape`

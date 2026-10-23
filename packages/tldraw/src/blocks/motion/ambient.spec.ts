@@ -3,7 +3,11 @@
  * DOM side starts, and the loop options of both drivers.
  */
 
-import { AMBIENT_IDS, AMBIENT_PRESETS, SUBTLE_AMP, SUBTLE_PERIOD, ambientTargets, resolveAmbient, startAmbient } from './ambient'
+import { AMBIENT_IDS, AMBIENT_PRESETS, SUBTLE_AMP, SUBTLE_PERIOD, ambientTargets, blockAmbients, mayLoop, nestedBlockSpecs, resolveAmbient, startAmbient } from './ambient'
+import { BlockRegistry } from '../registry'
+import { registerBuiltInBlocks } from '../library'
+import { BUILT_IN_STYLES } from '../styles'
+import { ambientStyleOf, shapeToBlock } from '../shape-bridge'
 import { ALLOWED_PROPERTIES, FORBIDDEN_PROPERTIES } from './driver'
 import type { MotionDriver, MotionKeyframes, MotionOptions } from './driver'
 import { createGsapDriver } from './gsap-driver'
@@ -213,5 +217,58 @@ describe('the deck switch (DeckSpec.ambient)', () => {
     const rules = (s: DeckSpec) => validateDeckSpec(s).map((f: { rule: string }) => f.rule)
     expect(rules(spec('off'))).toContain('deck/invalid-ambient')
     expect(rules(spec(false))).not.toContain('deck/invalid-ambient')
+  })
+})
+
+describe('style-master motifs loop with their slide (V3)', () => {
+  const reg = new BlockRegistry()
+  registerBuiltInBlocks(reg)
+  const loopsOf = (style: string, motionStyle: string): string[][] => {
+    const st = BUILT_IN_STYLES.find((s) => s.id === style)!
+    const spec = {
+      version: 1,
+      id: 'p',
+      title: 'P',
+      style,
+      theme: st.palettes[0].id,
+      aspect: 'widescreen',
+      motionStyle,
+      slides: [
+        { id: 'c', role: 'cover', layout: 'blank', regions: { content: [{ id: 'h', type: 'tls.c.hero', props: { title: 'Hi' } }] } },
+        { id: 'k', layout: 'blank', regions: { content: [{ id: 'b', type: 'tls.t.paragraph', props: { text: 'Hi' } }] } },
+      ],
+    } as unknown as DeckSpec
+    const { document } = deckSpecToDocument(spec)
+    return ['c', 'k'].map((pid) =>
+      Object.values(document.pages[pid].shapes)
+        .filter((sh) => sh.id.startsWith('style:'))
+        .flatMap((sh) => {
+          const b = shapeToBlock(sh)
+          const style = ambientStyleOf(sh)
+          return b && style ? [b, ...nestedBlockSpecs(b)].flatMap((c) => resolveAmbient(c, reg.get(c.type), style)?.preset.id ?? []) : []
+        })
+    )
+  }
+
+  it('a playful style: the cover motifs loop (nested in their split), not on a still deck', () => {
+    expect(loopsOf('doodle', 'expressive')[0]).toEqual(expect.arrayContaining(['spin', 'twinkle', 'sway']))
+    expect(loopsOf('doodle', 'static').flat()).toEqual([])
+  })
+
+  it('a plain style stays still', () => {
+    expect(loopsOf('minimal', 'expressive').flat()).toEqual([])
+    expect(loopsOf('corporate', 'expressive').flat()).toEqual([])
+  })
+
+  it('blockAmbients finds a nested child by its wrapper; mayLoop sees it', () => {
+    const spec = { id: 'sp', type: 'tls.l.split', props: { children: [{ id: 'd1', type: 'tls.m.decoration', props: { shape: 'sparkle' } }, { id: 't', type: 'tls.t.paragraph', props: { text: 'x' } }] } }
+    expect(mayLoop(spec, (t) => reg.get(t), spec.type)).toBe(true)
+    expect(mayLoop({ props: { children: [{ id: 't', type: 'tls.t.paragraph', props: {} }] } }, (t) => reg.get(t), 'tls.l.split')).toBe(false)
+    const root = document.createElement('div')
+    root.innerHTML = '<div data-nested-id="d1" data-nested-type="tls.m.decoration"><svg></svg></div><div data-nested-id="t"></div>'
+    const loops = blockAmbients(root, spec as never, (t) => reg.get(t), 'subtle')
+    expect(loops).toHaveLength(1)
+    expect(loops[0].el.getAttribute('data-nested-id')).toBe('d1')
+    expect(loops[0].ambient.preset.id).toBe('twinkle')
   })
 })

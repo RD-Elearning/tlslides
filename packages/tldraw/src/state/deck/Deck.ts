@@ -1,5 +1,6 @@
 import { Utils } from '@tlslides/core'
-import { compileSlide } from '~blocks/slide-compiler'
+import { compileSlide, stampAmbient } from '~blocks/slide-compiler'
+import { effectiveMotionStyle } from '~blocks/motion/motion-style'
 import { styleMasterPage } from '~blocks/deck-document'
 import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { resolveTokens } from '~blocks/tokens'
@@ -200,6 +201,7 @@ export class Deck {
     // the spec sets none and its blocks (mesh, grain, motifs) as locked `style:` shapes
     // under the content.
     const sm = styleMasterPage(deckStyle, spec, slideId, frame, tokens, this.app.document.motif)
+    stampAmbient(sm.shapes, effectiveMotionStyle(spec.motionStyle, this.app.document.motionStyle ?? deckStyle?.motionStyle), registry)
 
     // 5. Apply page-level metadata.
     const background = result.background ?? sm.background
