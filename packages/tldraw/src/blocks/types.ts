@@ -1290,6 +1290,10 @@ export interface DeckSpec {
    *  `SUBJECT_SHAPES`). A style whose concept has `subjects` draws it in place of its masters'
    *  `signature` motif on the cover and section pages; other styles ignore it. */
   motif?: string
+  /** V5 (spro vivid PLAN.md) — `false` keeps the deck's blocks still once they have entered (no
+   *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
+   *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
+  ambient?: boolean
 }
 
 /** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */

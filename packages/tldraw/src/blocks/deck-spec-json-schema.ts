@@ -91,6 +91,10 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         enum: [...SUBJECT_SHAPES],
         description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
       },
+      ambient: {
+        type: 'boolean',
+        description: 'V5 — false keeps the blocks still once they have entered (no ambient loops).',
+      },
     },
     additionalProperties: false,
   }

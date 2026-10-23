@@ -628,7 +628,9 @@ describe('ambient loops (spro vivid V2)', () => {
   })
 
   it('nothing loops without the prop, on a still deck, or under reduced motion', () => {
-    for (const [spec, on] of [[deck('expressive'), false], [deck('static'), true]] as const) {
+    // a deck switched off (`ambient: false`) stays still even when the host asks for loops
+    const off = { ...deck('expressive'), ambient: false } as DeckSpec
+    for (const [spec, on] of [[deck('expressive'), false], [deck('static'), true], [off, true]] as const) {
       const { driver, calls } = makeStubDriver()
       render(<DeckViewer spec={spec} driver={driver} ambient={on} slideIndex={0} buildStep={9} />)
       act(() => void jest.advanceTimersByTime(3000))

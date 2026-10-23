@@ -190,6 +190,8 @@ export interface TDDocument {
   // enhance F1 — the deck's `DeckSpec.motif` (a subject doodle), carried for the masters and the
   // round trip.
   motif?: string
+  // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
+  ambient?: boolean
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —

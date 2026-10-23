@@ -79,7 +79,8 @@ export interface DeckViewerProps {
   /** V2 (spro vivid PLAN.md §4) — play the blocks' ambient loops (a decoration that floats, a
    *  ring that turns) once each block has entered; they stop when the slide changes. Through GSAP
    *  when `gsap` is given, else through `driver`. Off under reduced motion and on still slides.
-   *  Default `false`: a host opts in (thumbnails and before/after previews stay still). */
+   *  Default `false`: a host opts in (thumbnails and before/after previews stay still). A deck
+   *  whose `spec.ambient` is `false` stays still whatever the host says. */
   ambient?: boolean
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
@@ -650,8 +651,9 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     }
   }, [])
 
+  const ambientOn = ambient && spec.ambient !== false
   React.useEffect(() => {
-    if (!ambient || !page || reducedMotion) {
+    if (!ambientOn || !page || reducedMotion) {
       stopAmbient()
       return
     }
@@ -686,7 +688,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       ambientRef.current.set(sid, loop)
     }
     ambientSeenRef.current = { pageId: page.id, shown: currentBuildStep }
-  }, [ambient, page, steps, currentBuildStep, reducedMotion, blockRegistry, ambientDriver, stopAmbient])
+  }, [ambientOn, page, steps, currentBuildStep, reducedMotion, blockRegistry, ambientDriver, stopAmbient])
 
   React.useEffect(() => () => stopAmbient(), [stopAmbient])
 

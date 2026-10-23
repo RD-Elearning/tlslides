@@ -174,6 +174,16 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
     })
   }
 
+  // V5 (vivid): the ambient switch is a boolean
+  if (s.ambient !== undefined && typeof s.ambient !== 'boolean') {
+    findings.push({
+      level: 'warning',
+      rule: 'deck/invalid-ambient',
+      path: 'ambient',
+      message: `ambient ${stringifyForMessage(s.ambient)} is not true or false; it is ignored.`,
+    })
+  }
+
   // AC1: style
   if (s.style !== undefined) {
     const styleIds = BUILT_IN_STYLES.map((st) => st.id)

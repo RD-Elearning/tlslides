@@ -9,7 +9,10 @@ import type { MotionDriver, MotionKeyframes, MotionOptions } from './driver'
 import { createGsapDriver } from './gsap-driver'
 import type { GsapInstance } from './gsap-driver'
 import { createWAAPI_driver } from './waapi-driver'
-import type { MotionRecipe } from '../types'
+import type { DeckSpec, MotionRecipe } from '../types'
+import { deckSpecToDocument } from '../deck-document'
+import { documentToDeckSpec } from '../slide-decompiler'
+import { validateDeckSpec } from '../validate-deck-spec'
 import { motion as imageMotion } from '../library/media/tls-m-image/motion'
 
 const def = (ambient: MotionRecipe['ambient']) => ({ motion: { preset: 'fade', ambient } as MotionRecipe })
@@ -185,5 +188,30 @@ describe('driver loop options', () => {
     // the strong overshoot plays as a real spring
     d.play(document.createElement('div'), { scale: [0.9, 1] }, { duration: 300, easing: 'cubic-bezier(0.34, 3.85, 0.64, 1)' })
     expect(calls[3].to.ease).toBe('elastic.out(1, 0.5)')
+  })
+})
+
+describe('the deck switch (DeckSpec.ambient)', () => {
+  const spec = (ambient?: unknown): DeckSpec =>
+    ({
+      version: 1,
+      id: 'a',
+      title: 'A',
+      aspect: 'widescreen',
+      ...(ambient !== undefined ? { ambient } : {}),
+      slides: [{ id: 's1', layout: 'blank', regions: { content: [{ id: 'h', type: 'tls.c.hero', props: { title: 'Hi' } }] } }],
+    }) as DeckSpec
+
+  it('survives the round trip through the document; absent stays absent', () => {
+    const { document } = deckSpecToDocument(spec(false))
+    expect(document.ambient).toBe(false)
+    expect(documentToDeckSpec(document).spec.ambient).toBe(false)
+    expect('ambient' in documentToDeckSpec(deckSpecToDocument(spec()).document).spec).toBe(false)
+  })
+
+  it('a value that is not a boolean is flagged', () => {
+    const rules = (s: DeckSpec) => validateDeckSpec(s).map((f: { rule: string }) => f.rule)
+    expect(rules(spec('off'))).toContain('deck/invalid-ambient')
+    expect(rules(spec(false))).not.toContain('deck/invalid-ambient')
   })
 })

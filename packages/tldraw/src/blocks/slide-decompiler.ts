@@ -480,5 +480,6 @@ export function documentToDeckSpec(
   if (doc.motionStyle !== undefined) deckSpec.motionStyle = doc.motionStyle
   if (doc.styleId !== undefined) deckSpec.style = doc.styleId
   if (doc.motif !== undefined) deckSpec.motif = doc.motif
+  if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
   return { spec: deckSpec, findings }
 }
