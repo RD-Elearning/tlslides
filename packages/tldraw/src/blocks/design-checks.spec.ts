@@ -74,6 +74,13 @@ describe('CMP2 design checks: positive and negative cases', () => {
     expect(codes(good, 'contrast/low')).toHaveLength(0)
   })
 
+  it('contrast/low: a motif at the end of the title bar is not read as text (vivid)', () => {
+    const icons = { id: 'd', type: 'tls.m.icon-cluster', layer: 'overlay', anchor: 'right', props: { icons: ['book-2', 'school', 'pencil', 'bulb'], tone: 'mixed', opacity: 'strong' } } as BlockSpec
+    const deck = { style: 'doodle', theme: 'doodle-paper' } as Partial<DeckSpec>
+    const r = report({ id: 's', layout: 'timeline', regions: { title: [T('t', 'Cây cần gì'), icons], timeline: [B('b', 'x')] } }, { deck })
+    expect(codes(r, 'contrast/low')).toHaveLength(0)
+  })
+
   it('layout/misaligned: one peer title wraps; equal titles do not', () => {
     // CMP4: peer cards of one structure share their children's tracks (`peer-tracks.ts`), so the
     // engine itself aligns them; a peer of another structure (an extra child) still drifts.

@@ -12,7 +12,7 @@
  *
  * | code | sev | rule |
  * |---|---|---|
- * | `contrast/low` | error | a text leaf below 4.5:1 (3:1 from 36 units, or bold from 28; icons 3:1) on the paint actually under it — fills, gradients, translucent glass blended over what is behind, the slide background; an image counts as both black and white, so text on a photo needs a scrim |
+ * | `contrast/low` | error | a text leaf below 4.5:1 (3:1 from 36 units, or bold from 28; icons 3:1) on the paint actually under it — fills, gradients, translucent glass blended over what is behind, the slide background; an image counts as both black and white, so text on a photo needs a scrim; a motif (`MOTIF_BLOCKS`) is not judged |
  * | `layout/misaligned` | warning | peers (same-type children of a row / grid, side by side) whose matching text starts drift > 4 units vertically (or, stacked in a column, horizontally) |
  * | `layout/unequal-peers` | warning | peers side by side whose box (painted, for a card) widths or heights differ by > 5 % |
  * | `layout/narrow-child` | warning | a nested child's text wraps (≥ 2 lines) at < 12 characters per line, or in a box < 240 units wide |
@@ -358,6 +358,10 @@ function partName(ink: InkLeaf): string {
   return ink.kind === 'icon' ? ink.node.part ?? 'icon' : (ink.node.k === 'text' ? ink.node.propPath ?? ink.node.part : undefined) ?? 'text'
 }
 
+/** Pure decoration (no text, no meaning): `contrast/low` does not judge their ink. Not every
+ *  `category: 'decoration'` block — a field holds text children, an arrow points at something. */
+export const MOTIF_BLOCKS: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.icon-cluster', 'tls.m.pattern'])
+
 /** `contrast/low`: every text / icon leaf against the paint under it (all blocks, z order). */
 function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): void {
   const all: PaintOp[] = []
@@ -372,6 +376,9 @@ function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[])
   }
   for (const b of blocks) {
     if (!b.inspection || b.layer === 'backdrop' || b.styleOwned) continue
+    // vivid: a motif carries no information (topic icons at the end of the title bar, the kit's
+    // `corner` placement) — its ink is never text to read
+    if (MOTIF_BLOCKS.has(b.type)) continue
     const off = offsets.get(b) ?? 0
     // worst failing leaf per owner
     const worst = new Map<string, { ink: InkLeaf; ratio: number; floor: number; color: string; bg: string; unknown: boolean; count: number }>()
