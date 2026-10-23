@@ -6,7 +6,8 @@
 import type { MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
-  parts: ['mark', 'text', 'text[*]', 'emphasis', 'attribution'],
+  parts: ['mark', 'text', 'text[*]', 'emphasis', 'circle', 'attribution'],
   preset: 'words-in',
-  partMotion: { emphasis: { preset: 'wipe-x' } },
+  // vivid V4: a circle around the key words draws on once they are in
+  partMotion: { emphasis: { preset: 'wipe-x' }, circle: { preset: 'draw-path', delay: 450 } },
 }

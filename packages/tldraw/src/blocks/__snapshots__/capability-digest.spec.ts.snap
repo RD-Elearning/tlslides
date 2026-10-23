@@ -1819,6 +1819,37 @@ Rows by columns of cells shaded by value, with optional numbers and a legend. _(
 }
 \`\`\`
 
+### \`tls.d.icon-array\` — Icon Array
+
+A share of a group as a pictogram: value of total icons filled (7 of 10 people), a large figure, a label and a caption. _(family: data; keywords: pictogram, icon array, isotype, share, proportion, out of, people, percent, ratio)_
+
+**When:** One share of a group of people or things the audience can picture: \\"7 in 10 students\\", \\"1 in 4 households\\", \\"3 of 5 trees\\". The icon is one member of the group.
+**Avoid:** Shares of several parts (use tls.d.donut); a rate with no group behind it, like completion (use tls.d.progress-ring); exact figures over 100.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | number (min 0) | How many of the group: 7 (of 10). |
+| \`total\` | no | number (min 1, max 100) | The group size drawn, 10 or 20 (at most 100). Round a share: 68% → 7 of 10. |
+| \`icon\` | no | icon | One icon for one member of the group: user, school, home, tree. |
+| \`label\` | no | text (max 60 chars) | Who they are, one line: \\"students finish the course\\". |
+| \`caption\` | no | text (max 90 chars) | Source or context, one line. |
+| \`figure\` | no | enum: fraction \\\\| percent \\\\| none | The large number beside the icons: 7/10, 70%, or none. |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| negative \\\\| positive | Of the highlighted icons. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_icon_array\\",
+  \\"type\\": \\"tls.d.icon-array\\",
+  \\"props\\": {
+    \\"value\\": 3,
+    \\"total\\": 10,
+    \\"icon\\": \\"user\\",
+    \\"label\\": \\"of learners study on a phone\\",
+    \\"figure\\": \\"fraction\\"
+  }
+}
+\`\`\`
+
 ### \`tls.d.line\` — Line Chart
 
 Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
@@ -3175,6 +3206,83 @@ A central idea with 2-6 curved branches to topics, each with up to four subtopic
 }
 \`\`\`
 
+### \`tls.g.myth-fact\` — Myth vs Fact
+
+1-4 rows of a common misconception (struck through, ✗) and the fact that corrects it (✓), under localisable headings. _(family: diagram; keywords: myth, fact, misconception, truth, false, true, common mistakes, debunk, correction)_
+
+**When:** Common misconceptions of the topic and what is true instead, a \\"true or false?\\" review, typical student mistakes and their correction.
+**Avoid:** Two options weighed against each other (use tls.g.pros-cons); a change from old to new (use tls.g.before-after); misconceptions the source does not state.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`mythLabel\` | no | text (max 20 chars) | In the deck language: Myth / Ngộ nhận. |
+| \`factLabel\` | no | text (max 20 chars) | In the deck language: Fact / Sự thật. |
+| \`rows\` | yes | list of object (myth, fact) (1–4 items) | 1-4 misconceptions, each with the fact that corrects it. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_myth_fact\\",
+  \\"type\\": \\"tls.g.myth-fact\\",
+  \\"props\\": {
+    \\"mythLabel\\": \\"Myth\\",
+    \\"factLabel\\": \\"Fact\\",
+    \\"rows\\": [
+      {
+        \\"myth\\": \\"Heavier objects fall faster\\",
+        \\"fact\\": \\"Without air resistance every object falls with the same acceleration, 9.8 m/s²\\"
+      },
+      {
+        \\"myth\\": \\"Seasons come from the distance to the Sun\\",
+        \\"fact\\": \\"They come from the tilt of the Earth's axis\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.orbit\` — Orbit
+
+A concept on a central disc with 3-8 satellites (icon discs) on an orbit around it, each with a label and a note. _(family: diagram; keywords: orbit, satellites, around, ecosystem, factors, stakeholders, centre, radial, planet)_
+
+**When:** Peers that all relate to one centre, with no order between them: the factors that shape a learner, the stakeholders of a project, the parts of an ecosystem.
+**Avoid:** Steps that repeat in order (use tls.g.cycle); branches with sub-branches (use tls.g.mindmap); a centre with long notes per spoke (use tls.g.hub-spoke).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`center\` | yes | text (max 30 chars) | The concept everything relates to, 1-3 words. |
+| \`centerIcon\` | no | icon |  |
+| \`items\` | yes | list of object (label, text, icon) (3–8 items) | 3-8 parts or factors around the centre, clockwise from the top. |
+| \`spokes\` | no | enum: line \\\\| none | line = a line from the centre to each satellite. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_orbit\\",
+  \\"type\\": \\"tls.g.orbit\\",
+  \\"props\\": {
+    \\"center\\": \\"Healthy plant\\",
+    \\"centerIcon\\": \\"plant\\",
+    \\"items\\": [
+      {
+        \\"label\\": \\"Light\\",
+        \\"icon\\": \\"sun\\"
+      },
+      {
+        \\"label\\": \\"Water\\",
+        \\"icon\\": \\"droplet\\"
+      },
+      {
+        \\"label\\": \\"Soil\\",
+        \\"icon\\": \\"shovel\\"
+      },
+      {
+        \\"label\\": \\"Air\\",
+        \\"icon\\": \\"wind\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.pros-cons\` — Pros and Cons
 
 Two columns of advantages and disadvantages with check and cross marks and an optional verdict. _(family: diagram; keywords: pros, cons, advantages, disadvantages, trade-offs, verdict)_
@@ -3310,6 +3418,45 @@ Lanes of bars across periods, coloured by status, with a today line. _(family: d
 }
 \`\`\`
 
+### \`tls.g.staircase\` — Staircase
+
+Levels rising left to right like stairs, lowest first, each with an icon, a label and a note; a stair line along the tops. _(family: diagram; keywords: staircase, stairs, levels, ladder, progression, bloom, maturity, growth, climb)_
+
+**When:** Levels that build on each other and go up: Bloom's taxonomy, skill or maturity levels, stages of growth, from beginner to expert.
+**Avoid:** Steps of a procedure done in order (use tls.c.steps); tiers by size or importance (use tls.g.pyramid); a timeline (use tls.g.timeline).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (label, text, icon) (3–6 items) | The lowest level first, the highest last (3-6). |
+| \`numbering\` | no | enum: number \\\\| none | number = 1, 2, 3 on the steps. |
+| \`fill\` | no | enum: gradient \\\\| single \\\\| series |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_staircase\\",
+  \\"type\\": \\"tls.g.staircase\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"label\\": \\"Beginner\\",
+        \\"text\\": \\"Follows worked examples\\",
+        \\"icon\\": \\"seedling\\"
+      },
+      {
+        \\"label\\": \\"Practitioner\\",
+        \\"text\\": \\"Solves familiar problems alone\\",
+        \\"icon\\": \\"tool\\"
+      },
+      {
+        \\"label\\": \\"Expert\\",
+        \\"text\\": \\"Designs new solutions\\",
+        \\"icon\\": \\"trophy\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.steps\` — Steps Diagram
 
 Numbered step strip: accent badge, title and one-line description per step, joined by thin connectors. _(family: diagram; keywords: steps, process, workflow, diagram, flow)_
@@ -3385,6 +3532,42 @@ SWOT grid: strengths, weaknesses, opportunities and threats as four bullet lists
     ],
     \\"threats\\": [
       \\"New entrants\\"
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.target\` — Target
+
+Concentric rings from the core outward (core concept to periphery), each ring with a label and a note in a column beside it. _(family: diagram; keywords: target, bullseye, concentric, rings, onion, core, circles of, sphere of influence, layers)_
+
+**When:** Things that nest around a centre: a core concept and its wider contexts, circles of influence, must / should / could know, the layers of an onion model.
+**Avoid:** Levels that are stacked or ranked by size (use tls.g.pyramid); overlapping sets (use tls.g.venn); equal layers of a system (use tls.g.layers).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`rings\` | yes | list of object (label, text) (2–5 items) | The core first, then outward (2-5): the centre is what matters most. |
+| \`fill\` | no | enum: gradient \\\\| single \\\\| series |  |
+| \`labels\` | no | enum: side \\\\| none | side = labels in a column with leader lines; none = the ring names only, on the rings. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_target\\",
+  \\"type\\": \\"tls.g.target\\",
+  \\"props\\": {
+    \\"rings\\": [
+      {
+        \\"label\\": \\"Must know\\",
+        \\"text\\": \\"Definitions and the main theorem\\"
+      },
+      {
+        \\"label\\": \\"Should know\\",
+        \\"text\\": \\"Proof ideas and typical exercises\\"
+      },
+      {
+        \\"label\\": \\"Could know\\",
+        \\"text\\": \\"History and extensions\\"
+      }
     ]
   }
 }
@@ -4135,11 +4318,13 @@ Decorative shape or motif in a theme colour; deterministic from a seed. _(family
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame \\\\| cube \\\\| cylinder \\\\| cone \\\\| pyramid \\\\| slab \\\\| tree \\\\| graph \\\\| gear \\\\| book \\\\| flask \\\\| globe \\\\| bulb \\\\| chart \\\\| code | orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids, tree…code = subject doodles (a drawing of the topic). Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
+| \`shape\` | no | enum: blob \\\\| arc \\\\| ring \\\\| dots \\\\| wave \\\\| corner \\\\| orb \\\\| squiggle \\\\| star \\\\| sparkle \\\\| zigzag \\\\| triangle \\\\| half-circle \\\\| frame \\\\| cube \\\\| cylinder \\\\| cone \\\\| pyramid \\\\| slab \\\\| tree \\\\| graph \\\\| gear \\\\| book \\\\| flask \\\\| globe \\\\| bulb \\\\| chart \\\\| code \\\\| icon | orb = 3D sphere, frame = corner brackets, cube…slab = isometric solids, tree…code = subject doodles (a drawing of the topic), icon = the \`icon\` drawn large as a motif. Rotation snaps to quarters for wave, corner, squiggle, zigzag, half-circle. |
+| \`icon\` | no | icon | shape icon: the icon drawn large, e.g. \`atom\`, \`book\`, \`chart-bar\` — a topic icon, never a generic one. |
 | \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt \\\\| line |  |
 | \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
 | \`rotation\` | no | number (min 0, max 359) | Degrees. |
 | \`seed\` | no | number (min 0, max 9999) | Same seed, same shape (blob, wave). |
+| \`ambient\` | no | enum: auto \\\\| none \\\\| float \\\\| drift \\\\| spin \\\\| sway \\\\| pulse \\\\| twinkle | auto = by shape (orbs float, rings turn, sparkles twinkle). Plays only in the viewer, never on a still deck. |
 
 \`\`\`json
 {
@@ -4205,6 +4390,38 @@ SVG icon from the icon set, with optional color role. _(family: media; keywords:
     \\"icon\\": \\"zap\\",
     \\"color\\": \\"accent\\",
     \\"size\\": \\"lg\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.icon-cluster\` — Icon Cluster [backdrop]
+
+Decoration: 1-7 topic icons scattered in a seeded constellation, on soft discs, that bob gently in the viewer. _(family: media; keywords: icons, cluster, decoration, constellation, topic, illustration, doodle, sticker)_
+
+**When:** Decoration that says what the deck is about: beside a cover title, on a section page, on the free side of a statement or a number. Icons of the topic (atom, flask, microscope for chemistry).
+**Avoid:** Icons that belong to items (use tls.m.icon-list or a card's icon); behind text; more than one decoration on a slide.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`icons\` | yes | list of icon (1–7 items) | 3-5 icons of the slide topic, from the slide's icon list (e.g. atom, flask, microscope). Never generic arrows or checks. |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| mixed \\\\| line | mixed = accent and accent2 alternate; line = a faint grey. |
+| \`opacity\` | no | enum: soft \\\\| medium \\\\| strong |  |
+| \`backing\` | no | enum: none \\\\| disc | disc = each icon on a soft disc. |
+| \`seed\` | no | number (min 0, max 9999) | Same seed, same arrangement. |
+| \`ambient\` | no | enum: auto \\\\| none | auto = the icons bob gently, each in its own time (viewer only). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cluster\\",
+  \\"type\\": \\"tls.m.icon-cluster\\",
+  \\"props\\": {
+    \\"icons\\": [
+      \\"book-2\\",
+      \\"school\\",
+      \\"pencil\\",
+      \\"bulb\\"
+    ],
+    \\"tone\\": \\"mixed\\"
   }
 }
 \`\`\`
@@ -5078,7 +5295,7 @@ One large claim that fills the slide, key words emphasised. _(family: text; keyw
 | \`attribution\` | no | text (max 60 chars) | Optional source line, e.g. \\"Q3 board review\\". |
 | \`size\` | no | enum: display \\\\| xl \\\\| lg \\\\| md | Shrinks to fit, never below md. |
 | \`align\` | no | enum: start \\\\| center |  |
-| \`emphasis\` | no | enum: accent \\\\| underline \\\\| highlight | How the **bold** words render: accent colour, accent underline, or accent highlight. |
+| \`emphasis\` | no | enum: accent \\\\| underline \\\\| highlight \\\\| circle | How the **bold** words render: accent colour, accent underline, accent highlight, or a hand-drawn circle around them (drawn on as the slide builds). |
 | \`showAttribution\` | no | boolean |  |
 | \`showMark\` | no | boolean |  |
 
@@ -5473,7 +5690,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 138,
+  "blockCount": 144,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -5517,6 +5734,7 @@ Object {
     "tls.d.gauge",
     "tls.d.grouped-bar",
     "tls.d.heatmap",
+    "tls.d.icon-array",
     "tls.d.line",
     "tls.d.pie",
     "tls.d.pricing",
@@ -5549,11 +5767,15 @@ Object {
     "tls.g.matrix-2x2",
     "tls.g.milestones",
     "tls.g.mindmap",
+    "tls.g.myth-fact",
+    "tls.g.orbit",
     "tls.g.pros-cons",
     "tls.g.pyramid",
     "tls.g.roadmap",
+    "tls.g.staircase",
     "tls.g.steps",
     "tls.g.swot",
+    "tls.g.target",
     "tls.g.timeline",
     "tls.g.tree",
     "tls.g.venn",
@@ -5576,6 +5798,7 @@ Object {
     "tls.m.decoration",
     "tls.m.device-mock",
     "tls.m.icon",
+    "tls.m.icon-cluster",
     "tls.m.icon-label",
     "tls.m.icon-list",
     "tls.m.image",
@@ -5696,11 +5919,11 @@ Object {
 exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 17.7k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
-Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
-Scope: \`element\` combines with others; \`group\` is one per region; \`slide\` sits alone in the main region, never nested.
-Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look: turn them before switching block; other values are rejected. \`also:\` more blocks by name. Get a type's detail before filling its props.
-Height \`[h…]\` (1920×1080 units, width after \`@\`): \`B+P/L\` per text line, \`+P/item\` per item, \`fill\` = the given height, \`X–Y\` varies.
-Layers: in one region, \`layer: \\"backdrop\\"\` paints behind, \`\\"overlay\\"\` on top (never over text); \`anchor\` fill|corner|edge|center; \`anchorTo: \\"<id>\\"\`. Motion: \`motionStyle\` on deck/slide — expressive, subtle, static.
+Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
+Scope: \`element\` combines; \`group\` one per region; \`slide\` alone in the main region, never nested.
+Lines: \`type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle\`. Knobs change the look: try them before another block; other values are rejected. \`also:\` more blocks by name. Get a type's detail first.
+Height \`[h…]\` (1920×1080 units, width after \`@\`): \`B+P/L\` per text line, \`+P/item\` per item, \`fill\` = given height, \`X–Y\` varies.
+Layers: \`layer: \\"backdrop\\"\` paints behind its region, \`\\"overlay\\"\` on top (never over text); \`anchor\` fill|corner|edge|center; \`anchorTo: \\"<id>\\"\`. Motion: \`motionStyle\` on deck/slide — expressive, subtle, static.
 
 ## Styles
 Set \`style\` and one of its palettes as \`theme\`; get its style card first.
@@ -5711,7 +5934,7 @@ playful: doodle (doodle-paper, doodle-kids); memphis (memphis-pop)
 
 ## Recipes
 
-Known-good slides per role (\`id · layout — region: blocks — when · looks\`). \`+title\` = \`tls.t.title\` in the \`title\` region; no region name = the main region. \`looks:\` other designs (\`id/look\`); \`patterns:\` composed designs, picked the same way. Swap content, keep the rest; never repeat a design in a deck.
+Known-good slides per role (\`id · layout — region: blocks — when · looks\`). \`+title\` = \`tls.t.title\` in \`title\`; no region = the main region. \`looks:\` other designs (\`id/look\`); \`patterns:\` composed designs, picked the same way. Swap content, keep the rest; never repeat a design.
 
 ### cover
 cover-hero · blank — tls.c.hero — type-led opener · looks: center|split
@@ -5799,7 +6022,7 @@ also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.marker
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual=ring|plain, statsPlacement=below|side
-also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
+also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
 ## Charts
 tls.c.chart-insight · chart · group — Chart with a highlighted takeaway beside it and a source line [h=fill] knobs: side=right|left|below, ratio=2:1|3:2|1:1, insightSize=body|lead
@@ -5820,12 +6043,12 @@ tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, p
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow=arrow|chevron|none, emphasis=after|none
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight=none|TL|TR|BL|BR, style=tinted|lines, showItems
 tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h 354–604@840] knobs: style=columns|cards, balance=equal|auto, showVerdict
-also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.swot
+also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.myth-fact, tls.g.swot
 
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
 tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill=gradient|single|series, textPlacement=inside|below
-also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.steps
+also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none
@@ -5835,10 +6058,10 @@ also: tls.c.journey, tls.g.milestones
 ## Hierarchy
 tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction=up|down, notes=side|inside|none, fill=gradient|series|single
 tls.g.tree · hierarchy · group — Org chart or hierarchy of nodes linked from one root, down or sideways [h=fill] knobs: direction=TB|LR, nodeStyle=card|pill|avatar|circle, compact
-also: tls.g.breakdown, tls.g.graph, tls.g.layers, tls.g.mindmap
+also: tls.g.breakdown, tls.g.graph, tls.g.layers, tls.g.mindmap, tls.g.target
 
 ## Relationships
-also: tls.g.bracket, tls.g.hub-spoke, tls.g.venn, tls.m.shape
+also: tls.g.bracket, tls.g.hub-spoke, tls.g.orbit, tls.g.venn, tls.m.shape
 
 ## Media
 tls.c.image-full · media · slide — Full-slide photo with a headline panel [h=fill] knobs: panel=bottom-left|left|center|right|split|band, scrim=medium|strong|gradient, frame
@@ -5880,7 +6103,7 @@ also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x
 
 ## Decoration
 tls.m.decoration · decoration · element · backdrop — Decorative motif or 3D solid in a theme colour [h=fill] knobs: shape=blob|arc|ring|dots|wave|corner|orb|squiggle|star|sparkle|zigzag|triangle|half-circle|frame|cube|cylinder|cone|pyramid|slab, tone=accent|accent2|alt|line, opacity=soft|medium|strong
-also: tls.g.arrow, tls.l.field, tls.m.pattern, tls.x.rule
+also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.pattern, tls.x.rule
 
 ## Icons
 

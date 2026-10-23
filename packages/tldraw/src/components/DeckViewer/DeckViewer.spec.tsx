@@ -587,3 +587,84 @@ describe('halves: pointer hint and swipes (spro demo T12)', () => {
     expect(v.dataset.slideIndex).toBe('1')
   })
 })
+
+describe('ambient loops (spro vivid V2)', () => {
+  beforeEach(() => {
+    mockMatchMedia(false)
+    jest.useFakeTimers()
+  })
+  afterEach(() => jest.useRealTimers())
+
+  const deck = (motionStyle: 'static' | 'subtle' | 'expressive'): DeckSpec => ({
+    version: 1,
+    id: 'amb',
+    title: 'Ambient',
+    motionStyle,
+    slides: [
+      {
+        id: 's1',
+        layout: 'two-column',
+        regions: {
+          title: [titleBlock('t1', 'Orbs')],
+          left: [{ id: 'orb', type: 'tls.m.decoration', props: { shape: 'orb' } }],
+          right: [{ id: 'frame', type: 'tls.m.decoration', props: { shape: 'frame' } }],
+        },
+      },
+      { id: 's2', layout: 'blank', regions: { content: [titleBlock('t2', 'Next')] } },
+    ],
+  } as unknown as DeckSpec)
+
+  const loops = (calls: ReturnType<typeof makeStubDriver>['calls']) => calls.play.filter((c) => c.opts.iterations === Infinity)
+
+  it('a built slide loops its decoration (only the one whose shape loops), at its paint root', () => {
+    const { driver, calls } = makeStubDriver()
+    const { container } = render(<DeckViewer spec={deck('expressive')} driver={driver} ambient slideIndex={0} buildStep={9} />)
+    act(() => void jest.advanceTimersByTime(3000))
+    const l = loops(calls)
+    expect(l).toHaveLength(1)
+    const wrapper = container.querySelector('[data-block-id="orb"]')!
+    expect(l[0].target).toBe(wrapper.firstElementChild)
+    expect(l[0].keyframes.translate).toBeDefined()
+  })
+
+  it('nothing loops without the prop, on a still deck, or under reduced motion', () => {
+    for (const [spec, on] of [[deck('expressive'), false], [deck('static'), true]] as const) {
+      const { driver, calls } = makeStubDriver()
+      render(<DeckViewer spec={spec} driver={driver} ambient={on} slideIndex={0} buildStep={9} />)
+      act(() => void jest.advanceTimersByTime(3000))
+      expect(loops(calls)).toHaveLength(0)
+      cleanup()
+    }
+    mockMatchMedia(true)
+    const { driver, calls } = makeStubDriver()
+    render(<DeckViewer spec={deck('expressive')} driver={driver} ambient slideIndex={0} buildStep={9} />)
+    act(() => void jest.advanceTimersByTime(3000))
+    expect(loops(calls)).toHaveLength(0)
+  })
+
+  it('the loop stops when the slide changes', () => {
+    const cancel = jest.fn()
+    const { driver, calls } = makeStubDriver()
+    const play = driver.play.bind(driver)
+    driver.play = (t, k, o) => (o.iterations === Infinity ? (play(t, k, o), { cancel, finished: new Promise<void>(noop) }) : play(t, k, o))
+    // a click step under subtle: the host shows it built (`buildStep`)
+    const { rerender } = render(<DeckViewer spec={deck('subtle')} driver={driver} ambient slideIndex={0} buildStep={9} />)
+    act(() => void jest.advanceTimersByTime(3000))
+    expect(loops(calls)).toHaveLength(1)
+    rerender(<DeckViewer spec={deck('subtle')} driver={driver} ambient slideIndex={1} buildStep={9} />)
+    expect(cancel).toHaveBeenCalled()
+  })
+
+  it('with GSAP the loops go through it, not the entrance driver', () => {
+    const { driver, calls } = makeStubDriver()
+    const tweens: Array<Record<string, unknown>> = []
+    const gsap = {
+      fromTo: (_t: unknown, _f: unknown, to: Record<string, unknown>) => (tweens.push(to), { kill: noop, then: () => new Promise<void>(noop) }),
+      timeline: () => ({}),
+    }
+    render(<DeckViewer spec={deck('expressive')} driver={driver} gsap={gsap} ambient slideIndex={0} buildStep={9} />)
+    act(() => void jest.advanceTimersByTime(3000))
+    expect(loops(calls)).toHaveLength(0)
+    expect(tweens.filter((t) => t.repeat === -1)).toHaveLength(1)
+  })
+})

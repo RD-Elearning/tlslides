@@ -8,6 +8,7 @@ import { tlsDBar } from './tls-d-bar'
 import { tlsDDonut } from './tls-d-donut'
 import { tlsDProgressBar } from './tls-d-progress-bar'
 import { tlsDProgressRing } from './tls-d-progress-ring'
+import { tlsDIconArray } from './tls-d-icon-array'
 import { tlsDStatCompare } from './tls-d-stat-compare'
 import { tlsDLine } from './tls-d-line'
 import { tlsDArea } from './tls-d-area'
@@ -32,12 +33,13 @@ import { tlsDRanking } from './tls-d-ranking'
 import { tlsDHeatmap } from './tls-d-heatmap'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDIconArray, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
 export { tlsDProgressBar } from './tls-d-progress-bar'
 export { tlsDProgressRing } from './tls-d-progress-ring'
+export { tlsDIconArray } from './tls-d-icon-array'
 export { tlsDStatCompare } from './tls-d-stat-compare'
 export { tlsDLine } from './tls-d-line'
 export { tlsDArea } from './tls-d-area'

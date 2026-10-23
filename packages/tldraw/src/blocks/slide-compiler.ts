@@ -33,6 +33,7 @@ import type { ComponentShape } from '~types'
 import type {
   BlockAnchor,
   BlockDefinition,
+  BlockMotionSpec,
   BlockSpec,
   BlockStyleSpec,
   DeckStyle,
@@ -135,9 +136,26 @@ export function compileSlide(
   opts?: CompileSlideOptions
 ): CompileSlideResult {
   const result = (registry && growText(spec, frame, tokens, registry, opts)) || compileSlideBlocks(spec, frame, tokens, registry, opts)
+  stampAmbient(result.shapes, effectiveMotionStyle(spec.motionStyle, opts?.motionStyle), registry)
   // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
   if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
   return compileConnectors(spec, result, tokens, registry, opts)
+}
+
+/**
+ * V2 (vivid PLAN.md §4) — a block that can loop (its definition's or spec's `motion.ambient`)
+ * learns the motion style of its slide, layered blocks included (they take no part in the style's
+ * build order, so `applyMotionStyle` leaves them without one). A still slide stamps nothing.
+ */
+function stampAmbient(shapes: ComponentShape[], style: MotionStyle | undefined, registry: BlockRegistry | undefined): void {
+  if (style !== 'subtle' && style !== 'expressive') return
+  for (const shape of shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { motion?: BlockMotionSpec; ambientStyle?: string } | undefined
+    if (!meta || !shape.componentId) continue
+    const own = meta.motion?.ambient?.preset
+    if (own === 'none') continue
+    if (own || registry?.get(shape.componentId)?.motion?.ambient) meta.ambientStyle = style
+  }
 }
 
 /** enhance L5: below this share of the content regions' area, a balanced slide's content floats. */
@@ -214,7 +232,7 @@ function growText(
 }
 
 /** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
-const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image'])
+const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image', 'tls.m.icon-cluster'])
 
 /**
  * The painted union of the shapes `ids` names, in slide units, and `ok: false` when one of them

@@ -126,6 +126,6 @@ export const MEMPHIS_STYLE: DeckStyle = {
   },
   prefer: ['tls.t.tags'],
   avoid: ['tls.d.table', 'tls.t.footnote', 'tls.d.compare-table'],
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:zigzag', 'tls.m.decoration:triangle', 'tls.m.decoration:dots', 'tls.m.decoration:half-circle'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'sticker', accent: 'Flat bright colour blocks; confetti in the margins, never on the text.' , subjects: true },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:zigzag', 'tls.m.decoration:triangle', 'tls.m.decoration:dots', 'tls.m.decoration:half-circle', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'sticker', accent: 'Flat bright colour blocks; confetti in the margins, never on the text.' , subjects: true },
   rules: ['At most three motifs per slide, never over text.', 'Flat bright colours, black outlines.', 'Short punchy headlines.'],
 }

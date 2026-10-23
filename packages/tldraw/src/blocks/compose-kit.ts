@@ -44,19 +44,19 @@ export type SlideShape = (typeof SLIDE_SHAPES)[number]
  * full slot tables the prompt carries.
  */
 export const SHAPE_FAMILIES: Record<SlideShape, readonly string[]> = {
-  definition: ['tls.t.definition', 'tls.t.statement', 'tls.g.breakdown', 'tls.t.callout', 'tls.t.kv-list'],
-  terms: ['tls.t.kv-list', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.t.definition', 'tls.c.cards', 'tls.t.tags'],
-  hierarchy: ['tls.g.tree', 'tls.g.graph', 'tls.g.mindmap', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.pyramid'],
-  sequence: ['tls.c.steps', 'tls.g.graph', 'tls.g.flow', 'tls.g.chevrons', 'tls.g.timeline', 'tls.t.numbered', 'tls.g.steps'],
-  cycle: ['tls.g.cycle', 'tls.g.hub-spoke', 'tls.g.flow', 'tls.t.numbered'],
-  contrast: ['tls.g.before-after', 'tls.g.pros-cons', 'tls.d.compare-table', 'tls.c.comparison', 'tls.c.problem-solution', 'tls.g.venn'],
+  definition: ['tls.t.definition', 'tls.t.statement', 'tls.g.breakdown', 'tls.g.target', 'tls.t.callout', 'tls.t.kv-list'],
+  terms: ['tls.t.kv-list', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.g.orbit', 'tls.t.definition', 'tls.c.cards', 'tls.t.tags'],
+  hierarchy: ['tls.g.tree', 'tls.g.graph', 'tls.g.mindmap', 'tls.g.layers', 'tls.g.target', 'tls.g.pyramid', 'tls.g.staircase', 'tls.g.breakdown'],
+  sequence: ['tls.c.steps', 'tls.g.graph', 'tls.g.flow', 'tls.g.staircase', 'tls.g.chevrons', 'tls.g.timeline', 'tls.t.numbered', 'tls.g.steps'],
+  cycle: ['tls.g.cycle', 'tls.g.orbit', 'tls.g.hub-spoke', 'tls.g.flow', 'tls.t.numbered'],
+  contrast: ['tls.g.before-after', 'tls.g.pros-cons', 'tls.g.myth-fact', 'tls.d.compare-table', 'tls.c.comparison', 'tls.c.problem-solution', 'tls.g.venn'],
   matrix: ['tls.g.matrix-2x2', 'tls.d.table', 'tls.d.compare-table', 'tls.g.swot'],
   formula: ['tls.t.formula', 'tls.t.definition', 'tls.t.statement', 'tls.t.kv-list', 'tls.t.callout'],
   code: ['tls.t.code', 'tls.t.numbered', 'tls.t.kv-list', 'tls.t.callout'],
   'worked-example': ['tls.g.graph', 'tls.g.tree', 'tls.t.code', 'tls.d.table', 'tls.g.flow', 'tls.c.steps', 'tls.t.numbered', 'tls.t.callout'],
-  number: ['tls.c.big-stat', 'tls.c.stat-spotlight', 'tls.c.kpi-row', 'tls.t.hero-number', 'tls.d.progress-ring', 'tls.c.chart-insight'],
+  number: ['tls.c.big-stat', 'tls.c.stat-spotlight', 'tls.d.icon-array', 'tls.c.kpi-row', 'tls.t.hero-number', 'tls.d.progress-ring', 'tls.c.chart-insight'],
   quote: ['tls.t.quote', 'tls.c.testimonial', 'tls.t.statement'],
-  question: ['tls.t.qa', 'tls.c.quiz', 'tls.t.checklist', 'tls.t.statement'],
+  question: ['tls.t.qa', 'tls.c.quiz', 'tls.g.myth-fact', 'tls.t.checklist', 'tls.t.statement'],
   'image-led': ['tls.c.image-text', 'tls.m.image', 'tls.m.image-grid', 'tls.c.image-full'],
   statement: ['tls.t.statement', 'tls.t.hero-number', 'tls.t.quote', 'tls.t.takeaway'],
   recap: ['tls.c.recap', 'tls.t.checklist', 'tls.m.icon-list', 'tls.c.objectives', 'tls.t.numbered', 'tls.c.cards'],
@@ -80,7 +80,7 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
 /** Blocks that stand out beside the main structure (B2): at most one per slide. */
 export const ACCENT_BLOCKS: readonly string[] = ['tls.t.takeaway', 'tls.t.callout', 'tls.t.hero-number', 'tls.t.badge', 'tls.t.kicker', 'tls.t.quote', 'tls.t.footnote']
 /** Purely decorative blocks (B6): at most one per slide. */
-export const DECORATION_BLOCKS: readonly string[] = ['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule']
+export const DECORATION_BLOCKS: readonly string[] = ['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.icon-cluster']
 
 const CARD_WORDS: Record<NonNullable<DeckStyle['surface']>['card'], string> = {
   filled: 'filled panels in the surface colour',
@@ -127,9 +127,17 @@ export function styleConceptCard(style: DeckStyle): string {
     style.brief,
     `- Drawn by the style on every block you place (never set them): ${look}${r !== undefined ? `, corner radius ${r}` : ''}; fonts ${style.fonts.heading.family} / ${style.fonts.body.family}. Colours come from the palette and the person's primary colour — write roles (accent, text), never hex, sizes or borders.`,
     `- Icons: ${c.icons === 'none' ? 'only where an item needs one; this style is typographic' : c.icons === 'plain' ? 'plain glyphs, no disc' : `\`iconStyle: "${c.icons}"\` beside card headings and list items; one icon per item, each fitting its item`}.`,
-    `- Decoration: ${c.decoration === 'none' ? 'none — this style relies on white space; a short rule under a heading at most' : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
+    `- Decoration: ${c.decoration === 'none' ? (c.quiet?.length ? 'almost none — white space is the look; a short rule under a heading, and on about one slide in four a quiet watermark: `tls.m.decoration` `shape: "icon"` (a topic icon) `tone: "line"`, `opacity: "soft"`, `layer: "backdrop"`' : 'none — this style relies on white space; a short rule under a heading at most') : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
   ]
-  if (c.decoration !== 'none') lines.push('- Where decoration may sit: ' + c.zones.map((z) => ZONE_HOW[z]).join('; ') + '.')
+  const motifs = c.decoration === 'none' ? c.quiet ?? [] : c.motifs
+  if (motifs.includes('tls.m.decoration:icon') || motifs.includes('tls.m.icon-cluster')) {
+    lines.push(
+      '- Topic icons: `tls.m.decoration` `shape: "icon"` + `icon` (one large)' +
+        (motifs.includes('tls.m.icon-cluster') ? '; `tls.m.icon-cluster` `icons` (3-5 small, beside a title or a number)' : '') +
+        ' — of the topic, from the icon list, never generic.'
+    )
+  }
+  if (c.decoration !== 'none' || c.quiet?.length) lines.push('- Where decoration may sit: ' + c.zones.map((z) => ZONE_HOW[z]).join('; ') + '.')
   lines.push(`- Accent: ${c.accent}`)
   if (style.rules.length) lines.push('- Rules: ' + style.rules.join(' '))
   if (style.avoid.length) lines.push('- Never use: ' + style.avoid.map((t) => `\`${t}\``).join(', '))

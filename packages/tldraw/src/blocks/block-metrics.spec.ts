@@ -179,9 +179,11 @@ describe('LO3 size cards', () => {
     })
   })
 
-  it('the digest index carries the hints and stays under 20k chars', () => {
+  it('the digest index carries the hints and stays under 21k chars', () => {
     const md = capabilityIndex(registry)
-    expect(md.length).toBeLessThanOrEqual(20000)
+    // vivid V4 (144 blocks): the full index is for tools; the model reads the tier-1 index, whose
+    // 17.7k budget is unchanged (capability-digest.spec)
+    expect(md.length).toBeLessThanOrEqual(21000)
     expect(md).toContain(`tls.t.title · heading · element — ${registry.get('tls.t.title')!.shortDescription} [h≈0+104/L@840]`)
     expect(md).toContain('[h=fill]')
   })

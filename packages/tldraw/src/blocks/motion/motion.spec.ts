@@ -162,11 +162,13 @@ describe('BLUR_TOKENS', () => {
 // ---------------------------------------------------------------------------
 
 describe('MotionDriver property vocabulary', () => {
-  it('ALLOWED_PROPERTIES contains exactly the six allowed CSS properties', () => {
+  it('ALLOWED_PROPERTIES contains exactly the seven allowed CSS properties', () => {
+    // vivid V2: `rotate` (the CSS individual property) for the ambient spin / sway loops
     expect([...ALLOWED_PROPERTIES]).toEqual([
       'opacity',
       'translate',
       'scale',
+      'rotate',
       'clip-path',
       'filter',
       'stroke-dashoffset',

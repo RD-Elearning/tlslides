@@ -125,7 +125,7 @@ export function checkGrammar(slide: SlideSpec, registry: BlockRegistry, basePath
 
 /** B2/B6: region-level blocks that count as the slide's one accent / one decoration. */
 const FOCAL_ACCENTS = new Set(['tls.t.takeaway', 'tls.t.callout'])
-const DECORATIONS = new Set(['tls.m.decoration', 'tls.m.pattern'])
+const DECORATIONS = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.m.icon-cluster'])
 
 /** The leaf types of a slide (a multiset as type → count). */
 function leafTypes(regions: Record<string, readonly BlockSpec[]>): Map<string, number> {

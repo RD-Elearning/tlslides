@@ -178,7 +178,8 @@ export interface BlockMotionSpec {
   stagger?: DurationToken | number
   /** Per-named-part motion override. Part names are declared by the motion recipe. */
   parts?: Record<string, PartMotionSpec>
-  /** Presentation-only ambient loop (shimmer, drift). Off unless explicitly set. */
+  /** Presentation-only ambient loop (V2: float, drift, spin…). Absent = the definition's
+   *  `motion.ambient`; `{ preset: 'none' }` switches it off. */
   ambient?: AmbientMotionSpec
 }
 
@@ -200,9 +201,10 @@ export interface PartMotionSpec {
  * Ambient (presentation-only) motion specification.
  */
 export interface AmbientMotionSpec {
-  /** Ambient preset: 'shimmer', 'drift', etc. */
+  /** V2 — an ambient loop id (`motion/ambient.ts` AMBIENT_IDS: float, drift, spin, sway, pulse,
+   *  twinkle, bob), or `'none'` for no loop. */
   preset?: MotionPresetId
-  /** Duration of one ambient cycle. */
+  /** Duration of one ambient cycle, in ms. */
   duration?: DurationToken | number
   /** Easing applied to the ambient animation. */
   ease?: EaseToken
@@ -459,7 +461,26 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
  * Motion recipe: declares named parts and a default choreography.
  * (Full shape defined in Phase 22; for P18 this is a placeholder.)
  */
+/**
+ * V2 (vivid PLAN.md §4) — the ambient loop a block plays once it has entered (`motion/ambient.ts`).
+ */
+export interface AmbientRecipe {
+  /** An ambient id (`AMBIENT_IDS`). */
+  preset: string
+  /** Loop the indexed parts `part[0]`, `part[1]`… one by one instead of the whole block. */
+  part?: string
+  /** Phase offset between those parts, in ms. */
+  stagger?: number
+  /** Amplitude factor (1 = the preset's). */
+  amp?: number
+  /** One run in ms (absent = the preset's). */
+  periodMs?: number
+}
+
 export interface MotionRecipe {
+  /** V2 — the block's ambient loop: a recipe, or one chosen from its props (a decoration loops by
+   *  shape); `null` = none. Presentation only: the timeline and the checks never see it. */
+  ambient?: AmbientRecipe | ((props: Record<string, unknown>) => AmbientRecipe | null)
   /** Named parts this block declares. Listed here so motion.parts can target them. */
   parts?: string[]
   /** Default motion preset. */
@@ -1313,6 +1334,9 @@ export interface StyleConcept {
   /** enhance S4: subject doodles suit the style (`tls.m.decoration` tree, flask, globe…): the art
    *  direction may pick the one that draws the deck's topic. */
   subjects?: boolean
+  /** vivid V3 — the quiet tier of a decoration-`none` style: motifs it still allows, only as a
+   *  soft watermark (tone `line`, `layer: backdrop`) on about one slide in four. */
+  quiet?: string[]
 }
 
 /**

@@ -449,9 +449,9 @@ describe('R7 — capability digest v2', () => {
   describe('two-tier digest (P0.4)', () => {
     const reg = freshBuiltInRegistry()
 
-    it('capabilityIndex lists every block exactly once and stays under 20k chars', () => {
+    it('capabilityIndex lists every block exactly once and stays under 21k chars', () => {
       const md = capabilityIndex(reg)
-      expect(md.length).toBeLessThanOrEqual(20000)
+      expect(md.length).toBeLessThanOrEqual(21000) // vivid V4: 144 blocks; the model reads the tier-1 index (17.7k)
       for (const def of BUILT_IN_BLOCKS) {
         const lines = md.split('\n').filter((l) => l.startsWith(`${def.type} · `))
         expect(lines).toHaveLength(1)
@@ -608,9 +608,9 @@ describe('R7 — capability digest v2', () => {
         expect(data.find((e) => e.type === 'tls.d.line')?.absorbs).toEqual(['tls.d.area', 'tls.d.sparkline', 'tls.d.slope'])
       })
 
-      it('the default call is unchanged: every block a full line, no recipes, within 20k', () => {
+      it('the default call is unchanged: every block a full line, no recipes, within 21k', () => {
         const md = capabilityIndex(reg)
-        expect(md.length).toBeLessThanOrEqual(20000)
+        expect(md.length).toBeLessThanOrEqual(21000) // vivid V4: 144 blocks; the model reads the tier-1 index (17.7k)
         expect(md).not.toContain('## Recipes')
         expect(md).not.toContain(' knobs: ')
         expect(md).not.toContain('also: ')

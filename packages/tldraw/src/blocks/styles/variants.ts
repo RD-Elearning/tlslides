@@ -53,7 +53,7 @@ export const DOODLE_SKETCHNOTE_STYLE: DeckStyle = {
   surface: { card: 'filled', stroke: 'bold', shadow: 0, render: { stroke: 'rough', fill: 'hachure', roughness: 1.3, emphasis: 'highlighter', highlight: '#FFD86B' } },
   masters: SKETCH_MASTERS,
   // a big wave behind a diagram read as clutter (golden v1): corners and behind a statement only
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle'], zones: ['corner', 'behind-title'], icons: 'blob', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' , subjects: true },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:star', 'tls.m.decoration:sparkle', 'tls.m.decoration:squiggle', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'behind-title'], icons: 'blob', accent: 'Ink black for lines, one warm colour for the key word; pastel blocks for groups.' , subjects: true },
   rules: ['Short, friendly sentences.', 'Draw the idea, not paragraphs.'],
 }
 
@@ -76,7 +76,7 @@ export const DOODLE_GEO3D_STYLE: DeckStyle = {
   ],
   surface: { card: 'filled', stroke: 'bold', shadow: 'hard', render: { stroke: 'rough', roughness: 0.7 } },
   masters: GEO_MASTERS,
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:cylinder', 'tls.m.decoration:cone', 'tls.m.decoration:pyramid', 'tls.m.decoration:slab'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'tile', accent: 'Indigo for structure, amber for the one thing to notice; one solid beside the main visual.' , subjects: true },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:cylinder', 'tls.m.decoration:cone', 'tls.m.decoration:pyramid', 'tls.m.decoration:slab', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'tile', accent: 'Indigo for structure, amber for the one thing to notice; one solid beside the main visual.' , subjects: true },
   rules: ['Structure first: layers, stacks, trees, steps.', 'One solid per slide, beside the visual.'],
   blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
@@ -101,7 +101,7 @@ export const DOODLE_CHALKBOARD_STYLE: DeckStyle = {
   surface: { card: 'outline', stroke: 'bold', shadow: 0, render: { stroke: 'rough', roughness: 1.6 } },
   masters: CHALK_MASTERS,
   motionStyle: 'subtle',
-  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:sparkle'], zones: ['corner', 'behind-title'], icons: 'plain', accent: 'Chalk yellow for the key word, mint for the second idea; outlines only, no filled panels.' , subjects: true },
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:sparkle', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'behind-title'], icons: 'plain', accent: 'Chalk yellow for the key word, mint for the second idea; outlines only, no filled panels.' , subjects: true },
   rules: ['Few words, big, as on a board.', 'Outlines, never solid panels.'],
   blockDefaults: { ...DOODLE_STYLE.blockDefaults, 'tls.t.takeaway': { ...DOODLE_STYLE.blockDefaults['tls.t.takeaway'], variant: 'line' } },
 }
@@ -125,7 +125,7 @@ export const DOODLE_NOTEBOOK_STYLE: DeckStyle = {
   ],
   surface: { card: 'filled', stroke: 'hairline', shadow: 1, render: { stroke: 'rough', roughness: 1, emphasis: 'highlighter', highlight: '#FFE066' } },
   masters: NOTE_MASTERS,
-  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle'], zones: ['corner', 'under-heading'], icons: 'plain', accent: 'Blue ink for text, a yellow highlighter on one key word per slide.' , subjects: true },
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:star', 'tls.m.decoration:squiggle', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'under-heading'], icons: 'plain', accent: 'Blue ink for text, a yellow highlighter on one key word per slide.' , subjects: true },
   rules: ['Notes, not prose.', 'One highlighted word per slide.'],
 }
 
@@ -144,7 +144,7 @@ export const MINIMAL_SOFT_STYLE: DeckStyle = {
   fonts: { heading: { family: 'Plus Jakarta Sans', fallback: FontStyle.Sans, metricsKey: 'plus-jakarta-sans' }, body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' } },
   tokens: { ...MINIMAL_STYLE.tokens, radius: { sm: 10, md: 20, lg: 24, xl: 32 } },
   surface: { card: 'raised', stroke: 'none', shadow: 1 },
-  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'disc', accent: 'The accent on the key word and the one number; everything else grey.' },
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading', 'watermark'], quiet: ['tls.m.decoration:icon'], icons: 'disc', accent: 'The accent on the key word and the one number; everything else grey.' },
   rules: ['One idea per slide.', 'White cards on a soft page; no ornament.', 'One accent colour, used once per slide.'],
   blockDefaults: { ...MINIMAL_STYLE.blockDefaults, 'tls.t.takeaway': { ...MINIMAL_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
@@ -169,7 +169,7 @@ export const GLASS_CLAY_STYLE: DeckStyle = {
   tokens: { ...GLASS_STYLE.tokens, radius: { sm: 14, md: 24, lg: 32, xl: 40 } },
   surface: { card: 'raised', stroke: 'none', shadow: 2 },
   masters: CLAY_MASTERS,
-  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:orb', 'tls.m.decoration:blob'], zones: ['corner', 'beside-visual'], icons: 'tile', accent: 'One saturated colour for the focus; spheres in the margin, never on the text.' },
+  concept: { decoration: 'sparse', motifs: ['tls.m.decoration:orb', 'tls.m.decoration:blob', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'beside-visual'], icons: 'tile', accent: 'One saturated colour for the focus; spheres in the margin, never on the text.' },
   rules: ['Big, rounded, friendly.', 'One sphere or blob per slide, in the margin.', 'Numbers large, words few.'],
   blockDefaults: { ...GLASS_STYLE.blockDefaults, 'tls.t.takeaway': { ...GLASS_STYLE.blockDefaults['tls.t.takeaway'], variant: 'tint' } },
 }
@@ -191,7 +191,7 @@ export const MEMPHIS_CONFETTI_STYLE: DeckStyle = {
     pal('memphis-confetti-sun', 'Confetti Sun', BRICOLAGE, { background: '#FFFBEA', surface: '#FFFFFF', text: '#1A1A1A', textMuted: '#4D4743', accent1: '#3A86FF', accent2: '#FF006E', positive: '#2F855A', negative: '#C53030', warning: '#9A6700' }, 8),
   ],
   masters: CONFETTI_MASTERS,
-  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:pyramid', 'tls.m.decoration:zigzag', 'tls.m.decoration:cylinder', 'tls.m.decoration:dots'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'sticker', accent: 'Flat bright blocks; one floating solid in the margin, never on the text.' , subjects: true },
+  concept: { decoration: 'rich', motifs: ['tls.m.decoration:cube', 'tls.m.decoration:pyramid', 'tls.m.decoration:zigzag', 'tls.m.decoration:cylinder', 'tls.m.decoration:dots', 'tls.m.decoration:icon', 'tls.m.icon-cluster'], zones: ['corner', 'beside-visual', 'behind-title'], icons: 'sticker', accent: 'Flat bright blocks; one floating solid in the margin, never on the text.' , subjects: true },
 }
 
 // ── academic / lecture ──────────────────────────────────────────────────────────────────────────
@@ -209,7 +209,7 @@ export const ACADEMIC_LECTURE_STYLE: DeckStyle = {
   ],
   fonts: { heading: { family: 'Source Serif 4', fallback: FontStyle.Serif, metricsKey: 'source-serif-4' }, body: { family: 'Inter', fallback: FontStyle.Sans, metricsKey: 'inter' } },
   surface: { card: 'outline', stroke: 'hairline', shadow: 0 },
-  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'none', accent: 'The accent on defined terms and the one result; figures and formulas carry the slide.' },
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading', 'watermark'], quiet: ['tls.m.decoration:icon'], icons: 'none', accent: 'The accent on defined terms and the one result; figures and formulas carry the slide.' },
   rules: ['Define, then show: a definition, a figure, a worked example.', 'Number figures and equations.', 'No ornament; rules and boxes only.'],
   blockDefaults: { ...MINIMAL_STYLE.blockDefaults, 'tls.t.takeaway': { ...MINIMAL_STYLE.blockDefaults['tls.t.takeaway'], variant: 'line' } },
 }

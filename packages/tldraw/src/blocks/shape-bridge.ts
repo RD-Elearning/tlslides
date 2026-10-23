@@ -52,6 +52,11 @@ interface BlockMetadata {
   styleMotion?: BlockMotionSpec
   /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
   motionStyle?: 'subtle' | 'expressive'
+  /** V2 (vivid PLAN.md) — the motion style of the slide this block sits on, stamped by
+   *  `compileSlide` only on a block that can loop (`motion.ambient` on its definition or spec) and
+   *  only when the slide moves (`subtle` / `expressive`). The viewer's ambient loops read it; never
+   *  authored, never returned by `shapeToBlock`. */
+  ambientStyle?: 'subtle' | 'expressive'
   /** LO8 — where `compileSlide` placed a layered (backdrop/overlay) block: its box, and whether
    *  it came from a region (anchored) or from `free[]`. Never authored, never returned by
    *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
@@ -338,6 +343,11 @@ export function shapeToRevealBlock(shape: unknown): BlockSpec | undefined {
  */
 export function revealStyleOf(shape: unknown): 'subtle' | 'expressive' {
   return blockMetaOf(shape)?.motionStyle === 'subtle' ? 'subtle' : 'expressive'
+}
+
+/** V2 — the motion style a block's ambient loop plays in (`compileSlide` stamps it), else none. */
+export function ambientStyleOf(shape: unknown): 'subtle' | 'expressive' | undefined {
+  return blockMetaOf(shape)?.ambientStyle
 }
 
 function blockMetaOf(shape: unknown): BlockMetadata | undefined {

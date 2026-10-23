@@ -55,6 +55,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
+  // vivid V3: topic icons scattered as the slide's decoration (reached through the style concept)
+  'tls.m.icon-cluster': t2(['tone', 'opacity', 'backing']),
   'tls.x.rule': t2(['axis', 'weight', 'tone', 'length', 'dash']),
 
   // ── heading ──
@@ -87,6 +89,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.t.hero-number': t2(['format', 'emphasis']),
   'tls.d.progress-bar': t2(['showValue', 'thickness', 'tone', 'labelPos', 'track', 'format']),
   'tls.d.progress-ring': t2(['thickness', 'cap', 'tone', 'format']),
+  // vivid V4: a share of a group as a pictogram (number shape)
+  'tls.d.icon-array': t2(['figure', 'tone']),
   'tls.d.stat-compare': t2(['format', 'delta', 'polarity', 'connector']),
   'tls.d.gauge': t2(['needle', 'showTicks', 'format']),
   'tls.d.trend-badge': t2(['format', 'polarity', 'size']),
@@ -144,6 +148,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),
   'tls.g.before-after': t1(['arrow', 'emphasis'], ['tls.c.problem-solution', 'tls.m.image-compare', 'tls.g.iceberg']),
   'tls.g.iceberg': t2(['waterline']),
+  // vivid V4: misconceptions set right (contrast / question shapes)
+  'tls.g.myth-fact': t2(),
   'tls.c.comparison': t1(['style'], ['tls.c.case-study']),
   'tls.c.case-study': t2(['layout', 'emphasis', 'showMetric', 'showClient']),
   'tls.c.problem-solution': t2(['showIcons', 'style']),
@@ -164,6 +170,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
 
   // ── hierarchy ──
   'tls.g.tree': t1(['direction', 'nodeStyle', 'compact'], ['tls.g.hub-spoke', 'tls.g.mindmap']),
+  // vivid V4: levels that rise (sequence / hierarchy shapes)
+  'tls.g.staircase': t2(['numbering', 'fill']),
+  'tls.g.target': t2(['fill', 'labels']),
   'tls.g.pyramid': t1(['direction', 'notes', 'fill'], ['tls.g.layers', 'tls.g.breakdown']),
   'tls.g.layers': t2(['style', 'notes']),
   'tls.g.breakdown': t2(['direction', 'showShare']),
@@ -172,6 +181,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── relationship ──
   'tls.g.venn': t2(['opacity', 'labels']),
   'tls.g.hub-spoke': t2(['layout', 'connector']),
+  // vivid V4: a centre with satellites (cycle / terms / hierarchy shapes)
+  'tls.g.orbit': t2(['spokes']),
   'tls.g.bracket': t2(['side', 'style']),
 
   // ── cover ──

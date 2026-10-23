@@ -184,3 +184,33 @@ describe('RV02 — honest size (review G02)', () => {
     }
   })
 })
+
+describe('tls.t.statement — vivid V4 circle emphasis', () => {
+  const { absoluteLeaves } = require('../standard-suite')
+  const { tlsTStatement } = require('./index')
+  const { ctxNoAssets } = require('../../media/media-test')
+  const props = { text: 'Learning is **active**, not passive', emphasis: 'circle', size: 'lg' }
+
+  it('draws one open loop per bold run, stroked, after the words, inside the box', () => {
+    const tree = tlsTStatement.layout({ ...tlsTStatement.defaults, ...props }, ctxNoAssets(1200, 400))
+    const leaves = absoluteLeaves(tree)
+    const loops = leaves.filter((l: any) => /^circle\[/.test(l.part ?? ''))
+    expect(loops).toHaveLength(1)
+    const n = loops[0].node as any
+    expect(n.k).toBe('path')
+    expect(n.stroke).toBeDefined()
+    expect(n.fill).toBeUndefined()
+    expect(n.d).not.toMatch(/Z/)
+    const nums = (n.d.match(/-?\d+(?:\.\d+)?/g) as string[]).map(Number)
+    for (let i = 0; i < nums.length; i += 2) {
+      expect(nums[i]).toBeGreaterThanOrEqual(-1)
+      expect(nums[i]).toBeLessThanOrEqual(1201)
+      expect(nums[i + 1]).toBeGreaterThanOrEqual(-1)
+      expect(nums[i + 1]).toBeLessThanOrEqual(400)
+    }
+    // the loop is drawn after (over) the words
+    const lastText = leaves.map((l: any) => l.k).lastIndexOf('text')
+    expect(leaves.findIndex((l: any) => /^circle\[/.test(l.part ?? ''))).toBeGreaterThan(lastText)
+    expect(tlsTStatement.motion.partMotion.circle.preset).toBe('draw-path')
+  })
+})

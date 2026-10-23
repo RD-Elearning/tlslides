@@ -120,10 +120,49 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
   }
 }
 
+/**
+ * vivid V4 — an open hand-drawn loop: an ellipse (cubic segments) tilted a few degrees, starting
+ * above the left end and running a little past a full turn so its ends cross, as a pen circling a
+ * word does. `seed` varies the tilt and overshoot between runs.
+ */
+export function loopPath(cx: number, cy: number, rx: number, ry: number, seed = 0): string {
+  const f = (v: number) => String(Math.round(v * 100) / 100)
+  const tilt = ((((seed * 37) % 7) - 3) * Math.PI) / 180
+  const a0 = (-160 * Math.PI) / 180
+  const sweep = ((372 + ((seed * 13) % 9)) * Math.PI) / 180
+  const segs = 6
+  const da = sweep / segs
+  const k = (4 / 3) * Math.tan(da / 4)
+  // a slowly growing radius: the second pass sits just outside the first
+  const at = (a: number, grow: number) => {
+    const x = (rx + grow) * Math.cos(a)
+    const y = (ry + grow * 0.5) * Math.sin(a)
+    return { x: cx + x * Math.cos(tilt) - y * Math.sin(tilt), y: cy + x * Math.sin(tilt) + y * Math.cos(tilt) }
+  }
+  const tan = (a: number, grow: number) => {
+    const x = -(rx + grow) * Math.sin(a)
+    const y = (ry + grow * 0.5) * Math.cos(a)
+    return { x: x * Math.cos(tilt) - y * Math.sin(tilt), y: x * Math.sin(tilt) + y * Math.cos(tilt) }
+  }
+  const g = (i: number) => (Math.min(rx, ry) * 0.06 * i) / segs
+  const p0 = at(a0, 0)
+  let d = `M${f(p0.x)} ${f(p0.y)}`
+  for (let i = 0; i < segs; i++) {
+    const a = a0 + i * da
+    const b = a + da
+    const p = at(a, g(i))
+    const q = at(b, g(i + 1))
+    const tp = tan(a, g(i))
+    const tq = tan(b, g(i + 1))
+    d += `C${f(p.x + k * tp.x)} ${f(p.y + k * tp.y)} ${f(q.x - k * tq.x)} ${f(q.y - k * tq.y)} ${f(q.x)} ${f(q.y)}`
+  }
+  return d
+}
+
 export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
   const width = Math.max(1, ctx.box.width)
   const align = alignOf(props)
-  const emphasis = props.emphasis === 'underline' || props.emphasis === 'highlight' ? props.emphasis : 'accent'
+  const emphasis = props.emphasis === 'underline' || props.emphasis === 'highlight' || props.emphasis === 'circle' ? props.emphasis : 'accent'
   const f = fit(props, ctx, width, ctx.box.height)
   const children: LayoutNode[] = []
 
@@ -142,6 +181,7 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
   // group (RVM2) so the motion recipe can sweep them in: a bare `emphasis[l.r]` leaf matched no
   // recipe part and showed with the block fade, still, before its words rose in.
   const marks: LayoutNode[] = []
+  const circles: LayoutNode[] = []
   if (emphasis !== 'accent' && hasStrong(props.text)) {
     const accent = ctx.resolveColor('accent').color
     const tint = tintOf(ctx.resolveColor('surface').color, accent, 0.28)
@@ -155,7 +195,23 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
         const w = runWidth(run.text, f.style, !!run.bold)
         if (run.bold && shown.trim().length > 0) {
           const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
-          if (emphasis === 'highlight') {
+          if (emphasis === 'circle') {
+            // vivid V4: a hand-drawn loop around the run — an ellipse a little larger than the
+            // words, tilted, its ends overshooting; kept inside the block box
+            const rx = Math.max(4, Math.min(sw / 2 + size * 0.12, width / 2))
+            const cx = Math.min(width - rx, Math.max(rx, cursor + sw / 2))
+            const th = Math.max(3, Math.round(size * 0.06))
+            const room = Math.max(g.y + g.height, ctx.box.height)
+            const cy = g.y + g.height / 2
+            const ry = Math.max(4, Math.min(g.height / 2, cy - th, room - cy - th))
+            circles.push({
+              k: 'path',
+              part: `circle[${li}.${ri}]`,
+              box: { x: 0, y: 0, width, height: room },
+              d: loopPath(cx, cy, rx - th / 2, ry - th / 2, li * 7 + ri),
+              stroke: { color: accent, width: th },
+            })
+          } else if (emphasis === 'highlight') {
             const padX = Math.round(size * 0.08)
             // Clamped to the block box: a marked run that starts (or ends) a line would otherwise
             // push its pad past the box edge (LO6: true widths wrap the example's run to a line start).
@@ -198,6 +254,8 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
   }
 
   children.push(...f.placed.nodes)
+  // the loops go over the words (an open stroke never hides them) and draw on after them
+  if (circles.length > 0) children.push({ k: 'group', part: 'circle', box: { x: 0, y: 0, width, height: Math.max(...circles.map((c) => c.box.height)) }, children: circles })
 
   let bottom = f.top + f.placed.height
   if (f.attribution) {
@@ -210,7 +268,19 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
     bottom = y + a.height
   }
 
+  // a loop reaches a little past its line (never past the box); its boxes end where the block does
+  for (const c of circles) if (c.k === 'path') bottom = Math.max(bottom, Math.min(c.box.height, pathBottom(c.d) + 2))
+  for (const c of circles) c.box = { ...c.box, height: bottom }
+  for (const g of children) if (g.k === 'group' && g.part === 'circle') g.box = { ...g.box, height: bottom }
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height: bottom }, children }
+}
+
+/** The lowest y a path's points reach (its control points included: an upper bound). */
+function pathBottom(d: string): number {
+  const nums = d.match(/-?\d+(?:\.\d+)?/g) ?? []
+  let y = 0
+  for (let i = 1; i < nums.length; i += 2) y = Math.max(y, Number(nums[i]))
+  return y
 }
 
 export function capacity(props: StatementProps, box: Size, ctx: LayoutContext): CapacityReport {

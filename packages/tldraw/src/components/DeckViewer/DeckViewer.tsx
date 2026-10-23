@@ -15,7 +15,7 @@ import type { BlockDefinition } from '~blocks/types'
 import type { LayoutContext } from '~blocks/types'
 import { deckSpecToDocument } from '~blocks/deck-document'
 import { deckLayoutContext, contextForBlock } from '~blocks/deck-context'
-import { revealStyleOf, shapeToBlock, shapeToRevealBlock } from '~blocks/shape-bridge'
+import { ambientStyleOf, revealStyleOf, shapeToBlock, shapeToRevealBlock } from '~blocks/shape-bridge'
 import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
@@ -25,6 +25,8 @@ import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
 import { createWAAPI_driver } from '~blocks/motion/waapi-driver'
+import { createGsapDriver, type GsapInstance } from '~blocks/motion/gsap-driver'
+import { resolveAmbient, startAmbient } from '~blocks/motion/ambient'
 import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { autoRunEnd, entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
@@ -74,6 +76,11 @@ export interface DeckViewerProps {
    *  so that html blocks with `animate()` can use GSAP directly. No `import gsap` anywhere
    *  in the bundle — the adapter is structurally typed. */
   gsap?: unknown
+  /** V2 (spro vivid PLAN.md §4) — play the blocks' ambient loops (a decoration that floats, a
+   *  ring that turns) once each block has entered; they stop when the slide changes. Through GSAP
+   *  when `gsap` is given, else through `driver`. Off under reduced motion and on still slides.
+   *  Default `false`: a host opts in (thumbnails and before/after previews stay still). */
+  ambient?: boolean
   /** When set, once a slide's build finishes, auto-advance to the next presentable slide after
    *  this many ms. Absent = fully manual/click/keyboard navigation only. */
   autoAdvanceMs?: number
@@ -285,6 +292,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   onBuildStepChange,
   driver,
   gsap,
+  ambient = false,
   autoAdvanceMs,
   clickNavigation = 'advance',
   slideEntry = 'start',
@@ -623,6 +631,64 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       cancelAllAnimate()
     }
   }, [motionDriver, cancelAllAnimate])
+
+  /* --- V2: ambient loops ----------------------------------------------------------------- */
+
+  const ambientDriver = React.useMemo<MotionDriver>(() => {
+    const g = gsap as GsapInstance | undefined
+    return g && typeof g.fromTo === 'function' && typeof g.timeline === 'function' ? createGsapDriver(g) : motionDriver
+  }, [gsap, motionDriver])
+  /** Running loops (and loops waiting for their block's entrance), keyed by shape id. */
+  const ambientRef = React.useRef<Map<string, { stop?: () => void; timer?: ReturnType<typeof setTimeout> }>>(new Map())
+  const ambientSeenRef = React.useRef<{ pageId: string; shown: number }>({ pageId: '', shown: -1 })
+  const stopAmbient = React.useCallback((id?: string) => {
+    for (const [key, loop] of ambientRef.current) {
+      if (id !== undefined && key !== id) continue
+      if (loop.timer) clearTimeout(loop.timer)
+      loop.stop?.()
+      ambientRef.current.delete(key)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!ambient || !page || reducedMotion) {
+      stopAmbient()
+      return
+    }
+    const seen = ambientSeenRef.current
+    if (seen.pageId !== page.id) stopAmbient()
+    const prevShown = seen.pageId === page.id ? seen.shown : -1
+    const stepOf = new Map<string, number>()
+    steps.forEach((step, i) => step.shapeIds.forEach((sid) => stepOf.set(sid, i)))
+    for (const [sid, shape] of Object.entries(page.shapes)) {
+      const k = stepOf.get(sid)
+      const revealed = k === undefined || k < currentBuildStep
+      if (!revealed) {
+        stopAmbient(sid)
+        continue
+      }
+      if (ambientRef.current.has(sid)) continue
+      const style = ambientStyleOf(shape)
+      if (!style) continue
+      const spec = shapeToBlock(shape)
+      const resolved = spec ? resolveAmbient(spec, blockRegistry.get(spec.type), style) : null
+      const root = elementsRef.current.get(sid)?.firstElementChild
+      if (!resolved || !root) continue
+      // a block that has just entered loops once its entrance is over; one already shown at once
+      const entering = k !== undefined && prevShown >= 0 && k >= prevShown
+      const anim = (shape as ComponentShape).animation
+      const wait = entering ? (anim?.delayMs ?? 0) + (anim?.durationMs ?? 400) + 500 : 250
+      const loop: { stop?: () => void; timer?: ReturnType<typeof setTimeout> } = {}
+      loop.timer = setTimeout(() => {
+        loop.timer = undefined
+        loop.stop = startAmbient(root, resolved, ambientDriver)
+      }, wait)
+      ambientRef.current.set(sid, loop)
+    }
+    ambientSeenRef.current = { pageId: page.id, shown: currentBuildStep }
+  }, [ambient, page, steps, currentBuildStep, reducedMotion, blockRegistry, ambientDriver, stopAmbient])
+
+  React.useEffect(() => () => stopAmbient(), [stopAmbient])
 
   /* --- Auto-advance chain (`afterPrevious`/a leading `withPrevious`) -------------------- */
 

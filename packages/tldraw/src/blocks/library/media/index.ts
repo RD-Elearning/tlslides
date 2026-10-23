@@ -16,6 +16,7 @@ import { tlsMImageCompare } from './tls-m-image-compare'
 import { tlsMDeviceMock } from './tls-m-device-mock'
 import { tlsMAvatarGroup } from './tls-m-avatar-group'
 import { tlsMDecoration } from './tls-m-decoration'
+import { tlsMIconCluster } from './tls-m-icon-cluster'
 import { tlsMPattern } from './tls-m-pattern'
 import { tlsMShape } from './tls-m-shape'
 
@@ -33,12 +34,14 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMDeviceMock,
   tlsMAvatarGroup,
   tlsMDecoration,
+  tlsMIconCluster,
   tlsMPattern,
   tlsMShape,
 ]
 
 export { tlsMImage } from './tls-m-image'
 export { tlsMIcon } from './tls-m-icon'
+export { tlsMIconCluster } from './tls-m-icon-cluster'
 export { tlsMIconLabel } from './tls-m-icon-label'
 export { tlsMIconList } from './tls-m-icon-list'
 export { tlsMImageGrid } from './tls-m-image-grid'

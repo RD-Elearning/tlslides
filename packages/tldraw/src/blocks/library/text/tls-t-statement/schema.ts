@@ -30,10 +30,12 @@ export const schema: BlockSchema = {
     label: 'Alignment',
   },
   emphasis: {
-    type: { kind: 'enum', values: ['accent', 'underline', 'highlight'] },
+    type: { kind: 'enum', values: ['accent', 'underline', 'highlight', 'circle'] },
     role: 'option',
     label: 'Emphasis',
-    help: 'How the **bold** words render: accent colour, accent underline, or accent highlight.',
+    help: 'How the **bold** words render: accent colour, accent underline, accent highlight, or a hand-drawn circle around them (drawn on as the slide builds).',
+    // vivid V4: `circle` is offered by the compose kit's detail; the tier-1 index keeps its budget
+    indexValues: ['accent', 'underline', 'highlight'],
   },
   showAttribution: {
     type: { kind: 'boolean' },
@@ -54,7 +56,7 @@ export interface StatementProps extends Record<string, unknown> {
   attribution?: string
   size?: 'display' | 'xl' | 'lg' | 'md'
   align?: 'start' | 'center'
-  emphasis?: 'accent' | 'underline' | 'highlight'
+  emphasis?: 'accent' | 'underline' | 'highlight' | 'circle'
   showAttribution?: boolean
   showMark?: boolean
 }

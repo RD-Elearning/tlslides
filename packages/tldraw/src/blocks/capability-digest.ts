@@ -729,22 +729,23 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
   // AC8: the header is the compact form of the full index's rules (the AC7 header was 2.45k against
   // a 1.2k target; the room pays for the knob values and the recipe looks).
   lines.push(
-    "Start from a recipe for the slide's role. Pick a category by the content's relationship. Dated → " +
+    // vivid V4: trimmed to pay for the six new blocks' `also:` names (17.7k ceiling)
+    "Start from a recipe for the slide's role, else pick a category. Dated → " +
       '`timeline`, ordered → `process`, options → `comparison`, numbers on axes → `chart`, 1–4 headline numbers → `metric`.'
   )
-  lines.push('Scope: `element` combines with others; `group` is one per region; `slide` sits alone in the main region, never nested.')
+  lines.push('Scope: `element` combines; `group` one per region; `slide` alone in the main region, never nested.')
   lines.push(
     // AC8.6: a few words trimmed to pay for the section-title recipe line (17k ceiling)
     'Lines: `type · category · scope · items · layer — what it shows [height] knobs: k=a|b, toggle`. Knobs change the ' +
-      'look: turn them before switching block; other values are rejected. `also:` more blocks by ' +
-      "name. Get a type's detail before filling its props."
+      'look: try them before another block; other values are rejected. `also:` more blocks by ' +
+      "name. Get a type's detail first."
   )
   lines.push(
     'Height `[h…]` (1920×1080 units, width after `@`): `B+P/L` per text line, `+P/item` per item, `fill` = ' +
-      'the given height, `X–Y` varies.'
+      'given height, `X–Y` varies.'
   )
   lines.push(
-    'Layers: in one region, `layer: "backdrop"` paints behind, `"overlay"` on top (never over text); `anchor` ' +
+    'Layers: `layer: "backdrop"` paints behind its region, `"overlay"` on top (never over text); `anchor` ' +
       'fill|corner|edge|center; `anchorTo: "<id>"`. Motion: `motionStyle` on deck/slide — expressive, subtle, static.'
   )
   lines.push('')
@@ -778,8 +779,8 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
       // AC8.6: trimmed (~40 chars) to pay for the section-title line within the 17k ceiling
       // CMP3: trimmed (", clean with example content") to pay for the three atoms' `also:` names
         'Known-good slides per role (`id · layout — region: blocks — when · looks`). ' +
-        '`+title` = `tls.t.title` in the `title` region; no region name = the main region. ' +
-        '`looks:` other designs (`id/look`); `patterns:` composed designs, picked the same way. Swap content, keep the rest; never repeat a design in a deck.'
+        '`+title` = `tls.t.title` in `title`; no region = the main region. ' +
+        '`looks:` other designs (`id/look`); `patterns:` composed designs, picked the same way. Swap content, keep the rest; never repeat a design.'
     )
     lines.push('')
     // CMP4: per role, its composition patterns on one line (`id(look|look)`), picked like recipes

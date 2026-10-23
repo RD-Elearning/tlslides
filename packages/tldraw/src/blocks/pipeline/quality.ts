@@ -122,7 +122,7 @@ function union(boxes: Array<{ x: number; y: number; width: number; height: numbe
 }
 
 /** Ornament, not content: left out of the balance measures. */
-const DECORATIVE = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule'])
+const DECORATIVE = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.icon-cluster'])
 
 /** The tallest gap between the vertical extents of `boxes` (sorted, merged), in units. */
 function largestGap(boxes: Array<{ y: number; height: number }>): number {

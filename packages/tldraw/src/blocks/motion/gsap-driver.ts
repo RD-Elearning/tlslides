@@ -85,6 +85,7 @@ const GSAP_KEYFRAME_MAP: Record<string, string> = {
   scale: 'scale',
   scaleX: 'scaleX',
   scaleY: 'scaleY',
+  rotate: 'rotation',
   clipPath: 'clipPath',
   filter: 'filter',
   strokeDashoffset: 'strokeDashoffset',
@@ -100,6 +101,7 @@ const KEYFRAME_TO_CSS: Record<string, string> = {
   scale: 'scale',
   scaleX: 'scale',
   scaleY: 'scale',
+  rotate: 'rotate',
   clipPath: 'clip-path',
   filter: 'filter',
   strokeDashoffset: 'stroke-dashoffset',
@@ -168,6 +170,8 @@ function toGsapVars(keyframes: MotionKeyframes, isFrom: boolean): GsapVars {
       vars.y = parsed.y
     } else if (key === 'opacity' || key === 'scale' || key === 'scaleX' || key === 'scaleY') {
       vars[key] = typeof val === 'number' ? val : parseFloat(String(val))
+    } else if (key === 'rotate') {
+      vars.rotation = parseFloat(String(val)) || 0
     } else if (key === 'clipPath' || key === 'filter') {
       vars[key] = String(val)
     } else if (key === 'strokeDashoffset') {
@@ -216,6 +220,8 @@ function cssEaseToGsap(ease: string): string {
     'cubic-bezier(0.22, 1, 0.36, 1)': 'power3.out',
     'cubic-bezier(0.34, 1.36, 0.64, 1)': 'back.out(1.7)',
     'cubic-bezier(0.34, 3.85, 0.64, 1)': 'back.out(3)',
+    // V2: the loop easing (EASING_TOKENS.sine) — a float or sway that slows at both ends
+    'cubic-bezier(0.37, 0, 0.63, 1)': 'sine.inOut',
   }
   return map[ease] ?? 'power2.out'
 }
@@ -243,6 +249,11 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
     toVars.delay = (opts.delay ?? 0) / 1000
     toVars.ease = cssEaseToGsap(opts.easing ?? 'ease-out')
     toVars.onComplete = undefined // resolved via .then()
+    // V2: loops (ambient presets) — `repeat` counts the runs after the first; -1 = forever
+    if (opts.iterations !== undefined && opts.iterations !== 1) {
+      toVars.repeat = Number.isFinite(opts.iterations) ? Math.max(0, Math.round(opts.iterations) - 1) : -1
+    }
+    if (opts.direction === 'alternate') toVars.yoyo = true
 
     // M1b: `onUpdate(progress)` (count-up's number, a sweep's sector) gets the tween's eased
     // progress every frame and 1 on completion. It used to be dropped, so nothing counted.
@@ -292,6 +303,8 @@ export function createGsapDriver(gsap: GsapInstance): MotionDriver {
         vars.y = parsed.y
       } else if (key === 'opacity' || key === 'scale' || key === 'scaleX' || key === 'scaleY') {
         vars[key] = typeof value === 'number' ? value : parseFloat(String(value))
+      } else if (key === 'rotate') {
+        vars.rotation = parseFloat(String(value)) || 0
       } else if (key === 'clipPath') {
         vars.clipPath = normalizeClipPath(String(value))
       } else if (key === 'filter') {

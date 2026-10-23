@@ -700,3 +700,17 @@ describe('LO8: host poster origin', () => {
     expect(renderNodeToSvg(atOrigin)).not.toContain('transform=')
   })
 })
+
+describe('path boxes (vivid: tight motion slots)', () => {
+  it('a path inside a moved group paints where the DOM paints it: its box is its origin', () => {
+    const { renderNodeToSvg } = require('./render-svg')
+    const tree = {
+      k: 'group',
+      box: { x: 0, y: 0, width: 400, height: 300 },
+      children: [{ k: 'group', part: 'tier[0]', box: { x: 100, y: 50, width: 60, height: 60 }, children: [{ k: 'path', part: 'level[0]', box: { x: -100, y: -50, width: 400, height: 300 }, d: 'M100 50L160 50L160 110Z', fill: { type: 'solid', color: '#000' } }] }],
+    }
+    const svg: string = renderNodeToSvg(tree as any)
+    expect(svg).toContain('translate(100 50)')
+    expect(svg).toContain('translate(-100 -50)')
+  })
+})

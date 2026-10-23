@@ -236,7 +236,12 @@ function renderNodeInner(
         styles.push(`stroke-width:${node.stroke.width}`)
         if (node.stroke.dash && node.stroke.dash.length > 0) styles.push(`stroke-dasharray:${node.stroke.dash.join(' ')}`)
       }
-      return `<path d="${node.d}" ${styleAttr(styles.join(';'))}/>`
+      // vivid: the path's coordinates are relative to its own box, as the DOM renderer draws it (an
+      // <svg> at the box, viewBox from 0). A tight motion slot (`shapeSlot`: pyramid levels, target
+      // rings) moves the path's box against its group's, and the SVG used to ignore it: the shape
+      // was drawn off by the group's offset (a pyramid's tip beside its base).
+      const moved = node.box.x !== 0 || node.box.y !== 0
+      return `<path d="${node.d}"${moved ? ` transform="translate(${node.box.x} ${node.box.y})"` : ''} ${styleAttr(styles.join(';'))}/>`
     }
 
     /* ── text ──────────────────────────────────────────────────────────────── */
