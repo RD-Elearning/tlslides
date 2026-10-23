@@ -44,7 +44,8 @@ export type SlideShape = (typeof SLIDE_SHAPES)[number]
  * full slot tables the prompt carries.
  */
 export const SHAPE_FAMILIES: Record<SlideShape, readonly string[]> = {
-  definition: ['tls.t.definition', 'tls.t.statement', 'tls.g.breakdown', 'tls.g.target', 'tls.t.callout', 'tls.t.kv-list'],
+  // not tls.g.target: a definition's parts are not nested rings (golden vv1: dx → 0, tangent, f'(x0) drawn as rings)
+  definition: ['tls.t.definition', 'tls.t.statement', 'tls.g.breakdown', 'tls.t.callout', 'tls.t.kv-list'],
   terms: ['tls.t.kv-list', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.g.orbit', 'tls.t.definition', 'tls.c.cards', 'tls.t.tags'],
   hierarchy: ['tls.g.tree', 'tls.g.graph', 'tls.g.mindmap', 'tls.g.layers', 'tls.g.target', 'tls.g.pyramid', 'tls.g.staircase', 'tls.g.breakdown'],
   sequence: ['tls.c.steps', 'tls.g.graph', 'tls.g.flow', 'tls.g.staircase', 'tls.g.chevrons', 'tls.g.timeline', 'tls.t.numbered', 'tls.g.steps'],
@@ -111,8 +112,8 @@ export function styleConcept(style: DeckStyle): StyleConcept {
 const ZONE_HOW: Record<StyleConcept['zones'][number], string> = {
   corner: 'a small motif at the right end of the title bar: a second block in `regions.title` with `layer: "overlay"`, `anchor: "right"`',
   'behind-title': 'a soft motif behind a statement or a number: the first block of that region with `layer: "backdrop"`',
-  'beside-visual': 'a motif behind the free side of the main region: `layer: "backdrop"`, `opacity: "soft"`',
-  watermark: 'a large faint motif behind the main region: `layer: "backdrop"`, `opacity: "soft"`',
+  'beside-visual': 'a motif behind the free side of the main region: `layer: "backdrop"` on the block, `"opacity": "soft"` in its props',
+  watermark: 'a large faint motif behind the main region: `layer: "backdrop"` on the block, `"opacity": "soft"` in its props',
   'under-heading': 'a short accent bar under a heading: `tls.x.rule` with `length: "short"` in the stack, or first in the main region',
 }
 
@@ -127,7 +128,7 @@ export function styleConceptCard(style: DeckStyle): string {
     style.brief,
     `- Drawn by the style on every block you place (never set them): ${look}${r !== undefined ? `, corner radius ${r}` : ''}; fonts ${style.fonts.heading.family} / ${style.fonts.body.family}. Colours come from the palette and the person's primary colour — write roles (accent, text), never hex, sizes or borders.`,
     `- Icons: ${c.icons === 'none' ? 'only where an item needs one; this style is typographic' : c.icons === 'plain' ? 'plain glyphs, no disc' : `\`iconStyle: "${c.icons}"\` beside card headings and list items; one icon per item, each fitting its item`}.`,
-    `- Decoration: ${c.decoration === 'none' ? (c.quiet?.length ? 'almost none — white space is the look; a short rule under a heading, and on about one slide in four a quiet watermark: `tls.m.decoration` `shape: "icon"` (a topic icon) `tone: "line"`, `opacity: "soft"`, `layer: "backdrop"`' : 'none — this style relies on white space; a short rule under a heading at most') : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
+    `- Decoration: ${c.decoration === 'none' ? (c.quiet?.length ? 'almost none — white space is the look; a short rule under a heading, and on about one slide in four a quiet watermark: `tls.m.decoration` with props `shape: "icon"` (a topic icon), `tone: "line"`, `opacity: "soft"` and `layer: "backdrop"` on the block' : 'none — this style relies on white space; a short rule under a heading at most') : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
   ]
   const motifs = c.decoration === 'none' ? c.quiet ?? [] : c.motifs
   if (motifs.includes('tls.m.decoration:icon') || motifs.includes('tls.m.icon-cluster')) {

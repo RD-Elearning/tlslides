@@ -20,7 +20,7 @@ export const tlsGTarget: BlockDefinition = {
   related: ['tls.g.layers', 'tls.g.pyramid', 'tls.g.venn'],
   describe: {
     when: 'Things that nest around a centre: a core concept and its wider contexts, circles of influence, must / should / could know, the layers of an onion model.',
-    avoid: 'Levels that are stacked or ranked by size (use tls.g.pyramid); overlapping sets (use tls.g.venn); equal layers of a system (use tls.g.layers).',
+    avoid: 'Parts that do not contain one another — the terms of a definition, steps, a list (each ring must hold the one inside it); levels stacked or ranked by size (use tls.g.pyramid); overlapping sets (use tls.g.venn); equal layers of a system (use tls.g.layers).',
     example: {
       id: 'b_target',
       type: 'tls.g.target',

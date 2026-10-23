@@ -79,6 +79,9 @@ export function defaultBlockRegistry(): BlockRegistry {
  * `undefined`, a non-object, wrong-typed fields) is handled explicitly rather than assumed
  * away by the type signature.
  */
+/** The fields of a `BlockSpec` itself (everything else on a block is not read). */
+const BLOCK_SPEC_FIELDS: ReadonlySet<string> = new Set(['type', 'id', 'props', 'style', 'motion', 'children', 'slot', 'layer', 'anchor', 'anchorTo', 'bleed'])
+
 export function validateDeckSpec(spec: DeckSpec, registry?: BlockRegistry): DeckFinding[] {
   try {
     return validateDeckSpecInner(spec, registry)
@@ -711,6 +714,21 @@ function validateBlockTree(
         `Place it alone in a slide region, or use a group- or element-scope sibling here.` +
         (def.related && def.related.length ? ` Related blocks: ${def.related.join(', ')}.` : ''),
     })
+  }
+
+  // vivid (golden vv1): a model wrote a decoration's `opacity: "soft"` next to `layer`, outside
+  // `props` — silently dropped, so the watermark painted at its default. A key that is no block
+  // field but is one of this block's props is reported where it belongs.
+  if (def && block && typeof block === 'object') {
+    for (const key of Object.keys(block)) {
+      if (BLOCK_SPEC_FIELDS.has(key) || !(key in def.schema)) continue
+      findings.push({
+        level: 'warning',
+        rule: 'block/misplaced-prop',
+        path: `${path}.${key}`,
+        message: `Block ${label} has "${key}" beside its "props"; it is a prop of ${def.type} and is ignored there. Move it into "props".`,
+      })
+    }
   }
 
   if (def) {

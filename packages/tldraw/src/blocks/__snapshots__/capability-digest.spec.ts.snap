@@ -3542,7 +3542,7 @@ SWOT grid: strengths, weaknesses, opportunities and threats as four bullet lists
 Concentric rings from the core outward (core concept to periphery), each ring with a label and a note in a column beside it. _(family: diagram; keywords: target, bullseye, concentric, rings, onion, core, circles of, sphere of influence, layers)_
 
 **When:** Things that nest around a centre: a core concept and its wider contexts, circles of influence, must / should / could know, the layers of an onion model.
-**Avoid:** Levels that are stacked or ranked by size (use tls.g.pyramid); overlapping sets (use tls.g.venn); equal layers of a system (use tls.g.layers).
+**Avoid:** Parts that do not contain one another — the terms of a definition, steps, a list (each ring must hold the one inside it); levels stacked or ranked by size (use tls.g.pyramid); overlapping sets (use tls.g.venn); equal layers of a system (use tls.g.layers).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|

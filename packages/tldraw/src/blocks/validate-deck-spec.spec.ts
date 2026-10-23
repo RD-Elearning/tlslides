@@ -831,3 +831,15 @@ describe('validateDeckSpec — slot shapes at every depth', () => {
     expect(bad).toEqual([])
   })
 })
+
+describe('validateDeckSpec — a prop written beside props (vivid)', () => {
+  const deckWith = (block: Record<string, unknown>) =>
+    ({ version: 1, id: 'd', title: 'D', theme: 'corporate-navy', aspect: 'widescreen', slides: [{ id: 's1', layout: 'blank', regions: { content: [block] } }] }) as unknown as DeckSpec
+
+  it('`opacity` next to `layer` on a decoration is reported; block fields and unknown keys are not', () => {
+    const f = findingsOf(deckWith({ id: 'd1', type: 'tls.m.decoration', layer: 'backdrop', opacity: 'soft', props: { shape: 'icon', icon: 'eye' } }))
+    expect(byRule(f, 'block/misplaced-prop').map((x) => x.path)).toEqual(['slides[0].regions.content[0].opacity'])
+    const ok = findingsOf(deckWith({ id: 'd1', type: 'tls.m.decoration', layer: 'backdrop', anchor: 'right', style: {}, props: { shape: 'icon', opacity: 'soft' } }))
+    expect(hasRule(ok, 'block/misplaced-prop')).toBe(false)
+  })
+})
