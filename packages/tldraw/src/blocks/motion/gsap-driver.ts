@@ -219,7 +219,8 @@ function cssEaseToGsap(ease: string): string {
     'linear': 'none',
     'cubic-bezier(0.22, 1, 0.36, 1)': 'power3.out',
     'cubic-bezier(0.34, 1.36, 0.64, 1)': 'back.out(1.7)',
-    'cubic-bezier(0.34, 3.85, 0.64, 1)': 'back.out(3)',
+    // the strong overshoot is a spring the cubic-bezier only approximates: GSAP plays the real one
+    'cubic-bezier(0.34, 3.85, 0.64, 1)': 'elastic.out(1, 0.5)',
     // V2: the loop easing (EASING_TOKENS.sine) — a float or sway that slows at both ends
     'cubic-bezier(0.37, 0, 0.63, 1)': 'sine.inOut',
   }

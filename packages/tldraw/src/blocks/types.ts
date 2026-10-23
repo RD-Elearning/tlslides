@@ -475,12 +475,14 @@ export interface AmbientRecipe {
   amp?: number
   /** One run in ms (absent = the preset's). */
   periodMs?: number
+  /** Clip the block to its box while it loops (a `zoom` on a photo). */
+  clip?: boolean
 }
 
 export interface MotionRecipe {
   /** V2 — the block's ambient loop: a recipe, or one chosen from its props (a decoration loops by
    *  shape); `null` = none. Presentation only: the timeline and the checks never see it. */
-  ambient?: AmbientRecipe | ((props: Record<string, unknown>) => AmbientRecipe | null)
+  ambient?: AmbientRecipe | ((props: Record<string, unknown>, block: Pick<BlockSpec, 'layer'>) => AmbientRecipe | null)
   /** Named parts this block declares. Listed here so motion.parts can target them. */
   parts?: string[]
   /** Default motion preset. */

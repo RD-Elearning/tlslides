@@ -5,7 +5,7 @@
  * RVM5: was `fade-up` on both parts at once (the photo slid 24 px with its caption).
  */
 
-import type { MotionRecipe } from '../../../types'
+import type { AmbientRecipe, MotionRecipe } from '../../../types'
 
 export const motion: MotionRecipe = {
   parts: ['image', 'caption'],
@@ -14,4 +14,7 @@ export const motion: MotionRecipe = {
     image: { preset: 'sweep-nodes', delay: 0 },
     caption: { preset: 'fade-up', delay: 250 },
   },
+  // V2: a backdrop photo (cover, unframed) pushes in slowly in the viewer, clipped to its box
+  ambient: (p, block): AmbientRecipe | null =>
+    block.layer === 'backdrop' && (p.fit ?? 'cover') === 'cover' && (!p.frame || p.frame === 'none') ? { preset: 'zoom', part: 'image', clip: true } : null,
 }

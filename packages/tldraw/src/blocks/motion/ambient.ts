@@ -20,7 +20,7 @@
 import type { AmbientRecipe, BlockDefinition, BlockSpec, MotionStyle } from '../types'
 import type { MotionDriver, MotionHandle, MotionKeyframes } from './driver'
 
-export const AMBIENT_IDS = ['float', 'drift', 'spin', 'sway', 'pulse', 'twinkle', 'bob'] as const
+export const AMBIENT_IDS = ['float', 'drift', 'spin', 'sway', 'pulse', 'twinkle', 'bob', 'zoom'] as const
 export type AmbientId = (typeof AMBIENT_IDS)[number]
 
 export function isAmbientId(v: unknown): v is AmbientId {
@@ -52,7 +52,13 @@ export const AMBIENT_PRESETS: Readonly<Record<AmbientId, AmbientPreset>> = {
   pulse: { id: 'pulse', keyframes: (a) => ({ scale: [1, 1 + 0.06 * a] }), periodMs: 2200, direction: 'alternate', easing: AMBIENT_EASE, origin: '50% 50%' },
   twinkle: { id: 'twinkle', keyframes: (a) => ({ opacity: [1, 1 - 0.6 * a] }), periodMs: 1600, direction: 'alternate', easing: AMBIENT_EASE },
   bob: { id: 'bob', keyframes: (a) => ({ translate: ['0px 0px', `0px ${-9 * a}px`] }), periodMs: 2400, direction: 'alternate', easing: AMBIENT_EASE },
+  // the Ken Burns push on a backdrop photo: so slow it reads as a living picture, never as motion
+  zoom: { id: 'zoom', keyframes: (a) => ({ scale: [1, 1 + 0.06 * a] }), periodMs: 16000, direction: 'alternate', easing: AMBIENT_EASE, origin: '50% 50%' },
 }
+
+/** The legacy entrance-table loop (`MOTION_PRESETS['ken-burns']`, `isAmbient`): a block whose spec
+ *  picks it plays the `zoom` loop, clipped to its box. */
+export const KEN_BURNS = 'ken-burns'
 
 /** What `subtle` does to a loop: a smaller amplitude and a longer period. */
 export const SUBTLE_AMP = 0.55
@@ -66,6 +72,8 @@ export interface ResolvedAmbient {
   staggerMs: number
   amp: number
   periodMs: number
+  /** Clip the paint root to its box while the loop runs (a zoom must not spill past it). */
+  clip: boolean
 }
 
 /**
@@ -77,7 +85,7 @@ export interface ResolvedAmbient {
  * @param reducedMotion  the viewer's `prefers-reduced-motion`
  */
 export function resolveAmbient(
-  block: Pick<BlockSpec, 'props' | 'motion'>,
+  block: Pick<BlockSpec, 'props' | 'motion' | 'layer'>,
   def: Pick<BlockDefinition, 'motion'> | undefined,
   style: MotionStyle | undefined,
   reducedMotion = false
@@ -87,7 +95,11 @@ export function resolveAmbient(
   if (own === 'none') return null
   const fromDef = def?.motion?.ambient
   const recipe: AmbientRecipe | null | undefined =
-    typeof fromDef === 'function' ? fromDef((block.props ?? {}) as Record<string, unknown>) : fromDef
+    block.motion?.preset === KEN_BURNS
+      ? { preset: 'zoom', clip: true }
+      : typeof fromDef === 'function'
+        ? fromDef((block.props ?? {}) as Record<string, unknown>, { layer: block.layer })
+        : fromDef
   const id = isAmbientId(own) ? own : recipe?.preset
   if (!isAmbientId(id)) return null
   const preset = AMBIENT_PRESETS[id]
@@ -100,6 +112,7 @@ export function resolveAmbient(
     staggerMs: recipe?.stagger ?? 0,
     amp: (recipe?.amp ?? 1) * (subtle ? SUBTLE_AMP : 1),
     periodMs: Math.round(base * (subtle ? SUBTLE_PERIOD : 1)),
+    clip: !!recipe?.clip,
   }
 }
 
@@ -120,13 +133,17 @@ export function ambientTargets(root: Element, part: string | undefined): Element
  * stopper. A loop on an SVG part turns about its own box (`transform-box: fill-box`).
  */
 export function startAmbient(root: Element, ambient: ResolvedAmbient, driver: MotionDriver): () => void {
-  const targets = ambientTargets(root, ambient.part)
+  // a clipped loop without a part moves what the root paints, together, inside the clipped root
+  const targets = ambient.clip && !ambient.part ? Array.from(root.children) : ambientTargets(root, ambient.part)
   const handles: MotionHandle[] = []
+  const rootStyle = (root as HTMLElement).style
+  const overflow = rootStyle?.overflow
+  if (ambient.clip && rootStyle) rootStyle.overflow = 'hidden'
   targets.forEach((el, i) => {
     const style = (el as HTMLElement | SVGElement).style
     if (style && typeof SVGElement !== 'undefined' && el instanceof SVGElement) style.setProperty('transform-box', 'fill-box')
     // a phase offset per part, and a period that differs a little, so a cluster never moves in step
-    const period = Math.round(ambient.periodMs * (1 + ((i * 7) % 5) * 0.06))
+    const period = ambient.clip ? ambient.periodMs : Math.round(ambient.periodMs * (1 + ((i * 7) % 5) * 0.06))
     handles.push(
       driver.play(el, ambient.preset.keyframes(ambient.amp), {
         duration: period,
@@ -139,5 +156,8 @@ export function startAmbient(root: Element, ambient: ResolvedAmbient, driver: Mo
       })
     )
   })
-  return () => handles.forEach((h) => h.cancel())
+  return () => {
+    handles.forEach((h) => h.cancel())
+    if (ambient.clip && rootStyle) rootStyle.overflow = overflow ?? ''
+  }
 }

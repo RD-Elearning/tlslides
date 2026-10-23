@@ -10,6 +10,7 @@ import { createGsapDriver } from './gsap-driver'
 import type { GsapInstance } from './gsap-driver'
 import { createWAAPI_driver } from './waapi-driver'
 import type { MotionRecipe } from '../types'
+import { motion as imageMotion } from '../library/media/tls-m-image/motion'
 
 const def = (ambient: MotionRecipe['ambient']) => ({ motion: { preset: 'fade', ambient } as MotionRecipe })
 
@@ -43,6 +44,18 @@ describe('resolveAmbient', () => {
     // a definition without a loop: only an explicit spec loop plays
     expect(resolveAmbient(block, { motion: { preset: 'fade' } }, 'expressive')).toBeNull()
     expect(resolveAmbient({ ...block, motion: { ambient: { preset: 'bob', duration: 900 } } }, undefined, 'expressive')?.periodMs).toBe(900)
+  })
+
+  it('ken-burns: a spec that picks it zooms slowly, clipped; a backdrop photo zooms on its own', () => {
+    const kb = resolveAmbient({ props: {}, motion: { preset: 'ken-burns' } }, undefined, 'expressive')!
+    expect(kb.preset.id).toBe('zoom')
+    expect(kb.clip).toBe(true)
+    expect(resolveAmbient({ props: {}, motion: { preset: 'ken-burns' } }, undefined, 'static')).toBeNull()
+    const image = { motion: imageMotion }
+    expect(resolveAmbient({ props: { fit: 'cover' }, layer: 'backdrop' }, image, 'subtle')).toMatchObject({ part: 'image', clip: true })
+    expect(resolveAmbient({ props: { fit: 'cover' } }, image, 'expressive')).toBeNull()
+    expect(resolveAmbient({ props: { fit: 'contain' }, layer: 'backdrop' }, image, 'expressive')).toBeNull()
+    expect(resolveAmbient({ props: { frame: 'polaroid' }, layer: 'backdrop' }, image, 'expressive')).toBeNull()
   })
 
   it('a part recipe keeps its part and stagger', () => {
@@ -116,6 +129,18 @@ describe('startAmbient', () => {
     expect(calls.every((c) => c.cancelled)).toBe(true)
   })
 
+  it('a clipped loop clips the root while it runs and moves its children in step', () => {
+    const root = document.createElement('div')
+    root.innerHTML = '<img data-part="image"><div></div>'
+    const { driver, calls } = recordingDriver()
+    const stop = startAmbient(root, resolveAmbient({ props: {}, motion: { preset: 'ken-burns' } }, undefined, 'expressive')!, driver)
+    expect(root.style.overflow).toBe('hidden')
+    expect(calls).toHaveLength(2)
+    expect(calls[0].opts.duration).toBe(calls[1].opts.duration)
+    stop()
+    expect(root.style.overflow).toBe('')
+  })
+
   it('a spin turns about the element centre (an SVG part about its own box)', () => {
     const root = document.createElement('div')
     root.innerHTML = '<svg><path data-part="ring[0]" d="M0 0"></path></svg>'
@@ -157,5 +182,8 @@ describe('driver loop options', () => {
     d.play(document.createElement('div'), { opacity: [0, 1] }, { duration: 300 })
     expect(calls[2].to.repeat).toBeUndefined()
     expect(calls[2].to.yoyo).toBeUndefined()
+    // the strong overshoot plays as a real spring
+    d.play(document.createElement('div'), { scale: [0.9, 1] }, { duration: 300, easing: 'cubic-bezier(0.34, 3.85, 0.64, 1)' })
+    expect(calls[3].to.ease).toBe('elastic.out(1, 0.5)')
   })
 })

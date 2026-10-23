@@ -154,7 +154,7 @@ function stampAmbient(shapes: ComponentShape[], style: MotionStyle | undefined, 
     if (!meta || !shape.componentId) continue
     const own = meta.motion?.ambient?.preset
     if (own === 'none') continue
-    if (own || registry?.get(shape.componentId)?.motion?.ambient) meta.ambientStyle = style
+    if (own || meta.motion?.preset === 'ken-burns' || registry?.get(shape.componentId)?.motion?.ambient) meta.ambientStyle = style
   }
 }
 

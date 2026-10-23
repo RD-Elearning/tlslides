@@ -3272,7 +3272,7 @@ A concept on a central disc with 3-8 satellites (icon discs) on an orbit around 
       },
       {
         \\"label\\": \\"Soil\\",
-        \\"icon\\": \\"shovel\\"
+        \\"icon\\": \\"leaf\\"
       },
       {
         \\"label\\": \\"Air\\",
@@ -3445,7 +3445,7 @@ Levels rising left to right like stairs, lowest first, each with an icon, a labe
       {
         \\"label\\": \\"Practitioner\\",
         \\"text\\": \\"Solves familiar problems alone\\",
-        \\"icon\\": \\"tool\\"
+        \\"icon\\": \\"puzzle\\"
       },
       {
         \\"label\\": \\"Expert\\",
