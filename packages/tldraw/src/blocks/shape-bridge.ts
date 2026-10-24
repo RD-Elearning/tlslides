@@ -71,6 +71,8 @@ interface BlockMetadata {
    *  content into its page (`growText`). Never authored: `shapeToBlock` keeps the scale (renderers
    *  need it), `shapeToAuthoredBlock` drops it while it is still this value. */
   grown?: number
+  /** The `style.typeStep` `compileSlide` gave the block (`harmonizeTypes`); dropped like `grown`. */
+  stepped?: number
 }
 
 /** LO8 — see `BlockMetadata.placed`. */
@@ -312,6 +314,12 @@ export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
   const grown = blockMetaOf(shape)?.grown
   if (spec?.style && typeof grown === 'number' && spec.style.textScale === grown) {
     const { textScale: _grown, ...rest } = spec.style
+    if (Object.keys(rest).length) spec.style = rest
+    else delete spec.style
+  }
+  const stepped = blockMetaOf(shape)?.stepped
+  if (spec?.style && typeof stepped === 'number' && spec.style.typeStep === stepped) {
+    const { typeStep: _stepped, ...rest } = spec.style
     if (Object.keys(rest).length) spec.style = rest
     else delete spec.style
   }

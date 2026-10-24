@@ -150,6 +150,9 @@ export interface BlockStyleSpec {
    *  sets it on the content of a balanced slide that would float in its page (`growText`); an
    *  author may set it too. */
   textScale?: number
+  /** 2026-10-24: steps down a block's own type tiers (`fitTier`), 1-3. `compileSlide` sets it when
+   *  the blocks that pick their type by box would give the slide more than five text sizes. */
+  typeStep?: number
   /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
@@ -971,6 +974,8 @@ export interface ResolvedTokens {
   /** enhance L5: the `style.textScale` already applied to `type` (absent = 1), so a nested
    *  context built from these tokens does not scale them twice. */
   textScale?: number
+  /** The `style.typeStep` in force (absent = 0): nested contexts keep it, as they keep `textScale`. */
+  typeStep?: number
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */

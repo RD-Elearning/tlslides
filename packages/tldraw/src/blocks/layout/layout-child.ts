@@ -265,6 +265,12 @@ function defaultResolveText(
   }
 }
 
+/** A block style's `typeStep`, an integer 0-3; `undefined` when absent or invalid. */
+export function typeStepOf(style: BlockStyleSpec | undefined): number | undefined {
+  const k = style?.typeStep
+  return typeof k === 'number' && Number.isFinite(k) ? Math.max(0, Math.min(3, Math.round(k))) : undefined
+}
+
 /** enhance L5: a block style's `textScale`, clamped to 0.5-2; `undefined` when absent or invalid. */
 export function textScaleOf(style: BlockStyleSpec | undefined): number | undefined {
   const k = style?.textScale
@@ -315,6 +321,7 @@ export function createLayoutContext(
     ...(options.tokens.surface !== undefined ? { surface: { ...options.tokens.surface } } : {}),
     ...(options.tokens.locale !== undefined ? { locale: options.tokens.locale } : {}),
     ...(options.tokens.textScale !== undefined ? { textScale: options.tokens.textScale } : {}),
+    ...(options.tokens.typeStep !== undefined ? { typeStep: options.tokens.typeStep } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }
@@ -367,6 +374,8 @@ export function createLayoutContext(
     for (const v of Object.values(tokens.type)) v.size = Math.round(v.size * scaleBy * 100) / 100
     tokens.textScale = textScale
   }
+  const typeStep = typeStepOf(instanceStyle)
+  if (typeStep !== undefined) tokens.typeStep = typeStep
   const givenResolveText = options.resolveText
   const resolveTextFn: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle = givenResolveText
     ? Math.abs(scaleBy - 1) > 1e-6

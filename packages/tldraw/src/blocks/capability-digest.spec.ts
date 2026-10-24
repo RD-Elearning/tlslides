@@ -478,7 +478,7 @@ describe('R7 — capability digest v2', () => {
         range: '2–5 items',
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
-        size: 'h 150–260@544', // AC3: card rows stretch with the box (a range); default theme body in Inter
+        size: 'h≈277-28/item@840', // AC3: card rows stretch with the box (a range); default theme body in Inter
         aiTier: 1,
         looks: ['tile', 'gap'],
         lookValues: { tile: ['plain', 'card', 'accent-bar'], gap: ['xs', 'sm', 'md', 'lg'] }, // AC8

@@ -13,6 +13,9 @@ import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
 import { contextTracks, isAuthoredContext } from '../../../layout/layout-child'
 
+/** Blocks that take a smaller type tier in a shorter box (`fitTier` and its kin). */
+const TIERED: ReadonlySet<string | undefined> = new Set(['tls.c.kpi-row', 'tls.c.kpi-tile', 'tls.g.timeline', 'tls.g.tree', 'tls.c.agenda'])
+
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
   // A container that delegates to an inner stack (tls.l.section) passes its gap in units.
@@ -65,6 +68,19 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
       const tracked = intrinsicSizes.map((s, i) => ({ height: Math.max(s.height, tracks[i] ?? 0) }))
       intrinsicSizes.splice(0, intrinsicSizes.length, ...tracked)
       totalIntrinsic = tracked.reduce((a, s) => a + s.height, 0)
+    }
+
+    // 2026-10-24: a block that picks its type by its box (a KPI row, a timeline) measures at its
+    // largest tier; when the packed content is taller than the box, that block gives up the excess
+    // (it then takes a smaller tier) instead of the stack spilling (a cover lockup 12 units over).
+    const over = totalIntrinsic - availableHeight
+    if (pack && over > 0.5 && !tracks) {
+      let k = -1
+      for (let i = 0; i < n; i++) if (TIERED.has(children[i]?.type) && (k < 0 || intrinsicSizes[i].height > intrinsicSizes[k].height)) k = i
+      if (k >= 0 && intrinsicSizes[k].height - over >= 50) {
+        intrinsicSizes[k] = { height: intrinsicSizes[k].height - over }
+        totalIntrinsic -= over
+      }
     }
 
     // CMP4: a packed stack (authored, or an authored card's own) whose content is taller than its

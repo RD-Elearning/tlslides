@@ -12,6 +12,7 @@
  */
 
 import { slotItems } from '../_slots'
+import { tierStart } from '../../diagram/_kit'
 import { alignText, cardNodes, cardPaint } from '../_kit'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
@@ -78,7 +79,7 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   const pads: Array<CardPad | undefined> = props.variant === 'cards' ? ['xl', 'lg', 'sm', undefined] : [undefined]
   let node: LayoutNode | undefined
   for (const pad of pads) {
-    for (const tier of TIERS) {
+    for (const tier of TIERS.slice(tierStart(ctx, TIERS.length))) {
       // The roomy tier pairs with `xl` card padding (or the list); `xl` padding with nothing else.
       if (pad === 'xl' ? !tier.roomy : tier.roomy && pad !== undefined) continue
       const candidate = place(props, ctx, tier, cols, pad)

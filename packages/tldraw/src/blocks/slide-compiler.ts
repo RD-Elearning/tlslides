@@ -60,6 +60,7 @@ import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
+import { DESIGN_THRESHOLDS } from './design-checks'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
 
@@ -136,7 +137,9 @@ export function compileSlide(
   registry?: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
-  const result = (registry && growText(spec, frame, tokens, registry, opts)) || compileSlideBlocks(spec, frame, tokens, registry, opts)
+  const grown = registry ? growText(spec, frame, tokens, registry, opts) : null
+  let result = grown?.result ?? compileSlideBlocks(spec, frame, tokens, registry, opts)
+  if (registry) result = harmonizeTypes(grown?.spec ?? spec, result, frame, tokens, registry, opts)
   stampAmbient(result.shapes, effectiveMotionStyle(spec.motionStyle, opts?.motionStyle), registry)
   // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
   if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
@@ -187,7 +190,7 @@ function growText(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): CompileSlideResult | null {
+): { result: CompileSlideResult; spec: SlideSpec } | null {
   if (spec.valign !== 'auto' || opts?.growText === false) return null
   const grows = (name: string, b: BlockSpec | undefined) =>
     name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && !GROW_SKIP.has(b.type) && textScaleOf(b.style) === undefined
@@ -212,8 +215,13 @@ function growText(
   const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
   const before = paintedContent(base, ids, tokens, registry, opts)
   if (!before.ok || !before.box) return null
-  const floats = before.box.width * before.box.height < GROW_BELOW * area.width * area.height || before.box.height < GROW_HEIGHT_BELOW * area.height
+  // the height share only for a structure (cards, a diagram): text alone sizes itself (a statement
+  // grown on height crossed a style's rule)
+  const structured = Object.entries(spec.regions ?? {}).some(([name, blocks]) => Array.isArray(blocks) && blocks.some((b) => grows(name, b) && !b.type.startsWith('tls.t.')))
+  const floats =
+    before.box.width * before.box.height < GROW_BELOW * area.width * area.height || (structured && before.box.height < GROW_HEIGHT_BELOW * area.height)
   if (!floats) return null
+  let baseSizes: number | undefined
   for (const k of GROW_STEPS) {
     const scaled: SlideSpec = {
       ...spec,
@@ -233,13 +241,107 @@ function growText(
     // a block that sizes its own type to its box (a statement) can paint smaller under a scale:
     // growing must grow
     if (after.box.width * after.box.height <= before.box.width * before.box.height) continue
+    // nor wrap a short text into narrow lines (a card title at 11 characters a line)
+    if (after.narrow > before.narrow) continue
+    // the scaled body must not add a text size the slide's type check counts (×1.2 turns 48/40/30
+    // into 57/47/36, which no longer meet the title's or an unscaled block's sizes)
+    if (typeSizeCount(result, tokens, registry, opts) > Math.max(DESIGN_THRESHOLDS.typeSizes, (baseSizes ??= typeSizeCount(base, tokens, registry, opts)))) continue
     for (const shape of result.shapes) {
       const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
       if (meta && typeof meta.id === 'string' && ids.has(meta.id)) meta.grown = k
     }
-    return result
+    return { result, spec: scaled }
   }
   return null
+}
+
+/** Blocks that pick their type by box (`fitTier` and its kin) and honour `style.typeStep`. */
+const TIERED_TYPES: ReadonlySet<string> = new Set(['tls.g.timeline', 'tls.g.tree', 'tls.c.agenda', 'tls.c.kpi-row', 'tls.c.kpi-tile'])
+
+/**
+ * 2026-10-24 — blocks that grow their type with their box (a timeline, a tree, a KPI row) chose
+ * their tier alone, so beside a column of text a slide could count six sizes (`type/too-many-sizes`
+ * on 13 corpus slides). When it does, the content blocks are compiled again with `style.typeStep`
+ * 1 then 2 (each tiered block, nested ones too, skips its largest tiers) and the first step back
+ * at five sizes wins, if it overflows nothing new. The step is recorded as `$block.stepped`, so the
+ * decompiler returns the authored style. A slide with no tiered block is left as compiled.
+ */
+function harmonizeTypes(
+  spec: SlideSpec,
+  result: CompileSlideResult,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  const tiered = (b: BlockSpec | undefined): boolean =>
+    !!b && (TIERED_TYPES.has(b.type) || (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some(tiered)))
+  const steps = (name: string, b: BlockSpec | undefined) => name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && tiered(b) && b.style?.typeStep === undefined
+  const ids = new Set<string>()
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (Array.isArray(blocks)) for (const b of blocks) if (steps(name, b)) ids.add(b.id as string)
+  }
+  if (!ids.size) return result
+  const before = typeSizeCount(result, tokens, registry, opts)
+  if (before <= DESIGN_THRESHOLDS.typeSizes) return result
+  const overflow = (r: CompileSlideResult) => r.findings.filter((f) => f.rule === 'region/overflow').length
+  const grownById = new Map<string, unknown>()
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; grown?: unknown } | undefined
+    if (meta && typeof meta.id === 'string' && meta.grown !== undefined) grownById.set(meta.id, meta.grown)
+  }
+  for (const step of [1, 2]) {
+    const stepped: SlideSpec = {
+      ...spec,
+      regions: Object.fromEntries(
+        Object.entries(spec.regions ?? {}).map(([name, blocks]) => [
+          name,
+          Array.isArray(blocks) ? blocks.map((b) => (b && ids.has(b.id as string) ? { ...b, style: { ...(b.style ?? {}), typeStep: step } } : b)) : blocks,
+        ])
+      ),
+    }
+    const next = compileSlideBlocks(stepped, frame, tokens, registry, opts)
+    if (overflow(next) > overflow(result)) continue
+    if (typeSizeCount(next, tokens, registry, opts) > DESIGN_THRESHOLDS.typeSizes) continue
+    for (const shape of next.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      if (!meta || typeof meta.id !== 'string') continue
+      if (ids.has(meta.id)) meta.stepped = step
+      if (grownById.has(meta.id)) meta.grown = grownById.get(meta.id)
+    }
+    return next
+  }
+  return result
+}
+
+/** Distinct text sizes of a compiled slide's content blocks, merged within 1 unit as `type/too-many-sizes` does. */
+function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, registry: BlockRegistry, opts?: CompileSlideOptions): number {
+  const sizes: number[] = []
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { layer?: string; style?: BlockStyleSpec } | undefined
+    const def = registry.get(shape.componentId as string)
+    if (!meta || !def || meta.layer === 'backdrop') continue
+    const size = { width: shape.size[0], height: shape.size[1] }
+    const props = { ...shape.props }
+    delete props[BLOCK_PROP_KEY]
+    try {
+      const ctx = createLayoutContext({
+        box: size,
+        tokens,
+        surface: MINIMAL_SURFACE,
+        registry,
+        ...(meta.style ? { style: meta.style } : {}),
+        ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
+      })
+      for (const t of collectPaintedLeaves(layoutBlock(def, props, ctx), size).text) sizes.push(Math.round(t.fontSize * (t.scale || 1)))
+    } catch {
+      // a block that fails to lay out paints nothing
+    }
+  }
+  let count = 0
+  let last = Infinity
+  for (const s of [...new Set(sizes)].sort((a, b) => b - a)) if (last - s > 1) (count++, (last = s))
+  return count
 }
 
 /** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
@@ -255,8 +357,9 @@ function paintedContent(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): { box: Box | null; ok: boolean } {
+): { box: Box | null; ok: boolean; narrow: number } {
   const boxes: Box[] = []
+  let narrow = 0
   for (const shape of result.shapes) {
     const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; style?: BlockStyleSpec } | undefined
     if (!meta || typeof meta.id !== 'string' || !ids.has(meta.id)) continue
@@ -276,16 +379,17 @@ function paintedContent(
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
       const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
-      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false }
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow }
+      narrow += c.text.filter((t) => t.lines > 1 && t.chars / t.lines < DESIGN_THRESHOLDS.narrowChars).length
       painted = paintedBounds(c)
     } catch {
-      return { box: null, ok: false }
+      return { box: null, ok: false, narrow }
     }
     if (!painted) continue
-    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false }
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow }
     boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
   }
-  return { box: unionBox(boxes), ok: true }
+  return { box: unionBox(boxes), ok: true, narrow }
 }
 
 /** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */

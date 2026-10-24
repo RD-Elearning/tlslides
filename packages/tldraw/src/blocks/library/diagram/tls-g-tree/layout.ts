@@ -145,7 +145,7 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     if (want > pitch - gapCross) return null
     return { labelS, subS, cross: want, main, parent: t.parent * k }
   }
-  const tier = circle ? null : sized(fitTier(TIERS, (t) => sized(t) !== null))
+  const tier = circle ? null : sized(fitTier(TIERS, (t) => sized(t) !== null, ctx))
   // The compact sizes the block always had (and round nodes): caption labels, footnote subs.
   // Dense left-to-right trees drop to the smaller label size so one line always fits a slot.
   const bigS = style(ctx, 'caption', c.text)

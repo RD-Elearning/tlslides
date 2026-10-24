@@ -22,6 +22,7 @@ import { insetBox } from '../../../layout/box-model'
 import { isShown } from '../../../schema-helpers'
 import { formatValue } from '../../data/_engine/format-value'
 import { realWidth } from '../../data/_chart/inter-width'
+import { tierStart } from '../../diagram/_kit'
 
 /**
  * Build an SVG path `d` string for a sparkline from an array of numbers.
@@ -76,7 +77,9 @@ export function kpiTier(props: KpiTileProps, ctx: LayoutContext, inner: { width:
     const deltaH = showDelta ? ctx.measureText('\u2191 +0', small, inner.width).height : 0
     return labelH + valueH + deltaH
   }
+  const start = tierStart(ctx, TIERS.length)
   const i = TIERS.findIndex((t, k) => {
+    if (k < start) return false
     if (k === TIERS.length - 1) return true
     if (inner.height + 0.5 < tierHeight(t.value, t.small)) return false
     // a heading value too wide shrinks to fit below (it always did); the larger steps must fit as set

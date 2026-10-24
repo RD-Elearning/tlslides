@@ -79,3 +79,78 @@ describe('growText leaves html blocks alone', () => {
     expect(grownIds(slide([stat, list(2)], 'auto'))).toEqual([])
   })
 })
+
+describe('harmonizeTypes (2026-10-24)', () => {
+  // a corpus slide: a tree beside a column of text; the tree's largest tier added a sixth size
+  const treeSlide: SlideSpec = {
+    id: 's',
+    layout: 'two-column',
+    regions: {
+      title: [{ id: 't', type: 'tls.t.title', props: { text: 'Định nghĩa Cây và Phân loại Nút' } }],
+      left: [{ id: 'tree', type: 'tls.g.tree', props: { root: { label: '50', children: [{ label: '40', children: [{ label: '15' }, { label: '30' }] }, { label: '60', children: [{ label: '45' }, { label: '70' }] }] } } }],
+      right: [
+        {
+          id: 'col',
+          type: 'tls.l.stack',
+          props: {
+            sizing: 'content',
+            children: [
+              { id: 'd', type: 'tls.t.definition', props: { term: 'Cây (Tree)', layout: 'stacked', definition: 'Tập hữu hạn các nút nối với nhau bằng các cạnh, không tạo thành chu trình.' } },
+              { id: 'k', type: 'tls.t.kv-list', props: { leader: 'rule', items: [{ key: 'Nút gốc (Root)', value: 'Không có nút cha' }, { key: 'Nút trung gian', value: 'Có ít nhất một cây con, không phải gốc' }, { key: 'Nút lá (Leaf)', value: 'Không có cây con, bậc bằng 0' }] } },
+              { id: 'tk', type: 'tls.t.takeaway', props: { size: 'body', tone: 'accent', label: 'Đồ thị không chu trình', text: 'Cây là đồ thị không chu trình có phân cấp rõ rệt.' } },
+            ],
+          },
+        },
+      ],
+    },
+  } as SlideSpec
+  const sizes = (s: SlideSpec) => {
+    const merged: number[] = []
+    for (const x of [...new Set(fonts(s).map((f) => f.size))].sort((a, b) => b - a)) if (!merged.length || merged[merged.length - 1] - x > 1) merged.push(x)
+    return merged.length
+  }
+
+  it('a tiered block steps down until the slide is back at five text sizes', () => {
+    expect(sizes(treeSlide)).toBeLessThanOrEqual(5)
+    const tree = compileSlide(treeSlide, FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'tree')!
+    expect((tree.props.$block as { stepped?: number }).stepped).toBeGreaterThanOrEqual(1)
+    expect(shapeToBlock(tree)?.style?.typeStep).toBeGreaterThanOrEqual(1)
+    expect(shapeToAuthoredBlock(tree)?.style).toBeUndefined()
+  })
+
+  it('a slide already at five sizes is compiled as authored', () => {
+    expect(grownOf(slide([list(3)])).length).toBeGreaterThan(0)
+    const shapes = compileSlide(slide([{ id: 'tl', type: 'tls.g.timeline', props: { events: [{ date: '2024', title: 'Start' }, { date: '2025', title: 'Grow' }, { date: '2026', title: 'Scale' }] } }]), FRAME, TEST_TOKENS, registry).shapes
+    expect(shapes.every((sh) => (sh.props.$block as { stepped?: number }).stepped === undefined)).toBe(true)
+  })
+})
+
+describe('a packed stack gives a tiered child the excess (2026-10-24)', () => {
+  it('a cover lockup with a KPI row does not spill out of its region', () => {
+    const cover: SlideSpec = {
+      id: 's',
+      layout: 'section-stack',
+      regions: {
+        content: [
+          {
+            id: 'lockup',
+            type: 'tls.l.stack',
+            props: {
+              gap: 'lg',
+              sizing: 'content',
+              children: [
+                { id: 'b', type: 'tls.t.badge', props: { text: 'One-day workshop', tone: 'soft' } },
+                { id: 'h', type: 'tls.t.title', props: { rule: true, text: 'Design Thinking Workshop: Problem to Prototype in a Day, with a longer title' } },
+                { id: 'k', type: 'tls.c.kpi-row', props: { gap: 'lg', tile: 'accent-bar', tiles: [{ label: 'Hours in the day', value: 6, format: 'plain' }, { label: 'Steps from problem to prototype', value: 5, format: 'plain' }, { label: 'Prototype tested with users', value: 1, format: 'plain' }] } },
+              ],
+            },
+          },
+        ],
+      },
+    } as SlideSpec
+    for (const style of ['memphis', 'minimal', 'swiss']) {
+      const r = analyzeDeck({ ...deck(cover), style, theme: style === 'memphis' ? 'memphis-pop' : 'minimal-white' } as DeckSpec)[0]
+      expect(r.findings.filter((f) => f.code === 'content/overflow').map((f) => `${style} ${f.message}`)).toEqual([])
+    }
+  })
+})

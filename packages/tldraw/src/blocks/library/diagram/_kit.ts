@@ -127,9 +127,17 @@ export function linesNeeded(ctx: LayoutContext, text: string, s: ResolvedTextSty
  * as the block always did). Blocks whose box grows with the slide pick their type this way, so a
  * timeline alone on a slide reads at slide size instead of keeping caption type in a large box.
  */
-export function fitTier<T>(tiers: readonly T[], fits: (tier: T) => boolean): T {
-  for (const t of tiers) if (fits(t)) return t
+export function fitTier<T>(tiers: readonly T[], fits: (tier: T) => boolean, ctx?: LayoutContext): T {
+  for (let i = tierStart(ctx, tiers.length); i < tiers.length; i++) if (fits(tiers[i])) return tiers[i]
   return tiers[tiers.length - 1]
+}
+
+/**
+ * The first tier a block may take: `style.typeStep` (carried on the tokens) skips the largest ones,
+ * so `compileSlide` can bring a slide back to five text sizes (`harmonizeTypes`).
+ */
+export function tierStart(ctx: LayoutContext | undefined, count: number): number {
+  return Math.max(0, Math.min(count - 1, ctx?.tokens.typeStep ?? 0))
 }
 
 /** Stroke-only path (arcs, polylines) in absolute block coordinates. */

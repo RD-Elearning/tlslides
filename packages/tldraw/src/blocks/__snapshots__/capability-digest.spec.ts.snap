@@ -6020,7 +6020,7 @@ also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.marker
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
-tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 150–260@544] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈277-28/item@840] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual=ring|plain, statsPlacement=below|side
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
@@ -6052,7 +6052,7 @@ also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none
-tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h 245–549@840] knobs: axis=horizontal|vertical, alternate, nodeStyle=dot|icon|number
+tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h=fill] knobs: axis=horizontal|vertical, alternate, nodeStyle=dot|icon|number
 also: tls.c.journey, tls.g.milestones
 
 ## Hierarchy
