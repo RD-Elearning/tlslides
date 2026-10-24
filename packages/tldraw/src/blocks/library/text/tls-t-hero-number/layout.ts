@@ -55,6 +55,15 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   while (realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 > cw && scale > 0.4) scale -= 0.04
   const fitsOneLine = realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 <= cw
   let valueMetrics = mc.measureText(props.value, withScale(baseValueStyle, scale), fitsOneLine ? undefined : cw)
+  // the wider of the face table and the host's own measure (the browser's canvas draws with the real
+  // font; the table only approximates a script face's figures)
+  if (fitsOneLine && valueMetrics.lines.length === 1) {
+    const host = ctx.measureText(props.value, withScale(baseValueStyle, scale))
+    if (host.lines.length === 1 && host.width > valueMetrics.width) {
+      const width = Math.min(cw, Math.ceil(host.width))
+      valueMetrics = { ...valueMetrics, width, lines: valueMetrics.lines.map((l) => ({ ...l, width })) }
+    }
+  }
   const valueStyle = scale < 1 ? withScale(baseValueStyle, scale) : baseValueStyle
   const valueHeight = valueMetrics.height
 

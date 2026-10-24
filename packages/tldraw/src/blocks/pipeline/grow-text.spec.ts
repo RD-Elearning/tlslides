@@ -110,12 +110,25 @@ describe('harmonizeTypes (2026-10-24)', () => {
     return merged.length
   }
 
-  it('a tiered block steps down until the slide is back at five text sizes', () => {
+  it('a slide with tiered blocks ends at five text sizes or fewer', () => {
     expect(sizes(treeSlide)).toBeLessThanOrEqual(5)
-    const tree = compileSlide(treeSlide, FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'tree')!
-    expect((tree.props.$block as { stepped?: number }).stepped).toBeGreaterThanOrEqual(1)
-    expect(shapeToBlock(tree)?.style?.typeStep).toBeGreaterThanOrEqual(1)
-    expect(shapeToAuthoredBlock(tree)?.style).toBeUndefined()
+    // two tiered blocks that each pick their own tier, beside a column of text
+    const busy: SlideSpec = { ...treeSlide, regions: { ...treeSlide.regions, left: [{ id: 'tl', type: 'tls.g.timeline', props: { events: [{ date: '2024', title: 'Start', text: 'A first note' }, { date: '2025', title: 'Grow', text: 'A second note' }, { date: '2026', title: 'Scale', text: 'A third note' }] } }, ...(treeSlide.regions!.left as BlockSpec[])] } } as SlideSpec
+    expect(sizes(busy)).toBeLessThanOrEqual(5)
+  })
+
+  it('`style.typeStep` steps a block down its tiers; the decompiler drops a compiled step', () => {
+    const tree = (treeSlide.regions!.left as BlockSpec[])[0]
+    const at = (typeStep?: number) => {
+      const s = { ...treeSlide, regions: { ...treeSlide.regions, left: [{ ...tree, ...(typeStep ? { style: { typeStep } } : {}) }] } } as SlideSpec
+      return Math.max(...fonts(s).filter((f) => f.region === 'left').map((f) => f.size))
+    }
+    expect(at(1)).toBeLessThan(at())
+    expect(at(2)).toBeLessThan(at(1))
+    const shape = compileSlide({ ...treeSlide, regions: { ...treeSlide.regions, left: [{ ...tree, style: { typeStep: 1 } }] } } as SlideSpec, FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'tree')!
+    ;(shape.props.$block as { stepped?: number }).stepped = 1
+    expect(shapeToBlock(shape)?.style?.typeStep).toBe(1)
+    expect(shapeToAuthoredBlock(shape)?.style).toBeUndefined()
   })
 
   it('a slide already at five sizes is compiled as authored', () => {
@@ -152,5 +165,23 @@ describe('a packed stack gives a tiered child the excess (2026-10-24)', () => {
       const r = analyzeDeck({ ...deck(cover), style, theme: style === 'memphis' ? 'memphis-pop' : 'minimal-white' } as DeckSpec)[0]
       expect(r.findings.filter((f) => f.code === 'content/overflow').map((f) => `${style} ${f.message}`)).toEqual([])
     }
+  })
+})
+
+describe('connectors attach to the compiled (grown) block (2026-10-24)', () => {
+  it('a connector from a grown hero number starts past the grown number, not the authored one', () => {
+    const hero = (id: string, value: string): BlockSpec => ({ id, type: 'tls.t.hero-number', props: { value, unit: 'students' } })
+    const s = {
+      id: 's',
+      layout: 'title-content',
+      valign: 'auto',
+      regions: { title: [T], content: [{ id: 'row', type: 'tls.l.row', props: { gap: 'xl', children: [hero('a', '6.000'), hero('b', '84%'), hero('c', '300')] } }] },
+      connectors: [{ id: 'k1', from: { block: 'a', side: 'right' }, to: { block: 'b', side: 'left' } }],
+    } as unknown as SlideSpec
+    const fromW = (r: ReturnType<typeof compileSlide>) => (r.shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'k1')!.props as { fromBox: { width: number } }).fromBox.width
+    const grown = compileSlide(s, FRAME, TEST_TOKENS, registry)
+    const plain = compileSlide(s, FRAME, TEST_TOKENS, registry, { growText: false })
+    expect(grown.shapes.some((sh) => (sh.props.$block as { grown?: number }).grown !== undefined)).toBe(true)
+    expect(fromW(grown)).toBeGreaterThan(fromW(plain))
   })
 })

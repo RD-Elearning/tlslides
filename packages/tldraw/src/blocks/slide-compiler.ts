@@ -1080,7 +1080,7 @@ function compileLayered(
     if (!shape) return undefined
     const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
     const nested = target.id === targetId ? undefined : targetId
-    const painted = registry ? paintedBoxOf(target, box, tokens, registry, blockDefaults, nested) : null
+    const painted = registry ? paintedBoxOf(withCompiledStyle(target, shape), box, tokens, registry, blockDefaults, nested) : null
     return painted ?? (nested ? undefined : box)
   }
 
@@ -1391,13 +1391,23 @@ export function resolveConnectorEnd(
   if (!top) return undefined
   const shape = shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === top.id)
   if (!shape) return undefined
-  const filled = blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top
+  const filled = withCompiledStyle(blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top, shape)
   const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
   const nested = top.id === id ? undefined : id
   const painted = registry ? paintedBoxOf(filled, box, tokens, registry, blockDefaults, nested) : nested ? null : box
   if (!painted) return undefined
   const own = findBlockSpec(filled, id) ?? filled
   return { box: painted, shape, block: own, round: isRoundBlock(own) }
+}
+
+/**
+ * The block with the style its shape was compiled with: `growText` / `harmonizeTypes` give a block
+ * a `textScale` / `typeStep` its authored spec lacks, and an anchor measured at the authored size
+ * started a connector inside a grown hero number (2026-10-24 review).
+ */
+function withCompiledStyle(block: BlockSpec, shape: ComponentShape): BlockSpec {
+  const style = (shape.props[BLOCK_PROP_KEY] as { style?: BlockStyleSpec } | undefined)?.style
+  return style ? { ...block, style } : block
 }
 
 /** Padding around a connector's painted route inside its shape (anti-aliasing, label slack). */

@@ -69,6 +69,8 @@ function measure(raw: unknown): { nodes: number; maxKids: number; levels: number
  */
 type Tier = { label: TypeToken; sub: TypeToken; cross: number; parent: number; main: number }
 const TIERS: readonly Tier[] = [
+  // a small tree alone in a half slide (four nodes in 1142×888) still floated at subheading
+  { label: 'heading', sub: 'lead', cross: 720, parent: 820, main: 640 },
   { label: 'subheading', sub: 'body', cross: 560, parent: 640, main: 520 },
   { label: 'lead', sub: 'body', cross: 460, parent: 540, main: 440 },
   { label: 'body', sub: 'caption', cross: 380, parent: 440, main: 360 },
