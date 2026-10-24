@@ -68,11 +68,14 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
     const tierFloor = Math.max(0, ...tiles.map((t) => kpiTier({ ...(t as KpiTileProps) }, ctx, tileInner)))
     // and one value size: a value shrunk to fit its tile sets the row's (58 / 47 / 64 in one row
     // counted three sizes)
-    const valueSize = Math.min(...tiles.map((t) => kpiValueSize({ ...(t as KpiTileProps) }, ctx, tierFloor, tileInner.width)))
+    // counted three sizes) — unless one long value would drag the others below 60 % of theirs (a
+    // "4,860 tỷ đồng" beside "104%"): that outlier alone shrinks
+    const fitted = tiles.map((t) => kpiValueSize({ ...(t as KpiTileProps) }, ctx, tierFloor, tileInner.width))
+    const valueSize = Math.min(...fitted) >= 0.6 * Math.max(...fitted) ? Math.min(...fitted) : undefined
     return tiles.map((tile, i) => {
       const x = rowX + i * (tileWidth + gap)
       // Delegate to tls.c.kpi-tile via ctx.layoutChild.
-      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile, tierFloor, valueSize } }
+      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile, tierFloor, ...(valueSize === undefined ? {} : { valueSize }) } }
       const tileNode = ctx.layoutChild(tileSpec, { x: x + inset + bar, y: inner.y + inset, width: tileWidth - 2 * inset - bar, height: h - 2 * inset })
       // Override the wrapper's part name with our indexed name: tile[0], tile[1], …
       // Do NOT re-wrap — layoutChild already returns a wrapper group at the correct coordinates.

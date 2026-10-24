@@ -86,7 +86,8 @@ export function statsOf(props: StatSpotlightProps): SpotStat[] {
   return list
     .filter((s): s is SpotStat => !!s && typeof s === 'object')
     .slice(0, 3)
-    .map((s) => ({ value: str(s.value, 12), label: str(s.label, 32) }))
+    // a label takes two lines of its band (the poster's tiers), so it may run past the schema's 32
+    .map((s) => ({ value: str(s.value, 12), label: str(s.label, 64) }))
 }
 
 export function progressOf(props: StatSpotlightProps): number {

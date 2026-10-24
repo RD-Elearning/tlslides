@@ -9,6 +9,7 @@ import { backdrop, color, safe, str } from '../_showcase'
 import type { StatSpotlightProps } from './schema'
 import { geometry, progressOf, statsOf, SPOT, SPOT_ROOMY } from './schema'
 import { cssTextHeight } from '../../../html-block'
+import { withRealWidths } from '../../data/_chart/kit'
 
 /** Arc path from the top, clockwise, `p` of a full turn (two halves when p ~ 1). */
 export function arcPath(cx: number, cy: number, r: number, p: number): string {
@@ -95,12 +96,15 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
     const tiers: Array<['title' | 'heading', 'lead' | 'body' | 'caption']> = g.roomy
       ? [['title', 'lead'], ['title', 'body'], ['heading', 'lead'], ['heading', 'body'], ['heading', 'caption']]
       : [['heading', 'caption']]
+    // stat labels wrap at the face's true widths: the DOM sets each poster line without wrapping, and
+    // a line the flat estimate fitted ran past its band ("…citing a conf")
+    const rc = withRealWidths(ctx)
     const fitsAt = (t: ReturnType<typeof styles>) =>
       stats.every((s, i) => {
         const inner = Math.max(1, g.stats[i].width - inset)
         if (ctx.measureText({ runs: [{ text: s.value, bold: true }] }, t.sv, inner).lines.length > 1) return false
         const room = g.stats[i].height - SPOT.statPadTop - cssTextHeight(1, t.sv) - SPOT.statLabelGap
-        const lines = ctx.measureText(s.label, t.sl, inner).lines.length
+        const lines = rc.measureText(s.label, t.sl, inner).lines.length
         return lines <= 2 && room >= t.sl.size * t.sl.lineHeight * lines
       })
     let { sv: svStyle, sl: slStyle } = styles('heading', 'caption')
@@ -116,7 +120,7 @@ export function poster(props: StatSpotlightProps, ctx: LayoutContext): LayoutNod
       const x = box.x
       const inner = Math.max(1, box.width - inset)
       const sv = ctx.measureText({ runs: [{ text: s.value, bold: true }] }, svStyle, inner)
-      const sl = ctx.measureText(s.label, slStyle, inner)
+      const sl = rc.measureText(s.label, slStyle, inner)
       const part = `stat[${i}]`
       children.push({ k: 'rect', part, box: { x, y: box.y, width: 6, height: box.height }, fill: { type: 'solid', color: color(ctx, i % 2 ? 'accent2' : 'accent') } })
       const svH = Math.min(cssTextHeight(1, svStyle), box.height)

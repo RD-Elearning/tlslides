@@ -162,7 +162,13 @@ export function safe(n: unknown, fallback = 0): number {
 
 /** Plain string from a possibly missing / non-string prop. */
 export function str(v: unknown, max = 400): string {
-  return typeof v === 'string' ? v.slice(0, max) : typeof v === 'number' ? String(v) : ''
+  if (typeof v === 'number') return String(v)
+  if (typeof v !== 'string') return ''
+  if (v.length <= max) return v
+  // 2026-10-24: past the limit, cut at a word and say so ("…citing a conf" read as a typo)
+  const cut = v.slice(0, Math.max(1, max - 1))
+  const sp = cut.lastIndexOf(' ')
+  return `${(sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,.;:–—-]+$/, '')}…`
 }
 
 /** A colour role resolved for the poster. */

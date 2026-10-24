@@ -53,17 +53,19 @@ function layoutAt(props: MindmapProps, ctx: LayoutContext): LayoutNode {
 
   const bigS = style(ctx, 'caption', c.text)
   const smallS = style(ctx, 'footnote', c.text)
-  const kidS = rowH >= 46 ? bigS : smallS
-  const branchS = rowH >= 56 ? bigS : smallS
+  // 2026-10-24: the row and box caps grow with the type `promoteToFit` gives the labels
+  const k = Math.max(1, bigS.size / Math.max(1, ctx.tokens.type.caption.size))
+  const kidS = rowH >= 46 * k ? bigS : smallS
+  const branchS = rowH >= 56 * k ? bigS : smallS
 
   // Column geometry.
-  const cw = clamp(W * (both ? 0.17 : 0.2), 100, 260)
-  const ch = clamp(H * 0.2, Math.min(H, lineH(bigS) + 16), 110)
+  const cw = clamp(W * (both ? 0.17 : 0.2), 100, 260 * k)
+  const ch = clamp(H * 0.2, Math.min(H, lineH(bigS) + 16), 110 * k)
   const g = clamp(W * 0.035, 16, 56)
   const cBox: Box = both ? { x: (W - cw) / 2, y: (H - ch) / 2, width: cw, height: ch } : { x: 0, y: (H - ch) / 2, width: cw, height: ch }
   const avail = both ? (W - cw) / 2 : W - cw
-  const bw = clamp((avail - 2 * g) * 0.45, 70, 230)
-  const kw = clamp(avail - 2 * g - bw, 60, 230)
+  const bw = clamp((avail - 2 * g) * 0.45, 70, 230 * k)
+  const kw = clamp(avail - 2 * g - bw, 60, 230 * k)
 
   const nodeBox = (cx0: number, y: number, w: number, h: number): Box => ({ x: cx0, y: y - h / 2, width: w, height: h })
   const link = (part: string, from: { x: number; y: number }, to: { x: number; y: number }, color: string) => {
