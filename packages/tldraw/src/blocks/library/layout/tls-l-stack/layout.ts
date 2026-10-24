@@ -12,9 +12,7 @@ import type { StackProps } from './schema'
 import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
 import { contextTracks, isAuthoredContext } from '../../../layout/layout-child'
-
-/** Blocks that take a smaller type tier in a shorter box (`fitTier` and its kin). */
-const TIERED: ReadonlySet<string | undefined> = new Set(['tls.c.kpi-row', 'tls.c.kpi-tile', 'tls.g.timeline', 'tls.g.tree', 'tls.c.agenda'])
+import { TIERED_BLOCK_TYPES } from '../../../tiered'
 
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -76,7 +74,7 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
     const over = totalIntrinsic - availableHeight
     if (pack && over > 0.5 && !tracks) {
       let k = -1
-      for (let i = 0; i < n; i++) if (TIERED.has(children[i]?.type) && (k < 0 || intrinsicSizes[i].height > intrinsicSizes[k].height)) k = i
+      for (let i = 0; i < n; i++) if (TIERED_BLOCK_TYPES.has(children[i]?.type ?? '') && (k < 0 || intrinsicSizes[i].height > intrinsicSizes[k].height)) k = i
       if (k >= 0 && intrinsicSizes[k].height - over >= 50) {
         intrinsicSizes[k] = { height: intrinsicSizes[k].height - over }
         totalIntrinsic -= over

@@ -12,12 +12,17 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import { iconLeaf } from '../../text/_engine/icon'
 import type { LayersProps } from './schema'
 import { LAYERS_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style, promoteToFit } from '../_kit'
 import { slotsByIndex } from '../_motion'
 
 const GAP = 8
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: LayersProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const layers = objs(props.layers)

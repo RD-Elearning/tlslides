@@ -6020,7 +6020,7 @@ also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.marker
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
-tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h≈277-28/item@840] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
+tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 184–265@840] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual=ring|plain, statsPlacement=below|side
 also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 

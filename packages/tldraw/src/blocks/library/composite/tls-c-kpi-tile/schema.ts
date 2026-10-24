@@ -29,6 +29,8 @@ export interface KpiTileProps extends Record<string, unknown> {
   /** Internal, not in the schema: the smallest type tier (index) a `tls.c.kpi-row` gives its
    *  tiles, so one row keeps one value size and one label size. */
   tierFloor?: number
+  /** Internal: the smallest fitted value size of a `tls.c.kpi-row` (one number size per row). */
+  valueSize?: number
 }
 
 export const schema: BlockSchema = {

@@ -10,13 +10,13 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
+import type { CapacityReport, LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import { isShown } from '../../../schema-helpers'
 import { iconLeaf } from '../../text/_engine/icon'
 import type { CycleProps } from './schema'
 import { CYCLE_MAX } from './schema'
 import {
-  arrowHead, asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, placeLines, rampColor, root, str, strokePath, style, tintOf,
+  arrowHead, asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, linesNeeded, showsWhole, tierStart, lineH, mutedStyle, objs, onColor, placeLines, rampColor, root, str, strokePath, style, tintOf,
 } from '../_kit'
 import { slot } from '../_motion'
 
@@ -32,12 +32,35 @@ const HEAD = 14
 const ARROW_W = 3
 const PAD = 6
 
+/**
+ * Type tiers, largest first (2026-10-24 corpus: a four-step cycle alone on a slide drew caption
+ * labels and footnote notes round a 1728×888 box). `d` caps a round node, `wv` the label width at
+ * 12 and 6 o'clock, `side` at 3 and 9, `cw` a card. The last tier is the compact one it always had.
+ */
+type Tier = { label: TypeToken; text: TypeToken; d: number; wv: number; side: number; cw: number }
+const TIERS: readonly Tier[] = [
+  { label: 'subheading', text: 'body', d: 104, wv: 480, side: 420, cw: 400 },
+  { label: 'lead', text: 'body', d: 92, wv: 420, side: 380, cw: 360 },
+  { label: 'body', text: 'caption', d: 80, wv: 360, side: 320, cw: 300 },
+  { label: 'caption', text: 'footnote', d: 64, wv: 300, side: 260, cw: 240 },
+]
+
 function inside(n: NodeBox, x: number, y: number, pad: number): boolean {
   if (n.round) return Math.hypot(x - n.cx, y - n.cy) <= n.w / 2 + pad
   return Math.abs(x - n.cx) <= n.w / 2 + pad && Math.abs(y - n.cy) <= n.h / 2 + pad
 }
 
 export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
+  // the largest tier whose real layout shows every label and note whole in the box
+  for (const t of TIERS.slice(tierStart(ctx, TIERS.length), -1)) {
+    const node = layoutTier(props, ctx, t)
+    if (node) return node
+  }
+  return layoutTier(props, ctx, null) as LayoutNode
+}
+
+/** The cycle at tier `pick` (`null` = the compact tier, always drawn); `null` when `pick` does not fit. */
+function layoutTier(props: CycleProps, ctx: LayoutContext, pick: Tier | null): LayoutNode | null {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const steps = objs(props.steps)
@@ -52,8 +75,36 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
   const arrows = enumOf(props.arrowStyle, ['arc', 'none'] as const, 'arc') === 'arc'
   const showText = isShown(props, 'showText')
   const centerText = isShown(props, 'showCenter') ? str(props.center) : ''
-  const labelS = style(ctx, 'caption', c.text)
-  const textS = mutedStyle(ctx, 'footnote')
+  /** Whether every label (two lines) and note (three; a card's whatever room it has) shows whole. */
+  const fits = (t: Tier): boolean => {
+    const lS = style(ctx, t.label, c.text)
+    const xS = mutedStyle(ctx, t.text)
+    const whole = (w: number, textLines: number) =>
+      steps.every((s) => linesNeeded(ctx, s.label, lS, w) <= 2 && (!showText || !s.text || linesNeeded(ctx, s.text, xS, w) <= textLines))
+    if (!card) {
+      const D = clamp(Math.min(W, H) * 0.14, 28, t.d)
+      const wV = clamp(W * 0.3, 90, t.wv)
+      if (!whole(wV, 3)) return false
+      const reserve = Math.max(...steps.map((s) => linesHeight(ctx, s.label, lS, wV, 2) + (showText && s.text ? 2 + linesHeight(ctx, s.text, xS, wV, 3) : 0))) + 8
+      const R = Math.min((H - D) / 2 - reserve, (W - D) / 2 - t.side * 0.46)
+      if (R < Math.min(W, H) * 0.18) return false
+      const sideW = Math.min(t.side, W / 2 - R - D / 2 - 10)
+      return N < 3 || (sideW >= 60 && whole(sideW, 3))
+    }
+    const CW = clamp(W * 0.24, 130, t.cw)
+    const iw = CW - 24
+    const CHmax = Math.max(40, H / 3)
+    return steps.every((s) => {
+      const lw = iw - (s.icon ? 28 : 0)
+      if (linesNeeded(ctx, s.label, lS, lw) > 2) return false
+      const room = CHmax - 24 - linesHeight(ctx, s.label, lS, lw, 2) - 4
+      return !showText || !s.text || linesNeeded(ctx, s.text, xS, iw) <= Math.floor(room / lineH(xS))
+    })
+  }
+  if (pick && !fits(pick)) return null
+  const tier = pick ?? TIERS[TIERS.length - 1]
+  const labelS = style(ctx, tier.label, c.text)
+  const textS = mutedStyle(ctx, tier.text)
   const cx = W / 2
   const cy = H / 2
   const tOf = (i: number) => -Math.PI / 2 + (sgn * i * 2 * Math.PI) / N
@@ -63,12 +114,12 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
   let ry = 0
 
   if (!card) {
-    const D = clamp(Math.min(W, H) * 0.14, 28, 64)
-    const wV = clamp(W * 0.3, 90, 300)
+    const D = clamp(Math.min(W, H) * 0.14, 28, tier.d)
+    const wV = clamp(W * 0.3, 90, tier.wv)
     const labelH = (s: { label: string; text: string }, w: number, textLines: number) =>
       linesHeight(ctx, s.label, labelS, w, 2) + (showText && s.text ? 2 + linesHeight(ctx, s.text, textS, w, textLines) : 0)
     const reserve = Math.max(...steps.map((s) => labelH(s, wV, 2))) + 8
-    const R = Math.max(8, Math.min((H - D) / 2 - reserve, (W - D) / 2 - 120))
+    const R = Math.max(8, Math.min((H - D) / 2 - reserve, (W - D) / 2 - tier.side * 0.46))
     rx = R
     ry = R
     steps.forEach((s, i) => {
@@ -103,15 +154,15 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
         else place(x, ny + D / 2 + 6, wV, 'center', 'top')
       } else if (cs > 0) {
         const x = nx + D / 2 + 10
-        place(x, ny, Math.max(20, Math.min(260, W - x)), 'start', 'mid')
+        place(x, ny, Math.max(20, Math.min(tier.side, W - x)), 'start', 'mid')
       } else {
-        const w = Math.max(20, Math.min(260, nx - D / 2 - 10))
+        const w = Math.max(20, Math.min(tier.side, nx - D / 2 - 10))
         place(nx - D / 2 - 10 - w, ny, w, 'end', 'mid')
       }
       nodes.push(slot(`mark[${i}]`, { width: W, height: H }, mark), slot(`cap[${i}]`, { width: W, height: H }, cap))
     })
   } else {
-    const CW = clamp(W * 0.24, 130, 240)
+    const CW = clamp(W * 0.24, 130, tier.cw)
     const CHmax = Math.max(40, H / 3)
     const pad = 12
     const iw = CW - 2 * pad
@@ -195,7 +246,8 @@ export function layout(props: CycleProps, ctx: LayoutContext): LayoutNode {
     const h = linesHeight(ctx, centerText, cs, w, lines)
     nodes.push(...placeLines(ctx, centerText, cs, { x: cx - w / 2, y: cy - h / 2, width: w }, 'center', lines, 'center').nodes)
   }
-  return root(ctx, nodes)
+  const out = root(ctx, nodes)
+  return pick && !showsWhole(ctx, out) ? null : out
 }
 
 export function capacity(props: CycleProps, box: Size, ctx: LayoutContext): CapacityReport {

@@ -61,6 +61,7 @@ import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS } from './design-checks'
+import { TIERED_BLOCK_TYPES } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
 
@@ -255,8 +256,6 @@ function growText(
   return null
 }
 
-/** Blocks that pick their type by box (`fitTier` and its kin) and honour `style.typeStep`. */
-const TIERED_TYPES: ReadonlySet<string> = new Set(['tls.g.timeline', 'tls.g.tree', 'tls.c.agenda', 'tls.c.kpi-row', 'tls.c.kpi-tile'])
 
 /**
  * 2026-10-24 — blocks that grow their type with their box (a timeline, a tree, a KPI row) chose
@@ -275,7 +274,7 @@ function harmonizeTypes(
   opts?: CompileSlideOptions
 ): CompileSlideResult {
   const tiered = (b: BlockSpec | undefined): boolean =>
-    !!b && (TIERED_TYPES.has(b.type) || (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some(tiered)))
+    !!b && (TIERED_BLOCK_TYPES.has(b.type) || (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some(tiered)))
   const steps = (name: string, b: BlockSpec | undefined) => name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && tiered(b) && b.style?.typeStep === undefined
   const ids = new Set<string>()
   for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
@@ -1102,7 +1101,10 @@ function compileLayered(
     const anchored = !target && blockAnchor(l.block, def) !== 'fill'
     const inSafe = anchored ? intersectBox(region, safe) : undefined
     const container = target ?? inSafe ?? region
-    const box = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
+    const anchoredAt = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
+    const box = anchored && l.layer === 'backdrop' && isOpaqueMotif(l.block) ? clearOfContent(l.region, l.block, def, anchoredAt, container) : anchoredAt
+    // a solid motif with no free corner beside the content is left out (it would cover it)
+    if (!box) return []
     const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
     // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
     const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
@@ -1119,6 +1121,37 @@ function compileLayered(
       const inImageRegion = [...imageRegions].some((r) => (split.flow.regions[r] ?? []).some((b) => b.id === id))
       if (inImageRegion) meta.overImage = true
     }
+  }
+
+  /**
+   * 2026-10-24 review: an opaque motif (an isometric solid, a subject doodle, an orb) anchored behind
+   * the content covered a timeline's nodes and axis once the timeline grew into its region (no
+   * text under it, so `text/occluded` said nothing). It shrinks, from its anchor corner, until it
+   * clears the content's painted boxes; below MIN_MOTIF it is dropped.
+   */
+  const clearOfContent = (regionName: string, block: BlockSpec, def: BlockDefinition | undefined, box: Box, container: Box): Box | null => {
+    if (!registry || !def) return box
+    const content: Box[] = []
+    for (const b of split.flow.regions[regionName] ?? []) {
+      const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === b.id)
+      if (!shape) continue
+      const at: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+      const painted = paintedBoxOf(withCompiledStyle(b, shape), at, tokens, registry, blockDefaults)
+      if (painted) content.push(painted)
+    }
+    const hits = (r: Box) => content.some((c) => {
+      const i = intersectBox(r, c)
+      return !!i && i.width * i.height > 0.04 * r.width * r.height
+    })
+    if (!hits(box)) return box
+    const [col, row] = ANCHOR_GRID[blockAnchor(block, def) as Exclude<BlockAnchor, 'fill'>] ?? [0, 0]
+    for (let k = 0.9; k * Math.min(box.width, box.height) >= MIN_MOTIF; k *= 0.9) {
+      const w = box.width * k
+      const h = box.height * k
+      const r = { x: container.x + ((container.width - w) * col) / 2, y: container.y + ((container.height - h) * row) / 2, width: w, height: h }
+      if (!hits(r)) return r
+    }
+    return null
   }
 
   const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
@@ -1226,6 +1259,16 @@ export function anchoredBox(
     width: w,
     height: h,
   }
+}
+
+/** The smallest side an opaque motif shrinks to before `clearOfContent` leaves it out. */
+const MIN_MOTIF = 120
+// `tls.m.decoration`'s SOLID_SHAPES (solids.ts), SUBJECT_SHAPES (subjects.ts) and the orb
+const OPAQUE_MOTIFS: ReadonlySet<string> = new Set(['orb', 'cube', 'cylinder', 'cone', 'pyramid', 'slab', 'tree', 'graph', 'gear', 'book', 'flask', 'globe', 'bulb', 'chart', 'code'])
+/** A decoration drawn opaque (`tls.m.decoration` floors these at 0.85; tone `alt` stays quiet). */
+function isOpaqueMotif(block: BlockSpec): boolean {
+  const p = block.props as { shape?: unknown; tone?: unknown } | undefined
+  return block.type === 'tls.m.decoration' && typeof p?.shape === 'string' && OPAQUE_MOTIFS.has(p.shape) && p.tone !== 'alt'
 }
 
 /** Anchor → [column, row] in halves: 0 = start, 1 = centre, 2 = end. */

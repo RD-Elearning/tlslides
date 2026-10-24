@@ -20,6 +20,7 @@ import type { BlockSpec, LayoutContext, LayoutNode } from '../../../types'
 import type { StepsProps } from './schema'
 import { onColor } from '../../text/_engine/color'
 import { realWidth } from '../../data/_chart/inter-width'
+import { linesNeeded } from '../../diagram/_kit'
 
 const CONNECTOR_THICKNESS = 2
 const MARKER_SIZE = 48
@@ -80,7 +81,16 @@ function buildMarker(index: number, x: number, y: number, size: number, ctx: Lay
 const ROOMY_MIN_H = 480
 const ROOMY_MIN_COL = 360
 const ROOMY_MARKER = 72
-type TitleToken = 'subheading' | 'heading'
+type TitleToken = 'subheading' | 'heading' | 'lead' | 'body'
+
+/** The compact title sizes, largest first (`STEP_TITLE_TYPE_TOKEN` first). */
+const COMPACT_TITLES: readonly TitleToken[] = [STEP_TITLE_TYPE_TOKEN, 'lead', 'body']
+
+/** Lines a step title takes: the more of the face table's wrap and the host measure `tls.t.title` uses. */
+function titleLines(ctx: LayoutContext, title: string, token: TitleToken, width: number): number {
+  const style = ctx.resolveText(token, { letterSpacing: -0.03 })
+  return Math.max(linesNeeded(ctx, title, style, width), ctx.measureText(title, style, width).lines.length)
+}
 
 function measureTitleHeight(title: string, width: number, ctx: LayoutContext, token: TitleToken = STEP_TITLE_TYPE_TOKEN): number {
   const style = ctx.resolveText(token, { letterSpacing: -0.03 })
@@ -223,7 +233,11 @@ function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: n
   const plan = (roomy: boolean) => {
     const markerGap = ctx.tokens.space[roomy ? 'lg' : 'sm']
     const MARKER = roomy ? ROOMY_MARKER : MARKER_SIZE
-    const token: TitleToken = roomy ? 'heading' : STEP_TITLE_TYPE_TOKEN
+    // 2026-10-24 review: six steps across a slide wrapped "Báo cơ quan chức năng" to four lines of
+    // one or two words at subheading; the compact titles step down until each takes two lines
+    const token: TitleToken = roomy
+      ? 'heading'
+      : (COMPACT_TITLES.find((t) => steps.every((s) => titleLines(ctx, s.title, t, stepWidth) <= 2)) ?? 'body')
     const heights = steps.map((s) => {
       const t = measureTitleHeight(s.title, stepWidth, ctx, token) + (roomy && s.desc ? ctx.tokens.space.xs : 0)
       const d = s.desc ? measureDescHeight(s.desc, stepWidth, ctx) : 0
@@ -239,7 +253,8 @@ function layoutHorizontal(steps: StepsProps['steps'], n: number, W: number, H: n
   // The roomy tier when one row of wide columns has room for it — the room, not a fixed box
   // height: a row sized to its content in a region it shares (steps + takeaway, spro demo T19)
   // has a box exactly as tall as the roomy row and must not drop to the compact tier there.
-  const wide = rows === 1 && stepWidth >= ROOMY_MIN_COL
+  const wide =
+    rows === 1 && stepWidth >= ROOMY_MIN_COL && steps.every((s) => titleLines(ctx, s.title, 'heading', stepWidth) <= 2)
   const roomyPlan = wide ? plan(true) : null
   const roomy = !!roomyPlan && (H >= ROOMY_MIN_H || roomyPlan.total <= H + 1)
   const { markerGap, MARKER, token, heights, rowH, total } = roomy ? roomyPlan! : plan(false)

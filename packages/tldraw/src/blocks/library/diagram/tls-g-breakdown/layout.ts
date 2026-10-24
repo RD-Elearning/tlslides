@@ -12,7 +12,7 @@
 import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { BreakdownProps } from './schema'
 import { BREAKDOWN_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, promoteToFit } from '../_kit'
 
 const GAP = 12
 
@@ -54,7 +54,12 @@ export function bracePath(length: number, depth: number, map: (u: number, v: num
   ].join('')
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: BreakdownProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const wholeObj = objs([props.whole])[0] ?? {}

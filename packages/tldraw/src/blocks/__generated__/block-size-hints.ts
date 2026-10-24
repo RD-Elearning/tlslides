@@ -23,7 +23,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.image-text': 'h=fill',
   'tls.c.journey': 'h≈341+11/item@840',
   'tls.c.kinetic-title': 'h=fill',
-  'tls.c.kpi-row': 'h≈277-28/item@840',
+  'tls.c.kpi-row': 'h 184–265@840',
   'tls.c.kpi-tile': 'h=fill',
   'tls.c.objectives': 'h≈61+68/item@840',
   'tls.c.problem-solution': 'h≈250@1728',

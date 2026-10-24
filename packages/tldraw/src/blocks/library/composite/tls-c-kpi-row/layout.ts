@@ -17,7 +17,7 @@ import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { KpiRowProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 import { cardNodes, cardPaint } from '../_kit'
-import { kpiTier } from '../tls-c-kpi-tile/layout'
+import { kpiTier, kpiValueSize } from '../tls-c-kpi-tile/layout'
 import type { KpiTileProps } from '../tls-c-kpi-tile/schema'
 
 /** AC2 `tile: accent-bar`: the bar's width down the card's left edge. */
@@ -66,10 +66,13 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
     const pad = ctx.tokens.space.md
     const tileInner = { width: Math.max(1, tileWidth - 2 * inset - bar - 2 * pad), height: Math.max(0, h - 2 * inset - 2 * pad) }
     const tierFloor = Math.max(0, ...tiles.map((t) => kpiTier({ ...(t as KpiTileProps) }, ctx, tileInner)))
+    // and one value size: a value shrunk to fit its tile sets the row's (58 / 47 / 64 in one row
+    // counted three sizes)
+    const valueSize = Math.min(...tiles.map((t) => kpiValueSize({ ...(t as KpiTileProps) }, ctx, tierFloor, tileInner.width)))
     return tiles.map((tile, i) => {
       const x = rowX + i * (tileWidth + gap)
       // Delegate to tls.c.kpi-tile via ctx.layoutChild.
-      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile, tierFloor } }
+      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile, tierFloor, valueSize } }
       const tileNode = ctx.layoutChild(tileSpec, { x: x + inset + bar, y: inner.y + inset, width: tileWidth - 2 * inset - bar, height: h - 2 * inset })
       // Override the wrapper's part name with our indexed name: tile[0], tile[1], …
       // Do NOT re-wrap — layoutChild already returns a wrapper group at the correct coordinates.

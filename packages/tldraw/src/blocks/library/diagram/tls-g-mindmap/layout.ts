@@ -13,7 +13,7 @@
 import type { Box, CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { MindmapProps } from './schema'
 import { MIND_CHILDREN_MAX, MIND_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, lineH, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, linesHeight } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, lineH, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, linesHeight, promoteToFit } from '../_kit'
 import { around, slot } from '../_motion'
 
 const f = (v: number) => String(Math.round(v * 100) / 100)
@@ -23,7 +23,12 @@ interface Branch {
   kids: string[]
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: MindmapProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const center = str(props.center).trim()
@@ -71,7 +76,10 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
     const w = Math.max(8, box.width - 2 * pad)
     const lines = clamp(Math.floor((box.height - 2) / lineH(s)), 1, 2)
     const h = linesHeight(ctx, text, s, w, lines)
-    nodes.push(...placeLines(ctx, text, { ...s, color }, { x: box.x + pad, y: box.y + (box.height - h) / 2, width: w }, align, lines, part).nodes)
+    const placed = placeLines(ctx, text, { ...s, color }, { x: box.x + pad, y: box.y + (box.height - h) / 2, width: w }, align, lines, part).nodes
+    // a centred label wrapped to two lines is one line node each: one `part` group animates both
+    if (placed.length > 1) nodes.push({ k: 'group', part, box: { x: 0, y: 0, width: W, height: H }, children: placed.map((n) => ({ ...n, part: undefined }) as LayoutNode) })
+    else nodes.push(...placed)
   }
 
   const drawSide = (idx: number[], dirSign: 1 | -1) => {

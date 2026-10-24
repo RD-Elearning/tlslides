@@ -185,3 +185,25 @@ describe('connectors attach to the compiled (grown) block (2026-10-24)', () => {
     expect(fromW(grown)).toBeGreaterThan(fromW(plain))
   })
 })
+
+describe('an opaque backdrop motif clears the content (2026-10-24)', () => {
+  const tl: BlockSpec = { id: 'tl', type: 'tls.g.timeline', props: { alternate: true, nodeStyle: 'icon', events: [{ date: 'Year 1', icon: 'map', title: 'Map risk', text: 'Set up early warning' }, { date: 'Years 2–4', title: 'Restore buffers', text: 'Regulate groundwater' }, { date: 'Year 5+', title: 'Upgrade defences', text: 'Only where density justifies the cost' }, { date: 'Every 5 years', title: 'Review the plan', text: 'Loop back to the start' }] } }
+  const at = (shape: string) => {
+    const s = { id: 's', layout: 'blank', valign: 'auto', regions: { content: [tl, { id: 'dec', type: 'tls.m.decoration', layer: 'backdrop', anchor: 'bottom-left', props: { shape, opacity: 'soft' } }] } } as unknown as SlideSpec
+    const shapes = compileSlide(s, FRAME, TEST_TOKENS, registry).shapes
+    return shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'dec')
+  }
+  it('a cylinder behind a timeline shrinks into the free corner or is left out; a soft blob stays', () => {
+    const r = analyzeDeck(deck({ id: 's', layout: 'blank', valign: 'auto', regions: { content: [tl] } } as unknown as SlideSpec))[0]
+    const painted = r.blocks.find((b) => b.id === 'tl')!.painted!
+    const cyl = at('cylinder')
+    if (cyl) {
+      const box = { x: cyl.point[0], y: cyl.point[1], width: cyl.size[0], height: cyl.size[1] }
+      const ix = Math.max(0, Math.min(box.x + box.width, painted.x + painted.width) - Math.max(box.x, painted.x))
+      const iy = Math.max(0, Math.min(box.y + box.height, painted.y + painted.height) - Math.max(box.y, painted.y))
+      expect(ix * iy).toBeLessThanOrEqual(0.04 * box.width * box.height)
+    }
+    const blob = at('blob')!
+    expect(blob.size[0]).toBeGreaterThan(300)
+  })
+})

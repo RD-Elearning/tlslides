@@ -13,11 +13,27 @@ import type { Box, CapacityReport, LayoutContext, LayoutNode, Size } from '../..
 import { isShown } from '../../../schema-helpers'
 import type { MatrixProps } from './schema'
 import { MATRIX_MAX_ITEMS } from './schema'
-import { TEXT_SLACK, arrowHead, asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, mutedStyle, numOrNull, objs, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
+import { TEXT_SLACK, arrowHead, asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, fitTier, linesHeight, linesNeeded, lineH, mutedStyle, numOrNull, objs, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
 import { withRealWidths } from '../../data/_chart/kit'
+import type { TypeToken } from '../../../types'
 
 const GAP = 8
 const HL = ['TL', 'TR', 'BL', 'BR'] as const
+
+/**
+ * Type tiers, largest first (2026-10-24 corpus: every 2×2 matrix drew caption labels and footnote
+ * notes in quadrants of a whole slide). The block takes the largest tier whose quadrant labels keep
+ * one line, notes their whole text in three lines, and axis labels fit their column and row; the
+ * last is the compact tier it always had. `lw` caps the y-axis label column.
+ */
+type Tier = { label: TypeToken; note: TypeToken; axis: TypeToken; lw: number }
+const TIERS: readonly Tier[] = [
+  { label: 'heading', note: 'lead', axis: 'body', lw: 240 },
+  { label: 'subheading', note: 'body', axis: 'body', lw: 220 },
+  { label: 'lead', note: 'body', axis: 'caption', lw: 190 },
+  { label: 'body', note: 'caption', axis: 'caption', lw: 170 },
+  { label: 'caption', note: 'footnote', axis: 'footnote', lw: 150 },
+]
 
 const hit = (a: Box, b: Box, pad = 2) => a.x < b.x + b.width + pad && b.x < a.x + a.width + pad && a.y < b.y + b.height + pad && b.y < a.y + a.height + pad
 
@@ -36,12 +52,41 @@ export function layout(props: MatrixProps, ctx0: LayoutContext): LayoutNode {
   const lines = enumOf(props.style, ['tinted', 'lines'] as const, 'tinted') === 'lines'
   const showItems = isShown(props, 'showItems')
   const showTitles = isShown(props, 'showAxisTitles')
-  const labelS = style(ctx, 'caption', c.text)
-  const noteS = mutedStyle(ctx, 'footnote')
-  const axisS = mutedStyle(ctx, 'footnote')
-  const titleS = style(ctx, 'footnote', c.text)
+  const xTexts = [str(ax.low), str(ax.high), showTitles ? str(ax.title) : ''].filter(Boolean)
+  const yTexts = [str(ay.low), str(ay.high), showTitles ? str(ay.title) : ''].filter(Boolean)
+  const fits = (t: Tier): boolean => {
+    const lS = style(ctx, t.label, c.text)
+    const nS = mutedStyle(ctx, t.note)
+    const aS = mutedStyle(ctx, t.axis)
+    const lw = clamp(W * 0.13, 70, t.lw)
+    const gw = Math.max(20, W - lw - 10)
+    const gh = Math.max(20, H - lineH(aS) * 2 - 18)
+    const qw = (gw - GAP) / 2
+    const qh = (gh - GAP) / 2
+    const p = clamp(Math.min(qw, qh) * 0.08, 8, 18)
+    const tw = Math.max(10, qw - 2 * p)
+    for (const q of quads) {
+      const lh = str(q.label) ? lineH(lS) : 0
+      if (str(q.label) && linesNeeded(ctx, str(q.label), lS, tw) > 1) return false
+      if (str(q.text) && linesNeeded(ctx, str(q.text), nS, tw) > Math.min(3, Math.floor((qh - 2 * p - lh - 2) / lineH(nS)))) return false
+    }
+    if (yTexts.some((x) => linesNeeded(ctx, x, aS, Math.max(10, lw - 4)) > 2)) return false
+    return !xTexts.some((x) => linesNeeded(ctx, x, aS, Math.max(10, gw / 3 - 8)) > 1)
+  }
+  // plotted points need the quadrants' free space for their labels: a few keep the body tiers, a
+  // dense plot the compact ones
+  const nItems = showItems ? objs(props.items).length : 0
+  const tier = fitTier(TIERS.slice(nItems > 4 ? 3 : nItems > 0 ? 2 : 0), fits, ctx)
+  const labelS = style(ctx, tier.label, c.text)
+  const noteS = mutedStyle(ctx, tier.note)
+  const axisS = mutedStyle(ctx, tier.axis)
+  const titleS = style(ctx, tier.axis, c.text)
+  // plotted points stay small labels (a dozen of them share the grid with the quadrant text)
+  const itemS = mutedStyle(ctx, tier.note === 'lead' || tier.note === 'body' ? 'caption' : tier.note)
+  // a point label's widest line grows with its type (200 at footnote size)
+  const itemW = Math.round((200 * itemS.size) / ctx.resolveText('footnote').size)
 
-  const LW = clamp(W * 0.13, 70, 150)
+  const LW = clamp(W * 0.13, 70, tier.lw)
   const BH = lineH(axisS) * 2 + 8
   const gx = LW + 10
   const gy = 0
@@ -142,8 +187,8 @@ export function layout(props: MatrixProps, ctx0: LayoutContext): LayoutNode {
         const px = gx + R + 4 + clamp(fx, 0, 1) * (gw - 2 * (R + 4))
         const py = gy + R + 4 + (1 - clamp(fy, 0, 1)) * (gh - 2 * (R + 4))
         const text = str(it.label)
-        const tw = Math.min(200, Math.ceil(placeLines(ctx, text, noteS, { x: 0, y: 0, width: 200 }, 'start', 1, 'probe').width) + 2)
-        const th = lineH(noteS)
+        const tw = Math.min(itemW, Math.ceil(placeLines(ctx, text, itemS, { x: 0, y: 0, width: itemW }, 'start', 1, 'probe').width) + 2)
+        const th = lineH(itemS)
         const dotBox: Box = { x: px - R, y: py - R, width: 2 * R, height: 2 * R }
         const cands: Box[] = [
           { x: px + R + 6, y: py - th / 2, width: tw, height: th },
@@ -177,7 +222,7 @@ export function layout(props: MatrixProps, ctx0: LayoutContext): LayoutNode {
         pick = pick ?? cands.find(inGrid) ?? cands[0]
         placed.push(pick, dotBox)
         nodes.push(dot(px, py, R, c.accent, `item[${i}]`, c.surface))
-        nodes.push(...placeLines(ctx, text, { ...noteS, color: c.text }, { x: pick.x, y: pick.y, width: tw + 2 }, 'start', 1, `item-label[${i}]`).nodes)
+        nodes.push(...placeLines(ctx, text, { ...itemS, color: c.text }, { x: pick.x, y: pick.y, width: tw + 2 }, 'start', 1, `item-label[${i}]`).nodes)
       })
   }
   void TEXT_SLACK

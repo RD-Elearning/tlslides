@@ -21,8 +21,7 @@ import type { FlowProps } from './schema'
 import { FLOW_MAX_EDGES, FLOW_MAX_NODES } from './schema'
 import { readGraph, type Graph } from './graph'
 import {
-  TEXT_SLACK, arrowHead, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, onColor, pathNode, placeLines, polyline, root, strokePath, style, tintOf,
-} from '../_kit'
+  TEXT_SLACK, arrowHead, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, onColor, pathNode, placeLines, polyline, root, strokePath, style, tintOf, promoteToFit } from '../_kit'
 
 const HEAD = 12
 const EDGE_W = 2.5
@@ -71,7 +70,12 @@ function solve(props: FlowProps, ctx: LayoutContext, W: number, H: number): Solv
   return { graph, dag, dir, nodeSize, backReserve }
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: FlowProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const g0 = readGraph(props)

@@ -16,7 +16,7 @@
  * Pure and DOM-free: no `document`, no `window`, no `Date.now()`, no `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode, Stroke } from '../../../types'
+import type { LayoutContext, LayoutNode, ResolvedTextStyle, Stroke } from '../../../types'
 import type { KpiTileProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 import { isShown } from '../../../schema-helpers'
@@ -73,7 +73,9 @@ export function kpiTier(props: KpiTileProps, ctx: LayoutContext, inner: { width:
     const labelH = isShown(props, 'showLabel') ? ctx.measureText(props.label ?? '', small, inner.width).height + ctx.tokens.space.xs : 0
     // the gap under the value only paints when a delta follows (a content-sized row gives the tile
     // exactly its painted height, and counting it dropped a tile that fits a step)
-    const valueH = ctx.measureText(formattedValue, value, inner.width).height + (showDelta ? ctx.tokens.space.xs : 0)
+    // one line: the value never wraps, it shrinks to the tile's width (a heading-tier "120 → 55 hours"
+    // measured as two lines dropped the row's labels to caption)
+    const valueH = ctx.measureText(formattedValue, value).height + (showDelta ? ctx.tokens.space.xs : 0)
     const deltaH = showDelta ? ctx.measureText('\u2191 +0', small, inner.width).height : 0
     return labelH + valueH + deltaH
   }
@@ -88,6 +90,24 @@ export function kpiTier(props: KpiTileProps, ctx: LayoutContext, inner: { width:
     return !isShown(props, 'showLabel') || ctx.measureText(props.label ?? '', ctx.resolveText(t.small), inner.width).lines.length <= 2
   })
   return i < 0 ? TIERS.length - 1 : i
+}
+
+/**
+ * The value style shrunk (to half the heading size, then exactly) until the browser-true width fits
+ * one line of `width` (RV04: a long value used to wrap or run out of a narrow tile; LO6: with true
+ * widths the layout wrapped what the old estimate kept on one line while the DOM ran past the tile).
+ */
+function fittedValueStyle(ctx: LayoutContext, value: string, base: ResolvedTextStyle, width: number): ResolvedTextStyle {
+  let s = base
+  for (let k = 0; k < 8 && realWidth(value, s) * 1.03 > width && s.size > 0.5 * ctx.resolveText('heading').size; k++) s = { ...s, size: s.size * 0.9 }
+  const rw = realWidth(value, s) * 1.03
+  return rw > width ? { ...s, size: (s.size * width) / rw } : s
+}
+
+/** The value size a tile at tier `index` and inner width `width` draws (for `tls.c.kpi-row`). */
+export function kpiValueSize(props: KpiTileProps, ctx: LayoutContext, index: number, width: number): number {
+  const t = TIERS[Math.max(0, Math.min(TIERS.length - 1, index))]
+  return fittedValueStyle(ctx, formatValue(props.value, props.format, { locale: ctx.tokens.locale }), ctx.resolveText(t.value), width).size
 }
 
 export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
@@ -136,23 +156,24 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   // --- value (big number) ---
   // One line, shrunk (to 0.5) until the browser-true width fits the tile: a long value ("$1,234,567")
   // used to wrap or run out of a narrow tile (RV04).
-  let valueStyle = ctx.resolveText(tier.value)
-  for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
-    valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
-  }
-  // Still wider at the floor: fit exactly rather than wrap a number mid-digits (LO6 — with true
-  // widths the layout wraps what the old estimate kept on one line while the DOM ran past the tile).
-  const rw = realWidth(formattedValue, valueStyle) * 1.03
-  if (rw > inner.width) valueStyle = { ...valueStyle, size: (valueStyle.size * inner.width) / rw }
-  const valueMetrics = ctx.measureText(formattedValue, valueStyle, inner.width)
+  let valueStyle = fittedValueStyle(ctx, formattedValue, ctx.resolveText(tier.value), inner.width)
+  // a kpi-row passes its tiles' smallest fitted value size, so the row draws one number size
+  if (typeof props.valueSize === 'number' && Number.isFinite(props.valueSize) && props.valueSize < valueStyle.size) valueStyle = { ...valueStyle, size: props.valueSize }
+  // one line: the loop above sized it to the browser-true width (the flat estimate could wrap it)
+  const valueMetrics = ctx.measureText(formattedValue, valueStyle)
+  // a value shrunk to fit keeps its tier's line: `kpiTier` counts that height, and a content-sized
+  // row given exactly it must find the same tier again (a shorter line dropped the labels a step)
+  // (not the last tier: it is taken whether it fits or not, and a reserved line would overflow)
+  const valueLine = tier === TIERS[TIERS.length - 1] ? valueMetrics.height : Math.max(valueMetrics.height, ctx.measureText(formattedValue, ctx.resolveText(tier.value)).height)
+  const valueTop = y + (valueLine - valueMetrics.height)
   children.push({
     k: 'text',
     part: 'value',
-    box: { x: inner.x, y, width: inner.width, height: valueMetrics.height },
+    box: { x: inner.x, y: valueTop, width: inner.width, height: valueMetrics.height },
     lines: valueMetrics.lines,
     style: { ...valueStyle, color: ctx.resolveColor('accent').color },
   })
-  y += valueMetrics.height + ctx.tokens.space.xs
+  y += valueLine + ctx.tokens.space.xs
 
   // --- delta row (optional) ---
   if (isShown(props, 'showDelta') && delta != null) {

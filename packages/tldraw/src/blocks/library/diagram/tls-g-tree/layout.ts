@@ -14,7 +14,7 @@ import { tidyTree, MAX_TREE_LEVELS } from '../../../layout/diagram'
 import type { TreeNode } from '../../../layout/diagram'
 import type { TreeProps } from './schema'
 import { TREE_MAX_CHILDREN, TREE_MAX_NODES } from './schema'
-import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, fitTier, lineH, linesNeeded, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
+import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, lineH, linesNeeded, showsWhole, tierStart, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
 import { slot } from '../_motion'
 
 interface TNode {
@@ -85,6 +85,17 @@ const initials = (label: string) =>
     .join('')
 
 export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
+  // the largest tier whose real layout shows every label whole in the box (the estimate the
+  // layout report and the browser measure with set an edge node's label a few units wider)
+  for (let i = tierStart(ctx, TIERS.length); i < TIERS.length; i++) {
+    const node = layoutTier(props, ctx, i)
+    if (node) return node
+  }
+  return layoutTier(props, ctx, -1) as LayoutNode
+}
+
+/** The tree at tier `tierAt` (-1 = the compact sizes, always drawn); `null` when that tier does not fit. */
+function layoutTier(props: TreeProps, ctx: LayoutContext, tierAt: number): LayoutNode | null {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const tree = readTree(props.root)
@@ -147,7 +158,8 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
     if (want > pitch - gapCross) return null
     return { labelS, subS, cross: want, main, parent: t.parent * k }
   }
-  const tier = circle ? null : sized(fitTier(TIERS, (t) => sized(t) !== null, ctx))
+  if (tierAt >= 0 && (circle || !sized(TIERS[tierAt]))) return null
+  const tier = tierAt >= 0 ? sized(TIERS[tierAt]) : null
   // The compact sizes the block always had (and round nodes): caption labels, footnote subs.
   // Dense left-to-right trees drop to the smaller label size so one line always fits a slot.
   const bigS = style(ctx, 'caption', c.text)
@@ -343,10 +355,11 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   const L = levels
   const box = { width: W, height: H }
   const at = (part: string, d: number) => nodes.filter((n) => n.part?.startsWith(part) && depthOf.get(n) === d)
-  return root(ctx, [
+  const out = root(ctx, [
     ...Array.from({ length: L }, (_, d) => slot(`links[${d}]`, box, at('edge[', d))),
     ...Array.from({ length: L }, (_, d) => slot(`level[${d}]`, box, at('item[', d))),
   ])
+  return tierAt >= 0 && !showsWhole(ctx, out) ? null : out
 }
 
 export function capacity(props: TreeProps, box: Size, ctx: LayoutContext): CapacityReport {

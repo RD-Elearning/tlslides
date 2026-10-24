@@ -676,3 +676,28 @@ describe('tls.c.steps align center and a shared centred region (spro demo T19)',
     expect(tk.y - (st.y + st.height)).toBeLessThan(120)
   })
 })
+
+describe('tls.c.steps — compact titles step down to two lines (review 2026-10-24)', () => {
+  it('six steps across a slide: no title wraps past two lines', () => {
+    const registry = new BlockRegistry()
+    registerBuiltInBlocks(registry)
+    const props = {
+      ...(tlsCSteps.defaults as any),
+      align: 'center',
+      orientation: 'horizontal',
+      steps: ['Ngắt khỏi mạng', 'Báo người phụ trách', 'Đổi mật khẩu', 'Khôi phục dữ liệu', 'Báo cơ quan chức năng', 'Rút kinh nghiệm'].map((title) => ({ title, desc: 'Một dòng mô tả ngắn' })),
+    }
+    const tree = layout(props, makeCtx({ width: 1728, height: 742 }, registry) as LayoutContext)
+    const titleLines = (n: LayoutNode, inTitle = false): number[] => {
+      const here = inTitle || /^step\[\d+\]\.title$/.test(n.part ?? '')
+      if (n.k === 'group') {
+        const kids = n.children.flatMap((c) => titleLines(c, here))
+        return /^step\[\d+\]\.title$/.test(n.part ?? '') ? [kids.reduce((a, b) => a + b, 0)] : kids
+      }
+      return here && n.k === 'text' ? [n.lines.length] : []
+    }
+    const counts = titleLines(tree)
+    expect(counts).toHaveLength(6)
+    for (const c of counts) expect(c).toBeLessThanOrEqual(2)
+  })
+})
