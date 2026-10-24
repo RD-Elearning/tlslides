@@ -8,6 +8,7 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import type { HeroNumberProps } from './schema'
 import { realWidth } from '../../data/_chart/inter-width'
+import { withRealWidths } from '../../data/_chart/kit'
 
 /**
  * Apply a scale factor to a resolved text style. Mirrors `tls-t-title`'s own helper.
@@ -26,6 +27,10 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   const cw = Math.max(0, ctx.box.width - pad * 2)
 
   const children: LayoutNode[] = []
+  // Lines as wide as the browser draws them (the face's measured table): a connector attaches to the
+  // painted box, and the flat estimate drew a 218-px "6.000" in Patrick Hand 44 units narrower than
+  // the glyphs, so the arrow started inside the number (2026-10-24 review).
+  const mc = withRealWidths(ctx)
 
   // ── Value (display size) ──────────────────────────────────────────────
   const valueColor =
@@ -49,7 +54,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   let scale = 1
   while (realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 > cw && scale > 0.4) scale -= 0.04
   const fitsOneLine = realWidth(props.value, withScale(baseValueStyle, scale)) * 1.03 <= cw
-  let valueMetrics = ctx.measureText(props.value, withScale(baseValueStyle, scale), fitsOneLine ? undefined : cw)
+  let valueMetrics = mc.measureText(props.value, withScale(baseValueStyle, scale), fitsOneLine ? undefined : cw)
   const valueStyle = scale < 1 ? withScale(baseValueStyle, scale) : baseValueStyle
   const valueHeight = valueMetrics.height
 
@@ -68,7 +73,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   if (props.unit) {
     const unitStyle = ctx.resolveText('subheading')
     const unitColor = ctx.resolveColor('text')
-    const unitMetrics = ctx.measureText(props.unit, unitStyle, cw)
+    const unitMetrics = mc.measureText(props.unit, unitStyle, cw)
     const unitHeight = unitMetrics.height
 
     children.push({
@@ -86,7 +91,7 @@ export function layout(props: HeroNumberProps, ctx: LayoutContext): LayoutNode {
   if (props.caption) {
     const captionStyle = ctx.resolveText('caption')
     const captionColor = ctx.resolveColor('textMuted')
-    const captionMetrics = ctx.measureText(props.caption, captionStyle, cw)
+    const captionMetrics = mc.measureText(props.caption, captionStyle, cw)
     const captionHeight = captionMetrics.height
 
     children.push({

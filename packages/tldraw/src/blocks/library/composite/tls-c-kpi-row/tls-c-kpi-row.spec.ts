@@ -412,3 +412,22 @@ describe('AC2 — look knob (tile)', () => {
     await assertParity(DEF, { ...props, tile: 'accent-bar' } as any, { width: 1200, height: 320 })
   }, 30000)
 })
+
+describe('tls.c.kpi-row — one type tier per row (review 2026-10-24)', () => {
+  const registry = makeCompositeRegistry()
+  const texts = (n: any, part: string): number[] =>
+    n.k === 'text' && n.part === part ? [n.style.size] : (n.children ?? []).flatMap((c: any) => texts(c, part))
+  it.each([[1200, 300], [1200, 520], [900, 260]])('a tile whose label wraps keeps the value and label sizes of its peers (%i×%i)', (width, height) => {
+    const props = {
+      ...(tlsCKpiRow.defaults as any),
+      tiles: [
+        { value: 40, label: 'Teams', format: 'plain' },
+        { value: 3, label: 'Times the pipeline grew over the last two quarters', format: 'plain' },
+        { value: 118, label: 'Net retention', format: 'plain' },
+      ],
+    }
+    const node = tlsCKpiRow.layout(props, makeCtx({ width, height }, registry))
+    expect(new Set(texts(node, 'value').map(Math.round)).size).toBe(1)
+    expect(new Set(texts(node, 'label').map(Math.round)).size).toBe(1)
+  })
+})

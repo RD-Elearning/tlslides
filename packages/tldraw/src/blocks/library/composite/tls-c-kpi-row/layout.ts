@@ -17,6 +17,8 @@ import type { LayoutContext, LayoutNode, SpaceToken } from '../../../types'
 import type { KpiRowProps } from './schema'
 import { insetBox } from '../../../layout/box-model'
 import { cardNodes, cardPaint } from '../_kit'
+import { kpiTier } from '../tls-c-kpi-tile/layout'
+import type { KpiTileProps } from '../tls-c-kpi-tile/schema'
 
 /** AC2 `tile: accent-bar`: the bar's width down the card's left edge. */
 const TILE_BAR = 8
@@ -57,16 +59,23 @@ export function layout(props: KpiRowProps, ctx: LayoutContext): LayoutNode {
   const tileWidth = (rowW - totalGaps) / tileCount
   const tileHeight = inner.height
 
-  const place = (h: number): LayoutNode[] =>
-    tiles.map((tile, i) => {
+  const place = (h: number): LayoutNode[] => {
+    // 2026-10-24 review: one type tier for the row — each tile used to pick its own, so a tile
+    // whose label wraps drew its number a step smaller than its peers (and the slide counted one
+    // more text size). The tile's own padding is `md` on each side (`tls.c.kpi-tile`).
+    const pad = ctx.tokens.space.md
+    const tileInner = { width: Math.max(1, tileWidth - 2 * inset - bar - 2 * pad), height: Math.max(0, h - 2 * inset - 2 * pad) }
+    const tierFloor = Math.max(0, ...tiles.map((t) => kpiTier({ ...(t as KpiTileProps) }, ctx, tileInner)))
+    return tiles.map((tile, i) => {
       const x = rowX + i * (tileWidth + gap)
       // Delegate to tls.c.kpi-tile via ctx.layoutChild.
-      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile } }
+      const tileSpec = { id: `kpi-tile-${i}`, type: 'tls.c.kpi-tile', props: { ...tile, tierFloor } }
       const tileNode = ctx.layoutChild(tileSpec, { x: x + inset + bar, y: inner.y + inset, width: tileWidth - 2 * inset - bar, height: h - 2 * inset })
       // Override the wrapper's part name with our indexed name: tile[0], tile[1], …
       // Do NOT re-wrap — layoutChild already returns a wrapper group at the correct coordinates.
       return { ...tileNode, part: `tile[${i}]` }
     })
+  }
 
   /** The card behind each tile (one group per tile, so the card reveals with its tile). */
   const withCards = (nodes: LayoutNode[], h: number, dy = 0): LayoutNode[] =>

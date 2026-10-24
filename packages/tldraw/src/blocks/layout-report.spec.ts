@@ -257,6 +257,13 @@ describe('LO1 — layer policy (LO2 plugs blockLayer() into this)', () => {
     expect(classifyOverlap(p('d', 'backdrop', 5), p('c', 'content', 1), box, true).severity).toBe('error')
   })
 
+  it('a line-ink decoration (an icon glyph) occludes text from a lower opacity than a filled one (review 2026-10-24)', () => {
+    const deco = (alpha: number, line: boolean): OverlapParty => ({ ...p('d', 'backdrop', 1), text: [], decorationAlpha: alpha, ...(line ? { decorationLineInk: true } : {}) })
+    expect(classifyOverlap(deco(0.35, true), p('c', 'content', 2), box, true).code).toBe('text/occluded')
+    expect(classifyOverlap(deco(0.35, false), p('c', 'content', 2), box, true).code).toBe('layout/overlap')
+    expect(classifyOverlap(deco(0.22, true), p('c', 'content', 2), box, true).code).toBe('layout/overlap')
+  })
+
   it('an overlay that covers no text is allowed', () => {
     const cls = classifyOverlap(p('badge', 'overlay', 2), p('card', 'content', 1, [{ x: 500, y: 500, width: 10, height: 10 }]), box, true)
     expect([cls.code, cls.severity]).toEqual(['layout/overlap', 'info'])

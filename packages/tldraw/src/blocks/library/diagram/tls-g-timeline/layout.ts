@@ -14,13 +14,13 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
+import type { CapacityReport, LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import { isShown } from '../../../schema-helpers'
 import { iconLeaf } from '../../text/_engine/icon'
 import type { TimelineProps } from './schema'
 import { TIMELINE_MAX } from './schema'
 import {
-  asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, numOrNull, objs, onColor, placeLines, root, solidRect, str, style, tintOf,
+  asArr, capacityOf, chartColors, clamp, emptyState, enumOf, fitTier, linesHeight, linesNeeded, lineH, mutedStyle, numOrNull, objs, onColor, placeLines, root, solidRect, str, style, tintOf,
 } from '../_kit'
 import { around, slot } from '../_motion'
 
@@ -37,12 +37,23 @@ export function horizontalCardWidth(W: number, n: number, alternate: boolean, ma
   return Math.min(maxW, raw)
 }
 
-/** AC3 pre-item: the roomy tier (body dates, subheading titles, body notes, wider cards, a bigger
- *  node and stem) for a horizontal timeline alone in a tall box. The block fills its box, so the
- *  tier follows its height. */
-const ROOMY_MIN_H = 480
-const ROOMY_MAX_CARD_W = 420
-const ROOMY_MIN_CARD_W = 240
+/**
+ * Type tiers, largest first (2026-10-24 review: a timeline alone on a slide kept footnote dates and
+ * notes in a box three times their height). The block takes the largest tier at which every
+ * event shows its date, its whole title (one line at heading size, else two) and its whole note in
+ * the box (`fitTier`); the last tier is the compact one it always had, and clips. `node` scales the
+ * disc and the stem, `cardW` caps a horizontal card's width (longer lines at larger type).
+ */
+type Tier = { date: TypeToken; title: TypeToken; text: TypeToken; node: number; cardW: number; gap: number; titleLines: number; noteLines: number }
+const TIERS: readonly Tier[] = [
+  // a heading title only on one line (two lines of heading per event outweigh the axis)
+  { date: 'lead', title: 'heading', text: 'lead', node: 1.8, cardW: 720, gap: 12, titleLines: 1, noteLines: 4 },
+  { date: 'body', title: 'subheading', text: 'lead', node: 1.6, cardW: 620, gap: 10, titleLines: 2, noteLines: 4 },
+  { date: 'body', title: 'subheading', text: 'body', node: 1.5, cardW: 520, gap: 8, titleLines: 2, noteLines: 4 },
+  { date: 'caption', title: 'lead', text: 'body', node: 1.3, cardW: 460, gap: 6, titleLines: 2, noteLines: 4 },
+  { date: 'caption', title: 'body', text: 'caption', node: 1.1, cardW: 360, gap: 4, titleLines: 2, noteLines: 5 },
+  { date: 'footnote', title: 'caption', text: 'footnote', node: 1, cardW: MAX_CARD_W, gap: 2, titleLines: 2, noteLines: 5 },
+]
 
 export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
@@ -61,13 +72,15 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const now = rawNow !== null && Math.round(rawNow) >= 0 ? Math.min(N - 1, Math.round(rawNow)) : -1
   const past = (i: number) => now < 0 || i <= now
 
-  const roomy = !mode.vertical && H >= ROOMY_MIN_H && horizontalCardWidth(W, N, mode.alternate, ROOMY_MAX_CARD_W) >= ROOMY_MIN_CARD_W
-  const dateS = style(ctx, roomy ? 'body' : 'footnote', c.accent)
-  const titleS = style(ctx, roomy ? 'subheading' : 'caption', c.text)
-  const textS = mutedStyle(ctx, roomy ? 'body' : 'footnote')
-  const D = (nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40) * (roomy ? 1.5 : 1)
-  const STEM = roomy ? 2 * STEM0 : STEM0
-  const cardGap = roomy ? 8 : 2
+  const D0 = nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40
+  const tier = fitTier(TIERS, (t) => fits(t, events, showText, mode, D0, W, H, ctx))
+  const dateS = style(ctx, tier.date, c.accent)
+  const titleS = style(ctx, tier.title, c.text)
+  const textS = mutedStyle(ctx, tier.text)
+  const D = D0 * tier.node
+  const STEM = Math.round(STEM0 * (1 + (tier.node - 1) * 2))
+  const cardGap = tier.gap
+  const noteLines = tier.noteLines
   const nodes: LayoutNode[] = []
   const cards: LayoutNode[][] = events.map(() => [])
 
@@ -106,7 +119,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     const titleLines = Math.max(1, Math.min(2, Math.floor((maxH - (dh ? dh + cardGap : 0)) / lineH(tS))))
     const th = linesHeight(ctx, e.title, tS, w, titleLines)
     const room = maxH - dh - (dh ? cardGap : 0) - th - 2 * cardGap
-    const nl = showText && e.text ? Math.max(0, Math.min(5, Math.floor((room + 1) / lineH(textS)))) : 0
+    const nl = showText && e.text ? Math.max(0, Math.min(noteLines, Math.floor((room + 1) / lineH(textS)))) : 0
     const xh = nl > 0 ? linesHeight(ctx, e.text, textS, w, nl) : 0
     const total = dh + (dh ? cardGap : 0) + th + (xh ? 2 * cardGap + xh : 0)
     let y = anchor === 'top' ? box.y : box.y - total
@@ -125,7 +138,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   }
 
   if (!mode.vertical) {
-    const cardW = Math.max(60, horizontalCardWidth(W, N, mode.alternate, roomy ? ROOMY_MAX_CARD_W : MAX_CARD_W))
+    const cardW = Math.max(60, horizontalCardWidth(W, N, mode.alternate, tier.cardW))
     const span = Math.max(0, W - cardW)
     const x = (i: number) => (N === 1 ? W / 2 : cardW / 2 + (span * i) / (N - 1))
     const stemColor = (i: number) => (past(i) ? c.accent : c.track)
@@ -138,7 +151,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
       const allowed = Math.max(0, H - D - STEM)
       const measure = (i: number) => {
         const e = events[i]
-        return (e.date ? lineH(dateS) + cardGap : 0) + linesHeight(ctx, e.title, titleS, cardW, 2) + (showText && e.text ? 2 * cardGap + linesHeight(ctx, e.text, textS, cardW, 5) : 0)
+        return (e.date ? lineH(dateS) + cardGap : 0) + linesHeight(ctx, e.title, titleS, cardW, 2) + (showText && e.text ? 2 * cardGap + linesHeight(ctx, e.text, textS, cardW, noteLines) : 0)
       }
       cardsH = Math.min(allowed, Math.max(...events.map((_, i) => measure(i))))
       axisY = Math.max(D / 2, (H - (D + STEM + cardsH)) / 2 + D / 2)
@@ -162,7 +175,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
     const pitch = Math.max(1, H / N)
     const nodeY = (i: number) => i * pitch + Math.max(D / 2, lineH(titleS) / 2 + 2)
     if (!mode.alternate) {
-      const dW = clamp(W * 0.16, 70, 200)
+      const dW = verticalDateWidth(W)
       const ax = dW + 12 + D / 2
       const cardX = ax + D / 2 + 16
       nodes.push(around('rail-y', [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(N - 1) - nodeY(0)) }, c.track, 'axis'), ...(now >= 0 ? [solidRect({ x: ax - 2, y: nodeY(0), width: 4, height: Math.max(0, nodeY(now) - nodeY(0)) }, c.accent, 'axis.progress')] : [])]))
@@ -190,6 +203,50 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   }
   nodes.push(...cards.map((kids, i) => slot(`card[${i}]`, { width: W, height: H }, kids)))
   return root(ctx, nodes)
+}
+
+/** The date column of a one-sided vertical timeline. */
+const verticalDateWidth = (W: number) => clamp(W * 0.16, 70, 220)
+
+type Ev = { date: string; title: string; text: string }
+
+/**
+ * Whether `tier` shows every event whole in the box: the date on one line, the title in at most
+ * two lines, the note in `noteLines`, and the cards within the height `layout` gives them.
+ */
+function fits(tier: Tier, events: Ev[], showText: boolean, mode: Mode, D0: number, W: number, H: number, ctx: LayoutContext): boolean {
+  const dS = style(ctx, tier.date)
+  const tS = style(ctx, tier.title)
+  const xS = mutedStyle(ctx, tier.text)
+  const D = D0 * tier.node
+  const STEM = Math.round(STEM0 * (1 + (tier.node - 1) * 2))
+  const g = tier.gap
+  const N = events.length
+  /** Height of one card at width `w` (with or without its date), `Infinity` when a part is cut. */
+  const cardH = (e: Ev, w: number, withDate: boolean) => {
+    if (withDate && e.date && linesNeeded(ctx, e.date, dS, w) > 1) return Infinity
+    const tl = linesNeeded(ctx, e.title, tS, w)
+    const xl = showText && e.text ? linesNeeded(ctx, e.text, xS, w) : 0
+    if (tl > tier.titleLines || xl > tier.noteLines) return Infinity
+    return (withDate && e.date ? lineH(dS) + g : 0) + tl * lineH(tS) + (xl ? 2 * g + xl * lineH(xS) : 0)
+  }
+  if (!mode.vertical) {
+    const w = horizontalCardWidth(W, N, mode.alternate, tier.cardW)
+    // the compact tier's own floor; a larger tier needs at least its card width's worth of words
+    if (w < MIN_CARD_W) return false
+    const h = Math.max(...events.map((e) => cardH(e, w, true)))
+    return mode.alternate ? h <= (H - D) / 2 - STEM - g : D + STEM + g + h <= H
+  }
+  const pitch = H / Math.max(1, N)
+  if (!mode.alternate) {
+    const dW = verticalDateWidth(W)
+    if (events.some((e) => e.date && linesNeeded(ctx, e.date, dS, dW) > 1)) return false
+    const w = W - (dW + 12 + D + 16)
+    // the last card hangs below its node, so the box holds N pitches of cards
+    return w > 0 && events.every((e) => cardH(e, w, false) <= pitch - 6)
+  }
+  const w = W / 2 - D / 2 - 16
+  return w > 0 && events.every((e) => cardH(e, w, true) <= Math.min(2 * pitch - 8, pitch * 1.6))
 }
 
 export function capacity(props: TimelineProps, box: Size, ctx: LayoutContext): CapacityReport {

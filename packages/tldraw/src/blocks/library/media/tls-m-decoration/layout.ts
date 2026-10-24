@@ -277,6 +277,15 @@ function orbNode(W: number, H: number, color: string, alpha: number | undefined)
 }
 
 const OPACITY = { soft: 0.2, medium: 0.4, strong: 0.7 } as const
+/** Icon motif alpha: an inline-size mark keeps at least 0.35 so its thin outline reads. */
+const ICON_OPACITY = { soft: 0.35, medium: 0.4, strong: 0.7 } as const
+/**
+ * Review 2026-10-24: a watermark-size icon (short side of the glyph ≥ WATERMARK_SIDE) sits behind
+ * text, and at 0.35–0.7 its outline read as strokes over the words ("Q&A" crossed by a book). It is
+ * drawn as a faint watermark instead, whatever opacity the model asked for.
+ */
+const WATERMARK_SIDE = 300
+const WATERMARK_OPACITY = { soft: 0.1, medium: 0.16, strong: 0.22 } as const
 
 /**
  * vivid V3 — the `icon` motif: a topic icon drawn large (a watermark, a mark behind a title or
@@ -324,7 +333,8 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
     d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.04), 0, 360) + 'Z'
   } else if (shape === 'wave') d = wavePath(W, H, quarter, seed)
   else if (shape === 'corner') d = cornerPath(W, H, quarter)
-  else if (shape === 'icon') return iconMotif(props.icon, W, H, color, tone === 'alt' ? undefined : Math.max(0.35, OPACITY[op]))
+  else if (shape === 'icon')
+    return iconMotif(props.icon, W, H, color, tone === 'alt' ? undefined : (Math.min(W, H) * 0.84 >= WATERMARK_SIDE ? WATERMARK_OPACITY : ICON_OPACITY)[op])
   else if (shape === 'orb') return orbNode(W, H, color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
   // enhance S4: isometric solids (lit, base, shaded faces + an ink outline), as solid as an orb
   else if ((SOLID_SHAPES as readonly string[]).includes(shape)) return solidNode(shape as SolidShape, W, H, color, ctx.resolveColor('text').color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))

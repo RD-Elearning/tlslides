@@ -56,6 +56,16 @@ describe('growText (L5)', () => {
     expect(off.shapes.every((sh) => (sh.props.$block as { grown?: number }).grown === undefined)).toBe(true)
   })
 
+  it('a short row of cards that spans the width but floats in the height grows (review 2026-10-24)', () => {
+    const card = (i: number): BlockSpec => ({
+      id: `c${i}`,
+      type: 'tls.l.card',
+      props: { children: [{ id: `h${i}`, type: 'tls.t.subtitle', props: { text: `Pillar ${i}` } }, { id: `p${i}`, type: 'tls.t.body', props: { text: 'One short line of detail.' } }] },
+    })
+    const row: BlockSpec = { id: 'r', type: 'tls.l.row', props: { gap: 'lg', children: [card(1), card(2), card(3)] } }
+    expect(grownIds(slide([row], 'auto'))).toEqual(['r'])
+  })
+
   it('the decompiler returns the authored style; renderers keep the scale', () => {
     const shape = compileSlide(slide([{ ...list(3), style: { align: 'start' } }], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
     expect(shapeToBlock(shape)?.style?.textScale).toBeGreaterThan(1)

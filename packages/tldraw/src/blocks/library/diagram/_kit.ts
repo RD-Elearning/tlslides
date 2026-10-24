@@ -107,6 +107,31 @@ export function linesHeight(ctx: LayoutContext, text: string, s: ResolvedTextSty
   return Math.min(m.lines.length, Math.floor(maxLines)) * lineH(s)
 }
 
+/**
+ * Lines `text` takes at `width` with nothing clipped, as `placeLines` would wrap it; `Infinity` when
+ * one word is wider than the box (it would be cut with an ellipsis). The type tiers of a block
+ * (`fitTier`) ask this to know whether a tier shows every word.
+ */
+export function linesNeeded(ctx: LayoutContext, text: string, s: ResolvedTextStyle, width: number): number {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (!clean) return 0
+  const w = Math.max(1, width)
+  const rc = withRealWidths(ctx)
+  const words = clean.split(' ')
+  if (words.some((x) => ellipsize(rc, x, s, w) !== x)) return Infinity
+  return rc.measureText(clean, s, w).lines.length
+}
+
+/**
+ * The first tier (largest type first) whose layout `fits`; the last tier when none does (it clips,
+ * as the block always did). Blocks whose box grows with the slide pick their type this way, so a
+ * timeline alone on a slide reads at slide size instead of keeping caption type in a large box.
+ */
+export function fitTier<T>(tiers: readonly T[], fits: (tier: T) => boolean): T {
+  for (const t of tiers) if (fits(t)) return t
+  return tiers[tiers.length - 1]
+}
+
 /** Stroke-only path (arcs, polylines) in absolute block coordinates. */
 export function strokePath(ctx: LayoutContext, d: string, part: string, color: string, width = 2): LayoutNode {
   return pathNode(ctx, d, part, { stroke: color, strokeWidth: width })

@@ -161,6 +161,11 @@ export function stampAmbient(shapes: ComponentShape[], style: MotionStyle | unde
 
 /** enhance L5: below this share of the content regions' area, a balanced slide's content floats. */
 export const GROW_BELOW = 0.5
+/**
+ * Review 2026-10-24: content that spans the width but paints under this share of the regions'
+ * height floats too (three 400-tall cards in a 750-tall region paint 53 % of the area).
+ */
+export const GROW_HEIGHT_BELOW = 0.6
 /** The text scales tried, largest first (≈ one type-scale step and halves of it). */
 export const GROW_STEPS: readonly number[] = [1.3, 1.2, 1.1]
 /** A grown slide's content may cover at most this share of the content regions' height. */
@@ -206,7 +211,9 @@ function growText(
   if (!area) return null
   const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
   const before = paintedContent(base, ids, tokens, registry, opts)
-  if (!before.ok || !before.box || before.box.width * before.box.height >= GROW_BELOW * area.width * area.height) return null
+  if (!before.ok || !before.box) return null
+  const floats = before.box.width * before.box.height < GROW_BELOW * area.width * area.height || before.box.height < GROW_HEIGHT_BELOW * area.height
+  if (!floats) return null
   for (const k of GROW_STEPS) {
     const scaled: SlideSpec = {
       ...spec,
@@ -223,6 +230,9 @@ function growText(
     const after = paintedContent(result, ids, tokens, registry, opts)
     if (!after.ok || !after.box || after.box.height > GROW_MAX_HEIGHT * area.height || after.box.width > area.width + FLOW_TOL) continue
     if (after.box.y < area.y - FLOW_TOL || after.box.y + after.box.height > area.y + area.height + FLOW_TOL) continue
+    // a block that sizes its own type to its box (a statement) can paint smaller under a scale:
+    // growing must grow
+    if (after.box.width * after.box.height <= before.box.width * before.box.height) continue
     for (const shape of result.shapes) {
       const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
       if (meta && typeof meta.id === 'string' && ids.has(meta.id)) meta.grown = k

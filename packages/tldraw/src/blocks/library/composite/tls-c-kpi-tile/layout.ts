@@ -42,6 +42,51 @@ function sparklinePath(data: number[], width: number, height: number): string {
   return points.join(' ')
 }
 
+type ValueToken = 'display' | 'title' | 'heading'
+type SmallToken = 'lead' | 'body' | 'caption'
+/** Value and label/delta sizes, largest first; the last is the compact tier every tile can take. */
+const TIERS: ReadonlyArray<{ value: ValueToken; small: SmallToken }> = [
+  { value: 'display', small: 'lead' },
+  { value: 'display', small: 'body' },
+  { value: 'title', small: 'lead' },
+  { value: 'title', small: 'body' },
+  { value: 'heading', small: 'body' },
+  { value: 'heading', small: 'caption' },
+]
+
+/**
+ * The index in `TIERS` of the largest type a tile with this `inner` box (padding removed) can take.
+ * AC2: a tile with the height for it shows the value at `display`; a KPI row in a tall region used
+ * to float a heading-size number in empty space. AC3 pre-item: a tile too narrow for the display
+ * number (four tiles in a row) but with the height takes the `title` step instead of dropping to
+ * the compact heading. 2026-10-24 review: the label grows to `lead` when the tile has the room, and
+ * keeps `body` beside a heading value (a narrow tile with a long value dropped its label to caption
+ * under an 80-px title). Exported for `tls.c.kpi-row` (one tier for the row).
+ */
+export function kpiTier(props: KpiTileProps, ctx: LayoutContext, inner: { width: number; height: number }): number {
+  const formattedValue = formatValue(props.value, props.format, { locale: ctx.tokens.locale })
+  const showDelta = isShown(props, 'showDelta') && props.delta != null
+  const tierHeight = (valueToken: ValueToken, smallToken: SmallToken): number => {
+    const small = ctx.resolveText(smallToken)
+    const value = ctx.resolveText(valueToken)
+    const labelH = isShown(props, 'showLabel') ? ctx.measureText(props.label ?? '', small, inner.width).height + ctx.tokens.space.xs : 0
+    // the gap under the value only paints when a delta follows (a content-sized row gives the tile
+    // exactly its painted height, and counting it dropped a tile that fits a step)
+    const valueH = ctx.measureText(formattedValue, value, inner.width).height + (showDelta ? ctx.tokens.space.xs : 0)
+    const deltaH = showDelta ? ctx.measureText('\u2191 +0', small, inner.width).height : 0
+    return labelH + valueH + deltaH
+  }
+  const i = TIERS.findIndex((t, k) => {
+    if (k === TIERS.length - 1) return true
+    if (inner.height + 0.5 < tierHeight(t.value, t.small)) return false
+    // a heading value too wide shrinks to fit below (it always did); the larger steps must fit as set
+    if (t.value !== 'heading' && realWidth(formattedValue, ctx.resolveText(t.value)) * 1.03 > inner.width) return false
+    // the label may wrap to two lines, never more
+    return !isShown(props, 'showLabel') || ctx.measureText(props.label ?? '', ctx.resolveText(t.small), inner.width).lines.length <= 2
+  })
+  return i < 0 ? TIERS.length - 1 : i
+}
+
 export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   const W = ctx.box.width
   const H = ctx.box.height
@@ -64,29 +109,11 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   const children: LayoutNode[] = []
   let y = inner.y
 
-  // AC2: a tile with the height for it shows the value at `display` (label and delta at `body`);
-  // a KPI row in a tall region used to float a heading-size number in empty space. Otherwise the
-  // compact tier (heading value, caption label/delta) as before.
   const formattedValue = formatValue(props.value, props.format, { locale: ctx.tokens.locale })
-  const showDelta = isShown(props, 'showDelta') && delta != null
-  const tierHeight = (valueToken: 'display' | 'title' | 'heading', smallToken: 'body' | 'caption'): number => {
-    const small = ctx.resolveText(smallToken)
-    const value = ctx.resolveText(valueToken)
-    const labelH = isShown(props, 'showLabel') ? ctx.measureText(props.label ?? '', small, inner.width).height + ctx.tokens.space.xs : 0
-    const valueH = ctx.measureText(formattedValue, value, inner.width).height + ctx.tokens.space.xs
-    const deltaH = showDelta ? ctx.measureText('\u2191 +0', small, inner.width).height : 0
-    return labelH + valueH + deltaH
-  }
-  const big =
-    inner.height + 0.5 >= tierHeight('display', 'body') &&
-    realWidth(formattedValue, ctx.resolveText('display')) * 1.03 <= inner.width
-  // AC3 pre-item: a tile too narrow for the display number (four tiles in a row) but with the height
-  // takes the `title` step instead of dropping to the compact heading.
-  const mid =
-    !big &&
-    inner.height + 0.5 >= tierHeight('title', 'body') &&
-    realWidth(formattedValue, ctx.resolveText('title')) * 1.03 <= inner.width
-  const smallToken = big || mid ? 'body' : 'caption'
+  // a kpi-row passes the smallest tier its tiles chose, so peers keep one value and one label size
+  const floor = typeof props.tierFloor === 'number' && Number.isFinite(props.tierFloor) ? Math.max(0, Math.min(TIERS.length - 1, Math.floor(props.tierFloor))) : 0
+  const tier = TIERS[Math.max(floor, kpiTier(props, ctx, inner))]
+  const smallToken = tier.small
 
 // --- label (top, muted) ---
   if (isShown(props, 'showLabel')) {
@@ -106,7 +133,7 @@ export function layout(props: KpiTileProps, ctx: LayoutContext): LayoutNode {
   // --- value (big number) ---
   // One line, shrunk (to 0.5) until the browser-true width fits the tile: a long value ("$1,234,567")
   // used to wrap or run out of a narrow tile (RV04).
-  let valueStyle = ctx.resolveText(big ? 'display' : mid ? 'title' : 'heading')
+  let valueStyle = ctx.resolveText(tier.value)
   for (let k = 0; k < 8 && realWidth(formattedValue, valueStyle) * 1.03 > inner.width && valueStyle.size > 0.5 * ctx.resolveText('heading').size; k++) {
     valueStyle = { ...valueStyle, size: valueStyle.size * 0.9 }
   }

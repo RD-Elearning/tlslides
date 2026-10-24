@@ -265,6 +265,14 @@ describe('tls.m.decoration — vivid V3 icon motif and V2 ambient loop', () => {
     expect(JSON.stringify(lay({ shape: 'icon', icon: 'atom' }))).not.toBe(JSON.stringify(lay({ shape: 'icon', icon: 'book' })))
   })
 
+  it('icon: a watermark-size glyph is faint whatever the opacity; a small one keeps ≥ 0.35 (review 2026-10-24)', () => {
+    for (const opacity of ['soft', 'medium', 'strong']) {
+      expect((lay({ shape: 'icon', icon: 'book', opacity }, 900, 700) as any).opacity).toBeLessThan(0.25)
+      expect((lay({ shape: 'icon', icon: 'book', opacity }, 160, 160) as any).opacity).toBeGreaterThanOrEqual(0.35)
+    }
+    expect((lay({ shape: 'icon', icon: 'book', opacity: 'soft' }, 900, 700) as any).opacity).toBeLessThan((lay({ shape: 'icon', icon: 'book', opacity: 'strong' }, 900, 700) as any).opacity)
+  })
+
   it('icon: an unknown name still draws a glyph (the fallback), never text', () => {
     const leaf = absoluteLeaves(lay({ shape: 'icon', icon: 'no-such-icon-zzz' }))[0].node as any
     expect(leaf.k).toBe('icon')

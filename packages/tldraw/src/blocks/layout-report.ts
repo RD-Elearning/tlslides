@@ -182,6 +182,9 @@ export interface BlockReport {
   /** The opacity the block's root paints at (absent = 1). A backdrop at 0.5 or more behind text
    *  reads as a picture on top of the words, not as a texture (`classifyOverlap`). */
   alpha?: number
+  /** A decoration drawn as strokes (an `icon` glyph): its ink is lines that cross the words, so it
+   *  occludes text from a lower opacity than a filled shape (`STRONG_LINE_BACKDROP_ALPHA`). */
+  lineInk?: boolean
   /** How far painted content leaves the box (0 = inside). */
   contentOverflow: { dx: number; dy: number }
   text: TextLeafReport[]
@@ -337,6 +340,8 @@ export interface OverlapParty {
   painted?: Box | null
   /** A `tls.m.decoration`'s root opacity (absent = none set); see `STRONG_BACKDROP_ALPHA`. */
   decorationAlpha?: number
+  /** The decoration is line ink (`BlockReport.lineInk`). */
+  decorationLineInk?: boolean
 }
 
 /** A `tls.m.decoration` backdrop painting at this opacity or more behind another block's text is
@@ -345,6 +350,9 @@ export interface OverlapParty {
  *  backdrops (a photo under a title) and a decoration in tone `alt` (no opacity: already quiet) are
  *  left alone. */
 export const STRONG_BACKDROP_ALPHA = 0.5
+/** The same for a decoration drawn in lines (an icon glyph): a 0.35 outline over a list of questions
+ *  crossed every line of it (2026-10-24 review, spro deck 4068f089 s10) and passed at 0.5. */
+export const STRONG_LINE_BACKDROP_ALPHA = 0.25
 
 /**
  * Classify a box ∩ box overlap by layer policy (layout-oracle §LO2). Text ∩ text across blocks
@@ -369,7 +377,7 @@ export function classifyOverlap(
     if (a.layer === 'backdrop' && b.layer === 'backdrop') {
       return { code: 'layout/overlap', severity: 'info', note: 'two backdrops overlap' }
     }
-    if (backdrop.z < other.z && (backdrop.decorationAlpha ?? 0) >= STRONG_BACKDROP_ALPHA) {
+    if (backdrop.z < other.z && (backdrop.decorationAlpha ?? 0) >= (backdrop.decorationLineInk ? STRONG_LINE_BACKDROP_ALPHA : STRONG_BACKDROP_ALPHA)) {
       const cover = backdrop.painted ? intersect(backdrop.painted, overlap) : overlap
       if (cover && other.text.some((t) => area(intersect(t, cover)) > MIN_TEXT_COLLISION)) {
         return { code: 'text/occluded', severity: 'error', note: `backdrop ${backdrop.id} paints strongly behind text of ${other.id}` }
@@ -633,6 +641,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       elastic: measure.elastic,
       painted,
       ...(rootAlpha(root) === undefined ? {} : { alpha: rootAlpha(root) }),
+      ...(p.block.type === 'tls.m.decoration' && (props as { shape?: unknown }).shape === 'icon' ? { lineInk: true } : {}),
       contentOverflow,
       text,
       ...(capacity ? { capacity } : {}),
@@ -1352,7 +1361,7 @@ function rootAlpha(root: LayoutNode | undefined): number | undefined {
 }
 
 function party(b: BlockReport): OverlapParty {
-  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted, ...(b.type === 'tls.m.decoration' && b.alpha !== undefined ? { decorationAlpha: b.alpha } : {}) }
+  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted, ...(b.type === 'tls.m.decoration' && b.alpha !== undefined ? { decorationAlpha: b.alpha, ...(b.lineInk ? { decorationLineInk: true } : {}) } : {}) }
 }
 
 /** The smaller of the two moves that separates `b` from `a` (down or sideways). */

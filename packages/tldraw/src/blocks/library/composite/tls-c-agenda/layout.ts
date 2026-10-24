@@ -52,6 +52,10 @@ const TIERS: ReadonlyArray<Tier> = [
   // structure (a table of contents), cards get `xl` padding.
   { title: 'heading', note: 'lead', index: 'subheading', gap: 'xl', roomy: true },
   { title: 'heading', note: 'body', index: 'body', gap: 'md' },
+  // 2026-10-24 review: a seven-item agenda in two columns fell from body notes straight to caption
+  // notes under subheading titles; the notes keep body size while the titles step down first
+  { title: 'subheading', note: 'body', index: 'body', gap: 'md' },
+  { title: 'lead', note: 'body', index: 'body', gap: 'sm' },
   { title: 'subheading', note: 'caption', index: 'caption', gap: 'md' },
   { title: 'lead', note: 'caption', index: 'caption', gap: 'sm' },
   { title: 'body', note: 'caption', index: 'caption', gap: 'sm' },

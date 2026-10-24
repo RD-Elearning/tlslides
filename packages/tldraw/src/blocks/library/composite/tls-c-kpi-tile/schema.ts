@@ -26,6 +26,9 @@ export interface KpiTileProps extends Record<string, unknown> {
   polarity?: 'upGood' | 'downGood'
   /** Number format hint for display. */
   format?: 'plain' | 'compact' | 'percent' | 'currency'
+  /** Internal, not in the schema: the smallest type tier (index) a `tls.c.kpi-row` gives its
+   *  tiles, so one row keeps one value size and one label size. */
+  tierFloor?: number
 }
 
 export const schema: BlockSchema = {
