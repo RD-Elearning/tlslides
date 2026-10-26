@@ -825,7 +825,14 @@ describe('AC4 fix — poster icons fill their box (SVG export)', () => {
       // a 24-unit Lucide glyph spans ~18–22 of its 24; unscaled it spanned ≤ 24 units of a 64+ box
       expect(Math.max(b.width, b.height)).toBeGreaterThan(0.6 * ic.box.width)
       expect(b.x + b.width).toBeLessThanOrEqual(ic.box.width + 1)
-      expect(ic.strokeWidth).toBeUndefined()
+      // creative CR7a: outlines are stroked (filled, the globe of the example drew as a dot)
+      expect(ic.strokeWidth).toBeGreaterThanOrEqual(1.5)
     }
+  })
+
+  it('the template strokes the glyph too (creative CR7a)', () => {
+    const html = template(tlsCFeatureGrid.describe!.example.props as any, makeTemplateCtx(ctx({ width: 1728, height: 600 })))
+    expect(html).toContain('fill="none" stroke=')
+    expect(html).not.toContain('stroke="none"')
   })
 })
