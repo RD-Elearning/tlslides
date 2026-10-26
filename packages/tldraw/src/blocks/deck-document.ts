@@ -24,6 +24,7 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
 import { resolveMaster } from './master-renderer'
+import { placeDeckMotifs } from './motif-zone'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -161,7 +162,9 @@ export function styleMasterPage(
  * onto `document.theme` — this is what lets the editor and `<DeckViewer>` resolve real tokens
  * and real colour roles instead of falling back to a colourless placeholder.
  */
-export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
+export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
+  // CR7a masters v2: under `motifZone: 'auto'` each cover/section page carries its signature motif
+  const spec = placeDeckMotifs(authored)
   const frame = resolveDeckFrame(spec.aspect)
   const theme = resolveDeckTheme(spec.theme, spec.style, deckSpecTokens(spec))
   // AC1: the style resolves under everything the spec authors (ai-curation §3.2).

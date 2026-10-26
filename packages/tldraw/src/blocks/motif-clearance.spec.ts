@@ -135,7 +135,10 @@ describe('motifZone auto', () => {
   it('a deck without motifZone is left as is, and the round trip keeps the zone', () => {
     const d = doodle()
     expect(placeDeckMotifs(d)).toBe(d)
-    const placed = placeDeckMotifs(doodle('auto'))
-    expect(documentToDeckSpec(deckSpecToDocument(placed).document).spec.motifZone).toBe('auto')
+    // the document places the motif itself; the round trip returns it as a free block, placed once
+    const back = documentToDeckSpec(deckSpecToDocument(doodle('auto')).document).spec
+    expect(back.motifZone).toBe('auto')
+    expect(back.slides[0].free!.filter((f) => f.block.id === 'deck-motif')).toHaveLength(1)
+    expect(placeDeckMotifs(back).slides[0].free!.filter((f) => f.block.id === 'deck-motif')).toHaveLength(1)
   })
 })
