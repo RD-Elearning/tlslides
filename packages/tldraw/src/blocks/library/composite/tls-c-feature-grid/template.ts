@@ -10,7 +10,7 @@
 
 import type { HtmlTemplateContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
-import { ICONS } from '../../../icons'
+import { ICONS, getIcon } from '../../../icons'
 import { posterText } from '../../../html-block'
 import { cardCssFromPoster } from '../_kit'
 
@@ -40,7 +40,7 @@ function solvedIconFill(poster: LayoutNode | undefined, i: number): string | und
  * Get icon path by name, with fallback to alert icon for unknown names.
  */
 function getIconPath(iconName: string): string {
-  const icon = ICONS[iconName]
+  const icon = getIcon(iconName)
   if (icon) return icon.path
   // Fallback to alert icon
   return ICONS['alert']?.path ?? ''

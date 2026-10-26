@@ -188,14 +188,24 @@ export const ICON_GROUPS: Record<string, string[]> = (() => {
  * Unknown names should be treated as a lint finding, never rendered as text.
  */
 export function getIcon(name: string): Icon | undefined {
-  return ICONS[name]
+  return ICONS[name] ?? ICONS[ICON_ALIASES[name]]
+}
+
+/** creative CR7a: the subject names a model writes for icons the set draws under another name
+ *  (an alias draws the same picture; an unknown name stays a lint finding). */
+export const ICON_ALIASES: Record<string, string> = {
+  earth: 'world', money: 'cash', coin: 'coins', currency: 'cash', bank: 'building-bank',
+  factory: 'building-factory', industry: 'building-factory', water: 'droplet', fire: 'flame', bicycle: 'bike',
+  idea: 'bulb', question: 'help-circle', chart: 'chart-bar', teacher: 'presentation', student: 'school',
+  classroom: 'chalkboard', paint: 'palette', justice: 'scale', law: 'scale', bot: 'robot',
+  'robot-face': 'robot', sprout: 'seedling', baby: 'baby-carriage',
 }
 
 /**
  * Check if an icon name is known.
  */
 export function hasIcon(name: string): boolean {
-  return name in ICONS
+  return getIcon(name) !== undefined
 }
 
 /**

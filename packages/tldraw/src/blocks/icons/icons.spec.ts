@@ -99,3 +99,17 @@ describe('icon set (P0.5)', () => {
     }
   })
 })
+
+describe('creative CR7a — subject names a model writes', () => {
+  it('robot is drawn, and common subject names resolve through the aliases', () => {
+    const { getIcon, hasIcon, ICON_ALIASES, ICONS } = require('./index')
+    expect(getIcon('robot')?.name).toBe('Robot')
+    for (const [alias, target] of Object.entries(ICON_ALIASES)) {
+      expect(ICONS[alias]).toBeUndefined() // an alias never shadows an icon of its own
+      expect(ICONS[target as string]).toBeDefined()
+      expect(getIcon(alias)).toBe(ICONS[target as string])
+    }
+    expect(hasIcon('earth')).toBe(true)
+    expect(getIcon('xyzzy')).toBeUndefined()
+  })
+})
