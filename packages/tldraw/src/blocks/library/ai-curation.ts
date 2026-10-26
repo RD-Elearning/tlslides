@@ -17,12 +17,18 @@
  * - `looks` names are `option` slots of kind `enum` or `boolean` in the block's schema.
  */
 
-import type { BlockDefinition } from '../types'
+import type { BlockDefinition, BlockFits, VariantPreset } from '../types'
+import { BLOCK_FITS, EDITOR_ONLY } from './block-fits'
+import { BLOCK_VARIANTS } from './block-variants'
 
 export interface AiCuration {
   aiTier: 1 | 2
   absorbs?: string[]
   looks?: string[]
+  /** spro creative CR2 (rows in `block-fits.ts` and `block-variants.ts`). */
+  fits?: BlockFits
+  variants?: VariantPreset[]
+  editorOnly?: boolean
 }
 
 const t1 = (looks: string[] = [], absorbs: string[] = []): AiCuration => ({
@@ -248,6 +254,11 @@ export function applyAiCuration(defs: BlockDefinition[]): BlockDefinition[] {
     def.aiTier = row.aiTier
     if (row.absorbs) def.absorbs = [...row.absorbs]
     if (row.looks) def.looks = [...row.looks]
+    const fits = row.fits ?? BLOCK_FITS[def.type]
+    if (fits) def.fits = fits
+    const variants = row.variants ?? BLOCK_VARIANTS[def.type]
+    if (variants) def.variants = variants
+    if (row.editorOnly ?? EDITOR_ONLY.has(def.type)) def.editorOnly = true
   }
   return defs
 }

@@ -85,17 +85,24 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
         const start = km.lineCount > 1 ? x0 + keyW : keyEnd
         const dotW = Math.max(1, ctx.measureText(LEADER_GLYPH, keyStyle).width)
         const room = firstValX - start - sp.xs * 2
-        const count = Math.floor(room / (dotW * 1.6))
+        let count = Math.floor(room / (dotW * 1.6))
+        const leaderStyle = { ...keyStyle, color: lineColor }
+        const dots = (n: number) => Array.from({ length: n }, () => LEADER_GLYPH).join(' ')
+        let lm = ctx.measureText(dots(Math.max(count, 0)), leaderStyle, undefined)
+        // the estimate (dot + space ≈ 1.6 dots) runs long in some fonts: trim to what fits
+        // (spro creative CR2 variants spec: 16 units past the frame in all four styles)
+        while (count >= 3 && lm.width > room) {
+          count = Math.floor((count * room) / lm.width) - (lm.width > room ? 1 : 0)
+          lm = ctx.measureText(dots(Math.max(count, 0)), leaderStyle, undefined)
+        }
         if (count >= 3 && vm.lineCount === 1) {
-          const text = Array.from({ length: count }, () => LEADER_GLYPH).join(' ')
-          const lm = ctx.measureText(text, { ...keyStyle, color: lineColor }, undefined)
           const w = Math.min(room, lm.width)
           nodes.push({
             k: 'text',
             part: `leader[${i}]`,
             box: { x: start + sp.xs, y, width: w + 1, height: lm.height },
             lines: lm.lines,
-            style: { ...keyStyle, color: lineColor },
+            style: leaderStyle,
           })
         }
       }

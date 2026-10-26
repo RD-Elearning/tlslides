@@ -232,6 +232,60 @@ export type BlockCategory =
   | 'cover' | 'divider' | 'agenda' | 'closing' | 'learning'
   | 'chrome' | 'decoration'
 
+/** spro creative CR2 — what a slide's content *is* (the outline's relations, PLAN §7.3): the 16
+ *  shapes plus the finer kinds a block can show. */
+export type Relation =
+  | 'definition' | 'terms' | 'hierarchy' | 'sequence' | 'cycle' | 'contrast' | 'matrix' | 'formula'
+  | 'code' | 'worked-example' | 'number' | 'quote' | 'question' | 'image-led' | 'statement' | 'recap'
+  | 'series' | 'share' | 'ranking' | 'timeline' | 'cause-effect' | 'network' | 'people' | 'story'
+  | 'action' | 'group'
+export const RELATIONS: readonly Relation[] = [
+  'definition', 'terms', 'hierarchy', 'sequence', 'cycle', 'contrast', 'matrix', 'formula',
+  'code', 'worked-example', 'number', 'quote', 'question', 'image-led', 'statement', 'recap',
+  'series', 'share', 'ranking', 'timeline', 'cause-effect', 'network', 'people', 'story',
+  'action', 'group',
+]
+/** The look families of spro's dialog (`app/decks/looks.py`). */
+export type LookFamily = 'playful' | 'classroom' | 'academic' | 'professional' | 'elegant' | 'modern'
+export const LOOK_FAMILIES: readonly LookFamily[] = ['playful', 'classroom', 'academic', 'professional', 'elegant', 'modern']
+/** The frame slides a block can carry. */
+export type FrameRole = 'cover' | 'agenda' | 'divider' | 'summary' | 'qa' | 'closing'
+export const FRAME_ROLES: readonly FrameRole[] = ['cover', 'agenda', 'divider', 'summary', 'qa', 'closing']
+export type FitsTextLoad = 'labels' | 'lines' | 'paragraphs'
+export type FitsData = 'none' | 'single' | 'share' | 'series' | 'table'
+export type FitsEnergy = 'calm' | 'neutral' | 'lively'
+export const FITS_TEXT_LOADS: readonly FitsTextLoad[] = ['labels', 'lines', 'paragraphs']
+export const FITS_DATA: readonly FitsData[] = ['none', 'single', 'share', 'series', 'table']
+export const FITS_ENERGY: readonly FitsEnergy[] = ['calm', 'neutral', 'lively']
+
+/** spro creative CR2 — a block's capability card (PLAN §6.1). */
+export interface BlockFits {
+  /** What it can show, best first (empty: decoration, never a main block). */
+  relations: Relation[]
+  /** The item count it shows well (not the schema maximum). */
+  items?: [number, number]
+  textLoad: FitsTextLoad
+  /** The data it draws; absent = none. */
+  data?: FitsData
+  energy: FitsEnergy
+  /** Look families it suits (absent = all). */
+  families?: LookFamily[]
+  /** Frame roles it can carry. */
+  frames?: FrameRole[]
+  /** Design moves it can carry as the main block (`moves.ts`). */
+  moves?: string[]
+  /** What it cannot do without (the picker's asset needs). */
+  needs?: Array<'images' | 'logos' | 'portraits' | 'chartData' | 'prices'>
+}
+
+/** spro creative CR2 — a named preset over a block's look knobs (PLAN §6.2). */
+export interface VariantPreset {
+  id: string
+  /** One line: when this preset reads best. */
+  when: string
+  knobs: Record<string, string | boolean>
+}
+
 /** Placement scope: element = atom, group = self-contained unit for one region, slide = fills the content area (never nest). */
 export type BlockScope = 'element' | 'group' | 'slide'
 
@@ -395,6 +449,13 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   /** AC0 — the look knobs: `enum`/`boolean` option slot names whose values change the look, not
    *  the content, in the order an LLM should try them. */
   looks?: string[]
+  /** spro creative CR2 — the capability card: what the block can show, and how. Filled for every
+   *  AI-eligible built-in from `library/block-fits.ts`; read by `shortlist.ts`. */
+  fits?: BlockFits
+  /** spro creative CR2 — named presets over the block's own `looks` knobs (2–6). */
+  variants?: VariantPreset[]
+  /** spro creative CR2 — containers, editing aids and page chrome: never a slide's main block. */
+  editorOnly?: boolean
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide
