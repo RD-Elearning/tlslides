@@ -27,6 +27,8 @@ const HEAD = 12
 const EDGE_W = 2.5
 const CURVE = 36
 const MAX_LABEL_W = 110
+/** Most lines a node label wraps to. */
+const MAX_LINES = 4
 
 interface Solved {
   graph: Graph
@@ -59,9 +61,15 @@ function solve(props: FlowProps, ctx: LayoutContext, W: number, H: number): Solv
   const k = Math.max(1, ctx.resolveText('caption').size / Math.max(1, ctx.tokens.type.caption.size))
   let nodeSize: Size
   if (dir === 'LR') {
+    const width = clamp((box.width - (layerCount - 1) * gap) / layerCount, 90, 200 * k)
+    // creative CR7a: a narrow node in a tall region grows to the lines its longest label needs (up
+    // to MAX_LINES) instead of cutting it at 96 units
+    const room = box.height / widest - 24
+    const labelS = style(ctx, 'caption', '#000')
+    const need = Math.max(0, ...graph.nodes.map((n) => linesHeight(ctx, n.label, labelS, Math.max(8, width - 20), MAX_LINES) + 16))
     nodeSize = {
-      width: clamp((box.width - (layerCount - 1) * gap) / layerCount, 90, 200 * k),
-      height: clamp(box.height / widest - 24, hasDecision ? 60 : 40, 96 * k),
+      width,
+      height: clamp(room, hasDecision ? 60 : 40, Math.max(96 * k, Math.min(need, room))),
     }
   } else {
     nodeSize = {
@@ -141,7 +149,7 @@ function layoutAt(props: FlowProps, ctx: LayoutContext): LayoutNode {
       })
     }
     const tw = Math.max(8, n.kind === 'decision' ? b.width * 0.58 : b.width - 20 - (n.kind === 'step' ? 0 : b.height * 0.3))
-    const maxLines = Math.max(1, Math.min(3, Math.floor((n.kind === 'decision' ? b.height * 0.56 : b.height - 8) / lineH(labelS))))
+    const maxLines = Math.max(1, Math.min(MAX_LINES, Math.floor((n.kind === 'decision' ? b.height * 0.56 : b.height - 8) / lineH(labelS))))
     const th = linesHeight(ctx, n.label, labelS, tw, maxLines)
     kids.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x: b.x + (b.width - tw) / 2, y: b.y + Math.max(0, (b.height - th) / 2), width: tw }, 'center', maxLines, `${part}.label`).nodes)
   }

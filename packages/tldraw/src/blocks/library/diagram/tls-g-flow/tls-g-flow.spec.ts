@@ -170,3 +170,21 @@ describe('tls.g.flow example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGFlow))
   it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGFlow))
 })
+
+describe('creative CR7a — six LR steps in a tall region', () => {
+  const labels = ['Xác định bài toán', 'Thu thập và làm sạch dữ liệu', 'Chia dữ liệu 70/15/15', 'Huấn luyện và so sánh mô hình', 'Đánh giá trên tập kiểm tra', 'Triển khai và theo dõi']
+  const props = {
+    direction: 'LR',
+    nodes: labels.map((label, i) => ({ id: `n${i}`, label, kind: i === 0 ? 'start' : i === labels.length - 1 ? 'end' : 'step' })),
+    edges: labels.slice(1).map((_, i) => ({ from: `n${i}`, to: `n${i + 1}` })),
+  }
+  it('shows every label whole, in nodes taller than the old 96-unit cap', () => {
+    const { showsWhole } = require('../_kit')
+    const ctx = chartCtx({ width: 1520, height: 700 })
+    const node = layoutOf(tlsGFlow, props, { width: 1520, height: 700 })
+    expect(showsWhole(ctx, node)).toBe(true)
+    const rects = rectsOf(node, /^node\[\d+\]$/)
+    expect(rects.length).toBe(6)
+    expect(Math.max(...rects.map((r) => r.height))).toBeGreaterThan(96)
+  })
+})
