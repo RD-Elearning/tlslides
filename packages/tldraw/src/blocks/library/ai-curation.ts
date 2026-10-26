@@ -20,6 +20,7 @@
 import type { BlockDefinition, BlockFits, VariantPreset } from '../types'
 import { BLOCK_FITS, EDITOR_ONLY } from './block-fits'
 import { BLOCK_VARIANTS } from './block-variants'
+import { movesOfBlock } from '../moves'
 
 export interface AiCuration {
   aiTier: 1 | 2
@@ -255,7 +256,10 @@ export function applyAiCuration(defs: BlockDefinition[]): BlockDefinition[] {
     if (row.absorbs) def.absorbs = [...row.absorbs]
     if (row.looks) def.looks = [...row.looks]
     const fits = row.fits ?? BLOCK_FITS[def.type]
-    if (fits) def.fits = fits
+    if (fits) {
+      const moves = movesOfBlock(def.type)
+      def.fits = moves.length ? { ...fits, moves } : fits
+    }
     const variants = row.variants ?? BLOCK_VARIANTS[def.type]
     if (variants) def.variants = variants
     if (row.editorOnly ?? EDITOR_ONLY.has(def.type)) def.editorOnly = true

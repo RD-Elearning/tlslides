@@ -12,6 +12,7 @@
  */
 import { capabilityDigest } from './capability-digest'
 import { iconGroupOf, iconsFor } from './icons/search'
+import { DESIGN_MOVES } from './moves'
 import type { BlockRegistry } from './registry'
 import type { DeckStyle, StyleConcept } from './types'
 import { defaultBlockRegistry } from './validate-deck-spec'
@@ -188,7 +189,12 @@ export function iconCard(text?: string): string {
 }
 
 export interface ComposeKitOptions {
-  shape: SlideShape
+  /** v2: the shape whose families are detailed. */
+  shape?: SlideShape
+  /** creative CR2 (v3): exactly these block types are detailed (the brief's main and support). */
+  types?: readonly string[]
+  /** creative CR2: the deck's look range and defaults (ignored until the look axes, CR7b). */
+  look?: Record<string, unknown>
   style: DeckStyle
   /** Extra block types to include (e.g. the families of another shape for a recompose). */
   extra?: readonly string[]
@@ -203,7 +209,11 @@ export interface ComposeKit {
   markdown: string
   /** The block types whose detail is included, in order. */
   types: string[]
-  shape: SlideShape
+  shape?: SlideShape
+  /** creative CR2: the variant preset ids of each detailed type. */
+  variants?: Record<string, string[]>
+  /** creative CR2: the layouts of the moves the detailed main block can carry. */
+  layouts?: string[]
 }
 
 /** The prompt section for composing one slide of `shape` in `style`. */
@@ -211,7 +221,8 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   const reg = registry ?? defaultBlockRegistry()
   const budget = opts.budget ?? 9000
   const avoid = new Set(opts.style.avoid)
-  const wanted = [...SHAPE_FAMILIES[opts.shape], ...(opts.extra ?? []), 'tls.t.takeaway']
+  if (opts.types) return typesKit(opts, reg)
+  const wanted = [...SHAPE_FAMILIES[opts.shape ?? 'definition'], ...(opts.extra ?? []), 'tls.t.takeaway']
   const types: string[] = []
   let detail = ''
   for (const t of [...new Set(wanted)]) {
@@ -225,4 +236,26 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   detail = detail.replace(/^Valid icon names:.*$/m, '').trim()
   const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
   return { markdown, types, shape: opts.shape }
+}
+
+/** creative CR2: the kit for exactly `types` (the brief's blocks): their full detail, their variant
+ *  presets, and the layouts of the moves the first (main) type carries. No budget: a brief names
+ *  one to three blocks. */
+function typesKit(opts: ComposeKitOptions, reg: BlockRegistry): ComposeKit {
+  const avoid = new Set(opts.style.avoid)
+  const types = [...new Set(opts.types)].filter((t) => !avoid.has(t) && reg.get(t))
+  const detail = types.length ? capabilityDigest(reg, { types }).replace(/^Valid icon names:.*$/m, '').trim() : ''
+  const variants: Record<string, string[]> = {}
+  const lines: string[] = []
+  for (const t of types) {
+    const vs = reg.get(t)!.variants ?? []
+    if (!vs.length) continue
+    variants[t] = vs.map((v) => v.id)
+    lines.push(`- \`${t}\`: ${vs.map((v) => `\`${v.id}\` (${v.when}: ${Object.entries(v.knobs).map(([k, x]) => `${k}=${String(x)}`).join(', ')})`).join('; ')}`)
+  }
+  const main = types[0]
+  const layouts = [...new Set(DESIGN_MOVES.filter((m) => main && m.main.includes(main)).flatMap((m) => m.layouts))]
+  const variantCard = lines.length ? ['## Variants (set the knobs of the one the brief names)', ...lines].join('\n') : ''
+  const markdown = [composeCard(), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
+  return { markdown, types, variants, layouts }
 }

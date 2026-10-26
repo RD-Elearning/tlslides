@@ -934,3 +934,22 @@ const WORKED_EXAMPLE_SLIDE = {
   },
   notes: 'Land on the 61 — this is the hinge slide.',
 }
+
+/** spro creative CR2 — the compact capability card of one block, for the director's catalog
+ *  (`GET /catalog/cards`): type, one line, what it shows, how many items, text load, data, energy,
+ *  variants by name, frames. */
+export function cardText(def: BlockDefinition): string {
+  const f = def.fits
+  const parts = [`\`${def.type}\` ${def.shortDescription ?? def.summary}`]
+  if (f) {
+    if (f.relations.length) parts.push(`shows ${f.relations.join('/')}`)
+    if (f.items) parts.push(`${f.items[0]}–${f.items[1]} items`)
+    parts.push(f.textLoad, f.energy)
+    if (f.data && f.data !== 'none') parts.push(`data: ${f.data}`)
+    if (f.frames?.length) parts.push(`frames: ${f.frames.join('/')}`)
+    if (f.needs?.length) parts.push(`needs ${f.needs.join('/')}`)
+    if (f.families?.length) parts.push(`suits ${f.families.join('/')}`)
+  }
+  if (def.variants?.length) parts.push(`variants: ${def.variants.map((v) => v.id).join(', ')}`)
+  return parts.join(' · ')
+}

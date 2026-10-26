@@ -173,7 +173,7 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
 
   // ── people ──
   'tls.c.profile-card': f(['people'], null, 'paragraphs', 'calm', { needs: ['portraits'] }),
-  'tls.c.team': f(['people', 'group'], [2, 8], 'labels', 'neutral'),
+  'tls.c.team': f(['people', 'group'], [2, 8], 'lines', 'neutral'),
   'tls.c.testimonial': f(['quote', 'people'], null, 'lines', 'calm'),
   'tls.m.avatar': f(['people'], null, 'labels', 'calm', { needs: ['portraits'] }),
   'tls.m.avatar-group': f(['people'], [3, 8], 'labels', 'neutral', { needs: ['portraits'] }),
