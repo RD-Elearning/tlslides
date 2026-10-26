@@ -221,6 +221,8 @@ export {
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
 export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, geometryProblems, slideProblems } from './pipeline/quality'
+export type { GateProfile } from './pipeline/quality'
+export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID } from './motif-zone'
 // CS0 — content stress + design capacity (`reviews/blocks/content-stress/README.md`).
 export { STRESS_LEVELS, STRESS_TEXT, stressSlide, soloDeck, soloProblems, designCapacity, runContentStress, plainText } from './pipeline/contentStress'
 export type { StressLevel, StressLang, StressCase, StressRow, DesignCapacity, ListCapacity } from './pipeline/contentStress'

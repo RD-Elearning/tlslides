@@ -130,10 +130,12 @@ export function styleMasterPage(
   frame: { width: number; height: number },
   tokens: ResolvedTokens,
   /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
-  motif?: string
+  motif?: string,
+  /** CR7a: the deck's `motifZone` (`auto`: the page carries the signature motif, not the master). */
+  zone?: DeckSpec['motifZone']
 ): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
   const masterId = styleMasterFor(style, slideSpec)
-  const master = masterId ? styleMasters(style, motif).find((m) => m.name === masterId) : undefined
+  const master = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
   if (!masterId || !master) return { shapes: [] }
   const shapes: ComponentShape[] = []
   // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
@@ -165,7 +167,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
   const style = getDeckStyle(spec.style)
   const tokens = resolveTokens(theme, deckSpecTokens(spec))
-  const masterList = styleMasters(style, spec.motif)
+  const masterList = styleMasters(style, spec.motif, spec.motifZone)
   const motionStyle = spec.motionStyle ?? style?.motionStyle
   const findings: CompileFinding[] = []
 
@@ -184,7 +186,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif)
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone)
     // vivid V3: the master's motifs (a corner sparkle, a doodle) loop with the slide's motion style
     stampAmbient(sm.shapes, effectiveMotionStyle(slideSpec.motionStyle, motionStyle), registry)
     findings.push(...result.findings)
@@ -243,6 +245,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
   if (style) document.styleId = style.id
   if (spec.motif !== undefined) document.motif = spec.motif
+  if (spec.motifZone !== undefined) document.motifZone = spec.motifZone
   if (spec.ambient !== undefined) document.ambient = spec.ambient
 
   return { document, findings }

@@ -133,14 +133,33 @@ export function documentDeckTokens(doc: Pick<TDDocument, 'styleId' | 'tokens'>):
 }
 
 /** Style masters under their reserved names (`style:cover`, …). */
-export function styleMasters(style: DeckStyle | undefined, motif?: string): MasterSpec[] {
+export function styleMasters(style: DeckStyle | undefined, motif?: string, zone?: DeckSpec['motifZone']): MasterSpec[] {
   if (!style) return []
   const swap = deckMotif(style, motif)
   return style.masters.map((m) => {
     const copy: MasterSpec = { ...JSON.parse(JSON.stringify(m)), name: STYLE_MASTER_PREFIX + m.name }
     if (swap && copy.signature && copy.blocks[copy.signature]) copy.blocks[copy.signature] = withShape(copy.blocks[copy.signature], swap)
+    // CR7a masters v2: under `motifZone: 'auto'` the page places the signature (`placeDeckMotifs`),
+    // and a content page keeps only its furniture (paper, rules, bands): its ornaments come from
+    // the slide's own decoration
+    if (zone === 'auto' && copy.signature) delete copy.blocks[copy.signature]
+    if (zone === 'auto' && m.name === 'content') {
+      for (const [k, b] of Object.entries(copy.blocks)) if (ORNAMENTS.has(placedType(b))) delete copy.blocks[k]
+    }
     return copy
   })
+}
+
+const ORNAMENTS = new Set(['tls.m.decoration', 'tls.m.icon-cluster'])
+
+/** The type of the block a master entry places through its splits (`_place.ts`). */
+function placedType(block: BlockSpec): string {
+  let b: BlockSpec | undefined = block
+  while (b && b.type === 'tls.l.split') {
+    const kids: BlockSpec[] = ((b.props as { children?: BlockSpec[] }).children) ?? []
+    b = kids.find((c) => c.type !== 'tls.l.spacer')
+  }
+  return b?.type ?? ''
 }
 
 /** enhance F1: the subject doodle a deck's `motif` names, when its style draws subjects. */

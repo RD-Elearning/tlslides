@@ -190,6 +190,8 @@ export interface TDDocument {
   // enhance F1 — the deck's `DeckSpec.motif` (a subject doodle), carried for the masters and the
   // round trip.
   motif?: string
+  // CR7a — the deck's `DeckSpec.motifZone`, carried so the masters drop the signature motif.
+  motifZone?: 'fixed' | 'auto'
   // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
   ambient?: boolean
 }

@@ -1368,6 +1368,11 @@ export interface DeckSpec {
    *  `SUBJECT_SHAPES`). A style whose concept has `subjects` draws it in place of its masters'
    *  `signature` motif on the cover and section pages; other styles ignore it. */
   motif?: string
+  /** spro creative PLAN §6.7 (CR7a) — masters v2: `auto` takes the signature motif off the cover
+   *  and section masters and places it on each such page at the corner farthest from its text
+   *  (`placeDeckMotifs`, which the host runs before rendering). Absent / `fixed` = the master's
+   *  own position. */
+  motifZone?: 'fixed' | 'auto'
   /** V5 (spro vivid PLAN.md) — `false` keeps the deck's blocks still once they have entered (no
    *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
    *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */

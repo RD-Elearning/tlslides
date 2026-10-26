@@ -948,7 +948,7 @@ export function analyzeDeck(
   const blockDefaults = style?.blockDefaults
   // AC4: a style master's blocks (mesh, grain, motifs) are on every page it applies to
   // (`deckSpecToDocument`); the report sees them as free backdrop blocks under the slide's flow.
-  const masters = Object.fromEntries(styleMasters(style, deck.motif).map((m) => [m.name, m]))
+  const masters = Object.fromEntries(styleMasters(style, deck.motif, deck.motifZone).map((m) => [m.name, m]))
   const withMaster = (s: SlideSpec): SlideSpec => {
     const id = styleMasterFor(style, s)
     const master = id ? masters[id] : undefined

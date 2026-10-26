@@ -200,7 +200,7 @@ export class Deck {
     // AC4: the style master of this slide (as `deckSpecToDocument` adds it): its background when
     // the spec sets none and its blocks (mesh, grain, motifs) as locked `style:` shapes
     // under the content.
-    const sm = styleMasterPage(deckStyle, spec, slideId, frame, tokens, this.app.document.motif)
+    const sm = styleMasterPage(deckStyle, spec, slideId, frame, tokens, this.app.document.motif, this.app.document.motifZone)
     stampAmbient(sm.shapes, effectiveMotionStyle(spec.motionStyle, this.app.document.motionStyle ?? deckStyle?.motionStyle), registry)
 
     // 5. Apply page-level metadata.
