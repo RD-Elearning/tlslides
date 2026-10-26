@@ -14,6 +14,8 @@ import { TAGS_MAX_ITEMS } from './schema'
 import { asArray, str } from '../_engine/rich'
 import { onColor, readableOn, tintOf } from '../_engine/color'
 import { withRealWidths } from '../../data/_chart/kit'
+import { growStep } from '../_engine/grow'
+import { promoteType } from '../../diagram/_kit'
 
 const SIZE_TOKEN: Record<string, TypeToken> = { sm: 'caption', md: 'body', lg: 'lead' }
 
@@ -104,7 +106,14 @@ function compute(props: TagsProps, ctx0: LayoutContext, width: number) {
   return { nodes, height: Math.max(0, y - rowGap), rows: rows.length, count: items.length, size }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: TagsProps, ctx: LayoutContext): LayoutNode {
+  // the step is the one the largest size takes, so sm < md < lg holds in any box; no tag wraps
+  const n = growStep(ctx, (c) => layoutAuthored({ ...props, size: 'lg' }, c), { keepLines: () => true })
+  return layoutAuthored(props, n ? promoteType(ctx, n) : ctx)
+}
+
+function layoutAuthored(props: TagsProps, ctx: LayoutContext): LayoutNode {
   const width = Math.max(1, ctx.box.width)
   const r = compute(props, ctx, width)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height: r.height }, children: r.nodes }

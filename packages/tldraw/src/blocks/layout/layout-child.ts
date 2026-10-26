@@ -322,6 +322,7 @@ export function createLayoutContext(
     ...(options.tokens.locale !== undefined ? { locale: options.tokens.locale } : {}),
     ...(options.tokens.textScale !== undefined ? { textScale: options.tokens.textScale } : {}),
     ...(options.tokens.typeStep !== undefined ? { typeStep: options.tokens.typeStep } : {}),
+    ...(options.tokens.measuring ? { measuring: true } : {}),
   }
 
   const surface: SurfaceContext = { ...options.surface }
@@ -636,6 +637,8 @@ export function measureIntrinsicSize(
   ctx = createLayoutContext({
     ...outer,
     box: { width: outer.box.width, height: outer.box.height },
+    // CR7a: a measured list keeps its authored type (`growText`)
+    tokens: outer.tokens.measuring ? outer.tokens : { ...outer.tokens, measuring: true },
     registry,
     style: childStyle,
     ...nestOptions(outer),

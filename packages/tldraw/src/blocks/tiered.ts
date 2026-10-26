@@ -18,4 +18,11 @@ export const TIERED_BLOCK_TYPES: ReadonlySet<string> = new Set([
   'tls.c.agenda',
   'tls.c.kpi-row',
   'tls.c.kpi-tile',
+  'tls.t.bullets',
+  'tls.t.checklist',
+  'tls.t.kv-list',
+  'tls.t.qa',
+  'tls.t.numbered',
+  'tls.t.tags',
+  'tls.m.icon-list',
 ])

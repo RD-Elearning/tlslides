@@ -14,6 +14,7 @@ import { NUMBERED_MAX_ITEMS } from './schema'
 import { layoutMarkerRows, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, toAlpha, toMeasurable, toRoman } from '../_engine/rich'
 import { onColor } from '../_engine/color'
+import { growText } from '../_engine/grow'
 
 export function markerLabel(style: unknown, n: number): string {
   switch (style) {
@@ -98,7 +99,12 @@ function compute(props: NumberedProps, ctx: LayoutContext, width: number) {
   return { rows, items, columns, textStyle }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: NumberedProps, ctx: LayoutContext): LayoutNode {
+  return growText(ctx, (c) => layoutAuthored(props, c))
+}
+
+function layoutAuthored(props: NumberedProps, ctx: LayoutContext): LayoutNode {
   const { rows } = compute(props, ctx, ctx.box.width)
   return {
     k: 'group',

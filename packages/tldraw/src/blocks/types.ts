@@ -1037,6 +1037,9 @@ export interface ResolvedTokens {
   textScale?: number
   /** The `style.typeStep` in force (absent = 0): nested contexts keep it, as they keep `textScale`. */
   typeStep?: number
+  /** CR7a: set on an intrinsic measure (`measureIntrinsicSize`): list text keeps its authored type
+   *  there (`growText`), so a container sizes it as authored and grows it only in the room it gives. */
+  measuring?: boolean
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */

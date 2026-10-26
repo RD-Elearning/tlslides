@@ -17,6 +17,7 @@ import { placeText } from '../_engine/text-place'
 import { splitCounts, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, str } from '../_engine/rich'
 import { withRealWidths } from '../../data/_chart/kit'
+import { growText } from '../_engine/grow'
 
 const LEADER_GLYPH = '·'
 
@@ -125,7 +126,13 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
   return { nodes, height, lines, items, columns, lineH, wrappedKeys }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: KvListProps, ctx: LayoutContext): LayoutNode {
+  // a key that fits on one line stays on one line
+  return growText(ctx, (c) => layoutAuthored(props, c), { keepLines: (p) => p.startsWith('key[') })
+}
+
+function layoutAuthored(props: KvListProps, ctx: LayoutContext): LayoutNode {
   const width = Math.max(1, ctx.box.width)
   const r = compute(props, ctx, width)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height: r.height }, children: r.nodes }
