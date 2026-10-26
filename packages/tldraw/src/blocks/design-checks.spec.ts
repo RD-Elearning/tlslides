@@ -81,6 +81,13 @@ describe('CMP2 design checks: positive and negative cases', () => {
     expect(codes(r, 'contrast/low')).toHaveLength(0)
   })
 
+  it('contrast/low: a motif inside a container is decoration too (creative CR7a)', () => {
+    const icons = { id: 'd', type: 'tls.m.icon-cluster', props: { icons: ['book-2', 'school', 'pencil', 'bulb'], tone: 'mixed', opacity: 'strong' } } as BlockSpec
+    const deck = { style: 'doodle', theme: 'doodle-paper' } as Partial<DeckSpec>
+    const r = report(blank('s', [row('r', [card('c', [T('t', 'Cây cần gì', { size: 'heading' }), B('b', 'Nước và ánh sáng.')]), icons])]), { deck })
+    expect(codes(r, 'contrast/low').filter((f) => f.message.includes('icon'))).toHaveLength(0)
+  })
+
   it('layout/misaligned: one peer title wraps; equal titles do not', () => {
     // CMP4: peer cards of one structure share their children's tracks (`peer-tracks.ts`), so the
     // engine itself aligns them; a peer of another structure (an extra child) still drifts.

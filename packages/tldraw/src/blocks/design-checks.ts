@@ -384,6 +384,9 @@ function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[])
     const worst = new Map<string, { ink: InkLeaf; ratio: number; floor: number; color: string; bg: string; unknown: boolean; count: number }>()
     for (const ink of b.inspection.inks) {
       if (ink.alpha < DESIGN_THRESHOLDS.decorativeAlpha) continue
+      // creative CR7a: a motif nested in a container is decoration wherever it sits
+      const owner = ownerOf(b, ink.owner).sub
+      if (owner && MOTIF_BLOCKS.has(owner.type)) continue
       const floor = floorOf(ink)
       const c = inkContrast(ink, all, ctx.background, off + ink.below)
       if (!c) continue
