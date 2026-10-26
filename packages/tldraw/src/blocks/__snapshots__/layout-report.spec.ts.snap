@@ -7,10 +7,10 @@ blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to it
 A b_03_title tls.t.title @title 96,96 1728x76 nat 834x74 | text 1L×74 ~58c/L
 B b_03_bar tls.d.bar @left 96,252 840x732 fill | 12 text leaves 12L, longest title 1L×53 ~36c/L
 C b_03_take tls.t.takeaway @right 984,252 840x130 nat 840x130 | label 1L×31 ~78c/L, text 1L×39 ~56c/L
-D b_03_bullets tls.t.bullets @right 984,406 840x303 nat 799x301 | 6 text leaves 8L, longest items.0.text 2L×53 ~36c/L
-E b_03_cap tls.t.caption @right 984,733 840x33 nat 286x31 | text 1L×31 ~88c/L
+D b_03_bullets tls.t.bullets @right 984,406 840x161 nat 645x159 | 6 text leaves 6L, longest items.0.text 1L×41 ~59c/L
+E b_03_cap tls.t.caption @right 984,591 840x33 nat 286x31 | text 1L×31 ~88c/L
 findings: none
-margins t96 r137 b98 l96 | free 50%
+margins t96 r234 b98 l96 | free 58%
 screenshot: not needed
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free
 ................................................
@@ -23,15 +23,15 @@ map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overl
 ..BBBBBBBBBBBBBBBBBBBBB..CCCCCCCCCCCCCCCCCcccc..
 ..BBBBBBBBBBBBBBBBBBBBB..CCCCCCCCCCCCCCCCCcccc..
 ..BBBBBBBBBBBBBBBBBBBBB..ccccccccccccccccccccc..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
-..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDDDDDd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDddddd..
+..BBBBBBBBBBBBBBBBBBBBB..DDDDDDDDDDDDDDDDddddd..
+..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB..EEEEEEEeeeeeeeeeeeeee..
+..BBBBBBBBBBBBBBBBBBBBB.........................
+..BBBBBBBBBBBBBBBBBBBBB.........................
+..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................
 ..BBBBBBBBBBBBBBBBBBBBB.........................

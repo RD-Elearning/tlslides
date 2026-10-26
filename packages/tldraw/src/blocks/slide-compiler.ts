@@ -60,8 +60,8 @@ import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
-import { DESIGN_THRESHOLDS, figureLike } from './design-checks'
-import { TIERED_BLOCK_TYPES } from './tiered'
+import { DESIGN_THRESHOLDS } from './design-checks'
+import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
 
@@ -273,8 +273,10 @@ function harmonizeTypes(
   registry: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
-  const tiered = (b: BlockSpec | undefined): boolean =>
-    !!b && (TIERED_BLOCK_TYPES.has(b.type) || (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some(tiered)))
+  const tiered = (b: BlockSpec | undefined, nested = false): boolean =>
+    !!b &&
+    ((TIERED_BLOCK_TYPES.has(b.type) && !(nested && TOP_LEVEL_TIERED.has(b.type))) ||
+      (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some((c) => tiered(c, true))))
   const steps = (name: string, b: BlockSpec | undefined) => name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && tiered(b) && b.style?.typeStep === undefined
   const ids = new Set<string>()
   for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
@@ -332,10 +334,10 @@ function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, regis
         ...(meta.style ? { style: meta.style } : {}),
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
-      const own = collectPaintedLeaves(layoutBlock(def, props, ctx), size).text.map((t) => Math.round(t.fontSize * (t.scale || 1)))
-      // a figure's labels are one size, its largest (`type/too-many-sizes`)
-      if (own.length && figureLike(shape.componentId as string, registry)) sizes.push(Math.max(...own))
-      else sizes.push(...own)
+      // every painted size, a figure's labels included: stepping a diagram down also keeps its
+      // labels whole (corpus 2026-10-26: a timeline beside a hero number cut 2 labels unstepped),
+      // though `type/too-many-sizes` reads a figure's labels as one size
+      for (const t of collectPaintedLeaves(layoutBlock(def, props, ctx), size).text) sizes.push(Math.round(t.fontSize * (t.scale || 1)))
     } catch {
       // a block that fails to lay out paints nothing
     }
@@ -754,6 +756,9 @@ function measureRegionBlocks(
   const regionSize = { width: regionBox.width, height: regionBox.height }
   // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
   const bd = blockDefaults ? { blockDefaults } : {}
+  // CR7a: blocks stacked in one region are measured at their authored type — a list that grew to
+  // the whole region's height pushed the block under it out (corpus 2026-10-26: 3 slides)
+  if (blocks.length > 1) tokens = { ...tokens, measuring: true }
   const sharedCtx = createLayoutContext({
     box: regionSize,
     tokens,

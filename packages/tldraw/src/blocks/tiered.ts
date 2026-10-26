@@ -19,6 +19,19 @@ export const TIERED_BLOCK_TYPES: ReadonlySet<string> = new Set([
   'tls.c.agenda',
   'tls.c.kpi-row',
   'tls.c.kpi-tile',
+  // CR7a list growth (`library/text/_engine/grow.ts`): tiered at a region's top level only
+  'tls.t.bullets',
+  'tls.t.checklist',
+  'tls.t.kv-list',
+  'tls.t.qa',
+  'tls.t.numbered',
+  'tls.t.tags',
+  'tls.m.icon-list',
+])
+
+/** CR7a — the lists that grow (`growText`) only at a region's top level: inside a container they
+ *  keep their authored type, so a container holding one is not stepped for it. */
+export const TOP_LEVEL_TIERED: ReadonlySet<string> = new Set([
   'tls.t.bullets',
   'tls.t.checklist',
   'tls.t.kv-list',

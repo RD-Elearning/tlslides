@@ -12,7 +12,7 @@ import type { StackProps } from './schema'
 import { tagChildren } from '../_motion'
 import { styleGap } from '../_style'
 import { contextTracks, isAuthoredContext } from '../../../layout/layout-child'
-import { TIERED_BLOCK_TYPES } from '../../../tiered'
+import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from '../../../tiered'
 
 export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
   const gapToken = (props.gap ?? 'md') as SpaceToken
@@ -74,7 +74,9 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
     const over = totalIntrinsic - availableHeight
     if (pack && over > 0.5 && !tracks) {
       let k = -1
-      for (let i = 0; i < n; i++) if (TIERED_BLOCK_TYPES.has(children[i]?.type ?? '') && (k < 0 || intrinsicSizes[i].height > intrinsicSizes[k].height)) k = i
+      // (a growing list cannot go under its authored type: it does not give up height — CR7a)
+      const gives = (t: string) => TIERED_BLOCK_TYPES.has(t) && !TOP_LEVEL_TIERED.has(t)
+      for (let i = 0; i < n; i++) if (gives(children[i]?.type ?? '') && (k < 0 || intrinsicSizes[i].height > intrinsicSizes[k].height)) k = i
       if (k >= 0 && intrinsicSizes[k].height - over >= 50) {
         intrinsicSizes[k] = { height: intrinsicSizes[k].height - over }
         totalIntrinsic -= over

@@ -28,6 +28,9 @@ export function growStep(ctx: LayoutContext, lay: (c: LayoutContext) => LayoutNo
   // a natural-size measure (an intrinsic size, a size card, `measureBlock`'s tall probe) is the
   // authored type: a list grows only in the room a slide gives it
   if (ctx.tokens.measuring || ctx.box.height >= DEFAULT_PROBE_HEIGHT) return 0
+  // a list inside a container (a card, a stack) keeps its authored type: the container sized it
+  // and the report re-measures it there (corpus 2026-10-26: a checklist in a card overflowed)
+  if ((ctx.depth ?? 0) > 0) return 0
   const base = lay(ctx)
   if (!showsWhole(ctx, base)) return 0
   const b = leaves(base)
