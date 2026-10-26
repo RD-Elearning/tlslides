@@ -60,7 +60,7 @@ import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
-import { DESIGN_THRESHOLDS } from './design-checks'
+import { DESIGN_THRESHOLDS, figureLike } from './design-checks'
 import { TIERED_BLOCK_TYPES } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
@@ -332,7 +332,10 @@ function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, regis
         ...(meta.style ? { style: meta.style } : {}),
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
-      for (const t of collectPaintedLeaves(layoutBlock(def, props, ctx), size).text) sizes.push(Math.round(t.fontSize * (t.scale || 1)))
+      const own = collectPaintedLeaves(layoutBlock(def, props, ctx), size).text.map((t) => Math.round(t.fontSize * (t.scale || 1)))
+      // a figure's labels are one size, its largest (`type/too-many-sizes`)
+      if (own.length && figureLike(shape.componentId as string, registry)) sizes.push(Math.max(...own))
+      else sizes.push(...own)
     } catch {
       // a block that fails to lay out paints nothing
     }

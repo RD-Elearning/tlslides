@@ -37,6 +37,7 @@ import type {
   ResolvedTokens,
   Size,
   SlideSpec,
+  SlideIntent,
   SurfaceContext,
 } from './types'
 import type { ComponentShape, DeckTheme } from '~types'
@@ -215,6 +216,8 @@ export interface LayoutReport {
   needsVisualCheck: VisualCheck[]
   /** CMP3: the slide's drawn connectors (absent = none). */
   connectors?: ConnectorReport[]
+  /** CR7a: the slide's authored `intent`, the quality gate's profile (absent = `default`). */
+  intent?: SlideIntent
 }
 
 /** CMP3 — one drawn connector: its endpoints, route and where it runs (slide coordinates). */
@@ -847,6 +850,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     freeSpace,
     needsVisualCheck,
     ...(connectors.length ? { connectors } : {}),
+    ...(spec.intent ? { intent: spec.intent } : {}),
   }
 }
 

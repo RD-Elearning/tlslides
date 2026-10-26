@@ -214,6 +214,7 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
+    if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
     pages[pageId] = page
 
     pageStates[pageId] = {

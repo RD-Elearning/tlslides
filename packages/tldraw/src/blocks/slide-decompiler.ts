@@ -394,6 +394,9 @@ export function pageToSlideSpec(
   if (page.valign !== undefined) {
     spec.valign = page.valign
   }
+  if (page.intent !== undefined) {
+    spec.intent = page.intent
+  }
 
   return { spec, findings }
 }

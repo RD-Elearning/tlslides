@@ -14,7 +14,7 @@ import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
 import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
-import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES, SLIDE_INTENTS } from './types'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -120,6 +120,7 @@ function slideSchema(
       role: { type: 'string', enum: ['cover', 'section', 'content', 'closing'] },
       rhythm: { type: 'string', enum: ['anchor', 'dense', 'breath'] },
       valign: { type: 'string', enum: ['start', 'auto'] },
+      intent: { type: 'string', enum: [...SLIDE_INTENTS] },
       regions: {
         type: 'object',
         additionalProperties: {

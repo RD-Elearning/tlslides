@@ -21,7 +21,7 @@ import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec, SlotType } from './types'
-import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES, SLIDE_INTENTS } from './types'
 import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
@@ -342,6 +342,7 @@ function validateSlide(
   }
 
   checkMotionStyle(slide.motionStyle, `${slidePath}.motionStyle`, `Slide "${slideLabel}"`, findings)
+  checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
@@ -549,6 +550,23 @@ function validateConnectors(slide: Record<string, unknown>, slidePath: string, s
         findings.push({ level: 'warning', rule: 'connector/malformed', path: `${path}.label`, message: `Connector ${label}: the label is ${raw.label.length} characters; keep it to ${CONNECTOR_LABEL_MAX} (one to three words).` })
       }
     }
+  })
+}
+
+/** CR7a — `intent` must be one of `SLIDE_INTENTS`; anything else is ignored (today's checks). */
+function checkIntent(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
+  if (value === undefined || (SLIDE_INTENTS as readonly unknown[]).includes(value)) return
+  const raw = typeof value === 'string' ? value : ''
+  const suggestion = raw ? nearestName(raw, [...SLIDE_INTENTS]) : undefined
+  findings.push({
+    level: 'warning',
+    rule: 'slide/unknown-intent',
+    path,
+    message:
+      `${owner} has intent ${stringifyForMessage(value)}, which is not a gate profile and is ignored.` +
+      (suggestion ? ` Did you mean "${suggestion}"?` : '') +
+      ` Use one of: ${SLIDE_INTENTS.join(', ')}.`,
+    suggestion,
   })
 }
 

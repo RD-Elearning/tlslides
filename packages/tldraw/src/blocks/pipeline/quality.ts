@@ -30,10 +30,13 @@ import type { BlockRegistry } from '../registry'
 import { deckSpecTokens, getDeckStyle } from '../styles'
 import { resolveTokens } from '../tokens'
 import { resolveDeckTheme } from '../deck-document'
-import type { DeckSpec } from '../types'
+import type { DeckSpec, SlideIntent } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | DesignCode
+
+/** CR7a (spro creative PLAN §6.8): the profile a slide is judged by, from `SlideSpec.intent`. */
+export type GateProfile = 'default' | SlideIntent
 
 export interface QualityFinding {
   code: QualityCode
@@ -43,6 +46,10 @@ export interface QualityFinding {
 }
 
 export interface SlideQuality {
+  /** CR7a: the profile the findings were judged by. */
+  profile: GateProfile
+  /** CR7a: the diagrams' painted union as a share of the regions that hold them (1 when none). */
+  diagramFill: number
   /** Painted union of the content blocks / safe area, 0-1. */
   fill: number
   /** Smallest region fill over the large non-title regions (1 when there is none). */
@@ -102,7 +109,14 @@ export const QUALITY_GATE = {
    *  0.6 it also took cards and icon rows whose panels fill the band. */
   floatingLead: 0.5,
   floatingCover: 0.55,
+  /** CR7a `diagram` profile: the diagrams must paint this share of the regions that hold them. */
+  minDiagramFill: 0.45,
+  /** CR7a `poster` profile: the lead must reach this share of the deck's title size. */
+  posterLeadOfTitle: 1,
 } as const
+
+/** CR7a: blocks that are a diagram or a chart for the `diagram` profile (connectors are lines). */
+const isDiagram = (type: string) => (type.startsWith('tls.g.') || type.startsWith('tls.d.')) && type !== 'tls.g.connector'
 
 interface Rect {
   x0: number
@@ -143,7 +157,8 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
  * The quality of one slide. `titleSize` is the deck's resolved `title` type size (the style's), for
  * the lead-type rule; without it that rule is skipped.
  */
-export function slideQuality(report: LayoutReport, opts: { titleSize?: number; balance?: boolean } = {}): SlideQuality {
+export function slideQuality(report: LayoutReport, opts: { titleSize?: number; balance?: boolean; intent?: SlideIntent } = {}): SlideQuality {
+  const profile: GateProfile = opts.intent ?? report.intent ?? 'default'
   const W = report.frame.width
   const H = report.frame.height
   const m = W * QUALITY_GATE.margin
@@ -195,21 +210,34 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     title = { x: Math.round(t.painted.x), y: Math.round(t.painted.y), width: Math.round(t.painted.width), fontSize: Math.round(t.fontSize * (t.scale || 1)) }
   }
 
+  const diagrams = flow.filter((b) => isDiagram(b.type) && b.region !== 'title' && b.region !== 'free')
+  const diagramRegions = union(Object.entries(report.regions).filter(([name]) => diagrams.some((b) => b.region === name)).map(([, box]) => box))
+  const diagramFill = diagrams.length && diagramRegions ? Math.min(1, area(union(diagrams.map((b) => b.painted))) / Math.max(1, area(diagramRegions))) : 1
+
   const findings: QualityFinding[] = []
+  const poster = profile === 'poster'
   const typeLed = !!opts.titleSize && lead >= opts.titleSize * QUALITY_GATE.displayOfTitle
   // enhance L1: a slide judged on balance is centred, so a small content block no longer leaves
   // a hole — it floats; the golden rubric scored such slides 2 for balance below ~50 % fill
   const minFill = typeLed ? QUALITY_GATE.displayFill : opts.balance ? QUALITY_GATE.balancedMinFill : QUALITY_GATE.minFill
-  if (fill < minFill) {
+  // CR7a `poster`: big type on calm space is the design; judged on its lead and balance instead
+  if (!poster && fill < minFill) {
     findings.push({ code: 'quality/sparse', message: `content covers ${pct(fill)} of the safe area (minimum ${pct(minFill)}): use a roomier design, larger type or more content` })
   }
   // the single region of a blank or full-bleed slide is the slide: `fill` already judged it
   const sole = Object.keys(report.regions).length === 1
-  if (!sole && regionFill < QUALITY_GATE.minRegionFill) {
+  if (!poster && !sole && regionFill < QUALITY_GATE.minRegionFill) {
     findings.push({ code: 'quality/thin-region', region: thinRegion, message: regionFill === 0 ? `region "${thinRegion}" is empty: put a block in it, or a layout without it (one wide region: timeline or blank)` : `region "${thinRegion}" is ${pct(regionFill)} filled (minimum ${pct(QUALITY_GATE.minRegionFill)}): larger type, more items, or another design` })
   }
-  if (opts.titleSize && lead > 0 && lead < opts.titleSize * QUALITY_GATE.leadOfTitle) {
-    findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}` })
+  const leadOf = poster ? QUALITY_GATE.posterLeadOfTitle : QUALITY_GATE.leadOfTitle
+  if (opts.titleSize && lead > 0 && lead < opts.titleSize * leadOf) {
+    findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}${poster ? ': a poster slide leads with title-size type or larger' : ''}` })
+  }
+  if (poster && !opts.balance && body.length && Math.abs(bottomGap - topGap) > QUALITY_GATE.maxBottomExcess) {
+    findings.push({ code: 'quality/unbalanced', message: `the poster's empty space is lopsided (${pct(topGap)} above the content, ${pct(bottomGap)} below): centre it, or a layout that places it` })
+  }
+  if (profile === 'diagram' && diagrams.length && diagramFill < QUALITY_GATE.minDiagramFill) {
+    findings.push({ code: 'quality/thin-diagram', message: `the diagram fills ${pct(diagramFill)} of its region (minimum ${pct(QUALITY_GATE.minDiagramFill)}): give it the wide region, more steps, or a layout where it leads` })
   }
   // enhance L1: judged only when asked (spro's composed and filled content slides, which set
   // `valign: 'auto'`); the recipes and the dry-run decks keep today's bar
@@ -231,7 +259,7 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
     findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
-  return { fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
+  return { profile, diagramFill, fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
 }
 
 /**

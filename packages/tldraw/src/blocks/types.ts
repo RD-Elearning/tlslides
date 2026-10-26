@@ -603,6 +603,10 @@ export type MotionStyle = 'static' | 'subtle' | 'expressive'
 /** The closed set of `MotionStyle` values (validator, JSON schema, digest). */
 export const MOTION_STYLES: readonly MotionStyle[] = ['static', 'subtle', 'expressive']
 
+/** CR7a — `SlideSpec.intent`, the gate profile (`pipeline/quality.ts`). */
+export const SLIDE_INTENTS = ['poster', 'diagram', 'dense'] as const
+export type SlideIntent = (typeof SLIDE_INTENTS)[number]
+
 /**
  * Schema of valid content for a block. Drives inserter UI, AI prompting, and linting.
  */
@@ -1242,6 +1246,11 @@ export interface SlideSpec {
    *  non-title region whose layout sets no alignment of its own, so a short column sits in the
    *  middle of the page instead of leaving its lower half empty. Absent = `start` (top). */
   valign?: 'start' | 'auto'
+  /** spro creative PLAN §6.8 (CR7a) — the gate profile, from the slide's design move: `poster`
+   *  (a cover, statement, question, quote, big number) is not judged on fill but on its lead size
+   *  and balance, `diagram` on how much of its region the diagram fills, `dense` like today.
+   *  Absent = today's checks (`default`). */
+  intent?: SlideIntent
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */

@@ -272,6 +272,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   motionStyle?: 'static' | 'subtle' | 'expressive'
   // enhance L1 — the authored `SlideSpec.valign`, carried back by `documentToDeckSpec`.
   valign?: 'start' | 'auto'
+  // CR7a — the authored `SlideSpec.intent` (gate profile), carried back by `documentToDeckSpec`.
+  intent?: 'poster' | 'diagram' | 'dense'
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

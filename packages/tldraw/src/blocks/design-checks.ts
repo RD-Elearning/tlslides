@@ -332,7 +332,7 @@ export function designFindings(blocks: DesignBlock[], ctx: DesignContext): Desig
     narrowChecks(b, drafts)
     if (ctx.llmAuthored) depthCheck(b, drafts)
   }
-  typeSizeCheck(blocks, drafts)
+  typeSizeCheck(blocks, ctx, drafts)
   accentCheck(blocks, ctx, drafts)
   measureChecks(blocks, drafts)
   motionChecks(blocks, ctx, drafts)
@@ -634,9 +634,20 @@ function contentText(blocks: DesignBlock[]): Array<{ b: DesignBlock; t: DesignBl
   return blocks.filter((b) => b.layer !== 'backdrop' && !b.styleOwned).flatMap((b) => b.text.map((t) => ({ b, t })))
 }
 
-/** `type/too-many-sizes` (P5). */
-function typeSizeCheck(blocks: DesignBlock[], out: Draft[]): void {
-  const sizes = [...new Set(contentText(blocks).map(({ t }) => r(t.fontSize * (t.scale || 1))))].sort((a, b) => b - a)
+/** CR7a (spro creative PLAN §2.4): a diagram or a chart sets its own label scale (a ring's value,
+ *  label and caption), read as one figure; tables and comparisons are text and count as text. */
+export function figureLike(type: string, registry: BlockRegistry): boolean {
+  const def = registry.get(type)
+  if (!def || (def.family !== 'diagram' && def.family !== 'data') || type === 'tls.g.connector') return false
+  return def.category !== 'table' && def.category !== 'comparison'
+}
+
+/** `type/too-many-sizes` (P5). A figure's labels count as one size: its largest. */
+function typeSizeCheck(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): void {
+  const text = contentText(blocks)
+  const figureTop = new Map<string, number>()
+  for (const { b, t } of text) if (figureLike(b.type, ctx.registry)) figureTop.set(b.id, Math.max(figureTop.get(b.id) ?? 0, r(t.fontSize * (t.scale || 1))))
+  const sizes = [...new Set(text.map(({ b, t }) => figureTop.get(b.id) ?? r(t.fontSize * (t.scale || 1))))].sort((a, b) => b - a)
   const merged: number[] = []
   for (const s of sizes) if (!merged.length || merged[merged.length - 1] - s > 1) merged.push(s)
   if (merged.length <= DESIGN_THRESHOLDS.typeSizes) return
