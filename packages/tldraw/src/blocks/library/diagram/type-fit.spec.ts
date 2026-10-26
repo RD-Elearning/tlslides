@@ -14,7 +14,7 @@ const texts = (n: LayoutNode): Array<{ size: number; cut: boolean }> =>
   n.k === 'group' ? n.children.flatMap(texts) : n.k === 'text' ? [{ size: n.style.size, cut: !!(n as { truncated?: boolean }).truncated }] : []
 
 describe('diagram type fits the box', () => {
-  it.each(['tls.g.matrix-2x2', 'tls.g.cycle', 'tls.g.flow', 'tls.g.venn', 'tls.g.pyramid', 'tls.g.mindmap', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.timeline', 'tls.g.tree'])('%s: at least body-plus type in a whole-slide box, never smaller than in a small one, nothing cut', (type) => {
+  it.each(['tls.g.matrix-2x2', 'tls.g.cycle', 'tls.g.flow', 'tls.g.venn', 'tls.g.pyramid', 'tls.g.mindmap', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.timeline', 'tls.g.tree', 'tls.g.iceberg'])('%s: at least body-plus type in a whole-slide box, never smaller than in a small one, nothing cut', (type) => {
     const def = registry.get(type)!
     const props = { ...(def.defaults as object), ...((def.describe?.example?.props ?? {}) as object) }
     const big = texts(def.layout(props as never, makeCtx({ width: 1728, height: 888 }, registry)))

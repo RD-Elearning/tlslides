@@ -7,6 +7,7 @@
  */
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { promoteType, showsWhole } from '../../diagram/_kit'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 
 export const GROW_STEPS = 2
 
@@ -24,7 +25,9 @@ function leaves(n: LayoutNode): Leaf[] {
 
 /** How many ladder steps `lay` can grow in `ctx`'s box (0 = keep the authored type). */
 export function growStep(ctx: LayoutContext, lay: (c: LayoutContext) => LayoutNode, opts: GrowOptions = {}): number {
-  if (ctx.tokens.measuring) return 0
+  // a natural-size measure (an intrinsic size, a size card, `measureBlock`'s tall probe) is the
+  // authored type: a list grows only in the room a slide gives it
+  if (ctx.tokens.measuring || ctx.box.height >= DEFAULT_PROBE_HEIGHT) return 0
   const base = lay(ctx)
   if (!showsWhole(ctx, base)) return 0
   const b = leaves(base)

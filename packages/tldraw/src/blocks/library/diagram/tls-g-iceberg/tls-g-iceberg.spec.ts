@@ -47,6 +47,21 @@ describe('tls.g.iceberg', () => {
     expect(xs(4)).toBe(2)
   })
 
+  it('CR7a redraw: rounded facets, a lit face on tip and mass, labels larger than footnote in a big box', () => {
+    const t = lay({ above: { label: 'Visible', items: items(2) }, below: { label: 'Hidden', items: items(4) } }, { width: 1600, height: 820 })
+    const path = (re: RegExp) => {
+      const out: any[] = []
+      const walk = (n: any) => (n.k === 'group' ? n.children.forEach(walk) : re.test(n.part ?? '') && out.push(n))
+      walk(t)
+      return out
+    }
+    for (const p of [...path(/^above\[shape\]/), ...path(/^below\[shape\]/)]) expect(p.d).toMatch(/Q/)
+    expect(path(/^above\[face\]/)).toHaveLength(1)
+    expect(path(/^below\[face\]/)).toHaveLength(1)
+    const sizes = path(/^(above|below)\[(label|item)/).filter((n) => n.k === 'text').map((n) => n.style.size)
+    expect(Math.min(...sizes)).toBeGreaterThan(chartCtx(SZ).resolveText('footnote').size)
+  })
+
   it('hostile input never yields NaN', () => {
     for (const p of [{ above: null, below: null }, { above: { label: 'a', items: [null, 3, 'ok'] }, below: { items: 'x' } }, { above: { label: 'a', items: [] }, below: { label: 'b', items: [] } }]) {
       expect(JSON.stringify(lay(p as any))).not.toMatch(/NaN|Infinity/)

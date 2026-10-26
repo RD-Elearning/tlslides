@@ -15,6 +15,7 @@ export const TIERED_BLOCK_TYPES: ReadonlySet<string> = new Set([
   'tls.g.breakdown',
   'tls.g.layers',
   'tls.g.graph',
+  'tls.g.iceberg',
   'tls.c.agenda',
   'tls.c.kpi-row',
   'tls.c.kpi-tile',
