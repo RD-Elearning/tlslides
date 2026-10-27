@@ -58,6 +58,17 @@ describe('spro creative R3e — regionStack', () => {
     expect(q.findings.map((x) => x.code)).not.toContain('quality/unbalanced')
   })
 
+  it('an arrow from the diagram to its caption keeps its shaft, and a footnote keeps its capacity', () => {
+    const arrow: SlideSpec = {
+      ...SLIDE,
+      regions: { ...SLIDE.regions, foot: [{ id: 'f', type: 'tls.t.footnote', props: { items: ['February pre-orders carry the 15% early-bird discount.'], marker: 'none' } }] },
+      connectors: [{ id: 'k', from: { block: 'm' }, to: { block: 'f' } }],
+    } as SlideSpec
+    const codes = analyzeSlide(arrow).findings.map((x) => x.code)
+    expect(codes).not.toContain('connector/too-short')
+    expect(codes).not.toContain('capacity/exceeded')
+  })
+
   it('the round trip returns the caption to the foot', () => {
     const deck: DeckSpec = { version: 1, slides: [SLIDE] } as DeckSpec
     const { document } = deckSpecToDocument(deck)

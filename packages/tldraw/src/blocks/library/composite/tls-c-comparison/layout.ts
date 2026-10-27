@@ -29,7 +29,7 @@ const VS_LABEL = 'VS'
 /** Type tiers, biggest first. `plain` keeps the last (the original look); `cards` / `versus` take
  *  the biggest whose columns fit the box height (AC2: a comparison alone under a title should not
  *  be a small band of body text in a tall region). */
-type Tier = { title: TypeToken; item: TypeToken; titleGap: 'sm' | 'md' | 'lg' | 'xl'; itemGap: 'xs' | 'sm' | 'md' | 'lg'; pad: 'lg' | 'xl' | '2xl' }
+type Tier = { title: TypeToken; item: TypeToken; titleGap: 'xs' | 'sm' | 'md' | 'lg' | 'xl'; itemGap: 'xs' | 'sm' | 'md' | 'lg'; pad: 'lg' | 'xl' | '2xl' }
 const TIERS: readonly Tier[] = [
   // AC3 pre-item: the roomy tier, for a comparison alone under a title in a tall region.
   { title: 'heading', item: 'lead', titleGap: 'xl', itemGap: 'lg', pad: '2xl' },

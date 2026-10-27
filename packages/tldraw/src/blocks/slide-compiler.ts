@@ -65,7 +65,7 @@ import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS } from './design-checks'
 import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
-import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
+import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH } from './layout/connector-route'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -511,13 +511,23 @@ function compileSlideUnstyled(
     const heights = group.map((n) => regionNaturalHeights.get(n))
     if (boxes.some((b) => !b) || heights.some((h) => h === undefined)) continue
     if (group.some((n, i) => regionYPositions.has(n) || heights[i]! > boxes[i]!.height)) continue
+    // an arrow between the group's regions (a diagram pointing at its caption) keeps its shaft
+    const ids = (n: string) => new Set((spec.regions[n] ?? []).map((b) => b.id))
+    const across = (a: string, b: string) =>
+      (spec.connectors ?? []).some((c) => {
+        const [x, y] = [ids(a), ids(b)]
+        const f = c.from?.block
+        const t = c.to?.block
+        return (x.has(f) && y.has(t)) || (y.has(f) && x.has(t))
+      })
+    const gapAfter = group.map((n, i) => (i < group.length - 1 && across(n, group[i + 1]) ? gap + MIN_CONNECTOR_LENGTH + tokens.space.sm : gap))
     const top = boxes[0]!.y
     const span = boxes[boxes.length - 1]!.y + boxes[boxes.length - 1]!.height - top
-    const total = heights.reduce((a, h) => a! + h!, 0)! + (group.length - 1) * gap
+    const total = heights.reduce((a, h) => a! + h!, 0)! + gapAfter.slice(0, -1).reduce((a, g) => a + g, 0)
     let y = top + Math.max(0, (span - total) / 2)
     group.forEach((n, i) => {
       stackedY.set(n, y)
-      y += heights[i]! + gap
+      y += heights[i]! + gapAfter[i]
     })
   }
 
@@ -833,7 +843,7 @@ function measureRegionBlocks(
     // it (a card row centred under the title, not hugging the top over an empty half).
     const only = blocks[0]
     // spro creative R3e: any block alone in a `regionStack` region hugs its content the same way
-    if (only && roots[0] > 0 && (hugAlone || SIZED_CONTAINERS.has(only.type))) {
+    if (only && roots[0] > 0 && ((hugAlone && !only.type.startsWith('tls.t.')) || SIZED_CONTAINERS.has(only.type))) {
       const def = registry.get(only.type)!
       const ctx = ctxFor(only)
       const props = only.props as Record<string, unknown>
