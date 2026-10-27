@@ -37,6 +37,11 @@ const TIERS: readonly Tier[] = [
   { title: 'heading', item: 'lead', titleGap: 'md', itemGap: 'sm', pad: 'lg' },
   { title: 'subheading', item: 'body', titleGap: 'sm', itemGap: 'xs', pad: 'lg' },
 ]
+/** spro creative R3: smaller titles for columns too narrow for a title word at subheading size. */
+const NARROW_TIERS: readonly Tier[] = [
+  { title: 'lead', item: 'body', titleGap: 'sm', itemGap: 'xs', pad: 'lg' },
+  { title: 'body', item: 'body', titleGap: 'xs', itemGap: 'xs', pad: 'lg' },
+]
 
 /**
  * RV06 (review G06): the column title was a `tls.t.title` child laid out with the WHOLE box as its
@@ -155,7 +160,21 @@ export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode 
   }
   // AC3 pre-item: `plain` takes the type tiers too (its padding stays `md`): a plain comparison
   // alone under a title was a small band of body text in a tall region.
-  const tiers = TIERS
+  // spro creative R3: a title word wider than its column was cut mid-word ("Paper scree / ns",
+  // golden design-thinking s7): a tier is used only when every title word fits the column on one
+  // line; narrow columns step down to smaller title sizes until it does.
+  const wordsFit = (tier: Tier) => {
+    const pad = look === 'plain' ? sp.md : sp[tier.pad]
+    const inner = Math.max(10, colWidth - 2 * pad)
+    const style = ctx.resolveText(tier.title)
+    return columns.slice(0, n).every((col) =>
+      String(col.title ?? '').split(/\s+/).filter(Boolean).every((w) => ctx.measureText(w, style, inner).lines.length <= 1),
+    )
+  }
+  // (the narrow tiers only when no regular tier fits the words: a short box still ends on subheading)
+  const regular = TIERS.filter(wordsFit)
+  const narrow = NARROW_TIERS.filter(wordsFit)
+  const tiers = regular.length ? regular : narrow.length ? narrow : [NARROW_TIERS[NARROW_TIERS.length - 1]]
   let measured = measureAt(tiers[tiers.length - 1])
   for (const tier of tiers.slice(0, -1)) {
     const m = measureAt(tier)

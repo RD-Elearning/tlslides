@@ -653,3 +653,23 @@ describe('AC2 — look knobs (style)', () => {
     await assertParity(DEF, { ...two, style: 'versus' } as any, { width: 1200, height: 460 }, undefined, { registry })
   }, 30000)
 })
+
+describe('spro creative R3: no title word cut mid-word in a narrow column', () => {
+  it('three card columns in a narrow box keep every title word on one line', () => {
+    const props = { style: 'cards', columns: [
+      { title: 'Paper screens', items: ['Sketch the flow', 'User taps and reacts'] },
+      { title: 'Role-play', items: ['Team acts the service'] },
+      { title: 'Fake landing page', items: ['One promise, one button'] },
+    ] }
+    const root = layout(props as any, makeCtx({ width: 640, height: 600 }))
+    const titles: any[] = []
+    const walk = (n: any) => { if (/\.title$/.test(n.part ?? '')) titles.push(n); (n.children ?? []).forEach(walk) }
+    walk(root)
+    expect(titles).toHaveLength(3)
+    for (const t of titles) {
+      // every line holds whole words of the titles
+      const all = props.columns.map((c) => c.title).join(' ').split(/\s+/)
+      for (const l of t.lines) for (const w of String(l.text).trim().split(/\s+/).filter(Boolean)) expect(all).toContain(w)
+    }
+  })
+})
