@@ -476,13 +476,17 @@ function compileSlideUnstyled(
 
   // F3.1: one fresh memo cache per compile pass.
   const intrinsicSizeCache = new Map<string, Size>()
+  // spro creative R3e: the regions of a `regionStack` group whose regions all hold blocks
+  const stackable = new Set(
+    (resolvedLayout?.regionStack ?? []).filter((g) => g.every((n) => regionBoxes[n] && (spec.regions[n] ?? []).length > 0)).flat()
+  )
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
       const blocks = spec.regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName))
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName), stackable.has(regionName))
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -499,6 +503,23 @@ function compileSlideUnstyled(
   const regionYPositions = registry
     ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (spec.regions[name] ?? []).length > 0, gap)
     : new Map<string, number>()
+
+  // spro creative R3e: a `regionStack` group is centred as one stack across its regions' span
+  const stackedY = new Map<string, number>()
+  for (const group of resolvedLayout?.regionStack ?? []) {
+    const boxes = group.map((n) => regionBoxes[n])
+    const heights = group.map((n) => regionNaturalHeights.get(n))
+    if (boxes.some((b) => !b) || heights.some((h) => h === undefined)) continue
+    if (group.some((n, i) => regionYPositions.has(n) || heights[i]! > boxes[i]!.height)) continue
+    const top = boxes[0]!.y
+    const span = boxes[boxes.length - 1]!.y + boxes[boxes.length - 1]!.height - top
+    const total = heights.reduce((a, h) => a! + h!, 0)! + (group.length - 1) * gap
+    let y = top + Math.max(0, (span - total) / 2)
+    group.forEach((n, i) => {
+      stackedY.set(n, y)
+      y += heights[i]! + gap
+    })
+  }
 
   // 3. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
@@ -573,7 +594,9 @@ function compileSlideUnstyled(
     } else if (regionAlign === 'end') {
       offset = Math.max(0, leftoverInRegion)
     }
-    if (hasRegistry) {
+    if (stackedY.has(regionName)) {
+      startY = stackedY.get(regionName)!
+    } else if (hasRegistry) {
       // Use the re-flowed y-position from Pass 2 — apply alignment offset too (F3.2)
       startY = flowedY + offset
     } else {
@@ -612,6 +635,7 @@ function compileSlideUnstyled(
         childIndex: childIndex++,
         definitionMotion: blockDef?.motion,
       })
+      if (stackedY.has(regionName)) (shape.props[BLOCK_PROP_KEY] as Record<string, unknown>).stackRegion = regionName
       shapes.push(shape)
       if (blockDef && block.motion === undefined) styleCandidates.push({ shape, block, def: blockDef, box })
       currentY += blockHeight + gap
@@ -757,7 +781,8 @@ function measureRegionBlocks(
   registry: BlockRegistry,
   intrinsicSizeCache: Map<string, Size>,
   blockDefaults?: Record<string, Record<string, unknown>>,
-  align: 'start' | 'center' | 'end' = 'start'
+  align: 'start' | 'center' | 'end' = 'start',
+  hugAlone = false
 ): number[] {
   const regionSize = { width: regionBox.width, height: regionBox.height }
   // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
@@ -807,7 +832,8 @@ function measureRegionBlocks(
     // content does not fill the region takes its painted height, so the region's alignment places
     // it (a card row centred under the title, not hugging the top over an empty half).
     const only = blocks[0]
-    if (only && roots[0] > 0 && SIZED_CONTAINERS.has(only.type)) {
+    // spro creative R3e: any block alone in a `regionStack` region hugs its content the same way
+    if (only && roots[0] > 0 && (hugAlone || SIZED_CONTAINERS.has(only.type))) {
       const def = registry.get(only.type)!
       const ctx = ctxFor(only)
       const props = only.props as Record<string, unknown>

@@ -67,6 +67,10 @@ interface BlockMetadata {
    *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
    *  (keep the move, `free[]`) from "untouched" (re-anchor). */
   placed?: ShapePlacement
+  /** spro creative R3e — the region of a block `compileSlide` placed as part of a `regionStack`
+   *  group (it may sit inside the group's other region). Never authored; the decompiler reads it
+   *  to return the block to its own region. */
+  stackRegion?: string
   /** AC1 — the deck style's knob defaults `compileSlide` filled into the top-level props (keys the
    *  block did not author). Never authored: `shapeToBlock` keeps them (renderers need the look),
    *  `shapeToAuthoredBlock` (the decompiler) drops a filled key whose value is still the default,

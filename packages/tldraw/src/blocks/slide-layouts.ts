@@ -606,6 +606,11 @@ export interface SlideLayout {
    *  'end' pushes blocks to the bottom. Used by `compileSlide` when distributing
    *  leftover height after intrinsic-height measurement. */
   regionAlign?: Record<string, 'start' | 'center' | 'end'>
+  /** spro creative R3e: regions stacked top to bottom whose blocks read as one group (a diagram
+   *  and its caption). When every region of a group has blocks and none overflows, the group is
+   *  centred as one stack across the regions' span, one gap apart, instead of each region
+   *  centring its own blocks (which left an empty band between the diagram and its caption). */
+  regionStack?: string[][]
 }
 
 /**
@@ -630,7 +635,7 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
   { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
   { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'center', content: 'center' } },
-  { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' } },
+  { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' }, regionStack: [['band', 'foot']] },
   { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
   // spro creative CR13: layouts v2 (PLAN §6.12)
   { id: 'hero-visual', name: 'Hero Visual', compile: layoutHeroVisual, regionAlign: { text: 'start', visual: 'center' } },

@@ -724,9 +724,11 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       return c?.region ? [c.region] : blocks.filter((b) => f.blockIds.includes(b.id)).map((b) => b.region)
     })
   )
+  // a `regionStack` group moves its blocks across its regions on purpose (spro creative R3e)
+  const stacked = new Set((layoutDef?.regionStack ?? []).flat())
   for (const b of blocks) {
     const rb = regions[b.region]
-    if (!rb || b.outOfFlow) continue
+    if (!rb || b.outOfFlow || stacked.has(b.region)) continue
     const below = b.box.y > rb.y + rb.height - TOL
     const above = b.box.y + b.box.height < rb.y + TOL
     if (!below && !above) continue

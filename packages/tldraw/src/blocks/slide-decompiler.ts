@@ -20,7 +20,7 @@ import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE, SLIDE_ASPECT_PRESETS } from '~constants'
 import type { BlockSpec, Box, ConnectorSpec, DeckSpec, PlacedBlock, ResolvedTokens, SlideSpec } from './types'
 import { connectorFromBlock, CONNECTOR_BLOCK_TYPE } from './connectors'
-import { shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
+import { BLOCK_PROP_KEY, shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
 
@@ -327,9 +327,13 @@ export function pageToSlideSpec(
       })
       continue
     }
-    const matchedRegion =
+    const geometric =
       matchToRegion(shapeForMatch, regionBoxes, tolerance) ??
       (layered ? matchLayeredToRegion(shapeForMatch, regionBoxes, tolerance) : undefined)
+    // spro creative R3e: a block of a `regionStack` group may sit inside the group's other region
+    const stackRegion = (shape as { props?: Record<string, { stackRegion?: unknown }> }).props?.[BLOCK_PROP_KEY]?.stackRegion
+    const group = typeof stackRegion === 'string' ? layout?.regionStack?.find((g) => g.includes(stackRegion)) : undefined
+    const matchedRegion = geometric && group?.includes(geometric) ? (stackRegion as string) : geometric
 
     if (matchedRegion) {
       if (!regionEntries[matchedRegion]) regionEntries[matchedRegion] = []
