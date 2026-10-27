@@ -33,7 +33,8 @@ function cells(props: RouteAgendaProps): { main: Cell[]; opts: PosterOptions } {
   if (props.title) main.push({ spec: { id: 'title', type: 'tls.t.title', props: { text: props.title, size: 'heading' } } })
   const cur = typeof props.current === 'number' ? props.current : undefined
   const route: BlockSpec = v === 'metro'
-    ? { id: 'route', type: 'tls.g.timeline', props: { events: stops.map((s, i) => ({ date: String(i + 1), title: s.label, text: s.note ?? '' })), nodeStyle: 'number' } }
+    // metro: the node carries the number (a date label repeated it: golden patient-flow s2)
+    ? { id: 'route', type: 'tls.g.timeline', props: { events: stops.map((s) => ({ date: '', title: s.label, text: s.note ?? '' })), nodeStyle: 'number' } }
     : v === 'stepping-stones'
       ? { id: 'route', type: 'tls.g.chevrons', props: { steps: stops.map((s) => ({ label: s.label, text: s.note ?? '' })), ...(cur !== undefined ? { currentIndex: cur } : {}) } }
       : { id: 'route', type: 'tls.g.steps', props: { steps: stops.map((s) => ({ title: s.label, description: s.note ?? '' })), direction: 'horizontal', connector: v === 'river' ? 'line' : 'arrow' } }
