@@ -26,7 +26,7 @@ import type {
 // `import type`. TypeScript erases both sides at compile time, same pattern `blocks/types.ts`
 // already uses for its own `import type { TDShape, AnimationTrigger } from '~types'`.
 import type { DeckTokens } from './blocks/tokens'
-import type { MasterSpec } from './blocks/types'
+import type { LookAxes, MasterSpec } from './blocks/types'
 
 /* -------------------------------------------------- */
 /*                         App                        */
@@ -192,6 +192,8 @@ export interface TDDocument {
   motif?: string
   // CR7a — the deck's `DeckSpec.motifZone`, carried so the masters drop the signature motif.
   motifZone?: 'fixed' | 'auto'
+  // CR7b — the deck's `DeckSpec.look`, for the round trip (pages' blocks carry the merged base).
+  look?: LookAxes
   // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
   ambient?: boolean
 }
@@ -276,6 +278,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   valign?: 'start' | 'auto'
   // CR7a — the authored `SlideSpec.intent` (gate profile), carried back by `documentToDeckSpec`.
   intent?: 'poster' | 'diagram' | 'dense'
+  // CR7b — the authored `SlideSpec.look`, carried back by `documentToDeckSpec`.
+  look?: LookAxes
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

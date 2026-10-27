@@ -17,6 +17,7 @@
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, stampAmbient, type CompileFinding } from './slide-compiler'
+import { BLOCK_PROP_KEY } from './shape-bridge'
 import { effectiveMotionStyle } from './motion/motion-style'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
@@ -199,8 +200,13 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     // `parentId` is the page's id — a compiled deck exported blank.
     const shapes: Record<string, ComponentShape> = {}
     for (const sh of sm.shapes) shapes[sh.id] = { ...sh, parentId: pageId }
+    // CR7b: the deck's and the slide's look, merged, on every block of the page (renderers draw a
+    // block without its page); the block's own `look` wins per axis
+    const lookBase = spec.look || slideSpec.look ? { ...(spec.look ?? {}), ...(slideSpec.look ?? {}) } : undefined
     for (const shape of result.shapes) {
-      shapes[shape.id] = { ...shape, parentId: pageId }
+      const meta = (shape.props as Record<string, unknown>)[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const props = lookBase && meta && typeof meta === 'object' ? { ...shape.props, [BLOCK_PROP_KEY]: { ...meta, lookBase } } : shape.props
+      shapes[shape.id] = { ...shape, props, parentId: pageId }
     }
 
     const page: TDPage = {
@@ -220,6 +226,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
+    if (slideSpec.look !== undefined) page.look = slideSpec.look
     pages[pageId] = page
 
     pageStates[pageId] = {
@@ -249,6 +256,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (style) document.styleId = style.id
   if (spec.motif !== undefined) document.motif = spec.motif
   if (spec.motifZone !== undefined) document.motifZone = spec.motifZone
+  if (spec.look !== undefined) document.look = spec.look
   if (spec.ambient !== undefined) document.ambient = spec.ambient
 
   return { document, findings }

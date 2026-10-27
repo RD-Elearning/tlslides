@@ -36,6 +36,9 @@ export interface BlockSpec {
   props: Record<string, unknown>
   /** Presentation overrides. Every field optional; the theme + definition defaults fill the rest. */
   style?: BlockStyleSpec
+  /** spro creative CR7b (PLAN §6.3) — how this block is drawn, over the slide's and the deck's look
+   *  (`blocks/look.ts`). Paint only. Nested blocks draw with their slide-level parent's look. */
+  look?: LookAxes
   /** Motion overrides. Absent = the definition's default recipe, which may itself be "none". */
   motion?: BlockMotionSpec
   /** Not read by any layout: child blocks go in **`props.children`**, the one canonical slot
@@ -1251,6 +1254,8 @@ export interface SlideSpec {
    *  and balance, `diagram` on how much of its region the diagram fills, `dense` like today.
    *  Absent = today's checks (`default`). */
   intent?: SlideIntent
+  /** spro creative CR7b — the look of every block on this slide, over the deck's (`blocks/look.ts`). */
+  look?: LookAxes
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -1373,10 +1378,26 @@ export interface DeckSpec {
    *  (`placeDeckMotifs`, which the host runs before rendering). Absent / `fixed` = the master's
    *  own position. */
   motifZone?: 'fixed' | 'auto'
+  /** spro creative CR7b (PLAN §6.3) — the deck's look axes, over the style's own treatment
+   *  (`StyleSurface.render`); slides and blocks override per axis. Paint only. */
+  look?: LookAxes
   /** V5 (spro vivid PLAN.md) — `false` keeps the deck's blocks still once they have entered (no
    *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
    *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
   ambient?: boolean
+}
+
+/** spro creative CR7b (PLAN §6.3) — look axes: how strokes, fills, corners, depth, emphasis,
+ *  connectors, icons and image frames are drawn. Values: `LOOK_VALUES` in `blocks/look.ts`. */
+export interface LookAxes {
+  stroke?: 'crisp' | 'rough' | 'ink' | 'chalk' | 'marker'
+  fill?: 'flat' | 'none' | 'hachure' | 'crosshatch' | 'paper' | 'gradient' | 'glass'
+  corner?: 'square' | 'round' | 'pill' | 'wobbly' | 'cut'
+  depth?: 'flat' | 'soft' | 'hard' | 'extrude' | 'clay' | 'stack'
+  icon?: 'outline' | 'thin' | 'duotone' | 'filled' | 'hand' | 'blob' | 'sticker' | 'tile' | 'emoji'
+  emphasis?: 'bold' | 'color' | 'highlighter' | 'underline' | 'circle' | 'box'
+  connector?: 'straight' | 'curved' | 'hand' | 'dotted'
+  frame?: 'none' | 'card' | 'tape' | 'polaroid' | 'torn' | 'circle' | 'blob'
 }
 
 /** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */

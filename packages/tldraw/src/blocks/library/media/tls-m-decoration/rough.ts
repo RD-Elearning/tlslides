@@ -59,8 +59,10 @@ export interface RoughOptions {
   /** Stroke colour and width; omitted = no outline. */
   stroke?: { color: string; width: number }
   /** Hachure fill colour, gap and line weight; omitted = no fill. */
-  hachure?: { color: string; gap: number; weight: number }
+  hachure?: { color: string; gap: number; weight: number; cross?: boolean }
   roughness?: number
+  /** One pass per stroke (an ink pen), not Rough.js's double sketch line. */
+  single?: boolean
   /** Half the outer stroke (and the wobble) kept inside the box. */
   margin: number
   /** How a sketch that spills is pulled back in: `uniform` (default) scales both axes by the same
@@ -91,9 +93,9 @@ export function roughPaths(d: string, W: number, H: number, o: RoughOptions): La
   const base = { seed, roughness: o.roughness ?? 1.3, bowing: 1 }
   // fill and outline drawn separately, so each set is known without guessing from its colour
   const fill = o.hachure
-    ? g.toPaths(g.path(d, { ...base, stroke: 'none', strokeWidth: 0, fill: '#000', fillStyle: 'hachure', hachureGap: o.hachure.gap, fillWeight: o.hachure.weight, hachureAngle: -41 })).filter((s) => s.stroke !== 'none')
+    ? g.toPaths(g.path(d, { ...base, stroke: 'none', strokeWidth: 0, fill: '#000', fillStyle: o.hachure.cross ? 'cross-hatch' : 'hachure', hachureGap: o.hachure.gap, fillWeight: o.hachure.weight, hachureAngle: -41 })).filter((s) => s.stroke !== 'none')
     : []
-  const line = o.stroke ? g.toPaths(g.path(d, { ...base, stroke: '#000', strokeWidth: o.stroke.width })).filter((s) => s.stroke !== 'none') : []
+  const line = o.stroke ? g.toPaths(g.path(d, { ...base, stroke: '#000', strokeWidth: o.stroke.width, ...(o.single ? { disableMultiStroke: true } : {}) })).filter((s) => s.stroke !== 'none') : []
   // fit: scale the whole sketch about the box centre when it spills past the margin
   const [kx, ky] = fitScale(hull([...fill, ...line].map((s) => s.d)), W, H, o.margin, o.fit)
   const fix = (dd: string) => (kx < 1 || ky < 1 ? scaleAbout(dd, W / 2, H / 2, kx, ky) : dd.replace(NUM, (m) => String(r2(Number(m)))))

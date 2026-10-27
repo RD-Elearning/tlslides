@@ -21,6 +21,7 @@ import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
 import { layoutBlock } from '~blocks/layout/layout-child'
 import { treatTree } from '~blocks/paint-treatment'
+import { blockTreatment } from '~blocks/look'
 import { HostRegistryContext } from '~hooks/useHostRegistry'
 import { BlockRegistryContext } from '~hooks/useBlockRegistry'
 import { registerBuiltInBlocks } from '~blocks/library'
@@ -225,14 +226,17 @@ function BlockContent({
   props,
   ctx,
   paintKey = '',
+  meta,
 }: {
   blockDef: BlockDefinition
   props: Record<string, unknown>
   ctx: LayoutContext
   /** enhance S2: seeds the style's render treatment (`${type}|${id}`, as the editor and export). */
   paintKey?: string
+  /** CR7b: the shape's `$block` metadata (its look and its page's merged look). */
+  meta?: unknown
 }) {
-  return <React.Fragment>{renderNodeToDom(treatTree(layoutBlock(blockDef, props, ctx), ctx.tokens.surface?.render, paintKey))}</React.Fragment>
+  return <React.Fragment>{renderNodeToDom(treatTree(layoutBlock(blockDef, props, ctx), blockTreatment(ctx.tokens.surface?.render, meta), paintKey))}</React.Fragment>
 }
 
 interface BlockBoundaryState {
@@ -955,7 +959,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                       props: blockSpec.props,
                       headless: false,
                     }}>
-                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} />
+                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} meta={(shape.props as Record<string, unknown>).$block} />
                     </HostLayoutContext.Provider>
                   ) : (
                     <UnknownBlockPlaceholder type={shape.componentId} />

@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
+import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, LookAxes, EaseToken, MotionRecipe, Box } from './types'
 import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
@@ -43,6 +43,11 @@ interface BlockMetadata {
   anchorTo?: string
   /** CMP1 — `BlockSpec.bleed` (a backdrop that may leave the frame). */
   bleed?: boolean
+  /** CR7b — `BlockSpec.look` (authored). */
+  look?: LookAxes
+  /** CR7b — the deck's and the slide's look merged, stamped by `deckSpecToDocument` so every
+   *  renderer draws the block without its page. Never authored, never returned by `shapeToBlock`. */
+  lookBase?: LookAxes
   /** CMP1 — set by `compileSlide` on a block whose region has a layered image backdrop: it sits on
    *  a photo, so its context surface is an image surface (`overImage: true`). Never authored,
    *  never returned by `shapeToBlock`. */
@@ -147,6 +152,7 @@ export function blockToShape(
   if (spec.anchor !== undefined) metadata.anchor = spec.anchor
   if (spec.anchorTo !== undefined) metadata.anchorTo = spec.anchorTo
   if (spec.bleed !== undefined) metadata.bleed = spec.bleed
+  if (spec.look !== undefined) metadata.look = JSON.parse(JSON.stringify(spec.look))
 
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
@@ -298,6 +304,7 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   if (meta.anchor !== undefined) spec.anchor = meta.anchor
   if (meta.anchorTo !== undefined) spec.anchorTo = meta.anchorTo
   if (meta.bleed !== undefined) spec.bleed = meta.bleed
+  if (meta.look !== undefined) spec.look = meta.look
   if (shapeObj.slot !== undefined) {
     spec.slot = shapeObj.slot as string
   }

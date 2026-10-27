@@ -397,6 +397,9 @@ export function pageToSlideSpec(
   if (page.intent !== undefined) {
     spec.intent = page.intent
   }
+  if (page.look !== undefined) {
+    spec.look = page.look
+  }
 
   return { spec, findings }
 }
@@ -484,6 +487,7 @@ export function documentToDeckSpec(
   if (doc.styleId !== undefined) deckSpec.style = doc.styleId
   if (doc.motif !== undefined) deckSpec.motif = doc.motif
   if (doc.motifZone !== undefined) deckSpec.motifZone = doc.motifZone
+  if (doc.look !== undefined) deckSpec.look = doc.look
   if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
   return { spec: deckSpec, findings }
 }

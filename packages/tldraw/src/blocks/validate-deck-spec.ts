@@ -28,6 +28,7 @@ import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 import { CONNECTOR_BLOCK_TYPE } from './connectors'
+import { lookProblems } from './look'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -80,7 +81,7 @@ export function defaultBlockRegistry(): BlockRegistry {
  * away by the type signature.
  */
 /** The fields of a `BlockSpec` itself (everything else on a block is not read). */
-const BLOCK_SPEC_FIELDS: ReadonlySet<string> = new Set(['type', 'id', 'props', 'style', 'motion', 'children', 'slot', 'layer', 'anchor', 'anchorTo', 'bleed'])
+const BLOCK_SPEC_FIELDS: ReadonlySet<string> = new Set(['type', 'id', 'props', 'style', 'motion', 'children', 'slot', 'layer', 'anchor', 'anchorTo', 'bleed', 'look'])
 
 export function validateDeckSpec(spec: DeckSpec, registry?: BlockRegistry): DeckFinding[] {
   try {
@@ -232,6 +233,8 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
 
   // P7: motionStyle (deck level; the slide level is checked in validateSlide).
   checkMotionStyle(s.motionStyle, 'motionStyle', 'DeckSpec', findings)
+  // CR7b: look axes (deck, slide, block) — an unknown axis or value is an error
+  for (const f of lookProblems((s as { look?: unknown }).look, 'look', 'DeckSpec')) findings.push({ level: 'error', ...f })
 
   // Tokens used only to read back real region names from each layout's compile() — the
   // *values* inside are irrelevant to validation, only the shape (which keys exist) is.
@@ -343,6 +346,7 @@ function validateSlide(
 
   checkMotionStyle(slide.motionStyle, `${slidePath}.motionStyle`, `Slide "${slideLabel}"`, findings)
   checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
+  for (const f of lookProblems((slide as { look?: unknown }).look, `${slidePath}.look`, `Slide "${slideLabel}"`)) findings.push({ level: 'error', ...f })
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
@@ -814,6 +818,8 @@ function validateBlockTree(
           : `Block ${label} sets an anchor inside a container that is not tls.l.overlay; anchors place a layered region block or a child of tls.l.overlay. It is ignored here.`,
     })
   }
+
+  for (const f of lookProblems((block as { look?: unknown }).look, `${path}.look`, `Block ${label}`)) findings.push({ level: 'error', ...f })
 
   // CMP1: `bleed` lets a backdrop leave the frame on purpose (no `slide/overflow`).
   if (block.bleed !== undefined && typeof block.bleed !== 'boolean') {

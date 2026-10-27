@@ -15,6 +15,15 @@ import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
 import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
 import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES, SLIDE_INTENTS } from './types'
+import { LOOK_AXES, LOOK_VALUES } from './look'
+
+/** CR7b — the look axes object (deck, slide, block). */
+const LOOK_SCHEMA = {
+  type: 'object',
+  properties: Object.fromEntries(LOOK_AXES.map((ax) => [ax, { type: 'string', enum: [...LOOK_VALUES[ax]] }])),
+  additionalProperties: false,
+  description: 'CR7b — look axes: how strokes, fills, corners, depth, emphasis, connectors, icons and frames are drawn. Paint only.',
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -91,6 +100,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         enum: [...SUBJECT_SHAPES],
         description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
       },
+      look: LOOK_SCHEMA,
       motifZone: {
         type: 'string',
         enum: ['fixed', 'auto'],
@@ -126,6 +136,7 @@ function slideSchema(
       rhythm: { type: 'string', enum: ['anchor', 'dense', 'breath'] },
       valign: { type: 'string', enum: ['start', 'auto'] },
       intent: { type: 'string', enum: [...SLIDE_INTENTS] },
+      look: LOOK_SCHEMA,
       regions: {
         type: 'object',
         additionalProperties: {
@@ -257,6 +268,7 @@ function blockSchema(
         type: 'boolean',
         description: 'A backdrop that may leave the slide frame on purpose (no slide/overflow finding).',
       },
+      look: LOOK_SCHEMA,
     },
     additionalProperties: false,
     oneOf: blockTypeSchemas,
