@@ -269,6 +269,9 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.g.annotated': [v('numbers', 'a numbered legend', { variant: 'numbers' }), v('labels', 'labels and notes', { variant: 'labels' })],
   'tls.t.highlight': [v('marker', 'marker on the key words', { variant: 'marker' }), v('underline', 'key words underlined', { variant: 'underline' }), v('circle', 'key words circled', { variant: 'circle' })],
   'tls.t.speech-bubble': [v('round', 'a round speech bubble', { variant: 'round' }), v('shout', 'a loud bubble', { variant: 'shout' })],
+  // spro creative CR9
+  'tls.m.emoji': [v('sticker', 'an emoji on a white sticker', { backing: 'sticker', size: 'lg' }), v('bare', 'a bare emoji', { backing: 'none' })],
+  'tls.m.illustration': [v('scene', 'a scene in accent', { accent: 'accent' }), v('facing', 'a mirrored scene in accent 2', { accent: 'accent2', flip: true })],
 
   // ── decoration ──
   'tls.g.arrow': [v('straight', 'a straight accent arrow', { kind: 'straight', tone: 'accent' }), v('curved', 'a curved pointer', { kind: 'curved' }), v('elbow', 'an elbow arrow', { kind: 'elbow', tone: 'text' })],

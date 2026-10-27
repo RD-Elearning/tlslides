@@ -16,10 +16,13 @@
  * Pure and DOM-free.
  */
 import { roughOutline, roughPaths } from './library/media/tls-m-decoration/rough'
+import { blobPath } from './library/media/tls-m-decoration/layout'
 import type { LayoutNode, Paint, Stroke } from './types'
 import { mixHex } from './color-math'
 import { editorMetrics } from './layout/measure'
 import { paintsAnything, type Treatment } from './look'
+import { emojiForIcon, emojiUrl, getIcon } from './icons'
+import { scaleIconPath } from './icons/scale-path'
 
 /** The treatment painted: the style's render treatment or a resolved look (CR7b, `look.ts`). */
 export type RenderTreatment = Treatment
@@ -235,6 +238,88 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment,
   return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [...marks, { ...node, box: { ...node.box, x: 0, y: 0 } }] }
 }
 
+const HEX = /^#[0-9a-f]{6}$/i
+
+/** The icon drawn at `k` × its size, centred in its own box (box-local). */
+function shrunk(node: Extract<LayoutNode, { k: 'icon' }>, k: number, over: Partial<Extract<LayoutNode, { k: 'icon' }>> = {}): LayoutNode {
+  const w = node.box.width
+  const s = w * k
+  return {
+    ...node,
+    box: { x: (w - s) / 2, y: (node.box.height - s) / 2, width: s, height: s },
+    icon: scaleIconPath(node.icon, k),
+    ...(node.strokeWidth ? { strokeWidth: Math.max(1, node.strokeWidth * Math.max(0.75, k)) } : {}),
+    ...over,
+  }
+}
+
+/** creative CR9 — `look.icon`: how an icon glyph is drawn, in its own box (never moved or grown).
+ *  `thin` halves the stroke, `filled` swaps in the filled weight (Phosphor) when the name has one,
+ *  `duotone` a pale disc behind, `hand` a sketched outline on an offset pastel blob, `blob` a pale
+ *  blob behind, `sticker` a white die-cut edge with a soft shadow, `tile` a rounded tile of the
+ *  icon's colour with the glyph in white. */
+function treatIcon(node: Extract<LayoutNode, { k: 'icon' }>, t: RenderTreatment, seed: number): LayoutNode {
+  const v = t.icon
+  if (!v || v === 'outline') return node
+  if (v === 'emoji') {
+    // the colour emoji of the icon's subject, in the icon's box; an icon with none stays an icon
+    const e = node.name ? emojiForIcon(node.name) : undefined
+    const url = e ? emojiUrl(e) : undefined
+    return url ? { k: 'image', ...(node.part ? { part: node.part } : {}), box: node.box, assetId: `emoji:${e}`, alt: e!.replace(/-/g, ' '), fit: 'contain', url } : node
+  }
+  const w = node.box.width
+  const h = node.box.height
+  if (w < 4 || h < 4) return node
+  const color = HEX.test(node.fill) ? node.fill : '#333333'
+  const pale = mixHex(color, '#ffffff', 0.8)
+  const def = node.name ? getIcon(node.name) : undefined
+  const at = (children: LayoutNode[]): LayoutNode => ({ k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children })
+  const local = { ...node, box: { ...node.box, x: 0, y: 0 } }
+  delete (local as { part?: string }).part
+  switch (v) {
+    case 'thin':
+      return node.strokeWidth ? { ...node, strokeWidth: Math.max(0.75, node.strokeWidth * 0.55) } : node
+    case 'filled': {
+      if (!def?.solid) return node
+      const out = { ...node, icon: scaleIconPath(def.solid, w / 24) }
+      delete out.strokeWidth
+      return out
+    }
+    case 'duotone': {
+      const r = Math.min(w, h) * 0.36
+      const d = `M${0.58 * w - r} ${0.58 * h} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`
+      return at([{ k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d, fill: { type: 'solid', color: mixHex(color, '#ffffff', 0.72) } }, local])
+    }
+    case 'blob':
+    case 'hand': {
+      const back: LayoutNode = { k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d: blobPath(w / 2, h / 2, Math.min(w, h) / 2, seed, 0), fill: { type: 'solid', color: pale } }
+      const glyph = shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.7)
+      if (v === 'blob' || !glyph || glyph.k !== 'icon' || !glyph.strokeWidth) return at([back, glyph])
+      const g = glyph as Extract<LayoutNode, { k: 'icon' }>
+      const sketch = roughPaths(g.icon, g.box.width, g.box.height, { seed, roughness: 0.7, margin: 0, single: true, stroke: { color, width: g.strokeWidth! } })
+      // the blob sits a little low-right of the glyph, like a marker swash behind a doodle
+      const s = Math.min(w, h) * 0.94
+      const off = { ...back, box: { x: w - s, y: h - s, width: s, height: s }, d: blobPath(s / 2, s / 2, s / 2, seed + 1, 0) }
+      return at([off, { k: 'group', box: g.box, children: sketch }])
+    }
+    case 'sticker': {
+      const glyph = shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.8) as Extract<LayoutNode, { k: 'icon' }>
+      const edge = Math.max(3, w * 0.09)
+      const sw = (glyph.strokeWidth ?? 0) + edge
+      const shadow = { ...glyph, box: { ...glyph.box, x: glyph.box.x + w * 0.03, y: glyph.box.y + h * 0.04 }, fill: '#0000002E', strokeWidth: sw } as LayoutNode
+      const white = { ...glyph, fill: '#FFFFFF', strokeWidth: sw } as LayoutNode
+      // a filled glyph too: the white edge is a stroke under it, the glyph itself stays a fill
+      return at([shadow, white, glyph])
+    }
+    case 'tile': {
+      const tile: LayoutNode = { k: 'rect', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, fill: { type: 'solid', color }, radius: Math.min(w, h) * 0.24 }
+      return at([tile, shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.6, { fill: '#FFFFFF' })])
+    }
+    default:
+      return node
+  }
+}
+
 /**
  * The tree drawn in treatment `t` (unchanged when `t` asks for nothing). `key` seeds the sketch
  * (the block's type or id), so the same block always wobbles the same way.
@@ -257,6 +342,8 @@ export function treatTree(node: LayoutNode, t: RenderTreatment | undefined, key 
         return x.box.x === 0 && x.box.y === 0 ? treatPath(x, t!, seed) : x
       case 'text':
         return treatText(x, t!, seed)
+      case 'icon':
+        return treatIcon(x, t!, seed)
       default:
         return x
     }

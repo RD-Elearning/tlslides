@@ -16,7 +16,7 @@
 
 import type { BlockMotionRuntime, HtmlTemplateContext, LayoutContext, LayoutNode, ResolvedTokens } from '../../types'
 import type { MotionHandle, MotionKeyframes, MotionOptions } from '../../motion/driver'
-import { FALLBACK_ICON, getIcon } from '../../icons'
+import { FALLBACK_ICON, getIcon, iconPaintAttrs } from '../../icons'
 import { lineWidth } from './_kit'
 
 /* ── GSAP, typed structurally (the package never imports gsap) ─────────────────────────── */
@@ -135,10 +135,10 @@ export function roleVar(ctx: HtmlTemplateContext, role: 'accent2' | 'surfaceAlt'
 
 /** Inline outline icon (24-unit path scaled by the viewBox), stroke in `color`. */
 export function iconSvg(name: string, size: number, color: string): string {
-  const path = (getIcon(name) ?? FALLBACK_ICON).path
+  const icon = getIcon(name) ?? FALLBACK_ICON
   return (
     `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible" aria-hidden="true">` +
-    `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    `<path d="${icon.path}" ${iconPaintAttrs(icon, color, 1.75)}/></svg>`
   )
 }
 

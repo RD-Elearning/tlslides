@@ -10,7 +10,7 @@
 
 import type { HtmlTemplateContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
-import { ICONS, getIcon } from '../../../icons'
+import { ICONS, getIcon, iconPaintAttrs } from '../../../icons'
 import { posterText } from '../../../html-block'
 import { cardCssFromPoster } from '../_kit'
 
@@ -102,7 +102,7 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
             (circle ? `align-items:center;justify-content:center;border-radius:50%;background:${colors.disc};` : '') +
             (center ? `margin-left:auto;margin-right:auto;` : '') +
           `">` +
-            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" fill="none" stroke="${fillColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;">` +
+            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" ${iconPaintAttrs(getIcon(cell.icon as string), fillColor, 1.5)} style="display:block;">` +
               `<path d="${iconPath}"/>` +
             `</svg>` +
           `</div>` +

@@ -253,6 +253,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.annotated': t2(['variant']),
   'tls.t.highlight': t2(['variant']),
   'tls.t.speech-bubble': t2(['variant', 'tail']),
+  // ── spro creative CR9: emoji and illustrations ──
+  'tls.m.emoji': t2(['size', 'backing']),
+  'tls.m.illustration': t2(['accent', 'flip']),
 
   // ── chrome (placed by style masters, AC1+) ──
   'tls.x.page-number': t2(['align']),

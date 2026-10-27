@@ -41,4 +41,11 @@ describe('icon set v2', () => {
     expect(card).toMatch(/math/)
     expect(iconCard()).toMatch(/listed with the slide/)
   })
+  it('creative CR9: VI/EN queries find the new subjects', () => {
+    expect(iconsFor('Chụp X quang xương và răng').slice(0, 20)).toEqual(expect.arrayContaining(['bone', 'tooth']))
+    expect(iconsFor('Kính hiển vi và di truyền học')).toEqual(expect.arrayContaining(['microscope', 'dna']))
+    expect(iconsFor('Pháp luật và tòa án')).toEqual(expect.arrayContaining(['gavel']))
+    expect(iconsFor('Robots and artificial intelligence')).toEqual(expect.arrayContaining(['robot']))
+    expect(iconsFor('Tổng sigma của dãy số')).toEqual(expect.arrayContaining(['sigma']))
+  })
 })

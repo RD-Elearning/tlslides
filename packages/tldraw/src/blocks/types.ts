@@ -762,7 +762,7 @@ export type LayoutNode =
       truncated?: true
     }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
-  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true }
+  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true; /** creative CR9: the icon's name, so a look can redraw it (filled weight, emoji). */ name?: string }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | {
       k: 'host'

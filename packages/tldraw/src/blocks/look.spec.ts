@@ -105,3 +105,37 @@ describe('look axes', () => {
     expect(lookRangeProblems({ stroke: 'ink' }, undefined, 's3')).toEqual([])
   })
 })
+
+describe('creative CR9 — look.icon', () => {
+  const { iconLeaf } = require('./library/text/_engine/icon')
+  const icons = [iconLeaf('rocket', { x: 10, y: 20, width: 64, height: 64 }, '#2255AA'), iconLeaf('gavel', { x: 100, y: 20, width: 48, height: 48 }, '#2255AA')] as LayoutNode[]
+  const t2: LayoutNode = { k: 'group', box: { x: 0, y: 0, width: 400, height: 200 }, children: icons }
+
+  it('an icon leaf names its icon; a Phosphor glyph is a fill, a Tabler one a stroke', () => {
+    expect(icons.map((n) => (n as { name?: string }).name)).toEqual(['rocket', 'gavel'])
+    expect((icons[0] as { strokeWidth?: number }).strokeWidth).toBeGreaterThan(0)
+    expect((icons[1] as { strokeWidth?: number }).strokeWidth).toBeUndefined()
+  })
+
+  it('every icon value keeps the boxes, renders, and changes the drawing (but outline)', () => {
+    const base = renderNodeToSvg(t2, 'p-')
+    for (const v of LOOK_PAINTED.icon) {
+      const out = treatTree(t2, { icon: v } as LookAxes, 'k')
+      expect(out.k === 'group' && out.children.map((c) => c.box)).toEqual(icons.map((c) => c.box))
+      const svg = renderNodeToSvg(out, 'p-')
+      expect([v, svg !== base]).toEqual([v, v !== 'outline'])
+      expect(svg).toBe(renderNodeToSvg(treatTree(t2, { icon: v } as LookAxes, 'k'), 'p-'))
+    }
+  })
+
+  it('filled swaps in the fill weight; tile draws the glyph white on a tile of its colour', () => {
+    const filled = treatTree(t2, { icon: 'filled' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    const rocket = filled.children[0] as Extract<LayoutNode, { k: 'icon' }>
+    expect(rocket.strokeWidth).toBeUndefined()
+    expect(rocket.icon).not.toBe((icons[0] as Extract<LayoutNode, { k: 'icon' }>).icon)
+    const tile = treatTree(t2, { icon: 'tile' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    const g = tile.children[0] as Extract<LayoutNode, { k: 'group' }>
+    expect(g.children[0]).toMatchObject({ k: 'rect', fill: { color: '#2255AA' } })
+    expect(g.children[1]).toMatchObject({ k: 'icon', fill: '#FFFFFF' })
+  })
+})

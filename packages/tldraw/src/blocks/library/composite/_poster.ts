@@ -4,7 +4,7 @@
  * breathes), the side column optional (a motif, a visual, a numeral). Parts are the piece ids, so
  * a block's motion parts are the ids it gives its specs. The block grows past a too-short box.
  */
-import type { BlockSpec, CapacityReport, LayoutContext, LayoutNode } from '../../../types'
+import type { BlockSpec, CapacityReport, LayoutContext, LayoutNode } from '../../types'
 import { composeFlat, measureHeights, plainOf, type Piece } from './_kit'
 
 export interface Cell {

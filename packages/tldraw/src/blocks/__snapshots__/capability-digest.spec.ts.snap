@@ -4787,6 +4787,31 @@ Screenshot framed in a browser window, laptop, phone or tablet; frame drawn from
 }
 \`\`\`
 
+### \`tls.m.emoji\` — Emoji
+
+One colour emoji (Fluent Emoji) as a sticker, sized by step, on an optional backing. _(family: media; keywords: emoji, sticker, reaction, playful, mascot, fun)_
+
+**When:** A playful deck: a reaction or a mascot beside a question, a hook, a closing.
+**Avoid:** Formal decks (use tls.m.icon); several in a row as bullets (use an icon list).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`emoji\` | yes | text (max 40 chars) | An emoji the slide is about; unknown names draw a placeholder and lint reports them. |
+| \`size\` | no | enum: sm \\\\| md \\\\| lg \\\\| xl | sm = 48, md = 96 (default), lg = 160, xl = 240 slide units, never larger than the box. |
+| \`backing\` | no | enum: none \\\\| sticker \\\\| disc | sticker: a white die-cut disc with a soft shadow; disc: a tinted disc. Default none. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_emoji\\",
+  \\"type\\": \\"tls.m.emoji\\",
+  \\"props\\": {
+    \\"emoji\\": \\"light-bulb\\",
+    \\"size\\": \\"lg\\",
+    \\"backing\\": \\"sticker\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.icon\` — Icon
 
 SVG icon from the icon set, with optional color role. _(family: media; keywords: icon, symbol, graphic, svg)_
@@ -4910,6 +4935,29 @@ Stacked points, each with its own icon, title and short description. _(family: m
       }
     ],
     \\"iconStyle\\": \\"circle\\"
+  }
+}
+\`\`\`
+
+### \`tls.m.illustration\` — Illustration
+
+A hand-drawn scene (a person reading, running, jumping…) recoloured from the palette. _(family: media; keywords: illustration, doodle, person, scene, drawing, playful, people)_
+
+**When:** Playful or teaching decks: a person doing what the slide is about, beside a hook, a question or a closing.
+**Avoid:** Data or formal slides; a real photo is needed (use tls.m.image).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`scene\` | yes | text (max 40 chars) | A person doing what the slide is about; a word finds the closest scene, an unknown one draws the reading scene and lint reports it. |
+| \`accent\` | no | enum: accent \\\\| accent2 \\\\| text | Palette role of the scene's colour patches (default accent); the lines are the text colour. |
+| \`flip\` | no | boolean | Mirror the scene so the person faces the other way (towards the text). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_illustration\\",
+  \\"type\\": \\"tls.m.illustration\\",
+  \\"props\\": {
+    \\"scene\\": \\"sitting-reading\\"
   }
 }
 \`\`\`
@@ -6174,7 +6222,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 160,
+  "blockCount": 162,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -6295,10 +6343,12 @@ Object {
     "tls.m.avatar-group",
     "tls.m.decoration",
     "tls.m.device-mock",
+    "tls.m.emoji",
     "tls.m.icon",
     "tls.m.icon-cluster",
     "tls.m.icon-label",
     "tls.m.icon-list",
+    "tls.m.illustration",
     "tls.m.image",
     "tls.m.image-compare",
     "tls.m.image-grid",
@@ -6568,7 +6618,7 @@ tls.c.image-full · media · slide — Full-slide photo with a headline panel [h
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.g.annotated, tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
+also: tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio
@@ -6609,6 +6659,6 @@ also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.pattern, tls.x.rule
 
 ## Icons
 
-Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic (+670 by meaning)
+Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic (+1118 by meaning)
 "
 `;

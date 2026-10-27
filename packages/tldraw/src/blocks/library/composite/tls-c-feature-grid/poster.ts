@@ -11,7 +11,7 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
 import { alignText, cardNodes, cardPaint } from '../_kit'
-import { getIcon } from '../../../icons'
+import { getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
@@ -117,7 +117,7 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
       // creative CR7a: the icons are Lucide/Tabler outlines — stroked, as `iconLeaf` draws them (a
       // filled outline turned a globe into a dot)
-      if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, strokeWidth: Math.max(1.5, (1.5 * g) / 24) })
+      if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, name: cell.icon as string, ...iconStroke(iconDef, Math.max(1.5, (1.5 * g) / 24)) })
     } else if (iconDef) {
       children.push({
         k: 'icon',
@@ -128,7 +128,8 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
         // the template paints it.
         icon: scaleIconPath(iconDef.path, iconSize / 24),
         fill: iconColor,
-        strokeWidth: Math.max(1.5, (1.5 * iconSize) / 24),
+        name: cell.icon as string,
+        ...iconStroke(iconDef, Math.max(1.5, (1.5 * iconSize) / 24)),
       })
     } else {
       // Fallback rect for unknown icon names

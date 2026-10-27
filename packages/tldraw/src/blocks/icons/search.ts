@@ -25,6 +25,11 @@ const VI: Array<[string, string[]]> = [
   ['an toàn', ['shield', 'lock', 'safety']], ['bảo mật', ['lock', 'shield', 'key']], ['rủi ro', ['alert', 'warning']], ['cảnh báo', ['alert', 'warning']], ['lỗi', ['bug', 'error', 'alert']],
   ['môi trường', ['leaf', 'nature', 'recycle']], ['năng lượng', ['bolt', 'energy', 'solar']], ['nước', ['droplet', 'water']], ['khí hậu', ['temperature', 'weather', 'cloud']], ['biển', ['wave', 'ship']], ['nông nghiệp', ['plant', 'seedling']],
   ['giao thông', ['car', 'bus', 'road']], ['du lịch', ['plane', 'map', 'world']], ['bản đồ', ['map', 'pin']], ['thành phố', ['building', 'buildings']], ['trường', ['school']],
+  // creative CR9: the subjects the review found missing (Phosphor names)
+  ['x quang', ['bone', 'x-ray', 'skeleton']], ['xương', ['bone']], ['răng', ['tooth']], ['kính hiển vi', ['microscope']], ['gen', ['dna']], ['di truyền', ['dna']],
+  ['robot', ['robot']], ['người máy', ['robot']], ['trí tuệ nhân tạo', ['robot', 'brain', 'cpu']], ['luật', ['gavel', 'scales', 'law']], ['pháp luật', ['gavel', 'scales', 'law']],
+  ['toà án', ['gavel', 'court']], ['tòa án', ['gavel', 'court']], ['tổng', ['sigma', 'sum']], ['tiêm', ['syringe', 'vaccine']], ['vắc xin', ['syringe', 'vaccine']],
+  ['âm nhạc', ['music', 'notes']], ['trò chơi', ['game', 'controller', 'dice']], ['thể thao', ['soccer', 'basketball', 'trophy']], ['ăn', ['food', 'pizza', 'fork']],
   ['chuyển đổi số', ['device', 'cloud', 'code']], ['số hoá', ['device', 'cloud']], ['dịch vụ', ['heart-handshake', 'service']], ['hợp tác', ['handshake', 'users']], ['giao tiếp', ['message', 'speakerphone']],
 ]
 

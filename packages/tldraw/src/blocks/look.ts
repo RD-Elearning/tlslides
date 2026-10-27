@@ -29,7 +29,7 @@ export const LOOK_AXES = Object.keys(LOOK_VALUES) as LookAxis[]
 
 /**
  * Values the painter draws today. The others validate and round-trip (a deck may ask for them) but
- * paint as the style's default until their renderer lands (icons: CR9; frames, paper, glass,
+ * paint as the style's default until their renderer lands (frames, paper, glass,
  * curved and hand connectors: Phase R) — `/capabilities` lists them as such.
  */
 export const LOOK_PAINTED: Record<LookAxis, readonly string[]> = {
@@ -37,7 +37,7 @@ export const LOOK_PAINTED: Record<LookAxis, readonly string[]> = {
   fill: ['flat', 'hachure', 'crosshatch', 'gradient'],
   corner: ['square', 'round', 'pill', 'wobbly', 'cut'],
   depth: ['flat', 'soft', 'hard', 'extrude', 'clay', 'stack'],
-  icon: [],
+  icon: ['outline', 'thin', 'duotone', 'filled', 'hand', 'blob', 'sticker', 'tile', 'emoji'],
   emphasis: ['bold', 'color', 'highlighter', 'underline', 'circle', 'box'],
   connector: ['straight', 'dotted'],
   frame: [],
@@ -89,7 +89,8 @@ export function paintsAnything(t: Treatment | undefined): boolean {
     !!t.corner ||
     !!t.depth ||
     (!!t.emphasis && t.emphasis !== 'bold') ||
-    t.connector === 'dotted'
+    t.connector === 'dotted' ||
+    (!!t.icon && t.icon !== 'outline')
   )
 }
 

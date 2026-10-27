@@ -15,7 +15,7 @@ import { enumOf, side, tintOf } from '../_kit'
 import { roughOutline, roughPaths } from './rough'
 import { SOLID_SHAPES, solidNode, type SolidShape } from './solids'
 import { SUBJECT_SHAPES, subjectNode, type SubjectShape } from './subjects'
-import { FALLBACK_ICON, getIcon } from '../../../icons'
+import { FALLBACK_ICON, getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
 
 /** Deterministic PRNG: the same seed gives the same sequence. */
@@ -303,7 +303,8 @@ function iconMotif(name: unknown, W: number, H: number, color: string, alpha: nu
     box: { x: (W - S) / 2, y: (H - S) / 2, width: S, height: S },
     icon: scaleIconPath(def.path, k),
     fill: color,
-    strokeWidth: Math.max(1.5, 1.15 * k),
+    ...(typeof name === 'string' && def !== FALLBACK_ICON ? { name } : {}),
+    ...iconStroke(def, Math.max(1.5, 1.15 * k)),
   }
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
 }

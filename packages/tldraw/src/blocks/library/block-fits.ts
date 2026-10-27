@@ -214,6 +214,9 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.g.annotated': f(['image-led', 'hierarchy', 'terms'], [2, 6], 'lines', 'neutral'),
   'tls.t.highlight': f(['quote', 'definition', 'worked-example'], null, 'paragraphs', 'calm'),
   'tls.t.speech-bubble': f(['quote', 'story', 'people'], null, 'lines', 'lively', { families: ['playful', 'classroom'] }),
+  // spro creative CR9
+  'tls.m.emoji': f(['statement', 'question'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
+  'tls.m.illustration': f(['statement', 'story', 'people'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
 
   // ── decoration (never a main block: relations empty) ──
   'tls.g.arrow': f([], null, 'labels', 'neutral'),

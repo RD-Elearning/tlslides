@@ -5,7 +5,7 @@
  */
 
 import type { LayoutNode } from '../../../types'
-import { FALLBACK_ICON, getIcon } from '../../../icons'
+import { FALLBACK_ICON, getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
 
 export function iconLeaf(
@@ -23,6 +23,7 @@ export function iconLeaf(
     box: { x: box.x + (box.width - size) / 2, y: box.y + (box.height - size) / 2, width: size, height: size },
     icon: scaleIconPath(def.path, factor),
     fill: color,
-    strokeWidth: Math.max(1.5, 1.5 * factor),
+    ...(typeof name === 'string' && def !== FALLBACK_ICON ? { name } : {}),
+    ...iconStroke(def, Math.max(1.5, 1.5 * factor)),
   }
 }
