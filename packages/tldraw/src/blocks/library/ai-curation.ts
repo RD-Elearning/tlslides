@@ -257,6 +257,24 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.emoji': t2(['size', 'backing']),
   'tls.m.illustration': t2(['accent', 'flip']),
 
+  // ── spro creative CR13: waves 2 and 3 ──
+  'tls.g.decision-tree': t2(['variant', 'outcomes']),
+  'tls.g.fishbone': t2(['variant']),
+  'tls.g.spectrum': t2(['variant']),
+  'tls.g.balance': t2(['variant', 'tilt']),
+  'tls.g.puzzle': t2(['variant']),
+  'tls.g.bridge': t2(['variant']),
+  'tls.c.number-story': t2(['variant']),
+  'tls.c.do-dont': t2(['variant']),
+  'tls.c.storyboard': t2(['variant']),
+  'tls.c.magazine': t2(['variant']),
+  'tls.t.drop-cap': t2(['variant']),
+  'tls.t.pull-quote': t2(['variant']),
+  'tls.c.photo-essay': t2(['variant']),
+  'tls.c.gallery-wall': t2(['variant']),
+  'tls.c.title-card': t2(['variant']),
+  'tls.c.full-bleed-type': t2(['variant']),
+
   // ── chrome (placed by style masters, AC1+) ──
   'tls.x.page-number': t2(['align']),
   'tls.x.footer-text': t2(['align', 'separator', 'showRule']),

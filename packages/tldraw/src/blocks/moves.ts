@@ -57,18 +57,18 @@ const frame = (
 ): DesignMove => ({ id, kind: 'frame', frameRole, layouts, main, relations: [], energy, intent, fallbackRecipe, when, ...(support ? { support } : {}) })
 
 export const DESIGN_MOVES: readonly DesignMove[] = [
-  // ── content (30) ──
-  content('diagram-hero', ['timeline', 'blank', 'sidebar-title'], ['tls.g.cycle', 'tls.g.tree', 'tls.g.flow', 'tls.g.mindmap', 'tls.g.hub-spoke', 'tls.g.venn'], ['cycle', 'hierarchy', 'network', 'sequence'], 'neutral', 'diagram', 'content-cards', 'one diagram fills the slide and carries the idea', ['tls.t.takeaway']),
+  // ── content (36) ──
+  content('diagram-hero', ['timeline', 'blank', 'sidebar-title'], ['tls.g.cycle', 'tls.g.tree', 'tls.g.flow', 'tls.g.mindmap', 'tls.g.hub-spoke', 'tls.g.venn', 'tls.g.puzzle', 'tls.g.decision-tree'], ['cycle', 'hierarchy', 'network', 'sequence'], 'neutral', 'diagram', 'content-cards', 'one diagram fills the slide and carries the idea', ['tls.t.takeaway']),
   content('split-visual', ['two-column', 'image-left', 'image-right'], ['tls.g.orbit', 'tls.g.target', 'tls.g.venn', 'tls.m.shape', 'tls.g.pyramid'], ['definition', 'group', 'hierarchy'], 'neutral', 'diagram', 'content-image-text', 'text on one side, its picture or diagram on the other', ['tls.t.body']),
   content('annotated', ['timeline', 'two-column'], ['tls.g.breakdown', 'tls.g.bracket', 'tls.g.iceberg', 'tls.m.image'], ['definition', 'hierarchy', 'image-led'], 'neutral', 'diagram', 'content-image-text', 'a figure or diagram with its parts pointed out'),
   content('big-number', ['section-stack', 'blank', 'timeline'], ['tls.c.big-stat', 'tls.t.hero-number', 'tls.c.stat-spotlight', 'tls.d.icon-array'], ['number', 'share'], 'lively', 'poster', 'data-big-stat', 'one number is the message', ['tls.t.takeaway']),
-  content('number-story', ['timeline', 'band'], ['tls.c.kpi-row', 'tls.d.stat-compare', 'tls.c.bento'], ['number', 'series'], 'neutral', 'dense', 'data-kpi-row', '2–4 numbers read in sequence', ['tls.t.takeaway']),
+  content('number-story', ['timeline', 'band'], ['tls.c.number-story', 'tls.c.kpi-row', 'tls.d.stat-compare', 'tls.c.bento'], ['number', 'series'], 'neutral', 'dense', 'data-kpi-row', '2–4 numbers read in sequence', ['tls.t.takeaway']),
   content('chart-insight', ['timeline', 'two-column'], ['tls.c.chart-insight', 'tls.d.line', 'tls.d.bar', 'tls.d.donut', 'tls.d.stacked-bar', 'tls.d.slope'], ['series', 'share', 'ranking'], 'neutral', 'diagram', 'data-chart-insight', 'a chart and what it says', ['tls.t.takeaway']),
-  content('versus', ['comparison', 'timeline'], ['tls.c.comparison', 'tls.g.before-after', 'tls.g.pros-cons', 'tls.c.problem-solution', 'tls.d.stat-compare'], ['contrast'], 'lively', 'dense', 'comparison-options', 'two sides set against each other'),
+  content('versus', ['comparison', 'timeline'], ['tls.c.comparison', 'tls.g.before-after', 'tls.g.pros-cons', 'tls.g.balance', 'tls.c.problem-solution', 'tls.d.stat-compare'], ['contrast'], 'lively', 'dense', 'comparison-options', 'two sides set against each other'),
   content('myth-buster', ['timeline'], ['tls.g.myth-fact', 'tls.g.before-after', 'tls.t.qa'], ['contrast', 'question'], 'lively', 'dense', 'comparison-before-after', 'a common belief set right'),
   content('card-grid', ['timeline', 'band'], ['tls.c.cards', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.c.feature-reveal'], ['group', 'terms'], 'neutral', 'dense', 'content-cards', 'peer items side by side'),
   content('bento', ['timeline', 'blank'], ['tls.c.bento'], ['group', 'number', 'image-led'], 'lively', 'dense', 'content-bento', 'mixed tiles: a number, points, a picture'),
-  content('path', ['timeline', 'band'], ['tls.g.staircase', 'tls.c.journey', 'tls.c.steps', 'tls.g.chevrons', 'tls.g.steps'], ['sequence', 'timeline', 'action'], 'lively', 'diagram', 'process-steps', 'steps along a road or a staircase'),
+  content('path', ['timeline', 'band'], ['tls.g.staircase', 'tls.c.journey', 'tls.c.steps', 'tls.g.chevrons', 'tls.g.steps', 'tls.g.bridge'], ['sequence', 'timeline', 'action'], 'lively', 'diagram', 'process-steps', 'steps along a road or a staircase'),
   content('loop', ['timeline', 'two-column'], ['tls.g.cycle', 'tls.g.orbit'], ['cycle'], 'lively', 'diagram', 'process-steps', 'steps that come back to the start'),
   content('layers', ['timeline', 'two-column'], ['tls.g.layers', 'tls.g.pyramid', 'tls.g.target', 'tls.g.iceberg'], ['hierarchy'], 'neutral', 'diagram', 'content-cards', 'levels stacked on each other'),
   content('tree-map', ['timeline', 'sidebar-title'], ['tls.g.tree', 'tls.g.mindmap', 'tls.g.graph', 'tls.g.breakdown'], ['hierarchy', 'network'], 'neutral', 'diagram', 'content-cards', 'branches from one root'),
@@ -77,20 +77,27 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   content('formula-board', ['two-column', 'section-stack', 'timeline'], ['tls.t.formula', 'tls.t.definition'], ['formula'], 'calm', 'poster', 'content-statement', 'an equation and what each part means', ['tls.t.kv-list']),
   content('code-walk', ['two-column', 'timeline'], ['tls.t.code'], ['code', 'worked-example'], 'calm', 'dense', 'content-bullets-image', 'code with its lines explained', ['tls.t.numbered', 'tls.t.callout']),
   content('worked-steps', ['timeline', 'two-column'], ['tls.c.steps', 'tls.t.numbered', 'tls.g.flow', 'tls.g.graph'], ['worked-example', 'sequence'], 'neutral', 'dense', 'process-steps', 'an example solved step by step', ['tls.t.callout']),
-  content('quote-poster', ['quote', 'section-stack'], ['tls.t.quote', 'tls.c.testimonial'], ['quote'], 'calm', 'poster', 'quote-pull', 'the quote is the slide'),
+  content('quote-poster', ['quote', 'section-stack'], ['tls.t.quote', 'tls.t.pull-quote', 'tls.c.testimonial'], ['quote'], 'calm', 'poster', 'quote-pull', 'the quote is the slide'),
   content('statement-poster', ['section-stack', 'blank'], ['tls.t.statement', 'tls.t.takeaway'], ['statement'], 'calm', 'poster', 'content-statement', 'one sentence, very large'),
   content('question-spotlight', ['section-stack', 'blank'], ['tls.t.statement', 'tls.t.qa'], ['question'], 'lively', 'poster', 'content-statement', 'one question for the room'),
   content('quiz-check', ['timeline'], ['tls.c.quiz', 'tls.t.qa', 'tls.t.checklist'], ['question'], 'lively', 'dense', 'content-cards', 'a check of understanding with options'),
   content('sticky-board', ['timeline', 'blank'], ['tls.c.bento', 'tls.c.cards', 'tls.t.tags'], ['group', 'terms'], 'lively', 'dense', 'content-cards', 'ideas pinned on a board'),
   content('checklist', ['timeline', 'two-column'], ['tls.t.checklist', 'tls.c.objectives', 'tls.m.icon-list'], ['action', 'recap'], 'neutral', 'dense', 'content-icon-list-image', 'things to do or to check'),
-  content('people-row', ['timeline'], ['tls.c.team', 'tls.c.cards', 'tls.m.icon-list'], ['people', 'group'], 'neutral', 'dense', 'people-team', 'the people or roles involved'),
-  content('photo-led', ['image-left', 'image-right', 'full-bleed'], ['tls.c.image-text', 'tls.c.image-full', 'tls.m.image', 'tls.m.image-grid'], ['image-led', 'story'], 'neutral', 'poster', 'content-image-text', 'a picture carries the slide'),
+  content('people-row', ['timeline'], ['tls.c.team', 'tls.c.gallery-wall', 'tls.c.cards', 'tls.m.icon-list'], ['people', 'group'], 'neutral', 'dense', 'people-team', 'the people or roles involved'),
+  content('photo-led', ['image-left', 'image-right', 'full-bleed'], ['tls.c.image-text', 'tls.c.image-full', 'tls.c.photo-essay', 'tls.m.image', 'tls.m.image-grid'], ['image-led', 'story'], 'neutral', 'poster', 'content-image-text', 'a picture carries the slide'),
   content('icon-constellation', ['timeline'], ['tls.g.orbit', 'tls.g.hub-spoke', 'tls.c.feature-grid'], ['group', 'network'], 'lively', 'diagram', 'content-feature-grid', 'related ideas as icons around one centre'),
   content('zoom-in', ['two-column', 'timeline'], ['tls.g.target', 'tls.g.breakdown', 'tls.g.bracket'], ['hierarchy', 'definition'], 'neutral', 'diagram', 'content-image-text', 'a close-up of one part of the previous diagram'),
-  content('scenario', ['two-column', 'image-right'], ['tls.c.case-study', 'tls.c.problem-solution', 'tls.t.statement'], ['story', 'worked-example'], 'lively', 'dense', 'content-statement', '"Imagine…": a situation the audience steps into'),
+  content('scenario', ['two-column', 'image-right'], ['tls.c.case-study', 'tls.c.storyboard', 'tls.c.problem-solution', 'tls.t.statement'], ['story', 'worked-example'], 'lively', 'dense', 'content-statement', '"Imagine…": a situation the audience steps into'),
 
+  // spro creative CR13: the wave-2/3 moves (PLAN Appendix C.3/C.4)
+  content('decision-path', ['timeline', 'sidebar-title'], ['tls.g.decision-tree', 'tls.g.tree', 'tls.g.flow'], ['question', 'cause-effect', 'hierarchy'], 'neutral', 'diagram', 'content-cards', 'a choice made by answering questions in turn'),
+  content('cause-map', ['timeline', 'blank'], ['tls.g.fishbone', 'tls.g.breakdown', 'tls.g.mindmap'], ['cause-effect'], 'neutral', 'diagram', 'content-cards', 'the causes behind one effect, in groups'),
+  content('trade-off', ['timeline', 'two-column'], ['tls.g.balance', 'tls.g.spectrum', 'tls.g.pros-cons'], ['contrast', 'ranking'], 'neutral', 'diagram', 'comparison-options', 'two sides weighed, or options between two poles'),
+  content('storyboard', ['timeline', 'band'], ['tls.c.storyboard', 'tls.c.journey', 'tls.g.timeline'], ['story', 'people', 'sequence'], 'lively', 'dense', 'process-steps', 'a scenario in three or four panels'),
+  content('do-dont', ['timeline', 'comparison'], ['tls.c.do-dont', 'tls.g.pros-cons', 'tls.g.myth-fact'], ['contrast', 'action'], 'lively', 'dense', 'comparison-before-after', 'the right way set against the common mistakes'),
+  content('editorial-spread', ['two-column', 'blank', 'section-stack'], ['tls.c.magazine', 'tls.t.pull-quote', 'tls.t.drop-cap', 'tls.c.photo-essay'], ['story', 'quote', 'image-led'], 'calm', 'poster', 'content-statement', 'a passage set like a magazine page, one line pulled out'),
   // ── cover (7) ──
-  frame('poster-type', 'cover', ['blank', 'section-stack'], ['tls.c.poster-cover', 'tls.c.cover', 'tls.c.hero'], 'neutral', 'poster', 'cover-hero', 'the title set large, nothing else'),
+  frame('poster-type', 'cover', ['blank', 'section-stack'], ['tls.c.poster-cover', 'tls.c.full-bleed-type', 'tls.c.title-card', 'tls.c.cover', 'tls.c.hero'], 'neutral', 'poster', 'cover-hero', 'the title set large, nothing else'),
   frame('question-hook', 'cover', ['section-stack', 'blank'], ['tls.c.hook-cover', 'tls.t.statement', 'tls.c.hero'], 'lively', 'poster', 'cover-hero', 'the deck opens with the question it answers'),
   frame('number-hook', 'cover', ['two-column', 'blank'], ['tls.c.hook-cover', 'tls.c.big-stat', 'tls.t.hero-number'], 'lively', 'poster', 'cover-hero', 'the deck opens with one striking number', ['tls.t.title']),
   frame('motif-hero', 'cover', ['blank'], ['tls.c.cover', 'tls.c.hero'], 'lively', 'poster', 'cover-hero', 'the deck motif drawn large beside the title'),
@@ -109,8 +116,8 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   frame('big-numeral', 'divider', ['section-stack', 'blank'], ['tls.c.chapter-divider', 'tls.c.divider'], 'neutral', 'poster', 'section-divider', 'the section number set huge'),
   frame('chapter-question', 'divider', ['section-stack'], ['tls.c.chapter-divider', 'tls.t.statement'], 'lively', 'poster', 'section-title', 'the section opens with its question'),
   frame('progress-journey', 'divider', ['band', 'timeline'], ['tls.g.chevrons', 'tls.g.steps', 'tls.c.journey'], 'neutral', 'diagram', 'section-divider', 'where we are on the route'),
-  frame('color-field', 'divider', ['blank'], ['tls.c.divider'], 'calm', 'poster', 'section-divider', 'a full colour field with the section title'),
-  frame('quote-divider', 'divider', ['quote', 'section-stack'], ['tls.t.quote'], 'calm', 'poster', 'section-title', 'a quote opens the section'),
+  frame('color-field', 'divider', ['blank'], ['tls.c.divider', 'tls.c.full-bleed-type'], 'calm', 'poster', 'section-divider', 'a full colour field with the section title'),
+  frame('quote-divider', 'divider', ['quote', 'section-stack'], ['tls.t.quote', 'tls.t.pull-quote', 'tls.c.title-card'], 'calm', 'poster', 'section-title', 'a quote opens the section'),
 
   // ── summary (4) ──
   frame('three-things', 'summary', ['timeline', 'three-column'], ['tls.c.takeaway-poster', 'tls.c.recap', 'tls.c.cards'], 'neutral', 'dense', 'content-cards', 'three things to remember'),
@@ -126,7 +133,7 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   // ── closing (8) ──
   frame('one-question', 'closing', ['section-stack', 'blank'], ['tls.c.one-question', 'tls.t.statement'], 'calm', 'poster', 'closing-centered', 'leave one question with the audience'),
   frame('call-to-action', 'closing', ['blank', 'section-stack'], ['tls.c.cta', 'tls.c.closing', 'tls.c.hero'], 'lively', 'poster', 'closing-centered', 'one thing to do next'),
-  frame('callback', 'closing', ['blank', 'section-stack'], ['tls.c.callback', 'tls.t.statement', 'tls.c.big-stat'], 'neutral', 'poster', 'closing-centered', 'answer the cover: its question, its number, its image'),
+  frame('callback', 'closing', ['blank', 'section-stack'], ['tls.c.callback', 'tls.t.statement', 'tls.c.title-card', 'tls.c.big-stat'], 'neutral', 'poster', 'closing-centered', 'answer the cover: its question, its number, its image'),
   frame('takeaway-poster', 'closing', ['section-stack', 'blank'], ['tls.c.takeaway-poster', 'tls.t.takeaway', 'tls.t.statement'], 'calm', 'poster', 'closing-centered', 'the one takeaway, very large'),
   frame('homework', 'closing', ['timeline', 'two-column'], ['tls.c.homework', 'tls.t.checklist', 'tls.c.objectives'], 'neutral', 'dense', 'closing-centered', 'what to do before next time'),
   frame('contact', 'closing', ['two-column', 'blank'], ['tls.c.contact', 'tls.c.closing'], 'calm', 'dense', 'closing-split', 'who to contact (only with contact data from the brief or document)'),

@@ -273,6 +273,23 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.m.emoji': [v('sticker', 'an emoji on a white sticker', { backing: 'sticker', size: 'lg' }), v('bare', 'a bare emoji', { backing: 'none' })],
   'tls.m.illustration': [v('scene', 'a scene in accent', { accent: 'accent' }), v('facing', 'a mirrored scene in accent 2', { accent: 'accent2', flip: true })],
 
+  // spro creative CR13: waves 2 and 3
+  'tls.g.decision-tree': [v('top-down', 'questions branch downwards', { variant: 'top-down' }), v('left-right', 'questions branch to the right', { variant: 'left-right' }), v('badges', 'outcomes as pills', { outcomes: 'badges' })],
+  'tls.g.fishbone': [v('classic', 'cause groups on cards', { variant: 'classic' }), v('minimal', 'cause groups without cards', { variant: 'minimal' })],
+  'tls.g.spectrum': [v('line', 'thin bars between the poles', { variant: 'line' }), v('bar', 'thick bars between the poles', { variant: 'gradient-bar' })],
+  'tls.g.balance': [v('scale', 'a scale weighs the two sides', { variant: 'scale' }), v('seesaw', 'a seesaw between the sides', { variant: 'seesaw' })],
+  'tls.g.puzzle': [v('grid', 'pieces in a grid', { variant: 'grid' }), v('row', 'pieces in one row', { variant: 'row' })],
+  'tls.g.bridge': [v('arch', 'roomy steps over the gap', { variant: 'arch' }), v('flat', 'tight steps over the gap', { variant: 'flat' })],
+  'tls.c.number-story': [v('row', 'numbers in a row', { variant: 'arrow-row' }), v('zoom', 'the last number in focus', { variant: 'zoom' })],
+  'tls.c.do-dont': [v('cards', 'do and don\'t on cards', { variant: 'cards' }), v('stamped', 'a big check and cross', { variant: 'stamped' })],
+  'tls.c.storyboard': [v('strip', 'panels in a strip', { variant: 'strip' }), v('grid', 'panels in a 2×2 grid', { variant: 'grid' })],
+  'tls.c.magazine': [v('column', 'a text column and its pull quote', { variant: 'two-column' }), v('figure', 'a figure beside the text', { variant: 'figure-right' })],
+  'tls.t.drop-cap': [v('raised', 'a raised initial', { variant: 'raised' }), v('boxed', 'the initial in a box', { variant: 'boxed' })],
+  'tls.t.pull-quote': [v('rules', 'a quote between rules', { variant: 'rules' }), v('marks', 'big quotation marks', { variant: 'marks' }), v('side', 'an accent bar beside', { variant: 'side' })],
+  'tls.c.photo-essay': [v('strip', 'photos in a strip', { variant: 'strip' }), v('hero', 'one large photo and two small', { variant: 'hero-plus-two' })],
+  'tls.c.gallery-wall': [v('salon', 'mixed frame sizes', { variant: 'salon' }), v('row', 'frames in a row', { variant: 'row' })],
+  'tls.c.title-card': [v('rule', 'a framed title over a rule', { variant: 'double-rule' }), v('arch', 'a title on an accent panel', { variant: 'arch' })],
+  'tls.c.full-bleed-type': [v('solid', 'one word in accent', { variant: 'solid' }), v('outline', 'one word in the text colour', { variant: 'outline' })],
   // ── decoration ──
   'tls.g.arrow': [v('straight', 'a straight accent arrow', { kind: 'straight', tone: 'accent' }), v('curved', 'a curved pointer', { kind: 'curved' }), v('elbow', 'an elbow arrow', { kind: 'elbow', tone: 'text' })],
   'tls.m.decoration': [v('blob', 'a soft blob', { shape: 'blob', opacity: 'soft' }), v('squiggle', 'a hand squiggle', { shape: 'squiggle' }), v('sparkle', 'a sparkle', { shape: 'sparkle', tone: 'accent2' }), v('solid', 'a 3D solid', { shape: 'cube' })],

@@ -480,6 +480,83 @@ function splitYN(
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* spro creative CR13 — layouts v2 (PLAN §6.12): layouts that break the title bar   */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+type Frame = { width: number; height: number }
+
+/** The title and a short text in a narrow left column; a large visual the full height beside it. */
+function layoutHeroVisual(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const [left, visual] = splitX(ca.x, ca.y, ca.width, ca.height, 0.38, g * 2)
+  const tH = Math.min(left.height, titleBand(tokens) * 2)
+  const [title, text] = splitY(left.x, left.y, left.width, left.height, tH / Math.max(1, left.height), g)
+  return { title, text, visual }
+}
+
+/** Under the title band, two columns at 40/60 or 60/40. */
+function splitBody(frame: Frame, tokens: ResolvedTokens, ratio: number): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const bodyTop = ca.y + tH + g
+  const [left, right] = splitX(ca.x, bodyTop, ca.width, ca.height - tH - g, ratio, g * 2)
+  return { title: { x: ca.x, y: ca.y, width: ca.width, height: tH }, left, right }
+}
+const layoutSplit4060 = (frame: Frame, tokens: ResolvedTokens) => splitBody(frame, tokens, 0.4)
+const layoutSplit6040 = (frame: Frame, tokens: ResolvedTokens) => splitBody(frame, tokens, 0.6)
+
+/** The eye's Z: the title top-left, a small accent top-right, then two halves left to right. */
+function layoutZPattern(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const [top, bottom] = splitY(ca.x, ca.y, ca.width, ca.height, 0.36, g * 2)
+  const [title, a] = splitX(top.x, top.y, top.width, top.height, 0.62, g * 2)
+  const [b, c] = splitX(bottom.x, bottom.y, bottom.width, bottom.height, 0.5, g * 2)
+  return { title, a, b, c }
+}
+
+/** A visual bleeding off the left half of the slide; the title and content inside the right half. */
+function layoutFullBleedHalf(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const half = Math.round(frame.width / 2)
+  const visual = { x: 0, y: 0, width: half, height: frame.height }
+  const x = half + g * 2
+  const w = Math.max(0, ca.x + ca.width - x)
+  const tH = titleBand(tokens)
+  return { visual, title: { x, y: ca.y, width: w, height: tH }, content: { x, y: ca.y + tH + g, width: w, height: Math.max(0, ca.height - tH - g) } }
+}
+
+/** No title bar: one poster region over the safe area (the gate reads it under the poster profile). */
+function layoutPoster(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  return { poster: contentArea(frame, tokens) }
+}
+
+/** The content first and full width; the title small in the bottom-left corner. */
+function layoutCornerTitle(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const content = { x: ca.x, y: ca.y, width: ca.width, height: Math.max(0, ca.height - tH - g) }
+  return { content, title: { x: ca.x, y: ca.y + content.height + g, width: Math.round(ca.width * 0.55), height: tH } }
+}
+
+/** Under the title band, a large cell on the left and two offset cells stacked on the right. */
+function layoutOffsetGrid(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const bodyTop = ca.y + tH + g
+  const bodyH = ca.height - tH - g
+  const [a, right] = splitX(ca.x, bodyTop, ca.width, bodyH, 0.58, g * 2)
+  const drop = Math.round(right.height * 0.12)
+  const [b, c] = splitY(right.x, right.y + drop, right.width, right.height - drop, 0.5, g)
+  return { title: { x: ca.x, y: ca.y, width: ca.width, height: tH }, a, b, c }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -504,6 +581,15 @@ export type SlideLayoutId =
   | 'section-stack'
   | 'sidebar-title'
   | 'band'
+  // spro creative CR13: layouts v2
+  | 'hero-visual'
+  | 'split-40-60'
+  | 'split-60-40'
+  | 'z-pattern'
+  | 'full-bleed-half'
+  | 'poster'
+  | 'corner-title'
+  | 'offset-grid'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -546,6 +632,15 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'center', content: 'center' } },
   { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' } },
   { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
+  // spro creative CR13: layouts v2 (PLAN §6.12)
+  { id: 'hero-visual', name: 'Hero Visual', compile: layoutHeroVisual, regionAlign: { text: 'start', visual: 'center' } },
+  { id: 'split-40-60', name: 'Split 40/60', compile: layoutSplit4060 },
+  { id: 'split-60-40', name: 'Split 60/40', compile: layoutSplit6040 },
+  { id: 'z-pattern', name: 'Z Pattern', compile: layoutZPattern, regionAlign: { a: 'center' } },
+  { id: 'full-bleed-half', name: 'Full Bleed Half', compile: layoutFullBleedHalf },
+  { id: 'poster', name: 'Poster', compile: layoutPoster, regionAlign: { poster: 'center' } },
+  { id: 'corner-title', name: 'Corner Title', compile: layoutCornerTitle },
+  { id: 'offset-grid', name: 'Offset Grid', compile: layoutOffsetGrid },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

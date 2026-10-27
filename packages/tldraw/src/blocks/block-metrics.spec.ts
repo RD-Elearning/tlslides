@@ -183,7 +183,7 @@ describe('LO3 size cards', () => {
     const md = capabilityIndex(registry)
     // vivid V4 (144 blocks): the full index is for tools; the model reads the tier-1 index, whose
     // budget is in capability-digest.spec; spro creative CR8 (160 blocks, +16 tier 2) → 22k here; CR9 (162, emoji + illustration) → 22.4k
-    expect(md.length).toBeLessThanOrEqual(22400)
+    expect(md.length).toBeLessThanOrEqual(24000) // spro creative CR13: 178 blocks
     expect(md).toContain(`tls.t.title · heading · element — ${registry.get('tls.t.title')!.shortDescription} [h≈0+104/L@840]`)
     expect(md).toContain('[h=fill]')
   })

@@ -77,6 +77,15 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
   { id: 'quote', regions: 'quote, attribution', when: 'a quotation and who said it' },
   { id: 'sidebar-title', regions: 'title, content', when: 'the title in a tall left column, one structure filling the right' },
   { id: 'band', regions: 'title, band, foot', when: 'one wide band (a process, a timeline, a row) and a short line or takeaway under it' },
+  // spro creative CR13: layouts v2
+  { id: 'hero-visual', regions: 'title, text, visual', when: 'one large visual the full height on the right; the title and a short text in a narrow left column' },
+  { id: 'split-40-60', regions: 'title, left, right', when: 'a short text or list (40 %) beside a wider visual or diagram (60 %)' },
+  { id: 'split-60-40', regions: 'title, left, right', when: 'a wider explanation (60 %) beside a number, a quote or an image (40 %)' },
+  { id: 'z-pattern', regions: 'title, a, b, c', when: 'the title top-left, a small accent top-right (a number, an icon), then two halves read left to right' },
+  { id: 'full-bleed-half', regions: 'visual, title, content', when: 'a figure or a colour field bleeding off the left half; the title and content on the right' },
+  { id: 'poster', regions: 'poster', when: 'no title bar: one poster block over the whole slide (a statement, a big number, a title card)' },
+  { id: 'corner-title', regions: 'content, title', when: 'one full-width structure first, the title small in the bottom-left corner' },
+  { id: 'offset-grid', regions: 'title, a, b, c', when: 'a large cell on the left, two smaller offset cells on the right (bento-like, three different things)' },
 ]
 
 /** Blocks that stand out beside the main structure (B2): at most one per slide. */

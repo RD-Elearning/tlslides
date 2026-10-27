@@ -218,6 +218,23 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.m.emoji': f(['statement', 'question'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.m.illustration': f(['statement', 'story', 'people'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
 
+  // spro creative CR13: waves 2 and 3 (PLAN Appendix C.3/C.4)
+  'tls.g.decision-tree': f(['hierarchy', 'cause-effect', 'question'], [3, 9], 'labels', 'neutral'),
+  'tls.g.fishbone': f(['cause-effect'], [2, 6], 'labels', 'neutral'),
+  'tls.g.spectrum': f(['contrast', 'ranking'], [2, 7], 'labels', 'neutral'),
+  'tls.g.balance': f(['contrast'], [2, 8], 'labels', 'neutral'),
+  'tls.g.puzzle': f(['group', 'hierarchy'], [2, 6], 'labels', 'lively'),
+  'tls.g.bridge': f(['contrast', 'sequence', 'action'], [1, 5], 'labels', 'neutral'),
+  'tls.c.number-story': f(['number', 'sequence'], [2, 4], 'labels', 'lively', { data: 'single' }),
+  'tls.c.do-dont': f(['contrast', 'action'], [2, 5], 'lines', 'neutral'),
+  'tls.c.storyboard': f(['story', 'sequence', 'people'], [3, 4], 'lines', 'lively', { families: ['playful', 'classroom', 'modern'] }),
+  'tls.c.magazine': f(['story', 'quote', 'image-led'], null, 'paragraphs', 'calm', { families: ['elegant', 'academic', 'professional'] }),
+  'tls.t.drop-cap': f(['story', 'definition'], null, 'paragraphs', 'calm', { families: ['elegant', 'academic', 'professional'] }),
+  'tls.t.pull-quote': f(['quote', 'statement'], null, 'lines', 'calm', { families: ['elegant', 'academic', 'professional'] }),
+  'tls.c.photo-essay': f(['image-led', 'story'], [2, 4], 'lines', 'neutral', { needs: ['images'] }),
+  'tls.c.gallery-wall': f(['group', 'image-led', 'people'], [3, 6], 'labels', 'neutral'),
+  'tls.c.title-card': f(['statement'], null, 'labels', 'calm', { frames: ['cover', 'divider', 'closing'], families: ['elegant', 'academic', 'professional'] }),
+  'tls.c.full-bleed-type': f(['statement'], null, 'labels', 'lively', { frames: ['cover', 'divider'] }),
   // ── decoration (never a main block: relations empty) ──
   'tls.g.arrow': f([], null, 'labels', 'neutral'),
   'tls.m.decoration': f([], null, 'labels', 'lively'),

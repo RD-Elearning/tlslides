@@ -108,6 +108,14 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 | \`sidebar-title\` (Sidebar Title) | \`title\`, \`content\` |  |
 | \`band\` (Band) | \`title\`, \`band\`, \`foot\` |  |
 | \`section-stack\` (Section Stack) | \`content\` |  |
+| \`hero-visual\` (Hero Visual) | \`title\`, \`text\`, \`visual\` |  |
+| \`split-40-60\` (Split 40/60) | \`title\`, \`left\`, \`right\` |  |
+| \`split-60-40\` (Split 60/40) | \`title\`, \`left\`, \`right\` |  |
+| \`z-pattern\` (Z Pattern) | \`title\`, \`a\`, \`b\`, \`c\` |  |
+| \`full-bleed-half\` (Full Bleed Half) | \`visual\`, \`title\`, \`content\` |  |
+| \`poster\` (Poster) | \`poster\` |  |
+| \`corner-title\` (Corner Title) | \`content\`, \`title\` |  |
+| \`offset-grid\` (Offset Grid) | \`title\`, \`a\`, \`b\`, \`c\` |  |
 
 ## Connectors
 
@@ -701,6 +709,37 @@ Section break: big section number, title and one-line intro. _(family: composite
 }
 \`\`\`
 
+### \`tls.c.do-dont\` — Do and don't
+
+What to do and what not to do, side by side. _(family: composite; keywords: do, dont, don't, rules, good practice, mistakes, should)_
+
+**When:** Practical rules: the right way set against the common mistakes.
+**Avoid:** Advantages and drawbacks of one option: tls.g.pros-cons.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`do\` | yes | list of text (max 60 chars) (2–5 items) |  |
+| \`dont\` | yes | list of text (max 60 chars) (2–5 items) |  |
+| \`titles\` | no | list of text (max 16 chars) (0–2 items) |  |
+| \`variant\` | no | enum: columns \\\\| cards \\\\| stamped |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_do_dont\\",
+  \\"type\\": \\"tls.c.do-dont\\",
+  \\"props\\": {
+    \\"do\\": [
+      \\"Wash hands before each patient\\",
+      \\"Label every sample\\"
+    ],
+    \\"dont\\": [
+      \\"Reuse gloves\\",
+      \\"Guess a dose\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.feature-grid\` — Feature Grid [html]
 
 Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
@@ -811,6 +850,67 @@ Two to six flashcards with a term and its meaning. _(family: composite; keywords
       {
         \\"term\\": \\"Label\\",
         \\"back\\": \\"The answer to learn\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.full-bleed-type\` — Full-bleed type
+
+One word or a short phrase filling the slide, the rest small. _(family: composite; keywords: word, type, poster, statement, big text, cover)_
+
+**When:** One word says it all: a cover, a divider, a statement.
+**Avoid:** A sentence: tls.t.statement.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`word\` | yes | text (max 16 chars) |  |
+| \`line\` | no | text (max 100 chars) |  |
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`variant\` | no | enum: solid \\\\| outline \\\\| image-fill |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_full_bleed_type\\",
+  \\"type\\": \\"tls.c.full-bleed-type\\",
+  \\"props\\": {
+    \\"word\\": \\"Wait.\\",
+    \\"line\\": \\"The average patient waits four hours.\\",
+    \\"kicker\\": \\"Emergency care\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.gallery-wall\` — Gallery wall
+
+Three to six framed pictures or icons hung as on a wall, each with a label. _(family: composite; keywords: gallery, wall, frames, portraits, people, collection)_
+
+**When:** A collection to look at: people, objects, examples.
+**Avoid:** Pictures that tell a sequence: tls.c.photo-essay.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (visual, label) (3–6 items) |  |
+| \`variant\` | no | enum: salon \\\\| row |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_gallery_wall\\",
+  \\"type\\": \\"tls.c.gallery-wall\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"visual\\": \\"stethoscope\\",
+        \\"label\\": \\"Doctors\\"
+      },
+      {
+        \\"visual\\": \\"heart\\",
+        \\"label\\": \\"Nurses\\"
+      },
+      {
+        \\"visual\\": \\"users\\",
+        \\"label\\": \\"Families\\"
       }
     ]
   }
@@ -1144,6 +1244,69 @@ Single KPI metric: headline number, change indicator, label, optional sparkline.
 }
 \`\`\`
 
+### \`tls.c.magazine\` — Magazine
+
+An editorial text column with a kicker, a pull quote beside it and an optional figure. _(family: composite; keywords: magazine, editorial, article, pull quote, column, story)_
+
+**When:** A short passage worth reading as text, with one line pulled out.
+**Avoid:** A bare quote: tls.t.pull-quote.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`body\` | yes | richText (max 600 chars) |  |
+| \`pull\` | no | text (max 120 chars) | Verbatim from the body. |
+| \`image\` | no | image |  |
+| \`alt\` | no | text (max 160 chars) |  |
+| \`variant\` | no | enum: two-column \\\\| figure-left \\\\| figure-right |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_magazine\\",
+  \\"type\\": \\"tls.c.magazine\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Case study\\",
+    \\"body\\": \\"The ward cut its waits by half in a year. Nurses triaged on tablets, beds were tracked live, and night shifts grew by two.\\",
+    \\"pull\\": \\"beds were tracked live\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.number-story\` — Number story
+
+Two to four numbers in a sequence that tells a story. _(family: composite; keywords: numbers, story, sequence, metric, kpi, funnel, from to)_
+
+**When:** A few numbers that only make sense read one after another.
+**Avoid:** Independent KPIs: tls.c.kpi-row.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (value, label, note) (2–4 items) |  |
+| \`variant\` | no | enum: arrow-row \\\\| staircase \\\\| zoom |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_number_story\\",
+  \\"type\\": \\"tls.c.number-story\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"value\\": \\"1,200\\",
+        \\"label\\": \\"patients a week\\"
+      },
+      {
+        \\"value\\": \\"4 h\\",
+        \\"label\\": \\"average wait\\"
+      },
+      {
+        \\"value\\": \\"1 in 5\\",
+        \\"label\\": \\"leave before seen\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.objectives\` — Objectives
 
 Learning objectives or goals as a numbered, checked or icon list with an intro line. _(family: composite; keywords: objectives, learning outcomes, goals, aims, by the end, lecture start, workshop)_
@@ -1199,6 +1362,39 @@ A closing or Q&A poster with one giant question and a prompt. _(family: composit
     \\"kicker\\": \\"Before you go\\",
     \\"question\\": \\"What would you measure first?\\",
     \\"prompt\\": \\"Discuss in pairs for two minutes.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.photo-essay\` — Photo essay
+
+Two to four images with captions in an editorial grid. _(family: composite; keywords: photos, images, gallery, essay, pictures, field trip)_
+
+**When:** The pictures carry the story; each gets one line.
+**Avoid:** One image with text: tls.m.image in a split layout.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 60 chars) |  |
+| \`images\` | yes | list of object (ref, caption) (2–4 items) |  |
+| \`variant\` | no | enum: hero-plus-two \\\\| strip \\\\| stagger |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_photo_essay\\",
+  \\"type\\": \\"tls.c.photo-essay\\",
+  \\"props\\": {
+    \\"title\\": \\"A night in the ER\\",
+    \\"images\\": [
+      {
+        \\"ref\\": \\"/demo/photo-1.svg\\",
+        \\"caption\\": \\"9 pm: the queue forms\\"
+      },
+      {
+        \\"ref\\": \\"/demo/photo-2.svg\\",
+        \\"caption\\": \\"Triage on a tablet\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -1638,6 +1834,43 @@ Two to eight sticky notes on a board, for ideas, voices or findings. _(family: c
 }
 \`\`\`
 
+### \`tls.c.storyboard\` — Storyboard
+
+Three or four panels with captions and speech bubbles: a scenario told in pictures. _(family: composite; keywords: storyboard, scenario, story, comic, panels, user journey, case)_
+
+**When:** A short scenario: who does what, in three or four moments.
+**Avoid:** Dated events: tls.g.timeline.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`panels\` | yes | list of object (visual, caption, bubble) (3–4 items) |  |
+| \`variant\` | no | enum: strip \\\\| grid |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_storyboard\\",
+  \\"type\\": \\"tls.c.storyboard\\",
+  \\"props\\": {
+    \\"panels\\": [
+      {
+        \\"visual\\": \\"user\\",
+        \\"caption\\": \\"Lan arrives at 9 pm\\",
+        \\"bubble\\": \\"Where do I go?\\"
+      },
+      {
+        \\"visual\\": \\"clipboard\\",
+        \\"caption\\": \\"Triage on a tablet\\"
+      },
+      {
+        \\"visual\\": \\"bed\\",
+        \\"caption\\": \\"A bed in 40 minutes\\",
+        \\"bubble\\": \\"That was quick!\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.takeaway-poster\` — Takeaway poster
 
 One to three takeaways set large, each with a giant numeral. _(family: composite; keywords: takeaway, summary, closing, key points, remember, poster)_
@@ -1741,6 +1974,32 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
     \\"name\\": \\"Jane Doe\\",
     \\"role\\": \\"VP of Engineering\\",
     \\"avatar\\": \\"\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.title-card\` — Title card
+
+A luxury frame for a title, a section or a quote. _(family: composite; keywords: title card, frame, elegant, cover, section, ornament)_
+
+**When:** A cover, a divider or a closing line in an elegant deck.
+**Avoid:** A playful cover: tls.c.hook-cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`title\` | yes | text (max 60 chars) |  |
+| \`line\` | no | text (max 100 chars) |  |
+| \`variant\` | no | enum: double-rule \\\\| corner-ornament \\\\| arch |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_title_card\\",
+  \\"type\\": \\"tls.c.title-card\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Chapter two\\",
+    \\"title\\": \\"Where the beds went\\",
+    \\"line\\": \\"A year of small changes on ward four\\"
   }
 }
 \`\`\`
@@ -2959,6 +3218,44 @@ A single straight, curved or elbow arrow in four directions with one or two head
 }
 \`\`\`
 
+### \`tls.g.balance\` — Balance
+
+A trade-off on a scale: two sides and which way it tilts. _(family: composite; keywords: balance, scale, trade-off, weigh, seesaw, pros, cons)_
+
+**When:** Two sets of reasons weighed against each other, one side winning or level.
+**Avoid:** Options with many rows: tls.d.compare-table.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`left\` | yes | object (title, items) |  |
+| \`right\` | yes | object (title, items) |  |
+| \`tilt\` | no | enum: left \\\\| right \\\\| level |  |
+| \`variant\` | no | enum: scale \\\\| seesaw |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_balance\\",
+  \\"type\\": \\"tls.g.balance\\",
+  \\"props\\": {
+    \\"left\\": {
+      \\"title\\": \\"Build\\",
+      \\"items\\": [
+        \\"Full control\\",
+        \\"Fits our data\\"
+      ]
+    },
+    \\"right\\": {
+      \\"title\\": \\"Buy\\",
+      \\"items\\": [
+        \\"Ready now\\",
+        \\"Support included\\"
+      ]
+    },
+    \\"tilt\\": \\"right\\"
+  }
+}
+\`\`\`
+
 ### \`tls.g.before-after\` — Before and After
 
 Before and after panels joined by an arrow, each with a tag, title, text and optional image. _(family: diagram; keywords: before, after, transformation, redesign, problem, solution, change)_
@@ -3057,6 +3354,42 @@ One whole box split into 2-6 parts with values, joined by a curly brace; can sho
         \\"label\\": \\"Tools\\",
         \\"value\\": \\"$20k\\"
       }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.bridge\` — Bridge
+
+From where we are to where we want to be, over the gap. _(family: composite; keywords: bridge, gap, from, to, current, target, transition, change)_
+
+**When:** A move from a current state to a target, with the steps that close the gap.
+**Avoid:** Only the two states: tls.g.before-after.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`from\` | yes | object (title, text) |  |
+| \`to\` | yes | object (title, text) |  |
+| \`planks\` | yes | list of text (max 32 chars) (1–5 items) |  |
+| \`variant\` | no | enum: arch \\\\| flat |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_bridge\\",
+  \\"type\\": \\"tls.g.bridge\\",
+  \\"props\\": {
+    \\"from\\": {
+      \\"title\\": \\"Today\\",
+      \\"text\\": \\"Paper triage, four-hour waits\\"
+    },
+    \\"to\\": {
+      \\"title\\": \\"Target\\",
+      \\"text\\": \\"Digital triage, one hour\\"
+    },
+    \\"planks\\": [
+      \\"Tablet triage\\",
+      \\"Live bed board\\",
+      \\"Night shift +2\\"
     ]
   }
 }
@@ -3195,6 +3528,100 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
       }
     ],
     \\"center\\": \\"PDCA\\"
+  }
+}
+\`\`\`
+
+### \`tls.g.decision-tree\` — Decision tree
+
+Questions branching to outcomes, each edge labelled (yes/no). _(family: composite; keywords: decision, tree, branch, if, choose, question, outcome)_
+
+**When:** A choice made by answering questions in turn, each answer leading on.
+**Avoid:** A plain hierarchy with no questions: tls.g.tree.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`root\` | yes | text (max 60 chars) |  |
+| \`nodes\` | yes | list of object (id, parent, edge, text, outcome) (3–9 items) |  |
+| \`variant\` | no | enum: top-down \\\\| left-right |  |
+| \`outcomes\` | no | enum: cards \\\\| badges |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_decision\\",
+  \\"type\\": \\"tls.g.decision-tree\\",
+  \\"props\\": {
+    \\"root\\": \\"Is the patient stable?\\",
+    \\"nodes\\": [
+      {
+        \\"id\\": \\"a\\",
+        \\"edge\\": \\"Yes\\",
+        \\"text\\": \\"Routine ward\\"
+      },
+      {
+        \\"id\\": \\"b\\",
+        \\"edge\\": \\"No\\",
+        \\"text\\": \\"Needs oxygen?\\"
+      },
+      {
+        \\"id\\": \\"c\\",
+        \\"parent\\": \\"b\\",
+        \\"edge\\": \\"Yes\\",
+        \\"text\\": \\"ICU\\",
+        \\"outcome\\": true
+      },
+      {
+        \\"id\\": \\"d\\",
+        \\"parent\\": \\"b\\",
+        \\"edge\\": \\"No\\",
+        \\"text\\": \\"Observation\\",
+        \\"outcome\\": true
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.fishbone\` — Fishbone
+
+Causes grouped along a spine to one effect. _(family: composite; keywords: fishbone, ishikawa, cause, effect, root cause, why)_
+
+**When:** Many causes, in a few groups, behind one effect or problem.
+**Avoid:** One chain of causes: tls.g.flow.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`effect\` | yes | text (max 40 chars) |  |
+| \`branches\` | yes | list of object (label, causes) (2–6 items) |  |
+| \`variant\` | no | enum: classic \\\\| minimal |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_fishbone\\",
+  \\"type\\": \\"tls.g.fishbone\\",
+  \\"props\\": {
+    \\"effect\\": \\"Long waits in the ER\\",
+    \\"branches\\": [
+      {
+        \\"label\\": \\"People\\",
+        \\"causes\\": [
+          \\"Short night shift\\",
+          \\"Slow handover\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Process\\",
+        \\"causes\\": [
+          \\"Paper triage\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Beds\\",
+        \\"causes\\": [
+          \\"Late discharge\\"
+        ]
+      }
+    ]
   }
 }
 \`\`\`
@@ -3739,6 +4166,46 @@ Two columns of advantages and disadvantages with check and cross marks and an op
 }
 \`\`\`
 
+### \`tls.g.puzzle\` — Puzzle
+
+Parts that fit together into a whole. _(family: composite; keywords: puzzle, pieces, parts, whole, fit, components)_
+
+**When:** A few parts that only work together, making one whole.
+**Avoid:** Peers that stand alone: tls.c.cards.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`whole\` | no | text (max 32 chars) |  |
+| \`pieces\` | yes | list of object (label, text, icon) (2–6 items) |  |
+| \`variant\` | no | enum: row \\\\| grid \\\\| ring |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_puzzle\\",
+  \\"type\\": \\"tls.g.puzzle\\",
+  \\"props\\": {
+    \\"whole\\": \\"A working model\\",
+    \\"pieces\\": [
+      {
+        \\"label\\": \\"Data\\",
+        \\"text\\": \\"Clean and labelled\\",
+        \\"icon\\": \\"database\\"
+      },
+      {
+        \\"label\\": \\"Features\\",
+        \\"text\\": \\"Chosen with care\\",
+        \\"icon\\": \\"sliders\\"
+      },
+      {
+        \\"label\\": \\"Evaluation\\",
+        \\"text\\": \\"On held-out data\\",
+        \\"icon\\": \\"check\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.pyramid\` — Pyramid
 
 Stacked pyramid levels from tip to base, each with a label and a note; can be inverted. _(family: diagram; keywords: pyramid, levels, tiers, maslow, hierarchy of needs, foundation)_
@@ -3833,6 +4300,45 @@ Lanes of bars across periods, coloured by status, with a today line. _(family: d
       }
     ],
     \\"todayAt\\": 1.5
+  }
+}
+\`\`\`
+
+### \`tls.g.spectrum\` — Spectrum
+
+Items placed between two poles. _(family: composite; keywords: spectrum, scale, range, between, trade-off, continuum, pole)_
+
+**When:** Options that sit somewhere between two extremes.
+**Avoid:** Two sides with lists: tls.c.comparison.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`left\` | yes | text (max 24 chars) |  |
+| \`right\` | yes | text (max 24 chars) |  |
+| \`items\` | yes | list of object (label, at, note) (2–7 items) |  |
+| \`variant\` | no | enum: line \\\\| gradient-bar \\\\| slider |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_spectrum\\",
+  \\"type\\": \\"tls.g.spectrum\\",
+  \\"props\\": {
+    \\"left\\": \\"Cheap\\",
+    \\"right\\": \\"Accurate\\",
+    \\"items\\": [
+      {
+        \\"label\\": \\"Rule of thumb\\",
+        \\"at\\": 0.15
+      },
+      {
+        \\"label\\": \\"Linear model\\",
+        \\"at\\": 0.45
+      },
+      {
+        \\"label\\": \\"Deep network\\",
+        \\"at\\": 0.9
+      }
+    ]
   }
 }
 \`\`\`
@@ -5474,6 +5980,28 @@ A term with its definition, optional pronunciation, part of speech and example. 
 }
 \`\`\`
 
+### \`tls.t.drop-cap\` — Drop cap
+
+A paragraph opened by a large initial. _(family: composite; keywords: drop cap, initial, paragraph, editorial, story)_
+
+**When:** One paragraph that should read like the opening of a story.
+**Avoid:** Several short points: tls.t.bullets.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 400 chars) |  |
+| \`variant\` | no | enum: raised \\\\| sunk \\\\| boxed |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_drop_cap\\",
+  \\"type\\": \\"tls.t.drop-cap\\",
+  \\"props\\": {
+    \\"text\\": \\"Every winter the ward filled faster than it emptied. The fix was not more beds but knowing, hour by hour, which beds were free.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.t.footnote\` — Footnote
 
 Small-print source or footnote lines with an optional marker. _(family: text; keywords: footnote, source, reference, citation, small print)_
@@ -5721,6 +6249,30 @@ Numbered points in order, one or two columns. _(family: text; keywords: numbered
     ],
     \\"markerStyle\\": \\"badge\\",
     \\"markerTone\\": \\"accent\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.pull-quote\` — Pull quote
+
+A quote set between rules, at display scale. _(family: composite; keywords: pull quote, quote, editorial, statement, citation)_
+
+**When:** One line from the source that deserves to be read large.
+**Avoid:** A quote with a photo of its author: tls.c.testimonial.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 160 chars) |  |
+| \`source\` | no | text (max 60 chars) |  |
+| \`variant\` | no | enum: rules \\\\| marks \\\\| side |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_pull_quote\\",
+  \\"type\\": \\"tls.t.pull-quote\\",
+  \\"props\\": {
+    \\"text\\": \\"We did not add beds. We learned where they were.\\",
+    \\"source\\": \\"Head nurse, ward 4\\"
   }
 }
 \`\`\`
@@ -6222,7 +6774,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 162,
+  "blockCount": 178,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -6239,9 +6791,12 @@ Object {
     "tls.c.cta",
     "tls.c.dashboard",
     "tls.c.divider",
+    "tls.c.do-dont",
     "tls.c.feature-grid",
     "tls.c.feature-reveal",
     "tls.c.flashcards",
+    "tls.c.full-bleed-type",
+    "tls.c.gallery-wall",
     "tls.c.hero",
     "tls.c.homework",
     "tls.c.hook-cover",
@@ -6251,8 +6806,11 @@ Object {
     "tls.c.kinetic-title",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
+    "tls.c.magazine",
+    "tls.c.number-story",
     "tls.c.objectives",
     "tls.c.one-question",
+    "tls.c.photo-essay",
     "tls.c.poster-cover",
     "tls.c.problem-solution",
     "tls.c.profile-card",
@@ -6266,9 +6824,11 @@ Object {
     "tls.c.stat-spotlight",
     "tls.c.steps",
     "tls.c.sticky-board",
+    "tls.c.storyboard",
     "tls.c.takeaway-poster",
     "tls.c.team",
     "tls.c.testimonial",
+    "tls.c.title-card",
     "tls.d.area",
     "tls.d.bar",
     "tls.d.bubble",
@@ -6298,12 +6858,16 @@ Object {
     "tls.d.waterfall",
     "tls.g.annotated",
     "tls.g.arrow",
+    "tls.g.balance",
     "tls.g.before-after",
     "tls.g.bracket",
     "tls.g.breakdown",
+    "tls.g.bridge",
     "tls.g.chevrons",
     "tls.g.connector",
     "tls.g.cycle",
+    "tls.g.decision-tree",
+    "tls.g.fishbone",
     "tls.g.flow",
     "tls.g.funnel",
     "tls.g.graph",
@@ -6316,8 +6880,10 @@ Object {
     "tls.g.myth-fact",
     "tls.g.orbit",
     "tls.g.pros-cons",
+    "tls.g.puzzle",
     "tls.g.pyramid",
     "tls.g.roadmap",
+    "tls.g.spectrum",
     "tls.g.staircase",
     "tls.g.steps",
     "tls.g.swot",
@@ -6364,6 +6930,7 @@ Object {
     "tls.t.checklist",
     "tls.t.code",
     "tls.t.definition",
+    "tls.t.drop-cap",
     "tls.t.footnote",
     "tls.t.formula",
     "tls.t.hero-number",
@@ -6372,6 +6939,7 @@ Object {
     "tls.t.kv-list",
     "tls.t.marker",
     "tls.t.numbered",
+    "tls.t.pull-quote",
     "tls.t.qa",
     "tls.t.quote",
     "tls.t.speech-bubble",
@@ -6402,7 +6970,7 @@ Object {
     "line",
     "scrim",
   ],
-  "layoutCount": 20,
+  "layoutCount": 28,
   "layoutIds": Array [
     "title",
     "section",
@@ -6424,6 +6992,14 @@ Object {
     "sidebar-title",
     "band",
     "section-stack",
+    "hero-visual",
+    "split-40-60",
+    "split-60-40",
+    "z-pattern",
+    "full-bleed-half",
+    "poster",
+    "corner-title",
+    "offset-grid",
   ],
   "motionCount": 35,
   "motionPresetIds": Array [
@@ -6466,7 +7042,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.1k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.4k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -6552,7 +7128,7 @@ also: tls.t.kicker, tls.t.subtitle
 ## Text
 tls.t.body · text · element — Paragraph text, auto-fitted, optionally in columns [h≈0+41/L@840] knobs: align=start|center|end, autoFit
 tls.t.footnote · text · element · ≤4 items — Small-print source, reference or footnote line with optional marker [h≈-6+30/item@840] knobs: marker=none|number|asterisk|source, align=start|end
-also: tls.t.caption, tls.t.code, tls.t.definition, tls.t.formula
+also: tls.c.magazine, tls.t.caption, tls.t.code, tls.t.definition, tls.t.drop-cap, tls.t.formula
 
 ## Lists
 tls.c.bento · list · slide · 3–5 items — Asymmetric tile grid: a big stat, icon points, a photo, a quote [h=fill] knobs: pattern=1+2|2+1|hero+3|3+2
@@ -6566,13 +7142,13 @@ also: tls.c.feature-reveal, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, 
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
 tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=display|xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
 tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead|column
-also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.highlight, tls.t.marker, tls.t.speech-bubble
+also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.highlight, tls.t.marker, tls.t.pull-quote, tls.t.speech-bubble
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 184–265@840] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual=ring|plain, statsPlacement=below|side
-also: tls.c.dashboard, tls.c.kpi-tile, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
+also: tls.c.dashboard, tls.c.kpi-tile, tls.c.number-story, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
 ## Charts
 tls.c.chart-insight · chart · group — Chart with a highlighted takeaway beside it and a source line [h=fill] knobs: side=right|left|below, ratio=2:1|3:2|1:1, insightSize=body|lead
@@ -6593,12 +7169,12 @@ tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, p
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow=arrow|chevron|none, emphasis=after|none
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight=none|TL|TR|BL|BR, style=tinted|lines, showItems
 tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h 354–604@840] knobs: style=columns|cards, balance=equal|auto, showVerdict
-also: tls.c.case-study, tls.c.problem-solution, tls.g.iceberg, tls.g.myth-fact, tls.g.swot
+also: tls.c.case-study, tls.c.do-dont, tls.c.problem-solution, tls.g.balance, tls.g.iceberg, tls.g.myth-fact, tls.g.spectrum, tls.g.swot
 
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
 tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill=gradient|single|series, textPlacement=inside|below
-also: tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
+also: tls.g.bridge, tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none
@@ -6608,22 +7184,22 @@ also: tls.c.journey, tls.g.milestones
 ## Hierarchy
 tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction=up|down, notes=side|inside|none, fill=gradient|series|single
 tls.g.tree · hierarchy · group — Org chart or hierarchy of nodes linked from one root, down or sideways [h=fill] knobs: direction=TB|LR, nodeStyle=card|pill|avatar|circle, compact
-also: tls.g.breakdown, tls.g.graph, tls.g.layers, tls.g.mindmap, tls.g.target
+also: tls.g.breakdown, tls.g.decision-tree, tls.g.graph, tls.g.layers, tls.g.mindmap, tls.g.target
 
 ## Relationships
-also: tls.g.bracket, tls.g.hub-spoke, tls.g.orbit, tls.g.venn, tls.m.shape
+also: tls.g.bracket, tls.g.fishbone, tls.g.hub-spoke, tls.g.orbit, tls.g.puzzle, tls.g.venn, tls.m.shape
 
 ## Media
 tls.c.image-full · media · slide — Full-slide photo with a headline panel [h=fill] knobs: panel=bottom-left|left|center|right|split|band, scrim=medium|strong|gradient, frame
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
+also: tls.c.gallery-wall, tls.c.photo-essay, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio
 tls.c.testimonial · people · group — Customer quote with name, role and avatar [h≈194+66/L@840] knobs: variant=centered|photo
-also: tls.c.profile-card, tls.m.avatar, tls.m.avatar-group
+also: tls.c.profile-card, tls.c.storyboard, tls.m.avatar, tls.m.avatar-group
 
 ## Brand
 tls.m.logo-wall · brand · group · 3–16 items — Even grid of logos at equal visual weight, with an optional heading [h 106–279@544] knobs: cols=auto|3|4|5|6, plates, dividers
@@ -6633,7 +7209,7 @@ also: tls.m.logo
 tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant=centered|split|bleed, decoration=none|blob|arc|dots
 tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule
 tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align=start|center, decoration=orbs|none, tone=plain|accent
-also: tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover
+also: tls.c.full-bleed-type, tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover, tls.c.title-card
 
 ## Dividers
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant=numeral|field|minimal, align=start|center

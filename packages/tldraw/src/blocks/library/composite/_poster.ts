@@ -197,6 +197,12 @@ export function schemaCapacity(schema: Record<string, unknown>, props: unknown):
       used = Array.isArray(v) ? v.length : 0
       max = s.type.max
       unit = 'items'
+    } else if (s.type.kind === 'object' && v && typeof v === 'object') {
+      // spro creative CR13: an object slot (a balance pan, a bridge bank) is read field by field
+      const inner = schemaCapacity((s.type as { fields?: Record<string, unknown> }).fields ?? {}, v)
+      for (const [f, b] of Object.entries(inner.budget)) budget[`${k}.${f}`] = b
+      if (!inner.fits) over.push(k)
+      continue
     } else continue
     if (used <= 0) continue
     budget[k] = { max, used, unit }
