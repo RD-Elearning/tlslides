@@ -80,6 +80,14 @@ describe('SLIDE_LAYOUTS module-level', () => {
     expect(band.band.height).toBeGreaterThan(band.foot.height * 1.5)
   })
 
+  it('spro creative R3d: the band foot is a strip for a line or two, under the gate\'s region share', () => {
+    // a one-line caption in a third of the body was judged a thin region (golden r3b: 7 of 10)
+    const band = getSlideLayout('band')!.compile({ width: 1920, height: 1080 }, TEST_TOKENS)
+    expect(band.band.height).toBeGreaterThan(band.foot.height * 3)
+    expect(band.foot.width * band.foot.height).toBeLessThan(0.15 * 1920 * 1080)
+    expect(band.foot.height).toBeGreaterThanOrEqual(120)
+  })
+
   it('AC8.6 section-stack: one start-aligned content column at most 1200 wide, centred stack', () => {
     const l = getSlideLayout('section-stack')!
     const regions = l.compile({ width: 1920, height: 1080 }, TEST_TOKENS)

@@ -400,13 +400,13 @@ function layoutSidebarTitle(frame: { width: number; height: number }, tokens: Re
   return { title, content }
 }
 
-/** The title band, one wide band (60 % of the body) and a foot under it for the takeaway. */
+/** The title band, one wide band (78 % of the body: the foot holds a line or two, spro creative R3d) and a foot under it for the takeaway. */
 function layoutBand(frame: { width: number; height: number }, tokens: ResolvedTokens): Record<string, Box> {
   const ca = contentArea(frame, tokens)
   const g = gutter(tokens)
   const tH = titleBand(tokens)
   const bodyTop = ca.y + tH + g
-  const [band, foot] = splitY(ca.x, bodyTop, ca.width, ca.height - tH - g, 0.66, g)
+  const [band, foot] = splitY(ca.x, bodyTop, ca.width, ca.height - tH - g, 0.78, g)
   return { title: { x: ca.x, y: ca.y, width: ca.width, height: tH }, band, foot }
 }
 
