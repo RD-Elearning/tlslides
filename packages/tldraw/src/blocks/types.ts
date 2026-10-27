@@ -1270,6 +1270,11 @@ export interface SlideSpec {
   masterId?: string
   /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
   motionStyle?: MotionStyle
+  /** spro creative CR10 — how the viewer brings this slide in (`motion/transition.ts`). Viewer-only. */
+  transition?: SlideTransition
+  /** spro creative CR10 — the design move whose choreography orders this slide's reveals
+   *  (`motion/choreo.ts`): it fills the motion of blocks that author none. */
+  choreography?: string
   /** CMP3 (B2, X10) — lines between blocks, by block id (nested ids too), never by coordinates.
    *  Compiled after layout into one overlay `tls.g.connector` shape each (on top of every block);
    *  the round trip returns them here. */
@@ -1378,6 +1383,9 @@ export interface DeckSpec {
    *  (`placeDeckMotifs`, which the host runs before rendering). Absent / `fixed` = the master's
    *  own position. */
   motifZone?: 'fixed' | 'auto'
+  /** spro creative CR10 — scales every reveal's duration and stagger and picks its easing, over
+   *  `motionStyle` (`motion/personality.ts`). Viewer-only. */
+  motionPersonality?: MotionPersonality
   /** spro creative CR7b (PLAN §6.3) — the deck's look axes, over the style's own treatment
    *  (`StyleSurface.render`); slides and blocks override per axis. Paint only. */
   look?: LookAxes
@@ -1386,6 +1394,15 @@ export interface DeckSpec {
    *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
   ambient?: boolean
 }
+
+/** spro creative CR10 — a slide transition (`SlideSpec.transition`). */
+export interface SlideTransition {
+  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'
+  dir?: 'left' | 'right' | 'up' | 'down'
+}
+
+/** spro creative CR10 — the deck's motion personality. */
+export type MotionPersonality = 'calm' | 'lively' | 'cinematic'
 
 /** spro creative CR7b (PLAN §6.3) — look axes: how strokes, fills, corners, depth, emphasis,
  *  connectors, icons and image frames are drawn. Values: `LOOK_VALUES` in `blocks/look.ts`. */

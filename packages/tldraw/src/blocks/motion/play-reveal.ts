@@ -28,6 +28,8 @@
  * @module motion/play-reveal
  */
 
+import { personalityOf, personalTiming } from './personality'
+import type { MotionPersonality } from '../types'
 import type { AnimationEffect } from '~types'
 import type { MotionDriver, MotionKeyframes, MotionState } from './driver'
 import { resolveBlockMotion, resolvePartMotion } from './resolve-motion'
@@ -46,6 +48,9 @@ export interface PlayBlockRevealContext {
   driver: MotionDriver
   /** When true, skip all animations — set visible state immediately. */
   reducedMotion: boolean
+  /** spro creative CR10 — the deck's motion personality: scales durations, delays and stagger,
+   *  picks the easing (`motion/personality.ts`). Absent = the presets' own timing. */
+  personality?: MotionPersonality
 }
 
 // --- Helpers -----------------------------------------------------------------
@@ -607,8 +612,9 @@ export function playBlockReveal(
   const { driver, reducedMotion } = ctx
 
   // 1. Resolve block-level and part-level motion.
-  const blockMotion = resolveBlockMotion(spec.motion, def.motion)
-  const partMotions = resolvePartMotion(spec.motion, def.motion)
+  const k = personalityOf(ctx.personality)
+  const blockMotion = personalTiming(resolveBlockMotion(spec.motion, def.motion), ctx.personality)
+  const partMotions = resolvePartMotion(spec.motion, def.motion).map((pm) => ({ ...personalTiming(pm, ctx.personality), delayMs: Math.round(pm.delayMs * k.duration) }))
 
   // 2. Reduced motion or no effect → set visible state immediately, no animation.
   if (reducedMotion || blockMotion.effect === null) {

@@ -29,6 +29,8 @@ import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 import { CONNECTOR_BLOCK_TYPE } from './connectors'
 import { lookProblems } from './look'
+import { TRANSITION_DIRS, TRANSITION_KINDS } from './motion/transition'
+import { MOTION_PERSONALITIES } from './motion/personality'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -235,6 +237,11 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
   checkMotionStyle(s.motionStyle, 'motionStyle', 'DeckSpec', findings)
   // CR7b: look axes (deck, slide, block) — an unknown axis or value is an error
   for (const f of lookProblems((s as { look?: unknown }).look, 'look', 'DeckSpec')) findings.push({ level: 'error', ...f })
+  // CR10: the motion personality (viewer-only; an unknown one is ignored)
+  const mp = (s as { motionPersonality?: unknown }).motionPersonality
+  if (mp !== undefined && !(MOTION_PERSONALITIES as readonly unknown[]).includes(mp)) {
+    findings.push({ level: 'warning', rule: 'motion/unknown-personality', path: 'motionPersonality', message: `motionPersonality ${stringifyForMessage(mp)} is not one of ${MOTION_PERSONALITIES.join(', ')} and is ignored.` })
+  }
 
   // Tokens used only to read back real region names from each layout's compile() — the
   // *values* inside are irrelevant to validation, only the shape (which keys exist) is.
@@ -347,6 +354,7 @@ function validateSlide(
   checkMotionStyle(slide.motionStyle, `${slidePath}.motionStyle`, `Slide "${slideLabel}"`, findings)
   checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
   for (const f of lookProblems((slide as { look?: unknown }).look, `${slidePath}.look`, `Slide "${slideLabel}"`)) findings.push({ level: 'error', ...f })
+  checkTransition((slide as { transition?: unknown }).transition, `${slidePath}.transition`, `Slide "${slideLabel}"`, findings)
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
@@ -572,6 +580,16 @@ function checkIntent(value: unknown, path: string, owner: string, findings: Deck
       ` Use one of: ${SLIDE_INTENTS.join(', ')}.`,
     suggestion,
   })
+}
+
+/** CR10 — a slide transition: `{ kind, dir? }` with known values; anything else is a cut. */
+function checkTransition(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
+  if (value === undefined) return
+  const t = value as { kind?: unknown; dir?: unknown }
+  const ok = !!value && typeof value === 'object' && (TRANSITION_KINDS as readonly unknown[]).includes(t.kind) && (t.dir === undefined || (TRANSITION_DIRS as readonly unknown[]).includes(t.dir))
+  if (!ok) {
+    findings.push({ level: 'warning', rule: 'motion/unknown-transition', path, message: `${owner} has transition ${stringifyForMessage(value)}; use { kind: ${TRANSITION_KINDS.join(' | ')}, dir?: ${TRANSITION_DIRS.join(' | ')} }. It plays as a cut.` })
+  }
 }
 
 /** P7 — `motionStyle` must be one of `MOTION_STYLES`; anything else is ignored at compile time. */

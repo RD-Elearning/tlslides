@@ -55,6 +55,8 @@ import { createLayoutContext } from './layout'
 import { layoutBlock, textScaleOf } from './layout/layout-child'
 import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
+import { choreoOrder, choreoPreset } from './motion/choreo'
+import { MOTION_PRESETS } from './motion/presets'
 import { deriveShapeAnimation } from './motion/resolve-motion'
 import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
@@ -639,8 +641,9 @@ function compileSlideUnstyled(
   }
 
   // 5. P7 — motion style. Only when a style is set; absent = the output above, untouched.
-  const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
-  if (motionStyle) applyMotionStyle(motionStyle, styleCandidates)
+  // CR10: a choreography is an explicit ask for motion — expressive when no style says otherwise
+  const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle) ?? (spec.choreography ? 'expressive' : undefined)
+  if (motionStyle) applyMotionStyle(motionStyle, styleCandidates, spec.choreography)
 
   // LO8: a free block with `layer: 'backdrop'` (e.g. a layered block the user dragged, which the
   // decompiler keeps in `free[]`) paints under every other shape, as it did in the region.
@@ -693,11 +696,14 @@ interface StyleCandidate {
  * order. The derived spec goes to `$block.styleMotion` (plus `$block.motionStyle` for the html
  * runtime), never to `$block.motion`, so `documentToDeckSpec` returns what was authored.
  */
-function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[]): void {
-  const ordered = [...candidates].sort((a, b) => readingOrder(a.box, b.box))
+function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[], choreography?: string): void {
+  const reading = [...candidates].sort((a, b) => readingOrder(a.box, b.box))
+  // CR10: the move's choreography reorders the reveal and may pick the leading blocks' preset
+  const ordered = choreography ? choreoOrder(choreography, reading.map((c) => c.block)).map((i) => reading[i]) : reading
   let index = 0
   for (const c of ordered) {
-    const motion = styleBlockMotion(style, c.def.motion, index)
+    const lead = style === 'expressive' && choreography ? choreoPreset(choreography, c.block, (id) => !!MOTION_PRESETS[id]) : undefined
+    const motion = styleBlockMotion(style, lead ? { ...(c.def.motion ?? {}), expressive: lead } : c.def.motion, index)
     if (!motion) continue
     const animation = deriveShapeAnimation(motion, c.def.motion)
     if (!animation) continue

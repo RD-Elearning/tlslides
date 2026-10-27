@@ -397,6 +397,8 @@ export function pageToSlideSpec(
   if (page.intent !== undefined) {
     spec.intent = page.intent
   }
+  if (page.transition !== undefined) spec.transition = page.transition
+  if (page.choreography !== undefined) spec.choreography = page.choreography
   if (page.look !== undefined) {
     spec.look = page.look
   }
@@ -488,6 +490,7 @@ export function documentToDeckSpec(
   if (doc.motif !== undefined) deckSpec.motif = doc.motif
   if (doc.motifZone !== undefined) deckSpec.motifZone = doc.motifZone
   if (doc.look !== undefined) deckSpec.look = doc.look
+  if (doc.motionPersonality !== undefined) deckSpec.motionPersonality = doc.motionPersonality
   if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
   return { spec: deckSpec, findings }
 }

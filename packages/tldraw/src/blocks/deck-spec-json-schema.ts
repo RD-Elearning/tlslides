@@ -16,6 +16,8 @@ import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
 import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES, SLIDE_INTENTS } from './types'
 import { LOOK_AXES, LOOK_VALUES } from './look'
+import { TRANSITION_DIRS, TRANSITION_KINDS } from './motion/transition'
+import { MOTION_PERSONALITIES } from './motion/personality'
 
 /** CR7b — the look axes object (deck, slide, block). */
 const LOOK_SCHEMA = {
@@ -101,6 +103,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
       },
       look: LOOK_SCHEMA,
+      motionPersonality: { type: 'string', enum: [...MOTION_PERSONALITIES], description: 'CR10 — scales reveal durations and stagger, picks the easing. Viewer-only.' },
       motifZone: {
         type: 'string',
         enum: ['fixed', 'auto'],
@@ -169,6 +172,14 @@ function slideSchema(
       skip: { type: 'boolean' },
       masterId: { type: 'string' },
       motionStyle: MOTION_STYLE_SCHEMA,
+      transition: {
+        type: 'object',
+        properties: { kind: { type: 'string', enum: [...TRANSITION_KINDS] }, dir: { type: 'string', enum: [...TRANSITION_DIRS] } },
+        required: ['kind'],
+        additionalProperties: false,
+        description: 'CR10 — how the viewer brings the slide in. Viewer-only.',
+      },
+      choreography: { type: 'string', description: 'CR10 — the design move whose choreography orders the reveals.' },
       connectors: CONNECTORS_SCHEMA,
     },
     additionalProperties: false,

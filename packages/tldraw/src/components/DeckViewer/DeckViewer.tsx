@@ -32,6 +32,7 @@ import { computeBuildSteps, stepChainDelayMs } from '~state/deck/presentation'
 import type { BuildStep } from '~state/deck/presentation'
 import { autoRunEnd, entranceKeyframes, hiddenState, visibleState } from './motion-helpers'
 import { playBlockReveal, settleBlockParts } from '~blocks/motion/play-reveal'
+import { transitionPlan } from '~blocks/motion/transition'
 import { hidePartsForAnimate, revealUntouchedParts } from '~blocks/motion/animate-guard'
 
 /**
@@ -327,6 +328,22 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
 
   const elementsRef = React.useRef<Map<string, HTMLDivElement>>(new Map())
 
+  /* --- CR10: the slide transition, played on the frame when the slide changes ---------- */
+  const frameRef = React.useRef<HTMLDivElement | null>(null)
+  const shownPageRef = React.useRef<string | undefined>(undefined)
+  React.useEffect(() => {
+    const el = frameRef.current
+    const id = page?.id
+    const first = shownPageRef.current === undefined
+    if (id === shownPageRef.current) return
+    shownPageRef.current = id
+    if (first || !el || typeof el.animate !== 'function') return
+    const plan = transitionPlan(page?.transition, document.motionPersonality, reducedMotion)
+    if (!plan) return
+    const anim = el.animate(plan.keyframes, { duration: plan.durationMs, easing: plan.easing })
+    return () => anim.cancel()
+  }, [page, document.motionPersonality, reducedMotion])
+
   /* --- R3: animate() disposers and onComplete promises ------------------------------ */
 
   /**
@@ -609,7 +626,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
           if (isRevealed) {
             if (isNewlyRevealed && !reducedMotion && blockSpec && blockDef) {
               // Full reveal: block-level + part-level choreography with stagger.
-              playBlockReveal(el, blockSpec, blockDef, { driver: motionDriver, reducedMotion: false })
+              playBlockReveal(el, blockSpec, blockDef, { driver: motionDriver, reducedMotion: false, personality: document.motionPersonality })
             } else {
               // Already revealed (or reduced motion): settle to visible.
               motionDriver.set(el, visibleState(animation.effect))
@@ -912,6 +929,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       <span className="sr-only">Slide {currentSlideIndex + 1} of {pages.length}</span>
       {page && (
         <div
+          ref={frameRef}
           data-testid="deck-viewer-slide"
           data-slide-id={page.id}
           style={{

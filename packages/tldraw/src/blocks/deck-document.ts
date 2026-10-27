@@ -227,6 +227,8 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
     if (slideSpec.look !== undefined) page.look = slideSpec.look
+    if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
+    if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page
 
     pageStates[pageId] = {
@@ -257,6 +259,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (spec.motif !== undefined) document.motif = spec.motif
   if (spec.motifZone !== undefined) document.motifZone = spec.motifZone
   if (spec.look !== undefined) document.look = spec.look
+  if (spec.motionPersonality !== undefined) document.motionPersonality = spec.motionPersonality
   if (spec.ambient !== undefined) document.ambient = spec.ambient
 
   return { document, findings }
