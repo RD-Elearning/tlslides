@@ -111,7 +111,15 @@ export const MIN_CELL_WIDTH = 200
 export function effectiveColumns(width: number, columns: number | undefined, gap: number, count: number): number {
   const want = Math.max(1, Math.min(4, Math.round(Number(columns) || 3)))
   const fit = Math.max(1, Math.floor((width + gap) / (MIN_CELL_WIDTH + gap)))
-  return Math.max(1, Math.min(want, fit, Math.max(1, count)))
+  const cols = Math.max(1, Math.min(want, fit, Math.max(1, count)))
+  // spro creative R3: never one card alone on the last row ("orphaned fifth card", golden calculus
+  // s4: 4 + 1) — one more column when it fits, else one fewer (5 → 3 + 2, 4 → 2 + 2 or one row).
+  if (count > cols && count % cols === 1) {
+    for (const alt of [cols + 1, cols - 1]) {
+      if (alt >= 2 && alt <= Math.min(4, fit) && (count <= alt || count % alt !== 1)) return alt
+    }
+  }
+  return cols
 }
 
 /** AC2 card cell: inner padding and corner radius (template and poster). */

@@ -836,3 +836,15 @@ describe('AC4 fix — poster icons fill their box (SVG export)', () => {
     expect(html).not.toContain('stroke="none"')
   })
 })
+
+describe('spro creative R3: no orphan card on the last row', () => {
+  it('effectiveColumns avoids a lone last card', () => {
+    const { effectiveColumns } = require('./schema') as typeof import('./schema')
+    expect(effectiveColumns(1600, 4, 24, 5)).toBe(3) // 3 + 2, not 4 + 1
+    expect(effectiveColumns(1600, 3, 24, 4)).toBe(4) // one row of 4, not 3 + 1
+    expect(effectiveColumns(1600, 3, 24, 7)).toBe(4) // 4 + 3, not 3 + 3 + 1
+    expect(effectiveColumns(1600, 3, 24, 6)).toBe(3)
+    expect(effectiveColumns(1600, 2, 24, 3)).toBe(3)
+    expect(effectiveColumns(400, 3, 24, 5)).toBe(1) // one column fits: no orphan to avoid
+  })
+})
