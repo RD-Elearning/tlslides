@@ -197,6 +197,24 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.quiz': f(['question'], [2, 5], 'labels', 'lively', { frames: ['qa'] }),
   'tls.t.qa': f(['question', 'definition'], [1, 4], 'lines', 'neutral', { frames: ['qa'] }),
 
+  // ── spro creative CR8: wave 1 (PLAN Appendix C.1) ──
+  'tls.c.one-question': f(['question', 'action'], null, 'labels', 'calm', { frames: ['closing', 'qa'] }),
+  'tls.c.cta': f(['action'], null, 'lines', 'lively', { frames: ['closing'] }),
+  'tls.c.callback': f(['statement', 'question'], null, 'lines', 'neutral', { frames: ['closing'] }),
+  'tls.c.takeaway-poster': f(['recap', 'statement', 'group'], [1, 3], 'lines', 'neutral', { frames: ['summary', 'closing'] }),
+  'tls.c.poster-cover': f(['statement', 'story'], null, 'labels', 'lively', { frames: ['cover'] }),
+  'tls.c.split-cover': f(['image-led', 'statement'], null, 'labels', 'neutral', { frames: ['cover', 'divider'] }),
+  'tls.c.hook-cover': f(['question', 'number'], null, 'labels', 'lively', { frames: ['cover'] }),
+  'tls.c.route-agenda': f(['sequence', 'timeline', 'story'], [3, 7], 'labels', 'lively', { frames: ['agenda', 'divider'] }),
+  'tls.c.chapter-divider': f(['statement', 'question'], null, 'labels', 'neutral', { frames: ['divider'] }),
+  'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
+  'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
+  'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),
+  'tls.c.flashcards': f(['terms', 'definition'], [2, 6], 'lines', 'neutral'),
+  'tls.g.annotated': f(['image-led', 'hierarchy', 'terms'], [2, 6], 'lines', 'neutral'),
+  'tls.t.highlight': f(['quote', 'definition', 'worked-example'], null, 'paragraphs', 'calm'),
+  'tls.t.speech-bubble': f(['quote', 'story', 'people'], null, 'lines', 'lively', { families: ['playful', 'classroom'] }),
+
   // ── decoration (never a main block: relations empty) ──
   'tls.g.arrow': f([], null, 'labels', 'neutral'),
   'tls.m.decoration': f([], null, 'labels', 'lively'),

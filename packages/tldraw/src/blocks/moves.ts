@@ -90,45 +90,45 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   content('scenario', ['two-column', 'image-right'], ['tls.c.case-study', 'tls.c.problem-solution', 'tls.t.statement'], ['story', 'worked-example'], 'lively', 'dense', 'content-statement', '"Imagine…": a situation the audience steps into'),
 
   // ── cover (7) ──
-  frame('poster-type', 'cover', ['blank', 'section-stack'], ['tls.c.cover', 'tls.c.hero'], 'neutral', 'poster', 'cover-hero', 'the title set large, nothing else'),
-  frame('question-hook', 'cover', ['section-stack', 'blank'], ['tls.t.statement', 'tls.c.hero'], 'lively', 'poster', 'cover-hero', 'the deck opens with the question it answers'),
-  frame('number-hook', 'cover', ['two-column', 'blank'], ['tls.c.big-stat', 'tls.t.hero-number'], 'lively', 'poster', 'cover-hero', 'the deck opens with one striking number', ['tls.t.title']),
+  frame('poster-type', 'cover', ['blank', 'section-stack'], ['tls.c.poster-cover', 'tls.c.cover', 'tls.c.hero'], 'neutral', 'poster', 'cover-hero', 'the title set large, nothing else'),
+  frame('question-hook', 'cover', ['section-stack', 'blank'], ['tls.c.hook-cover', 'tls.t.statement', 'tls.c.hero'], 'lively', 'poster', 'cover-hero', 'the deck opens with the question it answers'),
+  frame('number-hook', 'cover', ['two-column', 'blank'], ['tls.c.hook-cover', 'tls.c.big-stat', 'tls.t.hero-number'], 'lively', 'poster', 'cover-hero', 'the deck opens with one striking number', ['tls.t.title']),
   frame('motif-hero', 'cover', ['blank'], ['tls.c.cover', 'tls.c.hero'], 'lively', 'poster', 'cover-hero', 'the deck motif drawn large beside the title'),
   frame('figure-hero', 'cover', ['image-right', 'full-bleed'], ['tls.c.cover', 'tls.c.image-full'], 'neutral', 'poster', 'cover-split-image', 'a source figure carries the title page'),
-  frame('split-field', 'cover', ['blank'], ['tls.c.hero', 'tls.c.cover'], 'neutral', 'poster', 'cover-hero', 'a colour field on one side, the title on the other'),
+  frame('split-field', 'cover', ['blank'], ['tls.c.split-cover', 'tls.c.hero', 'tls.c.cover'], 'neutral', 'poster', 'cover-hero', 'a colour field on one side, the title on the other'),
   frame('kinetic', 'cover', ['blank'], ['tls.c.kinetic-title'], 'lively', 'poster', 'cover-kinetic', 'words rise in one by one'),
 
   // ── agenda (5) ──
-  frame('route-map', 'agenda', ['timeline', 'band'], ['tls.c.journey', 'tls.g.chevrons', 'tls.g.steps'], 'lively', 'diagram', 'agenda-full', 'the parts of the deck as a route'),
+  frame('route-map', 'agenda', ['timeline', 'band'], ['tls.c.route-agenda', 'tls.c.journey', 'tls.g.chevrons'], 'lively', 'diagram', 'agenda-full', 'the parts of the deck as a route'),
   frame('chapter-tabs', 'agenda', ['timeline'], ['tls.c.agenda', 'tls.c.cards'], 'neutral', 'dense', 'agenda-full', 'the parts as tabs or cards'),
   frame('questions-we-answer', 'agenda', ['timeline', 'two-column'], ['tls.t.qa', 'tls.t.numbered', 'tls.m.icon-list'], 'neutral', 'dense', 'agenda-full', 'the agenda as the questions the deck answers'),
   frame('objectives-board', 'agenda', ['timeline', 'two-column'], ['tls.c.objectives', 'tls.t.checklist'], 'calm', 'dense', 'agenda-full', 'what the audience will be able to do'),
   frame('numbered-stack', 'agenda', ['sidebar-title', 'timeline'], ['tls.c.agenda', 'tls.t.numbered'], 'calm', 'dense', 'agenda-full', 'a numbered list of the parts'),
 
   // ── divider (5) ──
-  frame('big-numeral', 'divider', ['section-stack', 'blank'], ['tls.c.divider'], 'neutral', 'poster', 'section-divider', 'the section number set huge'),
-  frame('chapter-question', 'divider', ['section-stack'], ['tls.t.statement'], 'lively', 'poster', 'section-title', 'the section opens with its question'),
+  frame('big-numeral', 'divider', ['section-stack', 'blank'], ['tls.c.chapter-divider', 'tls.c.divider'], 'neutral', 'poster', 'section-divider', 'the section number set huge'),
+  frame('chapter-question', 'divider', ['section-stack'], ['tls.c.chapter-divider', 'tls.t.statement'], 'lively', 'poster', 'section-title', 'the section opens with its question'),
   frame('progress-journey', 'divider', ['band', 'timeline'], ['tls.g.chevrons', 'tls.g.steps', 'tls.c.journey'], 'neutral', 'diagram', 'section-divider', 'where we are on the route'),
   frame('color-field', 'divider', ['blank'], ['tls.c.divider'], 'calm', 'poster', 'section-divider', 'a full colour field with the section title'),
   frame('quote-divider', 'divider', ['quote', 'section-stack'], ['tls.t.quote'], 'calm', 'poster', 'section-title', 'a quote opens the section'),
 
   // ── summary (4) ──
-  frame('three-things', 'summary', ['timeline', 'three-column'], ['tls.c.cards', 'tls.c.recap', 'tls.c.feature-grid'], 'neutral', 'dense', 'content-cards', 'three things to remember'),
+  frame('three-things', 'summary', ['timeline', 'three-column'], ['tls.c.takeaway-poster', 'tls.c.recap', 'tls.c.cards'], 'neutral', 'dense', 'content-cards', 'three things to remember'),
   frame('recap-map', 'summary', ['timeline'], ['tls.g.mindmap', 'tls.g.hub-spoke', 'tls.g.orbit'], 'neutral', 'diagram', 'content-cards', 'the ideas of the deck on one map'),
   frame('checklist-recap', 'summary', ['timeline', 'two-column'], ['tls.t.checklist', 'tls.c.objectives'], 'calm', 'dense', 'content-icon-list-image', 'the objectives ticked off'),
   frame('before-after-learning', 'summary', ['comparison', 'timeline'], ['tls.g.before-after'], 'lively', 'dense', 'comparison-before-after', 'what we knew before, what we know now'),
 
   // ── Q&A (3) ──
-  frame('question-wall', 'qa', ['timeline'], ['tls.t.tags', 'tls.c.cards', 'tls.t.qa'], 'lively', 'dense', 'section-title', 'questions people often ask'),
-  frame('big-question', 'qa', ['section-stack', 'blank'], ['tls.t.statement'], 'calm', 'poster', 'section-title', 'one large invitation to ask'),
+  frame('question-wall', 'qa', ['timeline'], ['tls.c.question-wall', 'tls.t.tags', 'tls.t.qa'], 'lively', 'dense', 'section-title', 'questions people often ask'),
+  frame('big-question', 'qa', ['section-stack', 'blank'], ['tls.c.one-question', 'tls.t.statement'], 'calm', 'poster', 'section-title', 'one large invitation to ask'),
   frame('discussion-prompts', 'qa', ['timeline', 'two-column'], ['tls.t.numbered', 'tls.m.icon-list', 'tls.c.quiz'], 'neutral', 'dense', 'section-title', 'prompts to discuss in pairs'),
 
   // ── closing (8) ──
-  frame('one-question', 'closing', ['section-stack', 'blank'], ['tls.t.statement'], 'calm', 'poster', 'closing-centered', 'leave one question with the audience'),
-  frame('call-to-action', 'closing', ['blank', 'section-stack'], ['tls.c.closing', 'tls.c.hero'], 'lively', 'poster', 'closing-centered', 'one thing to do next'),
-  frame('callback', 'closing', ['blank', 'section-stack'], ['tls.t.statement', 'tls.c.big-stat', 'tls.c.closing'], 'neutral', 'poster', 'closing-centered', 'answer the cover: its question, its number, its image'),
-  frame('takeaway-poster', 'closing', ['section-stack', 'blank'], ['tls.t.takeaway', 'tls.t.statement'], 'calm', 'poster', 'closing-centered', 'the one takeaway, very large'),
-  frame('homework', 'closing', ['timeline', 'two-column'], ['tls.t.checklist', 'tls.c.objectives', 'tls.t.numbered'], 'neutral', 'dense', 'closing-centered', 'what to do before next time'),
+  frame('one-question', 'closing', ['section-stack', 'blank'], ['tls.c.one-question', 'tls.t.statement'], 'calm', 'poster', 'closing-centered', 'leave one question with the audience'),
+  frame('call-to-action', 'closing', ['blank', 'section-stack'], ['tls.c.cta', 'tls.c.closing', 'tls.c.hero'], 'lively', 'poster', 'closing-centered', 'one thing to do next'),
+  frame('callback', 'closing', ['blank', 'section-stack'], ['tls.c.callback', 'tls.t.statement', 'tls.c.big-stat'], 'neutral', 'poster', 'closing-centered', 'answer the cover: its question, its number, its image'),
+  frame('takeaway-poster', 'closing', ['section-stack', 'blank'], ['tls.c.takeaway-poster', 'tls.t.takeaway', 'tls.t.statement'], 'calm', 'poster', 'closing-centered', 'the one takeaway, very large'),
+  frame('homework', 'closing', ['timeline', 'two-column'], ['tls.c.homework', 'tls.t.checklist', 'tls.c.objectives'], 'neutral', 'dense', 'closing-centered', 'what to do before next time'),
   frame('contact', 'closing', ['two-column', 'blank'], ['tls.c.contact', 'tls.c.closing'], 'calm', 'dense', 'closing-split', 'who to contact (only with contact data from the brief or document)'),
   frame('next-steps-path', 'closing', ['timeline', 'band'], ['tls.c.steps', 'tls.g.chevrons', 'tls.g.steps'], 'neutral', 'dense', 'closing-centered', 'the actions to take, in order (only for a decision or a call to act)'),
   frame('thanks-motif', 'closing', ['blank', 'section-stack'], ['tls.c.closing', 'tls.t.statement'], 'lively', 'poster', 'closing-centered', 'thanks with the deck motif (playful decks, always with a takeaway)', ['tls.t.takeaway']),

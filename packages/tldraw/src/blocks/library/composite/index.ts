@@ -3,6 +3,7 @@
  */
 
 import type { BlockDefinition } from '../../types'
+import { wave1Blocks } from './wave1'
 
 import { tlsCHero } from './tls-c-hero'
 import { tlsCKpiTile } from './tls-c-kpi-tile'
@@ -71,6 +72,8 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCFeatureReveal,
   tlsCBento,
   tlsCImageFull,
+  // spro creative CR8: wave 1
+  ...wave1Blocks,
 ]
 
 export { tlsCHero } from './tls-c-hero'
@@ -101,3 +104,5 @@ export { tlsCContact } from './tls-c-contact'
 export { tlsCQuoteImage } from './tls-c-quote-image'
 export { tlsCBento } from './tls-c-bento'
 export { tlsCImageFull } from './tls-c-image-full'
+
+export * from './wave1'

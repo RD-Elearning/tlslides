@@ -451,7 +451,7 @@ describe('R7 — capability digest v2', () => {
 
     it('capabilityIndex lists every block exactly once and stays under 21k chars', () => {
       const md = capabilityIndex(reg)
-      expect(md.length).toBeLessThanOrEqual(21000) // vivid V4: 144 blocks; the model reads the tier-1 index (17.7k)
+      expect(md.length).toBeLessThanOrEqual(22000) // vivid V4: 144 blocks; spro creative CR8: 160 (+16 wave-1, tier 2)
       for (const def of BUILT_IN_BLOCKS) {
         const lines = md.split('\n').filter((l) => l.startsWith(`${def.type} · `))
         expect(lines).toHaveLength(1)
@@ -559,8 +559,9 @@ describe('R7 — capability digest v2', () => {
       // slide's own role stays <= 16k (dry-run.spec).
       // CMP4 budget decision (composition README §4): one `patterns:` line per role (+630 chars,
       // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
-      it('stays within 17.7k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(17700)
+      // spro creative CR8: the 16 wave-1 blocks are tier 2 but named in the index (+~300 chars) → 18.1k.
+      it('stays within 18.1k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(18100)
         expect(tier1).toMatchSnapshot()
       })
 
@@ -610,7 +611,7 @@ describe('R7 — capability digest v2', () => {
 
       it('the default call is unchanged: every block a full line, no recipes, within 21k', () => {
         const md = capabilityIndex(reg)
-        expect(md.length).toBeLessThanOrEqual(21000) // vivid V4: 144 blocks; the model reads the tier-1 index (17.7k)
+        expect(md.length).toBeLessThanOrEqual(22000) // vivid V4: 144 blocks; spro creative CR8: 160 (+16 wave-1, tier 2)
         expect(md).not.toContain('## Recipes')
         expect(md).not.toContain(' knobs: ')
         expect(md).not.toContain('also: ')
@@ -627,10 +628,10 @@ describe('R7 — capability digest v2', () => {
         }
       })
 
-      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17.7k (AC8, CMP4)', () => {
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 18.1k (AC8, CMP4, CR8)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(17700)
+          expect(md.length).toBeLessThanOrEqual(18100)
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)

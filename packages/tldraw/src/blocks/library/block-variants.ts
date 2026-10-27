@@ -252,6 +252,24 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.c.quiz': [v('list', 'options in a list, answer shown', { layout: 'list', reveal: 'shown' }), v('grid', 'options in a grid, answer hidden', { layout: 'grid', reveal: 'none' })],
   'tls.t.qa': [v('badges', 'Q and A badges', { marker: 'qa' }), v('numbered', 'numbered questions', { marker: 'numbered' })],
 
+  // ── spro creative CR8: wave 1 ──
+  'tls.c.one-question': [v('centred', 'one question in the middle', { variant: 'centered' }), v('motif', 'the question beside a motif', { variant: 'with-motif', motif: 'bulb' }), v('margin', 'low-left beside a giant question mark', { variant: 'margin' })],
+  'tls.c.cta': [v('button', 'the action and a button', { variant: 'button' }), v('ticket', 'a ticket stub with the deadline', { variant: 'ticket' }), v('hand-arrow', 'a drawn arrow points at the action', { variant: 'hand-arrow' })],
+  'tls.c.callback': [v('mirror', "the cover's line and its answer, a motif beside", { variant: 'mirror' }), v('answered', 'the echo circled, then the answer', { variant: 'answered' })],
+  'tls.c.takeaway-poster': [v('stack', 'numbered takeaways one under another', { variant: 'stack' }), v('row', 'takeaways side by side', { variant: 'row' }), v('plain', 'large takeaways, no numbers', { variant: 'numerals-off' })],
+  'tls.c.poster-cover': [v('stacked', 'a display title stacked', { variant: 'stacked' }), v('offset', 'lines stepped across the page', { variant: 'offset' }), v('motif', 'the title beside a motif', { variant: 'overlap-motif' })],
+  'tls.c.split-cover': [v('field-left', 'a colour field on the left', { side: 'left', tone: 'accent' }), v('field-right', 'a colour field on the right', { side: 'right', tone: 'accent2' }), v('quiet-field', 'a quiet tinted field', { side: 'left', tone: 'alt' })],
+  'tls.c.hook-cover': [v('question', 'a question opens the deck', { variant: 'question' }), v('number', 'one number opens the deck', { variant: 'number' })],
+  'tls.c.route-agenda': [v('road', 'the parts as a road of stops', { variant: 'road' }), v('metro', 'a metro line of stations', { variant: 'metro' }), v('stones', 'stepping stones', { variant: 'stepping-stones' })],
+  'tls.c.chapter-divider': [v('numeral', 'a giant section number', { variant: 'numeral' }), v('question', "the section's question large", { variant: 'question' }), v('progress', 'how far through the deck', { variant: 'progress' })],
+  'tls.c.sticky-board': [v('grid', 'notes in a grid', { variant: 'grid' }), v('columns', 'notes in two columns', { variant: 'columns' })],
+  'tls.c.question-wall': [v('grid', 'questions as notes', { variant: 'grid' }), v('scattered', 'questions pinned loosely', { variant: 'scattered' })],
+  'tls.c.homework': [v('card', 'the assignment on a card', { variant: 'card' }), v('notebook', 'the assignment as a page', { variant: 'notebook' })],
+  'tls.c.flashcards': [v('grid', 'term cards in a grid', { variant: 'grid' }), v('fan', 'term cards fanned out', { variant: 'fan' })],
+  'tls.g.annotated': [v('numbers', 'a numbered legend', { variant: 'numbers' }), v('labels', 'labels and notes', { variant: 'labels' })],
+  'tls.t.highlight': [v('marker', 'marker on the key words', { variant: 'marker' }), v('underline', 'key words underlined', { variant: 'underline' }), v('circle', 'key words circled', { variant: 'circle' })],
+  'tls.t.speech-bubble': [v('round', 'a round speech bubble', { variant: 'round' }), v('shout', 'a loud bubble', { variant: 'shout' })],
+
   // ── decoration ──
   'tls.g.arrow': [v('straight', 'a straight accent arrow', { kind: 'straight', tone: 'accent' }), v('curved', 'a curved pointer', { kind: 'curved' }), v('elbow', 'an elbow arrow', { kind: 'elbow', tone: 'text' })],
   'tls.m.decoration': [v('blob', 'a soft blob', { shape: 'blob', opacity: 'soft' }), v('squiggle', 'a hand squiggle', { shape: 'squiggle' }), v('sparkle', 'a sparkle', { shape: 'sparkle', tone: 'accent2' }), v('solid', 'a 3D solid', { shape: 'cube' })],

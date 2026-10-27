@@ -236,6 +236,24 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.logo': t2(['maxHeight', 'align', 'plate']),
   'tls.m.logo-wall': t1(['cols', 'plates', 'dividers'], ['tls.m.logo']),
 
+  // ── spro creative CR8: wave 1 ──
+  'tls.c.one-question': t2(['variant', 'motif']),
+  'tls.c.cta': t2(['variant']),
+  'tls.c.callback': t2(['variant', 'motif']),
+  'tls.c.takeaway-poster': t2(['variant']),
+  'tls.c.poster-cover': t2(['variant', 'motif']),
+  'tls.c.split-cover': t2(['side', 'tone']),
+  'tls.c.hook-cover': t2(['variant']),
+  'tls.c.route-agenda': t2(['variant']),
+  'tls.c.chapter-divider': t2(['variant']),
+  'tls.c.sticky-board': t2(['variant']),
+  'tls.c.question-wall': t2(['variant']),
+  'tls.c.homework': t2(['variant']),
+  'tls.c.flashcards': t2(['variant']),
+  'tls.g.annotated': t2(['variant']),
+  'tls.t.highlight': t2(['variant']),
+  'tls.t.speech-bubble': t2(['variant', 'tail']),
+
   // ── chrome (placed by style masters, AC1+) ──
   'tls.x.page-number': t2(['align']),
   'tls.x.footer-text': t2(['align', 'separator', 'showRule']),

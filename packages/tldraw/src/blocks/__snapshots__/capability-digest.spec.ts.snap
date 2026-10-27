@@ -238,6 +238,32 @@ Big number slide. One enormous headline metric with a short label and optional c
 }
 \`\`\`
 
+### \`tls.c.callback\` — Callback
+
+A closing that repeats the cover’s question or hook and answers it. _(family: composite; keywords: closing, callback, bookend, answer, back to the question)_
+
+**When:** The cover asked a question or made a promise: the closing answers it.
+**Avoid:** A new question to think about: tls.c.one-question.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`echo\` | no | text (max 80 chars) | The cover's title or hook, verbatim. |
+| \`answer\` | yes | richText (max 140 chars) | What the deck found: the answer to the cover. |
+| \`motif\` | no | enum: none \\\\| blob \\\\| ring \\\\| squiggle \\\\| star \\\\| sparkle \\\\| orb \\\\| bulb |  |
+| \`variant\` | no | enum: mirror \\\\| answered | answered: the echo circled, then the answer. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_callback\\",
+  \\"type\\": \\"tls.c.callback\\",
+  \\"props\\": {
+    \\"echo\\": \\"Can a ward cut waiting time without new staff?\\",
+    \\"answer\\": \\"Yes: by a third, with the same team.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.cards\` — Cards
 
 Row of 2-4 equal cards, each led by an icon, number or image, then title and text. _(family: composite; keywords: cards, pillars, benefits, offerings, three columns, features, icon cards)_
@@ -313,6 +339,36 @@ Success story: challenge, solution and result, with one headline result number. 
       \\"label\\": \\"waiting time\\"
     },
     \\"layout\\": \\"columns\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.chapter-divider\` — Chapter divider
+
+A section divider with a big numeral, the section’s question and the progress. _(family: composite; keywords: divider, section, chapter, numeral, progress)_
+
+**When:** Open a section: its number, its title and the question it answers.
+**Avoid:** A colour field with the title only: tls.c.divider.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | no | text (max 4 chars) |  |
+| \`title\` | yes | text (max 60 chars) |  |
+| \`question\` | no | text (max 100 chars) | What this section answers. |
+| \`index\` | no | number (min 1, max 20) | This section number (progress). |
+| \`total\` | no | number (min 1, max 20) | How many sections (progress). |
+| \`variant\` | no | enum: numeral \\\\| question \\\\| progress |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_chapter_divider\\",
+  \\"type\\": \\"tls.c.chapter-divider\\",
+  \\"props\\": {
+    \\"number\\": \\"02\\",
+    \\"title\\": \\"What we measured\\",
+    \\"question\\": \\"Where does the time go?\\",
+    \\"index\\": 2,
+    \\"total\\": 4
   }
 }
 \`\`\`
@@ -529,6 +585,35 @@ Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(fa
 }
 \`\`\`
 
+### \`tls.c.cta\` — Call to action
+
+A closing with one action: a verb-first line, its detail and a button or ticket. _(family: composite; keywords: closing, call to action, next step, action, cta, do this)_
+
+**When:** End on one thing the audience should do next.
+**Avoid:** Several actions in order: tls.c.steps. Contacts: tls.c.contact.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`action\` | yes | text (max 80 chars) | Verb first: \\"Try the checklist on one ward this month\\". |
+| \`detail\` | no | text (max 140 chars) |  |
+| \`deadline\` | no | text (max 40 chars) | Only from the document or the brief. |
+| \`link\` | no | text (max 60 chars) | Only from the document or the brief. |
+| \`variant\` | no | enum: button \\\\| ticket \\\\| hand-arrow | ticket: a stub with the deadline; hand-arrow: a drawn arrow points at the action. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cta\\",
+  \\"type\\": \\"tls.c.cta\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Your next step\\",
+    \\"action\\": \\"Try the checklist on one ward\\",
+    \\"detail\\": \\"Share what changed at the next review.\\",
+    \\"deadline\\": \\"By 30 November\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.dashboard\` — Dashboard
 
 KPI tiles, one chart and an insight note on one slide. _(family: composite; keywords: dashboard, kpi, overview, monthly review, status, results, metrics)_
@@ -701,6 +786,37 @@ Grid of 3-6 icon cards (title + one line) that flip in one after another. _(fami
 }
 \`\`\`
 
+### \`tls.c.flashcards\` — Flashcards
+
+Two to six flashcards with a term and its meaning. _(family: composite; keywords: flashcards, terms, vocabulary, definitions, revision)_
+
+**When:** Teach or revise a few terms with their meanings.
+**Avoid:** One term in depth: tls.t.definition.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`cards\` | yes | list of object (term, back) (2–6 items) |  |
+| \`variant\` | no | enum: grid \\\\| fan |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_flashcards\\",
+  \\"type\\": \\"tls.c.flashcards\\",
+  \\"props\\": {
+    \\"cards\\": [
+      {
+        \\"term\\": \\"Feature\\",
+        \\"back\\": \\"A measured property\\"
+      },
+      {
+        \\"term\\": \\"Label\\",
+        \\"back\\": \\"The answer to learn\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.hero\` — Hero [html]
 
 Opening slide. One idea in the title, no full sentence; subtitle gives date/audience; CTA optional. _(family: composite; keywords: hero, opening, title, cover, splash, intro, landing)_
@@ -748,6 +864,65 @@ Opening slide. One idea in the title, no full sentence; subtitle gives date/audi
       ]
     },
     \\"cta\\": \\"\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.homework\` — Homework
+
+An assignment card: the task, its criteria, the deliverable and the due date. _(family: composite; keywords: homework, assignment, task, exercise, due)_
+
+**When:** End a lesson with the work to do before the next one.
+**Avoid:** One action for an audience: tls.c.cta.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 50 chars) |  |
+| \`task\` | yes | text (max 160 chars) |  |
+| \`criteria\` | no | list of text (max 60 chars) (0–4 items) |  |
+| \`due\` | no | text (max 40 chars) | Only from the document or the brief. |
+| \`deliverable\` | no | text (max 60 chars) |  |
+| \`variant\` | no | enum: card \\\\| notebook | notebook: no card, ruled like a page. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_homework\\",
+  \\"type\\": \\"tls.c.homework\\",
+  \\"props\\": {
+    \\"title\\": \\"Before next week\\",
+    \\"task\\": \\"Write the question you would ask your data.\\",
+    \\"criteria\\": [
+      \\"One clear question\\",
+      \\"The data that answers it\\"
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.hook-cover\` — Hook cover
+
+A cover that opens with a question or a striking number, then the title. _(family: composite; keywords: cover, hook, question, number, opening)_
+
+**When:** Open with the question the deck answers or the number that makes it matter.
+**Avoid:** A plain title page: tls.c.poster-cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`hook\` | no | text (max 90 chars) |  |
+| \`number\` | no | text (max 12 chars) | Only a number the document gives. |
+| \`numberLabel\` | no | text (max 60 chars) |  |
+| \`title\` | yes | text (max 80 chars) |  |
+| \`meta\` | no | text (max 60 chars) |  |
+| \`variant\` | no | enum: question \\\\| number |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_hook_cover\\",
+  \\"type\\": \\"tls.c.hook-cover\\",
+  \\"props\\": {
+    \\"hook\\": \\"Why do patients wait four hours?\\",
+    \\"title\\": \\"Improving patient flow\\"
   }
 }
 \`\`\`
@@ -1001,6 +1176,61 @@ Learning objectives or goals as a numbered, checked or icon list with an intro l
 }
 \`\`\`
 
+### \`tls.c.one-question\` — One question
+
+A closing or Q&A poster with one giant question and a prompt. _(family: composite; keywords: closing, question, q&a, reflection, discussion, poster, end slide)_
+
+**When:** Leave the audience with one question to think about, or open the Q&A.
+**Avoid:** Several questions: tls.c.question-wall. A thank-you with contacts: tls.c.closing.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) | \\"Before you go\\", \\"One question\\". |
+| \`question\` | yes | richText (max 120 chars) | One question the audience leaves with. |
+| \`prompt\` | no | text (max 100 chars) | What to think about or discuss. |
+| \`motif\` | no | enum: none \\\\| blob \\\\| ring \\\\| squiggle \\\\| star \\\\| sparkle \\\\| dots \\\\| orb \\\\| bulb | A decoration beside the question (with-motif). |
+| \`variant\` | no | enum: centered \\\\| with-motif \\\\| margin | with-motif: a decoration beside; margin: low-left over a giant question mark. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_one_question\\",
+  \\"type\\": \\"tls.c.one-question\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Before you go\\",
+    \\"question\\": \\"What would you measure first?\\",
+    \\"prompt\\": \\"Discuss in pairs for two minutes.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.poster-cover\` — Poster cover
+
+A typographic poster cover: a display title, subtitle and meta. _(family: composite; keywords: cover, title, poster, typographic, opening)_
+
+**When:** Open the deck with its title set large, no picture needed.
+**Avoid:** A cover with a photo: tls.c.cover or tls.c.split-cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`title\` | yes | text (max 80 chars) |  |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`meta\` | no | text (max 60 chars) | Presenter, date. |
+| \`motif\` | no | enum: blob \\\\| ring \\\\| squiggle \\\\| star \\\\| sparkle \\\\| orb \\\\| dots \\\\| wave | overlap-motif: drawn beside the title. |
+| \`variant\` | no | enum: stacked \\\\| offset \\\\| overlap-motif \\\\| outline-type | offset: lines indented in steps; overlap-motif: a motif beside; outline-type: follows the look stroke. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_poster_cover\\",
+  \\"type\\": \\"tls.c.poster-cover\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Lecture 5\\",
+    \\"title\\": \\"Machine learning, from data to decisions\\",
+    \\"meta\\": \\"October 2026\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.problem-solution\` — Problem and solution
 
 A problem statement and its solution side by side, joined by an arrow. _(family: composite; keywords: problem, solution, pain point, pitch, proposal, challenge, fix, before and after)_
@@ -1063,6 +1293,34 @@ Card with a portrait, name, role, short bio and a contact line; portrait above o
     \\"role\\": \\"Head of Data Science\\",
     \\"bio\\": \\"Leads the applied analytics group.\\",
     \\"contact\\": \\"lan.tran@example.edu\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.question-wall\` — Question wall
+
+The questions the audience is likely to ask, as notes on a wall. _(family: composite; keywords: q&a, questions, faq, discussion, closing)_
+
+**When:** Open the Q&A with the questions people usually ask.
+**Avoid:** Questions with their answers: tls.t.qa.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 40 chars) |  |
+| \`questions\` | yes | list of text (max 90 chars) (3–8 items) | Questions the audience is likely to ask, from the content. |
+| \`variant\` | no | enum: grid \\\\| scattered |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_question_wall\\",
+  \\"type\\": \\"tls.c.question-wall\\",
+  \\"props\\": {
+    \\"title\\": \\"Questions you may have\\",
+    \\"questions\\": [
+      \\"Does it need new staff?\\",
+      \\"What did it cost?\\",
+      \\"How long did it run?\\"
+    ]
   }
 }
 \`\`\`
@@ -1161,6 +1419,71 @@ Numbered key points to remember, closed by one takeaway line. _(family: composit
     ],
     \\"takeaway\\": \\"Plot first, calculate second.\\",
     \\"style\\": \\"numbered\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.route-agenda\` — Route agenda
+
+The agenda drawn as a route with three to seven stops. _(family: composite; keywords: agenda, route, roadmap, outline, journey, stops)_
+
+**When:** Show the parts of the deck as a route the audience travels.
+**Avoid:** A plain numbered list: tls.c.agenda.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 40 chars) |  |
+| \`stops\` | yes | list of object (label, note) (3–7 items) | The parts of the deck, in order. |
+| \`current\` | no | number (min 0, max 6) | Index of the current stop (on a divider). |
+| \`variant\` | no | enum: road \\\\| metro \\\\| stepping-stones \\\\| river |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_route_agenda\\",
+  \\"type\\": \\"tls.c.route-agenda\\",
+  \\"props\\": {
+    \\"title\\": \\"Our route\\",
+    \\"stops\\": [
+      {
+        \\"label\\": \\"Why\\"
+      },
+      {
+        \\"label\\": \\"What we measured\\"
+      },
+      {
+        \\"label\\": \\"What we changed\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.split-cover\` — Split cover
+
+A cover split into a colour field with a visual and the title beside it. _(family: composite; keywords: cover, title, split, colour field, opening)_
+
+**When:** Open the deck or a section with a strong colour block and one visual.
+**Avoid:** A title alone: tls.c.poster-cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`title\` | yes | text (max 80 chars) |  |
+| \`subtitle\` | no | text (max 120 chars) |  |
+| \`meta\` | no | text (max 60 chars) |  |
+| \`icon\` | no | icon | Drawn large on the field. |
+| \`image\` | no | image | A source figure, on the field instead of the icon. |
+| \`side\` | no | enum: left \\\\| right \\\\| diagonal |  |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| alt |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_split_cover\\",
+  \\"type\\": \\"tls.c.split-cover\\",
+  \\"props\\": {
+    \\"title\\": \\"Improving patient flow at Riverside\\",
+    \\"subtitle\\": \\"What we changed\\",
+    \\"icon\\": \\"chart\\"
   }
 }
 \`\`\`
@@ -1277,6 +1600,67 @@ Process or timeline of numbered steps with titles and optional descriptions. Arr
       }
     ],
     \\"orientation\\": \\"horizontal\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.sticky-board\` — Sticky board
+
+Two to eight sticky notes on a board, for ideas, voices or findings. _(family: composite; keywords: sticky notes, board, ideas, brainstorm, workshop, voices)_
+
+**When:** Show several short ideas, quotes or findings as notes (workshops, playful decks).
+**Avoid:** Ordered steps: tls.c.steps. Long items: tls.c.cards.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`title\` | no | text (max 40 chars) |  |
+| \`notes\` | yes | list of object (text, group) (2–8 items) |  |
+| \`variant\` | no | enum: grid \\\\| scattered \\\\| columns | columns: two columns of notes. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_sticky_board\\",
+  \\"type\\": \\"tls.c.sticky-board\\",
+  \\"props\\": {
+    \\"title\\": \\"What we heard\\",
+    \\"notes\\": [
+      {
+        \\"text\\": \\"Too many forms\\"
+      },
+      {
+        \\"text\\": \\"Nobody knows the wait\\"
+      },
+      {
+        \\"text\\": \\"Beds free up late\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.takeaway-poster\` — Takeaway poster
+
+One to three takeaways set large, each with a giant numeral. _(family: composite; keywords: takeaway, summary, closing, key points, remember, poster)_
+
+**When:** End or sum up with the one to three things to remember.
+**Avoid:** More than three points: tls.c.recap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 40 chars) |  |
+| \`items\` | yes | list of richText (max 90 chars) (1–3 items) | 1-3 sentences to remember. |
+| \`variant\` | no | enum: row \\\\| stack \\\\| numerals-off | row: side by side; stack: one under the other; numerals-off: no numbers. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_takeaway_poster\\",
+  \\"type\\": \\"tls.c.takeaway-poster\\",
+  \\"props\\": {
+    \\"kicker\\": \\"To remember\\",
+    \\"items\\": [
+      \\"Measure before you change\\",
+      \\"Small tests, often\\"
+    ]
   }
 }
 \`\`\`
@@ -2507,6 +2891,41 @@ Bridge chart: floating bars for changes, full bars for totals, optional connecto
         \\"label\\": \\"End\\",
         \\"value\\": 115,
         \\"kind\\": \\"total\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.annotated\` — Annotated figure
+
+A figure with numbered notes naming its parts. _(family: diagram; keywords: annotated, figure, diagram, parts, callouts, labels)_
+
+**When:** Explain the parts of one figure or object.
+**Avoid:** A photo with a caption only: tls.c.image-text.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | no | image |  |
+| \`icon\` | no | icon | Drawn large when there is no image. |
+| \`alt\` | no | text (max 80 chars) |  |
+| \`callouts\` | yes | list of object (label, note) (2–6 items) | Parts of the figure the passages name. |
+| \`variant\` | no | enum: numbers \\\\| labels | numbers: a numbered legend; labels: the labels in bold. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_annotated\\",
+  \\"type\\": \\"tls.g.annotated\\",
+  \\"props\\": {
+    \\"icon\\": \\"gear\\",
+    \\"callouts\\": [
+      {
+        \\"label\\": \\"Inlet\\",
+        \\"note\\": \\"Water enters\\"
+      },
+      {
+        \\"label\\": \\"Outlet\\",
+        \\"note\\": \\"Water leaves\\"
       }
     ]
   }
@@ -5091,6 +5510,46 @@ Large KPI number with optional unit and caption. _(family: text; keywords: kpi, 
 }
 \`\`\`
 
+### \`tls.t.highlight\` — Highlight
+
+A passage with its key words marked and short margin notes. _(family: text; keywords: highlight, quote, passage, key words, annotate, text)_
+
+**When:** Show a short source passage and point at the words that matter.
+**Avoid:** A quote with its author only: tls.t.quote.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | richText (max 140 chars) | Verbatim from the source; the marked words in **bold**. |
+| \`notes\` | no | list of text (max 60 chars) (0–3 items) |  |
+| \`source\` | no | text (max 60 chars) |  |
+| \`variant\` | no | enum: marker \\\\| underline \\\\| circle |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_highlight\\",
+  \\"type\\": \\"tls.t.highlight\\",
+  \\"props\\": {
+    \\"text\\": {
+      \\"runs\\": [
+        {
+          \\"text\\": \\"A model is only as good as \\"
+        },
+        {
+          \\"text\\": \\"the question\\",
+          \\"bold\\": true
+        },
+        {
+          \\"text\\": \\".\\"
+        }
+      ]
+    },
+    \\"notes\\": [
+      \\"Ask the question first\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.t.kicker\` — Kicker
 
 Small label above the title with case and tracking options. _(family: text; keywords: kicker, eyebrow, label, category, tag, section)_
@@ -5278,6 +5737,31 @@ Pull quote with attribution: mark beside the text, display-size, on a card, with
     \\"markStyle\\": \\"glyph\\",
     \\"image\\": \\"/demo/photo-1.svg\\",
     \\"alt\\": \\"Students at a long table\\"
+  }
+}
+\`\`\`
+
+### \`tls.t.speech-bubble\` — Speech bubble
+
+A speech bubble with what someone says and who says it. _(family: text; keywords: speech bubble, dialogue, scenario, comic, voice, quote)_
+
+**When:** Give a voice to a person in a scenario or a story.
+**Avoid:** A formal quote with its source: tls.t.quote.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 140 chars) |  |
+| \`speaker\` | no | text (max 32 chars) |  |
+| \`variant\` | no | enum: round \\\\| cloud \\\\| shout |  |
+| \`tail\` | no | enum: left \\\\| right \\\\| down |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_speech_bubble\\",
+  \\"type\\": \\"tls.t.speech-bubble\\",
+  \\"props\\": {
+    \\"text\\": \\"Why do I wait four hours?\\",
+    \\"speaker\\": \\"A patient\\"
   }
 }
 \`\`\`
@@ -5690,23 +6174,29 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 144,
+  "blockCount": 160,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
     "tls.c.big-stat",
+    "tls.c.callback",
     "tls.c.cards",
     "tls.c.case-study",
+    "tls.c.chapter-divider",
     "tls.c.chart-insight",
     "tls.c.closing",
     "tls.c.comparison",
     "tls.c.contact",
     "tls.c.cover",
+    "tls.c.cta",
     "tls.c.dashboard",
     "tls.c.divider",
     "tls.c.feature-grid",
     "tls.c.feature-reveal",
+    "tls.c.flashcards",
     "tls.c.hero",
+    "tls.c.homework",
+    "tls.c.hook-cover",
     "tls.c.image-full",
     "tls.c.image-text",
     "tls.c.journey",
@@ -5714,14 +6204,21 @@ Object {
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
     "tls.c.objectives",
+    "tls.c.one-question",
+    "tls.c.poster-cover",
     "tls.c.problem-solution",
     "tls.c.profile-card",
+    "tls.c.question-wall",
     "tls.c.quiz",
     "tls.c.quote-image",
     "tls.c.recap",
+    "tls.c.route-agenda",
+    "tls.c.split-cover",
     "tls.c.stat-card",
     "tls.c.stat-spotlight",
     "tls.c.steps",
+    "tls.c.sticky-board",
+    "tls.c.takeaway-poster",
     "tls.c.team",
     "tls.c.testimonial",
     "tls.d.area",
@@ -5751,6 +6248,7 @@ Object {
     "tls.d.table",
     "tls.d.trend-badge",
     "tls.d.waterfall",
+    "tls.g.annotated",
     "tls.g.arrow",
     "tls.g.before-after",
     "tls.g.bracket",
@@ -5819,12 +6317,14 @@ Object {
     "tls.t.footnote",
     "tls.t.formula",
     "tls.t.hero-number",
+    "tls.t.highlight",
     "tls.t.kicker",
     "tls.t.kv-list",
     "tls.t.marker",
     "tls.t.numbered",
     "tls.t.qa",
     "tls.t.quote",
+    "tls.t.speech-bubble",
     "tls.t.statement",
     "tls.t.subtitle",
     "tls.t.tags",
@@ -5916,7 +6416,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 17.7k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.1k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -6010,13 +6510,13 @@ tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by 
 tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 221–574@1728] knobs: cell=plain|card, align=start|center, iconStyle=plain|circle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle=plain|circle|square, iconTone=accent|accent2|text, spacing=default|compact|roomy
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker=dot|dash|chevron|number|icon, spacing=xs|sm|md|lg
-also: tls.c.feature-reveal, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
+also: tls.c.feature-reveal, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
 
 ## Emphasis
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
 tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=display|xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
 tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead|column
-also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.marker
+also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.highlight, tls.t.marker, tls.t.speech-bubble
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
@@ -6068,7 +6568,7 @@ tls.c.image-full · media · slide — Full-slide photo with a headline panel [h
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
+also: tls.g.annotated, tls.m.device-mock, tls.m.icon, tls.m.icon-label, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio
@@ -6083,20 +6583,22 @@ also: tls.m.logo
 tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant=centered|split|bleed, decoration=none|blob|arc|dots
 tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule
 tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align=start|center, decoration=orbs|none, tone=plain|accent
+also: tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover
 
 ## Dividers
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant=numeral|field|minimal, align=start|center
+also: tls.c.chapter-divider
 
 ## Agenda
 tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; one can be marked current [h 169–970@1728] knobs: variant=list|cards, numbering=plain|badge|none
-also: tls.c.objectives
+also: tls.c.objectives, tls.c.route-agenda
 
 ## Closing
 tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h≈413@840] knobs: variant=centered|split|big-type, ctaStyle=button|link
-also: tls.c.contact, tls.c.recap
+also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.question-wall, tls.c.recap, tls.c.takeaway-poster
 
 ## Learning
-also: tls.c.quiz, tls.t.qa
+also: tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
 
 ## Chrome
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark
