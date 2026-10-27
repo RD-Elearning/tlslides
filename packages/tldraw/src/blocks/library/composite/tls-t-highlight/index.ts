@@ -54,7 +54,7 @@ const composite = defineCompositeBlock<HighlightProps>({
   summary: 'A passage with its key words marked and short margin notes.',
   keywords: ["highlight", "quote", "passage", "key words", "annotate", "text"],
   category: 'emphasis',
-  scope: 'slide',
+  scope: 'element',
   shortDescription: 'Passage with marked key words and margin notes',
   related: ["tls.t.quote", "tls.t.statement", "tls.t.definition"],
   schema,
