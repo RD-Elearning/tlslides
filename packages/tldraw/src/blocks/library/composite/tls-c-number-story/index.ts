@@ -31,10 +31,14 @@ function cells(props: NumberStoryProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'arrow-row')
   const steps = objects<{ value?: unknown; label?: unknown; note?: unknown }>(props.steps, 4).filter((s) => str(s.value, 12))
   const last = steps.length - 1
-  const items: BlockSpec[] = steps.map((s, i) => ({ id: `step-${i}`, type: 'tls.t.hero-number', props: {
-    value: str(s.value, 12), unit: str(s.label, 48), ...(str(s.note, 80) ? { caption: str(s.note, 80) } : {}),
-    emphasis: v === 'zoom' ? (i === last ? 'accent' : 'muted') : v === 'staircase' && i === last ? 'accent' : i === 0 ? 'accent' : 'default',
-  } }))
+  // one type size per role across the steps (hero-number autosized each value on its own: golden
+  // r3a patient-flow s9, ecoride s2 "too many sizes"); the emphasis moves the accent, not the size
+  const accentAt = (i: number) => (v === 'zoom' || v === 'staircase' ? i === last : i === 0)
+  const items: BlockSpec[] = steps.map((s, i) => ({ id: `step-${i}`, type: 'tls.l.card', props: { padding: 'sm', children: [
+    { id: `step-value-${i}`, type: 'tls.t.title', props: { text: str(s.value, 12), size: 'title', color: accentAt(i) ? 'accent' : 'text' } },
+    { id: `step-label-${i}`, type: 'tls.t.body', props: { text: str(s.label, 48), size: 'lead' } },
+    ...(str(s.note, 80) ? [{ id: `step-note-${i}`, type: 'tls.t.caption', props: { text: str(s.note, 80) } }] : []),
+  ], $block: { style: { surface: 'surfaceAlt' } } } }))
   const columns = Math.max(1, items.length)
   return { main: items.length ? [{ spec: { id: 'steps', type: 'tls.l.grid', props: { columns, gap: 'lg', sizing: 'equal', children: items } }, group: 'step', grid: { columns, items } }] : [], opts: {} }
 }
@@ -62,7 +66,7 @@ const composite = defineCompositeBlock<NumberStoryProps>({
   related: ["tls.c.kpi-row", "tls.d.stat-compare", "tls.c.big-stat"],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 420] },
+  size: { preferred: [1600, 800], min: [640, 520] },
   describe: {
     when: "A few numbers that only make sense read one after another.",
     avoid: "Independent KPIs: tls.c.kpi-row.",

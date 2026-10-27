@@ -35,7 +35,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.kpi-row': 'h 184–265@840',
   'tls.c.kpi-tile': 'h=fill',
   'tls.c.magazine': 'h≈402@840',
-  'tls.c.number-story': 'h 248–353@840',
+  'tls.c.number-story': 'h≈-115+152/item@840',
   'tls.c.objectives': 'h≈61+68/item@840',
   'tls.c.one-question': 'h≈371@840',
   'tls.c.photo-essay': 'h=fill',
