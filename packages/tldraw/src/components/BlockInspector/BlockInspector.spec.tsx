@@ -202,3 +202,21 @@ describe('ListField', () => {
     expect(b.container.textContent).toContain('Label')
   })
 })
+
+describe('variantOf (spro creative CR12b)', () => {
+  // imported lazily: the inspector module pulls the block library in
+  const { variantOf } = require('./BlockInspector') as typeof import('./BlockInspector')
+  const schema = {
+    text: { type: { kind: 'text' }, role: 'content', label: 'Text' },
+    variant: { type: { kind: 'enum', values: ['marker', 'underline', 'circle'] }, role: 'option', label: 'Variant' },
+  } as unknown as import('../../blocks/types').BlockSchema
+
+  it('offers the variant enum with the current pick', () => {
+    expect(variantOf(schema, { variant: 'circle' })).toEqual({ values: ['marker', 'underline', 'circle'], value: 'circle' })
+    expect(variantOf(schema, {})?.value).toBeUndefined()
+  })
+
+  it('is absent for a block without a variant enum', () => {
+    expect(variantOf({ text: schema.text }, {})).toBeUndefined()
+  })
+})
