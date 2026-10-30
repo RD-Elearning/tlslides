@@ -7,7 +7,6 @@ import type { BlockDefinition, BlockSchema, BlockSpec, LayoutContext, LayoutNode
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { pick, strings, richItems } from '../_kit'
-import { objects, text as str } from '../_wave2'
 import { posterBuild, posterLayout, schemaCapacity, type Cell, type PosterOptions } from '../_poster'
 
 export interface DoDontProps extends Record<string, unknown> {
@@ -30,17 +29,19 @@ export const defaults: DoDontProps = { do: ['Wash hands before each patient', 'L
 function cells(props: DoDontProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'cards')
   const titles = strings(props.titles, 2)
-  const col = (key: 'do' | 'dont', i: number): BlockSpec => {
+  // Two poster columns, the list of each one `grow`n into the height left under its title: the
+  // checklist's own type step (`growText`) then fills the box (a grid of measured cards drew both
+  // lists at body size in a band of the slide: r3i design-thinking s9, digital-uni s11).
+  const col = (key: 'do' | 'dont', i: number): Cell[] => {
     const items = strings(props[key], 5)
-    const kids: BlockSpec[] = []
-    if (v === 'stamped') kids.push({ id: `${key}-mark`, type: 'tls.m.icon', props: { icon: key === 'do' ? 'check' : 'x', size: 'lg', iconStyle: 'disc', color: key === 'do' ? 'positive' : 'negative' } })
-    kids.push({ id: `${key}-title`, type: 'tls.t.title', props: { text: titles[i] || (key === 'do' ? 'Do' : "Don't"), size: 'subheading', color: key === 'do' ? 'positive' : 'negative' } })
-    if (items.length >= 2) kids.push({ id: `${key}-items`, type: 'tls.t.checklist', props: { items: items.map((t) => ({ text: t, state: key === 'do' ? 'done' : 'blocked' })), doneStyle: 'check' } })
-    else if (items.length) kids.push({ id: `${key}-items`, type: 'tls.t.body', props: { text: items[0] } })
-    return { id: key, type: 'tls.l.card', props: { padding: v === 'columns' ? 'sm' : 'md', children: kids, $block: { style: { surface: 'surfaceAlt' } } } }
+    const out: Cell[] = []
+    if (v === 'stamped') out.push({ spec: { id: `${key}-mark`, type: 'tls.m.icon', props: { icon: key === 'do' ? 'check' : 'x', size: 'lg', iconStyle: 'disc', color: key === 'do' ? 'positive' : 'negative' } } })
+    out.push({ spec: { id: `${key}-title`, type: 'tls.t.title', props: { text: titles[i] || (key === 'do' ? 'Do' : "Don't"), size: 'heading', color: key === 'do' ? 'positive' : 'negative' } } })
+    if (items.length >= 2) out.push({ spec: { id: `${key}-items`, type: 'tls.t.checklist', props: { items: items.map((t) => ({ text: t, state: key === 'do' ? 'done' : 'blocked' })), doneStyle: 'check' } }, grow: true })
+    else if (items.length) out.push({ spec: { id: `${key}-items`, type: 'tls.t.body', props: { text: items[0], size: 'lead' } } })
+    return out
   }
-  const items = [col('do', 0), col('dont', 1)]
-  return { main: [{ spec: { id: 'sides', type: 'tls.l.grid', props: { columns: 2, gap: 'lg', sizing: 'equal', children: items } }, group: 'side', grid: { columns: 2, items } }], opts: {} }
+  return { main: col('do', 0), opts: { side: col('dont', 1), ratio: 0.5, gap: 'md', valign: 'start' } }
 }
 
 export function buildDoDont(props: DoDontProps): BlockSpec {
@@ -73,10 +74,11 @@ const composite = defineCompositeBlock<DoDontProps>({
     example: {"id": "b_do_dont", "type": "tls.c.do-dont", "props": {"do": ["Wash hands before each patient", "Label every sample"], "dont": ["Reuse gloves", "Guess a dose"]}},
   },
   motion: {
-    parts: ["side"],
+    parts: ["do-items", "dont-items"],
     preset: 'fade-up',
     partMotion: {
-      'side': { preset: 'fade-up', delay: 0, stagger: 60 },
+      'do-items': { preset: 'fade-up', delay: 0, stagger: 60 },
+      'dont-items': { preset: 'fade-up', delay: 150, stagger: 60 },
     },
   },
   build: buildDoDont,

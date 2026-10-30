@@ -8,7 +8,7 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { pick, strings, richItems } from '../_kit'
 import { objects, text as str } from '../_wave2'
-import { posterBuild, posterLayout, schemaCapacity, type Cell, type PosterOptions } from '../_poster'
+import { posterBuild, posterFit, schemaCapacity, type Cell, type PosterOptions } from '../_poster'
 
 export interface NumberStoryProps extends Record<string, unknown> {
   steps: Array<{ value: string; label: string; note?: string }>
@@ -27,7 +27,7 @@ export const schema: BlockSchema = {
 
 export const defaults: NumberStoryProps = { steps: [{ value: '1,200', label: 'patients a week' }, { value: '4 h', label: 'average wait' }, { value: '1 in 5', label: 'leave before seen', note: 'up from 1 in 10' }], variant: 'arrow-row' }
 
-function cells(props: NumberStoryProps): { main: Cell[]; opts: PosterOptions } {
+function cells(props: NumberStoryProps, value: 'display' | 'title' = 'title', label: 'subheading' | 'lead' = 'lead'): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'arrow-row')
   const steps = objects<{ value?: unknown; label?: unknown; note?: unknown }>(props.steps, 4).filter((s) => str(s.value, 12))
   const last = steps.length - 1
@@ -35,8 +35,8 @@ function cells(props: NumberStoryProps): { main: Cell[]; opts: PosterOptions } {
   // r3a patient-flow s9, ecoride s2 "too many sizes"); the emphasis moves the accent, not the size
   const accentAt = (i: number) => (v === 'zoom' || v === 'staircase' ? i === last : i === 0)
   const items: BlockSpec[] = steps.map((s, i) => ({ id: `step-${i}`, type: 'tls.l.card', props: { padding: 'sm', children: [
-    { id: `step-value-${i}`, type: 'tls.t.title', props: { text: str(s.value, 12), size: 'title', color: accentAt(i) ? 'accent' : 'text' } },
-    { id: `step-label-${i}`, type: 'tls.t.body', props: { text: str(s.label, 48), size: 'lead' } },
+    { id: `step-value-${i}`, type: 'tls.t.title', props: { text: str(s.value, 12), size: value, color: accentAt(i) ? 'accent' : 'text' } },
+    { id: `step-label-${i}`, type: 'tls.t.body', props: { text: str(s.label, 48), size: label } },
     ...(str(s.note, 80) ? [{ id: `step-note-${i}`, type: 'tls.t.caption', props: { text: str(s.note, 80) } }] : []),
   ], $block: { style: { surface: 'surfaceAlt' } } } }))
   const columns = Math.max(1, items.length)
@@ -49,8 +49,8 @@ export function buildNumberStory(props: NumberStoryProps): BlockSpec {
 }
 
 export function layoutNumberStory(props: NumberStoryProps, ctx: LayoutContext): LayoutNode {
-  const c = cells(props)
-  return posterLayout(ctx, c.main, c.opts)
+  // the biggest type that fits the box: the numbers lead, the labels read from the back row
+  return posterFit(ctx, [cells(props, 'display', 'subheading'), cells(props, 'display', 'lead'), cells(props, 'title', 'subheading'), cells(props)])
 }
 
 const composite = defineCompositeBlock<NumberStoryProps>({

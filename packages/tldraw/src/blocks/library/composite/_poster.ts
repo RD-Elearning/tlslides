@@ -128,8 +128,21 @@ function column(ctx: LayoutContext, cells0: Cell[], x: number, w: number, gap: n
   }
 }
 
-/** The poster layout: `main` (and `opts.side`) as measured, centred stacks. */
-export function posterLayout(ctx: LayoutContext, main: Cell[], opts: PosterOptions = {}): LayoutNode {
+interface PosterPlan {
+  W: number
+  H: number
+  mx: number
+  mw: number
+  sx: number
+  sw: number
+  pad: number
+  side?: Cell[]
+  m: ReturnType<typeof column>
+  s?: ReturnType<typeof column>
+  total: number
+}
+
+function posterPlan(ctx: LayoutContext, main: Cell[], opts: PosterOptions): PosterPlan {
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, ctx.box.height) || 0
   const gap = ctx.tokens.space[opts.gap ?? 'lg']
@@ -161,6 +174,29 @@ export function posterLayout(ctx: LayoutContext, main: Cell[], opts: PosterOptio
   const m = column(ctx, main, mx, mw, gap, H - 2 * pad)
   const s = side ? column(ctx, side, sx, sw, gap, H) : undefined
   const total = Math.max(H, m.height + 2 * pad, s?.height ?? 0)
+  return { W, H, mx, mw, sx, sw, pad, side, m, s, total }
+}
+
+/** The height the poster needs for `main` (and `opts.side`) at the box's width, before it is
+ *  stretched to the box: what `posterFit` compares with the box height. */
+export function posterHeight(ctx: LayoutContext, main: Cell[], opts: PosterOptions = {}): number {
+  const p = posterPlan(ctx, main, opts)
+  return Math.max(p.m.height + 2 * p.pad, p.s?.height ?? 0)
+}
+
+/** The largest rung that fits: `rungs` run from the biggest type to the smallest, each a `main` +
+ *  options; the first whose needed height is within `fill` of the box (default 0.9, a poster
+ *  breathes) is laid out, else the last. A block whose cells sit at one measured size left a focal
+ *  number or list in a band of the slide (spro creative Phase R: nova s3, digital-uni s3). */
+export function posterFit(ctx: LayoutContext, rungs: Array<{ main: Cell[]; opts: PosterOptions }>, fill = 0.9): LayoutNode {
+  const H = Math.max(0, ctx.box.height) || 0
+  const pick = rungs.find((r) => posterHeight(ctx, r.main, r.opts) <= H * fill) ?? rungs[rungs.length - 1]
+  return posterLayout(ctx, pick.main, pick.opts)
+}
+
+/** The poster layout: `main` (and `opts.side`) as measured, centred stacks. */
+export function posterLayout(ctx: LayoutContext, main: Cell[], opts: PosterOptions = {}): LayoutNode {
+  const { mx, mw, sx, sw, pad, side, m, s, total } = posterPlan(ctx, main, opts)
   const v = opts.valign ?? 'center'
   const my = v === 'end' ? total - pad - m.height : v === 'start' ? pad : (total - m.height) / 2
   const sidePieces = s ? s.pieces((total - s.height) / 2) : []

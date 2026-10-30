@@ -7,7 +7,7 @@ import type { BlockDefinition, BlockSchema, BlockSpec, LayoutContext, LayoutNode
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { pick, strings, richItems } from '../_kit'
-import { posterBuild, posterLayout, schemaCapacity, type Cell, type PosterOptions } from '../_poster'
+import { posterBuild, posterFit, schemaCapacity, type Cell, type PosterOptions } from '../_poster'
 
 export interface TakeawayPosterProps extends Record<string, unknown> {
   kicker?: string
@@ -24,13 +24,13 @@ export const schema: BlockSchema = {
 
 export const defaults: TakeawayPosterProps = { kicker: 'Three things to keep', items: ['Data beats opinion when the question is clear', 'Measure before you change anything', 'Small tests, often'], variant: 'stack' }
 
-function cells(props: TakeawayPosterProps): { main: Cell[]; opts: PosterOptions } {
+function cells(props: TakeawayPosterProps, size?: 'display' | 'xl' | 'lg' | 'md'): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'stack')
   const items = richItems(props.items, 3)
   const main: Cell[] = []
   if (props.kicker) main.push({ spec: { id: 'kicker', type: 'tls.t.kicker', props: { text: props.kicker } } })
   const numeral = (i: number): BlockSpec => ({ id: `numeral-${i}`, type: 'tls.t.marker', props: { value: String(i + 1), variant: 'numeral', tone: 'solid', size: items.length >= 3 ? 'md' : 'lg' } })
-  const text = (t: string | RichText, i: number): BlockSpec => ({ id: `item-${i}`, type: 'tls.t.statement', props: { text: t, size: items.length > 1 ? 'md' : 'xl', showMark: false } })
+  const text = (t: string | RichText, i: number): BlockSpec => ({ id: `item-${i}`, type: 'tls.t.statement', props: { text: t, size: size ?? (items.length > 1 ? 'md' : 'xl'), showMark: false } })
   if (v === 'row' && items.length > 1) {
     const cols: BlockSpec[] = items.map((t, i) => ({ id: `col-${i}`, type: 'tls.l.stack', props: { gap: 'sm', sizing: 'content', children: [numeral(i), text(t, i)] } }))
     main.push({ spec: { id: 'items', type: 'tls.l.grid', props: { columns: items.length, gap: 'xl', sizing: 'equal', children: cols } }, group: 'item' })
@@ -49,8 +49,9 @@ export function buildTakeawayPoster(props: TakeawayPosterProps): BlockSpec {
 }
 
 export function layoutTakeawayPoster(props: TakeawayPosterProps, ctx: LayoutContext): LayoutNode {
-  const c = cells(props)
-  return posterLayout(ctx, c.main, c.opts)
+  // the takeaways at the biggest statement size that fits (a 1-2-3 stack at md sat in a corner)
+  const sizes: Array<'display' | 'xl' | 'lg' | 'md'> = ['display', 'xl', 'lg', 'md']
+  return posterFit(ctx, sizes.map((z) => cells(props, z)))
 }
 
 const composite = defineCompositeBlock<TakeawayPosterProps>({
