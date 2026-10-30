@@ -43,12 +43,23 @@ describe('gate profiles', () => {
     expect(quality({ id: 's', layout: 'blank', intent: 'poster', regions: { content: [statement()] } }).profile).toBe('poster')
   })
 
-  it('poster: no sparse / thin-region, but the lead must reach the title size', () => {
+  it('poster: an empty large region and content hugging one side are still flagged (spro decks 9c2077bb, e28469a6)', () => {
+    const half: SlideSpec = { id: 's', layout: 'two-column', intent: 'poster', regions: { title: [T('A claim')], left: [statement('xl')] } }
+    const found = codes(half)
+    expect(found).toContain('quality/thin-region')
+    expect(found).toContain('quality/unbalanced')
+    // a statement that spans the one wide region is a finished poster
+    const wide: BlockSpec = { id: 'st', type: 'tls.t.statement', props: { text: 'Nova installs in fifteen minutes, learns a home in a week, and cuts heating energy by twenty-three percent.', size: 'xl' } }
+    expect(codes({ id: 's', layout: 'blank', intent: 'poster', regions: { content: [wide] } })).not.toContain('quality/unbalanced')
+  })
+
+  it('poster: no sparse, thin-region only below the poster floor, and the lead must reach the title size', () => {
     const slide: SlideSpec = { id: 's', layout: 'two-column', regions: { title: [T('A question')], left: [statement('md')], right: [] } }
     expect(codes(slide)).toEqual(expect.arrayContaining(['quality/thin-region']))
     const poster = codes({ ...slide, intent: 'poster' })
     expect(poster).not.toContain('quality/sparse')
-    expect(poster).not.toContain('quality/thin-region')
+    // the right half is empty: under the poster floor (0.15) it is a thin region too
+    expect(poster).toContain('quality/thin-region')
     expect(codes({ id: 's', layout: 'blank', intent: 'poster', regions: { content: [{ id: 'b', type: 'tls.t.body', props: { text: 'Small words.' } }] } })).toContain('quality/small-type')
   })
 

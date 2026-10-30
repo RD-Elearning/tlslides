@@ -67,6 +67,10 @@ export interface SlideQuality {
   /** The tallest empty horizontal band between the body's blocks (title excluded), as a share of
    *  the safe height. */
   innerGap: number
+  /** The empty bands left and right of the content (title included, ornament not), as shares of
+   *  the safe width: a slide whose content hugs one side has one near 0 and the other large. */
+  leftGap: number
+  rightGap: number
   /** The body's largest painted font size (title region excluded), slide units; 0 = no body text. */
   bodyLead: number
   /** The body's painted union as a share of the regions that hold it (title excluded), 0-1. */
@@ -113,6 +117,14 @@ export const QUALITY_GATE = {
   minDiagramFill: 0.45,
   /** CR7a `poster` profile: the lead must reach this share of the deck's title size. */
   posterLeadOfTitle: 1,
+  /** A poster skips `sparse` and `thin-region` (big type on calm space), yet a large region left
+   *  nearly empty beside a full one is not calm space (spro decks 9c2077bb s10, e28469a6 s6). Measured
+   *  2026-10-30 on the 398 poster slides of the spro_review/spro_deckdev decks: below 0.15 flags 10,
+   *  0.25 would flag 33, mostly deliberate type-led covers. */
+  posterMinRegionFill: 0.15,
+  /** A poster whose content hugs one side: the left and right empty bands differ by more than this
+   *  share of the safe width (flags 9 of those 398; 0.3 flags 52, mostly left-aligned section titles). */
+  posterMaxSideExcess: 0.4,
 } as const
 
 /** CR7a: blocks that are a diagram or a chart for the `diagram` profile (connectors are lines). */
@@ -189,6 +201,10 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
   const flow = content.filter((b) => !b.outOfFlow && !DECORATIVE.has(b.type) && b.painted)
   const lowest = flow.reduce((y, b) => Math.max(y, b.painted!.y + b.painted!.height), m)
   const bottomGap = Math.max(0, Math.min(1, (H - m - lowest) / safeH))
+  const safeW = Math.max(1, W - 2 * m)
+  const flowRect = union(flow.map((b) => b.painted))
+  const leftGap = flowRect ? Math.max(0, Math.min(1, (flowRect.x0 - m) / safeW)) : 0
+  const rightGap = flowRect ? Math.max(0, Math.min(1, (W - m - flowRect.x1) / safeW)) : 0
   const titleBottom = flow.filter((b) => b.region === 'title').reduce((y, b) => Math.max(y, b.painted!.y + b.painted!.height), m)
   const body = flow.filter((b) => b.region !== 'title')
   // between the body's blocks (title → body is `topGap`)
@@ -229,6 +245,12 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
   if (!poster && !sole && regionFill < QUALITY_GATE.minRegionFill) {
     findings.push({ code: 'quality/thin-region', region: thinRegion, message: regionFill === 0 ? `region "${thinRegion}" is empty: put a block in it, or a layout without it (one wide region: timeline or blank)` : `region "${thinRegion}" is ${pct(regionFill)} filled (minimum ${pct(QUALITY_GATE.minRegionFill)}): larger type, more items, or another design` })
   }
+  if (poster && !sole && regionFill < QUALITY_GATE.posterMinRegionFill) {
+    findings.push({ code: 'quality/thin-region', region: thinRegion, message: regionFill === 0 ? `region "${thinRegion}" is empty: put a block in it, or a layout without it (one wide region: poster, timeline or blank)` : `region "${thinRegion}" is ${pct(regionFill)} filled (minimum ${pct(QUALITY_GATE.posterMinRegionFill)} on a poster): put the content in the one region that has room, or a layout without the empty one` })
+  }
+  if (poster && Math.abs(leftGap - rightGap) > QUALITY_GATE.posterMaxSideExcess) {
+    findings.push({ code: 'quality/unbalanced', message: `the poster's content hugs one side (${pct(leftGap)} empty on the left, ${pct(rightGap)} on the right): centre it, or give it the full width` })
+  }
   const leadOf = poster ? QUALITY_GATE.posterLeadOfTitle : QUALITY_GATE.leadOfTitle
   if (opts.titleSize && lead > 0 && lead < opts.titleSize * leadOf) {
     findings.push({ code: 'quality/small-type', message: `the largest text is ${Math.round(lead)} units, under the deck's title size ${Math.round(opts.titleSize)}${poster ? ': a poster slide leads with title-size type or larger' : ''}` })
@@ -259,7 +281,7 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
     findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
-  return { profile, diagramFill, fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
+  return { profile, diagramFill, fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, leftGap, rightGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
 }
 
 /**

@@ -353,6 +353,9 @@ function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, regis
 /** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
 const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image', 'tls.m.icon-cluster'])
 
+/** Blocks that may bleed off the frame edge in the `visual` region of `full-bleed-half`: pictures and colour fields. */
+const BLEED_OK: ReadonlySet<string> = new Set([...GROW_SKIP, 'tls.m.shape', 'tls.c.image-full'])
+
 /**
  * The painted union of the shapes `ids` names, in slide units, and `ok: false` when one of them
  * paints outside its box, cuts a text or shrinks one to fit (a grown slide must not).
@@ -458,6 +461,20 @@ function compileSlideUnstyled(
       slideId,
       message: `Unknown layout "${spec.layout}"; falling back to "${FALLBACK_LAYOUT}".`,
     })
+  }
+
+  // The `visual` region of `full-bleed-half` bleeds off the frame edge for a picture or a colour
+  // field. Text or a card placed there started at x = 0 (spro deck 8e474d66 s1: a cover with no left
+  // padding), so it keeps the safe margin on every side that touches the edge. (`full-bleed` is not
+  // touched: its one region is the whole slide for a block that paints edge to edge.)
+  const visual = regionBoxes.visual
+  if (resolvedLayout?.id === 'full-bleed-half' && visual && !(spec.regions.visual ?? []).some((b) => BLEED_OK.has(b.type))) {
+    const m = contentArea(frame, tokens).x
+    const l = visual.x <= 0.5 ? m : 0
+    const t = visual.y <= 0.5 ? m : 0
+    const r = visual.x + visual.width >= frame.width - 0.5 ? m : 0
+    const b = visual.y + visual.height >= frame.height - 0.5 ? m : 0
+    regionBoxes.visual = { x: visual.x + l, y: visual.y + t, width: Math.max(0, visual.width - l - r), height: Math.max(0, visual.height - t - b) }
   }
 
   // 2. Get vertical alignment map from the resolved layout.

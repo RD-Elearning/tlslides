@@ -983,3 +983,19 @@ describe('compileSlide — a block that centres a capped stack hugs it in a cent
     expect(badge.point[1] - (lay.point[1] + lay.size[1])).toBeLessThan(80)
   })
 })
+
+describe('a region the layout bleeds off the frame edge', () => {
+  const text: BlockSpec = { type: 'tls.text', id: 'b-t', props: { text: 'Cover' } }
+  const pic: BlockSpec = { type: 'tls.m.image', id: 'b-i', props: {} }
+  const xs = (s: SlideSpec) => compileSlide(s, DEFAULT_FRAME, TEST_TOKENS).shapes.map((sh) => sh.point[0])
+
+  it('keeps the safe margin for a text block (spro deck 8e474d66 s1: a cover at x = 0)', () => {
+    const m = getSlideLayout('blank')!.compile(DEFAULT_FRAME, TEST_TOKENS).content!.x
+    const x = xs({ id: 's', layout: 'full-bleed-half', regions: { visual: [text] } })
+    expect(Math.min(...x)).toBeGreaterThanOrEqual(m)
+  })
+
+  it('lets a picture bleed to the edge', () => {
+    expect(Math.min(...xs({ id: 's', layout: 'full-bleed-half', regions: { visual: [pic] } }))).toBe(0)
+  })
+})
