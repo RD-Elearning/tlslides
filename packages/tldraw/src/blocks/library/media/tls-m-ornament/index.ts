@@ -73,7 +73,7 @@ function paths(shape: OrnamentShape, W: number, H: number, quarter: number, fill
     const rays = Array.from({ length: 9 }, (_, i) => arcPts(cx, H, R, 180 + 20 * i, 180 + 20 * i, 0)[0])
     const lines = rays.map((p) => poly([[cx, H - sw / 2], p.map((v) => v) as Pt])).join('') + poly(arcPts(cx, H - sw / 2, R, 180, 360, 36)) + poly(arcPts(cx, H - sw / 2, R * 0.55, 180, 360, 24))
     const t = (s: string) => (quarter ? s : s)
-    return { lines: t(lines), accent: filled ? poly([[cx, H - sw / 2], ...arcPts(cx, H - sw / 2, R * 0.55, 180, 360, 24)], true) : '' }
+    return { lines: t(lines), accent: filled ? poly([[cx, H - sw / 2], ...arcPts(cx, H - sw / 2, R * 0.3, 180, 360, 24)], true) : '' }
   }
   // sunburst
   const cy = H / 2
