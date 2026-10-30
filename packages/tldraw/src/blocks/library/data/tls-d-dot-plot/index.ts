@@ -25,6 +25,6 @@ export const tlsDDotPlot: BlockDefinition = {
   defaults: dotDefaults,
   size: { preferred: [900, 420], min: [350, 200] },
   layout: ((props: DotProps, ctx) => dotLayout(props, ctx, 'dot-plot')) as BlockDefinition['layout'],
-  motion: dotMotion('tls-d-dot-plot0'),
+  motion: dotMotion('dot'),
   capacity: ((props: DotProps, box) => dotCapacity(props, box)) as BlockDefinition['capacity'],
 }

@@ -55,3 +55,10 @@ describe('tls.d.lollipop', () => {
     assertExampleFits(tlsDLollipop)
   })
 })
+
+describe('tls.d.lollipop motion', () => {
+  it('animates the stems it draws (not a track), and the dots', () => {
+    expect(tlsDLollipop.motion?.parts).toEqual(expect.arrayContaining(['row[*].stem', 'row[*].dot']))
+    expect(tlsDLollipop.motion?.parts).not.toContain('row[*].track')
+  })
+})

@@ -25,6 +25,6 @@ export const tlsDLollipop: BlockDefinition = {
   defaults: dotDefaults,
   size: { preferred: [900, 420], min: [350, 200] },
   layout: ((props: DotProps, ctx) => dotLayout(props, ctx, 'lollipop')) as BlockDefinition['layout'],
-  motion: dotMotion('tls-d-lollipop0'),
+  motion: dotMotion('stem'),
   capacity: ((props: DotProps, box) => dotCapacity(props, box)) as BlockDefinition['capacity'],
 }

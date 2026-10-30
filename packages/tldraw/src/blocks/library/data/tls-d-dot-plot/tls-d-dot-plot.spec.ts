@@ -55,3 +55,10 @@ describe('tls.d.dot-plot', () => {
     assertExampleFits(tlsDDotPlot)
   })
 })
+
+describe('tls.d.dot-plot motion', () => {
+  it('animates the track it draws (not a stem), and the dots', () => {
+    expect(tlsDDotPlot.motion?.parts).toEqual(expect.arrayContaining(['row[*].track', 'row[*].dot']))
+    expect(tlsDDotPlot.motion?.parts).not.toContain('row[*].stem')
+  })
+})
