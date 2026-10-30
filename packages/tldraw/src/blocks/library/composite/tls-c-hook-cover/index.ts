@@ -36,7 +36,7 @@ function cells(props: HookCoverProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'question')
   const main: Cell[] = []
   if (props.kicker) main.push({ spec: { id: 'kicker', type: 'tls.t.kicker', props: { text: props.kicker } } })
-  if (v === 'number' && props.number) main.push({ spec: { id: 'hook', type: 'tls.t.hero-number', props: { value: props.number, caption: props.numberLabel ?? '', emphasis: 'accent' } }, grow: true })
+  if (v === 'number' && props.number) main.push({ spec: { id: 'hook', type: 'tls.t.hero-number', props: { value: props.number, caption: props.numberLabel ?? '', emphasis: 'accent' } } })
   else if (props.hook) main.push({ spec: { id: 'hook', type: 'tls.t.statement', props: { text: props.hook, size: 'xl', showMark: false } } })
   main.push({ spec: { id: 'title', type: 'tls.t.title', props: { text: props.title, size: 'heading' } }, space: 1 })
   if (props.meta) main.push({ spec: { id: 'meta', type: 'tls.t.caption', props: { text: props.meta } } })
