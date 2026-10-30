@@ -103,6 +103,10 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.d.funnel-chart': f(['sequence', 'share'], [3, 6], 'labels', 'neutral', { data: 'series' }),
   'tls.d.grouped-bar': f(['series', 'contrast'], [3, 8], 'labels', 'neutral', { data: 'table' }),
   'tls.d.heatmap': f(['matrix', 'series'], [3, 10], 'labels', 'calm', { data: 'table', families: SERIOUS }),
+  'tls.d.lollipop': f(['ranking', 'series', 'contrast'], [3, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
+  'tls.d.dot-plot': f(['ranking', 'series', 'contrast'], [4, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], families: SERIOUS }),
+  'tls.d.treemap': f(['share', 'hierarchy'], [4, 12], 'labels', 'calm', { data: 'share', needs: ['chartData'] }),
+  'tls.d.annotated-line': f(['series', 'timeline', 'cause-effect'], [1, 4], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
   'tls.d.line': f(['series', 'timeline'], [4, 24], 'labels', 'neutral', { data: 'series' }),
   'tls.d.pie': f(['share'], [2, 6], 'labels', 'neutral', { data: 'share' }),
   'tls.d.radar': f(['contrast', 'series'], [4, 8], 'labels', 'neutral', { data: 'table' }),
@@ -240,5 +244,6 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.m.decoration': f([], null, 'labels', 'lively'),
   'tls.m.icon-cluster': f([], null, 'labels', 'lively'),
   'tls.m.pattern': f([], null, 'labels', 'calm'),
+  'tls.m.ornament': f([], null, 'labels', 'calm', { families: ['elegant'] }),
   'tls.x.rule': f([], null, 'labels', 'calm'),
 }

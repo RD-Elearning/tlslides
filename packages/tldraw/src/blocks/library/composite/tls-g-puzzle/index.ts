@@ -68,7 +68,7 @@ const composite = defineCompositeBlock<PuzzleProps>({
   related: ["tls.c.cards", "tls.g.hub-spoke", "tls.g.venn"],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 620] },
+  size: { preferred: [1600, 800], min: [640, 680] },
   describe: {
     when: "A few parts that only work together, making one whole.",
     avoid: "Peers that stand alone: tls.c.cards.",

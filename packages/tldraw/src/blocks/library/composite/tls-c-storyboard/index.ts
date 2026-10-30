@@ -63,7 +63,7 @@ const composite = defineCompositeBlock<StoryboardProps>({
   related: ["tls.c.journey", "tls.t.speech-bubble", "tls.g.timeline"],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 360] },
+  size: { preferred: [1600, 800], min: [640, 380] },
   describe: {
     when: "A short scenario: who does what, in three or four moments.",
     avoid: "Dated events: tls.g.timeline.",

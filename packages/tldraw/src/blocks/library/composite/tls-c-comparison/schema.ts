@@ -13,6 +13,8 @@ export interface ComparisonColumn {
   title: string
   /** Bullet items in this column — each a short phrase. */
   items: string[]
+  /** `style: poster`: the big number of the column (a figure with its unit, ≤ 12 characters). */
+  metric?: string
 }
 
 export interface ComparisonProps extends Record<string, unknown> {
@@ -23,7 +25,7 @@ export interface ComparisonProps extends Record<string, unknown> {
   /** AC2: `plain` (default), `cards` (every column on a card, the highlighted one outlined in
    *  the accent) or `versus` (two columns as cards with an accent "VS" disc between them; three
    *  columns are drawn as `cards`). */
-  style?: 'plain' | 'cards' | 'versus'
+  style?: 'plain' | 'cards' | 'versus' | 'poster'
 }
 
 export const schema: BlockSchema = {
@@ -38,6 +40,12 @@ export const schema: BlockSchema = {
             required: true,
             role: 'content',
             label: 'Column title',
+          },
+          metric: {
+            type: { kind: 'text', maxChars: 12 },
+            role: 'content',
+            label: 'Big number',
+            guidance: 'Only for style poster: one figure with its unit, from the source.',
           },
           items: {
             type: {
@@ -69,10 +77,10 @@ export const schema: BlockSchema = {
     help: 'Index (0-based) of the column to highlight with accent colour. Omit or null for none.',
   },
   style: {
-    type: { kind: 'enum', values: ['plain', 'cards', 'versus'] },
+    type: { kind: 'enum', values: ['plain', 'cards', 'versus', 'poster'] },
     role: 'option',
     label: 'Style',
-    guidance: '`versus`: two rivals with a VS disc.',
+    guidance: '`versus`: two rivals with a VS disc; `poster`: two rivals, a big number (`metric`) each.',
   },
 }
 

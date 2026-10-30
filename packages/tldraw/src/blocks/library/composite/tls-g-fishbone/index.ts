@@ -68,7 +68,7 @@ const composite = defineCompositeBlock<FishboneProps>({
   related: ["tls.g.breakdown", "tls.g.mindmap", "tls.c.cards"],
   schema,
   defaults,
-  size: { preferred: [1600, 800], min: [640, 540] },
+  size: { preferred: [1600, 800], min: [640, 560] },
   describe: {
     when: "Many causes, in a few groups, behind one effect or problem.",
     avoid: "One chain of causes: tls.g.flow.",

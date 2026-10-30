@@ -64,7 +64,8 @@ function contentHeight(ctx: LayoutContext, spec: BlockSpec, w: number): number {
   const space = ctx.tokens.space as Record<string, number>
   if (spec.type === 'tls.l.card') {
     const pad = space[props.padding ?? 'md'] ?? space.md
-    return 2 * pad + kids.reduce((a, k) => a + contentHeight(ctx, k, Math.max(20, w - 2 * pad)), 0)
+    // the card lays its children in a stack with the `sm` gap (tls.l.card)
+    return 2 * pad + kids.reduce((a, k) => a + contentHeight(ctx, k, Math.max(20, w - 2 * pad)), 0) + space.sm * Math.max(0, kids.length - 1)
   }
   if (spec.type === 'tls.l.stack') {
     const gap = space[props.gap ?? 'md'] ?? space.md

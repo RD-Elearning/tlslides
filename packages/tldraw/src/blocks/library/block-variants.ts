@@ -146,6 +146,10 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.d.funnel-chart': [v('funnel', 'a tapering funnel', { shape: 'funnel', showDropoff: 'percent' }), v('bars', 'stages as bars', { shape: 'bars' })],
   'tls.d.grouped-bar': [v('columns', 'columns by group', { orientation: 'vertical', legend: 'top' }), v('bars', 'horizontal groups', { orientation: 'horizontal', valueLabels: 'end' })],
   'tls.d.heatmap': [v('accent', 'one-colour ramp with values', { ramp: 'accent', showValues: true }), v('diverging', 'above and below a middle', { ramp: 'diverging' })],
+  'tls.d.lollipop': [v('sorted', 'largest first, values at the end', { sorted: true, labels: 'end' }), v('plain', 'author order, no values', { sorted: false, labels: 'none' })],
+  'tls.d.dot-plot': [v('sorted', 'largest first, values at the end', { sorted: true, labels: 'end' }), v('plain', 'author order, no values', { sorted: false, labels: 'none' })],
+  'tls.d.treemap': [v('share', 'percent of the whole in each cell', { values: 'share' }), v('raw', 'the values themselves', { values: 'raw' })],
+  'tls.d.annotated-line': [v('below', 'a row of notes under the chart', { variant: 'notes-below' }), v('beside', 'the notes in a column beside it', { variant: 'notes-inline' })],
   'tls.d.line': [v('labelled', 'lines named at their ends', { endLabels: true, markers: 'last', legend: 'none' }), v('smooth', 'smooth lines with a legend', { curve: 'monotone', legend: 'top' }), v('points', 'every point marked', { markers: 'all' })],
   'tls.d.pie': [v('outside', 'labels outside', { labels: 'outside', showPercent: true }), v('legend', 'a legend beside', { labels: 'legend' })],
   'tls.d.radar': [v('filled', 'filled shapes', { fill: true }), v('lines', 'outlines only', { fill: false, legend: 'bottom' })],
@@ -162,7 +166,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
 
   // ── comparison ──
   'tls.c.case-study': [v('columns', 'challenge, solution, result side by side', { layout: 'columns', emphasis: 'result' }), v('rows', 'the story top to bottom', { layout: 'rows' })],
-  'tls.c.comparison': [v('columns', 'plain columns', { style: 'plain' }), v('cards', 'each option on a card', { style: 'cards' }), v('versus', 'two sides set against each other', { style: 'versus' })],
+  'tls.c.comparison': [v('columns', 'plain columns', { style: 'plain' }), v('cards', 'each option on a card', { style: 'cards' }), v('versus', 'two sides set against each other', { style: 'versus' }), v('poster', 'two sides, a big number each', { style: 'poster' })],
   'tls.c.problem-solution': [v('panels', 'two panels and an arrow', { style: 'panels', showIcons: true }), v('callouts', 'two callouts', { style: 'callouts' })],
   'tls.d.compare-table': [v('ticks', 'ticks and crosses', { cellKind: 'check', zebra: true }), v('ratings', 'ratings per criterion', { cellKind: 'rating' }), v('text', 'short words per cell', { cellKind: 'text', density: 'compact' })],
   'tls.d.pricing': [v('raised', 'the featured plan raised', { featuredStyle: 'raised' }), v('filled', 'the featured plan filled', { featuredStyle: 'filled', align: 'stretch' })],
@@ -295,5 +299,6 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.m.decoration': [v('blob', 'a soft blob', { shape: 'blob', opacity: 'soft' }), v('squiggle', 'a hand squiggle', { shape: 'squiggle' }), v('sparkle', 'a sparkle', { shape: 'sparkle', tone: 'accent2' }), v('solid', 'a 3D solid', { shape: 'cube' })],
   'tls.m.icon-cluster': [v('mixed', 'topic icons in mixed colours', { tone: 'mixed' }), v('discs', 'icons on discs', { backing: 'disc', tone: 'accent' })],
   'tls.m.pattern': [v('dots', 'a dot grid', { pattern: 'dots' }), v('grid', 'a fine grid', { pattern: 'grid', scale: 'sm' }), v('mesh', 'soft mesh glows', { pattern: 'mesh', tone: 'accent' })],
+  'tls.m.ornament': [v('divider', 'a rule with a diamond', { shape: 'divider', variant: 'filled' }), v('frame', 'a double rule with notched corners', { shape: 'frame' }), v('fan', 'a fan of rays', { shape: 'fan', variant: 'filled' }), v('sunburst', 'a ring of rays', { shape: 'sunburst' })],
   'tls.x.rule': [v('hairline', 'a thin divider', { weight: 'hairline' }), v('accent', 'a short accent rule', { tone: 'accent', length: 'short', weight: 'bold' }), v('gradient', 'a gradient line', { tone: 'gradient' })],
 }

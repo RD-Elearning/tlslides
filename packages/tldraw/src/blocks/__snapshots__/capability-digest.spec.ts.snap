@@ -136,6 +136,7 @@ Agenda or contents slide: numbered items with titles and optional notes. The cur
 | \`current\` | no | number | Index of the currently highlighted item (0-based). Omit or set to null to highlight none. |
 | \`variant\` | no | enum: list \\\\| cards | \`cards\`: each item on a card. |
 | \`numbering\` | no | enum: plain \\\\| badge \\\\| none | \`badge\`: number in an accent disc. |
+| \`startAt\` | no | number (min 1, max 99) | Only when one contents list is split over several blocks: the first number of this one. |
 
 \`\`\`json
 {
@@ -477,9 +478,9 @@ Side-by-side columns, each with a title and a list of items, to contrast options
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`columns\` | yes | list of object (title, items) (2–3 items) | 2–3 columns, each with a short title (2–6 words) and 2–6 short items (2–8 words each). |
+| \`columns\` | yes | list of object (title, metric, items) (2–3 items) | 2–3 columns, each with a short title (2–6 words) and 2–6 short items (2–8 words each). |
 | \`highlight\` | no | number | Index (0-based) of the column to highlight with accent colour. Omit or null for none. |
-| \`style\` | no | enum: plain \\\\| cards \\\\| versus | \`versus\`: two rivals with a VS disc. |
+| \`style\` | no | enum: plain \\\\| cards \\\\| versus \\\\| poster | \`versus\`: two rivals with a VS disc; \`poster\`: two rivals, a big number (\`metric\`) each. |
 
 \`\`\`json
 {
@@ -2004,6 +2005,57 @@ A luxury frame for a title, a section or a quote. _(family: composite; keywords:
 }
 \`\`\`
 
+### \`tls.d.annotated-line\` — Annotated line
+
+A line chart with the events that explain it, one note per event. _(family: data; keywords: annotated, line, events, timeline, trend, milestones, why it changed)_
+
+**When:** A trend that only makes sense with what happened along it: a launch, a change, a shock.
+**Avoid:** A trend with nothing to explain: tls.d.line. Several series: tls.d.line.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`categories\` | yes | list of text (max 16 chars) (2–24 items) | Ordered x labels. |
+| \`series\` | yes | list of object (name, values) (1–2 items) | One or two lines; a value per category. |
+| \`events\` | yes | list of object (x, label) (1–4 items) | What happened at that x, from the source. |
+| \`variant\` | no | enum: notes-below \\\\| notes-inline | notes-below: a row of notes under the chart; notes-inline: a list beside it. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_annotated_line\\",
+  \\"type\\": \\"tls.d.annotated-line\\",
+  \\"props\\": {
+    \\"categories\\": [
+      \\"2021\\",
+      \\"2022\\",
+      \\"2023\\",
+      \\"2024\\"
+    ],
+    \\"series\\": [
+      {
+        \\"name\\": \\"Users (k)\\",
+        \\"values\\": [
+          31,
+          58,
+          77,
+          96
+        ]
+      }
+    ],
+    \\"events\\": [
+      {
+        \\"x\\": \\"2022\\",
+        \\"label\\": \\"Mobile app launched\\"
+      },
+      {
+        \\"x\\": \\"2024\\",
+        \\"label\\": \\"Second city opened\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.area\` — Area Chart
 
 Area chart: overlapping, stacked or 100% stacked fills over ordered categories on a zero baseline. _(family: data; keywords: area, stacked, volume, composition, time, chart)_
@@ -2271,6 +2323,44 @@ Ring of up to six slices with a legend or outside labels, percentages and an opt
 }
 \`\`\`
 
+### \`tls.d.dot-plot\` — Dot plot
+
+Rows of one value each: a dot on a quiet track on a shared scale, the label left, the value after the dot. _(family: data; keywords: dot plot, strip, dot chart, compare values, ranking)_
+
+**When:** Compare values across many categories at a glance, one highlighted.
+**Avoid:** Parts of a whole: tls.d.donut or tls.d.pie. A time series: tls.d.line.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value) (3–10 items) | One value each, from the source; the rows keep their order unless sorted. |
+| \`highlight\` | no | text (max 40 chars) | The name of the one row that is the point (default: the largest). |
+| \`labels\` | no | enum: end \\\\| none |  |
+| \`sorted\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_dot-plot\\",
+  \\"type\\": \\"tls.d.dot-plot\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"A\\",
+        \\"value\\": 82
+      },
+      {
+        \\"label\\": \\"B\\",
+        \\"value\\": 64
+      },
+      {
+        \\"label\\": \\"C\\",
+        \\"value\\": 51
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.funnel-chart\` — Funnel Chart
 
 Funnel or bar stages sized by value, with the percentage lost between stages. _(family: data; keywords: funnel, conversion, pipeline, stages, drop-off, sales)_
@@ -2533,6 +2623,44 @@ Line chart with one line per series, labelled at the line ends. _(family: data; 
           27,
           40
         ]
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.d.lollipop\` — Lollipop
+
+Rows of one value each: a stem and a dot on a shared scale, the label left, the value after the dot. _(family: data; keywords: lollipop, dot chart, cleveland, ranking, compare values)_
+
+**When:** Compare a few values across categories where bars would be heavy; one row is the point.
+**Avoid:** Parts of a whole: tls.d.donut or tls.d.pie. A time series: tls.d.line.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value) (3–10 items) | One value each, from the source; the rows keep their order unless sorted. |
+| \`highlight\` | no | text (max 40 chars) | The name of the one row that is the point (default: the largest). |
+| \`labels\` | no | enum: end \\\\| none |  |
+| \`sorted\` | no | boolean |  |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_lollipop\\",
+  \\"type\\": \\"tls.d.lollipop\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"A\\",
+        \\"value\\": 82
+      },
+      {
+        \\"label\\": \\"B\\",
+        \\"value\\": 64
+      },
+      {
+        \\"label\\": \\"C\\",
+        \\"value\\": 51
       }
     ]
   }
@@ -3079,6 +3207,42 @@ Table with header, aligned numbers, status dots, ratings and a totals row. _(fam
       \\"$248\\"
     ],
     \\"zebra\\": true
+  }
+}
+\`\`\`
+
+### \`tls.d.treemap\` — Treemap
+
+The parts of one whole as rectangles whose areas are the values. _(family: data; keywords: treemap, share, parts of a whole, budget, composition, proportion)_
+
+**When:** Many parts of one whole (budget lines, market segments) where size is the message.
+**Avoid:** Two or three parts: tls.d.donut. Change over time: tls.d.line.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (label, value) (3–12 items) | The parts of one whole, from the source; positive values only. |
+| \`values\` | no | enum: share \\\\| raw \\\\| none | share: percent of the whole; raw: the value; none. |
+| \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_treemap\\",
+  \\"type\\": \\"tls.d.treemap\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"label\\": \\"Marketing\\",
+        \\"value\\": 42
+      },
+      {
+        \\"label\\": \\"Product\\",
+        \\"value\\": 27
+      },
+      {
+        \\"label\\": \\"Support\\",
+        \\"value\\": 9
+      }
+    ]
   }
 }
 \`\`\`
@@ -5663,6 +5827,34 @@ Even grid of logos at equal height or equal area, with an optional heading, plat
 }
 \`\`\`
 
+### \`tls.m.ornament\` — Ornament [backdrop]
+
+Art-deco frame, divider, corner rules, fan or sunburst in a theme colour. _(family: media; keywords: ornament, art deco, frame, divider, border, fan, sunburst, luxury, elegant, rule)_
+
+**When:** Elegant or luxury decks: frame a cover, divide a quote or a section, dress a closing. Place it in its own region or layer.
+**Avoid:** Anything that carries meaning; busy or playful decks (tls.m.decoration).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`shape\` | no | enum: frame \\\\| divider \\\\| corner \\\\| fan \\\\| sunburst | frame: a double rule with notched corners; divider: a rule with a diamond; corner: nested corner rules; fan / sunburst: rays. |
+| \`variant\` | no | enum: line \\\\| filled | line: strokes only; filled: adds filled diamonds or wedges. |
+| \`tone\` | no | enum: accent \\\\| accent2 \\\\| line |  |
+| \`opacity\` | no | enum: soft \\\\| medium \\\\| strong |  |
+| \`rotation\` | no | number (min 0, max 359) | Degrees, snapped to quarters (corner, fan). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_ornament\\",
+  \\"type\\": \\"tls.m.ornament\\",
+  \\"props\\": {
+    \\"shape\\": \\"divider\\",
+    \\"variant\\": \\"filled\\",
+    \\"tone\\": \\"accent\\",
+    \\"opacity\\": \\"medium\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.pattern\` — Pattern [backdrop]
 
 Subtle backdrop texture: repeating dots, grid, lines or diagonal stripes (one path), film grain, or a mesh of soft accent glows. _(family: media; keywords: pattern, texture, dots, grid, stripes, backdrop, background, grain, noise, mesh, glow)_
@@ -6774,7 +6966,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 178,
+  "blockCount": 183,
   "blockTypes": Array [
     "tls.c.agenda",
     "tls.c.bento",
@@ -6829,18 +7021,21 @@ Object {
     "tls.c.team",
     "tls.c.testimonial",
     "tls.c.title-card",
+    "tls.d.annotated-line",
     "tls.d.area",
     "tls.d.bar",
     "tls.d.bubble",
     "tls.d.bullet-chart",
     "tls.d.compare-table",
     "tls.d.donut",
+    "tls.d.dot-plot",
     "tls.d.funnel-chart",
     "tls.d.gauge",
     "tls.d.grouped-bar",
     "tls.d.heatmap",
     "tls.d.icon-array",
     "tls.d.line",
+    "tls.d.lollipop",
     "tls.d.pie",
     "tls.d.pricing",
     "tls.d.progress-bar",
@@ -6854,6 +7049,7 @@ Object {
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
     "tls.d.table",
+    "tls.d.treemap",
     "tls.d.trend-badge",
     "tls.d.waterfall",
     "tls.g.annotated",
@@ -6920,6 +7116,7 @@ Object {
     "tls.m.image-grid",
     "tls.m.logo",
     "tls.m.logo-wall",
+    "tls.m.ornament",
     "tls.m.pattern",
     "tls.m.shape",
     "tls.t.badge",
@@ -7042,7 +7239,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.4k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.5k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -7156,14 +7353,14 @@ tls.d.bar · chart · group · ≤20 items — Column or horizontal bar chart of
 tls.d.donut · chart · group · ≤6 items — Ring of slices showing shares of a whole, with a centre value [h≈366+0/item@544] knobs: labels=legend|outside, showPercent
 tls.d.grouped-bar · chart · group · 2–12 items — Side-by-side bars per category, one colour per series [h=fill] knobs: orientation=vertical|horizontal, valueLabels=none|end|inside, legend=top|bottom|right|none
 tls.d.line · chart · group · 2–24 items — Lines over ordered categories, one per series, labelled at the line ends [h=fill] knobs: curve=linear|monotone, markers=none|last|all, endLabels, legend=top|bottom|right|none
-also: tls.d.area, tls.d.bubble, tls.d.funnel-chart, tls.d.heatmap, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.waterfall
+also: tls.d.annotated-line, tls.d.area, tls.d.bubble, tls.d.dot-plot, tls.d.funnel-chart, tls.d.heatmap, tls.d.lollipop, tls.d.pie, tls.d.radar, tls.d.scatter, tls.d.slope, tls.d.sparkline, tls.d.stacked-bar, tls.d.treemap, tls.d.waterfall
 
 ## Tables
 tls.d.table · table · group · ≤8 items — Table with header row, aligned numbers, zebra rows and an emphasised row [h 222–332@840] knobs: zebra, rules=horizontal|head|none, header=filled|bold|none, density=default|compact
 also: tls.d.ranking, tls.d.scorecard
 
 ## Comparison
-tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style=plain|cards|versus
+tls.c.comparison · comparison · group · 2–3 items — Columns of titled item lists, one optionally highlighted [h≈238+50/item@1728] knobs: style=plain|cards|versus|poster
 tls.d.compare-table · comparison · group · 2–5 items — Feature matrix of options against criteria, ticks, crosses or ratings [h 232–350@840] knobs: cellKind=check|rating|text, zebra, density=default|compact
 tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, period, feature list and one featured plan [h 525–822@840] knobs: featuredStyle=raised|outline|filled, align=top|stretch
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow=arrow|chevron|none, emphasis=after|none
@@ -7231,7 +7428,7 @@ also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x
 
 ## Decoration
 tls.m.decoration · decoration · element · backdrop — Decorative motif or 3D solid in a theme colour [h=fill] knobs: shape=blob|arc|ring|dots|wave|corner|orb|squiggle|star|sparkle|zigzag|triangle|half-circle|frame|cube|cylinder|cone|pyramid|slab, tone=accent|accent2|alt|line, opacity=soft|medium|strong
-also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.pattern, tls.x.rule
+also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.ornament, tls.m.pattern, tls.x.rule
 
 ## Icons
 

@@ -62,6 +62,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
+  'tls.m.ornament': t2(['shape', 'variant', 'tone', 'opacity']),
   // vivid V3: topic icons scattered as the slide's decoration (reached through the style concept)
   'tls.m.icon-cluster': t2(['tone', 'opacity', 'backing']),
   'tls.x.rule': t2(['axis', 'weight', 'tone', 'length', 'dash']),
@@ -140,6 +141,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.slope': t2(['highlight', 'format']),
   'tls.d.bubble': t2(['sizeLegend', 'gridlines', 'format']),
   'tls.d.heatmap': t2(['ramp', 'showValues', 'format']),
+  'tls.d.lollipop': t2(['labels', 'sorted', 'format']),
+  'tls.d.dot-plot': t2(['labels', 'sorted', 'format']),
+  'tls.d.treemap': t2(['values', 'format']),
+  'tls.d.annotated-line': t2(['variant', 'format']),
   'tls.c.chart-insight': t1(['side', 'ratio', 'insightSize'], ['tls.c.dashboard']),
 
   // ── table ──

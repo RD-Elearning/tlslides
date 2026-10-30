@@ -20,7 +20,8 @@ import { tlsCPhotoEssay } from './tls-c-photo-essay'
 import { tlsCGalleryWall } from './tls-c-gallery-wall'
 import { tlsCTitleCard } from './tls-c-title-card'
 import { tlsCFullBleedType } from './tls-c-full-bleed-type'
+import { tlsDAnnotatedLine } from './tls-d-annotated-line'
 
-export const wave2Blocks: BlockDefinition[] = [tlsGDecisionTree, tlsGFishbone, tlsGSpectrum, tlsGBalance, tlsGPuzzle, tlsGBridge, tlsCNumberStory, tlsCDoDont, tlsCStoryboard, tlsCMagazine, tlsTDropCap, tlsTPullQuote, tlsCPhotoEssay, tlsCGalleryWall, tlsCTitleCard, tlsCFullBleedType]
+export const wave2Blocks: BlockDefinition[] = [tlsGDecisionTree, tlsGFishbone, tlsGSpectrum, tlsGBalance, tlsGPuzzle, tlsGBridge, tlsCNumberStory, tlsCDoDont, tlsCStoryboard, tlsCMagazine, tlsTDropCap, tlsTPullQuote, tlsCPhotoEssay, tlsCGalleryWall, tlsCTitleCard, tlsCFullBleedType, tlsDAnnotatedLine]
 
-export { tlsGDecisionTree, tlsGFishbone, tlsGSpectrum, tlsGBalance, tlsGPuzzle, tlsGBridge, tlsCNumberStory, tlsCDoDont, tlsCStoryboard, tlsCMagazine, tlsTDropCap, tlsTPullQuote, tlsCPhotoEssay, tlsCGalleryWall, tlsCTitleCard, tlsCFullBleedType }
+export { tlsGDecisionTree, tlsGFishbone, tlsGSpectrum, tlsGBalance, tlsGPuzzle, tlsGBridge, tlsCNumberStory, tlsCDoDont, tlsCStoryboard, tlsCMagazine, tlsTDropCap, tlsTPullQuote, tlsCPhotoEssay, tlsCGalleryWall, tlsCTitleCard, tlsCFullBleedType, tlsDAnnotatedLine }

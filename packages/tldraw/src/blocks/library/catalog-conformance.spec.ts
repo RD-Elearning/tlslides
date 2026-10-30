@@ -36,7 +36,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 178 // spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3
+const EXPECTED_BLOCK_COUNT = 183 // spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()

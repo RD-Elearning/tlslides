@@ -15,6 +15,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { isPoster, layoutPoster } from './poster'
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { ComparisonProps } from './schema'
 import { withRealWidths, tintOf, onColor, readableOn } from '../../data/_chart/kit'
@@ -116,6 +117,7 @@ function layoutColumn(
 }
 
 export function layout(props: ComparisonProps, ctx0: LayoutContext): LayoutNode {
+  if (isPoster(props)) return layoutPoster(props, ctx0)
   // Browser-true single-line widths: the item wrapping decides the height (RV06).
   const ctx = withRealWidths(ctx0)
   const columns = props.columns ?? []

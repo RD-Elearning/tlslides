@@ -18,6 +18,7 @@ import { tlsMAvatarGroup } from './tls-m-avatar-group'
 import { tlsMDecoration } from './tls-m-decoration'
 import { tlsMIconCluster } from './tls-m-icon-cluster'
 import { tlsMPattern } from './tls-m-pattern'
+import { tlsMOrnament } from './tls-m-ornament'
 import { tlsMShape } from './tls-m-shape'
 import { tlsMEmoji } from './tls-m-emoji'
 import { tlsMIllustration } from './tls-m-illustration'
@@ -38,6 +39,7 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMDecoration,
   tlsMIconCluster,
   tlsMPattern,
+  tlsMOrnament,
   tlsMShape,
   tlsMEmoji,
   tlsMIllustration,
@@ -58,5 +60,6 @@ export { tlsMAvatarGroup } from './tls-m-avatar-group'
 export { tlsMShape } from './tls-m-shape'
 export { tlsMDecoration } from './tls-m-decoration'
 export { tlsMPattern } from './tls-m-pattern'
+export { tlsMOrnament } from './tls-m-ornament'
 export { tlsMEmoji } from './tls-m-emoji'
 export { tlsMIllustration } from './tls-m-illustration'

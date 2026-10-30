@@ -31,9 +31,12 @@ import { tlsDScorecard } from './tls-d-scorecard'
 import { tlsDPricing } from './tls-d-pricing'
 import { tlsDRanking } from './tls-d-ranking'
 import { tlsDHeatmap } from './tls-d-heatmap'
+import { tlsDLollipop } from './tls-d-lollipop'
+import { tlsDDotPlot } from './tls-d-dot-plot'
+import { tlsDTreemap } from './tls-d-treemap'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDIconArray, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDIconArray, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap, tlsDLollipop, tlsDDotPlot, tlsDTreemap]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -62,3 +65,6 @@ export { tlsDScorecard } from './tls-d-scorecard'
 export { tlsDPricing } from './tls-d-pricing'
 export { tlsDRanking } from './tls-d-ranking'
 export { tlsDHeatmap } from './tls-d-heatmap'
+export { tlsDLollipop } from './tls-d-lollipop'
+export { tlsDDotPlot } from './tls-d-dot-plot'
+export { tlsDTreemap } from './tls-d-treemap'
