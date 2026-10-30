@@ -21,6 +21,8 @@ export interface AgendaProps extends Record<string, unknown> {
   /** AC2: `plain` (default, a small muted number), `badge` (the number in an accent disc, filled
    *  for the current item) or `none`. */
   numbering?: 'plain' | 'badge' | 'none'
+  /** The number of the first item (default 1): a contents list split over several blocks counts on. */
+  startAt?: number
 }
 
 export const schema: BlockSchema = {
@@ -60,6 +62,12 @@ export const schema: BlockSchema = {
     role: 'option',
     label: 'Numbering',
     guidance: '`badge`: number in an accent disc.',
+  },
+  startAt: {
+    type: { kind: 'number', min: 1, max: 99 },
+    role: 'option',
+    label: 'First number',
+    guidance: 'Only when one contents list is split over several blocks: the first number of this one.',
   },
 }
 

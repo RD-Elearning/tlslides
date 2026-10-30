@@ -108,6 +108,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
   // AC2 knobs: `variant: cards` puts each item on a card (inner padding `pad`); `numbering`
   // `badge` draws the number in a disc, `none` drops the number column.
   const cards = cardPad !== undefined
+  const firstNumber = Number.isInteger(props.startAt) && (props.startAt as number) >= 1 ? (props.startAt as number) : 1
   const numbering = props.numbering === 'badge' || props.numbering === 'none' ? props.numbering : 'plain'
   const pad = cardPad ? ctx.tokens.space[cardPad] : 0
   // Two columns hold half the rows, so the rows get more air (AC1.5).
@@ -196,7 +197,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     const noteColor = ctx.resolveColor('textMuted').color
 
     // Index number
-    const indexText = `${i + 1}`
+    const indexText = `${firstNumber + i}`
     if (numbering === 'plain') {
       const indexStyle: ResolvedTextStyle = {
         ...indexStyle0,

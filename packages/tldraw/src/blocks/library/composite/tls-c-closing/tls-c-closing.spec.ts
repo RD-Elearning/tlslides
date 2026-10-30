@@ -49,6 +49,12 @@ describe('tls.c.closing', () => {
     expect(leavesOf(s, 'panel')[0].x).toBeGreaterThan(800)
   })
 
+  it('split with no person and no contacts draws no panel (centred instead of an empty box)', () => {
+    const s = layoutAt(tlsCClosing, { ...EX, variant: 'split', person: { name: '', role: '' }, contacts: [] }, 1600, 800)
+    expect(leavesOf(s, 'panel')).toHaveLength(0)
+    for (const l of leavesOf(s, 'title')) expect(Math.abs(l.x + l.width / 2 - 800)).toBeLessThan(2)
+  })
+
   it('ctaStyle button draws a pill behind the label; link draws accent text with an arrow and no pill', () => {
     const b = layoutAt(tlsCClosing, { ...EX, ctaStyle: 'button' }, 1600, 800)
     const pill = leavesOf(b, 'cta').find((l) => l.k === 'rect')!

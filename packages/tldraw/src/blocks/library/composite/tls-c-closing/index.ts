@@ -109,7 +109,11 @@ export function buildClosing(props: ClosingProps): BlockSpec {
 export function layoutClosing(props: ClosingProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, ctx.box.height) || 0
-  const variant = pick(props.variant, VARIANTS, 'centered')
+  // A `split` whose panel would hold neither a person nor a contact is an empty dark box: centre instead.
+  const person = props.person
+  const hasPanel = (isShown(props, 'showPerson') && !!person && typeof person === 'object' && !!person.name) || (isShown(props, 'showContacts') && strings(props.contacts, CLOSING_MAX_CONTACTS).length > 0)
+  const picked = pick(props.variant, VARIANTS, 'centered')
+  const variant = picked === 'split' && !hasPanel ? 'centered' : picked
   const split = variant === 'split'
   const centered = !split
   const link = props.ctaStyle === 'link'
