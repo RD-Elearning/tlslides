@@ -165,6 +165,151 @@ Interactive multiple-choice question with feedback (live in Present mode). _(fam
 }
 \`\`\`
 
+### \`tls.a.fill-blank\` — Fill in the blank [html]
+
+A sentence with blanks filled from a word bank (live in Present mode). _(family: live; keywords: fill, blank, cloze, word bank, activity, interactive, điền từ)_
+
+**When:** Practice a definition or formula by recalling the key terms.
+**Avoid:** Open answers: tls.a.reveal. Long sentences with more than 5 blanks.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 160 chars) | e.g. \\"Điền từ vào chỗ trống\\". |
+| \`text\` | yes | text (max 300 chars) | Mark each blank as [[word]]; 1-5 blanks, each a single short word or term. |
+| \`distractors\` | no | list of text (max 30 chars) (0–3 items) | 0-3 wrong words added to the bank. |
+| \`explanation\` | no | text (max 240 chars) |  |
+| \`retry\` | no | boolean |  |
+| \`showAnswer\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_fill\\",
+  \\"type\\": \\"tls.a.fill-blank\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Fill in the blanks\\",
+    \\"text\\": \\"The [[median]] is the middle value, while the [[mean]] is the sum divided by the count.\\",
+    \\"distractors\\": [
+      \\"mode\\"
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.a.flip-cards\` — Flip cards [html]
+
+Cards that flip from term to definition on click (live in Present mode). _(family: live; keywords: flashcards, flip, terms, review, activity, interactive, thẻ ghi nhớ)_
+
+**When:** Review terms or facts at the end of a section: the learner recalls, then flips.
+**Avoid:** Scored questions: tls.a.choice. Print handouts: tls.c.flashcards.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | no | richText (max 120 chars) | Optional, e.g. \\"Ôn thuật ngữ\\". |
+| \`cards\` | yes | list of object (front, back) (2–8 items) | 2-8 cards; distinct fronts. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_flip\\",
+  \\"type\\": \\"tls.a.flip-cards\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Review the terms\\",
+    \\"cards\\": [
+      {
+        \\"front\\": \\"Mean\\",
+        \\"back\\": \\"The sum of the values divided by their number.\\"
+      },
+      {
+        \\"front\\": \\"Median\\",
+        \\"back\\": \\"The middle value of the ordered data.\\"
+      },
+      {
+        \\"front\\": \\"Range\\",
+        \\"back\\": \\"The largest value minus the smallest.\\"
+      },
+      {
+        \\"front\\": \\"Variance\\",
+        \\"back\\": \\"The mean squared distance from the mean.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.a.reveal\` — Reveal answer [html]
+
+A question with hidden hints and an answer revealed on click (live in Present mode). _(family: live; keywords: reveal, think, hint, answer, activity, interactive, đáp án, gợi ý)_
+
+**When:** Open question the class thinks about (think-pair-share): ask, hint, then reveal.
+**Avoid:** A question with fixed options: tls.a.choice.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 200 chars) | A question to think about before looking. |
+| \`hints\` | no | list of text (max 100 chars) (0–3 items) | 0-3 short hints, shown one by one. |
+| \`answer\` | yes | text (max 240 chars) | Hidden until \\"Hiện đáp án\\". |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_reveal\\",
+  \\"type\\": \\"tls.a.reveal\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Why does the median resist outliers?\\",
+    \\"hints\\": [
+      \\"Think about what the median depends on.\\"
+    ],
+    \\"answer\\": \\"It depends only on the middle position of the ordered data, not on how large the extremes are.\\"
+  }
+}
+\`\`\`
+
+### \`tls.a.true-false\` — True or false [html]
+
+Interactive true/false statements checked together (live in Present mode). _(family: live; keywords: true false, đúng sai, statements, quiz, activity, interactive, check understanding)_
+
+**When:** Quick check of 2-6 claims, e.g. misconceptions: the class judges each as true or false.
+**Avoid:** One question with options: tls.a.choice. Open questions: tls.t.qa.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 200 chars) | e.g. \\"Đúng hay sai?\\" |
+| \`statements\` | yes | list of object (text, answer, why) (2–6 items) | 2-6 short statements; with 3 or more, at least one true and one false. |
+| \`explanation\` | no | text (max 240 chars) | Shown after a fully correct answer and after \\"Hiện đáp án\\". |
+| \`retry\` | no | boolean |  |
+| \`showAnswer\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_tf\\",
+  \\"type\\": \\"tls.a.true-false\\",
+  \\"props\\": {
+    \\"prompt\\": \\"True or false?\\",
+    \\"statements\\": [
+      {
+        \\"text\\": \\"The median is not moved by one extreme value.\\",
+        \\"answer\\": true
+      },
+      {
+        \\"text\\": \\"The mean ignores outliers.\\",
+        \\"answer\\": false
+      },
+      {
+        \\"text\\": \\"The range uses only the two extreme values.\\",
+        \\"answer\\": true
+      }
+    ],
+    \\"explanation\\": \\"The median and the range are about position; the mean uses every value.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.agenda\` — Agenda
 
 Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
@@ -7008,9 +7153,13 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 184,
+  "blockCount": 188,
   "blockTypes": Array [
     "tls.a.choice",
+    "tls.a.fill-blank",
+    "tls.a.flip-cards",
+    "tls.a.reveal",
+    "tls.a.true-false",
     "tls.c.agenda",
     "tls.c.bento",
     "tls.c.big-stat",
@@ -7282,7 +7431,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.9k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 19.9k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -7320,6 +7469,10 @@ content-bento · timeline+title — tls.c.bento — a number, points, a photo
 content-statement · blank — tls.t.statement(size=display) — one message, key words in accent · looks: center|underline|accent
 content-bullets-image · two-column+title — left: tls.t.bullets(size=fit); right: tls.m.image — points beside a photo · looks: mirror|chevron
 activity-choice · timeline+title — tls.a.choice — a live multiple-choice question for the class
+activity-true-false · timeline+title — tls.a.true-false — a live true-or-false check of several statements
+activity-flip · timeline+title — tls.a.flip-cards — terms to recall, flipped one by one
+activity-reveal · timeline+title — tls.a.reveal — an open question with hints and a hidden answer
+activity-fill · timeline+title — tls.a.fill-blank — a definition to complete from a word bank
 content-cards · timeline+title — tls.c.cards — 2–4 parallel points · looks: numbers|giant|accent|outline|center
 content-feature-grid · timeline+title — tls.c.feature-grid(cell=card) — features with icons · looks: circle|center
 content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list(size=fit) — icon points beside a photo · looks: mirror
@@ -7466,6 +7619,10 @@ also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.questi
 
 ## Learning
 tls.a.choice · learning · group · 2–5 items — Interactive multiple-choice question with feedback [h≈67+108/item@1728] knobs: layout=list|grid, submit=instant|confirm, multiple
+tls.a.fill-blank · learning · group — Fill the blanks of a definition from a word bank [h≈475@1728] knobs: retry, showAnswer
+tls.a.flip-cards · learning · group · 2–8 items — Interactive flip cards: term on the front, meaning on the back [h 281–709@1728]
+tls.a.reveal · learning · group — Question first, hints and answer on demand [h≈434@1728]
+tls.a.true-false · learning · group · 2–6 items — Interactive list of true/false statements [h≈67+103/item@1728] knobs: retry, showAnswer
 also: tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
 
 ## Chrome

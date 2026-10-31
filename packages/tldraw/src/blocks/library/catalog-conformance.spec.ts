@@ -36,7 +36,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 184 // learning L03: + tls.a.choice; spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
+const EXPECTED_BLOCK_COUNT = 188 // learning L03: + tls.a.choice, true-false, flip-cards, reveal, fill-blank (wave 1); spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()
@@ -227,10 +227,10 @@ describe('block catalog conformance', () => {
       })
     }
 
-    it('the tier-1 set stays curated: 35–48 blocks', () => {
+    it('the tier-1 set stays curated: 35–51 blocks', () => {
       const n = BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).length
       expect(n).toBeGreaterThanOrEqual(35)
-      expect(n).toBeLessThanOrEqual(48)
+      expect(n).toBeLessThanOrEqual(51)
     })
 
     it('every absorbed block names one of its tier-1 absorbers in describe.avoid', () => {

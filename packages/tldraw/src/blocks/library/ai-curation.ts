@@ -122,6 +122,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.quiz': t2(['layout', 'reveal', 'showExplanation']),
   // learning L03: interactive activities (viewer only; a static poster everywhere else)
   'tls.a.choice': t1(['layout', 'submit', 'multiple']),
+  'tls.a.true-false': t1(['retry', 'showAnswer']),
+  'tls.a.flip-cards': t1([]),
+  'tls.a.reveal': t1([]),
+  'tls.a.fill-blank': t1(['retry', 'showAnswer']),
   // spro compose PLAN.md B3: teaching blocks (tier 2: reached through the compose kit's families)
   'tls.t.formula': t2(['size', 'align']),
   'tls.t.code': t2(['lineNumbers']),

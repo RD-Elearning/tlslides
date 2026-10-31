@@ -152,6 +152,10 @@ export const RECIPES: readonly SlideRecipe[] = [
     regions: { title: [TITLE], left: [b('tls.t.bullets', { size: 'fit' })], right: [b('tls.m.image')] },
     when: 'points beside a photo', variants: [{ id: 'mirror', swap: ['left', 'right'] }, v('chevron', { 'tls.t.bullets': { marker: 'chevron' } })] },
   { id: 'activity-choice', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.choice')] }, when: 'a live multiple-choice question for the class' },
+  { id: 'activity-true-false', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.true-false')] }, when: 'a live true-or-false check of several statements' },
+  { id: 'activity-flip', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.flip-cards')] }, when: 'terms to recall, flipped one by one' },
+  { id: 'activity-reveal', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.reveal')] }, when: 'an open question with hints and a hidden answer' },
+  { id: 'activity-fill', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.fill-blank')] }, when: 'a definition to complete from a word bank' },
   { id: 'content-cards', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.cards')] }, when: '2–4 parallel points', variants: [v('numbers', { 'tls.c.cards': { lead: 'number' } }), v('giant', { 'tls.c.cards': { lead: 'number', numeral: 'giant' } }), v('accent', { 'tls.c.cards': { tone: 'accent-first' } }), v('outline', { 'tls.c.cards': { tone: 'outline' } }), v('center', { 'tls.c.cards': { align: 'center' } })] },
   {
     id: 'content-feature-grid',

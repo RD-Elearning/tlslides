@@ -200,6 +200,10 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   // ── learning ──
   'tls.c.quiz': f(['question'], [2, 5], 'labels', 'lively', { frames: ['qa'] }),
   'tls.a.choice': f(['question'], [2, 5], 'labels', 'lively', { frames: ['qa'] }),
+  'tls.a.true-false': f(['question'], [2, 6], 'labels', 'lively', { frames: ['qa'] }),
+  'tls.a.flip-cards': f(['terms', 'definition'], [2, 8], 'labels', 'lively'),
+  'tls.a.reveal': f(['question'], null, 'lines', 'lively', { frames: ['qa'] }),
+  'tls.a.fill-blank': f(['definition', 'question'], null, 'lines', 'lively', { frames: ['qa'] }),
   'tls.t.qa': f(['question', 'definition'], [1, 4], 'lines', 'neutral', { frames: ['qa'] }),
 
   // ── spro creative CR8: wave 1 (PLAN Appendix C.1) ──
