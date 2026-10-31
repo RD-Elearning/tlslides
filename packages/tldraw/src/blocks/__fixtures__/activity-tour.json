@@ -1,0 +1,404 @@
+{
+  "version": 1,
+  "id": "activity-tour",
+  "title": "Activity tour",
+  "theme": "coral-pop",
+  "aspect": "widescreen",
+  "slides": [
+    {
+      "id": "act_01",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_01_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Choice question"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_01_choice",
+            "type": "tls.a.choice",
+            "props": {
+              "prompt": "Which measure resists outliers?",
+              "options": [
+                "The mean",
+                "The median",
+                "The range"
+              ],
+              "answer": [
+                1
+              ],
+              "explanation": "The median ignores how far the extremes are.",
+              "layout": "list"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_02",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_02_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "True or false"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_02_true-false",
+            "type": "tls.a.true-false",
+            "props": {
+              "prompt": "True or false?",
+              "statements": [
+                {
+                  "text": "The median is not moved by one extreme value.",
+                  "answer": true
+                },
+                {
+                  "text": "The mean ignores outliers.",
+                  "answer": false
+                },
+                {
+                  "text": "The range uses only the two extreme values.",
+                  "answer": true
+                }
+              ],
+              "explanation": "The median and the range are about position; the mean uses every value."
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_03",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_03_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Flip cards"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_03_flip-cards",
+            "type": "tls.a.flip-cards",
+            "props": {
+              "prompt": "Review the terms",
+              "cards": [
+                {
+                  "front": "Mean",
+                  "back": "The sum of the values divided by their number."
+                },
+                {
+                  "front": "Median",
+                  "back": "The middle value of the ordered data."
+                },
+                {
+                  "front": "Range",
+                  "back": "The largest value minus the smallest."
+                },
+                {
+                  "front": "Variance",
+                  "back": "The mean squared distance from the mean."
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_04",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_04_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Reveal answer"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_04_reveal",
+            "type": "tls.a.reveal",
+            "props": {
+              "prompt": "Why does the median resist outliers?",
+              "hints": [
+                "Think about what the median depends on."
+              ],
+              "answer": "It depends only on the middle position of the ordered data, not on how large the extremes are."
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_05",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_05_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Fill in the blank"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_05_fill-blank",
+            "type": "tls.a.fill-blank",
+            "props": {
+              "prompt": "Fill in the blanks",
+              "text": "The [[median]] is the middle value, while the [[mean]] is the sum divided by the count.",
+              "distractors": [
+                "mode"
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_06",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_06_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Match pairs"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_06_match",
+            "type": "tls.a.match",
+            "props": {
+              "prompt": "Match each term with its meaning",
+              "pairs": [
+                {
+                  "left": "Mean",
+                  "right": "Sum divided by the count"
+                },
+                {
+                  "left": "Median",
+                  "right": "Middle value of the ordered data"
+                },
+                {
+                  "left": "Mode",
+                  "right": "Most frequent value"
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_07",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_07_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Put in order"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_07_order",
+            "type": "tls.a.order",
+            "props": {
+              "prompt": "Put the steps in order",
+              "items": [
+                "Collect the data",
+                "Clean the data",
+                "Analyse it",
+                "Report the result"
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_08",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_08_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Sort into groups"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_08_sort",
+            "type": "tls.a.sort",
+            "props": {
+              "prompt": "Sort the numbers",
+              "bins": [
+                "Even",
+                "Odd"
+              ],
+              "items": [
+                {
+                  "text": "4",
+                  "bin": 0
+                },
+                {
+                  "text": "7",
+                  "bin": 1
+                },
+                {
+                  "text": "10",
+                  "bin": 0
+                },
+                {
+                  "text": "13",
+                  "bin": 1
+                },
+                {
+                  "text": "22",
+                  "bin": 0
+                }
+              ]
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "act_09",
+      "layout": "timeline",
+      "role": "content",
+      "regions": {
+        "title": [
+          {
+            "id": "b_09_title",
+            "type": "tls.t.title",
+            "props": {
+              "text": "Timer"
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 1
+            }
+          }
+        ],
+        "timeline": [
+          {
+            "id": "b_09_timer",
+            "type": "tls.a.timer",
+            "props": {
+              "label": "Discuss with your neighbour",
+              "seconds": 120
+            },
+            "motion": {
+              "preset": "fade-up",
+              "order": 2
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

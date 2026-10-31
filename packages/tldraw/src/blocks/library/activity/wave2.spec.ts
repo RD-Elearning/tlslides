@@ -166,3 +166,14 @@ describe('timer', () => {
     jest.useRealTimers()
   })
 })
+
+describe('activity tour fixture', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const tour = require('../../__fixtures__/activity-tour.json')
+  it('has one slide per activity block and every block is lint-clean', () => {
+    const blocks = tour.slides.map((s: any) => s.regions.timeline[0])
+    expect(blocks.map((b: any) => b.type)).toEqual(['choice', 'true-false', 'flip-cards', 'reveal', 'fill-blank', 'match', 'order', 'sort', 'timer'].map((t) => 'tls.a.' + t))
+    const reg = registry()
+    for (const b of blocks) expect(reg.get(b.type)!.lint!(b.props, makeCtx(box, reg))).toEqual([])
+  })
+})
