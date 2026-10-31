@@ -74,7 +74,7 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   content('tree-map', ['timeline', 'sidebar-title'], ['tls.g.tree', 'tls.g.mindmap', 'tls.g.graph', 'tls.g.breakdown'], ['hierarchy', 'network'], 'neutral', 'diagram', 'content-cards', 'branches from one root'),
   content('matrix', ['timeline'], ['tls.g.matrix-2x2', 'tls.g.swot', 'tls.d.compare-table', 'tls.d.heatmap'], ['matrix', 'contrast'], 'neutral', 'dense', 'comparison-matrix', 'items placed on two axes or in a grid'),
   content('timeline-river', ['timeline', 'band'], ['tls.g.timeline', 'tls.g.milestones', 'tls.c.journey', 'tls.g.roadmap'], ['timeline', 'story'], 'neutral', 'diagram', 'process-timeline', 'dated events along one line'),
-  content('formula-board', ['band', 'two-column', 'poster', 'timeline'], ['tls.t.formula', 'tls.t.definition'], ['formula'], 'calm', 'poster', 'content-statement', 'an equation and what each part means', ['tls.t.kv-list']),
+  content('formula-board', ['two-column', 'poster', 'timeline'], ['tls.t.formula', 'tls.t.definition'], ['formula'], 'calm', 'poster', 'content-statement', 'an equation and what each part means', ['tls.t.kv-list']),
   content('code-walk', ['two-column', 'timeline'], ['tls.t.code'], ['code', 'worked-example'], 'calm', 'dense', 'content-bullets-image', 'code with its lines explained', ['tls.t.numbered', 'tls.t.callout']),
   content('worked-steps', ['timeline', 'two-column'], ['tls.c.steps', 'tls.t.numbered', 'tls.g.flow', 'tls.g.graph'], ['worked-example', 'sequence'], 'neutral', 'dense', 'process-steps', 'an example solved step by step', ['tls.t.callout']),
   content('quote-poster', ['quote', 'poster'], ['tls.t.quote', 'tls.t.pull-quote', 'tls.c.testimonial'], ['quote'], 'calm', 'poster', 'quote-pull', 'the quote is the slide'),
