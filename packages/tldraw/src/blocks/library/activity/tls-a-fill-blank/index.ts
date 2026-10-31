@@ -72,6 +72,9 @@ export function lintFillBlank(props: FillBlankProps): LintFinding[] {
   const ans = answersOf(props.text)
   if (ans.length < BLANK_MIN || ans.length > BLANK_MAX) err('activity/blank-count', 'text', `Mark ${BLANK_MIN} to ${BLANK_MAX} blanks as [[word]] (got ${ans.length}).`)
   if (ans.some((a) => !a || a.split(/\s+/).length > 3)) err('activity/blank-long', 'text', 'Each blank is a short word or term (at most 3 words).')
+  // a blank is a concept the learner can reason out; a bare number or a code (course code, "04", a year) is a lookup
+  // (spro deck a51aeac7 s3: the blanks were the course code, "04" and the lecturer's name)
+  if (ans.some((a) => /^[\d\s.,%/:-]+$/.test(a) || /^[A-Z]{2,}[\s-]?\d+[A-Z\d]*$/.test(a))) err('activity/blank-lookup', 'text', 'Do not blank a bare number or a code: blank a term the learner can work out from the idea.')
   const dis = Array.isArray(props.distractors) ? props.distractors : []
   if (!distinct([...ans, ...dis])) err('activity/bank-duplicate', 'distractors', 'Two bank words are the same; blanks and extra words must be distinct.')
   return out

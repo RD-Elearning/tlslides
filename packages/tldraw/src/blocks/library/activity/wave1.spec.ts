@@ -81,6 +81,8 @@ describe('lint codes', () => {
     expect(lintFillBlank({ prompt: 'q', text: 'no blanks' } as any).map((f) => f.rule)).toContain('activity/blank-count')
     expect(lintFillBlank({ prompt: 'q', text: 'a [[x]] b [[x]]' } as any).map((f) => f.rule)).toContain('activity/bank-duplicate')
     expect(lintFillBlank({ prompt: 'q', text: 'a [[one two three four]]' } as any).map((f) => f.rule)).toContain('activity/blank-long')
+    expect(lintFillBlank({ prompt: 'q', text: 'Mã học phần là [[MAT103]], có [[04]] tín chỉ' } as any).map((f) => f.rule)).toContain('activity/blank-lookup')
+    expect(lintFillBlank({ prompt: 'q', text: 'The [[median]] is the middle value' } as any).map((f) => f.rule)).not.toContain('activity/blank-lookup')
     expect(lintFillBlank(tlsAFillBlank.defaults as any)).toEqual([])
   })
 })
