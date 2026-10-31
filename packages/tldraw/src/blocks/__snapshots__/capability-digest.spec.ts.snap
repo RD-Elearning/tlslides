@@ -239,6 +239,80 @@ Cards that flip from term to definition on click (live in Present mode). _(famil
 }
 \`\`\`
 
+### \`tls.a.match\` — Match pairs [html]
+
+Pair each left item with its right item by clicking (live in Present mode). _(family: live; keywords: match, pairs, connect, activity, interactive, nối)_
+
+**When:** Connect terms with definitions, causes with effects, names with examples.
+**Avoid:** One right answer among options: tls.a.choice. Ordering: tls.a.order.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 160 chars) | e.g. \\"Nối mỗi thuật ngữ với định nghĩa\\". |
+| \`pairs\` | yes | list of object (left, right) (2–6 items) | 2-6 pairs; lefts distinct, rights distinct. |
+| \`explanation\` | no | text (max 240 chars) |  |
+| \`retry\` | no | boolean |  |
+| \`showAnswer\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_match\\",
+  \\"type\\": \\"tls.a.match\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Match each term with its meaning\\",
+    \\"pairs\\": [
+      {
+        \\"left\\": \\"Mean\\",
+        \\"right\\": \\"Sum divided by the count\\"
+      },
+      {
+        \\"left\\": \\"Median\\",
+        \\"right\\": \\"Middle value of the ordered data\\"
+      },
+      {
+        \\"left\\": \\"Mode\\",
+        \\"right\\": \\"Most frequent value\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.a.order\` — Put in order [html]
+
+Click the items in the right order (live in Present mode). _(family: live; keywords: order, sequence, steps, rank, activity, interactive, sắp xếp)_
+
+**When:** Steps of a procedure, events of a history, stages of a cycle that must be sequenced.
+**Avoid:** Items with no single right order: tls.a.sort.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 160 chars) | e.g. \\"Sắp xếp các bước theo đúng thứ tự\\". |
+| \`items\` | yes | list of text (max 90 chars) (3–7 items) | 3-7 items, written in the CORRECT order; they are shown shuffled. |
+| \`explanation\` | no | text (max 240 chars) |  |
+| \`retry\` | no | boolean |  |
+| \`showAnswer\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_order\\",
+  \\"type\\": \\"tls.a.order\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Put the steps in order\\",
+    \\"items\\": [
+      \\"Collect the data\\",
+      \\"Clean the data\\",
+      \\"Analyse it\\",
+      \\"Report the result\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.a.reveal\` — Reveal answer [html]
 
 A question with hidden hints and an answer revealed on click (live in Present mode). _(family: live; keywords: reveal, think, hint, answer, activity, interactive, đáp án, gợi ý)_
@@ -264,6 +338,85 @@ A question with hidden hints and an answer revealed on click (live in Present mo
       \\"Think about what the median depends on.\\"
     ],
     \\"answer\\": \\"It depends only on the middle position of the ordered data, not on how large the extremes are.\\"
+  }
+}
+\`\`\`
+
+### \`tls.a.sort\` — Sort into groups [html]
+
+Click an item, then its bin (live in Present mode). _(family: live; keywords: sort, classify, categorise, group, activity, interactive, phân loại)_
+
+**When:** Classify examples into categories (e.g. fact / opinion, even / odd).
+**Avoid:** Items with one correct sequence: tls.a.order.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 160 chars) | e.g. \\"Phân loại các ví dụ vào đúng nhóm\\". |
+| \`bins\` | yes | list of text (max 40 chars) (2–3 items) | 2-3 category names. |
+| \`items\` | yes | list of object (text, bin) (3–9 items) | 3-9 items; bin = the 0-based index in bins; every bin gets at least one item. |
+| \`explanation\` | no | text (max 240 chars) |  |
+| \`retry\` | no | boolean |  |
+| \`showAnswer\` | no | boolean |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_sort\\",
+  \\"type\\": \\"tls.a.sort\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Sort the numbers\\",
+    \\"bins\\": [
+      \\"Even\\",
+      \\"Odd\\"
+    ],
+    \\"items\\": [
+      {
+        \\"text\\": \\"4\\",
+        \\"bin\\": 0
+      },
+      {
+        \\"text\\": \\"7\\",
+        \\"bin\\": 1
+      },
+      {
+        \\"text\\": \\"10\\",
+        \\"bin\\": 0
+      },
+      {
+        \\"text\\": \\"13\\",
+        \\"bin\\": 1
+      },
+      {
+        \\"text\\": \\"22\\",
+        \\"bin\\": 0
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.a.timer\` — Timer [html]
+
+A countdown the teacher starts for a task (live in Present mode). _(family: live; keywords: timer, countdown, clock, activity, interactive, đếm ngược)_
+
+**When:** Give the class a fixed time to discuss, solve or write.
+**Avoid:** Content to read: tls.t.bullets. A timer belongs on a task slide, not a content slide.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`label\` | yes | richText (max 120 chars) | What the class does while the clock runs, e.g. \\"Thảo luận nhóm\\". |
+| \`seconds\` | yes | number | 5 to 900. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_timer\\",
+  \\"type\\": \\"tls.a.timer\\",
+  \\"props\\": {
+    \\"label\\": \\"Discuss with your neighbour\\",
+    \\"seconds\\": 120
   }
 }
 \`\`\`
@@ -7153,12 +7306,16 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 188,
+  "blockCount": 192,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
     "tls.a.flip-cards",
+    "tls.a.match",
+    "tls.a.order",
     "tls.a.reveal",
+    "tls.a.sort",
+    "tls.a.timer",
     "tls.a.true-false",
     "tls.c.agenda",
     "tls.c.bento",
@@ -7623,7 +7780,7 @@ tls.a.fill-blank · learning · group — Fill the blanks of a definition from a
 tls.a.flip-cards · learning · group · 2–8 items — Interactive flip cards: term on the front, meaning on the back [h 281–709@1728]
 tls.a.reveal · learning · group — Question first, hints and answer on demand [h≈434@1728]
 tls.a.true-false · learning · group · 2–6 items — Interactive list of true/false statements [h≈67+103/item@1728] knobs: retry, showAnswer
-also: tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
+also: tls.a.match, tls.a.order, tls.a.sort, tls.a.timer, tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
 
 ## Chrome
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark

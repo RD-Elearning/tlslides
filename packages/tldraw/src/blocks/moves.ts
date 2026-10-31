@@ -83,8 +83,11 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   // learning L03: a live question with a clickable answer (viewer); a static poster in the editor and exports
   content('quick-check', ['timeline', 'poster'], ['tls.a.choice', 'tls.a.true-false'], ['question'], 'lively', 'dense', 'activity-choice', 'a live question the class answers by clicking'),
   content('flip-review', ['timeline'], ['tls.a.flip-cards'], ['terms', 'definition'], 'lively', 'dense', 'activity-flip', 'term cards the class flips to recall the meaning'),
-  content('think-pair-share', ['timeline'], ['tls.a.reveal'], ['question'], 'lively', 'dense', 'activity-reveal', 'an open question with hints, then the answer'),
+  content('think-pair-share', ['timeline'], ['tls.a.reveal'], ['question'], 'lively', 'dense', 'activity-reveal', 'an open question with hints, then the answer', ['tls.a.timer']),
   content('fill-in', ['timeline'], ['tls.a.fill-blank'], ['definition', 'question'], 'lively', 'dense', 'activity-fill', 'a definition completed from a word bank'),
+  content('match-up', ['timeline'], ['tls.a.match'], ['terms', 'definition'], 'lively', 'dense', 'content-cards', 'pairs the class connects by clicking'),
+  content('put-in-order', ['timeline'], ['tls.a.order'], ['sequence'], 'lively', 'dense', 'process-steps', 'steps the class puts in order'),
+  content('sort-it', ['timeline'], ['tls.a.sort'], ['group'], 'lively', 'dense', 'content-cards', 'examples the class sorts into categories'),
   content('true-or-false', ['timeline'], ['tls.a.true-false'], ['question'], 'lively', 'dense', 'activity-true-false', 'several statements judged true or false'),
   content('quiz-check', ['timeline'], ['tls.a.choice', 'tls.a.true-false', 'tls.c.quiz', 'tls.t.qa', 'tls.t.checklist'], ['question'], 'lively', 'dense', 'content-cards', 'a check of understanding with options'),
   content('sticky-board', ['timeline', 'blank'], ['tls.c.bento', 'tls.c.cards', 'tls.t.tags'], ['group', 'terms'], 'lively', 'dense', 'content-cards', 'ideas pinned on a board'),

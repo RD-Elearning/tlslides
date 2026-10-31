@@ -414,7 +414,7 @@ export interface BlockMotionRuntime {
  */
 /* ── L03 — interactive activities (viewer only) ─────────────────────────────── */
 
-export type ActivityKind = 'choice' | 'true-false' | 'flip' | 'reveal' | 'fill-blank' | 'match' | 'order' | 'sort'
+export type ActivityKind = 'choice' | 'true-false' | 'flip' | 'reveal' | 'fill-blank' | 'match' | 'order' | 'sort' | 'timer'
 /** `instant`: a single-answer activity gives its result on the click. `confirm`: select, then "Kiểm tra". */
 export type SubmitMode = 'instant' | 'confirm'
 

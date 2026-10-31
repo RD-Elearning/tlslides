@@ -126,6 +126,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.a.flip-cards': t1([]),
   'tls.a.reveal': t1([]),
   'tls.a.fill-blank': t1(['retry', 'showAnswer']),
+  'tls.a.match': t2(['retry', 'showAnswer']),
+  'tls.a.order': t2(['retry', 'showAnswer']),
+  'tls.a.sort': t2(['retry', 'showAnswer']),
+  'tls.a.timer': t2([]),
   // spro compose PLAN.md B3: teaching blocks (tier 2: reached through the compose kit's families)
   'tls.t.formula': t2(['size', 'align']),
   'tls.t.code': t2(['lineNumbers']),

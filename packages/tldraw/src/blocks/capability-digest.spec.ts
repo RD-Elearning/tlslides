@@ -451,7 +451,7 @@ describe('R7 — capability digest v2', () => {
 
     it('capabilityIndex lists every block exactly once and stays under 21k chars', () => {
       const md = capabilityIndex(reg)
-      expect(md.length).toBeLessThanOrEqual(25000) // learning L03: 188 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
+      expect(md.length).toBeLessThanOrEqual(25600) // learning L03: 192 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
       for (const def of BUILT_IN_BLOCKS) {
         const lines = md.split('\n').filter((l) => l.startsWith(`${def.type} · `))
         expect(lines).toHaveLength(1)
@@ -611,7 +611,7 @@ describe('R7 — capability digest v2', () => {
 
       it('the default call is unchanged: every block a full line, no recipes, within 21k', () => {
         const md = capabilityIndex(reg)
-        expect(md.length).toBeLessThanOrEqual(25000) // learning L03: 188 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
+        expect(md.length).toBeLessThanOrEqual(25600) // learning L03: 192 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
         expect(md).not.toContain('## Recipes')
         expect(md).not.toContain(' knobs: ')
         expect(md).not.toContain('also: ')

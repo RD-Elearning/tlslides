@@ -204,6 +204,10 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.a.flip-cards': f(['terms', 'definition'], [2, 8], 'labels', 'lively'),
   'tls.a.reveal': f(['question'], null, 'lines', 'lively', { frames: ['qa'] }),
   'tls.a.fill-blank': f(['definition', 'question'], null, 'lines', 'lively', { frames: ['qa'] }),
+  'tls.a.match': f(['terms', 'definition'], null, 'labels', 'lively'),
+  'tls.a.order': f(['sequence'], null, 'labels', 'lively'),
+  'tls.a.sort': f(['group'], null, 'labels', 'lively'),
+  'tls.a.timer': f(['action'], null, 'labels', 'lively'),
   'tls.t.qa': f(['question', 'definition'], [1, 4], 'lines', 'neutral', { frames: ['qa'] }),
 
   // ── spro creative CR8: wave 1 (PLAN Appendix C.1) ──
