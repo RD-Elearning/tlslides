@@ -88,6 +88,8 @@ export interface CapabilityIndexEntry {
   /** AC8: the values of each look knob (enum values; `boolean` for a toggle), so the planner can
    *  set a knob by name without the detail digest. */
   lookValues?: Record<string, string[] | 'boolean'>
+  /** L03 — set on interactive activity blocks: what kind, and whether it is scored. */
+  activity?: { kind: string; answers: 'single' | 'multi' | 'none' }
   /** AC0: tier-2 types this block replaces by default. */
   absorbs?: string[]
 }
@@ -594,6 +596,7 @@ export function capabilityIndexData(registry?: BlockRegistry, opts?: CapabilityI
         ...(BLOCK_SIZE_HINTS[def.type] ? { size: BLOCK_SIZE_HINTS[def.type] } : {}),
         ...(def.aiTier ? { aiTier: def.aiTier } : {}),
         ...(def.looks && def.looks.length ? { looks: [...def.looks], lookValues: lookValues(def) } : {}),
+        ...(def.activity ? { activity: { ...def.activity } } : {}),
         ...(def.absorbs && def.absorbs.length ? { absorbs: [...def.absorbs] } : {}),
       }
     })
