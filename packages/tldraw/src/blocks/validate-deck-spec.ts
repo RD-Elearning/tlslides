@@ -964,6 +964,15 @@ function validateProps(
     }
   }
 
+  // learning L03/L05: an activity block's own checks (an answer index that points at nothing, a bin no item
+  // uses, duplicate options) are validation errors, so the repair loop and the hard-stop see them
+  if (def.activity && typeof def.lint === 'function') {
+    for (const f of def.lint(props as never, {} as never)) {
+      if (f.level === 'info') continue
+      findings.push({ level: f.level, rule: f.rule, path: `${blockPath}.props${f.part ? '.' + f.part : ''}`, message: f.message })
+    }
+  }
+
   for (const propName of Object.keys(props)) {
     // `$block` is the composites' private per-child channel (`onSurface`); `BlockSpec.style` is
     // the public one (CMP1) — not an unknown prop.

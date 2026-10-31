@@ -177,3 +177,16 @@ describe('activity tour fixture', () => {
     for (const b of blocks) expect(reg.get(b.type)!.lint!(b.props, makeCtx(box, reg))).toEqual([])
   })
 })
+
+describe('activity lints reach the deck validator', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { validateDeckSpec } = require('../../validate-deck-spec')
+  it('a wrong answer index is a validation error (the repair loop and the hard stop read it)', () => {
+    const deck = JSON.parse(JSON.stringify(require('../../__fixtures__/activity-tour.json')))
+    expect(validateDeckSpec(deck, registry()).filter((f: any) => f.rule.startsWith('activity/'))).toEqual([])
+    deck.slides[0].regions.timeline[0].props.answer = [9]
+    const found = validateDeckSpec(deck, registry()).filter((f: any) => f.rule.startsWith('activity/'))
+    expect(found.map((f: any) => [f.level, f.rule])).toEqual([['error', 'activity/answer-out-of-range']])
+    expect(found[0].path).toContain('slides[0]')
+  })
+})
