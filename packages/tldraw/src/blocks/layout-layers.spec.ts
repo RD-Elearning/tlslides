@@ -188,6 +188,17 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     expect(r.findings.some((f) => f.code === 'layout/overlap' && f.severity === 'error')).toBe(false)
   })
 
+  it('a decoration overlay over text is told to be dropped or re-homed, not "moved by units" (spro deck 3a12e246 s11)', () => {
+    const title = (id: string): BlockSpec => ({ id, type: 'tls.t.title', props: { text: 'Ma trận nhầm lẫn và cái giá của sai sót trong bài toán dự đoán' } })
+    const dec: BlockSpec = { id: 'dec', type: 'tls.m.decoration', layer: 'overlay', anchor: 'right', props: { shape: 'squiggle' } } as BlockSpec
+    const r = analyzeSlide({ id: 's', layout: 'band', regions: { title: [title('t'), dec] } })
+    const f = r.findings.find((x) => x.code === 'text/occluded')
+    if (f) expect(f.fix).toMatch(/remove dec .*another region/)
+    // an overlay that is not a decoration keeps the numeric remedy
+    const badgeCase = analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }, { block: badge('b'), box: { x: analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }] }).blocks[0].text[0].painted.x, y: analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }] }).blocks[0].text[0].painted.y, width: 320, height: 64 } }] })
+    expect(badgeCase.findings.find((x) => x.code === 'text/occluded')?.fix).toMatch(/^move /)
+  })
+
   it('a region overlay that paints clear of the text is allowed (judged by what it paints)', () => {
     const r = analyzeSlide(STACKED)
     expect(has(r, 'layout/overlap', 'info', ['kpi', 'badge'])).toBe(true)

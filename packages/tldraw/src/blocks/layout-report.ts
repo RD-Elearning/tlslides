@@ -1301,7 +1301,7 @@ function pairFindings(a: BlockReport, b: BlockReport, out: LayoutFinding[]): voi
       severity: cls.severity,
       blockIds: [a.id, b.id],
       message: `${a.id} × ${b.id} boxes overlap ${r(boxOverlap.width)}x${r(boxOverlap.height)} at ${r(boxOverlap.x)},${r(boxOverlap.y)}: ${cls.note}.`,
-      ...(cls.severity === 'info' ? {} : { fix: separationFix(a, b, boxOverlap) }),
+      ...(cls.severity === 'info' ? {} : { fix: cls.code === 'text/occluded' ? occlusionFix(a, b, boxOverlap) : separationFix(a, b, boxOverlap) }),
     })
   } else if (a.painted && b.painted) {
     // Boxes are apart but content spills into the other block.
@@ -1371,6 +1371,20 @@ function party(b: BlockReport): OverlapParty {
 }
 
 /** The smaller of the two moves that separates `b` from `a` (down or sideways). */
+/**
+ * learning L01 (B2): the remedy for `text/occluded`. A decoration is placed by its anchor (`right`,
+ * `top-right`, …), so "move it down N units" is not something its author can do, and a repair that
+ * cannot move it keeps it (spro deck 3a12e246 s11: a `squiggle` anchored `right` in the title region
+ * covered the end of a long title through every repair). For a decoration the remedy is to drop it or
+ * to put it in a region with no text; for any other overlay, the numeric move.
+ */
+function occlusionFix(a: BlockReport, b: BlockReport, overlap: Box): string {
+  const deco = [a, b].find((x) => x.type === 'tls.m.decoration' && x.layer !== 'backdrop')
+  if (!deco) return separationFix(a, b, overlap)
+  const text = deco === a ? b : a
+  return `remove ${deco.id} (a decoration drawn over the words of ${text.id}), or give it another region that holds no text; an anchor cannot be moved by units`
+}
+
 function separationFix(a: BlockReport, b: BlockReport, overlap: Box): string {
   const [first, second] = a.box.y <= b.box.y ? [a, b] : [b, a]
   if (overlap.height <= overlap.width) {
