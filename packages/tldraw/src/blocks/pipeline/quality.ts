@@ -21,6 +21,15 @@
  * equal peers, narrow children, nesting, type sizes, accent, motion) — every one of their warnings
  * and errors on the report is a gate finding, one line each, peers grouped ("3 of 3 card in g1: …").
  *
+ * - **min-type** (learning L01, D10; opt-in through `opts.typeFloors`): the smallest READING text of
+ *   the slide against a floor for its kind. A run is classified from what the report carries (the
+ *   block type, its `part` / `propPath` name, the region): `title` (the title region) is judged by
+ *   `lead`, not here; `label` / `caption` / `footnote` by the leaf's part name (label, caption,
+ *   attribution, kicker, footer, unit, context, subtitle, badge, term); everything else is `body`.
+ *   Exempt: decorative blocks and backdrops, charts and diagrams (`tls.d.*`, `tls.g.*`: their axis
+ *   and node text is sized by the figure), runs of fewer than 8 characters (numbers, units) and
+ *   icon glyphs. Defaults when the caller asks without numbers: body 24, label 18, caption 18, footnote 16.
+ *
  * Pure and DOM-free. `dryRun.ts` runs it on every slide (S4.1 treats a failed gate like a warning:
  * the next design is tried), `dry-run.spec.ts` requires 0 findings on the dry-run decks.
  */
@@ -33,7 +42,7 @@ import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec, SlideIntent } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | 'quality/min-type' | DesignCode
 
 /** CR7a (spro creative PLAN §6.8): the profile a slide is judged by, from `SlideSpec.intent`. */
 export type GateProfile = 'default' | SlideIntent
@@ -79,6 +88,32 @@ export interface SlideQuality {
    *  slides; absent when the slide has no `title` region text. */
   title?: { x: number; y: number; width: number; fontSize: number }
   findings: QualityFinding[]
+}
+
+/** learning L01: the smallest size (slide units on 1920) each kind of reading text may have. */
+export interface TypeFloors {
+  body: number
+  label: number
+  caption: number
+  footnote: number
+}
+export const DEFAULT_TYPE_FLOORS: TypeFloors = { body: 24, label: 18, caption: 18, footnote: 16 }
+
+const LABEL_PARTS = /(^|[\s.\[\]])(label|badge|kicker|unit|context|term|subtitle|eyebrow)\b/i
+const CAPTION_PARTS = /(^|[\s.\[\]])(caption|attribution)\b/i
+const FOOTNOTE_PARTS = /(^|[\s.\[\]])(footer|footnote|source)\b/i
+const GLYPH_PARTS = /(^|[\s.\[\]])(glyph|icon|emoji|value|mark|star)\b/i
+
+/** The kind of a text leaf (see the header): null = not judged. */
+export function textKind(blockType: string, region: string, leaf: { part?: string; propPath?: string; chars: number }): keyof TypeFloors | null {
+  if (region === 'title' || leaf.chars < 8) return null
+  if (DECORATIVE.has(blockType) || blockType.startsWith('tls.d.') || blockType.startsWith('tls.g.')) return null
+  const name = `${leaf.part ?? ''} ${leaf.propPath ?? ''}`
+  if (GLYPH_PARTS.test(name)) return null
+  if (FOOTNOTE_PARTS.test(name)) return 'footnote'
+  if (CAPTION_PARTS.test(name)) return 'caption'
+  if (LABEL_PARTS.test(name)) return 'label'
+  return 'body'
 }
 
 /** The gate. Tighten only (a ratchet, like the oracle's own thresholds). */
@@ -169,7 +204,7 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
  * The quality of one slide. `titleSize` is the deck's resolved `title` type size (the style's), for
  * the lead-type rule; without it that rule is skipped.
  */
-export function slideQuality(report: LayoutReport, opts: { titleSize?: number; balance?: boolean; intent?: SlideIntent } = {}): SlideQuality {
+export function slideQuality(report: LayoutReport, opts: { titleSize?: number; balance?: boolean; intent?: SlideIntent; typeFloors?: Partial<TypeFloors> | true } = {}): SlideQuality {
   const profile: GateProfile = opts.intent ?? report.intent ?? 'default'
   const W = report.frame.width
   const H = report.frame.height
@@ -273,6 +308,26 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
       findings.push({
         code: 'quality/floating-body',
         message: `the body is a strip of small text (largest ${Math.round(bodyLead)} units under a ${Math.round(opts.titleSize)} title) covering ${pct(bodyCover)} of its region: one column instead of two, a block that fills the region (cards, a grid, objectives), a split with a visual or an accent, or a lead size`,
+      })
+    }
+  }
+  // learning L01 (D10): the smallest reading text against its floor, one finding naming the worst run
+  if (opts.typeFloors) {
+    const floors: TypeFloors = { ...DEFAULT_TYPE_FLOORS, ...(opts.typeFloors === true ? {} : opts.typeFloors) }
+    let worst: { kind: keyof TypeFloors; size: number; type: string; id: string } | null = null
+    for (const b of content) {
+      if (b.layer === 'backdrop') continue
+      for (const t of b.text) {
+        const kind = textKind(b.type, b.region, t)
+        if (!kind) continue
+        const size = t.fontSize * (t.scale || 1)
+        if (size < floors[kind] && (!worst || size / floors[kind] < worst.size / floors[worst.kind])) worst = { kind, size, type: b.type, id: b.id }
+      }
+    }
+    if (worst) {
+      findings.push({
+        code: 'quality/min-type',
+        message: `${worst.kind} text at ${Math.round(worst.size)} units (floor ${floors[worst.kind]}) in ${worst.type} \`${worst.id}\`: fewer items, shorter lines or a roomier design, and move the detail to the speaker notes`,
       })
     }
   }
