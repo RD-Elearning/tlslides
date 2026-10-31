@@ -741,6 +741,35 @@ describe('activity slides (learning L04): clicks belong to the activity, keys ke
     expect(option.getAttribute('aria-pressed') === 'true' || container.querySelector('[data-state]')).toBeTruthy()
   })
 
+  it('once answered the mouse navigates again; "Làm lại" gives the clicks back to the activity', () => {
+    const { v, container } = hostAt(1)
+    const option = container.querySelector('[data-act="option"][data-i="1"]') as HTMLElement
+    fireEvent.click(v, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('1') // not answered: the click is the activity's
+    fireEvent.click(option)
+    expect(option.dataset.state).not.toBe('idle') // instant mode: answered
+    // answered: a click on an option or a control still belongs to the activity, any other click navigates
+    fireEvent.click(option, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('1')
+    expect(v.dataset.clickSide).toBeDefined()
+    fireEvent.click(v, { clientX: 100 })
+    expect(v.dataset.slideIndex).toBe('0')
+    fireEvent.click(v, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('1')
+    fireEvent.click(v, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('2')
+    fireEvent.keyDown(v, { key: 'ArrowLeft' })
+    // retry: back to how it was — the slide keeps its clicks
+    const retry = container.querySelector('[data-act="retry"]') as HTMLElement
+    expect(retry).not.toBeNull()
+    fireEvent.click(retry)
+    expect(v.dataset.slideIndex).toBe('1')
+    expect(v.dataset.clickSide).toBeUndefined()
+    fireEvent.click(v, { clientX: 800 })
+    fireEvent.click(v, { clientX: 100 })
+    expect(v.dataset.slideIndex).toBe('1')
+  })
+
   it('a tap does nothing, a swipe navigates, and a swipe that starts on an option picks nothing', () => {
     const { v, container } = hostAt(1)
     const option = container.querySelector('[data-act="option"]') as HTMLElement

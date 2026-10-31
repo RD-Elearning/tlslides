@@ -336,6 +336,19 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   // viewer-session state of each activity block, kept until the spec changes
   const activityStates = React.useRef<Map<string, ActivityState>>(new Map())
   const activityFactories = React.useRef<Map<string, (blockKey: string) => ActivityRuntime>>(new Map())
+  // learning L04+: an answered activity hands the mouse back to navigation ("Làm lại" takes it again)
+  const [releasedSlides, setReleasedSlides] = React.useState<ReadonlySet<string>>(() => new Set())
+  const refreshReleased = (slideId: string) => {
+    const mine = [...activityStates.current].filter(([k]) => k.startsWith(`${slideId}:`)).map(([, st]) => st)
+    const released = mine.length > 0 && mine.every((st) => !!st.done)
+    setReleasedSlides((prev) => {
+      if (prev.has(slideId) === released) return prev
+      const next = new Set(prev)
+      if (released) next.add(slideId)
+      else next.delete(slideId)
+      return next
+    })
+  }
   const activitySubmit = React.useRef<Map<string, unknown>>(new Map())
   const activityDeckRef = React.useRef({ submit: spec.activity?.submit, locale: spec.tokens?.locale as string | undefined, reducedMotion })
   activityDeckRef.current = { submit: spec.activity?.submit, locale: spec.tokens?.locale as string | undefined, reducedMotion }
@@ -345,6 +358,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     activitySpecRef.current = spec
     activityStates.current = new Map()
     activityFactories.current = new Map()
+    setReleasedSlides(new Set())
   }, [spec])
   /** One stable factory per (slide, shape): HostMount re-wires an activity whenever its identity changes. */
   const activityFactoryFor = (slideId: string, shapeId: string, blockProps: Record<string, unknown>) => {
@@ -366,13 +380,18 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
             return activityDeckRef.current.reducedMotion
           },
           getState: () => activityStates.current.get(k),
-          setState: (st) => void activityStates.current.set(k, st),
+          setState: (st) => {
+            activityStates.current.set(k, st)
+            refreshReleased(slideId)
+          },
         } as ActivityRuntime
       }
       activityFactories.current.set(key, f)
     }
     return f
   }
+  // clicks belong to the activity until it is answered; `activitySlide` (any activity) still drives the hint
+  const activityLocked = activitySlide && !(page && releasedSlides.has(page.id))
   const [hintShown, setHintShown] = React.useState(false)
   React.useEffect(() => {
     if (!activitySlide || !activityHint) return
@@ -845,11 +864,11 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const swipeRef = React.useRef<{ x: number; y: number; swiped: boolean } | null>(null)
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (clickNavigation !== 'halves' || activitySlide) return
+      if (clickNavigation !== 'halves' || activityLocked) return
       const rect = e.currentTarget.getBoundingClientRect()
       setSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right')
     },
-    [clickNavigation, activitySlide]
+    [clickNavigation, activityLocked]
   )
   const handleTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     const t = e.touches[0]
@@ -877,8 +896,11 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
         swipeRef.current = null
         return
       }
-      // L04: a click on an activity slide, or inside an activity, never changes the slide
-      if (activitySlide || (e.target as Element | null)?.closest?.('[data-activity]')) return
+      // L04: a click on an activity slide that is not answered yet never changes the slide; once it is, a click
+      // on its controls (check, retry, show answer, an option) still belongs to the activity, any other click navigates
+      const target = e.target as Element | null
+      if (activityLocked) return
+      if (target?.closest?.('[data-activity]') && target.closest('button,[data-act],a,input,select,textarea')) return
       if (clickNavigation === 'halves') {
         const rect = e.currentTarget.getBoundingClientRect()
         if (e.clientX - rect.left < rect.width / 2) {
@@ -888,7 +910,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       }
       advance()
     },
-    [advance, retreat, clickNavigation, activitySlide]
+    [advance, retreat, clickNavigation, activityLocked]
   )
   // L04: a swipe that started on an option ends with a click on it: swallow that click (capture)
   const handleClickCapture = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -990,7 +1012,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       onMouseMove={handleMouseMove}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      data-click-side={clickNavigation === 'halves' && !activitySlide ? side : undefined}
+      data-click-side={clickNavigation === 'halves' && !activityLocked ? side : undefined}
       data-activity-slide={activitySlide ? 'true' : undefined}
       style={{
         position: 'relative',
@@ -998,7 +1020,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
         height: '100%',
         overflow: 'hidden',
         outline: 'none',
-        ...(clickNavigation === 'halves' ? { ...(activitySlide ? {} : { cursor: side === 'left' ? 'w-resize' : 'e-resize' }), touchAction: 'pan-y' } : {}),
+        ...(clickNavigation === 'halves' ? { ...(activityLocked ? {} : { cursor: side === 'left' ? 'w-resize' : 'e-resize' }), touchAction: 'pan-y' } : {}),
       }}
       data-testid="deck-viewer"
       data-slide-index={currentSlideIndex}
