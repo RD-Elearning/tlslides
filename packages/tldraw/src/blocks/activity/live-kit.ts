@@ -45,7 +45,7 @@ export function css(kind: string, ctx: HtmlTemplateContext, footH: number): stri
     `${R} .tlsa-btn[aria-pressed="true"]{background:${c.accent};color:${on}}` +
     `${R} .tlsa-t{flex:1;min-width:0}` +
     // buttons inside a row (✓/✗) fill the row's height: on a phone the slide is scaled to ~0.2, a 20px-padded glyph is not tappable
-    `${R} .tlsa-cell .tlsa-btn{align-self:stretch;margin:${px(tokens.space.sm)} 0;min-width:${px(sub.size * 2)};padding:0;text-align:center;font-size:${px(sub.size)};font-weight:700}` +
+    `${R} .tlsa-cell .tlsa-btn{align-self:stretch;margin:4px 0;min-width:${px(sub.size * 2)};padding:0;text-align:center;font-size:${px(sub.size)};font-weight:700}` +
     `${R} .tlsa-mark{flex:none;min-width:36px;text-align:center;font-weight:700;font-size:${px(sub.size)}}` +
     `${R} [data-state="correct"]{border-color:${c.positive};background:color-mix(in srgb,${c.positive} 16%,${c.surface})}` +
     `${R} [data-state="correct"] .tlsa-mark::before{content:"✓";color:${c.positive}}` +
