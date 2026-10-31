@@ -38,7 +38,11 @@ export function css(kind: string, ctx: HtmlTemplateContext, footH: number): stri
     `${R} .tlsa-q{position:absolute;font-family:var(--tls-font-heading,var(--tls-font-family));font-weight:700;font-size:${px(sub.size)};line-height:${sub.lineHeight}}` +
     `${R} .tlsa-cell{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:${px(tokens.space.md)};padding:0 ${px(tokens.space.lg)};border:3px solid transparent;border-radius:${px(tokens.radius.lg)};background:${c.surfaceAlt};font-size:${px(body.size)};line-height:${body.lineHeight}}` +
     `${R} .tlsa-cell:focus-visible,${R} .tlsa-btn:focus-visible{outline:4px solid ${c.accent};outline-offset:2px}` +
+    // a chosen answer must LOOK chosen before it is checked: the ✓/✗ buttons already carry an accent border,
+    // so the border alone showed nothing (spro deck a51aeac7 s10) — fill the button, tint the option row
     `${R} [aria-pressed="true"]{border-color:${c.accent}}` +
+    `${R} .tlsa-cell[aria-pressed="true"]{background:color-mix(in srgb,${c.accent} 18%,${c.surfaceAlt})}` +
+    `${R} .tlsa-btn[aria-pressed="true"]{background:${c.accent};color:${on}}` +
     `${R} .tlsa-t{flex:1;min-width:0}` +
     `${R} .tlsa-mark{flex:none;min-width:36px;text-align:center;font-weight:700;font-size:${px(sub.size)}}` +
     `${R} [data-state="correct"]{border-color:${c.positive};background:color-mix(in srgb,${c.positive} 16%,${c.surface})}` +
