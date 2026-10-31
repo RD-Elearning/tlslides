@@ -5,7 +5,7 @@
  */
 export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.a.choice': 'h≈67+108/item@1728',
-  'tls.a.fill-blank': 'h≈475@1728',
+  'tls.a.fill-blank': 'h≈456@1728',
   'tls.a.flip-cards': 'h 281–709@1728',
   'tls.a.match': 'h≈67+108/item@1728',
   'tls.a.order': 'h≈67+103/item@1728',

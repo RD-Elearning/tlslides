@@ -41,7 +41,7 @@ export function lintTimer(props: TimerProps): LintFinding[] {
 
 export function poster(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
   const p = props as TimerProps
-  return cellsPoster(ctx, { prompt: p.label ?? '', cells: [clock(p.seconds)], cols: 1, cellMin: 260, footer: FOOTER_H })
+  return cellsPoster(ctx, { prompt: p.label ?? '', cells: [clock(p.seconds)], cols: 1, cellMin: 260, cellSize: 'title', footer: FOOTER_H })
 }
 
 export const tlsATimer: BlockDefinition = {

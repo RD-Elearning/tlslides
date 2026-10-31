@@ -21,6 +21,8 @@ export interface CellsPoster {
   chips?: string[]
   /** A cell reserved for a long free area under the cells (reveal's answer area), in slide units. */
   area?: number
+  /** Text size of the cell text (default body); the timer uses a large clock. */
+  cellSize?: 'body' | 'subheading' | 'title'
   /** Footer band height (feedback and controls). */
   footer: number
 }
@@ -38,7 +40,7 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
   const cols = o.cols ?? 1
   const cellW = Math.max(1, (W - gap * (cols - 1)) / cols)
   const qH = measureHeights(ctx, [{ id: 'q', type: 'tls.t.title', props: { text: toMeasurable(o.prompt), size: 'subheading' } }], W)[0]
-  const textH = measureHeights(ctx, o.cells.map((t, i) => ({ id: `c${i}`, type: 'tls.t.body', props: { text: t } })), Math.max(1, cellW - 2 * padX))
+  const textH = measureHeights(ctx, o.cells.map((t, i) => ({ id: `c${i}`, type: o.cellSize ? 'tls.t.title' : 'tls.t.body', props: o.cellSize ? { text: t, size: o.cellSize } : { text: t } })), Math.max(1, cellW - 2 * padX))
   const heights = o.cells.map((_, i) => Math.max(o.cellMin ?? 0, textH[i] + 2 * padY + 4, 64))
   // equal height within a grid row
   for (let r = 0; r * cols < o.cells.length; r++) {
@@ -56,7 +58,7 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
     if (col === 0 && i > 0) rowTop += heights[i - 1] + gap
     const box = { x: col * (cellW + gap), y: rowTop, width: cellW, height: heights[i] }
     pieces.push({ id: `cell[${i}]`, raw: [{ k: 'rect', box, fill: { type: 'solid', color: surfaceAlt }, radius } as LayoutNode], box })
-    pieces.push({ id: `celltext[${i}]`, spec: { id: `celltext-${i}`, type: 'tls.t.body', props: { text } }, box: { x: box.x + padX, y: box.y + (box.height - textH[i]) / 2, width: Math.max(1, cellW - 2 * padX), height: textH[i] } })
+    pieces.push({ id: `celltext[${i}]`, spec: { id: `celltext-${i}`, type: o.cellSize ? 'tls.t.title' : 'tls.t.body', props: o.cellSize ? { text, size: o.cellSize } : { text } }, box: { x: box.x + padX, y: box.y + (box.height - textH[i]) / 2, width: Math.max(1, cellW - 2 * padX), height: textH[i] } })
   })
   y = o.cells.length ? rowTop + heights[heights.length - 1] : y
   if (o.area) {
@@ -69,7 +71,7 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
     const chipH = Math.ceil(chipFont.size * chipFont.lineHeight) + padY * 2 + 8
     let x = 0
     let cy = y + gap
-    const widths = o.chips.map((t) => Math.min(W, Math.ceil(t.length * chipFont.size * 0.6) + padX * 2))
+    const widths = o.chips.map((t) => Math.min(W, Math.ceil(t.length * chipFont.size * 0.78) + padX * 2))
     o.chips.forEach((t, i) => {
       if (x > 0 && x + widths[i] > W) {
         x = 0

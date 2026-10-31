@@ -7776,7 +7776,7 @@ also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.questi
 
 ## Learning
 tls.a.choice · learning · group · 2–5 items — Interactive multiple-choice question with feedback [h≈67+108/item@1728] knobs: layout=list|grid, submit=instant|confirm, multiple
-tls.a.fill-blank · learning · group — Fill the blanks of a definition from a word bank [h≈475@1728] knobs: retry, showAnswer
+tls.a.fill-blank · learning · group — Fill the blanks of a definition from a word bank [h≈456@1728] knobs: retry, showAnswer
 tls.a.flip-cards · learning · group · 2–8 items — Interactive flip cards: term on the front, meaning on the back [h 281–709@1728]
 tls.a.reveal · learning · group — Question first, hints and answer on demand [h≈434@1728]
 tls.a.true-false · learning · group · 2–6 items — Interactive list of true/false statements [h≈67+103/item@1728] knobs: retry, showAnswer
