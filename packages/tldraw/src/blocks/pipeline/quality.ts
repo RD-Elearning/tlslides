@@ -111,6 +111,7 @@ export function textKind(blockType: string, region: string, leaf: { part?: strin
   // a block that IS a caption or a footnote (`tls.t.caption`, `tls.t.footnote`) is judged as one
   if (blockType === 'tls.t.footnote') return 'footnote'
   if (blockType === 'tls.t.caption') return 'caption'
+  if (blockType === 'tls.t.kicker') return 'label' // the small line above a title is a label, not reading text
   const name = `${leaf.part ?? ''} ${leaf.propPath ?? ''}`
   if (GLYPH_PARTS.test(name)) return null
   if (FOOTNOTE_PARTS.test(name)) return 'footnote'
