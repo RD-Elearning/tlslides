@@ -108,6 +108,9 @@ const GLYPH_PARTS = /(^|[\s.\[\]])(glyph|icon|emoji|value|mark|star)\b/i
 export function textKind(blockType: string, region: string, leaf: { part?: string; propPath?: string; chars: number }): keyof TypeFloors | null {
   if (region === 'title' || leaf.chars < 8) return null
   if (DECORATIVE.has(blockType) || blockType.startsWith('tls.d.') || blockType.startsWith('tls.g.')) return null
+  // a block that IS a caption or a footnote (`tls.t.caption`, `tls.t.footnote`) is judged as one
+  if (blockType === 'tls.t.footnote') return 'footnote'
+  if (blockType === 'tls.t.caption') return 'caption'
   const name = `${leaf.part ?? ''} ${leaf.propPath ?? ''}`
   if (GLYPH_PARTS.test(name)) return null
   if (FOOTNOTE_PARTS.test(name)) return 'footnote'

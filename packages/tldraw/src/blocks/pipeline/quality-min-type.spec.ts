@@ -47,6 +47,9 @@ describe('quality/min-type', () => {
     expect(textKind('tls.t.quote', 'left', { chars: 30, part: 'attribution' })).toBe('caption')
     expect(textKind('tls.t.body', 'left', { chars: 30, propPath: 'footer' })).toBe('footnote')
     expect(textKind('tls.t.body', 'left', { chars: 30, part: 'text' })).toBe('body')
+    // blocks that are themselves a caption or a footnote (found on real decks: 22 and 18 units read as body)
+    expect(textKind('tls.t.caption', 'left', { chars: 30, part: 'text' })).toBe('caption')
+    expect(textKind('tls.t.footnote', 'content', { chars: 30, part: 'text' })).toBe('footnote')
   })
 
   it('a region packed with six cards falls under a body floor a roomy slide keeps', () => {
