@@ -670,3 +670,140 @@ describe('ambient loops (spro vivid V2)', () => {
     expect(tweens.filter((t) => t.repeat === -1)).toHaveLength(1)
   })
 })
+
+describe('activity slides (learning L04): clicks belong to the activity, keys keep navigating', () => {
+  const choice = tlsAChoiceProps()
+  const two: DeckSpec = {
+    version: 1,
+    id: 'activity-nav',
+    title: 'Activity nav',
+    theme: 'mono-grid',
+    aspect: 'widescreen',
+    slides: [
+      { id: 'p', layout: 'blank', regions: { content: [titleBlock('pt', 'plain slide')] } },
+      { id: 'q', layout: 'blank', regions: { content: [titleBlock('qt', 'quiz slide'), { id: 'qc', type: 'tls.a.choice', props: choice }] } },
+      { id: 'r', layout: 'blank', regions: { content: [titleBlock('rt', 'last slide')] } },
+    ],
+  }
+  const box = (el: HTMLElement) => {
+    el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 560, right: 1000, bottom: 560, x: 0, y: 0, toJSON: noop }) as DOMRect
+    return el
+  }
+  const mountAt = (slideIndex: number, extra: Partial<React.ComponentProps<typeof DeckViewer>> = {}) => {
+    mockMatchMedia(true)
+    const r = render(<DeckViewer spec={two} slideIndex={slideIndex} driver={NOOP_DRIVER} clickNavigation="halves" {...extra} />)
+    return { ...r, v: box(r.container.querySelector('[data-testid="deck-viewer"]') as HTMLElement) }
+  }
+  function Host(props: { start: number; extra?: Partial<React.ComponentProps<typeof DeckViewer>> }) {
+    const [i, setI] = React.useState(props.start)
+    return <DeckViewer spec={two} slideIndex={i} onSlideChange={setI} driver={NOOP_DRIVER} clickNavigation="halves" slideEntry="built" {...props.extra} />
+  }
+  const hostAt = (start: number, extra?: Partial<React.ComponentProps<typeof DeckViewer>>) => {
+    mockMatchMedia(true)
+    const r = render(<Host start={start} extra={extra} />)
+    return { ...r, v: box(r.container.querySelector('[data-testid="deck-viewer"]') as HTMLElement) }
+  }
+
+  it('a click moves a plain slide but not an activity slide', () => {
+    const { v } = hostAt(0)
+    fireEvent.click(v, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('1')
+    expect(v.dataset.activitySlide).toBe('true')
+    fireEvent.click(v, { clientX: 800 })
+    fireEvent.click(v, { clientX: 100 })
+    expect(v.dataset.slideIndex).toBe('1')
+    expect(v.dataset.clickSide).toBeUndefined()
+  })
+
+  it('arrows and page keys navigate; Space and Enter advance unless the focus is inside an activity', () => {
+    const { v, container } = hostAt(1)
+    fireEvent.keyDown(v, { key: 'ArrowDown' })
+    expect(v.dataset.slideIndex).toBe('2')
+    fireEvent.keyDown(v, { key: 'PageUp' })
+    expect(v.dataset.slideIndex).toBe('1')
+    const option = container.querySelector('[data-activity] button') as HTMLElement
+    expect(option).not.toBeNull()
+    fireEvent.keyDown(option, { key: 'Enter' })
+    fireEvent.keyDown(option, { key: ' ' })
+    expect(v.dataset.slideIndex).toBe('1')
+    fireEvent.keyDown(v, { key: 'Enter' })
+    expect(v.dataset.slideIndex).toBe('2')
+    fireEvent.keyDown(v, { key: 'ArrowUp' })
+    fireEvent.keyDown(v, { key: 'ArrowRight' })
+    expect(v.dataset.slideIndex).toBe('2')
+  })
+
+  it('a click on an option picks it and the slide stays; a click inside an activity never navigates', () => {
+    const { v, container } = mountAt(1)
+    const option = container.querySelector('[data-act="option"]') as HTMLElement
+    fireEvent.click(option, { clientX: 800 })
+    expect(v.dataset.slideIndex).toBe('1')
+    expect(option.getAttribute('aria-pressed') === 'true' || container.querySelector('[data-state]')).toBeTruthy()
+  })
+
+  it('a tap does nothing, a swipe navigates, and a swipe that starts on an option picks nothing', () => {
+    const { v, container } = hostAt(1)
+    const option = container.querySelector('[data-act="option"]') as HTMLElement
+    fireEvent.touchStart(v, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(v, { changedTouches: [{ clientX: 805, clientY: 300 }] })
+    fireEvent.click(v, { clientX: 805 })
+    expect(v.dataset.slideIndex).toBe('1')
+    // swipe from the option
+    fireEvent.touchStart(option, { touches: [{ clientX: 800, clientY: 300 }] })
+    fireEvent.touchEnd(option, { changedTouches: [{ clientX: 600, clientY: 305 }] })
+    fireEvent.click(option)
+    expect(v.dataset.slideIndex).toBe('2')
+    fireEvent.keyDown(v, { key: 'ArrowLeft' })
+    const again = container.querySelector('[data-act="option"][aria-pressed="true"]')
+    expect(again).toBeNull()
+  })
+
+  it('auto-advance is paused on an activity slide and runs elsewhere', () => {
+    jest.useFakeTimers()
+    try {
+      const { v } = hostAt(1, { autoAdvanceMs: 500 })
+      act(() => void jest.advanceTimersByTime(2000))
+      expect(v.dataset.slideIndex).toBe('1')
+      cleanup()
+      const plain = hostAt(0, { autoAdvanceMs: 500 })
+      act(() => void jest.advanceTimersByTime(600))
+      expect(plain.v.dataset.slideIndex).toBe('1')
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('shows the hint for 3 seconds when an activity slide appears, and not at all without the prop', () => {
+    jest.useFakeTimers()
+    try {
+      const a = hostAt(1, { activityHint: '← → to change slide' })
+      expect(a.queryByTestId('activity-hint')?.textContent).toBe('← → to change slide')
+      act(() => void jest.advanceTimersByTime(3100))
+      expect(a.queryByTestId('activity-hint')).toBeNull()
+      cleanup()
+      const b = hostAt(1)
+      expect(b.queryByTestId('activity-hint')).toBeNull()
+      cleanup()
+      const c = hostAt(0, { activityHint: 'x' })
+      expect(c.queryByTestId('activity-hint')).toBeNull()
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('state survives leaving the slide and coming back', () => {
+    const { v, container } = hostAt(1)
+    const first = container.querySelector('[data-act="option"]') as HTMLElement
+    fireEvent.click(first)
+    const picked = () => container.querySelectorAll('[data-act="option"][aria-pressed="true"], [data-act="option"][data-state="correct"], [data-act="option"][data-state="wrong"]').length
+    expect(picked()).toBeGreaterThan(0)
+    fireEvent.keyDown(v, { key: 'ArrowRight' })
+    fireEvent.keyDown(v, { key: 'ArrowLeft' })
+    expect(picked()).toBeGreaterThan(0)
+  })
+})
+
+function tlsAChoiceProps(): Record<string, unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('~blocks/library/activity/tls-a-choice').tlsAChoice.describe.example.props
+}

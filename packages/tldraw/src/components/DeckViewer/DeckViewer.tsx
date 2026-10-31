@@ -9,7 +9,9 @@ import { TDShapeType } from '~types'
 // uses avoids pulling that (and anything else barrel-adjacent) into a real DeckViewer bundle.
 // Verified with the same walker `import-graph.spec.ts` uses: none of these leaf modules reach
 // `parity-harness.ts`, `state/TldrawApp`, `state/sessions/`, or `mobx`.
-import type { DeckSpec, Box, BlockMotionRuntime } from '~blocks/types'
+import type { DeckSpec, Box, BlockMotionRuntime, ActivityRuntime, ActivityState } from '~blocks/types'
+import { isActivitySlide } from '~blocks/activity/is-activity-slide'
+import { activityLabels } from '~blocks/activity/labels'
 import type { MotionDriver } from '~blocks/motion/driver'
 import type { BlockDefinition } from '~blocks/types'
 import type { LayoutContext } from '~blocks/types'
@@ -95,6 +97,9 @@ export interface DeckViewerProps {
    *  thumbnail jump in a presentation app. The viewer's own navigation is unaffected (back
    *  lands built, forward at the start). */
   slideEntry?: 'start' | 'built'
+  /** L04: on a slide with an activity a click belongs to the activity; this short hint ("← → to change
+   *  slide") fades in for 3 s when such a slide appears. `false` / absent: no hint. */
+  activityHint?: string | false
   /** Optional block registry override. When absent, the module-level `sharedRegistry` is used. */
   registry?: BlockRegistry
   /** Optional host registry for `k: 'host'` layout nodes. */
@@ -302,6 +307,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   autoAdvanceMs,
   clickNavigation = 'advance',
   slideEntry = 'start',
+  activityHint,
   registry: registryProp,
   hostRegistry,
   className,
@@ -324,6 +330,59 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const steps = React.useMemo<BuildStep[]>(() => (page ? computeBuildSteps(page) : []), [page])
 
   const reducedMotion = usePrefersReducedMotion()
+
+  /* --- L04: activity slides — clicks belong to the activity; keys keep navigating ---------- */
+  const activitySlide = React.useMemo(() => isActivitySlide(spec.slides[currentSlideIndex] as never, blockRegistry), [spec, currentSlideIndex, blockRegistry])
+  // viewer-session state of each activity block, kept until the spec changes
+  const activityStates = React.useRef<Map<string, ActivityState>>(new Map())
+  const activityFactories = React.useRef<Map<string, (blockKey: string) => ActivityRuntime>>(new Map())
+  const activitySubmit = React.useRef<Map<string, unknown>>(new Map())
+  const activityDeckRef = React.useRef({ submit: spec.activity?.submit, locale: spec.tokens?.locale as string | undefined, reducedMotion })
+  activityDeckRef.current = { submit: spec.activity?.submit, locale: spec.tokens?.locale as string | undefined, reducedMotion }
+  const activitySpecRef = React.useRef(spec)
+  React.useEffect(() => {
+    if (activitySpecRef.current === spec) return
+    activitySpecRef.current = spec
+    activityStates.current = new Map()
+    activityFactories.current = new Map()
+  }, [spec])
+  /** One stable factory per (slide, shape): HostMount re-wires an activity whenever its identity changes. */
+  const activityFactoryFor = (slideId: string, shapeId: string, blockProps: Record<string, unknown>) => {
+    const key = `${slideId}:${shapeId}`
+    activitySubmit.current.set(key, blockProps.submit)
+    let f = activityFactories.current.get(key)
+    if (!f) {
+      f = (blockKey) => {
+        const k = `${key}:${blockKey}`
+        return {
+          get submit() {
+            const own = activitySubmit.current.get(key)
+            return own === 'instant' || own === 'confirm' ? own : activityDeckRef.current.submit ?? 'instant'
+          },
+          get labels() {
+            return activityLabels(activityDeckRef.current.locale)
+          },
+          get reducedMotion() {
+            return activityDeckRef.current.reducedMotion
+          },
+          getState: () => activityStates.current.get(k),
+          setState: (st) => void activityStates.current.set(k, st),
+        } as ActivityRuntime
+      }
+      activityFactories.current.set(key, f)
+    }
+    return f
+  }
+  const [hintShown, setHintShown] = React.useState(false)
+  React.useEffect(() => {
+    if (!activitySlide || !activityHint) return
+    setHintShown(true)
+    const h = setTimeout(() => setHintShown(false), 3000)
+    return () => {
+      clearTimeout(h)
+      setHintShown(false)
+    }
+  }, [activitySlide, activityHint, currentSlideIndex])
   const motionDriver = React.useMemo<MotionDriver>(() => driver ?? createWAAPI_driver(), [driver])
 
   const elementsRef = React.useRef<Map<string, HTMLDivElement>>(new Map())
@@ -731,26 +790,36 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   /* --- Optional whole-deck auto-advance -------------------------------------------------- */
 
   React.useEffect(() => {
-    if (!autoAdvanceMs || !page) return
+    if (!autoAdvanceMs || !page || activitySlide) return
     if (currentBuildStep < steps.length) return
     const next = nextPresentableIndex(pages, currentSlideIndex)
     if (next === undefined) return
     const handle = setTimeout(() => setSlide(next, 0), autoAdvanceMs)
     return () => clearTimeout(handle)
-  }, [autoAdvanceMs, page, steps.length, currentBuildStep, pages, currentSlideIndex, setSlide])
+  }, [autoAdvanceMs, page, steps.length, currentBuildStep, pages, currentSlideIndex, setSlide, activitySlide])
 
   /* --- Keyboard / click navigation -------------------------------------------------------- */
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
+      // L04: Space / Enter on a control of an activity belong to that control (it handles them itself)
+      const inActivity = !!(e.target as Element | null)?.closest?.('[data-activity]')
       switch (e.key) {
-        case 'ArrowRight':
         case ' ':
         case 'Enter':
+          if (inActivity) break
+          e.preventDefault()
+          advance()
+          break
+        case 'ArrowRight':
+        case 'ArrowDown':
+        case 'PageDown':
           e.preventDefault()
           advance()
           break
         case 'ArrowLeft':
+        case 'ArrowUp':
+        case 'PageUp':
         case 'Backspace':
           e.preventDefault()
           retreat()
@@ -776,11 +845,11 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const swipeRef = React.useRef<{ x: number; y: number; swiped: boolean } | null>(null)
   const handleMouseMove = React.useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (clickNavigation !== 'halves') return
+      if (clickNavigation !== 'halves' || activitySlide) return
       const rect = e.currentTarget.getBoundingClientRect()
       setSide(e.clientX - rect.left < rect.width / 2 ? 'left' : 'right')
     },
-    [clickNavigation]
+    [clickNavigation, activitySlide]
   )
   const handleTouchStart = React.useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     const t = e.touches[0]
@@ -808,6 +877,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
         swipeRef.current = null
         return
       }
+      // L04: a click on an activity slide, or inside an activity, never changes the slide
+      if (activitySlide || (e.target as Element | null)?.closest?.('[data-activity]')) return
       if (clickNavigation === 'halves') {
         const rect = e.currentTarget.getBoundingClientRect()
         if (e.clientX - rect.left < rect.width / 2) {
@@ -817,8 +888,15 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       }
       advance()
     },
-    [advance, retreat, clickNavigation]
+    [advance, retreat, clickNavigation, activitySlide]
   )
+  // L04: a swipe that started on an option ends with a click on it: swallow that click (capture)
+  const handleClickCapture = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (swipeRef.current?.swiped && (e.target as Element | null)?.closest?.('[data-activity]')) {
+      swipeRef.current = null
+      e.stopPropagation()
+    }
+  }, [])
 
   /* --- Viewport scale-to-fit -------------------------------------------------------------- */
 
@@ -908,17 +986,19 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
       aria-live="polite"
       onKeyDown={handleKeyDown}
       onClick={handleClick}
+      onClickCapture={handleClickCapture}
       onMouseMove={handleMouseMove}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      data-click-side={clickNavigation === 'halves' ? side : undefined}
+      data-click-side={clickNavigation === 'halves' && !activitySlide ? side : undefined}
+      data-activity-slide={activitySlide ? 'true' : undefined}
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
         overflow: 'hidden',
         outline: 'none',
-        ...(clickNavigation === 'halves' ? { cursor: side === 'left' ? 'w-resize' : 'e-resize', touchAction: 'pan-y' } : {}),
+        ...(clickNavigation === 'halves' ? { ...(activitySlide ? {} : { cursor: side === 'left' ? 'w-resize' : 'e-resize' }), touchAction: 'pan-y' } : {}),
       }}
       data-testid="deck-viewer"
       data-slide-index={currentSlideIndex}
@@ -976,6 +1056,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                       surface: ctx.surface,
                       props: blockSpec.props,
                       headless: false,
+                      activity: activityFactoryFor(page.id, shape.id, blockSpec.props),
                     }}>
                       <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} meta={(shape.props as Record<string, unknown>).$block} />
                     </HostLayoutContext.Provider>
@@ -986,6 +1067,27 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               </div>
             )
           })}
+        </div>
+      )}
+      {hintShown && activityHint && (
+        <div
+          data-testid="activity-hint"
+          role="note"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: 12,
+            transform: 'translateX(-50%)',
+            padding: '4px 14px',
+            borderRadius: 999,
+            background: 'rgba(0,0,0,0.65)',
+            color: '#fff',
+            fontSize: 13,
+            pointerEvents: 'none',
+            transition: reducedMotion ? undefined : 'opacity 300ms',
+          }}
+        >
+          {activityHint}
         </div>
       )}
     </div>

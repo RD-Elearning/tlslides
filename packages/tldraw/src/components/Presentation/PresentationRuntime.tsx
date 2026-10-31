@@ -10,6 +10,9 @@ import { playBlockReveal } from '~blocks/motion/play-reveal'
 import type { MotionDriver, MotionHandle, MotionKeyframes, MotionOptions, MotionState, MotionStep } from '~blocks/motion/driver'
 
 /**
+ * Learning L04: this presentation mode is NON-interactive — activities (`tls.a.*`) render as static posters here.
+ * Interactive activities live in `DeckViewer` (Tldraw's `showPresent={false}` hides this mode for hosts that use it).
+ *
  * T16.1 (build-order playback) + T16.6 (slide transitions), together in one component because
  * both are "presentation-only visual effects applied imperatively to DOM nodes the live editor
  * already renders" — the same mechanism, just aimed at two different targets (a shape's own

@@ -63,6 +63,13 @@ export interface TldrawProps extends TDCallbacks {
   showMenu?: boolean
 
   /**
+   * (optional) Whether the editor's own Present button and its ⇧P shortcut are available. Defaults to true.
+   * A host with its own viewer (spro: `DeckViewer`, where activities are interactive) passes `false`: the
+   * editor's presentation mode renders activities as static posters.
+   */
+  showPresent?: boolean
+
+  /**
    * (optional) Whether to show the multiplayer menu.
    */
   showMultiplayerMenu?: boolean
@@ -162,6 +169,7 @@ export function Tldraw({
   currentPageId,
   autofocus = true,
   showMenu = true,
+  showPresent = true,
   showMultiplayerMenu = true,
   showPages = true,
   showTools = true,
@@ -413,6 +421,7 @@ export function Tldraw({
             autofocus={autofocus}
             showPages={showPages}
             showMenu={showMenu}
+            showPresent={showPresent}
             showMultiplayerMenu={showMultiplayerMenu}
             showStyles={showStyles}
             showZoom={showZoom}
@@ -433,6 +442,7 @@ interface InnerTldrawProps {
   autofocus: boolean
   showPages: boolean
   showMenu: boolean
+  showPresent: boolean
   showMultiplayerMenu: boolean
   showZoom: boolean
   showStyles: boolean
@@ -447,6 +457,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
   autofocus,
   showPages,
   showMenu,
+  showPresent,
   showMultiplayerMenu,
   showZoom,
   showStyles,
@@ -568,7 +579,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
   return (
     <StyledLayout ref={rWrapper} tabIndex={-0} className={settings.isDarkMode ? dark : ''}>
       <Loading />
-      <OneOff focusableRef={rWrapper} autofocus={autofocus} />
+      <OneOff focusableRef={rWrapper} autofocus={autofocus} showPresent={showPresent} />
       <ContextMenu>
         <Renderer
           id={id}
@@ -658,6 +669,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
                   readOnly={readOnly}
                   showPages={showPages}
                   showMenu={showMenu}
+                  showPresent={showPresent}
                   showMultiplayerMenu={showMultiplayerMenu}
                   showStyles={showStyles}
                   showZoom={showZoom}
@@ -701,11 +713,13 @@ const InnerTldraw = React.memo(function InnerTldraw({
 const OneOff = React.memo(function OneOff({
   focusableRef,
   autofocus,
+  showPresent,
 }: {
   autofocus?: boolean
+  showPresent: boolean
   focusableRef: React.RefObject<HTMLDivElement>
 }) {
-  useKeyboardShortcuts(focusableRef)
+  useKeyboardShortcuts(focusableRef, showPresent)
   useStylesheet()
 
   React.useEffect(() => {
