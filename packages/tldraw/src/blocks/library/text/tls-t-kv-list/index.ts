@@ -20,7 +20,7 @@ export const tlsTKvList: BlockDefinition = {
   related: ['tls.t.bullets', 'tls.t.definition', 'tls.d.table'],
   describe: {
     when: 'Specs, facts, terms and conditions, a schedule of times.',
-    avoid: 'Multi-column data (use tls.d.table).',
+    avoid: 'Multi-column data (use tls.d.table); learning objectives or numbered goals (use tls.c.objectives); keys longer than a few words.',
     example: {
       id: 'b_kv',
       type: 'tls.t.kv-list',

@@ -37,6 +37,7 @@ import type {
   ResolvedTokens,
   Size,
   SlideSpec,
+  SlideIntent,
   SurfaceContext,
 } from './types'
 import type { ComponentShape, DeckTheme } from '~types'
@@ -179,6 +180,12 @@ export interface BlockReport {
   elastic: boolean
   /** Painted union at the final box, slide coordinates. `null` = paints nothing. */
   painted: Box | null
+  /** The opacity the block's root paints at (absent = 1). A backdrop at 0.5 or more behind text
+   *  reads as a picture on top of the words, not as a texture (`classifyOverlap`). */
+  alpha?: number
+  /** A decoration drawn as strokes (an `icon` glyph): its ink is lines that cross the words, so it
+   *  occludes text from a lower opacity than a filled shape (`STRONG_LINE_BACKDROP_ALPHA`). */
+  lineInk?: boolean
   /** How far painted content leaves the box (0 = inside). */
   contentOverflow: { dx: number; dy: number }
   text: TextLeafReport[]
@@ -209,6 +216,8 @@ export interface LayoutReport {
   needsVisualCheck: VisualCheck[]
   /** CMP3: the slide's drawn connectors (absent = none). */
   connectors?: ConnectorReport[]
+  /** CR7a: the slide's authored `intent`, the quality gate's profile (absent = `default`). */
+  intent?: SlideIntent
 }
 
 /** CMP3 — one drawn connector: its endpoints, route and where it runs (slide coordinates). */
@@ -332,14 +341,29 @@ export interface OverlapParty {
   /** LO2: painted union, slide coordinates. An overlay covers text only where it paints (a
    *  region overlay's box is the whole region). Absent = the box overlap is used. */
   painted?: Box | null
+  /** A `tls.m.decoration`'s root opacity (absent = none set); see `STRONG_BACKDROP_ALPHA`. */
+  decorationAlpha?: number
+  /** The decoration is line ink (`BlockReport.lineInk`). */
+  decorationLineInk?: boolean
 }
+
+/** A `tls.m.decoration` backdrop painting at this opacity or more behind another block's text is
+ *  `text/occluded`: a subject doodle or a 3D solid keeps ≥ 0.85, so `layer: backdrop` does not
+ *  quieten it (spro: a repair turned an occluding book into a backdrop to pass this check). Other
+ *  backdrops (a photo under a title) and a decoration in tone `alt` (no opacity: already quiet) are
+ *  left alone. */
+export const STRONG_BACKDROP_ALPHA = 0.5
+/** The same for a decoration drawn in lines (an icon glyph): a 0.35 outline over a list of questions
+ *  crossed every line of it (2026-10-24 review, spro deck 4068f089 s10) and passed at 0.5. */
+export const STRONG_LINE_BACKDROP_ALPHA = 0.25
 
 /**
  * Classify a box ∩ box overlap by layer policy (layout-oracle §LO2). Text ∩ text across blocks
  * is reported separately (`text/collision`): an error, `info` when one side is a backdrop behind (LO2.1).
  *
  * - content ∩ content → `layout/overlap` error (warning when the painted content does not meet);
- * - backdrop ∩ anything → allowed (`info`) when the backdrop paints *behind*, else error;
+ * - backdrop ∩ anything → allowed (`info`) when the backdrop paints *behind*, else error — and a
+ *   strong decoration (`STRONG_BACKDROP_ALPHA`) behind the other's text → `text/occluded` error;
  * - overlay ∩ content → allowed (`info`) unless it covers a text leaf → `text/occluded` error;
  * - overlay ∩ overlay → warning.
  */
@@ -355,6 +379,12 @@ export function classifyOverlap(
     const other = backdrop === a ? b : a
     if (a.layer === 'backdrop' && b.layer === 'backdrop') {
       return { code: 'layout/overlap', severity: 'info', note: 'two backdrops overlap' }
+    }
+    if (backdrop.z < other.z && (backdrop.decorationAlpha ?? 0) >= (backdrop.decorationLineInk ? STRONG_LINE_BACKDROP_ALPHA : STRONG_BACKDROP_ALPHA)) {
+      const cover = backdrop.painted ? intersect(backdrop.painted, overlap) : overlap
+      if (cover && other.text.some((t) => area(intersect(t, cover)) > MIN_TEXT_COLLISION)) {
+        return { code: 'text/occluded', severity: 'error', note: `backdrop ${backdrop.id} paints strongly behind text of ${other.id}` }
+      }
     }
     return backdrop.z < other.z
       ? { code: 'layout/overlap', severity: 'info', note: `backdrop ${backdrop.id} sits behind ${other.id} (intended)` }
@@ -613,6 +643,8 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       natural: measure.natural,
       elastic: measure.elastic,
       painted,
+      ...(rootAlpha(root) === undefined ? {} : { alpha: rootAlpha(root) }),
+      ...(p.block.type === 'tls.m.decoration' && (props as { shape?: unknown }).shape === 'icon' ? { lineInk: true } : {}),
       contentOverflow,
       text,
       ...(capacity ? { capacity } : {}),
@@ -692,9 +724,11 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       return c?.region ? [c.region] : blocks.filter((b) => f.blockIds.includes(b.id)).map((b) => b.region)
     })
   )
+  // a `regionStack` group moves its blocks across its regions on purpose (spro creative R3e)
+  const stacked = new Set((layoutDef?.regionStack ?? []).flat())
   for (const b of blocks) {
     const rb = regions[b.region]
-    if (!rb || b.outOfFlow) continue
+    if (!rb || b.outOfFlow || stacked.has(b.region)) continue
     const below = b.box.y > rb.y + rb.height - TOL
     const above = b.box.y + b.box.height < rb.y + TOL
     if (!below && !above) continue
@@ -818,6 +852,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
     freeSpace,
     needsVisualCheck,
     ...(connectors.length ? { connectors } : {}),
+    ...(spec.intent ? { intent: spec.intent } : {}),
   }
 }
 
@@ -915,7 +950,7 @@ export function analyzeDeck(
   const blockDefaults = style?.blockDefaults
   // AC4: a style master's blocks (mesh, grain, motifs) are on every page it applies to
   // (`deckSpecToDocument`); the report sees them as free backdrop blocks under the slide's flow.
-  const masters = Object.fromEntries(styleMasters(style, deck.motif).map((m) => [m.name, m]))
+  const masters = Object.fromEntries(styleMasters(style, deck.motif, deck.motifZone).map((m) => [m.name, m]))
   const withMaster = (s: SlideSpec): SlideSpec => {
     const id = styleMasterFor(style, s)
     const master = id ? masters[id] : undefined
@@ -1266,7 +1301,7 @@ function pairFindings(a: BlockReport, b: BlockReport, out: LayoutFinding[]): voi
       severity: cls.severity,
       blockIds: [a.id, b.id],
       message: `${a.id} × ${b.id} boxes overlap ${r(boxOverlap.width)}x${r(boxOverlap.height)} at ${r(boxOverlap.x)},${r(boxOverlap.y)}: ${cls.note}.`,
-      ...(cls.severity === 'info' ? {} : { fix: separationFix(a, b, boxOverlap) }),
+      ...(cls.severity === 'info' ? {} : { fix: cls.code === 'text/occluded' ? occlusionFix(a, b, boxOverlap) : separationFix(a, b, boxOverlap) }),
     })
   } else if (a.painted && b.painted) {
     // Boxes are apart but content spills into the other block.
@@ -1319,11 +1354,37 @@ function backdropBehind(a: BlockReport, b: BlockReport): BlockReport | undefined
   return undefined
 }
 
+/** The opacity a block paints at: the product down its chain of single-child root groups (a block
+ *  wrapper around the block's own root); absent = 1. */
+function rootAlpha(root: LayoutNode | undefined): number | undefined {
+  let alpha = 1
+  let n = root
+  while (n && n.k === 'group') {
+    if (typeof n.opacity === 'number') alpha *= n.opacity
+    n = n.children.length === 1 ? n.children[0] : undefined
+  }
+  return alpha < 1 ? alpha : undefined
+}
+
 function party(b: BlockReport): OverlapParty {
-  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted }
+  return { id: b.id, layer: b.layer, z: b.z, text: b.text.map((t) => t.painted), painted: b.painted, ...(b.type === 'tls.m.decoration' && b.alpha !== undefined ? { decorationAlpha: b.alpha, ...(b.lineInk ? { decorationLineInk: true } : {}) } : {}) }
 }
 
 /** The smaller of the two moves that separates `b` from `a` (down or sideways). */
+/**
+ * learning L01 (B2): the remedy for `text/occluded`. A decoration is placed by its anchor (`right`,
+ * `top-right`, …), so "move it down N units" is not something its author can do, and a repair that
+ * cannot move it keeps it (spro deck 3a12e246 s11: a `squiggle` anchored `right` in the title region
+ * covered the end of a long title through every repair). For a decoration the remedy is to drop it or
+ * to put it in a region with no text; for any other overlay, the numeric move.
+ */
+function occlusionFix(a: BlockReport, b: BlockReport, overlap: Box): string {
+  const deco = [a, b].find((x) => x.type === 'tls.m.decoration' && x.layer !== 'backdrop')
+  if (!deco) return separationFix(a, b, overlap)
+  const text = deco === a ? b : a
+  return `remove ${deco.id} (a decoration drawn over the words of ${text.id}), or give it another region that holds no text; an anchor cannot be moved by units`
+}
+
 function separationFix(a: BlockReport, b: BlockReport, overlap: Box): string {
   const [first, second] = a.box.y <= b.box.y ? [a, b] : [b, a]
   if (overlap.height <= overlap.width) {

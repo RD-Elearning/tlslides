@@ -37,7 +37,7 @@ const OPTIONAL: Record<string, RegExp> = {
   'tls.t.definition': /^(pronunciation|meta|example\.bar|example)$/,
   'tls.t.takeaway': /^(icon|label)$/,
   'tls.t.callout': /^(icon|title)$/,
-  'tls.t.statement': /^(mark|text\[\*\]|emphasis|attribution)$/,
+  'tls.t.statement': /^(mark|text\[\*\]|emphasis|circle|attribution)$/,
   'tls.t.quote': /^attribution$/,
   'tls.c.quote-image': /^(name|role)$/,
   'tls.c.cards': /^lead\[\*\]$/,

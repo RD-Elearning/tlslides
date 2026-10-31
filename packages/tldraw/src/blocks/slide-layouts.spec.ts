@@ -65,8 +65,8 @@ function allRegionsPositiveSize(regions: Record<string, Box>): void {
 /* ── SLIDE_LAYOUTS module-level object ─────────────────────────────────────── */
 
 describe('SLIDE_LAYOUTS module-level', () => {
-  it('contains exactly 20 layouts (AC6: + full-bleed, AC8.6: + section-stack, enhance L2: + sidebar-title, band)', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(20)
+  it('contains exactly 28 layouts (AC6: + full-bleed, AC8.6: + section-stack, enhance L2: + sidebar-title, band, creative CR13: + 8 layouts v2)', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(28)
   })
 
   it('enhance L2: sidebar-title puts the title in a left column the full height; band stacks a wide band over a foot', () => {
@@ -78,6 +78,14 @@ describe('SLIDE_LAYOUTS module-level', () => {
     expect(Object.keys(band)).toEqual(['title', 'band', 'foot'])
     expect(band.band.y + band.band.height).toBeLessThan(band.foot.y)
     expect(band.band.height).toBeGreaterThan(band.foot.height * 1.5)
+  })
+
+  it('spro creative R3d: the band foot is a strip for a line or two, under the gate\'s region share', () => {
+    // a one-line caption in a third of the body was judged a thin region (golden r3b: 7 of 10)
+    const band = getSlideLayout('band')!.compile({ width: 1920, height: 1080 }, TEST_TOKENS)
+    expect(band.band.height).toBeGreaterThan(band.foot.height * 3)
+    expect(band.foot.width * band.foot.height).toBeLessThan(0.15 * 1920 * 1080)
+    expect(band.foot.height).toBeGreaterThanOrEqual(120)
   })
 
   it('AC8.6 section-stack: one start-aligned content column at most 1200 wide, centred stack', () => {
@@ -135,7 +143,12 @@ describe.each(ASPECTS)('layouts at $label (%dx%d)', ({ label, width, height }) =
       // region is exactly the frame; every other layout keeps its regions inside the margin.
       it(layout.id === 'full-bleed' ? 'its one region is exactly the frame' : 'all regions are inside the safe margin', () => {
         if (layout.id === 'full-bleed') expect(regions).toEqual({ content: { x: 0, y: 0, width: frame.width, height: frame.height } })
-        else allRegionsInsideSafeMargin(regions, frame, TEST_TOKENS)
+        // spro creative CR13: `full-bleed-half`'s visual bleeds by design; its other regions keep the margin
+        else if (layout.id === 'full-bleed-half') {
+          expect(regions.visual).toEqual({ x: 0, y: 0, width: Math.round(frame.width / 2), height: frame.height })
+          const { visual: _v, ...rest } = regions
+          allRegionsInsideSafeMargin(rest, frame, TEST_TOKENS)
+        } else allRegionsInsideSafeMargin(regions, frame, TEST_TOKENS)
       })
 
       it('no two regions overlap', () => {

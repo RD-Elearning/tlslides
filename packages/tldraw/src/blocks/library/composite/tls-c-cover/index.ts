@@ -176,8 +176,10 @@ export function layoutCover(props: CoverProps, ctx: LayoutContext): LayoutNode {
   } else if (split && wantImage && s.image) {
     pieces.push({ id: 'image', spec: s.image, box: { x: W / 2 + gap, y: 0, width: W / 2 - gap, height: total } })
   } else if (deco !== 'none') {
-    const dw = split ? W * 0.42 : W * 0.38
-    const dh = Math.min(total, dw * 0.9)
+    // centred: a corner motif clear of the centred text column (a big blob behind the subtitle
+    // left muted text at 2.5:1 in minimal — spro creative CR2 variants spec)
+    const dw = split ? W * 0.42 : W * 0.24
+    const dh = split ? Math.min(total, dw * 0.9) : Math.min(total * 0.3, dw * 0.9)
     const box = split ? { x: W - dw, y: (total - dh) / 2, width: dw, height: dh } : { x: W - dw, y: 0, width: dw, height: dh }
     pieces.push({ id: 'decoration', spec: decoSpec(deco, 'accent', 7), box })
   }

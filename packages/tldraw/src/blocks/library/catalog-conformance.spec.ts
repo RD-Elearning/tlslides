@@ -13,7 +13,8 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { BUILT_IN_BLOCKS, registerBuiltInBlocks } from './index'
 import { BlockRegistry } from '../registry'
-import { BLOCK_CATEGORIES, BLOCK_SCOPES } from '../types'
+import { BLOCK_CATEGORIES, BLOCK_SCOPES, FITS_DATA, FITS_ENERGY, FITS_TEXT_LOADS, FRAME_ROLES, LOOK_FAMILIES, RELATIONS } from '../types'
+import { ASSET_KINDS, blockNeeds } from '../recipes'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { capabilityDigest } from '../capability-digest'
 import { makeCtx, makeRegistry, collectParts } from './layout/test-helpers'
@@ -35,7 +36,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 138
+const EXPECTED_BLOCK_COUNT = 192 // learning L03: + tls.a.choice, true-false, flip-cards, reveal, fill-blank (wave 1), match, order, sort, timer (wave 2); spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()
@@ -88,6 +89,60 @@ export function aiCurationViolations(def: BlockDefinition, reg: BlockRegistry): 
     if (!slot) out.push(`looks "${name}" is not a schema slot`)
     else if (slot.role !== 'option' || (slot.type.kind !== 'enum' && slot.type.kind !== 'boolean'))
       out.push(`looks "${name}" is not an enum/boolean option slot (${slot.role}/${slot.type.kind})`)
+  }
+  return out
+}
+
+/** spro creative CR2 — rules for the capability card (`fits`) and the variant presets. */
+export function fitsViolations(def: BlockDefinition): string[] {
+  const out: string[] = []
+  const f = def.fits
+  if (def.editorOnly) return f ? ['an editor-only block has fits'] : []
+  if (!f) return ['no fits (library/block-fits.ts)']
+  for (const r of f.relations) if (!RELATIONS.includes(r)) out.push(`relation "${r}" is unknown`)
+  if (!FITS_TEXT_LOADS.includes(f.textLoad)) out.push(`textLoad "${f.textLoad}" is unknown`)
+  if (!FITS_ENERGY.includes(f.energy)) out.push(`energy "${f.energy}" is unknown`)
+  if (f.data !== undefined && !FITS_DATA.includes(f.data)) out.push(`data "${f.data}" is unknown`)
+  for (const x of f.families ?? []) if (!LOOK_FAMILIES.includes(x)) out.push(`family "${x}" is unknown`)
+  for (const x of f.frames ?? []) if (!FRAME_ROLES.includes(x)) out.push(`frame "${x}" is unknown`)
+  for (const x of f.needs ?? []) if (!ASSET_KINDS.includes(x)) out.push(`need "${x}" is unknown`)
+  // the picker's needs are a floor: a card may say more (an image grid without images is no design)
+  for (const n of blockNeeds(def.type)) if (!f.needs?.includes(n)) out.push(`needs lacks "${n}" (recipes.ts TYPE_NEEDS)`)
+  if (f.items) {
+    const [lo, hi] = f.items
+    if (!(lo >= 1 && hi >= lo)) out.push(`items [${lo}, ${hi}] is not a range`)
+    const lists = Object.values(def.schema ?? {}).filter((s) => s.role === 'content' && s.type.kind === 'list') as Array<{ type: { min?: number; max?: number } }>
+    if (lists.length && !lists.some((s) => lo >= (s.type.min ?? 0) && hi <= (s.type.max ?? Infinity)))
+      out.push(`items [${lo}, ${hi}] lies outside every list slot's range (${lists.map((s) => `${s.type.min ?? 0}–${s.type.max ?? '∞'}`).join(', ')})`)
+  }
+  return out
+}
+
+export function variantViolations(def: BlockDefinition): string[] {
+  const out: string[] = []
+  const looks = def.looks ?? []
+  const vs = def.variants ?? []
+  if (def.editorOnly) return vs.length ? ['an editor-only block has variants'] : []
+  if (looks.length && (vs.length < 2 || vs.length > 6)) out.push(`${vs.length} variants (2–6 expected for a block with looks)`)
+  const ids = new Set<string>()
+  const sets = new Set<string>()
+  for (const p of vs) {
+    if (ids.has(p.id)) out.push(`variant id "${p.id}" twice`)
+    ids.add(p.id)
+    if (!p.when) out.push(`variant "${p.id}" has no when`)
+    const key = JSON.stringify(Object.entries(p.knobs).sort())
+    if (sets.has(key)) out.push(`variant "${p.id}" repeats another preset's knobs`)
+    sets.add(key)
+    if (!Object.keys(p.knobs).length) out.push(`variant "${p.id}" sets no knob`)
+    for (const [k, val] of Object.entries(p.knobs)) {
+      if (!looks.includes(k)) {
+        out.push(`variant "${p.id}" sets "${k}", not a look knob`)
+        continue
+      }
+      const t = def.schema?.[k]?.type as { kind: string; values?: readonly string[] } | undefined
+      if (t?.kind === 'boolean' ? typeof val !== 'boolean' : !t?.values?.includes(val as string))
+        out.push(`variant "${p.id}": ${k}=${String(val)} is not a value of the slot`)
+    }
   }
   return out
 }
@@ -172,10 +227,10 @@ describe('block catalog conformance', () => {
       })
     }
 
-    it('the tier-1 set stays curated: 35–48 blocks', () => {
+    it('the tier-1 set stays curated: 35–51 blocks', () => {
       const n = BUILT_IN_BLOCKS.filter((d) => d.aiTier === 1).length
       expect(n).toBeGreaterThanOrEqual(35)
-      expect(n).toBeLessThanOrEqual(48)
+      expect(n).toBeLessThanOrEqual(51)
     })
 
     it('every absorbed block names one of its tier-1 absorbers in describe.avoid', () => {
@@ -202,17 +257,41 @@ describe('block catalog conformance', () => {
     })
   })
 
+  describe('creative CR2 capability cards and variant presets', () => {
+    for (const def of BUILT_IN_BLOCKS) {
+      it(`"${def.type}" has a valid fits card and variant presets`, () => {
+        expect([...fitsViolations(def), ...variantViolations(def)]).toEqual([])
+      })
+    }
+
+    it('the gates themselves work', () => {
+      const reg = freshBuiltInRegistry()
+      const bar = reg.get('tls.d.bar')!
+      const bad = { ...bar, fits: { relations: ['nope'], textLoad: 'x', energy: 'calm', items: [1, 999] }, variants: [{ id: 'a', when: 'w', knobs: { orientation: 'diagonal' } }] } as any
+      const v = [...fitsViolations(bad), ...variantViolations(bad)]
+      expect(v.some((m) => m.includes('relation "nope"'))).toBe(true)
+      expect(v.some((m) => m.includes('needs lacks "chartData"'))).toBe(true)
+      expect(v.some((m) => m.includes('orientation=diagonal'))).toBe(true)
+      expect(v.some((m) => m.includes('1 variants'))).toBe(true)
+    })
+
+    it('every AI-eligible block has a card; containers and chrome are editor-only', () => {
+      expect(BUILT_IN_BLOCKS.filter((d) => !d.editorOnly && !d.fits).map((d) => d.type)).toEqual([])
+      expect(BUILT_IN_BLOCKS.filter((d) => d.category === 'structure' && !d.editorOnly).map((d) => d.type)).toEqual([])
+    })
+  })
+
   describe('BUILT_IN_BLOCKS', () => {
     it('has the expected hardened count', () => {
       // Today's figure. Update ONLY when a block is genuinely added or removed.
       expect(BUILT_IN_BLOCKS).toHaveLength(EXPECTED_BLOCK_COUNT)
     })
 
-    it('exports 7 family arrays', () => {
-      // layout, text, data, diagram, composite, media, chrome
+    it('exports 8 family arrays', () => {
+      // layout, text, data, diagram, composite, media, chrome, live (learning L03)
       const families = new Set(BUILT_IN_BLOCKS.map((b) => b.family))
       expect(Array.from(families).sort()).toEqual(
-        ['chrome', 'composite', 'data', 'diagram', 'layout', 'media', 'text']
+        ['chrome', 'composite', 'data', 'diagram', 'layout', 'live', 'media', 'text']
       )
     })
   })

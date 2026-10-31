@@ -173,3 +173,24 @@ describe('AC8.6 — roomy tier', () => {
     }
   }
 })
+
+describe('stat-spotlight — middle tiers in a roomy box (review 2026-10-24)', () => {
+  it('stat labels that miss the roomy tier step to body, whole, instead of a cut caption line', () => {
+    const { analyzeDeck } = require('../../../layout-report')
+    const s = {
+      id: 's',
+      layout: 'timeline',
+      regions: {
+        title: [{ id: 't', type: 'tls.t.title', props: { text: 'Why onboarding has to change' } }],
+        timeline: [{ id: 'sp', type: 'tls.c.stat-spotlight', props: { label: 'Average wait to first production change', value: '74 days', visual: 'plain', progress: 100, stats: [{ label: 'First-year leavers citing a confusing start', value: '23%' }, { label: 'Senior time per new hire', value: '120 h' }, { label: 'Environment, code review and on-call questions', value: 'Frequent' }] } }],
+      },
+    }
+    const r = analyzeDeck({ version: 1, id: 'q', title: 'q', theme: 'swiss-red', style: 'swiss', aspect: 'widescreen', slides: [s] })[0]
+    const labels = r.blocks.flatMap((b: any) => b.text).filter((t: any) => /^stats\.\d+\.label$/.test(t.propPath ?? ''))
+    expect(labels).toHaveLength(3)
+    for (const t of labels) {
+      expect(t.fontSize).toBeGreaterThanOrEqual(28)
+      expect(t.truncated).toBeUndefined()
+    }
+  })
+})

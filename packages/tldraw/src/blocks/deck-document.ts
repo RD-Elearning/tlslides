@@ -16,13 +16,16 @@
 
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
-import { compileSlide, type CompileFinding } from './slide-compiler'
+import { compileSlide, stampAmbient, type CompileFinding } from './slide-compiler'
+import { BLOCK_PROP_KEY } from './shape-bridge'
+import { effectiveMotionStyle } from './motion/motion-style'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
 import { resolveMaster } from './master-renderer'
+import { placeDeckMotifs } from './motif-zone'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* resolveDeckFrame                                                                 */
@@ -129,10 +132,12 @@ export function styleMasterPage(
   frame: { width: number; height: number },
   tokens: ResolvedTokens,
   /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
-  motif?: string
+  motif?: string,
+  /** CR7a: the deck's `motifZone` (`auto`: the page carries the signature motif, not the master). */
+  zone?: DeckSpec['motifZone']
 ): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
   const masterId = styleMasterFor(style, slideSpec)
-  const master = masterId ? styleMasters(style, motif).find((m) => m.name === masterId) : undefined
+  const master = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
   if (!masterId || !master) return { shapes: [] }
   const shapes: ComponentShape[] = []
   // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
@@ -158,13 +163,15 @@ export function styleMasterPage(
  * onto `document.theme` — this is what lets the editor and `<DeckViewer>` resolve real tokens
  * and real colour roles instead of falling back to a colourless placeholder.
  */
-export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
+export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
+  // CR7a masters v2: under `motifZone: 'auto'` each cover/section page carries its signature motif
+  const spec = placeDeckMotifs(authored)
   const frame = resolveDeckFrame(spec.aspect)
   const theme = resolveDeckTheme(spec.theme, spec.style, deckSpecTokens(spec))
   // AC1: the style resolves under everything the spec authors (ai-curation §3.2).
   const style = getDeckStyle(spec.style)
   const tokens = resolveTokens(theme, deckSpecTokens(spec))
-  const masterList = styleMasters(style, spec.motif)
+  const masterList = styleMasters(style, spec.motif, spec.motifZone)
   const motionStyle = spec.motionStyle ?? style?.motionStyle
   const findings: CompileFinding[] = []
 
@@ -183,7 +190,9 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif)
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone)
+    // vivid V3: the master's motifs (a corner sparkle, a doodle) loop with the slide's motion style
+    stampAmbient(sm.shapes, effectiveMotionStyle(slideSpec.motionStyle, motionStyle), registry)
     findings.push(...result.findings)
 
     // CMP1: shapes are top-level children of their page (`parentId` = page id). `blockToShape`
@@ -191,8 +200,13 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     // `parentId` is the page's id — a compiled deck exported blank.
     const shapes: Record<string, ComponentShape> = {}
     for (const sh of sm.shapes) shapes[sh.id] = { ...sh, parentId: pageId }
+    // CR7b: the deck's and the slide's look, merged, on every block of the page (renderers draw a
+    // block without its page); the block's own `look` wins per axis
+    const lookBase = spec.look || slideSpec.look ? { ...(spec.look ?? {}), ...(slideSpec.look ?? {}) } : undefined
     for (const shape of result.shapes) {
-      shapes[shape.id] = { ...shape, parentId: pageId }
+      const meta = (shape.props as Record<string, unknown>)[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      const props = lookBase && meta && typeof meta === 'object' ? { ...shape.props, [BLOCK_PROP_KEY]: { ...meta, lookBase } } : shape.props
+      shapes[shape.id] = { ...shape, props, parentId: pageId }
     }
 
     const page: TDPage = {
@@ -211,6 +225,10 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
     }
     if (slideSpec.motionStyle !== undefined) page.motionStyle = slideSpec.motionStyle
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
+    if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
+    if (slideSpec.look !== undefined) page.look = slideSpec.look
+    if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
+    if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page
 
     pageStates[pageId] = {
@@ -239,6 +257,10 @@ export function deckSpecToDocument(spec: DeckSpec): DeckDocumentResult {
   if (spec.motionStyle !== undefined) document.motionStyle = spec.motionStyle
   if (style) document.styleId = style.id
   if (spec.motif !== undefined) document.motif = spec.motif
+  if (spec.motifZone !== undefined) document.motifZone = spec.motifZone
+  if (spec.look !== undefined) document.look = spec.look
+  if (spec.motionPersonality !== undefined) document.motionPersonality = spec.motionPersonality
+  if (spec.ambient !== undefined) document.ambient = spec.ambient
 
   return { document, findings }
 }

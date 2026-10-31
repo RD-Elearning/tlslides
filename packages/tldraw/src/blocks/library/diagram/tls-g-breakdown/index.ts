@@ -36,7 +36,7 @@ export const tlsGBreakdown: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1100, 520], min: [560, 320] },
+  size: { preferred: [1100, 520], min: [560, 320], hug: true },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

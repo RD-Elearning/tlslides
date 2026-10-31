@@ -12,7 +12,7 @@
  *
  * | code | sev | rule |
  * |---|---|---|
- * | `contrast/low` | error | a text leaf below 4.5:1 (3:1 from 36 units, or bold from 28; icons 3:1) on the paint actually under it — fills, gradients, translucent glass blended over what is behind, the slide background; an image counts as both black and white, so text on a photo needs a scrim |
+ * | `contrast/low` | error | a text leaf below 4.5:1 (3:1 from 36 units, or bold from 28; icons 3:1) on the paint actually under it — fills, gradients, translucent glass blended over what is behind, the slide background; an image counts as both black and white, so text on a photo needs a scrim; a motif (`MOTIF_BLOCKS`) is not judged |
  * | `layout/misaligned` | warning | peers (same-type children of a row / grid, side by side) whose matching text starts drift > 4 units vertically (or, stacked in a column, horizontally) |
  * | `layout/unequal-peers` | warning | peers side by side whose box (painted, for a card) widths or heights differ by > 5 % |
  * | `layout/narrow-child` | warning | a nested child's text wraps (≥ 2 lines) at < 12 characters per line, or in a box < 240 units wide |
@@ -332,7 +332,7 @@ export function designFindings(blocks: DesignBlock[], ctx: DesignContext): Desig
     narrowChecks(b, drafts)
     if (ctx.llmAuthored) depthCheck(b, drafts)
   }
-  typeSizeCheck(blocks, drafts)
+  typeSizeCheck(blocks, ctx, drafts)
   accentCheck(blocks, ctx, drafts)
   measureChecks(blocks, drafts)
   motionChecks(blocks, ctx, drafts)
@@ -358,6 +358,10 @@ function partName(ink: InkLeaf): string {
   return ink.kind === 'icon' ? ink.node.part ?? 'icon' : (ink.node.k === 'text' ? ink.node.propPath ?? ink.node.part : undefined) ?? 'text'
 }
 
+/** Pure decoration (no text, no meaning): `contrast/low` does not judge their ink. Not every
+ *  `category: 'decoration'` block — a field holds text children, an arrow points at something. */
+export const MOTIF_BLOCKS: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.icon-cluster', 'tls.m.pattern'])
+
 /** `contrast/low`: every text / icon leaf against the paint under it (all blocks, z order). */
 function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): void {
   const all: PaintOp[] = []
@@ -372,11 +376,17 @@ function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[])
   }
   for (const b of blocks) {
     if (!b.inspection || b.layer === 'backdrop' || b.styleOwned) continue
+    // vivid: a motif carries no information (topic icons at the end of the title bar, the kit's
+    // `corner` placement) — its ink is never text to read
+    if (MOTIF_BLOCKS.has(b.type)) continue
     const off = offsets.get(b) ?? 0
     // worst failing leaf per owner
     const worst = new Map<string, { ink: InkLeaf; ratio: number; floor: number; color: string; bg: string; unknown: boolean; count: number }>()
     for (const ink of b.inspection.inks) {
       if (ink.alpha < DESIGN_THRESHOLDS.decorativeAlpha) continue
+      // creative CR7a: a motif nested in a container is decoration wherever it sits
+      const owner = ownerOf(b, ink.owner).sub
+      if (owner && MOTIF_BLOCKS.has(owner.type)) continue
       const floor = floorOf(ink)
       const c = inkContrast(ink, all, ctx.background, off + ink.below)
       if (!c) continue
@@ -624,9 +634,20 @@ function contentText(blocks: DesignBlock[]): Array<{ b: DesignBlock; t: DesignBl
   return blocks.filter((b) => b.layer !== 'backdrop' && !b.styleOwned).flatMap((b) => b.text.map((t) => ({ b, t })))
 }
 
-/** `type/too-many-sizes` (P5). */
-function typeSizeCheck(blocks: DesignBlock[], out: Draft[]): void {
-  const sizes = [...new Set(contentText(blocks).map(({ t }) => r(t.fontSize * (t.scale || 1))))].sort((a, b) => b - a)
+/** CR7a (spro creative PLAN §2.4): a diagram or a chart sets its own label scale (a ring's value,
+ *  label and caption), read as one figure; tables and comparisons are text and count as text. */
+export function figureLike(type: string, registry: BlockRegistry): boolean {
+  const def = registry.get(type)
+  if (!def || (def.family !== 'diagram' && def.family !== 'data') || type === 'tls.g.connector') return false
+  return def.category !== 'table' && def.category !== 'comparison'
+}
+
+/** `type/too-many-sizes` (P5). A figure's labels count as one size: its largest. */
+function typeSizeCheck(blocks: DesignBlock[], ctx: DesignContext, out: Draft[]): void {
+  const text = contentText(blocks)
+  const figureTop = new Map<string, number>()
+  for (const { b, t } of text) if (figureLike(b.type, ctx.registry)) figureTop.set(b.id, Math.max(figureTop.get(b.id) ?? 0, r(t.fontSize * (t.scale || 1))))
+  const sizes = [...new Set(text.map(({ b, t }) => figureTop.get(b.id) ?? r(t.fontSize * (t.scale || 1))))].sort((a, b) => b - a)
   const merged: number[] = []
   for (const s of sizes) if (!merged.length || merged[merged.length - 1] - s > 1) merged.push(s)
   if (merged.length <= DESIGN_THRESHOLDS.typeSizes) return

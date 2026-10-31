@@ -14,6 +14,7 @@ import { ICON_LIST_MAX_ITEMS } from './schema'
 import { asArray, spacingGap, str } from '../../text/_engine/rich'
 import { iconLeaf } from '../../text/_engine/icon'
 import { isShown } from '../../../schema-helpers'
+import { growText } from '../../text/_engine/grow'
 
 function toneRole(tone: unknown): ColorRole {
   return tone === 'accent2' ? 'accent2' : tone === 'text' ? 'text' : 'accent'
@@ -92,7 +93,14 @@ function compute(props: IconListProps, ctx: LayoutContext, width: number, rung: 
   return { nodes, height, items, lineCount, rowMin: shape, gap }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: IconListProps, ctx: LayoutContext): LayoutNode {
+  // `size: fit` already picks its rung by the box
+  if (props.size === 'fit') return layoutAuthored(props, ctx)
+  return growText(ctx, (c) => layoutAuthored(props, c))
+}
+
+function layoutAuthored(props: IconListProps, ctx: LayoutContext): LayoutNode {
   if (props.size === 'fit') {
     const H = ctx.box.height
     for (let i = 0; i < FIT_RUNGS.length; i++) {

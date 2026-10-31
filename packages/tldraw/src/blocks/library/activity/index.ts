@@ -1,0 +1,22 @@
+/** L03 — interactive activity blocks (family 'live', category 'learning'). */
+import type { BlockDefinition } from '../../types'
+import { tlsAChoice } from './tls-a-choice'
+import { tlsATrueFalse } from './tls-a-true-false'
+import { tlsAFlipCards } from './tls-a-flip-cards'
+import { tlsAReveal } from './tls-a-reveal'
+import { tlsAFillBlank } from './tls-a-fill-blank'
+import { tlsAMatch } from './tls-a-match'
+import { tlsAOrder } from './tls-a-order'
+import { tlsASort } from './tls-a-sort'
+import { tlsATimer } from './tls-a-timer'
+
+export const activityBlocks: BlockDefinition[] = [tlsAChoice, tlsATrueFalse, tlsAFlipCards, tlsAReveal, tlsAFillBlank, tlsAMatch, tlsAOrder, tlsASort, tlsATimer]
+export { tlsAChoice } from './tls-a-choice'
+export { tlsATrueFalse } from './tls-a-true-false'
+export { tlsAFlipCards } from './tls-a-flip-cards'
+export { tlsAReveal } from './tls-a-reveal'
+export { tlsAFillBlank } from './tls-a-fill-blank'
+export { tlsAMatch } from './tls-a-match'
+export { tlsAOrder } from './tls-a-order'
+export { tlsASort } from './tls-a-sort'
+export { tlsATimer } from './tls-a-timer'

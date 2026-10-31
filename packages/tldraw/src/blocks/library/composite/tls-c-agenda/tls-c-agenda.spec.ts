@@ -526,6 +526,21 @@ describe('AC2 — look knobs (variant, numbering)', () => {
     expect(disc(badges[0]).box.width).toBe(disc(badges[0]).box.height)
   })
 
+  it('startAt continues the numbering of a contents list split over several blocks', () => {
+    const c = ctx({ width: 1200, height: 660 })
+    const numbers = (extra: Record<string, unknown>): string[] => {
+      const out: string[] = []
+      const walk = (n: LayoutNode) => {
+        if (n.k === 'group') n.children.forEach(walk)
+        else if (n.k === 'text' && /^item\[\d+\]\.index$/.test((n as any).part ?? '')) out.push((n as any).lines.map((l: any) => l.text).join(''))
+      }
+      walk(DEF.layout({ ...props, ...extra }, c))
+      return out
+    }
+    expect(numbers({})).toEqual(['1', '2', '3', '4'])
+    expect(numbers({ startAt: 5 })).toEqual(['5', '6', '7', '8'])
+  })
+
   it('cards: a box too short for cards keeps the list (no card rects), as size.min does', () => {
     const [w, h] = DEF.size.min
     const node = DEF.layout({ ...props, items: [...props.items, { title: 'Wrap-up', note: 'Decisions' }], variant: 'cards' }, ctx({ width: w, height: h }))

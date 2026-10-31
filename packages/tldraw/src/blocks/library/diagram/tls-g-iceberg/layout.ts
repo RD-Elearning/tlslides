@@ -1,9 +1,13 @@
 /**
  * Pure layout for tls.g.iceberg — a tip above a waterline, a larger mass below it.
  *
- * The waterline sits a third or half way down. The tip is a small irregular polygon on the line;
- * the hidden mass is a wider polygon under it, in a water band. The tip's items are listed to the
- * right of it, the hidden items inside the mass (two columns once there are more than three).
+ * The waterline sits a third or half way down. The tip is a small irregular berg on the line; the
+ * hidden mass is a wider one under it, in a water band. The tip's items are listed to the right of
+ * it, the hidden items inside the mass (two columns once there are more than three).
+ *
+ * spro creative CR7a: redrawn — the outlines turn their corners in curves (no crude polygon), each
+ * berg has a lit face on its left (a lighter facet, as ice is drawn), and the labels step their type
+ * up with the box (`promoteToFit`): a whole-slide iceberg no longer reads in footnote type.
  *
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
@@ -11,14 +15,44 @@
 import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { IcebergProps } from './schema'
 import { ABOVE_MAX, BELOW_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, pathNode, placeLines, root, solidRect, str, style, tintOf } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, dot, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, pathNode, placeLines, promoteToFit, root, solidRect, str, style, tintOf } from '../_kit'
 import { withRealWidths } from '../../data/_chart/kit'
 
 const f = (v: number) => String(Math.round(v * 100) / 100)
 const poly = (pts: Array<[number, number]>) => `M${pts.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`
+/** `pts` pulled `d` units toward `c`: a facet kept inside its rounded outline (corners included). */
+const inset = (pts: Array<[number, number]>, c: [number, number], d: number): Array<[number, number]> =>
+  pts.map(([x, y]) => {
+    const len = Math.hypot(c[0] - x, c[1] - y) || 1
+    const k = Math.min(d, len / 2) / len
+    return [x + (c[0] - x) * k, y + (c[1] - y) * k]
+  })
+/** A closed outline through `pts` whose corners turn in curves of up to `r` units (half an edge at most). */
+function rounded(pts: Array<[number, number]>, r: number): string {
+  const n = pts.length
+  const at = (i: number) => pts[(i + n) % n]
+  const toward = (a: [number, number], b: [number, number], d: number): [number, number] => {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+    const k = Math.min(d, len / 2) / len
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
+  }
+  let d = ''
+  for (let i = 0; i < n; i++) {
+    const p = at(i)
+    const a = toward(p, at(i - 1), r)
+    const b = toward(p, at(i + 1), r)
+    d += `${i === 0 ? 'M' : 'L'}${f(a[0])} ${f(a[1])}Q${f(p[0])} ${f(p[1])} ${f(b[0])} ${f(b[1])}`
+  }
+  return d + 'Z'
+}
 const list = (v: unknown, max: number) => asArr(v).map(str).filter((s) => s.trim() !== '').slice(0, max)
 
-export function layout(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
+/** CR7a: the labels step their type up while the larger text still fits. */
+export function layout(props: IcebergProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
   // Browser-true single-line widths: axis labels and captions are anchored by their width (RV06).
   const ctx = withRealWidths(ctx0)
   const W = Math.max(1, ctx.box.width)
@@ -47,7 +81,7 @@ export function layout(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
   const h = H - wl
   const tw = Math.min(W * 0.3, 360)
   const bw = Math.min(W * 0.78, 900)
-  const belowShape = poly([
+  const massPts: Array<[number, number]> = [
     [cx - tw / 2, wl],
     [cx + tw / 2, wl],
     [cx + bw * 0.5, wl + h * 0.26],
@@ -56,8 +90,14 @@ export function layout(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
     [cx - bw * 0.2, H - h * 0.08 - 4],
     [cx - bw * 0.46, wl + h * 0.66],
     [cx - bw * 0.5, wl + h * 0.3],
-  ])
-  const below: LayoutNode[] = [pathNode(ctx, belowShape, 'below[shape]', { fill: tintOf(c.surface, c.accent, 0.26), stroke: c.accent, strokeWidth: 2 })]
+  ]
+  const r = Math.max(6, Math.min(28, Math.min(W, H) * 0.04))
+  // the lit face: the left flank down to a ridge a little left of the centre line
+  const massFace = poly(inset([massPts[0], [cx - bw * 0.04, wl + h * 0.42], [cx - bw * 0.12, H - h * 0.14], massPts[5], massPts[6], massPts[7]], [cx - bw * 0.2, wl + h * 0.45], r + 4))
+  const below: LayoutNode[] = [
+    pathNode(ctx, rounded(massPts, r), 'below[shape]', { fill: tintOf(c.surface, c.accent, 0.26), stroke: c.accent, strokeWidth: 2 }),
+    pathNode(ctx, massFace, 'below[face]', { fill: tintOf(c.surface, c.accent, 0.12) }),
+  ]
   const cols = bItems.length > 3 ? 2 : 1
   const rows = Math.max(1, Math.ceil(bItems.length / cols))
   const textW = Math.max(20, bw * (cols === 2 ? 0.62 : 0.42))
@@ -79,15 +119,19 @@ export function layout(props: IcebergProps, ctx0: LayoutContext): LayoutNode {
   nodes.push(group('below', below))
 
   // tip
-  const tip = poly([
+  const tipPts: Array<[number, number]> = [
     [cx - tw / 2, wl],
     [cx - tw * 0.22, wl * 0.45],
     [cx - tw * 0.06, wl * 0.1],
     [cx + tw * 0.1, wl * 0.3],
     [cx + tw * 0.28, wl * 0.5],
     [cx + tw / 2, wl],
-  ])
-  const above: LayoutNode[] = [pathNode(ctx, tip, 'above[shape]', { fill: tintOf(c.surface, c.accent, 0.1), stroke: c.accent, strokeWidth: 2 })]
+  ]
+  const tipFace = poly(inset([tipPts[0], tipPts[1], tipPts[2], [cx - tw * 0.02, wl * 0.55], [cx - tw * 0.08, wl]], [cx - tw * 0.15, wl * 0.6], r * 0.6 + 3))
+  const above: LayoutNode[] = [
+    pathNode(ctx, rounded(tipPts, r * 0.6), 'above[shape]', { fill: tintOf(c.surface, c.accent, 0.1), stroke: c.accent, strokeWidth: 2 }),
+    pathNode(ctx, tipFace, 'above[face]', { fill: tintOf(c.surface, c.accent, 0.03) }),
+  ]
   const ax = cx + tw / 2 + 28
   const aw = Math.max(20, W - ax)
   const avail = wl - 8

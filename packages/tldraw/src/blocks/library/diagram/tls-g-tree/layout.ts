@@ -9,12 +9,12 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
+import type { CapacityReport, LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
 import { tidyTree, MAX_TREE_LEVELS } from '../../../layout/diagram'
 import type { TreeNode } from '../../../layout/diagram'
 import type { TreeProps } from './schema'
 import { TREE_MAX_CHILDREN, TREE_MAX_NODES } from './schema'
-import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, lineH, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
+import { TEXT_SLACK, capacityOf, chartColors, clamp, emptyState, enumOf, lineH, linesNeeded, showsWhole, tierStart, mutedStyle, objs, onColor, placeLines, root, str, strokePath, style, tintOf, polyline, linesHeight } from '../_kit'
 import { slot } from '../_motion'
 
 interface TNode {
@@ -61,6 +61,21 @@ function measure(raw: unknown): { nodes: number; maxKids: number; levels: number
   return { nodes, maxKids, levels }
 }
 
+/**
+ * Label tiers, largest first (2026-10-24 review: a three-leaf tree alone beside its title drew
+ * caption labels in 280-wide boxes at the ends of a slide-high tree). `fitTier` takes the largest
+ * whose labels show whole (two lines, a one-line sub) in boxes the level count and the slots allow;
+ * `cross` caps a top-down node's width (`parent` a parent's), `main` a left-to-right node's.
+ */
+type Tier = { label: TypeToken; sub: TypeToken; cross: number; parent: number; main: number }
+const TIERS: readonly Tier[] = [
+  // a small tree alone in a half slide (four nodes in 1142×888) still floated at subheading
+  { label: 'heading', sub: 'lead', cross: 720, parent: 820, main: 640 },
+  { label: 'subheading', sub: 'body', cross: 560, parent: 640, main: 520 },
+  { label: 'lead', sub: 'body', cross: 460, parent: 540, main: 440 },
+  { label: 'body', sub: 'caption', cross: 380, parent: 440, main: 360 },
+]
+
 const initials = (label: string) =>
   label
     .split(/\s+/)
@@ -70,6 +85,17 @@ const initials = (label: string) =>
     .join('')
 
 export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
+  // the largest tier whose real layout shows every label whole in the box (the estimate the
+  // layout report and the browser measure with set an edge node's label a few units wider)
+  for (let i = tierStart(ctx, TIERS.length); i < TIERS.length; i++) {
+    const node = layoutTier(props, ctx, i)
+    if (node) return node
+  }
+  return layoutTier(props, ctx, -1) as LayoutNode
+}
+
+/** The tree at tier `tierAt` (-1 = the compact sizes, always drawn); `null` when that tier does not fit. */
+function layoutTier(props: TreeProps, ctx: LayoutContext, tierAt: number): LayoutNode | null {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const tree = readTree(props.root)
@@ -83,8 +109,6 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   // enhance L3: the visit order, as each node's number (the first unvisited node with the label)
   const orderOf = new Map<string, number>()
   const compact = props.compact === true
-  const subS = mutedStyle(ctx, 'footnote')
-  const lhS = lineH(subS)
 
   // Flatten for the tidy tree.
   const byId = new Map<string, TNode>()
@@ -101,17 +125,55 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   const mainExtent = horizontal ? W : H
   const crossExtent = horizontal ? H : W
   const pitch = crossExtent / Math.max(1, leaves)
-  // Dense left-to-right trees drop to the smaller label size so one line always fits a slot.
-  const bigS = style(ctx, 'caption', c.text)
-  const labelS = (horizontal && pitch < lineH(bigS) + 10) || (!horizontal && pitch < 150) ? style(ctx, 'footnote', c.text) : bigS
-  const lhL = lineH(labelS)
   const gapCross = clamp(pitch * 0.14, 2, 26)
   const hasSub = !compact && [...byId.values()].some((n) => n.sub)
+  const gapFactor = 0.9 // gap between levels as a fraction of the node's main extent
+  const all = [...byId.values()]
+  /** A tier's label and sub styles and node size, `null` when a label or sub would be cut. */
+  const sized = (t: Tier): { labelS: ResolvedTextStyle; subS: ResolvedTextStyle; cross: number; main: number; parent: number } | null => {
+    const labelS = style(ctx, t.label, c.text)
+    const subS = mutedStyle(ctx, t.sub)
+    const k = compact ? 0.75 : 1
+    const fitsIn = (w: number) => {
+      let lines = 1
+      for (const n of all) {
+        const l = linesNeeded(ctx, n.label, labelS, w)
+        if (l > 2 || (hasSub && n.sub && linesNeeded(ctx, n.sub, subS, w) > 1)) return 0
+        lines = Math.max(lines, l)
+      }
+      return lines
+    }
+    if (!horizontal) {
+      const cross = Math.min(pitch - gapCross, t.cross * k)
+      const lines = fitsIn(cross - 20)
+      if (!lines) return null
+      const want = 24 + lineH(labelS) * lines + (hasSub ? lineH(subS) + 2 : 0)
+      if (want > mainExtent / (levels + gapFactor * (levels - 1))) return null
+      return { labelS, subS, cross, main: want, parent: t.parent * k }
+    }
+    const main = Math.min(t.main * k, mainExtent / (levels + 0.7 * (levels - 1)))
+    const lines = fitsIn(main - 24)
+    if (!lines) return null
+    const want = 24 + lineH(labelS) * lines + (hasSub ? lineH(subS) + 2 : 0)
+    if (want > pitch - gapCross) return null
+    return { labelS, subS, cross: want, main, parent: t.parent * k }
+  }
+  if (tierAt >= 0 && (circle || !sized(TIERS[tierAt]))) return null
+  const tier = tierAt >= 0 ? sized(TIERS[tierAt]) : null
+  // The compact sizes the block always had (and round nodes): caption labels, footnote subs.
+  // Dense left-to-right trees drop to the smaller label size so one line always fits a slot.
+  const bigS = style(ctx, 'caption', c.text)
+  const labelS = tier ? tier.labelS : (horizontal && pitch < lineH(bigS) + 10) || (!horizontal && pitch < 150) ? style(ctx, 'footnote', c.text) : bigS
+  const subS = tier ? tier.subS : mutedStyle(ctx, 'footnote')
+  const lhS = lineH(subS)
+  const lhL = lineH(labelS)
   const wantH = (compact ? 8 : 20) + lhL * (compact ? 1 : 2) + (hasSub ? lhS : 0)
   let nodeCross: number
   let nodeMain: number
-  const gapFactor = 0.9 // gap between levels as a fraction of the node's main extent
-  if (!horizontal) {
+  if (tier) {
+    nodeCross = tier.cross
+    nodeMain = tier.main
+  } else if (!horizontal) {
     nodeCross = Math.min(pitch - gapCross, compact ? 200 : 280)
     nodeMain = Math.min(wantH, mainExtent / (levels + gapFactor * (levels - 1)))
     nodeMain = Math.max(nodeMain, Math.min(lhL + 6, mainExtent / levels))
@@ -142,7 +204,7 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
       const left = Math.min(...ls.map((l) => l.x))
       const right = Math.max(...ls.map((l) => l.x + l.width))
       const centre = b.x + b.width / 2
-      const w = Math.min(compact ? 220 : 300, 2 * Math.min(centre - left, right - centre))
+      const w = Math.min(tier ? tier.parent : compact ? 220 : 300, 2 * Math.min(centre - left, right - centre))
       if (w > b.width) boxes[n.id] = { ...b, x: centre - w / 2, width: w }
     }
   }
@@ -293,10 +355,11 @@ export function layout(props: TreeProps, ctx: LayoutContext): LayoutNode {
   const L = levels
   const box = { width: W, height: H }
   const at = (part: string, d: number) => nodes.filter((n) => n.part?.startsWith(part) && depthOf.get(n) === d)
-  return root(ctx, [
+  const out = root(ctx, [
     ...Array.from({ length: L }, (_, d) => slot(`links[${d}]`, box, at('edge[', d))),
     ...Array.from({ length: L }, (_, d) => slot(`level[${d}]`, box, at('item[', d))),
   ])
+  return tierAt >= 0 && !showsWhole(ctx, out) ? null : out
 }
 
 export function capacity(props: TreeProps, box: Size, ctx: LayoutContext): CapacityReport {

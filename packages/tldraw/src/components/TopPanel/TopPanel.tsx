@@ -22,6 +22,7 @@ interface TopPanelProps {
   readOnly: boolean
   showPages: boolean
   showMenu: boolean
+  showPresent?: boolean
   showStyles: boolean
   showZoom: boolean
   showMultiplayerMenu: boolean
@@ -32,6 +33,7 @@ export function TopPanel({
   readOnly,
   showPages,
   showMenu,
+  showPresent = true,
   showStyles,
   showZoom,
   showSponsorLink,
@@ -70,11 +72,13 @@ export function TopPanel({
       <StyledSpacer />
       {(showStyles || showZoom) && (
         <Panel side="right">
-          <Tooltip label="Start presentation mode" kbd="#⇧P">
-            <ToolButton variant="text" onClick={app.togglePresentationMode}>
-              <PlayIcon /> Present
-            </ToolButton>
-          </Tooltip>
+          {showPresent && (
+            <Tooltip label="Start presentation mode" kbd="#⇧P">
+              <ToolButton variant="text" onClick={app.togglePresentationMode}>
+                <PlayIcon /> Present
+              </ToolButton>
+            </Tooltip>
+          )}
           {showPages && <PageMenu />}
           {showPages && !readOnly && <BackgroundMenu />}
           {showPages && !readOnly && <ThemeMenu />}

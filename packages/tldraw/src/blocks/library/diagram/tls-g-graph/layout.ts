@@ -15,7 +15,7 @@
 import type { LayoutContext, LayoutNode, ResolvedTextStyle } from '../../../types'
 import type { GraphNode, GraphProps } from './schema'
 import { GRAPH_MAX_LEVELS, GRAPH_MAX_NODES } from './schema'
-import { arrowHead, chartColors, clamp, emptyState, objs, onColor, placeLines, root, str, strokePath, style, tintOf } from '../_kit'
+import { arrowHead, chartColors, clamp, emptyState, objs, onColor, placeLines, root, str, strokePath, style, tintOf, promoteToFit } from '../_kit'
 
 interface Placed {
   id: string
@@ -90,7 +90,12 @@ function tokenAtMost(ctx: LayoutContext, px: number): ResolvedTextStyle {
 
 const ids = (v: unknown) => (Array.isArray(v) ? v.map(str).filter(Boolean) : [])
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: GraphProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: GraphProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const nodes = readNodes(props.nodes, (props as Record<string, unknown>).edges)

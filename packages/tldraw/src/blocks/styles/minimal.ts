@@ -79,7 +79,7 @@ export const MINIMAL_STYLE: DeckStyle = {
     'tls.c.closing': { variant: ['big-type'] },
   },
   prefer: [],
-  avoid: ['tls.m.decoration', 'tls.m.pattern', 'tls.c.kinetic-title'],
-  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'plain', accent: 'Black and grey; the accent on one word at most.' },
+  avoid: ['tls.m.pattern', 'tls.c.kinetic-title'],
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading', 'watermark'], quiet: ['tls.m.decoration:icon'], icons: 'plain', accent: 'Black and grey; the accent on one word at most.' },
   rules: ['One idea per slide.', 'White space over decoration.', 'Grey and black only; accent for one word at most.'],
 }

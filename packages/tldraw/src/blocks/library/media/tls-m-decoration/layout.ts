@@ -15,6 +15,8 @@ import { enumOf, side, tintOf } from '../_kit'
 import { roughOutline, roughPaths } from './rough'
 import { SOLID_SHAPES, solidNode, type SolidShape } from './solids'
 import { SUBJECT_SHAPES, subjectNode, type SubjectShape } from './subjects'
+import { FALLBACK_ICON, getIcon, iconStroke } from '../../../icons'
+import { scaleIconPath } from '../../../icons/scale-path'
 
 /** Deterministic PRNG: the same seed gives the same sequence. */
 export function mulberry32(seed: number): () => number {
@@ -275,6 +277,37 @@ function orbNode(W: number, H: number, color: string, alpha: number | undefined)
 }
 
 const OPACITY = { soft: 0.2, medium: 0.4, strong: 0.7 } as const
+/** Icon motif alpha: an inline-size mark keeps at least 0.35 so its thin outline reads. */
+const ICON_OPACITY = { soft: 0.35, medium: 0.4, strong: 0.7 } as const
+/**
+ * Review 2026-10-24: a watermark-size icon (short side of the glyph ≥ WATERMARK_SIDE) sits behind
+ * text, and at 0.35–0.7 its outline read as strokes over the words ("Q&A" crossed by a book). It is
+ * drawn as a faint watermark instead, whatever opacity the model asked for.
+ */
+const WATERMARK_SIDE = 300
+const WATERMARK_OPACITY = { soft: 0.1, medium: 0.16, strong: 0.22 } as const
+
+/**
+ * vivid V3 — the `icon` motif: a topic icon drawn large (a watermark, a mark behind a title or
+ * beside a visual). The 24-unit outline is scaled to 84 % of the box's short side, centred, stroked
+ * lighter than an inline icon (a big glyph at 1.5 units per 24 reads as a logo, not a motif). An
+ * unknown name draws the fallback glyph (lint reports it). The `shape` part loops as one piece.
+ */
+function iconMotif(name: unknown, W: number, H: number, color: string, alpha: number | undefined): LayoutNode {
+  const def = (typeof name === 'string' ? getIcon(name) : undefined) ?? FALLBACK_ICON
+  const S = Math.max(1, Math.min(W, H) * 0.84)
+  const k = S / 24
+  const node: LayoutNode = {
+    k: 'icon',
+    part: 'shape',
+    box: { x: (W - S) / 2, y: (H - S) / 2, width: S, height: S },
+    icon: scaleIconPath(def.path, k),
+    fill: color,
+    ...(typeof name === 'string' && def !== FALLBACK_ICON ? { name } : {}),
+    ...iconStroke(def, Math.max(1.5, 1.15 * k)),
+  }
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
+}
 
 export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
   const W = side(ctx.box.width)
@@ -301,6 +334,8 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
     d = arcPath(c[0], c[1], Math.max(1, R - stroke / 2 - R * 0.04), 0, 360) + 'Z'
   } else if (shape === 'wave') d = wavePath(W, H, quarter, seed)
   else if (shape === 'corner') d = cornerPath(W, H, quarter)
+  else if (shape === 'icon')
+    return iconMotif(props.icon, W, H, color, tone === 'alt' ? undefined : (Math.min(W, H) * 0.84 >= WATERMARK_SIDE ? WATERMARK_OPACITY : ICON_OPACITY)[op])
   else if (shape === 'orb') return orbNode(W, H, color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
   // enhance S4: isometric solids (lit, base, shaded faces + an ink outline), as solid as an orb
   else if ((SOLID_SHAPES as readonly string[]).includes(shape)) return solidNode(shape as SolidShape, W, H, color, ctx.resolveColor('text').color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))

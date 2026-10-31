@@ -25,6 +25,7 @@ import type {
 } from './types'
 import type { BlockDefinition } from './types'
 import type { HostRegistry, HostRenderer, HostRenderContext } from './host-registry'
+import type { ActivityRuntime } from './types'
 import { HostRegistryContext } from '../hooks/useHostRegistry'
 import { useBlockRegistry } from '../hooks/useBlockRegistry'
 import { posterTextSignature } from './html-block'
@@ -44,6 +45,8 @@ export interface HostLayoutContextValue {
   surface: SurfaceContext
   props: Record<string, unknown>
   headless: boolean
+  /** L03: set by DeckViewer only — builds the runtime of one activity block (by its host `part`/id). */
+  activity?: (blockKey: string) => ActivityRuntime
 }
 
 export const HostLayoutContext = React.createContext<HostLayoutContextValue | undefined>(undefined)
@@ -259,10 +262,16 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       // If animate is defined and a BlockMotionRuntime is provided, call it.
       // When blockMotion is absent (e.g. initial load in editor), animate is skipped —
       // the block behaves as any other shape (rule 5: motion is off by default).
+      const disposers: Array<() => void> = []
       if (def.html!.animate && hctx.blockMotion) {
-        return def.html!.animate(root, hctx.blockMotion) ?? undefined
+        const d = def.html!.animate(root, hctx.blockMotion)
+        if (d) disposers.push(d)
       }
-      return undefined
+      // L03: wire an activity's controls, in the viewer only.
+      if (hctx.interactive && hctx.activity && def.html!.interact) {
+        disposers.push(wireActivity(root, def, hctx))
+      }
+      return disposers.length ? () => disposers.splice(0).forEach((d) => d()) : undefined
     },
 
     update(root: HTMLElement, hctx: HostRenderContext): void {
@@ -280,8 +289,27 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
+      // L03: the DOM was replaced, so the activity's listeners are gone: wire it again.
+      if (hctx.interactive && hctx.activity && def.html!.interact) {
+        ACTIVITY_DISPOSERS.get(root)?.()
+        wireActivity(root, def, hctx)
+      }
     },
   }
+}
+
+/** L03: the disposer of the activity wired into a host root (one per root). */
+const ACTIVITY_DISPOSERS = new WeakMap<HTMLElement, () => void>()
+
+function wireActivity(root: HTMLElement, def: BlockDefinition, hctx: HostRenderContext): () => void {
+  ACTIVITY_DISPOSERS.get(root)?.()
+  const dispose = def.html!.interact!(root, hctx.activity!, hctx.props)
+  const once = () => {
+    ACTIVITY_DISPOSERS.delete(root)
+    dispose()
+  }
+  ACTIVITY_DISPOSERS.set(root, once)
+  return once
 }
 
 /**
@@ -354,6 +382,7 @@ const HostMount = React.memo(function HostMount({
   const surface = layoutCtx?.surface
   const hostProps = nodeProps ?? layoutCtx?.props ?? {}
   const headless = layoutCtx?.headless ?? false
+  const activityFactory = layoutCtx?.activity
 
   // H1: Merge nodeVars after hostCssVarStyle so per-instance overrides win.
   // React owns these via inline style, so updates/removal are automatic.
@@ -368,7 +397,8 @@ const HostMount = React.memo(function HostMount({
     props: hostProps,
     headless,
     ...(poster ? { poster } : {}),
-  }), [box, tokens, surface, hostProps, headless, poster])
+    ...(activityFactory ? { interactive: true, activity: activityFactory(part ?? render) } : {}),
+  }), [box, tokens, surface, hostProps, headless, poster, activityFactory, part, render])
 
   useIsomorphicLayoutEffect(() => {
     const root = rootRef.current

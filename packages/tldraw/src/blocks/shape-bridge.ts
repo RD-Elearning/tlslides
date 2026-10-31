@@ -2,7 +2,7 @@ import { Utils } from '@tlslides/core'
 import type { ComponentShape, ShapeAnimation } from '~types'
 import { TDShapeType as TDShapeTypeEnum, AnimationEffect, AnimationTrigger } from '~types'
 import { defaultStyle } from '~state/shapes/shared'
-import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, EaseToken, MotionRecipe, Box } from './types'
+import type { BlockAnchor, BlockLayer, BlockSpec, BlockStyleSpec, BlockMotionSpec, LookAxes, EaseToken, MotionRecipe, Box } from './types'
 import { deriveShapeAnimation, resolveBlockMotion } from './motion/resolve-motion'
 
 /**
@@ -43,6 +43,11 @@ interface BlockMetadata {
   anchorTo?: string
   /** CMP1 — `BlockSpec.bleed` (a backdrop that may leave the frame). */
   bleed?: boolean
+  /** CR7b — `BlockSpec.look` (authored). */
+  look?: LookAxes
+  /** CR7b — the deck's and the slide's look merged, stamped by `deckSpecToDocument` so every
+   *  renderer draws the block without its page. Never authored, never returned by `shapeToBlock`. */
+  lookBase?: LookAxes
   /** CMP1 — set by `compileSlide` on a block whose region has a layered image backdrop: it sits on
    *  a photo, so its context surface is an image surface (`overImage: true`). Never authored,
    *  never returned by `shapeToBlock`. */
@@ -52,11 +57,20 @@ interface BlockMetadata {
   styleMotion?: BlockMotionSpec
   /** P7 — the style that produced `styleMotion` (drives `BlockMotionRuntime.style`). */
   motionStyle?: 'subtle' | 'expressive'
+  /** V2 (vivid PLAN.md) — the motion style of the slide this block sits on, stamped by
+   *  `compileSlide` only on a block that can loop (`motion.ambient` on its definition or spec) and
+   *  only when the slide moves (`subtle` / `expressive`). The viewer's ambient loops read it; never
+   *  authored, never returned by `shapeToBlock`. */
+  ambientStyle?: 'subtle' | 'expressive'
   /** LO8 — where `compileSlide` placed a layered (backdrop/overlay) block: its box, and whether
    *  it came from a region (anchored) or from `free[]`. Never authored, never returned by
    *  `shapeToBlock`: the decompiler compares it with the shape's box to tell "the user moved it"
    *  (keep the move, `free[]`) from "untouched" (re-anchor). */
   placed?: ShapePlacement
+  /** spro creative R3e — the region of a block `compileSlide` placed as part of a `regionStack`
+   *  group (it may sit inside the group's other region). Never authored; the decompiler reads it
+   *  to return the block to its own region. */
+  stackRegion?: string
   /** AC1 — the deck style's knob defaults `compileSlide` filled into the top-level props (keys the
    *  block did not author). Never authored: `shapeToBlock` keeps them (renderers need the look),
    *  `shapeToAuthoredBlock` (the decompiler) drops a filled key whose value is still the default,
@@ -66,6 +80,8 @@ interface BlockMetadata {
    *  content into its page (`growText`). Never authored: `shapeToBlock` keeps the scale (renderers
    *  need it), `shapeToAuthoredBlock` drops it while it is still this value. */
   grown?: number
+  /** The `style.typeStep` `compileSlide` gave the block (`harmonizeTypes`); dropped like `grown`. */
+  stepped?: number
 }
 
 /** LO8 — see `BlockMetadata.placed`. */
@@ -140,6 +156,7 @@ export function blockToShape(
   if (spec.anchor !== undefined) metadata.anchor = spec.anchor
   if (spec.anchorTo !== undefined) metadata.anchorTo = spec.anchorTo
   if (spec.bleed !== undefined) metadata.bleed = spec.bleed
+  if (spec.look !== undefined) metadata.look = JSON.parse(JSON.stringify(spec.look))
 
   // Store metadata under the reserved key
   clonedProps[BLOCK_PROP_KEY] = metadata
@@ -291,6 +308,7 @@ export function shapeToBlock(shape: unknown): BlockSpec | undefined {
   if (meta.anchor !== undefined) spec.anchor = meta.anchor
   if (meta.anchorTo !== undefined) spec.anchorTo = meta.anchorTo
   if (meta.bleed !== undefined) spec.bleed = meta.bleed
+  if (meta.look !== undefined) spec.look = meta.look
   if (shapeObj.slot !== undefined) {
     spec.slot = shapeObj.slot as string
   }
@@ -307,6 +325,12 @@ export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
   const grown = blockMetaOf(shape)?.grown
   if (spec?.style && typeof grown === 'number' && spec.style.textScale === grown) {
     const { textScale: _grown, ...rest } = spec.style
+    if (Object.keys(rest).length) spec.style = rest
+    else delete spec.style
+  }
+  const stepped = blockMetaOf(shape)?.stepped
+  if (spec?.style && typeof stepped === 'number' && spec.style.typeStep === stepped) {
+    const { typeStep: _stepped, ...rest } = spec.style
     if (Object.keys(rest).length) spec.style = rest
     else delete spec.style
   }
@@ -338,6 +362,11 @@ export function shapeToRevealBlock(shape: unknown): BlockSpec | undefined {
  */
 export function revealStyleOf(shape: unknown): 'subtle' | 'expressive' {
   return blockMetaOf(shape)?.motionStyle === 'subtle' ? 'subtle' : 'expressive'
+}
+
+/** V2 — the motion style a block's ambient loop plays in (`compileSlide` stamps it), else none. */
+export function ambientStyleOf(shape: unknown): 'subtle' | 'expressive' | undefined {
+  return blockMetaOf(shape)?.ambientStyle
 }
 
 function blockMetaOf(shape: unknown): BlockMetadata | undefined {

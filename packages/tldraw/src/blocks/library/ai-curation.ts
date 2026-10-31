@@ -17,12 +17,19 @@
  * - `looks` names are `option` slots of kind `enum` or `boolean` in the block's schema.
  */
 
-import type { BlockDefinition } from '../types'
+import type { BlockDefinition, BlockFits, VariantPreset } from '../types'
+import { BLOCK_FITS, EDITOR_ONLY } from './block-fits'
+import { BLOCK_VARIANTS } from './block-variants'
+import { movesOfBlock } from '../moves'
 
 export interface AiCuration {
   aiTier: 1 | 2
   absorbs?: string[]
   looks?: string[]
+  /** spro creative CR2 (rows in `block-fits.ts` and `block-variants.ts`). */
+  fits?: BlockFits
+  variants?: VariantPreset[]
+  editorOnly?: boolean
 }
 
 const t1 = (looks: string[] = [], absorbs: string[] = []): AiCuration => ({
@@ -55,6 +62,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
+  'tls.m.ornament': t2(['shape', 'variant', 'tone', 'opacity']),
+  // vivid V3: topic icons scattered as the slide's decoration (reached through the style concept)
+  'tls.m.icon-cluster': t2(['tone', 'opacity', 'backing']),
   'tls.x.rule': t2(['axis', 'weight', 'tone', 'length', 'dash']),
 
   // ── heading ──
@@ -87,6 +97,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.t.hero-number': t2(['format', 'emphasis']),
   'tls.d.progress-bar': t2(['showValue', 'thickness', 'tone', 'labelPos', 'track', 'format']),
   'tls.d.progress-ring': t2(['thickness', 'cap', 'tone', 'format']),
+  // vivid V4: a share of a group as a pictogram (number shape)
+  'tls.d.icon-array': t2(['figure', 'tone']),
   'tls.d.stat-compare': t2(['format', 'delta', 'polarity', 'connector']),
   'tls.d.gauge': t2(['needle', 'showTicks', 'format']),
   'tls.d.trend-badge': t2(['format', 'polarity', 'size']),
@@ -108,6 +120,16 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── learning ──
   'tls.t.qa': t2(['marker']),
   'tls.c.quiz': t2(['layout', 'reveal', 'showExplanation']),
+  // learning L03: interactive activities (viewer only; a static poster everywhere else)
+  'tls.a.choice': t1(['layout', 'submit', 'multiple']),
+  'tls.a.true-false': t1(['retry', 'showAnswer']),
+  'tls.a.flip-cards': t1([]),
+  'tls.a.reveal': t1([]),
+  'tls.a.fill-blank': t1(['retry', 'showAnswer']),
+  'tls.a.match': t2(['retry', 'showAnswer']),
+  'tls.a.order': t2(['retry', 'showAnswer']),
+  'tls.a.sort': t2(['retry', 'showAnswer']),
+  'tls.a.timer': t2([]),
   // spro compose PLAN.md B3: teaching blocks (tier 2: reached through the compose kit's families)
   'tls.t.formula': t2(['size', 'align']),
   'tls.t.code': t2(['lineNumbers']),
@@ -129,6 +151,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.slope': t2(['highlight', 'format']),
   'tls.d.bubble': t2(['sizeLegend', 'gridlines', 'format']),
   'tls.d.heatmap': t2(['ramp', 'showValues', 'format']),
+  'tls.d.lollipop': t2(['labels', 'sorted', 'format']),
+  'tls.d.dot-plot': t2(['labels', 'sorted', 'format']),
+  'tls.d.treemap': t2(['values', 'format']),
+  'tls.d.annotated-line': t2(['variant', 'format']),
   'tls.c.chart-insight': t1(['side', 'ratio', 'insightSize'], ['tls.c.dashboard']),
 
   // ── table ──
@@ -144,6 +170,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),
   'tls.g.before-after': t1(['arrow', 'emphasis'], ['tls.c.problem-solution', 'tls.m.image-compare', 'tls.g.iceberg']),
   'tls.g.iceberg': t2(['waterline']),
+  // vivid V4: misconceptions set right (contrast / question shapes)
+  'tls.g.myth-fact': t2(),
   'tls.c.comparison': t1(['style'], ['tls.c.case-study']),
   'tls.c.case-study': t2(['layout', 'emphasis', 'showMetric', 'showClient']),
   'tls.c.problem-solution': t2(['showIcons', 'style']),
@@ -164,6 +192,9 @@ export const AI_CURATION: Record<string, AiCuration> = {
 
   // ── hierarchy ──
   'tls.g.tree': t1(['direction', 'nodeStyle', 'compact'], ['tls.g.hub-spoke', 'tls.g.mindmap']),
+  // vivid V4: levels that rise (sequence / hierarchy shapes)
+  'tls.g.staircase': t2(['numbering', 'fill']),
+  'tls.g.target': t2(['fill', 'labels']),
   'tls.g.pyramid': t1(['direction', 'notes', 'fill'], ['tls.g.layers', 'tls.g.breakdown']),
   'tls.g.layers': t2(['style', 'notes']),
   'tls.g.breakdown': t2(['direction', 'showShare']),
@@ -172,6 +203,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── relationship ──
   'tls.g.venn': t2(['opacity', 'labels']),
   'tls.g.hub-spoke': t2(['layout', 'connector']),
+  // vivid V4: a centre with satellites (cycle / terms / hierarchy shapes)
+  'tls.g.orbit': t2(['spokes']),
   'tls.g.bracket': t2(['side', 'style']),
 
   // ── cover ──
@@ -218,6 +251,45 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.logo': t2(['maxHeight', 'align', 'plate']),
   'tls.m.logo-wall': t1(['cols', 'plates', 'dividers'], ['tls.m.logo']),
 
+  // ── spro creative CR8: wave 1 ──
+  'tls.c.one-question': t2(['variant', 'motif']),
+  'tls.c.cta': t2(['variant']),
+  'tls.c.callback': t2(['variant', 'motif']),
+  'tls.c.takeaway-poster': t2(['variant']),
+  'tls.c.poster-cover': t2(['variant', 'motif']),
+  'tls.c.split-cover': t2(['side', 'tone']),
+  'tls.c.hook-cover': t2(['variant']),
+  'tls.c.route-agenda': t2(['variant']),
+  'tls.c.chapter-divider': t2(['variant']),
+  'tls.c.sticky-board': t2(['variant']),
+  'tls.c.question-wall': t2(['variant']),
+  'tls.c.homework': t2(['variant']),
+  'tls.c.flashcards': t2(['variant']),
+  'tls.g.annotated': t2(['variant']),
+  'tls.t.highlight': t2(['variant']),
+  'tls.t.speech-bubble': t2(['variant', 'tail']),
+  // ── spro creative CR9: emoji and illustrations ──
+  'tls.m.emoji': t2(['size', 'backing']),
+  'tls.m.illustration': t2(['accent', 'flip']),
+
+  // ── spro creative CR13: waves 2 and 3 ──
+  'tls.g.decision-tree': t2(['variant', 'outcomes']),
+  'tls.g.fishbone': t2(['variant']),
+  'tls.g.spectrum': t2(['variant']),
+  'tls.g.balance': t2(['variant', 'tilt']),
+  'tls.g.puzzle': t2(['variant']),
+  'tls.g.bridge': t2(['variant']),
+  'tls.c.number-story': t2(['variant']),
+  'tls.c.do-dont': t2(['variant']),
+  'tls.c.storyboard': t2(['variant']),
+  'tls.c.magazine': t2(['variant']),
+  'tls.t.drop-cap': t2(['variant']),
+  'tls.t.pull-quote': t2(['variant']),
+  'tls.c.photo-essay': t2(['variant']),
+  'tls.c.gallery-wall': t2(['variant']),
+  'tls.c.title-card': t2(['variant']),
+  'tls.c.full-bleed-type': t2(['variant']),
+
   // ── chrome (placed by style masters, AC1+) ──
   'tls.x.page-number': t2(['align']),
   'tls.x.footer-text': t2(['align', 'separator', 'showRule']),
@@ -237,6 +309,14 @@ export function applyAiCuration(defs: BlockDefinition[]): BlockDefinition[] {
     def.aiTier = row.aiTier
     if (row.absorbs) def.absorbs = [...row.absorbs]
     if (row.looks) def.looks = [...row.looks]
+    const fits = row.fits ?? BLOCK_FITS[def.type]
+    if (fits) {
+      const moves = movesOfBlock(def.type)
+      def.fits = moves.length ? { ...fits, moves } : fits
+    }
+    const variants = row.variants ?? BLOCK_VARIANTS[def.type]
+    if (variants) def.variants = variants
+    if (row.editorOnly ?? EDITOR_ONLY.has(def.type)) def.editorOnly = true
   }
   return defs
 }

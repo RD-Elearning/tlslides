@@ -16,11 +16,31 @@
  * Pure and DOM-free.
  */
 import { roughOutline, roughPaths } from './library/media/tls-m-decoration/rough'
-import type { LayoutNode, Paint, Stroke, StyleSurface } from './types'
+import { blobPath } from './library/media/tls-m-decoration/layout'
+import type { LayoutNode, Paint, Stroke } from './types'
 import { mixHex } from './color-math'
 import { editorMetrics } from './layout/measure'
+import { paintsAnything, type Treatment } from './look'
+import { emojiForIcon, emojiUrl, getIcon } from './icons'
+import { scaleIconPath } from './icons/scale-path'
 
-export type RenderTreatment = NonNullable<StyleSurface['render']>
+/** The treatment painted: the style's render treatment or a resolved look (CR7b, `look.ts`). */
+export type RenderTreatment = Treatment
+
+/** Hand strokes (CR7b): how each pen sketches. */
+const PENS: Record<string, { roughness: number; width: number; single?: boolean; lighten?: number }> = {
+  rough: { roughness: 1, width: 1 },
+  marker: { roughness: 0.55, width: 1.6 },
+  ink: { roughness: 0.45, width: 1, single: true },
+  chalk: { roughness: 1.6, width: 1.2, lighten: 0.22 },
+}
+const pen = (t: RenderTreatment) => (t.stroke ? PENS[t.stroke] : undefined)
+const penStroke = (s: Stroke, t: RenderTreatment): { color: string; width: number } => {
+  const p = pen(t)!
+  const color = p.lighten && /^#[0-9a-f]{6}$/i.test(s.color) ? mixHex(s.color, '#ffffff', p.lighten) : s.color
+  return { color, width: Math.max(s.width * p.width, s.width + (p.width > 1 ? 1 : 0)) }
+}
+const roughness = (t: RenderTreatment) => (t.stroke === 'rough' ? t.roughness ?? 1 : pen(t)?.roughness ?? 1)
 
 /** FNV-1a of a string, for seeds. */
 function hash(s: string): number {
@@ -49,61 +69,145 @@ export function roundedRectPath(w: number, h: number, r: number): string {
 
 const sketchable = (s: Stroke | undefined): s is Stroke => !!s && s.width > 0 && !(s.dash && s.dash.length)
 
+/** A chamfered rectangle (corner `cut`). */
+function cutRectPath(w: number, h: number, c: number): string {
+  const k = Math.max(0, Math.min(c, w / 3, h / 3))
+  return `M${k} 0 L${w - k} 0 L${w} ${k} L${w} ${h - k} L${w - k} ${h} L${k} ${h} L0 ${h - k} L0 ${k} Z`
+}
+
+/** The corner radius of a look (undefined: the block's own). */
+function cornerRadius(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment): number | number[] | undefined {
+  const { width: W, height: H } = node.box
+  switch (t.corner) {
+    case 'square':
+      return 0
+    case 'round':
+      return Math.max(typeof node.radius === 'number' ? node.radius : 0, Math.min(16, W / 4, H / 4))
+    case 'pill':
+      return H <= 160 || W <= 160 ? Math.min(W, H) / 2 : Math.min(28, W / 4, H / 4)
+    default:
+      return node.radius
+  }
+}
+
+/** The fill of a look: a soft gradient of the block's colour, else the fill as it is. */
+function lookFill(fill: Paint | undefined, t: RenderTreatment): Paint | undefined {
+  const hex = solid(fill)
+  if (t.fill === 'gradient' && hex) {
+    return { type: 'linearGradient', angle: 135, stops: [{ color: mixHex(hex, '#ffffff', 0.18), at: 0 }, { color: mixHex(hex, '#000000', 0.06), at: 1 }] }
+  }
+  return fill
+}
+
+function lookShadow(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment): 0 | 1 | 2 | 'hard' | undefined {
+  switch (t.depth) {
+    case 'flat':
+      return undefined
+    case 'soft':
+      return node.fill ? 1 : node.shadow
+    case 'clay':
+      return node.fill ? 2 : node.shadow
+    case 'hard':
+    case 'extrude':
+      return node.fill || node.stroke ? 'hard' : node.shadow
+    default:
+      return node.shadow
+  }
+}
+
+/** Paper sheets under a panel (depth `stack`): two offset copies in a darker tint, inside the box. */
+function stackSheets(W: number, H: number, fill: Paint | undefined, radius: number | number[] | undefined): LayoutNode[] {
+  const hex = solid(fill)
+  if (!hex || W < 40 || H < 40) return []
+  const o = Math.min(8, W / 20, H / 20)
+  const sheet = (k: number, tint: number): LayoutNode => ({ k: 'rect', part: 'shape', box: { x: k * o, y: k * o, width: W - 2 * o, height: H - 2 * o }, fill: { type: 'solid', color: mixHex(hex, '#000000', tint) }, ...(radius !== undefined ? { radius } : {}) })
+  return [sheet(2, 0.14), sheet(1, 0.07)]
+}
+
 function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment, seed: number): LayoutNode {
   const { width: W, height: H } = node.box
-  const rough = t.stroke === 'rough' && sketchable(node.stroke)
+  if (W < 4 || H < 4) return node
+  const p = pen(t)
+  const sketch = !!p && sketchable(node.stroke)
   const fillHex = solid(node.fill)
-  const hatch = t.fill === 'hachure' && !!fillHex && W >= 24 && H >= 24
-  if ((!rough && !hatch) || W < 4 || H < 4) return node
-  const r = typeof node.radius === 'number' ? node.radius : Array.isArray(node.radius) ? node.radius[0] : 0
-  const d = roundedRectPath(W, H, r)
-  const stroke = rough ? node.stroke! : undefined
-  const sketch = roughPaths(d, W, H, {
-    seed,
-    roughness: t.roughness ?? 1,
-    margin: stroke ? stroke.width / 2 + 1 : 1,
-    ...(stroke ? { stroke: { color: stroke.color, width: stroke.width } } : {}),
-    ...(hatch ? { hachure: { color: mixHex(fillHex!, '#000000', 0.12), gap: 14, weight: 1.5 } } : {}),
-  })
-  // the fill follows the hand-drawn edge (one wobbly outline), so no crisp corner shows past the
-  // ink; a shadowed panel keeps its rect (the shadow is a rect effect)
+  const hatch = (t.fill === 'hachure' || t.fill === 'crosshatch') && !!fillHex && W >= 24 && H >= 24
+  const radius = cornerRadius(node, t)
+  const shadow = lookShadow(node, t)
+  const fill = lookFill(node.fill, t)
+  const shaped = t.corner === 'cut' || t.corner === 'wobbly'
+  const stack = t.depth === 'stack' ? stackSheets(W, H, node.fill, radius) : []
+  if (!sketch && !hatch && !shaped && !stack.length) {
+    if (radius === node.radius && shadow === node.shadow && fill === node.fill) return node
+    const out: Extract<LayoutNode, { k: 'rect' }> = { ...node, ...(fill ? { fill } : {}) }
+    if (radius !== undefined) out.radius = radius
+    if (shadow) out.shadow = shadow
+    else delete out.shadow
+    return out
+  }
+  const r = typeof radius === 'number' ? radius : Array.isArray(radius) ? radius[0] : 0
+  const d = t.corner === 'cut' ? cutRectPath(W, H, Math.min(18, W / 6, H / 6)) : roundedRectPath(W, H, r)
+  const stroke = sketch ? penStroke(node.stroke!, t) : undefined
+  const lines = sketch || hatch
+    ? roughPaths(d, W, H, {
+        seed,
+        roughness: roughness(t),
+        margin: stroke ? stroke.width / 2 + 1 : 1,
+        fit: 'axes',
+        ...(p?.single ? { single: true } : {}),
+        ...(stroke ? { stroke } : {}),
+        ...(hatch ? { hachure: { color: mixHex(fillHex!, '#000000', 0.12), gap: t.fill === 'crosshatch' ? 18 : 14, weight: 1.5, cross: t.fill === 'crosshatch' } } : {}),
+      })
+    : []
+  // the fill follows the hand-drawn (or cut) edge, so no crisp corner shows past the ink; a
+  // shadowed panel keeps its rect (the shadow is a rect effect)
   const local = { x: 0, y: 0, width: W, height: H }
+  const wobbly = (sketch || t.corner === 'wobbly') && !shadow
+  const edge = t.corner === 'cut' ? d : wobbly ? roughOutline(d, W, H, { seed, roughness: (sketch ? roughness(t) : 1) * 0.6, margin: (stroke?.width ?? 1) / 2 + 1, fit: 'axes' }) : undefined
+  const keepStroke = !sketch && node.stroke ? { stroke: node.stroke } : {}
   const base: LayoutNode =
-    rough && node.fill && !node.shadow
-      ? { k: 'path', box: local, d: roughOutline(d, W, H, { seed, roughness: (t.roughness ?? 1) * 0.6, margin: stroke!.width / 2 + 1 }), fill: node.fill, ...(node.part ? { part: node.part } : {}) }
-      : { k: 'rect', box: local, ...(node.fill ? { fill: node.fill } : {}), ...(node.radius !== undefined ? { radius: node.radius } : {}), ...(node.shadow ? { shadow: node.shadow } : {}), ...(node.part ? { part: node.part } : {}) }
-  return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [base, ...sketch] }
+    edge && (fill || (!sketch && node.stroke))
+      ? { k: 'path', box: local, d: edge, ...(fill ? { fill } : {}), ...keepStroke, ...(node.part ? { part: node.part } : {}) }
+      : { k: 'rect', box: local, ...(fill ? { fill } : {}), ...(radius !== undefined ? { radius } : {}), ...(shadow ? { shadow } : {}), ...keepStroke, ...(node.part ? { part: node.part } : {}) }
+  return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [...stack, base, ...lines] }
 }
 
 function treatLine(node: Extract<LayoutNode, { k: 'line' }>, t: RenderTreatment, seed: number): LayoutNode {
-  if (t.stroke !== 'rough' || node.marker || !sketchable(node.stroke)) return node
+  // connector `dotted`: an arrow (a line with a marker) is drawn dotted, crisp
+  if (t.connector === 'dotted' && node.marker && node.stroke && node.stroke.width > 0) {
+    return { ...node, stroke: { ...node.stroke, dash: [node.stroke.width * 1.2, node.stroke.width * 2.6] } }
+  }
+  if (!pen(t) || node.marker || !sketchable(node.stroke)) return node
   const pad = node.stroke.width + 6
   const x0 = Math.min(node.from.x, node.to.x) - pad
   const y0 = Math.min(node.from.y, node.to.y) - pad
   const W = Math.abs(node.to.x - node.from.x) + 2 * pad
   const H = Math.abs(node.to.y - node.from.y) + 2 * pad
   const d = `M${node.from.x - x0} ${node.from.y - y0} L${node.to.x - x0} ${node.to.y - y0}`
-  const sketch = roughPaths(d, W, H, { seed, roughness: t.roughness ?? 1, margin: 1, stroke: { color: node.stroke.color, width: node.stroke.width } })
+  const sketch = roughPaths(d, W, H, { seed, roughness: roughness(t), margin: 1, fit: 'axes', ...(pen(t)!.single ? { single: true } : {}), stroke: penStroke(node.stroke, t) })
   return { k: 'group', box: { x: x0, y: y0, width: W, height: H }, ...(node.part ? { part: node.part } : {}), children: sketch }
 }
 
 function treatPath(node: Extract<LayoutNode, { k: 'path' }>, t: RenderTreatment, seed: number): LayoutNode {
   // only an open outline: a filled path is a shape of its own (an icon-like glyph, a chart area)
-  if (t.stroke !== 'rough' || node.fill || !sketchable(node.stroke)) return node
+  if (!pen(t) || node.fill || !sketchable(node.stroke)) return node
   if (!/^[\sMLCZ\d.,eE+-]+$/.test(node.d)) return node // relative or arc commands: left crisp
   const { width: W, height: H } = node.box
   if (W < 2 && H < 2) return node
-  const sketch = roughPaths(node.d, Math.max(W, 4), Math.max(H, 4), { seed, roughness: t.roughness ?? 1, margin: 0, stroke: { color: node.stroke.color, width: node.stroke.width } })
+  const sketch = roughPaths(node.d, Math.max(W, 4), Math.max(H, 4), { seed, roughness: roughness(t), margin: 0, fit: 'axes', ...(pen(t)!.single ? { single: true } : {}), stroke: penStroke(node.stroke!, t) })
   return { k: 'group', box: { x: node.box.x, y: node.box.y, width: W, height: H }, ...(node.part ? { part: node.part } : {}), children: sketch.map((s) => ({ ...s, box: { x: 0, y: 0, width: W, height: H } })) }
 }
 
-/** A highlighter band behind each bold run of a text node (in the node's box, behind the text). */
-function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment): LayoutNode {
-  if (t.emphasis !== 'highlighter' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
+/** Hand marks on each bold run of a text node (emphasis `highlighter | underline | box | circle |
+ *  color`), in the node's box, behind the text (a ring or a box over it, never covering glyphs). */
+function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment, seed: number): LayoutNode {
+  const e = t.emphasis
+  if (!e || e === 'bold' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
   const color = t.highlight ?? '#FFE066'
+  const ink = node.style.color && /^#[0-9a-f]{6}$/i.test(node.style.color) ? node.style.color : '#333333'
   const fs = (node.style.size ?? 32) * (node.style.scale ?? 1)
   const lh = fs * (node.style.lineHeight ?? 1.3)
-  const bands: LayoutNode[] = []
+  const marks: LayoutNode[] = []
+  let k = 0
   node.lines.forEach((line, i) => {
     let x = 0
     const top = line.top ?? i * lh
@@ -111,13 +215,109 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment)
       const w = editorMetrics(run.text, node.style).width * (node.style.scale ?? 1)
       if (run.bold && run.text.trim()) {
         const pad = fs * 0.12
-        bands.push({ k: 'rect', part: 'highlight', box: { x: x - pad, y: top + lh * 0.5, width: w + 2 * pad, height: lh * 0.42 }, fill: { type: 'solid', color: `${color}B3` }, radius: pad })
+        const s2 = seed + 31 * k++
+        if (e === 'highlighter') {
+          marks.push({ k: 'rect', part: 'highlight', box: { x: x - pad, y: top + lh * 0.5, width: w + 2 * pad, height: lh * 0.42 }, fill: { type: 'solid', color: `${color}B3` }, radius: pad })
+        } else if (e === 'color') {
+          marks.push({ k: 'rect', part: 'highlight', box: { x: x - pad, y: top + lh * 0.12, width: w + 2 * pad, height: lh * 0.8 }, fill: { type: 'solid', color: `${color}55` }, radius: pad * 2 })
+        } else if (e === 'underline') {
+          const W = w + 2 * pad
+          const H = Math.max(6, fs * 0.22)
+          marks.push({ k: 'group', part: 'highlight', box: { x: x - pad, y: top + lh * 0.82, width: W, height: H }, children: roughPaths(`M0 ${H / 2} L${W} ${H / 2}`, W, H, { seed: s2, roughness: 1.2, margin: 0, fit: 'axes', single: true, stroke: { color: ink, width: Math.max(2, fs * 0.07) } }) })
+        } else {
+          const W = w + 4 * pad
+          const H = lh * 0.95
+          const d = e === 'box' ? roundedRectPath(W, H, pad) : `M${W / 2} 0 C${W * 1.05} 0 ${W} ${H} ${W / 2} ${H} C0 ${H} ${-W * 0.05} 0 ${W / 2} ${H * 0.04}`
+          marks.push({ k: 'group', part: 'highlight', box: { x: x - 2 * pad, y: top + (lh - H) / 2, width: W, height: H }, children: roughPaths(d, W, H, { seed: s2, roughness: 1, margin: 1, fit: 'axes', single: true, stroke: { color: ink, width: Math.max(1.5, fs * 0.05) } }) })
+        }
       }
       x += w
     }
   })
-  if (!bands.length) return node
-  return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [...bands, { ...node, box: { ...node.box, x: 0, y: 0 } }] }
+  if (!marks.length) return node
+  return { k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children: [...marks, { ...node, box: { ...node.box, x: 0, y: 0 } }] }
+}
+
+const HEX = /^#[0-9a-f]{6}$/i
+
+/** The icon drawn at `k` × its size, centred in its own box (box-local). */
+function shrunk(node: Extract<LayoutNode, { k: 'icon' }>, k: number, over: Partial<Extract<LayoutNode, { k: 'icon' }>> = {}): LayoutNode {
+  const w = node.box.width
+  const s = w * k
+  return {
+    ...node,
+    box: { x: (w - s) / 2, y: (node.box.height - s) / 2, width: s, height: s },
+    icon: scaleIconPath(node.icon, k),
+    ...(node.strokeWidth ? { strokeWidth: Math.max(1, node.strokeWidth * Math.max(0.75, k)) } : {}),
+    ...over,
+  }
+}
+
+/** creative CR9 — `look.icon`: how an icon glyph is drawn, in its own box (never moved or grown).
+ *  `thin` halves the stroke, `filled` swaps in the filled weight (Phosphor) when the name has one,
+ *  `duotone` a pale disc behind, `hand` a sketched outline on an offset pastel blob, `blob` a pale
+ *  blob behind, `sticker` a white die-cut edge with a soft shadow, `tile` a rounded tile of the
+ *  icon's colour with the glyph in white. */
+function treatIcon(node: Extract<LayoutNode, { k: 'icon' }>, t: RenderTreatment, seed: number): LayoutNode {
+  const v = t.icon
+  if (!v || v === 'outline') return node
+  if (v === 'emoji') {
+    // the colour emoji of the icon's subject, in the icon's box; an icon with none stays an icon
+    const e = node.name ? emojiForIcon(node.name) : undefined
+    const url = e ? emojiUrl(e) : undefined
+    return url ? { k: 'image', ...(node.part ? { part: node.part } : {}), box: node.box, assetId: `emoji:${e}`, alt: e!.replace(/-/g, ' '), fit: 'contain', url } : node
+  }
+  const w = node.box.width
+  const h = node.box.height
+  if (w < 4 || h < 4) return node
+  const color = HEX.test(node.fill) ? node.fill : '#333333'
+  const pale = mixHex(color, '#ffffff', 0.8)
+  const def = node.name ? getIcon(node.name) : undefined
+  const at = (children: LayoutNode[]): LayoutNode => ({ k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children })
+  const local = { ...node, box: { ...node.box, x: 0, y: 0 } }
+  delete (local as { part?: string }).part
+  switch (v) {
+    case 'thin':
+      return node.strokeWidth ? { ...node, strokeWidth: Math.max(0.75, node.strokeWidth * 0.55) } : node
+    case 'filled': {
+      if (!def?.solid) return node
+      const out = { ...node, icon: scaleIconPath(def.solid, w / 24) }
+      delete out.strokeWidth
+      return out
+    }
+    case 'duotone': {
+      const r = Math.min(w, h) * 0.36
+      const d = `M${0.58 * w - r} ${0.58 * h} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`
+      return at([{ k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d, fill: { type: 'solid', color: mixHex(color, '#ffffff', 0.72) } }, local])
+    }
+    case 'blob':
+    case 'hand': {
+      const back: LayoutNode = { k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d: blobPath(w / 2, h / 2, Math.min(w, h) / 2, seed, 0), fill: { type: 'solid', color: pale } }
+      const glyph = shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.7)
+      if (v === 'blob' || !glyph || glyph.k !== 'icon' || !glyph.strokeWidth) return at([back, glyph])
+      const g = glyph as Extract<LayoutNode, { k: 'icon' }>
+      const sketch = roughPaths(g.icon, g.box.width, g.box.height, { seed, roughness: 0.7, margin: 0, single: true, stroke: { color, width: g.strokeWidth! } })
+      // the blob sits a little low-right of the glyph, like a marker swash behind a doodle
+      const s = Math.min(w, h) * 0.94
+      const off = { ...back, box: { x: w - s, y: h - s, width: s, height: s }, d: blobPath(s / 2, s / 2, s / 2, seed + 1, 0) }
+      return at([off, { k: 'group', box: g.box, children: sketch }])
+    }
+    case 'sticker': {
+      const glyph = shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.8) as Extract<LayoutNode, { k: 'icon' }>
+      const edge = Math.max(3, w * 0.09)
+      const sw = (glyph.strokeWidth ?? 0) + edge
+      const shadow = { ...glyph, box: { ...glyph.box, x: glyph.box.x + w * 0.03, y: glyph.box.y + h * 0.04 }, fill: '#0000002E', strokeWidth: sw } as LayoutNode
+      const white = { ...glyph, fill: '#FFFFFF', strokeWidth: sw } as LayoutNode
+      // a filled glyph too: the white edge is a stroke under it, the glyph itself stays a fill
+      return at([shadow, white, glyph])
+    }
+    case 'tile': {
+      const tile: LayoutNode = { k: 'rect', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, fill: { type: 'solid', color }, radius: Math.min(w, h) * 0.24 }
+      return at([tile, shrunk(local as Extract<LayoutNode, { k: 'icon' }>, 0.6, { fill: '#FFFFFF' })])
+    }
+    default:
+      return node
+  }
 }
 
 /**
@@ -125,7 +325,7 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment)
  * (the block's type or id), so the same block always wobbles the same way.
  */
 export function treatTree(node: LayoutNode, t: RenderTreatment | undefined, key = ''): LayoutNode {
-  if (!t || (t.stroke !== 'rough' && t.fill !== 'hachure' && t.emphasis !== 'highlighter')) return node
+  if (!paintsAnything(t)) return node
   let n = 0
   const walk = (x: LayoutNode): LayoutNode => {
     const seed = hash(`${key}|${n++}|${x.k}`)
@@ -133,15 +333,17 @@ export function treatTree(node: LayoutNode, t: RenderTreatment | undefined, key 
       case 'group':
         return { ...x, children: x.children.map(walk) }
       case 'rect':
-        return treatRect(x, t, seed)
+        return treatRect(x, t!, seed)
       // a line or a path whose box is at the parent's origin: its coordinates are the parent's in
       // both renderers (the DOM one paints them in the box, the SVG one in the parent)
       case 'line':
-        return x.box.x === 0 && x.box.y === 0 ? treatLine(x, t, seed) : x
+        return x.box.x === 0 && x.box.y === 0 ? treatLine(x, t!, seed) : x
       case 'path':
-        return x.box.x === 0 && x.box.y === 0 ? treatPath(x, t, seed) : x
+        return x.box.x === 0 && x.box.y === 0 ? treatPath(x, t!, seed) : x
       case 'text':
-        return treatText(x, t)
+        return treatText(x, t!, seed)
+      case 'icon':
+        return treatIcon(x, t!, seed)
       default:
         return x
     }

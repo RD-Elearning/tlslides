@@ -29,9 +29,15 @@ export interface Icon {
   name: string
   /** Source URL and license information */
   source?: string
+  /** creative CR9: the path is a filled shape (Phosphor's regular weight), not an outline to stroke. */
+  filled?: true
+  /** creative CR9: the filled weight of the same subject (Phosphor fill), drawn under `look.icon: filled`. */
+  solid?: string
 }
 
 import { TABLER_ICONS, TABLER_SOURCE } from './tabler'
+import { PHOSPHOR_ICONS, PHOSPHOR_SOURCE } from './phosphor'
+import { EMOJI } from './emoji'
 
 const LUCIDE_SOURCE = 'Lucide, ISC License - https://lucide.dev (path data copied by hand; multi-element icons merged into one path, dots drawn as tiny circles because the renderers use butt caps)'
 
@@ -152,9 +158,123 @@ export const CORE_ICON_NAMES: readonly string[] = Object.keys(ICONS)
   }
 }
 
-/** Search words of an icon (Tabler's tags; the Lucide set has its name only). */
+/** creative CR7a: the subject names a model writes for icons the set draws under another name
+ *  (an alias draws the same picture; an unknown name stays a lint finding). */
+export const ICON_ALIASES: Record<string, string> = {
+  earth: 'world', money: 'cash', coin: 'coins', currency: 'cash', bank: 'building-bank',
+  factory: 'building-factory', industry: 'building-factory', water: 'droplet', fire: 'flame', bicycle: 'bike',
+  idea: 'bulb', question: 'help-circle', chart: 'chart-bar', teacher: 'presentation', student: 'school',
+  classroom: 'chalkboard', paint: 'palette', justice: 'scale', law: 'scale', bot: 'robot',
+  'robot-face': 'robot', sprout: 'seedling',
+  // CR9: the subjects the review found missing
+  'x-ray': 'bone', xray: 'bone', skeleton: 'bone', integral: 'math-integral', summation: 'sigma',
+  hammer: 'gavel', court: 'gavel', judge: 'gavel', lawyer: 'gavel', doctor: 'stethoscope', medicine: 'pill',
+  magnifier: 'search', envelope: 'mail',
+}
+
+// creative CR9: Phosphor (MIT) — the names the set lacked (x-ray's bone, gavel, sigma, …) drawn from
+// the regular weight as filled shapes, and the fill weight of every subject Phosphor draws, found
+// by name or through `SOLID_ALIASES` (Tabler/Lucide name → Phosphor name).
+export const SOLID_ALIASES: Record<string, string> = {
+  bulb: 'lightbulb', 'building-bank': 'bank', 'building-factory': 'factory', settings: 'gear', search: 'magnifying-glass',
+  mail: 'envelope-simple', message: 'chat-circle', 'help-circle': 'question', 'alert-triangle': 'warning', alert: 'warning',
+  home: 'house', 'map-pin': 'map-pin', world: 'globe-hemisphere-west', globe: 'globe', users: 'users-three', zap: 'lightning',
+  flame: 'fire', droplet: 'drop', mood: 'smiley', 'mood-happy': 'smiley', 'mood-sad': 'smiley-sad', 'thumb-up': 'thumbs-up',
+  'thumb-down': 'thumbs-down', 'chart-pie': 'chart-pie', 'chart-line': 'chart-line', 'chart-bar': 'chart-bar', target: 'target',
+  'graduation-cap': 'graduation-cap', school: 'graduation-cap', 'book-open': 'book-open', library: 'books', cpu: 'cpu',
+  smartphone: 'device-mobile', 'device-mobile': 'device-mobile', laptop: 'laptop', code: 'code', terminal: 'terminal-window',
+  shield: 'shield', 'shield-check': 'shield-check', lock: 'lock', key: 'key', calendar: 'calendar-blank', clock: 'clock',
+  hourglass: 'hourglass', rocket: 'rocket-launch', flag: 'flag', trophy: 'trophy', award: 'medal', medal: 'medal', heart: 'heart',
+  star: 'star', sparkles: 'sparkle', leaf: 'leaf', sun: 'sun', eye: 'eye', filter: 'funnel', link: 'link', download: 'download-simple',
+  share: 'share-network', image: 'image', photo: 'image', video: 'video-camera', mic: 'microphone', microphone: 'microphone',
+  pencil: 'pencil-simple', clipboard: 'clipboard-text', 'file-text': 'file-text', brain: 'brain', puzzle: 'puzzle-piece',
+  dollar: 'currency-dollar', cash: 'money', coins: 'coins', wallet: 'wallet', 'credit-card': 'credit-card', 'shopping-cart': 'shopping-cart',
+  handshake: 'handshake', briefcase: 'briefcase', building: 'building-office', 'check-circle': 'check-circle', 'x-circle': 'x-circle',
+  info: 'info', check: 'check-circle', plus: 'plus-circle', minus: 'minus-circle', user: 'user', 'user-plus': 'user-plus',
+  smile: 'smiley', phone: 'phone', database: 'database', server: 'hard-drives', cloud: 'cloud', wifi: 'wifi-high', layers: 'stack',
+  'git-branch': 'git-branch', bug: 'bug', book: 'book', microscope: 'microscope', flask: 'flask', atom: 'atom', dna: 'dna',
+  virus: 'virus', plant: 'plant', seedling: 'plant', tree: 'tree', recycle: 'recycle', truck: 'truck', car: 'car', plane: 'airplane',
+  bike: 'bicycle', bus: 'bus', train: 'train', ship: 'boat', robot: 'robot', palette: 'palette', camera: 'camera', music: 'music-notes',
+  headphones: 'headphones', gift: 'gift', crown: 'crown', package: 'package', tag: 'tag', receipt: 'receipt', presentation: 'presentation-chart',
+  chalkboard: 'chalkboard-teacher', certificate: 'certificate', notebook: 'notebook', scale: 'scales', calculator: 'calculator',
+  stethoscope: 'stethoscope', pill: 'pill', vaccine: 'syringe', heartbeat: 'heartbeat', 'first-aid-kit': 'first-aid-kit', compass: 'compass',
+  map: 'map-trifold', 'chart-funnel': 'funnel', 'arrow-right': 'arrow-circle-right', 'trending-up': 'trend-up', 'trending-down': 'trend-down',
+}
+{
+  for (const [name, [title, regular]] of Object.entries(PHOSPHOR_ICONS)) {
+    // a name a model already writes as an alias keeps the alias's (outline) picture
+    if (!regular || name in ICONS || name in ICON_ALIASES) continue
+    ICONS[name] = { name: title, path: regular, source: PHOSPHOR_SOURCE, filled: true }
+  }
+  for (const [name, icon] of Object.entries(ICONS)) {
+    const p = PHOSPHOR_ICONS[name] ?? PHOSPHOR_ICONS[SOLID_ALIASES[name] ?? '']
+    if (p) icon.solid = p[2]
+  }
+}
+
+/** creative CR9: the stroke of an icon node — none for a filled glyph (a Phosphor shape drawn as a
+ *  fill), else `width` (Lucide/Tabler outlines). */
+export function iconStroke(icon: Icon | undefined, width: number): { strokeWidth?: number } {
+  return icon?.filled ? {} : { strokeWidth: width }
+}
+
+/** The paint attributes of an inline `<svg>` icon (HTML templates): a fill or a round stroke. */
+export function iconPaintAttrs(icon: Icon | undefined, color: string, width: number): string {
+  return icon?.filled ? `fill="${color}"` : `fill="none" stroke="${color}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"`
+}
+
+// creative CR9 — Fluent Emoji (MIT): `tls.m.emoji` and `look.icon: emoji`.
+
+/** Icon names drawn by an emoji of another name under `look.icon: emoji`. */
+const ICON_EMOJI: Record<string, string> = {
+  bulb: 'light-bulb', idea: 'light-bulb', school: 'graduation-cap', book: 'open-book', 'book-open': 'open-book', books: 'books',
+  'chart-bar': 'bar-chart', chart: 'bar-chart', 'trending-up': 'chart-increasing', 'trending-down': 'chart-decreasing', target: 'bullseye',
+  users: 'busts-in-silhouette', user: 'bust-in-silhouette', award: 'sports-medal', medal: 'sports-medal', zap: 'high-voltage', bolt: 'high-voltage',
+  flame: 'fire', check: 'check-mark-button', 'check-circle': 'check-mark-button', x: 'cross-mark', 'x-circle': 'cross-mark',
+  'help-circle': 'red-question-mark', question: 'red-question-mark', alert: 'warning', 'alert-triangle': 'warning', brain: 'brain',
+  laptop: 'laptop', computer: 'desktop-computer', 'device-desktop': 'desktop-computer', smartphone: 'mobile-phone', 'device-mobile': 'mobile-phone',
+  world: 'globe-showing-europe-africa', globe: 'globe-with-meridians', calendar: 'spiral-calendar', hourglass: 'hourglass-done', clock: 'alarm-clock',
+  cash: 'dollar-banknote', money: 'money-bag', coins: 'coin', 'credit-card': 'credit-card', 'shopping-cart': 'shopping-cart', package: 'package',
+  truck: 'delivery-truck', 'truck-delivery': 'delivery-truck', handshake: 'handshake', 'thumb-up': 'thumbs-up', heart: 'red-heart', star: 'star',
+  sparkles: 'sparkles', seedling: 'seedling', plant: 'herb', leaf: 'herb', tree: 'deciduous-tree', sun: 'sun', droplet: 'droplet', water: 'droplet',
+  recycle: 'recycling-symbol', 'building-hospital': 'hospital', stethoscope: 'stethoscope', pill: 'pill', vaccine: 'syringe', syringe: 'syringe',
+  bone: 'bone', tooth: 'tooth', search: 'magnifying-glass-tilted-left', key: 'key', lock: 'locked', shield: 'shield', settings: 'gear',
+  tool: 'hammer-and-wrench', tools: 'hammer-and-wrench', magnet: 'magnet', scale: 'balance-scale', scales: 'balance-scale', gavel: 'balance-scale',
+  bell: 'bell', speakerphone: 'megaphone', megaphone: 'megaphone', message: 'speech-balloon', 'message-circle': 'speech-balloon', mail: 'envelope',
+  clipboard: 'clipboard', pin: 'pushpin', 'map-pin': 'round-pushpin', link: 'link', puzzle: 'puzzle-piece', dice: 'game-die', palette: 'artist-palette',
+  music: 'musical-notes', movie: 'movie-camera', camera: 'camera', microphone: 'microphone', mic: 'microphone', headphones: 'headphone',
+  plane: 'airplane', car: 'automobile', bike: 'bicycle', bus: 'bus', ship: 'ship', building: 'office-building', 'building-factory': 'factory',
+  home: 'house', map: 'world-map', compass: 'compass', mountain: 'mountain', ruler: 'straight-ruler', flask: 'alembic', atom: 'atom-symbol',
+  satellite: 'satellite', battery: 'battery', plug: 'electric-plug', coffee: 'hot-beverage', eye: 'eyes', crown: 'crown', diamond: 'gem-stone',
+  flag: 'triangular-flag', ticket: 'ticket', notes: 'spiral-notepad', 'file-text': 'page-facing-up', news: 'newspaper', trophy: 'trophy',
+  rocket: 'rocket', microscope: 'microscope', telescope: 'telescope', dna: 'dna', robot: 'robot', gift: 'wrapped-gift', 'confetti': 'party-popper',
+  mood: 'smiling-face-with-smiling-eyes', 'mood-happy': 'grinning-face-with-big-eyes', smile: 'smiling-face-with-smiling-eyes', 'test-pipe': 'test-tube',
+  pencil: 'pencil', writing: 'memo', certificate: 'scroll', 'school-bell': 'bell', calculator: 'abacus', abacus: 'abacus',
+}
+
+/** An emoji by its name (`rocket`, `light-bulb`): title, glyph, SVG body (32 grid) and tags. */
+export function getEmoji(name: string): { title: string; glyph: string; body: string; tags: string[] } | undefined {
+  const e = EMOJI[name]
+  return e ? { title: e[0], glyph: e[1], body: e[2], tags: e[3] } : undefined
+}
+
+/** The emoji that draws an icon name under `look.icon: emoji` (same name, or the map above). */
+export function emojiForIcon(name: string): string | undefined {
+  if (EMOJI[name]) return name
+  const m = ICON_EMOJI[name] ?? ICON_EMOJI[ICON_ALIASES[name] ?? '']
+  return m && EMOJI[m] ? m : undefined
+}
+
+/** A self-contained `data:` URL of an emoji's SVG (an `image` node draws it, in both renderers). */
+export function emojiUrl(name: string): string | undefined {
+  const e = EMOJI[name]
+  if (!e) return undefined
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">${e[2]}</svg>`)}`
+}
+
+/** Search words of an icon (Tabler's or Phosphor's tags; the Lucide set has its name only). */
 export function iconTags(name: string): string[] {
-  return TABLER_ICONS[name]?.[3] ?? []
+  return TABLER_ICONS[name]?.[3] ?? PHOSPHOR_ICONS[name]?.[4] ?? []
 }
 
 const LUCIDE_GROUPS: Record<string, string[]> = {
@@ -179,6 +299,11 @@ export const ICON_GROUPS: Record<string, string[]> = (() => {
     ;(groups[group] ??= []).push(name)
     placed.add(name)
   }
+  for (const [name, [, , , group]] of Object.entries(PHOSPHOR_ICONS)) {
+    if (placed.has(name) || ICONS[name]?.source !== PHOSPHOR_SOURCE) continue
+    ;(groups[group] ??= []).push(name)
+    placed.add(name)
+  }
   return groups
 })()
 
@@ -188,14 +313,15 @@ export const ICON_GROUPS: Record<string, string[]> = (() => {
  * Unknown names should be treated as a lint finding, never rendered as text.
  */
 export function getIcon(name: string): Icon | undefined {
-  return ICONS[name]
+  return ICONS[name] ?? ICONS[ICON_ALIASES[name]]
 }
+
 
 /**
  * Check if an icon name is known.
  */
 export function hasIcon(name: string): boolean {
-  return name in ICONS
+  return getIcon(name) !== undefined
 }
 
 /**

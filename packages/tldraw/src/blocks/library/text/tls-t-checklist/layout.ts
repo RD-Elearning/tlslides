@@ -16,6 +16,7 @@ import { asArray, spacingGap, str } from '../_engine/rich'
 import { onColor } from '../_engine/color'
 import { getIcon } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
+import { growText } from '../_engine/grow'
 
 /** Cross glyph on the 24x24 icon grid (the icon set has no plain "x"). */
 export const CROSS_PATH = 'M7 7L17 17M17 7L7 17'
@@ -95,7 +96,12 @@ function compute(props: ChecklistProps, ctx: LayoutContext, width: number) {
   return { rows, items, columns, base }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: ChecklistProps, ctx: LayoutContext): LayoutNode {
+  return growText(ctx, (c) => layoutAuthored(props, c))
+}
+
+function layoutAuthored(props: ChecklistProps, ctx: LayoutContext): LayoutNode {
   const { rows } = compute(props, ctx, ctx.box.width)
   return {
     k: 'group',

@@ -23,7 +23,7 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Pairs',
     required: true,
-    guidance: 'Short labels as keys; keep values to a phrase or a number with its unit.',
+    guidance: 'Short labels as keys (1-3 words, never numbered); keep values to a phrase or a number with its unit.',
   },
   leader: {
     type: { kind: 'enum', values: ['none', 'dots', 'rule'] },

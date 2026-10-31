@@ -17,6 +17,7 @@ import { placeText } from '../_engine/text-place'
 import { splitCounts, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, str } from '../_engine/rich'
 import { withRealWidths } from '../../data/_chart/kit'
+import { growText } from '../_engine/grow'
 
 const LEADER_GLYPH = '·'
 
@@ -58,6 +59,7 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
   const counts = splitCounts(items.length, columns)
   let index = 0
   let lines = 0
+  let wrappedKeys = 0
   const heights: number[] = []
   for (let c = 0; c < counts.length; c++) {
     const x0 = c * (gw + colGap)
@@ -72,6 +74,7 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
         propPath: `items.${i}.value`,
       })
       lines += km.lineCount + vm.lineCount
+      if (km.lineCount > 1) wrappedKeys++
       // A one-line key's box hugs its text so the leader can start right after it.
       const keyNode = km.nodes[0]
       if (km.lineCount === 1 && keyNode.k === 'text') keyNode.box = { ...keyNode.box, width: Math.min(keyW, km.lines[0].width + 1) }
@@ -83,17 +86,24 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
         const start = km.lineCount > 1 ? x0 + keyW : keyEnd
         const dotW = Math.max(1, ctx.measureText(LEADER_GLYPH, keyStyle).width)
         const room = firstValX - start - sp.xs * 2
-        const count = Math.floor(room / (dotW * 1.6))
+        let count = Math.floor(room / (dotW * 1.6))
+        const leaderStyle = { ...keyStyle, color: lineColor }
+        const dots = (n: number) => Array.from({ length: n }, () => LEADER_GLYPH).join(' ')
+        let lm = ctx.measureText(dots(Math.max(count, 0)), leaderStyle, undefined)
+        // the estimate (dot + space ≈ 1.6 dots) runs long in some fonts: trim to what fits
+        // (spro creative CR2 variants spec: 16 units past the frame in all four styles)
+        while (count >= 3 && lm.width > room) {
+          count = Math.floor((count * room) / lm.width) - (lm.width > room ? 1 : 0)
+          lm = ctx.measureText(dots(Math.max(count, 0)), leaderStyle, undefined)
+        }
         if (count >= 3 && vm.lineCount === 1) {
-          const text = Array.from({ length: count }, () => LEADER_GLYPH).join(' ')
-          const lm = ctx.measureText(text, { ...keyStyle, color: lineColor }, undefined)
           const w = Math.min(room, lm.width)
           nodes.push({
             k: 'text',
             part: `leader[${i}]`,
             box: { x: start + sp.xs, y, width: w + 1, height: lm.height },
             lines: lm.lines,
-            style: { ...keyStyle, color: lineColor },
+            style: leaderStyle,
           })
         }
       }
@@ -113,10 +123,16 @@ function compute(props: KvListProps, ctx0: LayoutContext, width: number) {
     heights.push(Math.max(0, y - rowGap + (leader === 'rule' && counts[c] > 0 ? Math.ceil(rowGap / 2 + 0.5) : 0)))
   }
   const height = Math.max(0, ...heights)
-  return { nodes, height, lines, items, columns, lineH }
+  return { nodes, height, lines, items, columns, lineH, wrappedKeys }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: KvListProps, ctx: LayoutContext): LayoutNode {
+  // a key that fits on one line stays on one line
+  return growText(ctx, (c) => layoutAuthored(props, c), { keepLines: (p) => p.startsWith('key[') })
+}
+
+function layoutAuthored(props: KvListProps, ctx: LayoutContext): LayoutNode {
   const width = Math.max(1, ctx.box.width)
   const r = compute(props, ctx, width)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height: r.height }, children: r.nodes }
@@ -124,7 +140,7 @@ export function layout(props: KvListProps, ctx: LayoutContext): LayoutNode {
 
 export function capacity(props: KvListProps, box: Size, ctx: LayoutContext): CapacityReport {
   const r = compute(props, ctx, Math.max(1, box.width))
-  return markerCapacity({
+  const report = markerCapacity({
     rows: { nodes: [], height: r.height, lineCount: r.lines, columnHeights: [r.height] },
     itemCount: r.items.length,
     maxItems: KV_MAX_ITEMS,
@@ -133,4 +149,14 @@ export function capacity(props: KvListProps, box: Size, ctx: LayoutContext): Cap
     gap: spacingGap(ctx, 'default'),
     lineHeight: r.lineH,
   })
+  // two groups halve the key column: a key that wraps there reads as a four-column grid of broken
+  // phrases (spro deck "Sáu mục tiêu của chương 1") — one column, or shorter keys
+  if (r.columns === 2 && r.wrappedKeys > 0) {
+    return {
+      fits: false,
+      budget: { items: report.budget.items, wrappedKeys: { max: 0, used: r.wrappedKeys, unit: 'items' } },
+      remedy: [{ kind: 'reflow', to: "columns: '1'" }, ...report.remedy],
+    }
+  }
+  return report
 }

@@ -249,3 +249,43 @@ describe('subject doodles (enhance S4)', () => {
     }
   })
 })
+
+describe('tls.m.decoration — vivid V3 icon motif and V2 ambient loop', () => {
+  it('icon: the named icon drawn large and centred inside the box, lighter than an inline icon', () => {
+    const tree = lay({ shape: 'icon', icon: 'atom' }, 600, 400)
+    const leaves = absoluteLeaves(tree)
+    expect(leaves).toHaveLength(1)
+    const leaf = leaves[0].node as any
+    expect(leaf.k).toBe('icon')
+    expect(leaf.part).toBe('shape')
+    expect(leaf.box.width).toBeCloseTo(336)
+    expect(leaf.box.x).toBeCloseTo(132)
+    expect(leaf.box.y).toBeCloseTo(32)
+    expect(leaf.strokeWidth).toBeLessThan(1.5 * (336 / 24))
+    expect(JSON.stringify(lay({ shape: 'icon', icon: 'atom' }))).not.toBe(JSON.stringify(lay({ shape: 'icon', icon: 'book' })))
+  })
+
+  it('icon: a watermark-size glyph is faint whatever the opacity; a small one keeps ≥ 0.35 (review 2026-10-24)', () => {
+    for (const opacity of ['soft', 'medium', 'strong']) {
+      expect((lay({ shape: 'icon', icon: 'book', opacity }, 900, 700) as any).opacity).toBeLessThan(0.25)
+      expect((lay({ shape: 'icon', icon: 'book', opacity }, 160, 160) as any).opacity).toBeGreaterThanOrEqual(0.35)
+    }
+    expect((lay({ shape: 'icon', icon: 'book', opacity: 'soft' }, 900, 700) as any).opacity).toBeLessThan((lay({ shape: 'icon', icon: 'book', opacity: 'strong' }, 900, 700) as any).opacity)
+  })
+
+  it('icon: an unknown name still draws a glyph (the fallback), never text', () => {
+    const leaf = absoluteLeaves(lay({ shape: 'icon', icon: 'no-such-icon-zzz' }))[0].node as any
+    expect(leaf.k).toBe('icon')
+    expect(leaf.icon.length).toBeGreaterThan(5)
+  })
+
+  it('ambient auto follows the shape; an explicit value wins; none switches it off', () => {
+    const amb = tlsMDecoration.motion!.ambient as (p: Record<string, unknown>) => { preset: string } | null
+    expect(amb({ shape: 'orb' })?.preset).toBe('float')
+    expect(amb({ shape: 'ring' })?.preset).toBe('spin')
+    expect(amb({ shape: 'sparkle', ambient: 'auto' })?.preset).toBe('twinkle')
+    expect(amb({ shape: 'frame' })).toBeNull()
+    expect(amb({ shape: 'orb', ambient: 'spin' })?.preset).toBe('spin')
+    expect(amb({ shape: 'orb', ambient: 'none' })).toBeNull()
+  })
+})

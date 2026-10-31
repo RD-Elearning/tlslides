@@ -29,6 +29,7 @@ const KEYFRAME_MAP: Record<string, string> = {
   // One-axis scales are written into the CSS `scale` property ("x y"), see `axisScale`.
   scaleX: 'scale',
   scaleY: 'scale',
+  rotate: 'rotate',
   clipPath: 'clip-path',
   filter: 'filter',
   strokeDashoffset: 'stroke-dashoffset',
@@ -164,6 +165,8 @@ export function createWAAPI_driver(): MotionDriver {
       easing: opts.easing ?? 'ease-out',
       fill: opts.fill ?? 'forwards',
       delay: opts.delay ?? 0,
+      iterations: opts.iterations ?? 1,
+      direction: opts.direction ?? 'normal',
     })
     active.add(animation)
 

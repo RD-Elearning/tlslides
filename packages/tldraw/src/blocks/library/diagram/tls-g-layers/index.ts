@@ -35,7 +35,7 @@ export const tlsGLayers: BlockDefinition = {
   },
   schema,
   defaults,
-  size: { preferred: [1000, 560], min: [560, 320] },
+  size: { preferred: [1000, 560], min: [560, 320], hug: true },
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

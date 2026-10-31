@@ -449,9 +449,9 @@ describe('R7 — capability digest v2', () => {
   describe('two-tier digest (P0.4)', () => {
     const reg = freshBuiltInRegistry()
 
-    it('capabilityIndex lists every block exactly once and stays under 20k chars', () => {
+    it('capabilityIndex lists every block exactly once and stays under 21k chars', () => {
       const md = capabilityIndex(reg)
-      expect(md.length).toBeLessThanOrEqual(20000)
+      expect(md.length).toBeLessThanOrEqual(25600) // learning L03: 192 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
       for (const def of BUILT_IN_BLOCKS) {
         const lines = md.split('\n').filter((l) => l.startsWith(`${def.type} · `))
         expect(lines).toHaveLength(1)
@@ -478,7 +478,7 @@ describe('R7 — capability digest v2', () => {
         range: '2–5 items',
         shortDescription: 'Equal-width row of KPI tiles',
         related: ['tls.c.kpi-tile', 'tls.c.dashboard'],
-        size: 'h 150–260@544', // AC3: card rows stretch with the box (a range); default theme body in Inter
+        size: 'h 184–265@840', // AC3: card rows stretch with the box (a range); default theme body in Inter
         aiTier: 1,
         looks: ['tile', 'gap'],
         lookValues: { tile: ['plain', 'card', 'accent-bar'], gap: ['xs', 'sm', 'md', 'lg'] }, // AC8
@@ -559,8 +559,9 @@ describe('R7 — capability digest v2', () => {
       // slide's own role stays <= 16k (dry-run.spec).
       // CMP4 budget decision (composition README §4): one `patterns:` line per role (+630 chars,
       // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
-      it('stays within 17.7k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(17700)
+      // spro creative CR8: the 16 wave-1 blocks are tier 2 but named in the index (+~300 chars) → 18.1k; CR13 +16 → 18.4k.
+      it('stays within 19.9k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(19900) // CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
         expect(tier1).toMatchSnapshot()
       })
 
@@ -608,9 +609,9 @@ describe('R7 — capability digest v2', () => {
         expect(data.find((e) => e.type === 'tls.d.line')?.absorbs).toEqual(['tls.d.area', 'tls.d.sparkline', 'tls.d.slope'])
       })
 
-      it('the default call is unchanged: every block a full line, no recipes, within 20k', () => {
+      it('the default call is unchanged: every block a full line, no recipes, within 21k', () => {
         const md = capabilityIndex(reg)
-        expect(md.length).toBeLessThanOrEqual(20000)
+        expect(md.length).toBeLessThanOrEqual(25600) // learning L03: 192 blocks; vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162 (+16 wave-1, tier 2), CR13: 178 (+16 wave-2/3, tier 2)
         expect(md).not.toContain('## Recipes')
         expect(md).not.toContain(' knobs: ')
         expect(md).not.toContain('also: ')
@@ -627,10 +628,10 @@ describe('R7 — capability digest v2', () => {
         }
       })
 
-      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 17.7k (AC8, CMP4)', () => {
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 18.9k (AC8, CMP4, CR8, CR13)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(17700)
+          expect(md.length).toBeLessThanOrEqual(19900) // CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)

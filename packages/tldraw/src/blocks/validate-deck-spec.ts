@@ -20,14 +20,17 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { SLIDE_LAYOUTS, getSlideLayout, type SlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens, type DeckTokens } from './tokens'
-import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec } from './types'
-import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES } from './types'
+import type { Box, BlockDefinition, DeckSpec, Paint, ResolvedTokens, SlotSpec, SlotType } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MAX_NESTING_DEPTH, MOTION_STYLES, SLIDE_INTENTS } from './types'
 import { isBlockAnchor, isBlockLayer } from './block-layer'
 import { isMotionStyle } from './motion/motion-style'
 import { levenshtein, nearestName } from './nearest-name'
 import { ICONS } from './icons'
 import { tryHexToRgb, relativeLuminance, contrastRatio } from './color-math'
 import { CONNECTOR_BLOCK_TYPE } from './connectors'
+import { lookProblems } from './look'
+import { TRANSITION_DIRS, TRANSITION_KINDS } from './motion/transition'
+import { MOTION_PERSONALITIES } from './motion/personality'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public types                                                                     */
@@ -79,6 +82,9 @@ export function defaultBlockRegistry(): BlockRegistry {
  * `undefined`, a non-object, wrong-typed fields) is handled explicitly rather than assumed
  * away by the type signature.
  */
+/** The fields of a `BlockSpec` itself (everything else on a block is not read). */
+const BLOCK_SPEC_FIELDS: ReadonlySet<string> = new Set(['type', 'id', 'props', 'style', 'motion', 'children', 'slot', 'layer', 'anchor', 'anchorTo', 'bleed', 'look'])
+
 export function validateDeckSpec(spec: DeckSpec, registry?: BlockRegistry): DeckFinding[] {
   try {
     return validateDeckSpecInner(spec, registry)
@@ -174,6 +180,16 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
     })
   }
 
+  // V5 (vivid): the ambient switch is a boolean
+  if (s.ambient !== undefined && typeof s.ambient !== 'boolean') {
+    findings.push({
+      level: 'warning',
+      rule: 'deck/invalid-ambient',
+      path: 'ambient',
+      message: `ambient ${stringifyForMessage(s.ambient)} is not true or false; it is ignored.`,
+    })
+  }
+
   // AC1: style
   if (s.style !== undefined) {
     const styleIds = BUILT_IN_STYLES.map((st) => st.id)
@@ -219,6 +235,13 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
 
   // P7: motionStyle (deck level; the slide level is checked in validateSlide).
   checkMotionStyle(s.motionStyle, 'motionStyle', 'DeckSpec', findings)
+  // CR7b: look axes (deck, slide, block) — an unknown axis or value is an error
+  for (const f of lookProblems((s as { look?: unknown }).look, 'look', 'DeckSpec')) findings.push({ level: 'error', ...f })
+  // CR10: the motion personality (viewer-only; an unknown one is ignored)
+  const mp = (s as { motionPersonality?: unknown }).motionPersonality
+  if (mp !== undefined && !(MOTION_PERSONALITIES as readonly unknown[]).includes(mp)) {
+    findings.push({ level: 'warning', rule: 'motion/unknown-personality', path: 'motionPersonality', message: `motionPersonality ${stringifyForMessage(mp)} is not one of ${MOTION_PERSONALITIES.join(', ')} and is ignored.` })
+  }
 
   // Tokens used only to read back real region names from each layout's compile() — the
   // *values* inside are irrelevant to validation, only the shape (which keys exist) is.
@@ -329,6 +352,9 @@ function validateSlide(
   }
 
   checkMotionStyle(slide.motionStyle, `${slidePath}.motionStyle`, `Slide "${slideLabel}"`, findings)
+  checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
+  for (const f of lookProblems((slide as { look?: unknown }).look, `${slidePath}.look`, `Slide "${slideLabel}"`)) findings.push({ level: 'error', ...f })
+  checkTransition((slide as { transition?: unknown }).transition, `${slidePath}.transition`, `Slide "${slideLabel}"`, findings)
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
@@ -539,6 +565,33 @@ function validateConnectors(slide: Record<string, unknown>, slidePath: string, s
   })
 }
 
+/** CR7a — `intent` must be one of `SLIDE_INTENTS`; anything else is ignored (today's checks). */
+function checkIntent(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
+  if (value === undefined || (SLIDE_INTENTS as readonly unknown[]).includes(value)) return
+  const raw = typeof value === 'string' ? value : ''
+  const suggestion = raw ? nearestName(raw, [...SLIDE_INTENTS]) : undefined
+  findings.push({
+    level: 'warning',
+    rule: 'slide/unknown-intent',
+    path,
+    message:
+      `${owner} has intent ${stringifyForMessage(value)}, which is not a gate profile and is ignored.` +
+      (suggestion ? ` Did you mean "${suggestion}"?` : '') +
+      ` Use one of: ${SLIDE_INTENTS.join(', ')}.`,
+    suggestion,
+  })
+}
+
+/** CR10 — a slide transition: `{ kind, dir? }` with known values; anything else is a cut. */
+function checkTransition(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
+  if (value === undefined) return
+  const t = value as { kind?: unknown; dir?: unknown }
+  const ok = !!value && typeof value === 'object' && (TRANSITION_KINDS as readonly unknown[]).includes(t.kind) && (t.dir === undefined || (TRANSITION_DIRS as readonly unknown[]).includes(t.dir))
+  if (!ok) {
+    findings.push({ level: 'warning', rule: 'motion/unknown-transition', path, message: `${owner} has transition ${stringifyForMessage(value)}; use { kind: ${TRANSITION_KINDS.join(' | ')}, dir?: ${TRANSITION_DIRS.join(' | ')} }. It plays as a cut.` })
+  }
+}
+
 /** P7 — `motionStyle` must be one of `MOTION_STYLES`; anything else is ignored at compile time. */
 function checkMotionStyle(value: unknown, path: string, owner: string, findings: DeckFinding[]): void {
   if (value === undefined || isMotionStyle(value)) return
@@ -703,6 +756,21 @@ function validateBlockTree(
     })
   }
 
+  // vivid (golden vv1): a model wrote a decoration's `opacity: "soft"` next to `layer`, outside
+  // `props` — silently dropped, so the watermark painted at its default. A key that is no block
+  // field but is one of this block's props is reported where it belongs.
+  if (def && block && typeof block === 'object') {
+    for (const key of Object.keys(block)) {
+      if (BLOCK_SPEC_FIELDS.has(key) || !(key in def.schema)) continue
+      findings.push({
+        level: 'warning',
+        rule: 'block/misplaced-prop',
+        path: `${path}.${key}`,
+        message: `Block ${label} has "${key}" beside its "props"; it is a prop of ${def.type} and is ignored there. Move it into "props".`,
+      })
+    }
+  }
+
   if (def) {
     // CMP1: the props recursion carries this block as an ancestor (cycle guard) and stops past
     // the nesting limit, like the `children` recursion below.
@@ -768,6 +836,8 @@ function validateBlockTree(
           : `Block ${label} sets an anchor inside a container that is not tls.l.overlay; anchors place a layered region block or a child of tls.l.overlay. It is ignored here.`,
     })
   }
+
+  for (const f of lookProblems((block as { look?: unknown }).look, `${path}.look`, `Block ${label}`)) findings.push({ level: 'error', ...f })
 
   // CMP1: `bleed` lets a backdrop leave the frame on purpose (no `slide/overflow`).
   if (block.bleed !== undefined && typeof block.bleed !== 'boolean') {
@@ -869,6 +939,7 @@ function validateProps(
     if (value !== undefined && value !== null) {
       checkBudget(value, slotSpec, `${blockPath}.props.${slotName}`, def.type, slotName, findings, (def.looks ?? []).includes(slotName))
       checkIcons(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
+      if (slotSpec.role === 'content') checkShape(value, slotSpec.type, `${blockPath}.props.${slotName}`, def.type, findings)
 
       // For `blocks`-kind slots, recurse into each child block via validateBlockTree.
       // This mirrors how the layout engine reads props.children (not the top-level BlockSpec.children).
@@ -890,6 +961,15 @@ function validateProps(
           )
         })
       }
+    }
+  }
+
+  // learning L03/L05: an activity block's own checks (an answer index that points at nothing, a bin no item
+  // uses, duplicate options) are validation errors, so the repair loop and the hard-stop see them
+  if (def.activity && typeof def.lint === 'function') {
+    for (const f of def.lint(props as never, {} as never)) {
+      if (f.level === 'info') continue
+      findings.push({ level: f.level, rule: f.rule, path: `${blockPath}.props${f.part ? '.' + f.part : ''}`, message: f.message })
     }
   }
 
@@ -1213,6 +1293,63 @@ function checkIcons(
     for (const [k, spec] of Object.entries(type.fields)) {
       if (value[k] !== undefined) checkIcons(value[k], spec.type, `${path}.${k}`, blockType, findings)
     }
+  }
+}
+
+/**
+ * The value's shape against its slot type, at any depth inside list/object slots — the layouts
+ * read only what the schema declares, so a wrong shape draws wrong or nothing, with no error
+ * anywhere else (spro deck 5a45a329: `tls.t.numbered` items as `{title, description}` objects drew
+ * "[object Object]"; `tls.g.timeline` events as `{label, description}` drew bare dots).
+ * - `slot/wrong-type` (error): a text slot holding an object, a list slot holding a non-array, an
+ *   object slot holding a non-object.
+ * - `slot/missing` (error): an object item without one of its required fields (an image field
+ *   excepted: it draws a placeholder until an asset is set, as a top-level image does).
+ * Content slots only: option slots are knobs, some with a shape of their own (`tls.m.image`'s focal
+ * is a [fx, fy] pair).
+ * An undeclared field inside an item is left alone: a layout may read past the schema (a tree's
+ * fourth level), and a warning would still send the slide back for a repair.
+ */
+function checkShape(value: unknown, type: SlotType, path: string, blockType: string, findings: DeckFinding[]): void {
+  if (value === undefined || value === null) return
+  const wrong = (want: string) =>
+    findings.push({
+      level: 'error',
+      rule: 'slot/wrong-type',
+      path,
+      message: `Block "${blockType}" at "${path}" takes ${want}; got ${describeType(value)}${isRecord(value) ? ` with fields ${Object.keys(value).join(', ')}` : ''}.`,
+    })
+  switch (type.kind) {
+    case 'text':
+      if (typeof value !== 'string' && typeof value !== 'number') wrong('a string')
+      return
+    case 'richText':
+      if (typeof value !== 'string' && typeof value !== 'number' && !(isRecord(value) && Array.isArray(value.runs)))
+        wrong('a string (bold with **double asterisks**) or {runs: [{text, bold?}]}')
+      return
+    case 'list':
+      if (!Array.isArray(value)) return wrong('a list')
+      value.forEach((item, i) => checkShape(item, type.of, `${path}[${i}]`, blockType, findings))
+      return
+    case 'object': {
+      const names = Object.keys(type.fields)
+      if (!isRecord(value)) return wrong(`an object {${names.join(', ')}}`)
+      // all fields empty (`person: {name: '', role: ''}`) is no object: the block leaves it out
+      if (Object.values(value).every(isEmptyValue)) return
+      for (const [k, spec] of Object.entries(type.fields)) {
+        if (spec.required && spec.type.kind !== 'image' && isEmptyValue(value[k])) {
+          findings.push({
+            level: 'error',
+            rule: 'slot/missing',
+            path: `${path}.${k}`,
+            message: `Block "${blockType}" at "${path}" is missing its required "${k}" field (${spec.label}); fields: ${names.join(', ')}.` + (spec.guidance ? ` ${spec.guidance}` : ''),
+          })
+        } else checkShape(value[k], spec.type, `${path}.${k}`, blockType, findings)
+      }
+      return
+    }
+    default:
+      return
   }
 }
 

@@ -9,7 +9,7 @@
  * and the two registries serve different layers.
  */
 
-import type { Box, ResolvedTokens, SurfaceContext, BlockMotionRuntime, LayoutNode } from './types'
+import type { Box, ResolvedTokens, SurfaceContext, BlockMotionRuntime, LayoutNode, ActivityRuntime } from './types'
 
 /**
  * Resolved block motion (from R5); undefined until that phase lands.
@@ -48,6 +48,11 @@ export interface HostRenderContext {
   headless: boolean
   /** LO7: the host node's poster (the same layout pass), for html templates that paint its lines. */
   poster?: LayoutNode
+  /** L03: true only when DeckViewer renders the block interactively (Present / view mode). The editor
+   *  canvas, thumbnails and export never set it: activities are static posters there. */
+  interactive?: boolean
+  /** L03: the activity runtime of this block (set with `interactive`). */
+  activity?: ActivityRuntime
 }
 
 /**

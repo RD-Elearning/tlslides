@@ -3,7 +3,7 @@ import { useHotkeys } from 'react-hotkeys-hook'
 import { AlignStyle, TDShapeType } from '~types'
 import { useFileSystemHandlers, useTldrawApp } from '~hooks'
 
-export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
+export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>, showPresent = true) {
   const app = useTldrawApp()
 
   const canHandleEvent = React.useCallback(
@@ -170,12 +170,13 @@ export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>) {
   useHotkeys(
     'ctrl+shift+p,⌘+shift+p',
     (e) => {
-      if (!canHandleEvent(true)) return
+      // learning L04: a host with its own viewer turns the editor's presentation mode off
+      if (!showPresent || !canHandleEvent(true)) return
       app.togglePresentationMode()
       e.preventDefault()
     },
     undefined,
-    [app]
+    [app, showPresent]
   )
 
   useHotkeys(

@@ -21,6 +21,17 @@ describe('render treatment', () => {
     expect(treatTree(tree, { stroke: 'crisp', fill: 'flat' })).toBe(tree)
   })
 
+  it('a rough pill keeps its outline at the long ends: each axis is fitted on its own', () => {
+    // spro deck 63550faa s8: a uniform fit let the short side's wobble shrink a 300 × 40 badge's
+    // outline by ~15 % in width, so the ink crossed the label inside it.
+    const pill: LayoutNode = { k: 'rect', box: { x: 0, y: 0, width: 300, height: 40 }, fill: { type: 'solid', color: '#F06A3C' }, stroke: { color: '#1F1F1F', width: 3 }, radius: 20 }
+    for (const key of ['a', 'b', 'c', 'd']) {
+      const out = treatTree(pill, { stroke: 'rough' }, key)
+      const xs = paths(out).flatMap((p) => (p.d.match(/-?\d*\.?\d+/g) ?? []).map(Number).filter((_, i) => i % 2 === 0))
+      expect([key, Math.min(...xs) < 12, Math.max(...xs) > 288]).toEqual([key, true, true])
+    }
+  })
+
   it('a rough card keeps its box, fill and radius, and draws its border as a sketch inside it', () => {
     const out = treatTree(card, { stroke: 'rough' }, 'k') as Extract<LayoutNode, { k: 'group' }>
     expect(out.k).toBe('group')

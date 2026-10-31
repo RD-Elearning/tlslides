@@ -102,6 +102,6 @@ export const EDITORIAL_STYLE: DeckStyle = {
   },
   prefer: ['tls.t.kicker'],
   avoid: ['tls.m.pattern', 'tls.t.tags', 'tls.c.kinetic-title'],
-  concept: { decoration: 'sparse', motifs: ['tls.x.rule', 'tls.m.decoration:corner'], zones: ['under-heading', 'watermark'], icons: 'none', accent: 'Red on the kicker or one giant numeral; type carries the page.' },
+  concept: { decoration: 'sparse', motifs: ['tls.x.rule', 'tls.m.decoration:corner', 'tls.m.decoration:icon'], zones: ['under-heading', 'watermark'], icons: 'none', accent: 'Red on the kicker or one giant numeral; type carries the page.' },
   rules: ['Kicker, title, rule: let type carry the page.', 'Pull quotes over bullet lists.', 'No glass, orbs, pills or gradients.'],
 }

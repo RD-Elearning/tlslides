@@ -10,7 +10,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { Box, LayoutContext, LayoutNode, ResolvedTextStyle } from '../../types'
+import type { Box, LayoutContext, LayoutNode, ResolvedTextStyle, TypeToken } from '../../types'
 import { mixHex, rgbToHsl, tryHexToRgb } from '../../color-math'
 import { clipLines, ellipsize, fullBox, lineH, pathNode, solidRect, withRealWidths } from '../data/_chart/kit'
 
@@ -105,6 +105,113 @@ export function linesHeight(ctx: LayoutContext, text: string, s: ResolvedTextSty
   const rc = withRealWidths(ctx)
   const m = rc.measureText(clean.split(' ').map((x) => ellipsize(rc, x, s, w)).join(' '), s, w)
   return Math.min(m.lines.length, Math.floor(maxLines)) * lineH(s)
+}
+
+/**
+ * Lines `text` takes at `width` with nothing clipped, as `placeLines` would wrap it; `Infinity` when
+ * one word is wider than the box (it would be cut with an ellipsis). The type tiers of a block
+ * (`fitTier`) ask this to know whether a tier shows every word.
+ */
+export function linesNeeded(ctx: LayoutContext, text: string, s: ResolvedTextStyle, width: number): number {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (!clean) return 0
+  const w = Math.max(1, width)
+  const rc = withRealWidths(ctx)
+  const words = clean.split(' ')
+  if (words.some((x) => ellipsize(rc, x, s, w) !== x)) return Infinity
+  return rc.measureText(clean, s, w).lines.length
+}
+
+/**
+ * The first tier (largest type first) whose layout `fits`; the last tier when none does (it clips,
+ * as the block always did). Blocks whose box grows with the slide pick their type this way, so a
+ * timeline alone on a slide reads at slide size instead of keeping caption type in a large box.
+ */
+export function fitTier<T>(tiers: readonly T[], fits: (tier: T) => boolean, ctx?: LayoutContext): T {
+  for (let i = tierStart(ctx, tiers.length); i < tiers.length; i++) if (fits(tiers[i])) return tiers[i]
+  return tiers[tiers.length - 1]
+}
+
+/**
+ * The first tier a block may take: `style.typeStep` (carried on the tokens) skips the largest ones,
+ * so `compileSlide` can bring a slide back to five text sizes (`harmonizeTypes`).
+ */
+export function tierStart(ctx: LayoutContext | undefined, count: number): number {
+  return Math.max(0, Math.min(count - 1, ctx?.tokens.typeStep ?? 0))
+}
+
+/** The type ladder `promoteToFit` steps along (diagram text never passes `heading`). */
+const LADDER: readonly TypeToken[] = ['footnote', 'caption', 'body', 'lead', 'subheading', 'heading']
+
+/** `ctx` with every type token `n` steps up the ladder (sizes stay on the scale: no new odd sizes). */
+export function promoteType(ctx: LayoutContext, n: number): LayoutContext {
+  if (n <= 0) return ctx
+  const up = (t: TypeToken): TypeToken => {
+    const i = LADDER.indexOf(t)
+    return i < 0 ? t : LADDER[Math.min(LADDER.length - 1, i + n)]
+  }
+  return { ...ctx, resolveText: (t, over) => ctx.resolveText(up(t), over) }
+}
+
+type TextSummary = { chars: number; lines: number; cut: boolean; boxes: Box[]; outside: boolean }
+function summarize(root: LayoutNode, W: number, H: number, ctx?: LayoutContext): TextSummary {
+  const out: TextSummary = { chars: 0, lines: 0, cut: false, boxes: [], outside: false }
+  const walk = (n: LayoutNode, ox: number, oy: number) => {
+    const x = ox + n.box.x
+    const y = oy + n.box.y
+    if (n.k === 'group') {
+      for (const c of n.children) walk(c, x, y)
+      return
+    }
+    if (n.box.width > 0 && n.box.height > 0 && (x < -1 || y < -1 || x + n.box.width > W + 1 || y + n.box.height > H + 1)) out.outside = true
+    if (n.k !== 'text') return
+    if ((n as { truncated?: boolean }).truncated) out.cut = true
+    for (const l of n.lines) {
+      out.chars += l.text.replace(/[\s…]/g, '').length
+      out.lines++
+      // the host's own measure (the layout report's, the browser's canvas) may set a line a few
+      // percent wider than the face table the block wrapped with: it must still end in the box
+      if (ctx && x + Math.max(l.width, ctx.measureText(l.text.trimEnd(), n.style).width) > W + 1) out.outside = true
+    }
+    out.boxes.push({ x, y, width: n.box.width, height: n.box.height })
+  }
+  walk(root, -root.box.x, -root.box.y)
+  return out
+}
+
+/**
+ * 2026-10-24 corpus: diagram blocks that set fixed caption / footnote type (a 2×2, a cycle, a
+ * flow, a Venn…) drew it the same in a quarter slide and in a whole one. A block wrapped in this
+ * is laid out with its type `n` ladder steps up (largest first, at most `maxStep`, less any
+ * `style.typeStep`) and keeps the first that shows the same text as the authored size (nothing cut
+ * or dropped), stays in its box, keeps text off text, and does not more than double its lines.
+ */
+export function promoteToFit(ctx: LayoutContext, lay: (c: LayoutContext) => LayoutNode, maxStep = 3): LayoutNode {
+  const base = lay(ctx)
+  const W = Math.max(1, ctx.box.width)
+  const H = Math.max(1, ctx.box.height)
+  const b = summarize(base, W, H, ctx)
+  if (!b.chars) return base
+  for (let n = maxStep - (ctx.tokens.typeStep ?? 0); n >= 1; n--) {
+    const node = lay(promoteType(ctx, n))
+    const s = summarize(node, W, H, ctx)
+    if (s.cut || (s.outside && !b.outside) || s.chars < b.chars || s.lines > 2 * b.lines + 1) continue
+    const overlap = s.boxes.some((a, i) => s.boxes.some((c, j) => j > i && a.x < c.x + c.width - 1 && c.x < a.x + a.width - 1 && a.y < c.y + c.height - 1 && c.y < a.y + a.height - 1))
+    if (overlap) continue
+    return node
+  }
+  return base
+}
+
+/**
+ * Whether a block's tree shows its text whole inside its box: nothing cut, every leaf and every line
+ * (by the host's measure too) in the box, no text on text. A tiered block can test a tier's real
+ * layout with it instead of predicting the layout's geometry.
+ */
+export function showsWhole(ctx: LayoutContext, node: LayoutNode): boolean {
+  const s = summarize(node, Math.max(1, ctx.box.width), Math.max(1, ctx.box.height), ctx)
+  if (s.cut || s.outside) return false
+  return !s.boxes.some((a, i) => s.boxes.some((c, j) => j > i && a.x < c.x + c.width - 1 && c.x < a.x + a.width - 1 && a.y < c.y + c.height - 1 && c.y < a.y + a.height - 1))
 }
 
 /** Stroke-only path (arcs, polylines) in absolute block coordinates. */

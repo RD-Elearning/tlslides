@@ -13,6 +13,7 @@ import type { QaProps } from './schema'
 import { QA_MAX_ITEMS } from './schema'
 import { asArray, str, toMeasurable } from '../_engine/rich'
 import { onColor, readableOn } from '../_engine/color'
+import { growText } from '../_engine/grow'
 
 function compute(props: QaProps, ctx: LayoutContext, width: number) {
   const items = asArray<unknown>(props.items).map((it) => {
@@ -69,7 +70,12 @@ function compute(props: QaProps, ctx: LayoutContext, width: number) {
   return { nodes, height: Math.max(0, y - sp.md), count: items.length, lines, lineH: firstLine }
 }
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: QaProps, ctx: LayoutContext): LayoutNode {
+  return growText(ctx, (c) => layoutAuthored(props, c))
+}
+
+function layoutAuthored(props: QaProps, ctx: LayoutContext): LayoutNode {
   const width = Math.max(1, ctx.box.width)
   const r = compute(props, ctx, width)
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width, height: r.height }, children: r.nodes }

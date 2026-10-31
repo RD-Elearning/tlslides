@@ -7,17 +7,17 @@
  * Slide scope: it fills the region and the content is vertically centred.
  */
 
-import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode } from '../../../types'
+import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode, RichText } from '../../../types'
 import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
-import { onSurface, composeFlat, measureHeights, pick, strings, toMeasurable, type Piece } from '../_kit'
+import { onSurface, composeFlat, measureHeights, pick, richItems, toMeasurable, type Piece } from '../_kit'
 
 export const RECAP_MIN = 2
 export const RECAP_MAX = 5
 
 export interface RecapProps extends Record<string, unknown> {
-  points: string[]
+  points: Array<string | RichText>
   takeaway?: string
   style?: 'numbered' | 'cards'
 }
@@ -45,7 +45,7 @@ const takeawaySpec = (props: RecapProps): BlockSpec | undefined =>
   props.takeaway ? { id: 'takeaway', type: 'tls.t.takeaway', props: { text: props.takeaway, tone: 'accent', label: 'Remember' } } : undefined
 
 export function buildRecap(props: RecapProps): BlockSpec {
-  const list: BlockSpec = { id: 'points', type: 'tls.t.numbered', props: { items: strings(props.points, RECAP_MAX), markerStyle: 'badge', spacing: 'roomy' } }
+  const list: BlockSpec = { id: 'points', type: 'tls.t.numbered', props: { items: richItems(props.points, RECAP_MAX), markerStyle: 'badge', spacing: 'roomy' } }
   return { id: 'recap', type: 'tls.l.stack', props: { gap: 'lg', sizing: 'content', children: [list, takeawaySpec(props)].filter(Boolean) as BlockSpec[] } }
 }
 
@@ -53,7 +53,7 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
   const H = Math.max(0, ctx.box.height) || 0
   const style = pick(props.style, STYLES, 'numbered')
-  const pts = strings(props.points, RECAP_MAX)
+  const pts = richItems(props.points, RECAP_MAX)
   const gap = ctx.tokens.space.lg
   const take = takeawaySpec(props)
   const pieces: Piece[] = []

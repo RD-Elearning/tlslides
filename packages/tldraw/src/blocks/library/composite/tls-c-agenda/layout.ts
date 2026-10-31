@@ -12,6 +12,7 @@
  */
 
 import { slotItems } from '../_slots'
+import { tierStart } from '../../diagram/_kit'
 import { alignText, cardNodes, cardPaint } from '../_kit'
 import { onColor, readableOn, tintOf } from '../../text/_engine/color'
 import type { LayoutContext, LayoutNode, ResolvedTextStyle, Size, TypeToken } from '../../../types'
@@ -52,6 +53,10 @@ const TIERS: ReadonlyArray<Tier> = [
   // structure (a table of contents), cards get `xl` padding.
   { title: 'heading', note: 'lead', index: 'subheading', gap: 'xl', roomy: true },
   { title: 'heading', note: 'body', index: 'body', gap: 'md' },
+  // 2026-10-24 review: a seven-item agenda in two columns fell from body notes straight to caption
+  // notes under subheading titles; the notes keep body size while the titles step down first
+  { title: 'subheading', note: 'body', index: 'body', gap: 'md' },
+  { title: 'lead', note: 'body', index: 'body', gap: 'sm' },
   { title: 'subheading', note: 'caption', index: 'caption', gap: 'md' },
   { title: 'lead', note: 'caption', index: 'caption', gap: 'sm' },
   { title: 'body', note: 'caption', index: 'caption', gap: 'sm' },
@@ -74,7 +79,7 @@ export function layout(props: AgendaProps, ctx: LayoutContext): LayoutNode {
   const pads: Array<CardPad | undefined> = props.variant === 'cards' ? ['xl', 'lg', 'sm', undefined] : [undefined]
   let node: LayoutNode | undefined
   for (const pad of pads) {
-    for (const tier of TIERS) {
+    for (const tier of TIERS.slice(tierStart(ctx, TIERS.length))) {
       // The roomy tier pairs with `xl` card padding (or the list); `xl` padding with nothing else.
       if (pad === 'xl' ? !tier.roomy : tier.roomy && pad !== undefined) continue
       const candidate = place(props, ctx, tier, cols, pad)
@@ -103,6 +108,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
   // AC2 knobs: `variant: cards` puts each item on a card (inner padding `pad`); `numbering`
   // `badge` draws the number in a disc, `none` drops the number column.
   const cards = cardPad !== undefined
+  const firstNumber = Number.isInteger(props.startAt) && (props.startAt as number) >= 1 ? (props.startAt as number) : 1
   const numbering = props.numbering === 'badge' || props.numbering === 'none' ? props.numbering : 'plain'
   const pad = cardPad ? ctx.tokens.space[cardPad] : 0
   // Two columns hold half the rows, so the rows get more air (AC1.5).
@@ -191,7 +197,7 @@ function place(props: AgendaProps, ctx: LayoutContext, tier: (typeof TIERS)[numb
     const noteColor = ctx.resolveColor('textMuted').color
 
     // Index number
-    const indexText = `${i + 1}`
+    const indexText = `${firstNumber + i}`
     if (numbering === 'plain') {
       const indexStyle: ResolvedTextStyle = {
         ...indexStyle0,

@@ -123,7 +123,7 @@ export const SWISS_STYLE: DeckStyle = {
     'tls.c.closing': { variant: ['split'] },
   },
   prefer: ['tls.t.statement'],
-  avoid: ['tls.m.decoration', 'tls.t.tags', 'tls.c.kinetic-title'],
-  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading'], icons: 'none', accent: 'Signal red for one thing per slide; heavy rules organise the grid.' },
+  avoid: ['tls.t.tags', 'tls.c.kinetic-title'],
+  concept: { decoration: 'none', motifs: ['tls.x.rule'], zones: ['under-heading', 'watermark'], quiet: ['tls.m.decoration:icon'], icons: 'none', accent: 'Signal red for one thing per slide; heavy rules organise the grid.' },
   rules: ['Flush left everywhere; asymmetric grid.', 'Big type, few words.', 'Red for one thing per slide.', 'No blobs, orbs, gradients or centred text.'],
 }

@@ -13,7 +13,7 @@
 import type { Box, CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { MindmapProps } from './schema'
 import { MIND_CHILDREN_MAX, MIND_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, lineH, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, linesHeight } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, lineH, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf, linesHeight, promoteToFit } from '../_kit'
 import { around, slot } from '../_motion'
 
 const f = (v: number) => String(Math.round(v * 100) / 100)
@@ -23,7 +23,12 @@ interface Branch {
   kids: string[]
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: MindmapProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const center = str(props.center).trim()
@@ -48,17 +53,19 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
 
   const bigS = style(ctx, 'caption', c.text)
   const smallS = style(ctx, 'footnote', c.text)
-  const kidS = rowH >= 46 ? bigS : smallS
-  const branchS = rowH >= 56 ? bigS : smallS
+  // 2026-10-24: the row and box caps grow with the type `promoteToFit` gives the labels
+  const k = Math.max(1, bigS.size / Math.max(1, ctx.tokens.type.caption.size))
+  const kidS = rowH >= 46 * k ? bigS : smallS
+  const branchS = rowH >= 56 * k ? bigS : smallS
 
   // Column geometry.
-  const cw = clamp(W * (both ? 0.17 : 0.2), 100, 260)
-  const ch = clamp(H * 0.2, Math.min(H, lineH(bigS) + 16), 110)
+  const cw = clamp(W * (both ? 0.17 : 0.2), 100, 260 * k)
+  const ch = clamp(H * 0.2, Math.min(H, lineH(bigS) + 16), 110 * k)
   const g = clamp(W * 0.035, 16, 56)
   const cBox: Box = both ? { x: (W - cw) / 2, y: (H - ch) / 2, width: cw, height: ch } : { x: 0, y: (H - ch) / 2, width: cw, height: ch }
   const avail = both ? (W - cw) / 2 : W - cw
-  const bw = clamp((avail - 2 * g) * 0.45, 70, 230)
-  const kw = clamp(avail - 2 * g - bw, 60, 230)
+  const bw = clamp((avail - 2 * g) * 0.45, 70, 230 * k)
+  const kw = clamp(avail - 2 * g - bw, 60, 230 * k)
 
   const nodeBox = (cx0: number, y: number, w: number, h: number): Box => ({ x: cx0, y: y - h / 2, width: w, height: h })
   const link = (part: string, from: { x: number; y: number }, to: { x: number; y: number }, color: string) => {
@@ -71,7 +78,10 @@ export function layout(props: MindmapProps, ctx: LayoutContext): LayoutNode {
     const w = Math.max(8, box.width - 2 * pad)
     const lines = clamp(Math.floor((box.height - 2) / lineH(s)), 1, 2)
     const h = linesHeight(ctx, text, s, w, lines)
-    nodes.push(...placeLines(ctx, text, { ...s, color }, { x: box.x + pad, y: box.y + (box.height - h) / 2, width: w }, align, lines, part).nodes)
+    const placed = placeLines(ctx, text, { ...s, color }, { x: box.x + pad, y: box.y + (box.height - h) / 2, width: w }, align, lines, part).nodes
+    // a centred label wrapped to two lines is one line node each: one `part` group animates both
+    if (placed.length > 1) nodes.push({ k: 'group', part, box: { x: 0, y: 0, width: W, height: H }, children: placed.map((n) => ({ ...n, part: undefined }) as LayoutNode) })
+    else nodes.push(...placed)
   }
 
   const drawSide = (idx: number[], dirSign: 1 | -1) => {

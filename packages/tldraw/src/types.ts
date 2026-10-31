@@ -26,7 +26,7 @@ import type {
 // `import type`. TypeScript erases both sides at compile time, same pattern `blocks/types.ts`
 // already uses for its own `import type { TDShape, AnimationTrigger } from '~types'`.
 import type { DeckTokens } from './blocks/tokens'
-import type { MasterSpec } from './blocks/types'
+import type { LookAxes, MasterSpec } from './blocks/types'
 
 /* -------------------------------------------------- */
 /*                         App                        */
@@ -190,6 +190,14 @@ export interface TDDocument {
   // enhance F1 — the deck's `DeckSpec.motif` (a subject doodle), carried for the masters and the
   // round trip.
   motif?: string
+  // CR7a — the deck's `DeckSpec.motifZone`, carried so the masters drop the signature motif.
+  motifZone?: 'fixed' | 'auto'
+  // CR7b — the deck's `DeckSpec.look`, for the round trip (pages' blocks carry the merged base).
+  look?: LookAxes
+  // CR10 — the deck's `DeckSpec.motionPersonality` (the viewer reads it).
+  motionPersonality?: 'calm' | 'lively' | 'cinematic'
+  // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
+  ambient?: boolean
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -270,6 +278,13 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   motionStyle?: 'static' | 'subtle' | 'expressive'
   // enhance L1 — the authored `SlideSpec.valign`, carried back by `documentToDeckSpec`.
   valign?: 'start' | 'auto'
+  // CR7a — the authored `SlideSpec.intent` (gate profile), carried back by `documentToDeckSpec`.
+  intent?: 'poster' | 'diagram' | 'dense'
+  // CR7b — the authored `SlideSpec.look`, carried back by `documentToDeckSpec`.
+  look?: LookAxes
+  // CR10 — the authored `SlideSpec.transition` (the viewer plays it) and `choreography`.
+  transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'; dir?: 'left' | 'right' | 'up' | 'down' }
+  choreography?: string
 }
 
 /** One color stop in a gradient. `at` is 0–1 along the gradient, matching SVG's `<stop offset>`

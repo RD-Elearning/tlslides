@@ -44,11 +44,11 @@ function hull(ds: string[]): { x1: number; y1: number; x2: number; y2: number } 
 }
 
 /** Applies `x' = cx + (x - cx) k` (same for y) to every coordinate pair, keeping the commands. */
-function scaleAbout(d: string, cx: number, cy: number, k: number): string {
+function scaleAbout(d: string, cx: number, cy: number, k: number, ky = k): string {
   let i = 0
   return d.replace(NUM, (m) => {
     const v = Number(m)
-    const out = i % 2 === 0 ? cx + (v - cx) * k : cy + (v - cy) * k
+    const out = i % 2 === 0 ? cx + (v - cx) * k : cy + (v - cy) * ky
     i++
     return String(r2(out))
   })
@@ -59,10 +59,28 @@ export interface RoughOptions {
   /** Stroke colour and width; omitted = no outline. */
   stroke?: { color: string; width: number }
   /** Hachure fill colour, gap and line weight; omitted = no fill. */
-  hachure?: { color: string; gap: number; weight: number }
+  hachure?: { color: string; gap: number; weight: number; cross?: boolean }
   roughness?: number
+  /** One pass per stroke (an ink pen), not Rough.js's double sketch line. */
+  single?: boolean
   /** Half the outer stroke (and the wobble) kept inside the box. */
   margin: number
+  /** How a sketch that spills is pulled back in: `uniform` (default) scales both axes by the same
+   *  factor, keeping a motif's proportions; `axes` scales each axis on its own — for a panel or a
+   *  pill, where a short side's wobble must not shrink the long side (a badge's outline then cut
+   *  through its text: owner test, deck 63550faa s8). */
+  fit?: 'uniform' | 'axes'
+}
+
+/** The scale(s) that bring hull `h` inside the box less `m`, about its centre. */
+function fitScale(h: { x1: number; y1: number; x2: number; y2: number } | undefined, W: number, H: number, m: number, fit: 'uniform' | 'axes' = 'uniform'): [number, number] {
+  if (!h) return [1, 1]
+  const cx = W / 2
+  const cy = H / 2
+  const fits = (v: number, lo: number, hi: number, c: number) => (v < lo ? (c - lo) / Math.max(1e-6, c - v) : v > hi ? (hi - c) / Math.max(1e-6, v - c) : 1)
+  const kx = Math.max(0, Math.min(1, fits(h.x1, m, W - m, cx), fits(h.x2, m, W - m, cx)))
+  const ky = Math.max(0, Math.min(1, fits(h.y1, m, H - m, cy), fits(h.y2, m, H - m, cy)))
+  return fit === 'axes' ? [kx, ky] : [Math.min(kx, ky), Math.min(kx, ky)]
 }
 
 /**
@@ -75,20 +93,12 @@ export function roughPaths(d: string, W: number, H: number, o: RoughOptions): La
   const base = { seed, roughness: o.roughness ?? 1.3, bowing: 1 }
   // fill and outline drawn separately, so each set is known without guessing from its colour
   const fill = o.hachure
-    ? g.toPaths(g.path(d, { ...base, stroke: 'none', strokeWidth: 0, fill: '#000', fillStyle: 'hachure', hachureGap: o.hachure.gap, fillWeight: o.hachure.weight, hachureAngle: -41 })).filter((s) => s.stroke !== 'none')
+    ? g.toPaths(g.path(d, { ...base, stroke: 'none', strokeWidth: 0, fill: '#000', fillStyle: o.hachure.cross ? 'cross-hatch' : 'hachure', hachureGap: o.hachure.gap, fillWeight: o.hachure.weight, hachureAngle: -41 })).filter((s) => s.stroke !== 'none')
     : []
-  const line = o.stroke ? g.toPaths(g.path(d, { ...base, stroke: '#000', strokeWidth: o.stroke.width })).filter((s) => s.stroke !== 'none') : []
+  const line = o.stroke ? g.toPaths(g.path(d, { ...base, stroke: '#000', strokeWidth: o.stroke.width, ...(o.single ? { disableMultiStroke: true } : {}) })).filter((s) => s.stroke !== 'none') : []
   // fit: scale the whole sketch about the box centre when it spills past the margin
-  const h = hull([...fill, ...line].map((s) => s.d))
-  const cx = W / 2
-  const cy = H / 2
-  let k = 1
-  if (h) {
-    const m = o.margin
-    const fits = (v: number, lo: number, hi: number, c: number) => (v < lo ? (c - lo) / Math.max(1e-6, c - v) : v > hi ? (hi - c) / Math.max(1e-6, v - c) : 1)
-    k = Math.max(0, Math.min(1, fits(h.x1, m, W - m, cx), fits(h.x2, m, W - m, cx), fits(h.y1, m, H - m, cy), fits(h.y2, m, H - m, cy)))
-  }
-  const fix = (dd: string) => (k < 1 ? scaleAbout(dd, cx, cy, k) : dd.replace(NUM, (m) => String(r2(Number(m)))))
+  const [kx, ky] = fitScale(hull([...fill, ...line].map((s) => s.d)), W, H, o.margin, o.fit)
+  const fix = (dd: string) => (kx < 1 || ky < 1 ? scaleAbout(dd, W / 2, H / 2, kx, ky) : dd.replace(NUM, (m) => String(r2(Number(m)))))
   const leaf = (dd: string, color: string, width: number): LayoutNode => ({ k: 'path', part: 'shape', box: { x: 0, y: 0, width: W, height: H }, d: fix(dd), stroke: { color, width } })
   return [...fill.map((s) => leaf(s.d, o.hachure!.color, o.hachure!.weight)), ...line.map((s) => leaf(s.d, o.stroke!.color, o.stroke!.width))]
 }
@@ -97,21 +107,13 @@ export function roughPaths(d: string, W: number, H: number, o: RoughOptions): La
  * A single wobbly outline of the closed path `d` (one pass, no double stroke), fitted into the box
  * less `margin`: the edge of a hand-cut shape, painted as that shape's solid fill.
  */
-export function roughOutline(d: string, W: number, H: number, o: { seed: number; roughness?: number; margin: number }): string {
+export function roughOutline(d: string, W: number, H: number, o: { seed: number; roughness?: number; margin: number; fit?: 'uniform' | 'axes' }): string {
   const g = generator()
   const sets = g.toPaths(g.path(d, { seed: Math.max(1, Math.floor(o.seed) || 1), roughness: o.roughness ?? 1.2, bowing: 1, stroke: '#000', strokeWidth: 1, disableMultiStroke: true }))
   // Rough.js draws each edge as its own `M … C …` piece; one closed outline needs them joined:
   // every later `M` becomes an `L` (the jump is the wobble's few units), then `Z`.
   let first = true
   const dd = sets.map((x) => x.d).join(' ').replace(/M/g, () => (first ? ((first = false), 'M') : 'L')) + 'Z'
-  const h = hull([dd])
-  const cx = W / 2
-  const cy = H / 2
-  let k = 1
-  if (h) {
-    const m = o.margin
-    const fits = (v: number, lo: number, hi: number, c: number) => (v < lo ? (c - lo) / Math.max(1e-6, c - v) : v > hi ? (hi - c) / Math.max(1e-6, v - c) : 1)
-    k = Math.max(0, Math.min(1, fits(h.x1, m, W - m, cx), fits(h.x2, m, W - m, cx), fits(h.y1, m, H - m, cy), fits(h.y2, m, H - m, cy)))
-  }
-  return k < 1 ? scaleAbout(dd, cx, cy, k) : dd.replace(NUM, (x) => String(r2(Number(x))))
+  const [kx, ky] = fitScale(hull([dd]), W, H, o.margin, o.fit)
+  return kx < 1 || ky < 1 ? scaleAbout(dd, W / 2, H / 2, kx, ky) : dd.replace(NUM, (x) => String(r2(Number(x))))
 }

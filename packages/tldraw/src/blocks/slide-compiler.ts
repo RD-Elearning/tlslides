@@ -33,6 +33,7 @@ import type { ComponentShape } from '~types'
 import type {
   BlockAnchor,
   BlockDefinition,
+  BlockMotionSpec,
   BlockSpec,
   BlockStyleSpec,
   DeckStyle,
@@ -54,12 +55,17 @@ import { createLayoutContext } from './layout'
 import { layoutBlock, textScaleOf } from './layout/layout-child'
 import { collectPaintedLeaves, measureBlock, paintedBounds, unionBox } from './layout/measure-block'
 import { effectiveMotionStyle, readingOrder, styleBlockMotion } from './motion/motion-style'
+import { choreoOrder, choreoPreset } from './motion/choreo'
+import { MOTION_PRESETS } from './motion/presets'
 import { deriveShapeAnimation } from './motion/resolve-motion'
+import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
+import { DESIGN_THRESHOLDS } from './design-checks'
+import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
-import { connectorRoute, CONNECTOR_WEIGHT } from './layout/connector-route'
+import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH } from './layout/connector-route'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -134,14 +140,38 @@ export function compileSlide(
   registry?: BlockRegistry,
   opts?: CompileSlideOptions
 ): CompileSlideResult {
-  const result = (registry && growText(spec, frame, tokens, registry, opts)) || compileSlideBlocks(spec, frame, tokens, registry, opts)
+  const grown = registry ? growText(spec, frame, tokens, registry, opts) : null
+  let result = grown?.result ?? compileSlideBlocks(spec, frame, tokens, registry, opts)
+  if (registry) result = harmonizeTypes(grown?.spec ?? spec, result, frame, tokens, registry, opts)
+  stampAmbient(result.shapes, effectiveMotionStyle(spec.motionStyle, opts?.motionStyle), registry)
   // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
   if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
   return compileConnectors(spec, result, tokens, registry, opts)
 }
 
+/**
+ * V2 (vivid PLAN.md §4) — a block that can loop (its definition's or spec's `motion.ambient`)
+ * learns the motion style of its slide, layered blocks included (they take no part in the style's
+ * build order, so `applyMotionStyle` leaves them without one). A still slide stamps nothing.
+ * Also run on a slide's style-master shapes (`styleMasterPage`): their motifs loop with the slide.
+ */
+export function stampAmbient(shapes: ComponentShape[], style: MotionStyle | undefined, registry: BlockRegistry | undefined): void {
+  if (style !== 'subtle' && style !== 'expressive') return
+  for (const shape of shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { motion?: BlockMotionSpec; ambientStyle?: string } | undefined
+    if (!meta || !shape.componentId) continue
+    const props = shape.props as Record<string, unknown>
+    if (mayLoop({ props, motion: meta.motion }, (t) => registry?.get(t), shape.componentId)) meta.ambientStyle = style
+  }
+}
+
 /** enhance L5: below this share of the content regions' area, a balanced slide's content floats. */
 export const GROW_BELOW = 0.5
+/**
+ * Review 2026-10-24: content that spans the width but paints under this share of the regions'
+ * height floats too (three 400-tall cards in a 750-tall region paint 53 % of the area).
+ */
+export const GROW_HEIGHT_BELOW = 0.6
 /** The text scales tried, largest first (≈ one type-scale step and halves of it). */
 export const GROW_STEPS: readonly number[] = [1.3, 1.2, 1.1]
 /** A grown slide's content may cover at most this share of the content regions' height. */
@@ -163,7 +193,7 @@ function growText(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): CompileSlideResult | null {
+): { result: CompileSlideResult; spec: SlideSpec } | null {
   if (spec.valign !== 'auto' || opts?.growText === false) return null
   const grows = (name: string, b: BlockSpec | undefined) =>
     name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && !GROW_SKIP.has(b.type) && textScaleOf(b.style) === undefined
@@ -187,7 +217,14 @@ function growText(
   if (!area) return null
   const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
   const before = paintedContent(base, ids, tokens, registry, opts)
-  if (!before.ok || !before.box || before.box.width * before.box.height >= GROW_BELOW * area.width * area.height) return null
+  if (!before.ok || !before.box) return null
+  // the height share only for a structure (cards, a diagram): text alone sizes itself (a statement
+  // grown on height crossed a style's rule)
+  const structured = Object.entries(spec.regions ?? {}).some(([name, blocks]) => Array.isArray(blocks) && blocks.some((b) => grows(name, b) && !b.type.startsWith('tls.t.')))
+  const floats =
+    before.box.width * before.box.height < GROW_BELOW * area.width * area.height || (structured && before.box.height < GROW_HEIGHT_BELOW * area.height)
+  if (!floats) return null
+  let baseSizes: number | undefined
   for (const k of GROW_STEPS) {
     const scaled: SlideSpec = {
       ...spec,
@@ -204,17 +241,120 @@ function growText(
     const after = paintedContent(result, ids, tokens, registry, opts)
     if (!after.ok || !after.box || after.box.height > GROW_MAX_HEIGHT * area.height || after.box.width > area.width + FLOW_TOL) continue
     if (after.box.y < area.y - FLOW_TOL || after.box.y + after.box.height > area.y + area.height + FLOW_TOL) continue
+    // a block that sizes its own type to its box (a statement) can paint smaller under a scale:
+    // growing must grow
+    if (after.box.width * after.box.height <= before.box.width * before.box.height) continue
+    // nor wrap a short text into narrow lines (a card title at 11 characters a line)
+    if (after.narrow > before.narrow) continue
+    // the scaled body must not add a text size the slide's type check counts (×1.2 turns 48/40/30
+    // into 57/47/36, which no longer meet the title's or an unscaled block's sizes)
+    if (typeSizeCount(result, tokens, registry, opts) > Math.max(DESIGN_THRESHOLDS.typeSizes, (baseSizes ??= typeSizeCount(base, tokens, registry, opts)))) continue
     for (const shape of result.shapes) {
       const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
       if (meta && typeof meta.id === 'string' && ids.has(meta.id)) meta.grown = k
     }
-    return result
+    return { result, spec: scaled }
   }
   return null
 }
 
+
+/**
+ * 2026-10-24 — blocks that grow their type with their box (a timeline, a tree, a KPI row) chose
+ * their tier alone, so beside a column of text a slide could count six sizes (`type/too-many-sizes`
+ * on 13 corpus slides). When it does, the content blocks are compiled again with `style.typeStep`
+ * 1 then 2 (each tiered block, nested ones too, skips its largest tiers) and the first step back
+ * at five sizes wins, if it overflows nothing new. The step is recorded as `$block.stepped`, so the
+ * decompiler returns the authored style. A slide with no tiered block is left as compiled.
+ */
+function harmonizeTypes(
+  spec: SlideSpec,
+  result: CompileSlideResult,
+  frame: { width: number; height: number },
+  tokens: ResolvedTokens,
+  registry: BlockRegistry,
+  opts?: CompileSlideOptions
+): CompileSlideResult {
+  const tiered = (b: BlockSpec | undefined, nested = false): boolean =>
+    !!b &&
+    ((TIERED_BLOCK_TYPES.has(b.type) && !(nested && TOP_LEVEL_TIERED.has(b.type))) ||
+      (Array.isArray((b.props as { children?: unknown })?.children) && ((b.props as { children: BlockSpec[] }).children).some((c) => tiered(c, true))))
+  const steps = (name: string, b: BlockSpec | undefined) => name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && tiered(b) && b.style?.typeStep === undefined
+  const ids = new Set<string>()
+  for (const [name, blocks] of Object.entries(spec.regions ?? {})) {
+    if (Array.isArray(blocks)) for (const b of blocks) if (steps(name, b)) ids.add(b.id as string)
+  }
+  if (!ids.size) return result
+  const before = typeSizeCount(result, tokens, registry, opts)
+  if (before <= DESIGN_THRESHOLDS.typeSizes) return result
+  const overflow = (r: CompileSlideResult) => r.findings.filter((f) => f.rule === 'region/overflow').length
+  const grownById = new Map<string, unknown>()
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; grown?: unknown } | undefined
+    if (meta && typeof meta.id === 'string' && meta.grown !== undefined) grownById.set(meta.id, meta.grown)
+  }
+  for (const step of [1, 2]) {
+    const stepped: SlideSpec = {
+      ...spec,
+      regions: Object.fromEntries(
+        Object.entries(spec.regions ?? {}).map(([name, blocks]) => [
+          name,
+          Array.isArray(blocks) ? blocks.map((b) => (b && ids.has(b.id as string) ? { ...b, style: { ...(b.style ?? {}), typeStep: step } } : b)) : blocks,
+        ])
+      ),
+    }
+    const next = compileSlideBlocks(stepped, frame, tokens, registry, opts)
+    if (overflow(next) > overflow(result)) continue
+    if (typeSizeCount(next, tokens, registry, opts) > DESIGN_THRESHOLDS.typeSizes) continue
+    for (const shape of next.shapes) {
+      const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown> | undefined
+      if (!meta || typeof meta.id !== 'string') continue
+      if (ids.has(meta.id)) meta.stepped = step
+      if (grownById.has(meta.id)) meta.grown = grownById.get(meta.id)
+    }
+    return next
+  }
+  return result
+}
+
+/** Distinct text sizes of a compiled slide's content blocks, merged within 1 unit as `type/too-many-sizes` does. */
+function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, registry: BlockRegistry, opts?: CompileSlideOptions): number {
+  const sizes: number[] = []
+  for (const shape of result.shapes) {
+    const meta = shape.props[BLOCK_PROP_KEY] as { layer?: string; style?: BlockStyleSpec } | undefined
+    const def = registry.get(shape.componentId as string)
+    if (!meta || !def || meta.layer === 'backdrop') continue
+    const size = { width: shape.size[0], height: shape.size[1] }
+    const props = { ...shape.props }
+    delete props[BLOCK_PROP_KEY]
+    try {
+      const ctx = createLayoutContext({
+        box: size,
+        tokens,
+        surface: MINIMAL_SURFACE,
+        registry,
+        ...(meta.style ? { style: meta.style } : {}),
+        ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
+      })
+      // every painted size, a figure's labels included: stepping a diagram down also keeps its
+      // labels whole (corpus 2026-10-26: a timeline beside a hero number cut 2 labels unstepped),
+      // though `type/too-many-sizes` reads a figure's labels as one size
+      for (const t of collectPaintedLeaves(layoutBlock(def, props, ctx), size).text) sizes.push(Math.round(t.fontSize * (t.scale || 1)))
+    } catch {
+      // a block that fails to lay out paints nothing
+    }
+  }
+  let count = 0
+  let last = Infinity
+  for (const s of [...new Set(sizes)].sort((a, b) => b - a)) if (last - s > 1) (count++, (last = s))
+  return count
+}
+
 /** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
-const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image'])
+const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image', 'tls.m.icon-cluster'])
+
+/** Blocks that may bleed off the frame edge in the `visual` region of `full-bleed-half`: pictures and colour fields. */
+const BLEED_OK: ReadonlySet<string> = new Set([...GROW_SKIP, 'tls.m.shape', 'tls.c.image-full'])
 
 /**
  * The painted union of the shapes `ids` names, in slide units, and `ok: false` when one of them
@@ -226,8 +366,9 @@ function paintedContent(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): { box: Box | null; ok: boolean } {
+): { box: Box | null; ok: boolean; narrow: number } {
   const boxes: Box[] = []
+  let narrow = 0
   for (const shape of result.shapes) {
     const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; style?: BlockStyleSpec } | undefined
     if (!meta || typeof meta.id !== 'string' || !ids.has(meta.id)) continue
@@ -247,16 +388,17 @@ function paintedContent(
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
       const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
-      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false }
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow }
+      narrow += c.text.filter((t) => t.lines > 1 && t.chars / t.lines < DESIGN_THRESHOLDS.narrowChars).length
       painted = paintedBounds(c)
     } catch {
-      return { box: null, ok: false }
+      return { box: null, ok: false, narrow }
     }
     if (!painted) continue
-    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false }
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow }
     boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
   }
-  return { box: unionBox(boxes), ok: true }
+  return { box: unionBox(boxes), ok: true, narrow }
 }
 
 /** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */
@@ -321,6 +463,20 @@ function compileSlideUnstyled(
     })
   }
 
+  // The `visual` region of `full-bleed-half` bleeds off the frame edge for a picture or a colour
+  // field. Text or a card placed there started at x = 0 (spro deck 8e474d66 s1: a cover with no left
+  // padding), so it keeps the safe margin on every side that touches the edge. (`full-bleed` is not
+  // touched: its one region is the whole slide for a block that paints edge to edge.)
+  const visual = regionBoxes.visual
+  if (resolvedLayout?.id === 'full-bleed-half' && visual && !(spec.regions.visual ?? []).some((b) => BLEED_OK.has(b.type))) {
+    const m = contentArea(frame, tokens).x
+    const l = visual.x <= 0.5 ? m : 0
+    const t = visual.y <= 0.5 ? m : 0
+    const r = visual.x + visual.width >= frame.width - 0.5 ? m : 0
+    const b = visual.y + visual.height >= frame.height - 0.5 ? m : 0
+    regionBoxes.visual = { x: visual.x + l, y: visual.y + t, width: Math.max(0, visual.width - l - r), height: Math.max(0, visual.height - t - b) }
+  }
+
   // 2. Get vertical alignment map from the resolved layout.
   const regionAlignMap = resolvedLayout?.regionAlign
   // L1: `valign: 'auto'` centres the content regions the layout leaves at the top
@@ -337,13 +493,17 @@ function compileSlideUnstyled(
 
   // F3.1: one fresh memo cache per compile pass.
   const intrinsicSizeCache = new Map<string, Size>()
+  // spro creative R3e: the regions of a `regionStack` group whose regions all hold blocks
+  const stackable = new Set(
+    (resolvedLayout?.regionStack ?? []).filter((g) => g.every((n) => regionBoxes[n] && (spec.regions[n] ?? []).length > 0)).flat()
+  )
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
       const blocks = spec.regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName))
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName), stackable.has(regionName))
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -360,6 +520,33 @@ function compileSlideUnstyled(
   const regionYPositions = registry
     ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (spec.regions[name] ?? []).length > 0, gap)
     : new Map<string, number>()
+
+  // spro creative R3e: a `regionStack` group is centred as one stack across its regions' span
+  const stackedY = new Map<string, number>()
+  for (const group of resolvedLayout?.regionStack ?? []) {
+    const boxes = group.map((n) => regionBoxes[n])
+    const heights = group.map((n) => regionNaturalHeights.get(n))
+    if (boxes.some((b) => !b) || heights.some((h) => h === undefined)) continue
+    if (group.some((n, i) => regionYPositions.has(n) || heights[i]! > boxes[i]!.height)) continue
+    // an arrow between the group's regions (a diagram pointing at its caption) keeps its shaft
+    const ids = (n: string) => new Set((spec.regions[n] ?? []).map((b) => b.id))
+    const across = (a: string, b: string) =>
+      (spec.connectors ?? []).some((c) => {
+        const [x, y] = [ids(a), ids(b)]
+        const f = c.from?.block
+        const t = c.to?.block
+        return (x.has(f) && y.has(t)) || (y.has(f) && x.has(t))
+      })
+    const gapAfter = group.map((n, i) => (i < group.length - 1 && across(n, group[i + 1]) ? gap + MIN_CONNECTOR_LENGTH + tokens.space.sm : gap))
+    const top = boxes[0]!.y
+    const span = boxes[boxes.length - 1]!.y + boxes[boxes.length - 1]!.height - top
+    const total = heights.reduce((a, h) => a! + h!, 0)! + gapAfter.slice(0, -1).reduce((a, g) => a + g, 0)
+    let y = top + Math.max(0, (span - total) / 2)
+    group.forEach((n, i) => {
+      stackedY.set(n, y)
+      y += heights[i]! + gapAfter[i]
+    })
+  }
 
   // 3. Convert each region's blocks to ComponentShapes, stacking vertically.
   const shapes: ComponentShape[] = []
@@ -434,7 +621,9 @@ function compileSlideUnstyled(
     } else if (regionAlign === 'end') {
       offset = Math.max(0, leftoverInRegion)
     }
-    if (hasRegistry) {
+    if (stackedY.has(regionName)) {
+      startY = stackedY.get(regionName)!
+    } else if (hasRegistry) {
       // Use the re-flowed y-position from Pass 2 — apply alignment offset too (F3.2)
       startY = flowedY + offset
     } else {
@@ -473,6 +662,7 @@ function compileSlideUnstyled(
         childIndex: childIndex++,
         definitionMotion: blockDef?.motion,
       })
+      if (stackedY.has(regionName)) (shape.props[BLOCK_PROP_KEY] as Record<string, unknown>).stackRegion = regionName
       shapes.push(shape)
       if (blockDef && block.motion === undefined) styleCandidates.push({ shape, block, def: blockDef, box })
       currentY += blockHeight + gap
@@ -502,8 +692,9 @@ function compileSlideUnstyled(
   }
 
   // 5. P7 — motion style. Only when a style is set; absent = the output above, untouched.
-  const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle)
-  if (motionStyle) applyMotionStyle(motionStyle, styleCandidates)
+  // CR10: a choreography is an explicit ask for motion — expressive when no style says otherwise
+  const motionStyle = effectiveMotionStyle(spec.motionStyle, opts?.motionStyle) ?? (spec.choreography ? 'expressive' : undefined)
+  if (motionStyle) applyMotionStyle(motionStyle, styleCandidates, spec.choreography)
 
   // LO8: a free block with `layer: 'backdrop'` (e.g. a layered block the user dragged, which the
   // decompiler keeps in `free[]`) paints under every other shape, as it did in the region.
@@ -556,11 +747,14 @@ interface StyleCandidate {
  * order. The derived spec goes to `$block.styleMotion` (plus `$block.motionStyle` for the html
  * runtime), never to `$block.motion`, so `documentToDeckSpec` returns what was authored.
  */
-function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[]): void {
-  const ordered = [...candidates].sort((a, b) => readingOrder(a.box, b.box))
+function applyMotionStyle(style: MotionStyle, candidates: StyleCandidate[], choreography?: string): void {
+  const reading = [...candidates].sort((a, b) => readingOrder(a.box, b.box))
+  // CR10: the move's choreography reorders the reveal and may pick the leading blocks' preset
+  const ordered = choreography ? choreoOrder(choreography, reading.map((c) => c.block)).map((i) => reading[i]) : reading
   let index = 0
   for (const c of ordered) {
-    const motion = styleBlockMotion(style, c.def.motion, index)
+    const lead = style === 'expressive' && choreography ? choreoPreset(choreography, c.block, (id) => !!MOTION_PRESETS[id]) : undefined
+    const motion = styleBlockMotion(style, lead ? { ...(c.def.motion ?? {}), expressive: lead } : c.def.motion, index)
     if (!motion) continue
     const animation = deriveShapeAnimation(motion, c.def.motion)
     if (!animation) continue
@@ -614,11 +808,15 @@ function measureRegionBlocks(
   registry: BlockRegistry,
   intrinsicSizeCache: Map<string, Size>,
   blockDefaults?: Record<string, Record<string, unknown>>,
-  align: 'start' | 'center' | 'end' = 'start'
+  align: 'start' | 'center' | 'end' = 'start',
+  hugAlone = false
 ): number[] {
   const regionSize = { width: regionBox.width, height: regionBox.height }
   // CMP1: the style's knob defaults reach nested children too (`layoutChild` fills them).
   const bd = blockDefaults ? { blockDefaults } : {}
+  // CR7a: blocks stacked in one region are measured at their authored type — a list that grew to
+  // the whole region's height pushed the block under it out (corpus 2026-10-26: 3 slides)
+  if (blocks.length > 1) tokens = { ...tokens, measuring: true }
   const sharedCtx = createLayoutContext({
     box: regionSize,
     tokens,
@@ -661,7 +859,8 @@ function measureRegionBlocks(
     // content does not fill the region takes its painted height, so the region's alignment places
     // it (a card row centred under the title, not hugging the top over an empty half).
     const only = blocks[0]
-    if (only && roots[0] > 0 && SIZED_CONTAINERS.has(only.type)) {
+    // spro creative R3e: any block alone in a `regionStack` region hugs its content the same way
+    if (only && roots[0] > 0 && ((hugAlone && !only.type.startsWith('tls.t.')) || SIZED_CONTAINERS.has(only.type))) {
       const def = registry.get(only.type)!
       const ctx = ctxFor(only)
       const props = only.props as Record<string, unknown>
@@ -947,7 +1146,7 @@ function compileLayered(
     if (!shape) return undefined
     const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
     const nested = target.id === targetId ? undefined : targetId
-    const painted = registry ? paintedBoxOf(target, box, tokens, registry, blockDefaults, nested) : null
+    const painted = registry ? paintedBoxOf(withCompiledStyle(target, shape), box, tokens, registry, blockDefaults, nested) : null
     return painted ?? (nested ? undefined : box)
   }
 
@@ -969,7 +1168,10 @@ function compileLayered(
     const anchored = !target && blockAnchor(l.block, def) !== 'fill'
     const inSafe = anchored ? intersectBox(region, safe) : undefined
     const container = target ?? inSafe ?? region
-    const box = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
+    const anchoredAt = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
+    const box = anchored && l.layer === 'backdrop' && isOpaqueMotif(l.block) ? clearOfContent(l.region, l.block, def, anchoredAt, container) : anchoredAt
+    // a solid motif with no free corner beside the content is left out (it would cover it)
+    if (!box) return []
     const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })
     // LO8: remember where the compiler put it, so a drag in the editor survives the round trip.
     const meta = shape.props[BLOCK_PROP_KEY] as Record<string, unknown>
@@ -986,6 +1188,37 @@ function compileLayered(
       const inImageRegion = [...imageRegions].some((r) => (split.flow.regions[r] ?? []).some((b) => b.id === id))
       if (inImageRegion) meta.overImage = true
     }
+  }
+
+  /**
+   * 2026-10-24 review: an opaque motif (an isometric solid, a subject doodle, an orb) anchored behind
+   * the content covered a timeline's nodes and axis once the timeline grew into its region (no
+   * text under it, so `text/occluded` said nothing). It shrinks, from its anchor corner, until it
+   * clears the content's painted boxes; below MIN_MOTIF it is dropped.
+   */
+  const clearOfContent = (regionName: string, block: BlockSpec, def: BlockDefinition | undefined, box: Box, container: Box): Box | null => {
+    if (!registry || !def) return box
+    const content: Box[] = []
+    for (const b of split.flow.regions[regionName] ?? []) {
+      const shape = result.shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === b.id)
+      if (!shape) continue
+      const at: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
+      const painted = paintedBoxOf(withCompiledStyle(b, shape), at, tokens, registry, blockDefaults)
+      if (painted) content.push(painted)
+    }
+    const hits = (r: Box) => content.some((c) => {
+      const i = intersectBox(r, c)
+      return !!i && i.width * i.height > 0.04 * r.width * r.height
+    })
+    if (!hits(box)) return box
+    const [col, row] = ANCHOR_GRID[blockAnchor(block, def) as Exclude<BlockAnchor, 'fill'>] ?? [0, 0]
+    for (let k = 0.9; k * Math.min(box.width, box.height) >= MIN_MOTIF; k *= 0.9) {
+      const w = box.width * k
+      const h = box.height * k
+      const r = { x: container.x + ((container.width - w) * col) / 2, y: container.y + ((container.height - h) * row) / 2, width: w, height: h }
+      if (!hits(r)) return r
+    }
+    return null
   }
 
   const shapes = [...split.backdrops.flatMap(place), ...result.shapes, ...split.overlays.flatMap(place)]
@@ -1093,6 +1326,16 @@ export function anchoredBox(
     width: w,
     height: h,
   }
+}
+
+/** The smallest side an opaque motif shrinks to before `clearOfContent` leaves it out. */
+const MIN_MOTIF = 120
+// `tls.m.decoration`'s SOLID_SHAPES (solids.ts), SUBJECT_SHAPES (subjects.ts) and the orb
+const OPAQUE_MOTIFS: ReadonlySet<string> = new Set(['orb', 'cube', 'cylinder', 'cone', 'pyramid', 'slab', 'tree', 'graph', 'gear', 'book', 'flask', 'globe', 'bulb', 'chart', 'code'])
+/** A decoration drawn opaque (`tls.m.decoration` floors these at 0.85; tone `alt` stays quiet). */
+function isOpaqueMotif(block: BlockSpec): boolean {
+  const p = block.props as { shape?: unknown; tone?: unknown } | undefined
+  return block.type === 'tls.m.decoration' && typeof p?.shape === 'string' && OPAQUE_MOTIFS.has(p.shape) && p.tone !== 'alt'
 }
 
 /** Anchor → [column, row] in halves: 0 = start, 1 = centre, 2 = end. */
@@ -1258,13 +1501,23 @@ export function resolveConnectorEnd(
   if (!top) return undefined
   const shape = shapes.find((sh) => (sh.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id === top.id)
   if (!shape) return undefined
-  const filled = blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top
+  const filled = withCompiledStyle(blockDefaults ? applyStyleBlockDefaults(top, blockDefaults).block : top, shape)
   const box: Box = { x: shape.point[0], y: shape.point[1], width: shape.size[0], height: shape.size[1] }
   const nested = top.id === id ? undefined : id
   const painted = registry ? paintedBoxOf(filled, box, tokens, registry, blockDefaults, nested) : nested ? null : box
   if (!painted) return undefined
   const own = findBlockSpec(filled, id) ?? filled
   return { box: painted, shape, block: own, round: isRoundBlock(own) }
+}
+
+/**
+ * The block with the style its shape was compiled with: `growText` / `harmonizeTypes` give a block
+ * a `textScale` / `typeStep` its authored spec lacks, and an anchor measured at the authored size
+ * started a connector inside a grown hero number (2026-10-24 review).
+ */
+function withCompiledStyle(block: BlockSpec, shape: ComponentShape): BlockSpec {
+  const style = (shape.props[BLOCK_PROP_KEY] as { style?: BlockStyleSpec } | undefined)?.style
+  return style ? { ...block, style } : block
 }
 
 /** Padding around a connector's painted route inside its shape (anti-aliasing, label slack). */

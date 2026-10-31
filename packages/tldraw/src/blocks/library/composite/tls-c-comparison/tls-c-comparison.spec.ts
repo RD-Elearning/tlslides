@@ -594,7 +594,7 @@ describe('AC2 — look knobs (style)', () => {
   ]
 
   it('declares the knob as an enum', () => {
-    expect((DEF.schema.style.type as any).values).toEqual(['plain', 'cards', 'versus'])
+    expect((DEF.schema.style.type as any).values).toEqual(['plain', 'cards', 'versus', 'poster'])
   })
 
   for (const [name, props] of LOOKS) {
@@ -652,4 +652,62 @@ describe('AC2 — look knobs (style)', () => {
   it('versus: DOM and SVG agree', async () => {
     await assertParity(DEF, { ...two, style: 'versus' } as any, { width: 1200, height: 460 }, undefined, { registry })
   }, 30000)
+})
+
+describe('spro creative R3: no title word cut mid-word in a narrow column', () => {
+  it('three card columns in a narrow box keep every title word on one line', () => {
+    const props = { style: 'cards', columns: [
+      { title: 'Paper screens', items: ['Sketch the flow', 'User taps and reacts'] },
+      { title: 'Role-play', items: ['Team acts the service'] },
+      { title: 'Fake landing page', items: ['One promise, one button'] },
+    ] }
+    const root = layout(props as any, makeCtx({ width: 640, height: 600 }))
+    const titles: any[] = []
+    const walk = (n: any) => { if (/\.title$/.test(n.part ?? '')) titles.push(n); (n.children ?? []).forEach(walk) }
+    walk(root)
+    expect(titles).toHaveLength(3)
+    for (const t of titles) {
+      // every line holds whole words of the titles
+      const all = props.columns.map((c) => c.title).join(' ').split(/\s+/)
+      for (const l of t.lines) for (const w of String(l.text).trim().split(/\s+/).filter(Boolean)) expect(all).toContain(w)
+    }
+  })
+})
+
+describe('style poster (spro creative CR13)', () => {
+  const posterProps = {
+    style: 'poster',
+    columns: [
+      { title: 'Before', metric: '4 h', items: ['Paper forms', 'Phone queue'] },
+      { title: 'After', metric: '15 min', items: ['One tap', 'No queue'] },
+    ],
+    highlight: 1,
+  } as unknown as ComparisonProps
+  const texts = (n: LayoutNode, out: string[] = []): string[] => {
+    if (n.k === 'group') n.children.forEach((c) => texts(c, out))
+    else if (n.k === 'text') out.push(n.lines.map((l: any) => l.text).join(' '))
+    return out
+  }
+  const sizeOf = (n: LayoutNode, text: string): number => {
+    let found = 0
+    const walk = (x: LayoutNode) => {
+      if (x.k === 'group') x.children.forEach(walk)
+      else if (x.k === 'text' && x.lines.map((l: any) => l.text).join(' ') === text) found = (x.style as any).size
+    }
+    walk(n)
+    return found
+  }
+
+  it('shows a big number for each contender, larger than its title', () => {
+    const t = layout(posterProps, makeCtx({ width: 1600, height: 800 }, registry))
+    expect(texts(t)).toEqual(expect.arrayContaining(['4 h', '15 min', 'Before', 'After']))
+    expect(sizeOf(t, '15 min')).toBeGreaterThan(sizeOf(t, 'After'))
+  })
+
+  it('without a metric, or with three columns, the regular layout draws it', () => {
+    const noMetric = { ...posterProps, columns: (posterProps.columns as any[]).map(({ metric, ...c }) => c) } as ComparisonProps
+    const t = layout(noMetric, makeCtx({ width: 1200, height: 460 }, registry))
+    expect(texts(t)).toEqual(expect.arrayContaining(['Before', 'After']))
+    expect(() => layout({ ...posterProps, columns: [...(posterProps.columns as any[]), { title: 'Third', items: ['x'] }] } as ComparisonProps, makeCtx({ width: 1200, height: 460 }, registry))).not.toThrow()
+  })
 })

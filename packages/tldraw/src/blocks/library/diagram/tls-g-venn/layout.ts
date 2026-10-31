@@ -14,7 +14,7 @@
 import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
 import type { VennProps } from './schema'
 import { VENN_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, placeLines, rampColor, root, str, style } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, placeLines, rampColor, root, str, style, promoteToFit } from '../_kit'
 
 const SQ3 = Math.sqrt(3)
 
@@ -24,7 +24,12 @@ interface Circle {
   r: number
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: VennProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: VennProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const sets = objs(props.sets)

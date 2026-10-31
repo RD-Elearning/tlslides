@@ -36,6 +36,9 @@ export interface BlockSpec {
   props: Record<string, unknown>
   /** Presentation overrides. Every field optional; the theme + definition defaults fill the rest. */
   style?: BlockStyleSpec
+  /** spro creative CR7b (PLAN §6.3) — how this block is drawn, over the slide's and the deck's look
+   *  (`blocks/look.ts`). Paint only. Nested blocks draw with their slide-level parent's look. */
+  look?: LookAxes
   /** Motion overrides. Absent = the definition's default recipe, which may itself be "none". */
   motion?: BlockMotionSpec
   /** Not read by any layout: child blocks go in **`props.children`**, the one canonical slot
@@ -150,6 +153,9 @@ export interface BlockStyleSpec {
    *  sets it on the content of a balanced slide that would float in its page (`growText`); an
    *  author may set it too. */
   textScale?: number
+  /** 2026-10-24: steps down a block's own type tiers (`fitTier`), 1-3. `compileSlide` sets it when
+   *  the blocks that pick their type by box would give the slide more than five text sizes. */
+  typeStep?: number
   /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
@@ -178,7 +184,8 @@ export interface BlockMotionSpec {
   stagger?: DurationToken | number
   /** Per-named-part motion override. Part names are declared by the motion recipe. */
   parts?: Record<string, PartMotionSpec>
-  /** Presentation-only ambient loop (shimmer, drift). Off unless explicitly set. */
+  /** Presentation-only ambient loop (V2: float, drift, spin…). Absent = the definition's
+   *  `motion.ambient`; `{ preset: 'none' }` switches it off. */
   ambient?: AmbientMotionSpec
 }
 
@@ -200,9 +207,10 @@ export interface PartMotionSpec {
  * Ambient (presentation-only) motion specification.
  */
 export interface AmbientMotionSpec {
-  /** Ambient preset: 'shimmer', 'drift', etc. */
+  /** V2 — an ambient loop id (`motion/ambient.ts` AMBIENT_IDS: float, drift, spin, sway, pulse,
+   *  twinkle, bob), or `'none'` for no loop. */
   preset?: MotionPresetId
-  /** Duration of one ambient cycle. */
+  /** Duration of one ambient cycle, in ms. */
   duration?: DurationToken | number
   /** Easing applied to the ambient animation. */
   ease?: EaseToken
@@ -226,6 +234,60 @@ export type BlockCategory =
   | 'media' | 'people' | 'brand'
   | 'cover' | 'divider' | 'agenda' | 'closing' | 'learning'
   | 'chrome' | 'decoration'
+
+/** spro creative CR2 — what a slide's content *is* (the outline's relations, PLAN §7.3): the 16
+ *  shapes plus the finer kinds a block can show. */
+export type Relation =
+  | 'definition' | 'terms' | 'hierarchy' | 'sequence' | 'cycle' | 'contrast' | 'matrix' | 'formula'
+  | 'code' | 'worked-example' | 'number' | 'quote' | 'question' | 'image-led' | 'statement' | 'recap'
+  | 'series' | 'share' | 'ranking' | 'timeline' | 'cause-effect' | 'network' | 'people' | 'story'
+  | 'action' | 'group'
+export const RELATIONS: readonly Relation[] = [
+  'definition', 'terms', 'hierarchy', 'sequence', 'cycle', 'contrast', 'matrix', 'formula',
+  'code', 'worked-example', 'number', 'quote', 'question', 'image-led', 'statement', 'recap',
+  'series', 'share', 'ranking', 'timeline', 'cause-effect', 'network', 'people', 'story',
+  'action', 'group',
+]
+/** The look families of spro's dialog (`app/decks/looks.py`). */
+export type LookFamily = 'playful' | 'classroom' | 'academic' | 'professional' | 'elegant' | 'modern'
+export const LOOK_FAMILIES: readonly LookFamily[] = ['playful', 'classroom', 'academic', 'professional', 'elegant', 'modern']
+/** The frame slides a block can carry. */
+export type FrameRole = 'cover' | 'agenda' | 'divider' | 'summary' | 'qa' | 'closing'
+export const FRAME_ROLES: readonly FrameRole[] = ['cover', 'agenda', 'divider', 'summary', 'qa', 'closing']
+export type FitsTextLoad = 'labels' | 'lines' | 'paragraphs'
+export type FitsData = 'none' | 'single' | 'share' | 'series' | 'table'
+export type FitsEnergy = 'calm' | 'neutral' | 'lively'
+export const FITS_TEXT_LOADS: readonly FitsTextLoad[] = ['labels', 'lines', 'paragraphs']
+export const FITS_DATA: readonly FitsData[] = ['none', 'single', 'share', 'series', 'table']
+export const FITS_ENERGY: readonly FitsEnergy[] = ['calm', 'neutral', 'lively']
+
+/** spro creative CR2 — a block's capability card (PLAN §6.1). */
+export interface BlockFits {
+  /** What it can show, best first (empty: decoration, never a main block). */
+  relations: Relation[]
+  /** The item count it shows well (not the schema maximum). */
+  items?: [number, number]
+  textLoad: FitsTextLoad
+  /** The data it draws; absent = none. */
+  data?: FitsData
+  energy: FitsEnergy
+  /** Look families it suits (absent = all). */
+  families?: LookFamily[]
+  /** Frame roles it can carry. */
+  frames?: FrameRole[]
+  /** Design moves it can carry as the main block (`moves.ts`). */
+  moves?: string[]
+  /** What it cannot do without (the picker's asset needs). */
+  needs?: Array<'images' | 'logos' | 'portraits' | 'chartData' | 'prices'>
+}
+
+/** spro creative CR2 — a named preset over a block's look knobs (PLAN §6.2). */
+export interface VariantPreset {
+  id: string
+  /** One line: when this preset reads best. */
+  when: string
+  knobs: Record<string, string | boolean>
+}
 
 /** Placement scope: element = atom, group = self-contained unit for one region, slide = fills the content area (never nest). */
 export type BlockScope = 'element' | 'group' | 'slide'
@@ -350,6 +412,70 @@ export interface BlockMotionRuntime {
  * Runtime metadata and behaviour for a block type. The definition lives in code; each
  * instance is a plain JSON `BlockSpec` in the document.
  */
+/* ── L03 — interactive activities (viewer only) ─────────────────────────────── */
+
+export type ActivityKind = 'choice' | 'true-false' | 'flip' | 'reveal' | 'fill-blank' | 'match' | 'order' | 'sort' | 'timer'
+/** `instant`: a single-answer activity gives its result on the click. `confirm`: select, then "Kiểm tra". */
+export type SubmitMode = 'instant' | 'confirm'
+
+export interface ActivityMeta {
+  kind: ActivityKind
+  /** `single`: one click decides (submit mode applies) · `multi`: several picks, always "Kiểm tra" ·
+   *  `none`: nothing is scored (flip cards, reveal). */
+  answers: 'single' | 'multi' | 'none'
+}
+
+/** Labels of the controls, in the deck locale (`blocks/activity/labels.ts`). */
+export interface ActivityLabels {
+  check: string
+  retry: string
+  correct: string
+  wrong: string
+  showAnswer: string
+  hint: string
+  flip: string
+  flipAll: string
+  unflipAll: string
+  start: string
+  stop: string
+  timeUp: string
+  of: string
+}
+
+/** Viewer-session state of one activity block. JSON only. */
+export interface ActivityState {
+  /** Picked option / statement indices, in pick order (order/match activities use it as the sequence). */
+  picked?: number[]
+  /** `true` once evaluated; `'shown'` after "Hiện đáp án". */
+  done?: boolean | 'shown'
+  /** Kind-specific extras (flipped cards, revealed hints, filled blanks…). */
+  extra?: Record<string, unknown>
+}
+
+export interface ActivityEvent {
+  type: 'answered' | 'retried' | 'revealed'
+  kind: ActivityKind
+  correct?: boolean
+}
+
+export interface ActivityRuntime {
+  /** The effective submit mode: block prop `submit` → deck `activity.submit` → `'instant'`. */
+  submit: SubmitMode
+  labels: ActivityLabels
+  /** Viewer-session state of this block (survives leaving and coming back to the slide in one viewer
+   *  mount; cleared when the spec changes). */
+  getState(): ActivityState | undefined
+  setState(s: ActivityState): void
+  /** Host telemetry hook. Optional, never required. */
+  emit?(e: ActivityEvent): void
+  reducedMotion: boolean
+}
+
+/** Deck-level activity defaults (`DeckSpec.activity`). Additive. */
+export interface DeckActivity {
+  submit?: SubmitMode
+}
+
 export interface BlockDefinition<P extends Record<string, unknown> = Record<string, unknown>> {
   /** Registry key, namespaced. */
   type: string
@@ -390,6 +516,13 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   /** AC0 — the look knobs: `enum`/`boolean` option slot names whose values change the look, not
    *  the content, in the order an LLM should try them. */
   looks?: string[]
+  /** spro creative CR2 — the capability card: what the block can show, and how. Filled for every
+   *  AI-eligible built-in from `library/block-fits.ts`; read by `shortlist.ts`. */
+  fits?: BlockFits
+  /** spro creative CR2 — named presets over the block's own `looks` knobs (2–6). */
+  variants?: VariantPreset[]
+  /** spro creative CR2 — containers, editing aids and page chrome: never a slide's main block. */
+  editorOnly?: boolean
 
   /** R7 — LLM-facing guidance: when to use this block, when to avoid it, and a filled
    *  example instance that passes `validateDeckSpec`. Every built-in block should provide
@@ -428,6 +561,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   poster?(props: P, ctx: LayoutContext): LayoutNode
 
   /** `kind: 'html'` only. The HTML template and optional animation. */
+  /** L03 — an interactive activity (family 'live'). Present only on activity blocks. */
+  activity?: ActivityMeta
+
   html?: {
     /** Return markup. MUST use `ctx.esc()` for all user content.
      *  Parts are declared as `data-part` attributes matching `motion.parts`. */
@@ -435,6 +571,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
     /** Optional animation hook. R3 fills rt; for R2, this signature is declared but not called.
      *  Returns a disposer that cleans up running animations. */
     animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)
+    /** L03 — wires the controls of an activity. Called ONLY when the host renders interactively
+     *  (DeckViewer); never in the editor canvas, thumbnails or export. Returns a disposer. */
+    interact?(root: HTMLElement, rt: ActivityRuntime, props: P): () => void
   }
 
   /** Named parts and default choreography. */
@@ -459,7 +598,28 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
  * Motion recipe: declares named parts and a default choreography.
  * (Full shape defined in Phase 22; for P18 this is a placeholder.)
  */
+/**
+ * V2 (vivid PLAN.md §4) — the ambient loop a block plays once it has entered (`motion/ambient.ts`).
+ */
+export interface AmbientRecipe {
+  /** An ambient id (`AMBIENT_IDS`). */
+  preset: string
+  /** Loop the indexed parts `part[0]`, `part[1]`… one by one instead of the whole block. */
+  part?: string
+  /** Phase offset between those parts, in ms. */
+  stagger?: number
+  /** Amplitude factor (1 = the preset's). */
+  amp?: number
+  /** One run in ms (absent = the preset's). */
+  periodMs?: number
+  /** Clip the block to its box while it loops (a `zoom` on a photo). */
+  clip?: boolean
+}
+
 export interface MotionRecipe {
+  /** V2 — the block's ambient loop: a recipe, or one chosen from its props (a decoration loops by
+   *  shape); `null` = none. Presentation only: the timeline and the checks never see it. */
+  ambient?: AmbientRecipe | ((props: Record<string, unknown>, block: Pick<BlockSpec, 'layer'>) => AmbientRecipe | null)
   /** Named parts this block declares. Listed here so motion.parts can target them. */
   parts?: string[]
   /** Default motion preset. */
@@ -515,6 +675,10 @@ export type MotionStyle = 'static' | 'subtle' | 'expressive'
 
 /** The closed set of `MotionStyle` values (validator, JSON schema, digest). */
 export const MOTION_STYLES: readonly MotionStyle[] = ['static', 'subtle', 'expressive']
+
+/** CR7a — `SlideSpec.intent`, the gate profile (`pipeline/quality.ts`). */
+export const SLIDE_INTENTS = ['poster', 'diagram', 'dense'] as const
+export type SlideIntent = (typeof SLIDE_INTENTS)[number]
 
 /**
  * Schema of valid content for a block. Drives inserter UI, AI prompting, and linting.
@@ -668,7 +832,7 @@ export type LayoutNode =
       truncated?: true
     }
   | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
-  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true }
+  | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true; /** creative CR9: the icon's name, so a look can redraw it (filled weight, emoji). */ name?: string }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | {
       k: 'host'
@@ -948,6 +1112,11 @@ export interface ResolvedTokens {
   /** enhance L5: the `style.textScale` already applied to `type` (absent = 1), so a nested
    *  context built from these tokens does not scale them twice. */
   textScale?: number
+  /** The `style.typeStep` in force (absent = 0): nested contexts keep it, as they keep `textScale`. */
+  typeStep?: number
+  /** CR7a: set on an intrinsic measure (`measureIntrinsicSize`): list text keeps its authored type
+   *  there (`growText`), so a container sizes it as authored and grows it only in the room it gives. */
+  measuring?: boolean
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */
@@ -1150,6 +1319,13 @@ export interface SlideSpec {
    *  non-title region whose layout sets no alignment of its own, so a short column sits in the
    *  middle of the page instead of leaving its lower half empty. Absent = `start` (top). */
   valign?: 'start' | 'auto'
+  /** spro creative PLAN §6.8 (CR7a) — the gate profile, from the slide's design move: `poster`
+   *  (a cover, statement, question, quote, big number) is not judged on fill but on its lead size
+   *  and balance, `diagram` on how much of its region the diagram fills, `dense` like today.
+   *  Absent = today's checks (`default`). */
+  intent?: SlideIntent
+  /** spro creative CR7b — the look of every block on this slide, over the deck's (`blocks/look.ts`). */
+  look?: LookAxes
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -1164,6 +1340,11 @@ export interface SlideSpec {
   masterId?: string
   /** P7 — motion style for this slide; overrides `DeckSpec.motionStyle`. Absent = the deck's. */
   motionStyle?: MotionStyle
+  /** spro creative CR10 — how the viewer brings this slide in (`motion/transition.ts`). Viewer-only. */
+  transition?: SlideTransition
+  /** spro creative CR10 — the design move whose choreography orders this slide's reveals
+   *  (`motion/choreo.ts`): it fills the motion of blocks that author none. */
+  choreography?: string
   /** CMP3 (B2, X10) — lines between blocks, by block id (nested ids too), never by coordinates.
    *  Compiled after layout into one overlay `tls.g.connector` shape each (on top of every block);
    *  the round trip returns them here. */
@@ -1258,6 +1439,8 @@ export interface DeckSpec {
   slides: SlideSpec[]
   /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
   motionStyle?: MotionStyle
+  /** L03 — activity defaults (answer mode of single-answer activities). Absent = `instant`. */
+  activity?: DeckActivity
   /** AC1 — a deck style id (one of `BUILT_IN_STYLES`, e.g. `'corporate'`). The style supplies the
    *  default palette, token overrides, masters (`style:*`), knob defaults per block type and the
    *  motion style, each under what this spec authors (`reviews/blocks/ai-curation/README.md`
@@ -1267,6 +1450,43 @@ export interface DeckSpec {
    *  `SUBJECT_SHAPES`). A style whose concept has `subjects` draws it in place of its masters'
    *  `signature` motif on the cover and section pages; other styles ignore it. */
   motif?: string
+  /** spro creative PLAN §6.7 (CR7a) — masters v2: `auto` takes the signature motif off the cover
+   *  and section masters and places it on each such page at the corner farthest from its text
+   *  (`placeDeckMotifs`, which the host runs before rendering). Absent / `fixed` = the master's
+   *  own position. */
+  motifZone?: 'fixed' | 'auto'
+  /** spro creative CR10 — scales every reveal's duration and stagger and picks its easing, over
+   *  `motionStyle` (`motion/personality.ts`). Viewer-only. */
+  motionPersonality?: MotionPersonality
+  /** spro creative CR7b (PLAN §6.3) — the deck's look axes, over the style's own treatment
+   *  (`StyleSurface.render`); slides and blocks override per axis. Paint only. */
+  look?: LookAxes
+  /** V5 (spro vivid PLAN.md) — `false` keeps the deck's blocks still once they have entered (no
+   *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
+   *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
+  ambient?: boolean
+}
+
+/** spro creative CR10 — a slide transition (`SlideSpec.transition`). */
+export interface SlideTransition {
+  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'
+  dir?: 'left' | 'right' | 'up' | 'down'
+}
+
+/** spro creative CR10 — the deck's motion personality. */
+export type MotionPersonality = 'calm' | 'lively' | 'cinematic'
+
+/** spro creative CR7b (PLAN §6.3) — look axes: how strokes, fills, corners, depth, emphasis,
+ *  connectors, icons and image frames are drawn. Values: `LOOK_VALUES` in `blocks/look.ts`. */
+export interface LookAxes {
+  stroke?: 'crisp' | 'rough' | 'ink' | 'chalk' | 'marker'
+  fill?: 'flat' | 'none' | 'hachure' | 'crosshatch' | 'paper' | 'gradient' | 'glass'
+  corner?: 'square' | 'round' | 'pill' | 'wobbly' | 'cut'
+  depth?: 'flat' | 'soft' | 'hard' | 'extrude' | 'clay' | 'stack'
+  icon?: 'outline' | 'thin' | 'duotone' | 'filled' | 'hand' | 'blob' | 'sticker' | 'tile' | 'emoji'
+  emphasis?: 'bold' | 'color' | 'highlighter' | 'underline' | 'circle' | 'box'
+  connector?: 'straight' | 'curved' | 'hand' | 'dotted'
+  frame?: 'none' | 'card' | 'tape' | 'polaroid' | 'torn' | 'circle' | 'blob'
 }
 
 /** AC1 — a font a style names. The package never loads fonts; the host does (§4.1). */
@@ -1313,6 +1533,9 @@ export interface StyleConcept {
   /** enhance S4: subject doodles suit the style (`tls.m.decoration` tree, flask, globe…): the art
    *  direction may pick the one that draws the deck's topic. */
   subjects?: boolean
+  /** vivid V3 — the quiet tier of a decoration-`none` style: motifs it still allows, only as a
+   *  soft watermark (tone `line`, `layer: backdrop`) on about one slide in four. */
+  quiet?: string[]
 }
 
 /**

@@ -16,8 +16,12 @@ import { tlsMImageCompare } from './tls-m-image-compare'
 import { tlsMDeviceMock } from './tls-m-device-mock'
 import { tlsMAvatarGroup } from './tls-m-avatar-group'
 import { tlsMDecoration } from './tls-m-decoration'
+import { tlsMIconCluster } from './tls-m-icon-cluster'
 import { tlsMPattern } from './tls-m-pattern'
+import { tlsMOrnament } from './tls-m-ornament'
 import { tlsMShape } from './tls-m-shape'
+import { tlsMEmoji } from './tls-m-emoji'
+import { tlsMIllustration } from './tls-m-illustration'
 
 /** All built-in media block definitions. */
 export const mediaBlocks: BlockDefinition[] = [
@@ -33,12 +37,17 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMDeviceMock,
   tlsMAvatarGroup,
   tlsMDecoration,
+  tlsMIconCluster,
   tlsMPattern,
+  tlsMOrnament,
   tlsMShape,
+  tlsMEmoji,
+  tlsMIllustration,
 ]
 
 export { tlsMImage } from './tls-m-image'
 export { tlsMIcon } from './tls-m-icon'
+export { tlsMIconCluster } from './tls-m-icon-cluster'
 export { tlsMIconLabel } from './tls-m-icon-label'
 export { tlsMIconList } from './tls-m-icon-list'
 export { tlsMImageGrid } from './tls-m-image-grid'
@@ -51,3 +60,6 @@ export { tlsMAvatarGroup } from './tls-m-avatar-group'
 export { tlsMShape } from './tls-m-shape'
 export { tlsMDecoration } from './tls-m-decoration'
 export { tlsMPattern } from './tls-m-pattern'
+export { tlsMOrnament } from './tls-m-ornament'
+export { tlsMEmoji } from './tls-m-emoji'
+export { tlsMIllustration } from './tls-m-illustration'

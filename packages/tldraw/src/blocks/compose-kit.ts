@@ -12,6 +12,7 @@
  */
 import { capabilityDigest } from './capability-digest'
 import { iconGroupOf, iconsFor } from './icons/search'
+import { DESIGN_MOVES } from './moves'
 import type { BlockRegistry } from './registry'
 import type { DeckStyle, StyleConcept } from './types'
 import { defaultBlockRegistry } from './validate-deck-spec'
@@ -44,19 +45,20 @@ export type SlideShape = (typeof SLIDE_SHAPES)[number]
  * full slot tables the prompt carries.
  */
 export const SHAPE_FAMILIES: Record<SlideShape, readonly string[]> = {
+  // not tls.g.target: a definition's parts are not nested rings (golden vv1: dx → 0, tangent, f'(x0) drawn as rings)
   definition: ['tls.t.definition', 'tls.t.statement', 'tls.g.breakdown', 'tls.t.callout', 'tls.t.kv-list'],
-  terms: ['tls.t.kv-list', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.t.definition', 'tls.c.cards', 'tls.t.tags'],
-  hierarchy: ['tls.g.tree', 'tls.g.graph', 'tls.g.mindmap', 'tls.g.breakdown', 'tls.g.layers', 'tls.g.pyramid'],
-  sequence: ['tls.c.steps', 'tls.g.graph', 'tls.g.flow', 'tls.g.chevrons', 'tls.g.timeline', 'tls.t.numbered', 'tls.g.steps'],
-  cycle: ['tls.g.cycle', 'tls.g.hub-spoke', 'tls.g.flow', 'tls.t.numbered'],
-  contrast: ['tls.g.before-after', 'tls.g.pros-cons', 'tls.d.compare-table', 'tls.c.comparison', 'tls.c.problem-solution', 'tls.g.venn'],
+  terms: ['tls.t.kv-list', 'tls.c.feature-grid', 'tls.m.icon-list', 'tls.g.orbit', 'tls.t.definition', 'tls.c.cards', 'tls.t.tags'],
+  hierarchy: ['tls.g.tree', 'tls.g.graph', 'tls.g.mindmap', 'tls.g.layers', 'tls.g.target', 'tls.g.pyramid', 'tls.g.staircase', 'tls.g.breakdown'],
+  sequence: ['tls.c.steps', 'tls.g.graph', 'tls.g.flow', 'tls.g.staircase', 'tls.g.chevrons', 'tls.g.timeline', 'tls.t.numbered', 'tls.g.steps'],
+  cycle: ['tls.g.cycle', 'tls.g.orbit', 'tls.g.hub-spoke', 'tls.g.flow', 'tls.t.numbered'],
+  contrast: ['tls.g.before-after', 'tls.g.pros-cons', 'tls.g.myth-fact', 'tls.d.compare-table', 'tls.c.comparison', 'tls.c.problem-solution', 'tls.g.venn'],
   matrix: ['tls.g.matrix-2x2', 'tls.d.table', 'tls.d.compare-table', 'tls.g.swot'],
   formula: ['tls.t.formula', 'tls.t.definition', 'tls.t.statement', 'tls.t.kv-list', 'tls.t.callout'],
   code: ['tls.t.code', 'tls.t.numbered', 'tls.t.kv-list', 'tls.t.callout'],
   'worked-example': ['tls.g.graph', 'tls.g.tree', 'tls.t.code', 'tls.d.table', 'tls.g.flow', 'tls.c.steps', 'tls.t.numbered', 'tls.t.callout'],
-  number: ['tls.c.big-stat', 'tls.c.stat-spotlight', 'tls.c.kpi-row', 'tls.t.hero-number', 'tls.d.progress-ring', 'tls.c.chart-insight'],
+  number: ['tls.c.big-stat', 'tls.c.stat-spotlight', 'tls.d.icon-array', 'tls.c.kpi-row', 'tls.t.hero-number', 'tls.d.progress-ring', 'tls.c.chart-insight'],
   quote: ['tls.t.quote', 'tls.c.testimonial', 'tls.t.statement'],
-  question: ['tls.t.qa', 'tls.c.quiz', 'tls.t.checklist', 'tls.t.statement'],
+  question: ['tls.t.qa', 'tls.c.quiz', 'tls.g.myth-fact', 'tls.t.checklist', 'tls.t.statement'],
   'image-led': ['tls.c.image-text', 'tls.m.image', 'tls.m.image-grid', 'tls.c.image-full'],
   statement: ['tls.t.statement', 'tls.t.hero-number', 'tls.t.quote', 'tls.t.takeaway'],
   recap: ['tls.c.recap', 'tls.t.checklist', 'tls.m.icon-list', 'tls.c.objectives', 'tls.t.numbered', 'tls.c.cards'],
@@ -70,17 +72,26 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
   { id: 'three-column', regions: 'title, a, b, c', when: 'three parallel columns' },
   { id: 'image-left', regions: 'title, image, text', when: 'an image or a large visual first, text beside it' },
   { id: 'image-right', regions: 'title, text, image', when: 'text first, the visual beside it' },
-  { id: 'section-stack', regions: 'content', when: 'a centred stack, no title bar: a statement, a number, a question' },
+  { id: 'section-stack', regions: 'content', when: 'one short stack in a 1200-wide left column, no title bar, the right third left empty — only beside a motif; a poster slide takes `poster`' },
   { id: 'blank', regions: 'content', when: 'one region, the whole safe area' },
   { id: 'quote', regions: 'quote, attribution', when: 'a quotation and who said it' },
   { id: 'sidebar-title', regions: 'title, content', when: 'the title in a tall left column, one structure filling the right' },
   { id: 'band', regions: 'title, band, foot', when: 'one wide band (a process, a timeline, a row) and a short line or takeaway under it' },
+  // spro creative CR13: layouts v2
+  { id: 'hero-visual', regions: 'title, text, visual', when: 'one large visual the full height on the right; the title and a short text in a narrow left column' },
+  { id: 'split-40-60', regions: 'title, left, right', when: 'a short text or list (40 %) beside a wider visual or diagram (60 %)' },
+  { id: 'split-60-40', regions: 'title, left, right', when: 'a wider explanation (60 %) beside a number, a quote or an image (40 %)' },
+  { id: 'z-pattern', regions: 'title, a, b, c', when: 'the title top-left, a small accent top-right (a number, an icon), then two halves read left to right' },
+  { id: 'full-bleed-half', regions: 'visual, title, content', when: 'a figure or a colour field bleeding off the left half; the title and content on the right' },
+  { id: 'poster', regions: 'poster', when: 'no title bar: one poster block over the whole slide (a statement, a big number, a title card)' },
+  { id: 'corner-title', regions: 'content, title', when: 'one full-width structure first, the title small in the bottom-left corner' },
+  { id: 'offset-grid', regions: 'title, a, b, c', when: 'a large cell on the left, two smaller offset cells on the right (bento-like, three different things)' },
 ]
 
 /** Blocks that stand out beside the main structure (B2): at most one per slide. */
 export const ACCENT_BLOCKS: readonly string[] = ['tls.t.takeaway', 'tls.t.callout', 'tls.t.hero-number', 'tls.t.badge', 'tls.t.kicker', 'tls.t.quote', 'tls.t.footnote']
 /** Purely decorative blocks (B6): at most one per slide. */
-export const DECORATION_BLOCKS: readonly string[] = ['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule']
+export const DECORATION_BLOCKS: readonly string[] = ['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.icon-cluster']
 
 const CARD_WORDS: Record<NonNullable<DeckStyle['surface']>['card'], string> = {
   filled: 'filled panels in the surface colour',
@@ -111,8 +122,8 @@ export function styleConcept(style: DeckStyle): StyleConcept {
 const ZONE_HOW: Record<StyleConcept['zones'][number], string> = {
   corner: 'a small motif at the right end of the title bar: a second block in `regions.title` with `layer: "overlay"`, `anchor: "right"`',
   'behind-title': 'a soft motif behind a statement or a number: the first block of that region with `layer: "backdrop"`',
-  'beside-visual': 'a motif behind the free side of the main region: `layer: "backdrop"`, `opacity: "soft"`',
-  watermark: 'a large faint motif behind the main region: `layer: "backdrop"`, `opacity: "soft"`',
+  'beside-visual': 'a motif behind the free side of the main region: `layer: "backdrop"` on the block, `"opacity": "soft"` in its props',
+  watermark: 'a large faint motif behind the main region: `layer: "backdrop"` on the block, `"opacity": "soft"` in its props',
   'under-heading': 'a short accent bar under a heading: `tls.x.rule` with `length: "short"` in the stack, or first in the main region',
 }
 
@@ -127,9 +138,17 @@ export function styleConceptCard(style: DeckStyle): string {
     style.brief,
     `- Drawn by the style on every block you place (never set them): ${look}${r !== undefined ? `, corner radius ${r}` : ''}; fonts ${style.fonts.heading.family} / ${style.fonts.body.family}. Colours come from the palette and the person's primary colour — write roles (accent, text), never hex, sizes or borders.`,
     `- Icons: ${c.icons === 'none' ? 'only where an item needs one; this style is typographic' : c.icons === 'plain' ? 'plain glyphs, no disc' : `\`iconStyle: "${c.icons}"\` beside card headings and list items; one icon per item, each fitting its item`}.`,
-    `- Decoration: ${c.decoration === 'none' ? 'none — this style relies on white space; a short rule under a heading at most' : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
+    `- Decoration: ${c.decoration === 'none' ? (c.quiet?.length ? 'almost none — white space is the look; a short rule under a heading, and on about one slide in four a quiet watermark: `tls.m.decoration` with props `shape: "icon"` (a topic icon), `tone: "line"`, `opacity: "soft"` and `layer: "backdrop"` on the block' : 'none — this style relies on white space; a short rule under a heading at most') : `${c.decoration === 'rich' ? 'welcome on most slides' : 'on about one slide in three'}, at most one decorative element per slide, never over text; suits ${c.motifs.map((m) => `\`${m}\``).join(', ')}`}.`,
   ]
-  if (c.decoration !== 'none') lines.push('- Where decoration may sit: ' + c.zones.map((z) => ZONE_HOW[z]).join('; ') + '.')
+  const motifs = c.decoration === 'none' ? c.quiet ?? [] : c.motifs
+  if (motifs.includes('tls.m.decoration:icon') || motifs.includes('tls.m.icon-cluster')) {
+    lines.push(
+      '- Topic icons: `tls.m.decoration` `shape: "icon"` + `icon` (one large)' +
+        (motifs.includes('tls.m.icon-cluster') ? '; `tls.m.icon-cluster` `icons` (3-5 small, beside a title or a number)' : '') +
+        ' — of the topic, from the icon list, never generic.'
+    )
+  }
+  if (c.decoration !== 'none' || c.quiet?.length) lines.push('- Where decoration may sit: ' + c.zones.map((z) => ZONE_HOW[z]).join('; ') + '.')
   lines.push(`- Accent: ${c.accent}`)
   if (style.rules.length) lines.push('- Rules: ' + style.rules.join(' '))
   if (style.avoid.length) lines.push('- Never use: ' + style.avoid.map((t) => `\`${t}\``).join(', '))
@@ -179,7 +198,12 @@ export function iconCard(text?: string): string {
 }
 
 export interface ComposeKitOptions {
-  shape: SlideShape
+  /** v2: the shape whose families are detailed. */
+  shape?: SlideShape
+  /** creative CR2 (v3): exactly these block types are detailed (the brief's main and support). */
+  types?: readonly string[]
+  /** creative CR2: the deck's look range and defaults (ignored until the look axes, CR7b). */
+  look?: Record<string, unknown>
   style: DeckStyle
   /** Extra block types to include (e.g. the families of another shape for a recompose). */
   extra?: readonly string[]
@@ -194,7 +218,11 @@ export interface ComposeKit {
   markdown: string
   /** The block types whose detail is included, in order. */
   types: string[]
-  shape: SlideShape
+  shape?: SlideShape
+  /** creative CR2: the variant preset ids of each detailed type. */
+  variants?: Record<string, string[]>
+  /** creative CR2: the layouts of the moves the detailed main block can carry. */
+  layouts?: string[]
 }
 
 /** The prompt section for composing one slide of `shape` in `style`. */
@@ -202,7 +230,8 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   const reg = registry ?? defaultBlockRegistry()
   const budget = opts.budget ?? 9000
   const avoid = new Set(opts.style.avoid)
-  const wanted = [...SHAPE_FAMILIES[opts.shape], ...(opts.extra ?? []), 'tls.t.takeaway']
+  if (opts.types) return typesKit(opts, reg)
+  const wanted = [...SHAPE_FAMILIES[opts.shape ?? 'definition'], ...(opts.extra ?? []), 'tls.t.takeaway']
   const types: string[] = []
   let detail = ''
   for (const t of [...new Set(wanted)]) {
@@ -216,4 +245,26 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   detail = detail.replace(/^Valid icon names:.*$/m, '').trim()
   const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
   return { markdown, types, shape: opts.shape }
+}
+
+/** creative CR2: the kit for exactly `types` (the brief's blocks): their full detail, their variant
+ *  presets, and the layouts of the moves the first (main) type carries. No budget: a brief names
+ *  one to three blocks. */
+function typesKit(opts: ComposeKitOptions, reg: BlockRegistry): ComposeKit {
+  const avoid = new Set(opts.style.avoid)
+  const types = [...new Set(opts.types)].filter((t) => !avoid.has(t) && reg.get(t))
+  const detail = types.length ? capabilityDigest(reg, { types }).replace(/^Valid icon names:.*$/m, '').trim() : ''
+  const variants: Record<string, string[]> = {}
+  const lines: string[] = []
+  for (const t of types) {
+    const vs = reg.get(t)!.variants ?? []
+    if (!vs.length) continue
+    variants[t] = vs.map((v) => v.id)
+    lines.push(`- \`${t}\`: ${vs.map((v) => `\`${v.id}\` (${v.when}: ${Object.entries(v.knobs).map(([k, x]) => `${k}=${String(x)}`).join(', ')})`).join('; ')}`)
+  }
+  const main = types[0]
+  const layouts = [...new Set(DESIGN_MOVES.filter((m) => main && m.main.includes(main)).flatMap((m) => m.layouts))]
+  const variantCard = lines.length ? ['## Variants (set the knobs of the one the brief names)', ...lines].join('\n') : ''
+  const markdown = [composeCard(), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
+  return { markdown, types, variants, layouts }
 }

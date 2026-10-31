@@ -14,13 +14,18 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import { trapezoidPath } from '../../../layout/diagram'
 import type { PyramidProps } from './schema'
 import { PYRAMID_MAX } from './schema'
-import { TEXT_SLACK, asArr, capacityOf, chartColors, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { TEXT_SLACK, asArr, capacityOf, chartColors, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style, promoteToFit } from '../_kit'
 import { slotsByIndex } from '../_motion'
 
 const GAP = 6
 const PAD = 8
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: PyramidProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: PyramidProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const levels = objs(props.levels)

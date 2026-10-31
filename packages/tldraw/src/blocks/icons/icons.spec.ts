@@ -99,3 +99,44 @@ describe('icon set (P0.5)', () => {
     }
   })
 })
+
+describe('creative CR7a — subject names a model writes', () => {
+  it('robot is drawn, and common subject names resolve through the aliases', () => {
+    const { getIcon, hasIcon, ICON_ALIASES, ICONS } = require('./index')
+    expect(getIcon('robot')?.name).toBe('Robot')
+    expect(Object.keys(ICON_ALIASES).filter((a) => ICONS[a])).toEqual([]) // an alias never shadows an icon of its own
+    for (const [alias, target] of Object.entries(ICON_ALIASES)) {
+      expect(ICONS[target as string]).toBeDefined()
+      expect(getIcon(alias)).toBe(ICONS[target as string])
+    }
+    expect(hasIcon('earth')).toBe(true)
+    expect(getIcon('xyzzy')).toBeUndefined()
+  })
+})
+
+describe('creative CR9 — Phosphor', () => {
+  const { getIcon, ICONS, SOLID_ALIASES } = require('./index')
+  const { PHOSPHOR_ICONS } = require('./phosphor')
+
+  it('draws the subjects the review found missing, each with a filled weight', () => {
+    for (const q of ['x-ray', 'microscope', 'dna', 'sigma', 'integral', 'gavel', 'robot', 'tooth', 'syringe']) {
+      expect([q, !!getIcon(q)]).toEqual([q, true])
+    }
+    for (const q of ['microscope', 'dna', 'sigma', 'gavel', 'robot', 'rocket', 'users', 'bulb']) expect([q, !!getIcon(q)?.solid]).toEqual([q, true])
+    expect(getIcon('gavel').filled).toBe(true) // Phosphor regular: a filled shape
+    expect(getIcon('rocket').filled).toBeUndefined() // Tabler outline stays the outline
+  })
+
+  it('every solid alias names a Phosphor icon; most of the set has a filled weight', () => {
+    expect(Object.entries(SOLID_ALIASES).filter(([, v]) => !PHOSPHOR_ICONS[v as string]).map(([k]) => k)).toEqual([])
+    const all = Object.values(ICONS) as Array<{ solid?: string }>
+    expect(all.length).toBeGreaterThan(1150)
+    expect(all.filter((i) => i.solid).length).toBeGreaterThan(600)
+  })
+
+  it.each(Object.keys(PHOSPHOR_ICONS))('%s: fill weight parses and fits 24x24', (name) => {
+    const { pts, ok } = points(PHOSPHOR_ICONS[name][2])
+    expect(ok).toBe(true)
+    for (const [px, py] of pts) expect(px >= -0.01 && px <= 24.01 && py >= -0.01 && py <= 24.01).toBe(true)
+  })
+})

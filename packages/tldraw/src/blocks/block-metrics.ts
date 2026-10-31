@@ -261,7 +261,8 @@ function blockMetrics(
   const ctxAt = (width: number) =>
     createLayoutContext({
       box: { width, height: def.size.preferred[1] },
-      tokens,
+      // CR7a: a size card is the authored type's need; lists grow only in the room a slide gives
+      tokens: { ...tokens, measuring: true },
       surface: SURFACE,
       registry,
       measureText,

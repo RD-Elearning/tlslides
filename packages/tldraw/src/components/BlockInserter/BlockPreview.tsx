@@ -35,6 +35,9 @@ export interface BlockPreviewProps {
   maxHeight?: number
   /** Optional theme id for memo key (forces re-render on theme switch). */
   themeId?: string
+  /** Props to draw instead of the block's example (the inspector's variant thumbnails). Keep the
+   *  object stable (`useMemo`): the preview is memoised on its identity. */
+  props?: Record<string, unknown>
 }
 
 /** The box a block "fills" at rest — origin (0,0), full preferred size. */
@@ -48,7 +51,7 @@ function makeBox(def: BlockDefinition) {
  * LayoutNode tree as DOM. Wrapped in HostLayoutContext so any host children
  * (nested html-kind blocks) get the right CSS vars.
  */
-function BlockPreviewInner({ def, width, maxHeight }: { def: BlockDefinition; width: number; maxHeight?: number }) {
+function BlockPreviewInner({ def, width, maxHeight, props: own }: { def: BlockDefinition; width: number; maxHeight?: number; props?: Record<string, unknown> }) {
   const box = React.useMemo(() => makeBox(def), [def])
 
   // H1: one useBlockLayoutContext per card — fine for ~40 cards.
@@ -60,7 +63,7 @@ function BlockPreviewInner({ def, width, maxHeight }: { def: BlockDefinition; wi
   // H2: never use def.layout() for kind: 'html' in the gallery — it returns a
   // host node and would mount the live template + animation hooks.
   const node = React.useMemo(() => {
-    const props = (def.describe?.example?.props ?? def.defaults) as Record<string, unknown>
+    const props = (own ?? def.describe?.example?.props ?? def.defaults) as Record<string, unknown>
     if (def.kind === 'html') {
       // Tier B: use the poster (pure LayoutNode, no host rendering).
       // Every kind: 'html' block has a poster (validated by the conformance suite).
@@ -68,7 +71,7 @@ function BlockPreviewInner({ def, width, maxHeight }: { def: BlockDefinition; wi
     }
     // Tier A: use the layout function.
     return layoutBlock(def, props, ctx)
-  }, [def, ctx, box])
+  }, [def, ctx, box, own])
 
   const [origW, origH] = def.size.preferred
   const scale = Math.min(width / origW, maxHeight ? maxHeight / origH : Infinity)
@@ -95,7 +98,7 @@ function BlockPreviewInner({ def, width, maxHeight }: { def: BlockDefinition; wi
             surface: ctx.surface,
             // Pass the block's own props for HostLayoutContext — host nodes read this.
             // For non-host layouts it's unused but harmless.
-            props: (node as { props?: Record<string, unknown> }).props ?? (def.describe?.example?.props ?? def.defaults) as Record<string, unknown>,
+            props: (node as { props?: Record<string, unknown> }).props ?? (own ?? def.describe?.example?.props ?? def.defaults) as Record<string, unknown>,
             headless: false,
           }}
         >
@@ -120,6 +123,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = React.memo(function Blo
   width,
   maxHeight,
   themeId,
+  props,
 }) {
   // H4: IntersectionObserver for lazy rendering — only render previews when
   // scrolled into view. For 40 cards this means ~8 rendered at a time.
@@ -132,6 +136,11 @@ export const BlockPreview: React.FC<BlockPreviewProps> = React.memo(function Blo
 
     // If already intersecting (e.g. small gallery), render immediately.
     if (visible) return
+    // no IntersectionObserver (a test DOM, an old browser): draw at once
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true)
+      return
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -154,7 +163,7 @@ export const BlockPreview: React.FC<BlockPreviewProps> = React.memo(function Blo
     <PreviewOuter ref={ref} data-block-type={def.type} data-theme={themeId ?? undefined}>
       {visible && (
         <BlockErrorBoundary componentId={def.type}>
-          <BlockPreviewInner def={def} width={width} maxHeight={maxHeight} />
+          <BlockPreviewInner def={def} width={width} maxHeight={maxHeight} props={props} />
         </BlockErrorBoundary>
       )}
     </PreviewOuter>

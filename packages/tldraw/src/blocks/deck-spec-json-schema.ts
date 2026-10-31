@@ -14,7 +14,18 @@ import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, stylePaletteIds } from './styles'
 import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 import type { SlotSpec, SlotType } from './types'
-import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES } from './types'
+import { BLOCK_ANCHORS, BLOCK_LAYERS, MOTION_STYLES, SLIDE_INTENTS } from './types'
+import { LOOK_AXES, LOOK_VALUES } from './look'
+import { TRANSITION_DIRS, TRANSITION_KINDS } from './motion/transition'
+import { MOTION_PERSONALITIES } from './motion/personality'
+
+/** CR7b — the look axes object (deck, slide, block). */
+const LOOK_SCHEMA = {
+  type: 'object',
+  properties: Object.fromEntries(LOOK_AXES.map((ax) => [ax, { type: 'string', enum: [...LOOK_VALUES[ax]] }])),
+  additionalProperties: false,
+  description: 'CR7b — look axes: how strokes, fills, corners, depth, emphasis, connectors, icons and frames are drawn. Paint only.',
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
@@ -81,6 +92,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         items: slideSchema(reg, blockTypeSchemas, layoutIds),
       },
       motionStyle: MOTION_STYLE_SCHEMA,
+      activity: ACTIVITY_SCHEMA,
       style: {
         type: 'string',
         enum: BUILT_IN_STYLES.map((st) => st.id),
@@ -90,6 +102,17 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         type: 'string',
         enum: [...SUBJECT_SHAPES],
         description: "enhance F1 — the deck's signature subject doodle (cover and section pages of a playful style).",
+      },
+      look: LOOK_SCHEMA,
+      motionPersonality: { type: 'string', enum: [...MOTION_PERSONALITIES], description: 'CR10 — scales reveal durations and stagger, picks the easing. Viewer-only.' },
+      motifZone: {
+        type: 'string',
+        enum: ['fixed', 'auto'],
+        description: 'CR7a — `auto` places the signature motif on each cover/section page at the corner farthest from its text.',
+      },
+      ambient: {
+        type: 'boolean',
+        description: 'V5 — false keeps the blocks still once they have entered (no ambient loops).',
       },
     },
     additionalProperties: false,
@@ -116,6 +139,8 @@ function slideSchema(
       role: { type: 'string', enum: ['cover', 'section', 'content', 'closing'] },
       rhythm: { type: 'string', enum: ['anchor', 'dense', 'breath'] },
       valign: { type: 'string', enum: ['start', 'auto'] },
+      intent: { type: 'string', enum: [...SLIDE_INTENTS] },
+      look: LOOK_SCHEMA,
       regions: {
         type: 'object',
         additionalProperties: {
@@ -148,6 +173,14 @@ function slideSchema(
       skip: { type: 'boolean' },
       masterId: { type: 'string' },
       motionStyle: MOTION_STYLE_SCHEMA,
+      transition: {
+        type: 'object',
+        properties: { kind: { type: 'string', enum: [...TRANSITION_KINDS] }, dir: { type: 'string', enum: [...TRANSITION_DIRS] } },
+        required: ['kind'],
+        additionalProperties: false,
+        description: 'CR10 — how the viewer brings the slide in. Viewer-only.',
+      },
+      choreography: { type: 'string', description: 'CR10 — the design move whose choreography orders the reveals.' },
       connectors: CONNECTORS_SCHEMA,
     },
     additionalProperties: false,
@@ -247,10 +280,25 @@ function blockSchema(
         type: 'boolean',
         description: 'A backdrop that may leave the slide frame on purpose (no slide/overflow finding).',
       },
+      look: LOOK_SCHEMA,
     },
     additionalProperties: false,
     oneOf: blockTypeSchemas,
   }
+}
+
+/** L03 — deck-level activity defaults. */
+const ACTIVITY_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    submit: {
+      type: 'string',
+      enum: ['instant', 'confirm'],
+      description: 'Single-answer activities: instant gives the result on the click (default); confirm selects, then "Kiểm tra".',
+    },
+  },
+  additionalProperties: false,
+  description: 'Defaults for interactive activity blocks (viewer only).',
 }
 
 /** P7 — deck/slide `motionStyle` (slide wins). */

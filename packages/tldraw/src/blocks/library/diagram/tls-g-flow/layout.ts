@@ -21,13 +21,14 @@ import type { FlowProps } from './schema'
 import { FLOW_MAX_EDGES, FLOW_MAX_NODES } from './schema'
 import { readGraph, type Graph } from './graph'
 import {
-  TEXT_SLACK, arrowHead, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, onColor, pathNode, placeLines, polyline, root, strokePath, style, tintOf,
-} from '../_kit'
+  TEXT_SLACK, arrowHead, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, onColor, pathNode, placeLines, polyline, root, strokePath, style, tintOf, promoteToFit } from '../_kit'
 
 const HEAD = 12
 const EDGE_W = 2.5
 const CURVE = 36
 const MAX_LABEL_W = 110
+/** Most lines a node label wraps to. */
+const MAX_LINES = 4
 
 interface Solved {
   graph: Graph
@@ -53,25 +54,39 @@ function solve(props: FlowProps, ctx: LayoutContext, W: number, H: number): Solv
   const backLabel = graph.edges.some((e) => e.label && prov.layers[e.from] > prov.layers[e.to])
   const backReserve = hasBack ? (dir === 'LR' ? CURVE + 26 + lineH(noteS) : CURVE + 14 + (backLabel ? lblW : 0)) : 0
   const box: Box = { x: 0, y: 0, width: Math.max(1, W - (dir === 'TB' ? backReserve : 0)), height: Math.max(1, H - (dir === 'LR' ? backReserve : 0)) }
-  const gap = dir === 'LR' ? Math.max(56, labelled.length ? 2 * (lblW + HEAD + 10) : 0) : Math.max(56, labelled.length ? lineH(noteS) + HEAD + 24 : 0)
+  const gap = dir === 'LR' ? Math.max(56, labelled.length ? lblW + 2 * HEAD + 24 : 0) : Math.max(56, labelled.length ? lineH(noteS) + HEAD + 24 : 0)
   const hasDecision = graph.nodes.some((n) => n.kind === 'decision')
+  // 2026-10-24: node caps grow with the type `promoteToFit` gives the labels (caption -> body…), so
+  // a larger label gets a larger node instead of a cut one
+  const k = Math.max(1, ctx.resolveText('caption').size / Math.max(1, ctx.tokens.type.caption.size))
   let nodeSize: Size
   if (dir === 'LR') {
+    const width = clamp((box.width - (layerCount - 1) * gap) / layerCount, 90, 200 * k)
+    // creative CR7a: a narrow node in a tall region grows to the lines its longest label needs (up
+    // to MAX_LINES) instead of cutting it at 96 units
+    const room = box.height / widest - 24
+    const labelS = style(ctx, 'caption', '#000')
+    const need = Math.max(0, ...graph.nodes.map((n) => linesHeight(ctx, n.label, labelS, Math.max(8, width - 20), MAX_LINES) + 16))
     nodeSize = {
-      width: clamp((box.width - (layerCount - 1) * gap) / layerCount, 90, 200),
-      height: clamp(box.height / widest - 24, hasDecision ? 60 : 40, 96),
+      width,
+      height: clamp(room, hasDecision ? 60 : 40, Math.max(96 * k, Math.min(need, room))),
     }
   } else {
     nodeSize = {
-      width: clamp(box.width / widest - 24, 80, 240),
-      height: clamp((box.height - (layerCount - 1) * gap) / layerCount, hasDecision ? 56 : 36, 84),
+      width: clamp(box.width / widest - 24, 80, 240 * k),
+      height: clamp((box.height - (layerCount - 1) * gap) / layerCount, hasDecision ? 56 : 36, 84 * k),
     }
   }
   const dag = layeredDag(ids, graph.edges, dir, box, { nodeSize, minGap: Math.min(gap, 40) * 0.8 })
   return { graph, dag, dir, nodeSize, backReserve }
 }
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: FlowProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const g0 = readGraph(props)
@@ -134,7 +149,7 @@ export function layout(props: FlowProps, ctx: LayoutContext): LayoutNode {
       })
     }
     const tw = Math.max(8, n.kind === 'decision' ? b.width * 0.58 : b.width - 20 - (n.kind === 'step' ? 0 : b.height * 0.3))
-    const maxLines = Math.max(1, Math.min(3, Math.floor((n.kind === 'decision' ? b.height * 0.56 : b.height - 8) / lineH(labelS))))
+    const maxLines = Math.max(1, Math.min(MAX_LINES, Math.floor((n.kind === 'decision' ? b.height * 0.56 : b.height - 8) / lineH(labelS))))
     const th = linesHeight(ctx, n.label, labelS, tw, maxLines)
     kids.push(...placeLines(ctx, n.label, { ...labelS, color: ink }, { x: b.x + (b.width - tw) / 2, y: b.y + Math.max(0, (b.height - th) / 2), width: tw }, 'center', maxLines, `${part}.label`).nodes)
   }

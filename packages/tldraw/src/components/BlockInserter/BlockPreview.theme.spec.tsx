@@ -60,6 +60,23 @@ describe('BlockPreview theme colors (B7)', () => {
     expect(previewElement).toBeInTheDocument()
   })
 
+  it('draws the `props` it is given instead of the example (the inspector\'s variant thumbnails)', () => {
+    const app = new TldrawApp()
+    const draw = (props?: Record<string, unknown>) =>
+      render(
+        <TldrawContext.Provider value={app}>
+          <BlockRegistryContext.Provider value={registry}>
+            <BlockPreview def={registry.get('tls.c.comparison')!} width={160} props={props} />
+          </BlockRegistryContext.Provider>
+        </TldrawContext.Provider>,
+      ).container.innerHTML
+    const base = registry.get('tls.c.comparison')!.defaults as Record<string, unknown>
+    const plain = draw({ ...base, style: 'plain' })
+    cleanup()
+    const versus = draw({ ...base, style: 'versus' })
+    expect(plain).not.toBe(versus)
+  })
+
   it('renders a preview for an HTML (Tier B) block via poster', () => {
     const { container } = renderPreviewFor('tls.c.big-stat', MONO_GRID)
 

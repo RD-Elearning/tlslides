@@ -10,7 +10,7 @@
 
 import type { HtmlTemplateContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCircleIcon, type FeatureGridProps } from './schema'
-import { ICONS } from '../../../icons'
+import { ICONS, getIcon, iconPaintAttrs } from '../../../icons'
 import { posterText } from '../../../html-block'
 import { cardCssFromPoster } from '../_kit'
 
@@ -40,7 +40,7 @@ function solvedIconFill(poster: LayoutNode | undefined, i: number): string | und
  * Get icon path by name, with fallback to alert icon for unknown names.
  */
 function getIconPath(iconName: string): string {
-  const icon = ICONS[iconName]
+  const icon = getIcon(iconName)
   if (icon) return icon.path
   // Fallback to alert icon
   return ICONS['alert']?.path ?? ''
@@ -102,8 +102,8 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
             (circle ? `align-items:center;justify-content:center;border-radius:50%;background:${colors.disc};` : '') +
             (center ? `margin-left:auto;margin-right:auto;` : '') +
           `">` +
-            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" fill="${fillColor}" style="display:block;">` +
-              `<path d="${iconPath}" stroke="none"/>` +
+            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" ${iconPaintAttrs(getIcon(cell.icon as string), fillColor, 1.5)} style="display:block;">` +
+              `<path d="${iconPath}"/>` +
             `</svg>` +
           `</div>` +
           // Title

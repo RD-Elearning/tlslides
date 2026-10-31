@@ -12,12 +12,17 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import { iconLeaf } from '../../text/_engine/icon'
 import type { LayersProps } from './schema'
 import { LAYERS_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, objs, onColor, pathNode, placeLines, rampColor, root, solidRect, str, style, promoteToFit } from '../_kit'
 import { slotsByIndex } from '../_motion'
 
 const GAP = 8
 
+/** 2026-10-24: the type steps up while the larger text still fits (`promoteToFit`). */
 export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
+  return promoteToFit(ctx, (c) => layoutAt(props, c))
+}
+
+function layoutAt(props: LayersProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
   const H = Math.max(1, ctx.box.height)
   const layers = objs(props.layers)
@@ -51,8 +56,9 @@ export function layout(props: LayersProps, ctx: LayoutContext): LayoutNode {
     } else {
       nodes.push({ k: 'rect', part: `layer[${i}]`, box: { x: 0, y, width: barW, height: rowH }, fill: { type: 'solid', color: fill }, radius: Math.min(14, rowH / 3) })
     }
-    // Content area inside the bar: avoid the slanted ends.
-    const pad = Math.max(10, skew + 12)
+    // Content area inside the bar: avoid the slanted ends. Inline padding from the spacing scale
+    // (12 units put the icon on a flat bar's edge: owner test, deck 63550faa s8).
+    const pad = Math.max(ctx.tokens.space.md, skew + ctx.tokens.space.xs)
     const cx0 = pad
     const cw = Math.max(20, barW - skew - 2 * pad + (persp ? skew * 0.4 : 0))
     const isz = l.icon && rowH >= 48 ? Math.min(34, rowH - 16) : 0

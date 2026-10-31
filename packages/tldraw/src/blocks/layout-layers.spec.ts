@@ -74,6 +74,8 @@ describe('LO2 — layer vocabulary on the built-in blocks', () => {
       'tls.l.field': 'backdrop',
       'tls.l.grid-guide': 'backdrop',
       'tls.m.decoration': 'backdrop',
+      'tls.m.icon-cluster': 'backdrop',
+      'tls.m.ornament': 'backdrop',
       'tls.m.pattern': 'backdrop',
       'tls.x.watermark': 'backdrop',
       'tls.d.trend-badge': 'overlay',
@@ -186,6 +188,17 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     expect(r.findings.some((f) => f.code === 'layout/overlap' && f.severity === 'error')).toBe(false)
   })
 
+  it('a decoration overlay over text is told to be dropped or re-homed, not "moved by units" (spro deck 3a12e246 s11)', () => {
+    const title = (id: string): BlockSpec => ({ id, type: 'tls.t.title', props: { text: 'Ma trận nhầm lẫn và cái giá của sai sót trong bài toán dự đoán' } })
+    const dec: BlockSpec = { id: 'dec', type: 'tls.m.decoration', layer: 'overlay', anchor: 'right', props: { shape: 'squiggle' } } as BlockSpec
+    const r = analyzeSlide({ id: 's', layout: 'band', regions: { title: [title('t'), dec] } })
+    const f = r.findings.find((x) => x.code === 'text/occluded')
+    if (f) expect(f.fix).toMatch(/remove dec .*another region/)
+    // an overlay that is not a decoration keeps the numeric remedy
+    const badgeCase = analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }, { block: badge('b'), box: { x: analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }] }).blocks[0].text[0].painted.x, y: analyzeSlide({ id: 's', layout: 'blank', regions: {}, free: [{ block: statCard('c'), box: CARD_BOX }] }).blocks[0].text[0].painted.y, width: 320, height: 64 } }] })
+    expect(badgeCase.findings.find((x) => x.code === 'text/occluded')?.fix).toMatch(/^move /)
+  })
+
   it('a region overlay that paints clear of the text is allowed (judged by what it paints)', () => {
     const r = analyzeSlide(STACKED)
     expect(has(r, 'layout/overlap', 'info', ['kpi', 'badge'])).toBe(true)
@@ -230,6 +243,26 @@ describe('LO2 — layer policy in analyzeSlide', () => {
     // Content text ∩ content text stays an error.
     const two = analyzeSlide({ ...slide, free: [slide.free![1], { block: title('t2', 'Revenue grew 42% this year'), box }] })
     expect(has(two, 'text/collision', 'error', ['t', 't2'])).toBe(true)
+  })
+
+  it('a strong decoration backdrop behind text → text/occluded; a soft one or tone alt is intended', () => {
+    // spro deck 63550faa s12: a repair made an occluding `book` doodle a backdrop to pass the check,
+    // but a subject doodle paints at ≥ 0.85 whatever its layer.
+    const doodle = (id: string, props: Record<string, unknown>): BlockSpec => ({ id, type: 'tls.m.decoration', layer: 'backdrop', props: { shape: 'book', ...props } })
+    const slide = (deco: BlockSpec): SlideSpec => ({
+      id: 's',
+      layout: 'two-column',
+      regions: { title: [title('t', 'Layered composite')], left: [deco, statCard('card')] },
+    })
+    const strong = analyzeSlide(slide(doodle('d', { opacity: 'soft' })))
+    const f = strong.findings.find((x) => x.code === 'text/occluded' && x.blockIds.includes('d'))!
+    expect([f.severity, f.blockIds.includes('card')]).toEqual(['error', true])
+    expect(f.message).toMatch(/backdrop d paints strongly behind text of card/)
+    for (const quiet of [blob('d', { layer: 'backdrop' }), doodle('d', { tone: 'alt' })]) {
+      const r = analyzeSlide(slide(quiet))
+      expect(r.findings.some((x) => x.code === 'text/occluded')).toBe(false)
+      expect(has(r, 'layout/overlap', 'info', ['d', 'card'])).toBe(true)
+    }
   })
 
   it('a backdrop above content in z → error', () => {
@@ -296,7 +329,7 @@ describe('LO2 — validation, JSON schema, digest', () => {
 
   it('the capability index names the non-content layers and the stacking rule, within budget', () => {
     const md = capabilityIndex()
-    expect(md.length).toBeLessThanOrEqual(20000)
+    expect(md.length).toBeLessThanOrEqual(24500) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178 (the model reads the 18.1k tier-1 index)
     expect(md).toContain('tls.m.decoration · decoration · element · backdrop — ')
     expect(md).toContain('tls.d.trend-badge · metric · element · overlay — ')
     expect(md).toContain('tls.t.title · heading · element — ')

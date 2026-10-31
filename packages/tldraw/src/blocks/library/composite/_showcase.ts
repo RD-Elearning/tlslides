@@ -16,7 +16,7 @@
 
 import type { BlockMotionRuntime, HtmlTemplateContext, LayoutContext, LayoutNode, ResolvedTokens } from '../../types'
 import type { MotionHandle, MotionKeyframes, MotionOptions } from '../../motion/driver'
-import { FALLBACK_ICON, getIcon } from '../../icons'
+import { FALLBACK_ICON, getIcon, iconPaintAttrs } from '../../icons'
 import { lineWidth } from './_kit'
 
 /* ── GSAP, typed structurally (the package never imports gsap) ─────────────────────────── */
@@ -135,10 +135,10 @@ export function roleVar(ctx: HtmlTemplateContext, role: 'accent2' | 'surfaceAlt'
 
 /** Inline outline icon (24-unit path scaled by the viewBox), stroke in `color`. */
 export function iconSvg(name: string, size: number, color: string): string {
-  const path = (getIcon(name) ?? FALLBACK_ICON).path
+  const icon = getIcon(name) ?? FALLBACK_ICON
   return (
     `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible" aria-hidden="true">` +
-    `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+    `<path d="${icon.path}" ${iconPaintAttrs(icon, color, 1.75)}/></svg>`
   )
 }
 
@@ -162,7 +162,13 @@ export function safe(n: unknown, fallback = 0): number {
 
 /** Plain string from a possibly missing / non-string prop. */
 export function str(v: unknown, max = 400): string {
-  return typeof v === 'string' ? v.slice(0, max) : typeof v === 'number' ? String(v) : ''
+  if (typeof v === 'number') return String(v)
+  if (typeof v !== 'string') return ''
+  if (v.length <= max) return v
+  // 2026-10-24: past the limit, cut at a word and say so ("…citing a conf" read as a typo)
+  const cut = v.slice(0, Math.max(1, max - 1))
+  const sp = cut.lastIndexOf(' ')
+  return `${(sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,.;:–—-]+$/, '')}…`
 }
 
 /** A colour role resolved for the poster. */

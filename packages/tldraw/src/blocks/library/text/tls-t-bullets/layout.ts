@@ -15,6 +15,7 @@
 import type { LayoutContext, LayoutNode, SpaceToken, TypeToken } from '../../../types'
 import type { BulletsProps } from './schema'
 import { renderList } from '../../../layout/lists'
+import { growText } from '../_engine/grow'
 
 /**
  * Marker characters for visual markers.
@@ -51,7 +52,14 @@ export const FIT_SHARE = 0.6
 /** At a rung above body an item may wrap to at most this many lines. */
 export const FIT_MAX_LINES = 2
 
+/** CR7a: the list's type steps up while the larger text still fits (`growText`). */
 export function layout(props: BulletsProps, ctx: LayoutContext): LayoutNode {
+  // `size: fit` already picks its rung by the box
+  if (props.size === 'fit') return layoutAuthored(props, ctx)
+  return growText(ctx, (c) => layoutAuthored(props, c))
+}
+
+function layoutAuthored(props: BulletsProps, ctx: LayoutContext): LayoutNode {
   if (props.size === 'fit') {
     const H = ctx.box.height
     for (let i = 0; i < FIT_LADDER.length; i++) {

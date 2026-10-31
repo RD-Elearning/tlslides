@@ -3,7 +3,7 @@
  *
  * A `MotionDriver` is the bridge between the declarative motion recipe on a `BlockSpec`
  * and the imperative world of browser animations. Only one property vocabulary is allowed:
- * opacity, translate, scale, clip-path, filter, stroke-dashoffset. Properties like
+ * opacity, translate, scale, rotate, clip-path, filter, stroke-dashoffset. Properties like
  * `transform`, `width`, `height`, `top`, `left`, and `box-shadow` are never touched —
  * enforced by test.
  */
@@ -18,6 +18,9 @@ export const ALLOWED_PROPERTIES = [
   'opacity',
   'translate',
   'scale',
+  // V2 (vivid PLAN.md): the CSS individual `rotate` property, for ambient loops (spin, sway);
+  // `transform` stays forbidden.
+  'rotate',
   'clip-path',
   'filter',
   'stroke-dashoffset',
@@ -50,6 +53,8 @@ export interface MotionKeyframes {
   scaleX?: number[]
   /** One-axis scale (the CSS `scale` property's y term). Allowed under `scale`. */
   scaleY?: number[]
+  /** CSS `rotate` values (`'0deg'`, `'360deg'`). */
+  rotate?: string[]
   clipPath?: string[]
   filter?: string[]
   strokeDashoffset?: string[]
@@ -78,6 +83,10 @@ export interface MotionOptions {
    *  to call this at any specific frequency; the recording driver calls it once at the end
    *  of `play()` with progress=1. */
   onUpdate?: (progress: number) => void
+  /** V2 — how many times the animation runs; `Infinity` loops (ambient presets). Absent = 1. */
+  iterations?: number
+  /** V2 — `'alternate'` plays every other iteration backwards (a float that rises and settles). */
+  direction?: 'normal' | 'alternate'
 }
 
 // --- Handle -------------------------------------------------------------------
@@ -102,6 +111,7 @@ export interface MotionState {
   scale?: number
   scaleX?: number
   scaleY?: number
+  rotate?: string
   clipPath?: string
   filter?: string
   strokeDashoffset?: string

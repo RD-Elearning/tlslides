@@ -6,8 +6,9 @@
  *   1. Content fields (role: 'content')
  *   2. Collapsible "Options" section (role: 'option' fields, excluding toggles)
  *   3. "Elements" section (one checkbox per `toggles` slot)
- * - Style: Surface / Text / Accent colour pickers (ThemeColorPicker), padding,
- *   vertical align, and a "Reset all styles to theme" button.
+ * - Style: the block's variant (chips, when it has a `variant` enum slot) and its look axes
+ *   (`$block.look`, spro creative CR12b), Surface / Text / Accent colour pickers (ThemeColorPicker),
+ *   padding, vertical align, and a "Reset all styles to theme" button.
  * - Motion: Preset picker (from the real preset registry), delay/duration/stagger
  *   sliders that write only on user change (no mount effects), and a Preview button.
  *
@@ -35,6 +36,9 @@ import { ThemeColorPicker, COLOR_ROLES } from './fields/ThemeColorPicker'
 import { renderFieldForSpec, SelectField } from './fields/FieldControls'
 import { MOTION_PRESETS, ACTIVE_PRESET_IDS } from '../../blocks/motion/presets'
 import type { MotionPreset } from '../../blocks/motion/presets'
+import { LOOK_AXES, LOOK_VALUES } from '../../blocks/look'
+import type { LookAxes } from '../../blocks/types'
+import { BlockPreview } from '../BlockInserter/BlockPreview'
 
 export interface BlockInspectorProps {
   selectedShapeId: string | null
@@ -65,6 +69,7 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
   }, [shape, blockMeta])
 
   const blockStyle = blockMeta?.style as BlockStyleSpec | undefined
+  const blockLook = blockMeta?.look as LookAxes | undefined
   const blockMotion = blockMeta?.motion as BlockMotionSpec | undefined
 
   /**
@@ -93,7 +98,7 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
    * undo/redo, since the "before" snapshot would already reflect the "after" state.
    */
   const updateBlockMeta = React.useCallback(
-    (key: 'style' | 'motion', path: string, value: unknown) => {
+    (key: 'style' | 'motion' | 'look', path: string, value: unknown) => {
       if (!shape) return
       const currentProps = shape.props as Record<string, unknown>
       const currentMeta = { ...((currentProps.$block as Record<string, unknown> | undefined) ?? {}) }
@@ -110,6 +115,11 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
 
   const updateStyle = React.useCallback(
     (path: string, value: unknown) => updateBlockMeta('style', path, value),
+    [updateBlockMeta],
+  )
+
+  const updateLook = React.useCallback(
+    (axis: string, value: unknown) => updateBlockMeta('look', axis, value),
     [updateBlockMeta],
   )
 
@@ -171,6 +181,12 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
         )}
         {activeTab === 'style' && (
           <StyleTab
+            variant={variantOf(blockDef.schema, blockProps)}
+            onVariant={(v) => updateProp('variant', v)}
+            blockDef={blockDef}
+            blockProps={blockProps}
+            look={blockLook}
+            onLook={updateLook}
             style={blockStyle}
             onUpdate={updateStyle}
             onResetAll={resetAllStyles}
@@ -292,6 +308,13 @@ function ContentFieldCompact({ spec, value, onChange }: ContentFieldProps) {
 /* ──────────── Style tab ──────────── */
 
 interface StyleTabProps {
+  variant?: { values: string[]; value: string | undefined }
+  onVariant: (value: string) => void
+  /** The block and its props: each variant chip then carries a thumbnail of the block in that variant. */
+  blockDef?: BlockDefinition
+  blockProps?: Record<string, unknown> | null
+  look?: LookAxes
+  onLook: (axis: string, value: string | undefined) => void
   style?: BlockStyleSpec
   onUpdate: (path: string, value: unknown) => void
   onResetAll: () => void
@@ -312,9 +335,54 @@ const SPACE_TOKENS: Array<string | 'none'> = [
   '3xl',
 ]
 
-function StyleTab({ style, onUpdate, onResetAll, shape }: StyleTabProps) {
+/** The block's `variant` enum slot, when it has one: its values and the current pick. */
+export function variantOf(schema: BlockSchema, props: Record<string, unknown> | null) {
+  const t = schema.variant?.type
+  if (!t || t.kind !== 'enum') return undefined
+  return { values: t.values, value: (props?.variant as string | undefined) ?? undefined }
+}
+
+function StyleTab({ variant, onVariant, blockDef, blockProps, look, onLook, style, onUpdate, onResetAll, shape }: StyleTabProps) {
   return (
     <StyleSection>
+      {variant && (
+        <StyleColorRow>
+          <StyleLabel>Variant</StyleLabel>
+          <ChipRow role="radiogroup" aria-label="Variant">
+            {variant.values.map((v, i) => {
+              const on = variant.value === v || (variant.value === undefined && i === 0)
+              return (
+                <Chip key={v} type="button" role="radio" aria-label={v} aria-checked={on} data-on={on} data-thumb={blockDef ? 'true' : undefined} onClick={() => onVariant(v)}>
+                  {blockDef && <VariantThumb def={blockDef} props={blockProps ?? null} variant={v} />}
+                  {v}
+                </Chip>
+              )
+            })}
+          </ChipRow>
+        </StyleColorRow>
+      )}
+
+      <StyleColors>
+        {LOOK_AXES.map((axis) => (
+          <StyleColorRow key={axis}>
+            <StyleLabel>Look · {axis}</StyleLabel>
+            <SelectField
+              aria-label={`Look ${axis}`}
+              value={(look?.[axis] as string | undefined) ?? ''}
+              // empty = follow the slide and the deck
+              onChange={(e) => onLook(axis, e.target.value || undefined)}
+            >
+              <option value="">— deck —</option>
+              {LOOK_VALUES[axis].map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </SelectField>
+          </StyleColorRow>
+        ))}
+      </StyleColors>
+
       <StyleColors>
         <StyleColorRow>
           <StyleLabel>Surface</StyleLabel>
@@ -756,6 +824,34 @@ const CustomPaddingInput = styled('input', {
   fontSize: '12px',
   border: '1px solid $border',
   borderRadius: '4px',
+})
+
+/** One variant's thumbnail: the block drawn with the block's own props and this variant (stable props per variant). */
+function VariantThumb({ def, props, variant }: { def: BlockDefinition; props: Record<string, unknown> | null; variant: string }) {
+  const own = React.useMemo(() => ({ ...(def.describe?.example?.props ?? def.defaults ?? {}), ...(props ?? {}), variant }) as Record<string, unknown>, [def, props, variant])
+  return (
+    <span style={{ display: 'block', marginBottom: 3 }}>
+      <BlockPreview def={def} width={72} maxHeight={44} props={own} />
+    </span>
+  )
+}
+
+const ChipRow = styled('div', {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '4px',
+})
+
+const Chip = styled('button', {
+  fontSize: '11px',
+  padding: '2px 8px',
+  borderRadius: '999px',
+  border: '1px solid $hover',
+  background: '$panel',
+  color: '$text',
+  cursor: 'pointer',
+  '&[data-thumb="true"]': { borderRadius: '8px', padding: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  '&[data-on="true"]': { background: '$selected', borderColor: '$selected', color: '#fff' },
 })
 
 const ResetAllButton = styled('button', {
