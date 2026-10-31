@@ -560,8 +560,8 @@ describe('R7 — capability digest v2', () => {
       // CMP4 budget decision (composition README §4): one `patterns:` line per role (+630 chars,
       // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
       // spro creative CR8: the 16 wave-1 blocks are tier 2 but named in the index (+~300 chars) → 18.1k; CR13 +16 → 18.4k.
-      it('stays within 18.5k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(18500) // CR13: +16 tier-2 names
+      it('stays within 18.9k chars and matches its snapshot', () => {
+        expect(tier1.length).toBeLessThanOrEqual(18900) // CR13: +16 tier-2 names; learning L03: +1 tier-1 block (tls.a.choice, ~180 chars even with a shortened describe) -> 18.9k
         expect(tier1).toMatchSnapshot()
       })
 
@@ -628,10 +628,10 @@ describe('R7 — capability digest v2', () => {
         }
       })
 
-      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 18.5k (AC8, CMP4, CR8, CR13)', () => {
+      it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 18.9k (AC8, CMP4, CR8, CR13)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(18500) // CR13: +16 tier-2 names
+          expect(md.length).toBeLessThanOrEqual(18900) // CR13: +16 tier-2 names; learning L03: +1 tier-1 block (tls.a.choice, ~180 chars even with a shortened describe) -> 18.9k
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)

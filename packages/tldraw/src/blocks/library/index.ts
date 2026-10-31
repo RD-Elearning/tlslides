@@ -24,6 +24,9 @@ import { compositeBlocks } from './composite'
 // Media blocks — image block and future media types (R8).
 import { mediaBlocks } from './media'
 
+// Activity blocks — interactive, viewer-only (learning L03).
+import { activityBlocks } from './activity'
+
 // Chrome blocks — page chrome elements (R14).
 import { chromeBlocks } from './chrome'
 
@@ -39,6 +42,7 @@ export const BUILT_IN_BLOCKS: BlockDefinition[] = applyAiCuration([
   ...compositeBlocks,
   ...mediaBlocks,
   ...chromeBlocks,
+  ...activityBlocks,
 ])
 
 /**

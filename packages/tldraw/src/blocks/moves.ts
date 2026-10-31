@@ -80,7 +80,9 @@ export const DESIGN_MOVES: readonly DesignMove[] = [
   content('quote-poster', ['quote', 'poster'], ['tls.t.quote', 'tls.t.pull-quote', 'tls.c.testimonial'], ['quote'], 'calm', 'poster', 'quote-pull', 'the quote is the slide'),
   content('statement-poster', ['poster', 'blank'], ['tls.t.statement', 'tls.t.takeaway'], ['statement'], 'calm', 'poster', 'content-statement', 'one sentence, very large'),
   content('question-spotlight', ['poster', 'blank'], ['tls.t.statement', 'tls.t.qa'], ['question'], 'lively', 'poster', 'content-statement', 'one question for the room'),
-  content('quiz-check', ['timeline'], ['tls.c.quiz', 'tls.t.qa', 'tls.t.checklist'], ['question'], 'lively', 'dense', 'content-cards', 'a check of understanding with options'),
+  // learning L03: a live question with a clickable answer (viewer); a static poster in the editor and exports
+  content('quick-check', ['timeline', 'poster'], ['tls.a.choice'], ['question'], 'lively', 'dense', 'activity-choice', 'a live question the class answers by clicking'),
+  content('quiz-check', ['timeline'], ['tls.a.choice', 'tls.c.quiz', 'tls.t.qa', 'tls.t.checklist'], ['question'], 'lively', 'dense', 'content-cards', 'a check of understanding with options'),
   content('sticky-board', ['timeline', 'blank'], ['tls.c.bento', 'tls.c.cards', 'tls.t.tags'], ['group', 'terms'], 'lively', 'dense', 'content-cards', 'ideas pinned on a board'),
   content('checklist', ['timeline', 'two-column'], ['tls.t.checklist', 'tls.c.objectives', 'tls.m.icon-list'], ['action', 'recap'], 'neutral', 'dense', 'content-icon-list-image', 'things to do or to check'),
   content('people-row', ['timeline'], ['tls.c.team', 'tls.c.gallery-wall', 'tls.c.cards', 'tls.m.icon-list'], ['people', 'group'], 'neutral', 'dense', 'people-team', 'the people or roles involved'),

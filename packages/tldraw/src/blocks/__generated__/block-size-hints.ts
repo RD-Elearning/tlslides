@@ -4,6 +4,7 @@
  * are `block-metrics.json` next to this file. `block-metrics.spec.ts` fails when either is stale.
  */
 export const BLOCK_SIZE_HINTS: Record<string, string> = {
+  'tls.a.choice': 'h≈67+108/item@1728',
   'tls.c.agenda': 'h 169–970@1728',
   'tls.c.bento': 'h=fill',
   'tls.c.big-stat': 'h≈388@840',

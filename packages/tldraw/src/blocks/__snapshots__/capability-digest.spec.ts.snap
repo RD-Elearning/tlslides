@@ -123,6 +123,48 @@ Lines between blocks of one slide, by block id (a nested child id works too), ne
 
 ## Blocks
 
+### \`tls.a.choice\` — Choice question [html]
+
+Interactive multiple-choice question with feedback (live in Present mode). _(family: live; keywords: quiz, multiple choice, question, check understanding, activity, interactive, poll, trắc nghiệm)_
+
+**When:** Check understanding after a definition or example: one question with a clear right answer.
+**Avoid:** Open questions with no single right answer: tls.t.qa. Print handouts: tls.c.quiz.
+
+**Parts:** \`root\`
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`prompt\` | yes | richText (max 200 chars) | One clear question. |
+| \`options\` | yes | list of text (max 90 chars) (2–5 items) | Short, parallel answers; lettered A-E automatically. |
+| \`answer\` | yes | list of number (min 0, max 4) (1–5 items) | Zero-based indices into options (0 = A). One index unless \`multiple\`. |
+| \`multiple\` | no | boolean | true: the learner picks all correct options and presses \\"Kiểm tra\\". |
+| \`why\` | no | list of text (max 120 chars) (0–5 items) | Optional feedback for each option, same length as options. |
+| \`explanation\` | no | text (max 240 chars) | Shown after a correct answer and after \\"Hiện đáp án\\". |
+| \`layout\` | no | enum: list \\\\| grid | grid = two columns. |
+| \`submit\` | no | enum: instant \\\\| confirm | instant: the click gives the result; confirm: select, then \\"Kiểm tra\\". Absent = the deck default. |
+| \`retry\` | no | boolean | Default true. |
+| \`showAnswer\` | no | boolean | Default true. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_choice\\",
+  \\"type\\": \\"tls.a.choice\\",
+  \\"props\\": {
+    \\"prompt\\": \\"Which measure resists outliers?\\",
+    \\"options\\": [
+      \\"The mean\\",
+      \\"The median\\",
+      \\"The range\\"
+    ],
+    \\"answer\\": [
+      1
+    ],
+    \\"explanation\\": \\"The median ignores how far the extremes are.\\",
+    \\"layout\\": \\"list\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.agenda\` — Agenda
 
 Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
@@ -6966,8 +7008,9 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 183,
+  "blockCount": 184,
   "blockTypes": Array [
+    "tls.a.choice",
     "tls.c.agenda",
     "tls.c.bento",
     "tls.c.big-stat",
@@ -7239,7 +7282,7 @@ Object {
 }
 `;
 
-exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.5k chars and matches its snapshot 1`] = `
+exports[`R7 — capability digest v2 two-tier digest (P0.4) tier-1 index (AC0) stays within 18.9k chars and matches its snapshot 1`] = `
 "# Slide block index — core set
 
 Start from a recipe for the slide's role, else pick a category. Dated → \`timeline\`, ordered → \`process\`, options → \`comparison\`, numbers on axes → \`chart\`, 1–4 headline numbers → \`metric\`.
@@ -7276,6 +7319,7 @@ patterns: section-marker(disc|style) · section-questions(chevron) · section-ph
 content-bento · timeline+title — tls.c.bento — a number, points, a photo
 content-statement · blank — tls.t.statement(size=display) — one message, key words in accent · looks: center|underline|accent
 content-bullets-image · two-column+title — left: tls.t.bullets(size=fit); right: tls.m.image — points beside a photo · looks: mirror|chevron
+activity-choice · timeline+title — tls.a.choice — a live multiple-choice question for the class
 content-cards · timeline+title — tls.c.cards — 2–4 parallel points · looks: numbers|giant|accent|outline|center
 content-feature-grid · timeline+title — tls.c.feature-grid(cell=card) — features with icons · looks: circle|center
 content-icon-list-image · image-left+title — image: tls.m.image; text: tls.m.icon-list(size=fit) — icon points beside a photo · looks: mirror
@@ -7421,6 +7465,7 @@ tls.c.closing · closing · slide — Closing slide with thank-you title, call t
 also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.question-wall, tls.c.recap, tls.c.takeaway-poster
 
 ## Learning
+tls.a.choice · learning · group · 2–5 items — Interactive multiple-choice question with feedback [h≈67+108/item@1728] knobs: layout=list|grid, submit=instant|confirm, multiple
 also: tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
 
 ## Chrome

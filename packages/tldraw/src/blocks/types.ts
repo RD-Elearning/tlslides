@@ -412,6 +412,70 @@ export interface BlockMotionRuntime {
  * Runtime metadata and behaviour for a block type. The definition lives in code; each
  * instance is a plain JSON `BlockSpec` in the document.
  */
+/* ── L03 — interactive activities (viewer only) ─────────────────────────────── */
+
+export type ActivityKind = 'choice' | 'true-false' | 'flip' | 'reveal' | 'fill-blank' | 'match' | 'order' | 'sort'
+/** `instant`: a single-answer activity gives its result on the click. `confirm`: select, then "Kiểm tra". */
+export type SubmitMode = 'instant' | 'confirm'
+
+export interface ActivityMeta {
+  kind: ActivityKind
+  /** `single`: one click decides (submit mode applies) · `multi`: several picks, always "Kiểm tra" ·
+   *  `none`: nothing is scored (flip cards, reveal). */
+  answers: 'single' | 'multi' | 'none'
+}
+
+/** Labels of the controls, in the deck locale (`blocks/activity/labels.ts`). */
+export interface ActivityLabels {
+  check: string
+  retry: string
+  correct: string
+  wrong: string
+  showAnswer: string
+  hint: string
+  flip: string
+  flipAll: string
+  unflipAll: string
+  start: string
+  stop: string
+  timeUp: string
+  of: string
+}
+
+/** Viewer-session state of one activity block. JSON only. */
+export interface ActivityState {
+  /** Picked option / statement indices, in pick order (order/match activities use it as the sequence). */
+  picked?: number[]
+  /** `true` once evaluated; `'shown'` after "Hiện đáp án". */
+  done?: boolean | 'shown'
+  /** Kind-specific extras (flipped cards, revealed hints, filled blanks…). */
+  extra?: Record<string, unknown>
+}
+
+export interface ActivityEvent {
+  type: 'answered' | 'retried' | 'revealed'
+  kind: ActivityKind
+  correct?: boolean
+}
+
+export interface ActivityRuntime {
+  /** The effective submit mode: block prop `submit` → deck `activity.submit` → `'instant'`. */
+  submit: SubmitMode
+  labels: ActivityLabels
+  /** Viewer-session state of this block (survives leaving and coming back to the slide in one viewer
+   *  mount; cleared when the spec changes). */
+  getState(): ActivityState | undefined
+  setState(s: ActivityState): void
+  /** Host telemetry hook. Optional, never required. */
+  emit?(e: ActivityEvent): void
+  reducedMotion: boolean
+}
+
+/** Deck-level activity defaults (`DeckSpec.activity`). Additive. */
+export interface DeckActivity {
+  submit?: SubmitMode
+}
+
 export interface BlockDefinition<P extends Record<string, unknown> = Record<string, unknown>> {
   /** Registry key, namespaced. */
   type: string
@@ -497,6 +561,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   poster?(props: P, ctx: LayoutContext): LayoutNode
 
   /** `kind: 'html'` only. The HTML template and optional animation. */
+  /** L03 — an interactive activity (family 'live'). Present only on activity blocks. */
+  activity?: ActivityMeta
+
   html?: {
     /** Return markup. MUST use `ctx.esc()` for all user content.
      *  Parts are declared as `data-part` attributes matching `motion.parts`. */
@@ -504,6 +571,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
     /** Optional animation hook. R3 fills rt; for R2, this signature is declared but not called.
      *  Returns a disposer that cleans up running animations. */
     animate?(root: HTMLElement, rt: BlockMotionRuntime): void | (() => void)
+    /** L03 — wires the controls of an activity. Called ONLY when the host renders interactively
+     *  (DeckViewer); never in the editor canvas, thumbnails or export. Returns a disposer. */
+    interact?(root: HTMLElement, rt: ActivityRuntime, props: P): () => void
   }
 
   /** Named parts and default choreography. */
@@ -1369,6 +1439,8 @@ export interface DeckSpec {
   slides: SlideSpec[]
   /** P7 — default motion style for every slide. Absent = no style (only per-block `motion`). */
   motionStyle?: MotionStyle
+  /** L03 — activity defaults (answer mode of single-answer activities). Absent = `instant`. */
+  activity?: DeckActivity
   /** AC1 — a deck style id (one of `BUILT_IN_STYLES`, e.g. `'corporate'`). The style supplies the
    *  default palette, token overrides, masters (`style:*`), knob defaults per block type and the
    *  motion style, each under what this spec authors (`reviews/blocks/ai-curation/README.md`

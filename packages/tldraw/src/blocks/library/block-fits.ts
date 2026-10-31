@@ -199,6 +199,7 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
 
   // ── learning ──
   'tls.c.quiz': f(['question'], [2, 5], 'labels', 'lively', { frames: ['qa'] }),
+  'tls.a.choice': f(['question'], [2, 5], 'labels', 'lively', { frames: ['qa'] }),
   'tls.t.qa': f(['question', 'definition'], [1, 4], 'lines', 'neutral', { frames: ['qa'] }),
 
   // ── spro creative CR8: wave 1 (PLAN Appendix C.1) ──

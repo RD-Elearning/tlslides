@@ -46,7 +46,7 @@ export function moveSample(id: string): SlideSpec {
 
 describe('creative CR2 design moves', () => {
   it('has 30 content and 32 frame moves with unique ids', () => {
-    expect(DESIGN_MOVES.filter((m) => m.kind === 'content')).toHaveLength(36) // spro creative CR13: + 6 wave-2/3 moves
+    expect(DESIGN_MOVES.filter((m) => m.kind === 'content')).toHaveLength(37) // spro creative CR13: + 6 wave-2/3 moves; learning L03: + quick-check
     expect(DESIGN_MOVES.filter((m) => m.kind === 'frame')).toHaveLength(32)
     expect(new Set(DESIGN_MOVES.map((m) => m.id)).size).toBe(DESIGN_MOVES.length)
     for (const r of FRAME_ROLES) expect([r, movesFor(r).length >= 3]).toEqual([r, true])

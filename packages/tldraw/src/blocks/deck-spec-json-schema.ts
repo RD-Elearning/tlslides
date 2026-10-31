@@ -92,6 +92,7 @@ export function deckSpecJsonSchema(registry?: BlockRegistry): Record<string, unk
         items: slideSchema(reg, blockTypeSchemas, layoutIds),
       },
       motionStyle: MOTION_STYLE_SCHEMA,
+      activity: ACTIVITY_SCHEMA,
       style: {
         type: 'string',
         enum: BUILT_IN_STYLES.map((st) => st.id),
@@ -284,6 +285,20 @@ function blockSchema(
     additionalProperties: false,
     oneOf: blockTypeSchemas,
   }
+}
+
+/** L03 — deck-level activity defaults. */
+const ACTIVITY_SCHEMA: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    submit: {
+      type: 'string',
+      enum: ['instant', 'confirm'],
+      description: 'Single-answer activities: instant gives the result on the click (default); confirm selects, then "Kiểm tra".',
+    },
+  },
+  additionalProperties: false,
+  description: 'Defaults for interactive activity blocks (viewer only).',
 }
 
 /** P7 — deck/slide `motionStyle` (slide wins). */

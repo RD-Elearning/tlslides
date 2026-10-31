@@ -254,6 +254,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
 
   // ── learning ──
   'tls.c.quiz': [v('list', 'options in a list, answer shown', { layout: 'list', reveal: 'shown' }), v('grid', 'options in a grid, answer hidden', { layout: 'grid', reveal: 'none' })],
+  'tls.a.choice': [v('list', 'options in a list', { layout: 'list' }), v('grid', 'options in two columns', { layout: 'grid' })],
   'tls.t.qa': [v('badges', 'Q and A badges', { marker: 'qa' }), v('numbered', 'numbered questions', { marker: 'numbered' })],
 
   // ── spro creative CR8: wave 1 ──

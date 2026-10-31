@@ -120,6 +120,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── learning ──
   'tls.t.qa': t2(['marker']),
   'tls.c.quiz': t2(['layout', 'reveal', 'showExplanation']),
+  // learning L03: interactive activities (viewer only; a static poster everywhere else)
+  'tls.a.choice': t1(['layout', 'submit', 'multiple']),
   // spro compose PLAN.md B3: teaching blocks (tier 2: reached through the compose kit's families)
   'tls.t.formula': t2(['size', 'align']),
   'tls.t.code': t2(['lineNumbers']),

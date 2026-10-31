@@ -151,6 +151,7 @@ export const RECIPES: readonly SlideRecipe[] = [
     layout: 'two-column',
     regions: { title: [TITLE], left: [b('tls.t.bullets', { size: 'fit' })], right: [b('tls.m.image')] },
     when: 'points beside a photo', variants: [{ id: 'mirror', swap: ['left', 'right'] }, v('chevron', { 'tls.t.bullets': { marker: 'chevron' } })] },
+  { id: 'activity-choice', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.a.choice')] }, when: 'a live multiple-choice question for the class' },
   { id: 'content-cards', role: 'content', layout: 'timeline', regions: { title: [TITLE], timeline: [b('tls.c.cards')] }, when: '2–4 parallel points', variants: [v('numbers', { 'tls.c.cards': { lead: 'number' } }), v('giant', { 'tls.c.cards': { lead: 'number', numeral: 'giant' } }), v('accent', { 'tls.c.cards': { tone: 'accent-first' } }), v('outline', { 'tls.c.cards': { tone: 'outline' } }), v('center', { 'tls.c.cards': { align: 'center' } })] },
   {
     id: 'content-feature-grid',

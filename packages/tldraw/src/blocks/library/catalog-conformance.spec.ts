@@ -36,7 +36,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 183 // spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
+const EXPECTED_BLOCK_COUNT = 184 // learning L03: + tls.a.choice; spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()
@@ -287,11 +287,11 @@ describe('block catalog conformance', () => {
       expect(BUILT_IN_BLOCKS).toHaveLength(EXPECTED_BLOCK_COUNT)
     })
 
-    it('exports 7 family arrays', () => {
-      // layout, text, data, diagram, composite, media, chrome
+    it('exports 8 family arrays', () => {
+      // layout, text, data, diagram, composite, media, chrome, live (learning L03)
       const families = new Set(BUILT_IN_BLOCKS.map((b) => b.family))
       expect(Array.from(families).sort()).toEqual(
-        ['chrome', 'composite', 'data', 'diagram', 'layout', 'media', 'text']
+        ['chrome', 'composite', 'data', 'diagram', 'layout', 'live', 'media', 'text']
       )
     })
   })
