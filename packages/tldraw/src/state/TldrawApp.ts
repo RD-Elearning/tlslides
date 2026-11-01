@@ -99,6 +99,7 @@ import { StarTool } from './tools/StarTool'
 import { SpeechBubbleTool } from './tools/SpeechBubbleTool'
 import { StateManager } from './StateManager'
 import { clearPrevSize } from './shapes/shared/getTextSize'
+import { collectDeckIds, remintBlockIds } from '~blocks/remint-ids'
 
 const uuid = Utils.uniqueId()
 
@@ -2328,6 +2329,10 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         }
         return copy
       })
+
+    // Editor E00: pasted / inserted blocks never reuse a block id the deck already has
+    const remintedShapes = remintBlockIds(shapesToInsert as never[], collectDeckIds(this.document as never)).shapes as unknown as typeof shapesToInsert
+    shapesToInsert.splice(0, shapesToInsert.length, ...remintedShapes)
 
     const bindingsToInsert = bindings.map((binding) => ({
       ...binding,

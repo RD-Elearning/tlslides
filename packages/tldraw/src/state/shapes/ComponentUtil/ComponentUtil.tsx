@@ -14,7 +14,7 @@ import {
 import { styled } from '@stitches/react'
 import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
 import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
-import { getAtPath, setAtPath } from '~blocks/prop-path'
+import { getAtPath, hasPath, setAtPath } from '~blocks/prop-path'
 import { layoutBlock } from '~blocks/layout/layout-child'
 import { treatTree } from '~blocks/paint-treatment'
 import { blockTreatment } from '~blocks/look'
@@ -120,10 +120,14 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           now - lastPointerDownRef.current.time < 250
         lastPointerDownRef.current = { time: now, target }
         const propPath = target?.getAttribute('data-prop-path')
+        const root = (propsRef.current ?? {}) as Record<string, unknown>
+        // Editor E00: only a path that resolves in this block's own props opens the editor — a
+        // nested child's own path (`text` inside a composite) would open empty and write an orphan
+        // key; and nothing opens while the document is read-only (an AI run, presentation).
         // `null` = a rich value with formatting plain text cannot carry: leave it to the inspector
         const initial =
-          propPath != null
-            ? toEditable(getAtPath((propsRef.current ?? {}) as Record<string, unknown>, propPath))
+          propPath != null && !app.readOnly && hasPath(root, propPath)
+            ? toEditable(getAtPath(root, propPath))
             : null
         if (isDouble && target && propPath && initial !== null) {
           const rect = target.getBoundingClientRect()
@@ -136,7 +140,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           const style = editorStyleOf(target, rect)
           window.setTimeout(() => setEditing({ propPath, rect, initial, style, target }), 0)
         }
-      }, [])
+      }, [app])
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current

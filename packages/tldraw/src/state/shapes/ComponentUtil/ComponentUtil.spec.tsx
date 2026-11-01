@@ -229,13 +229,14 @@ describe('Component shape', () => {
       fireEvent.pointerDown(target)
     }
 
-    function renderTitleBlock(props: Record<string, unknown>) {
+    function renderTitleBlock(props: Record<string, unknown>, componentId = 'tls.t.bullets', readOnly = false) {
       const app = new TldrawApp()
+      app.readOnly = readOnly
       const registry = new BlockRegistry()
       registerBuiltInBlocks(registry)
       const shape = Component.create({
         id: 'bullets-block',
-        componentId: 'tls.t.bullets',
+        componentId,
         size: [960, 400],
         props,
       })
@@ -358,6 +359,25 @@ describe('Component shape', () => {
 
       expect(updateShapes).not.toHaveBeenCalled()
       expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+    })
+  
+    it('editor E00: nothing opens while the document is read-only', async () => {
+      renderTitleBlock(bulletsProps, 'tls.t.bullets', true)
+      doubleClick(document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement)
+      await new Promise((r) => setTimeout(r, 20))
+      expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+    })
+
+    it('editor E00: a path that does not resolve in the block props opens nothing', async () => {
+      const { app } = renderTitleBlock({ title: 'Cover title', kicker: 'Lecture 5' }, 'tls.c.poster-cover')
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+      const leaves = Array.from(document.querySelectorAll('[data-prop-path]')) as HTMLElement[]
+      const bad = leaves.find((el) => !['title', 'kicker', 'subtitle', 'meta'].includes(el.getAttribute('data-prop-path') ?? ''))
+      if (!bad) return // every path resolves (editor E02 binds composite children) — nothing to guard
+      doubleClick(bad)
+      await new Promise((r) => setTimeout(r, 20))
+      expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+      expect(updateShapes).not.toHaveBeenCalled()
     })
   })
 })

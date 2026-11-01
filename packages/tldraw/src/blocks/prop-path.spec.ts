@@ -1,4 +1,4 @@
-import { setAtPath, getAtPath, parsePropPath } from './prop-path'
+import { setAtPath, getAtPath, parsePropPath, hasPath } from './prop-path'
 
 describe('prop-path', () => {
   it('setAtPath sets a value at top-level path', () => {
@@ -22,5 +22,17 @@ describe('prop-path', () => {
   it('parsePropPath parses dot-separated paths', () => {
     expect(parsePropPath('text')).toEqual(['text'])
     expect(parsePropPath('items.0.text')).toEqual(['items', 0, 'text'])
+  })
+
+  it('hasPath: present, empty, missing, out of range', () => {
+    const p = { title: '', items: [{ text: 'a' }], meta: null }
+    expect(hasPath(p, 'title')).toBe(true)
+    expect(hasPath(p, 'meta')).toBe(true)
+    expect(hasPath(p, 'items.0.text')).toBe(true)
+    expect(hasPath(p, 'text')).toBe(false)
+    expect(hasPath(p, 'items.1.text')).toBe(false)
+    expect(hasPath(p, 'items.0.missing')).toBe(false)
+    expect(hasPath(p, 'meta.x')).toBe(false)
+    expect(hasPath(p, '')).toBe(false)
   })
 })

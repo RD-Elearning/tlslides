@@ -4,6 +4,7 @@ import { Vec } from '@tlslides/vec'
 import { TLDR } from '~state/TLDR'
 import type { PagePartial, TldrawCommand, TDShape } from '~types'
 import type { TldrawApp } from '../../internal'
+import { collectDeckIds, remintBlockIds } from '~blocks/remint-ids'
 
 export function duplicateShapes(app: TldrawApp, ids: string[], point?: number[]): TldrawCommand {
   const { selectedIds, currentPageId, page, shapes } = app
@@ -146,6 +147,14 @@ export function duplicateShapes(app: TldrawApp, ids: string[], point?: number[])
     if (shape.isLocked) {
       shape.isLocked = false
     }
+  })
+
+  // Editor E00: a duplicated block gets its own block id (and fresh ids for its authored children)
+  const newIds = new Set(Object.values(duplicateMap))
+  const copies = shapesToMove.filter((shape) => newIds.has(shape.id))
+  const reminted = remintBlockIds(copies as never[], collectDeckIds(app.state.document as never)).shapes as unknown as TDShape[]
+  reminted.forEach((shape) => {
+    after.shapes[shape.id] = shape
   })
 
   return {

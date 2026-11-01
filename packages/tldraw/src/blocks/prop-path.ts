@@ -91,3 +91,20 @@ export function getAtPath(
 export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
+/**
+ * True when every key of `path` exists in `obj` (the leaf itself may be '' or null — an empty
+ * slot). Editor E00: an inline edit opens only on a path that resolves in the block's own props,
+ * never on one that would write a new, orphan key.
+ */
+export function hasPath(obj: Record<string, unknown>, path: string): boolean {
+  if (!path) return false
+  let current: unknown = obj
+  for (const key of parsePropPath(path)) {
+    if (current === null || typeof current !== 'object') return false
+    if (Array.isArray(current)) {
+      if (typeof key !== 'number' || key < 0 || key >= current.length) return false
+    } else if (!Object.prototype.hasOwnProperty.call(current, key)) return false
+    current = (current as Record<string | number, unknown>)[key]
+  }
+  return true
+}
