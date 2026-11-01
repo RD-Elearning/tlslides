@@ -10,6 +10,7 @@ import { styled } from '../../../styles'
 import type { SlotSpec, SlotType, ColorRole } from '~blocks/types'
 import { ThemeColorPicker } from './ThemeColorPicker'
 import { ICONS } from '~blocks/icons'
+import { useLabels, useMsg } from '../../../hooks/useMessages'
 
 export interface FieldProps {
   /** The slot specification from the block's schema. */
@@ -176,8 +177,10 @@ export const NumberField: React.FC<FieldProps & { name: string }> = ({ spec, val
 /* Enum                                                                           */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
-export const EnumField: React.FC<FieldProps & { name: string }> = ({ spec, value, onChange }) => {
+export const EnumField: React.FC<FieldProps & { name: string }> = ({ spec, value, onChange, name }) => {
   const typeSpec = spec.type as { kind: 'enum'; values: string[] }
+  const t = useMsg()
+  const labels = useLabels()
 
   return (
     <FieldContainer>
@@ -187,11 +190,11 @@ export const EnumField: React.FC<FieldProps & { name: string }> = ({ spec, value
         onChange={(e) => onChange(e.target.value)}
       >
         <option value="" disabled>
-          — select —
+          {t('field.select')}
         </option>
         {typeSpec.values.map((v) => (
           <option key={v} value={v}>
-            {v}
+            {labels.option?.('', name, v) ?? v}
           </option>
         ))}
       </SelectField>
@@ -300,6 +303,7 @@ export const ListField: React.FC<FieldProps & { name: string; path: string }> = 
   // `of` is a bare SlotType; the item editor and the default helper take a SlotSpec.
   const itemSpec: SlotSpec = { type: typeSpec.of, role: spec.role, label: '' }
   const items = (value as unknown[]) ?? []
+  const t = useMsg()
   const maxItems = typeSpec.max
 
   const addItem = () => {
@@ -340,19 +344,19 @@ export const ListField: React.FC<FieldProps & { name: string; path: string }> = 
         {items.map((item, i) => (
           <ListItemRow key={i}>
             <ListControls>
-              <ListButton onClick={() => moveUp(i)} title="Move up" disabled={i === 0}>
+              <ListButton onClick={() => moveUp(i)} title={t('field.moveUp')} disabled={i === 0}>
                 ↑
               </ListButton>
               <ListButton
                 onClick={() => moveDown(i)}
-                title="Move down"
+                title={t('field.moveDown')}
                 disabled={i === items.length - 1}
               >
                 ↓
               </ListButton>
               <ListButton
                 onClick={() => removeItem(i)}
-                title="Remove"
+                title={t('field.remove')}
                 disabled={typeSpec.min !== undefined && items.length <= typeSpec.min}
               >
                 ✕
@@ -371,7 +375,7 @@ export const ListField: React.FC<FieldProps & { name: string; path: string }> = 
         ))}
       </ListItemsContainer>
       {(maxItems === undefined || items.length < maxItems) && (
-        <AddButton onClick={addItem}>+ Add</AddButton>
+        <AddButton onClick={addItem}>{t('field.add')}</AddButton>
       )}
       {spec.help && <FieldHelp>{spec.help}</FieldHelp>}
     </FieldContainer>
@@ -428,6 +432,7 @@ export const SeriesField: React.FC<FieldProps & { name: string; path: string }> 
   const typeSpec = spec.type as { kind: 'series'; value: 'number'; label: 'text'; max?: number }
   const items = (value as Array<{ value: number; label: string }>) ?? []
   const maxItems = typeSpec.max
+  const t = useMsg()
 
   const addItem = () => {
     if (maxItems !== undefined && items.length >= maxItems) return
@@ -457,25 +462,25 @@ export const SeriesField: React.FC<FieldProps & { name: string; path: string }> 
         {items.map((item, i) => (
           <SeriesRow key={i}>
             <NumberField
-              spec={{ type: { kind: 'number' }, label: 'Value', role: 'option' }}
+              spec={{ type: { kind: 'number' }, label: t('field.value'), role: 'option' }}
               value={item.value}
               onChange={(val) => updateValue(i, val as number)}
               name={`_${i}_value`}
             />
             <TextField
-              spec={{ type: { kind: 'text' }, label: 'Label', role: 'option' }}
+              spec={{ type: { kind: 'text' }, label: t('field.label'), role: 'option' }}
               value={item.label}
               onChange={(val) => updateLabel(i, val as string)}
               name={`_${i}_label`}
             />
-            <ListButton onClick={() => removeItem(i)} title="Remove">
+            <ListButton onClick={() => removeItem(i)} title={t('field.remove')}>
               ✕
             </ListButton>
           </SeriesRow>
         ))}
       </ListItemsContainer>
       {(maxItems === undefined || items.length < maxItems) && (
-        <AddButton onClick={addItem}>+ Add</AddButton>
+        <AddButton onClick={addItem}>{t('field.add')}</AddButton>
       )}
       {spec.help && <FieldHelp>{spec.help}</FieldHelp>}
     </FieldContainer>
@@ -488,14 +493,13 @@ export const SeriesField: React.FC<FieldProps & { name: string; path: string }> 
 
 export const BlocksField: React.FC<FieldProps & { name: string }> = ({ spec, value }) => {
   const children = (value as unknown[]) ?? []
+  const t = useMsg()
 
   return (
     <FieldContainer>
       <FieldLabel>{spec.label}</FieldLabel>
       <BlocksSummary>
-        {children.length === 0
-          ? 'No child blocks'
-          : `${children.length} child block${children.length === 1 ? '' : 's'}`}
+        {children.length === 0 ? t('field.noChildren') : t('field.children', { n: children.length })}
       </BlocksSummary>
       {spec.help && <FieldHelp>{spec.help}</FieldHelp>}
     </FieldContainer>
@@ -568,8 +572,11 @@ export function renderFieldForSpec(
  * Internal recursive component — used by ListField and ObjectField.
  */
 const RecursiveField: React.FC<RecursiveFieldProps> = ({ spec, value, path, name, onChange }) => {
+  // Editor E08: nested field names in the host's language too (a list item keeps its empty label)
+  const labels = useLabels()
+  const label = spec.label ? labels.field?.('', path, spec.label) ?? spec.label : spec.label
   return renderFieldForSpec(
-    spec,
+    label === spec.label ? spec : { ...spec, label },
     value,
     path,
     onChange,
