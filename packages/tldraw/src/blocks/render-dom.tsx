@@ -8,6 +8,7 @@
  * `.tl-positioned-div` sets `overflow: hidden` — overlays must portal.
  */
 
+import { markHtmlEditPaths } from './html-edit-paths'
 import * as React from 'react'
 import { rectShadowSpec, shadowCss } from './shadow'
 import type {
@@ -242,6 +243,8 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
+      // Editor E02: the template's text elements carry the prop paths they paint (inline edit, items).
+      if (!hctx.headless) markHtmlEditPaths(root, hctx.props, hctx.poster)
 
       // R0.5 item 3: hide parts immediately so they don't flash at full opacity
       // between the layout effect (mount) and the reveal trigger. animate()'s
@@ -289,6 +292,8 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
+      // Editor E02: the template's text elements carry the prop paths they paint (inline edit, items).
+      if (!hctx.headless) markHtmlEditPaths(root, hctx.props, hctx.poster)
       // L03: the DOM was replaced, so the activity's listeners are gone: wire it again.
       if (hctx.interactive && hctx.activity && def.html!.interact) {
         ACTIVITY_DISPOSERS.get(root)?.()
