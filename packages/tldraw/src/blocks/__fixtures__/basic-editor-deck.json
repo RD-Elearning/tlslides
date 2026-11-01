@@ -1,0 +1,616 @@
+{
+ "id": "fixture-basic-editor",
+ "style": "doodle-notebook",
+ "theme": "doodle-notebook-blue",
+ "title": "Basic editor fixture",
+ "aspect": "widescreen",
+ "slides": [
+  {
+   "id": "s01",
+   "free": [
+    {
+     "box": {
+      "x": 1640,
+      "y": 140,
+      "width": 140,
+      "height": 140
+     },
+     "block": {
+      "id": "deck-motif",
+      "type": "tls.m.decoration",
+      "layer": "backdrop",
+      "props": {
+       "seed": 3,
+       "tone": "accent2",
+       "shape": "star",
+       "opacity": "strong"
+      }
+     }
+    }
+   ],
+   "intent": "poster",
+   "layout": "poster",
+   "regions": {
+    "poster": [
+     {
+      "id": "s01_pc",
+      "type": "tls.c.poster-cover",
+      "props": {
+       "motif": "squiggle",
+       "title": "Học máy là gì và đã ở quanh ta",
+       "kicker": "Bài 1 · Nhập môn học máy",
+       "variant": "overlap-motif",
+       "subtitle": "Máy tính tự tìm quy luật từ dữ liệu"
+      }
+     },
+     {
+      "id": "s01_d1",
+      "type": "tls.m.decoration",
+      "layer": "overlay",
+      "props": {
+       "shape": "squiggle"
+      },
+      "anchor": "top-right"
+     },
+     {
+      "id": "s01_k",
+      "type": "tls.t.kicker",
+      "layer": "overlay",
+      "props": {
+       "case": "uppercase",
+       "text": "72% doanh nghiệp lớn đã dùng",
+       "marker": true,
+       "tracking": "wide"
+      },
+      "anchor": "bottom-left"
+     }
+    ]
+   },
+   "transition": {
+    "kind": "none"
+   },
+   "motionStyle": "expressive",
+   "choreography": "motif-hero"
+  },
+  {
+   "id": "s02",
+   "intent": "diagram",
+   "layout": "timeline",
+   "valign": "auto",
+   "regions": {
+    "title": [
+     {
+      "id": "s02_t",
+      "type": "tls.t.title",
+      "props": {
+       "text": "Nội dung bài giảng"
+      }
+     },
+     {
+      "id": "s02_dec",
+      "type": "tls.m.decoration",
+      "layer": "overlay",
+      "props": {
+       "shape": "star"
+      },
+      "anchor": "right"
+     }
+    ],
+    "timeline": [
+     {
+      "id": "s02_j",
+      "type": "tls.c.journey",
+      "props": {
+       "milestones": [
+        {
+         "text": "Định nghĩa và con số 72%.",
+         "when": "Phần 1",
+         "title": "Học máy là gì?"
+        },
+        {
+         "text": "Máy tìm quy luật trong dữ liệu.",
+         "when": "Phần 2",
+         "title": "Học quy luật từ dữ liệu"
+        },
+        {
+         "text": "Những ứng dụng quen thuộc.",
+         "when": "Phần 3",
+         "title": "Học máy đã ở quanh ta"
+        },
+        {
+         "text": "Bốn chặng phía trước, ôn lại.",
+         "when": "Phần 4",
+         "title": "Bốn chặng và ôn tập"
+        }
+       ]
+      }
+     },
+     {
+      "id": "s02_c",
+      "type": "tls.t.callout",
+      "props": {
+       "fill": "tint",
+       "text": "Đi theo **bốn chặng**; cuối bài tự phát biểu lại định nghĩa bằng lời của mình.",
+       "title": "Cách học",
+       "variant": "tip"
+      }
+     }
+    ]
+   },
+   "transition": {
+    "kind": "fade"
+   },
+   "motionStyle": "expressive",
+   "choreography": "route-map"
+  },
+  {
+   "id": "s09",
+   "intent": "dense",
+   "layout": "timeline",
+   "valign": "auto",
+   "regions": {
+    "title": [
+     {
+      "id": "s09_t",
+      "type": "tls.t.title",
+      "props": {
+       "text": "Quy trình học từ dữ liệu"
+      }
+     },
+     {
+      "id": "s09_dec",
+      "type": "tls.m.decoration",
+      "layer": "overlay",
+      "props": {
+       "shape": "star"
+      },
+      "anchor": "right"
+     }
+    ],
+    "timeline": [
+     {
+      "id": "s09_st",
+      "type": "tls.c.steps",
+      "props": {
+       "align": "center",
+       "steps": [
+        {
+         "desc": "Đầu vào: dữ liệu đã gán nhãn",
+         "title": "Hàng nghìn thư đã gán nhãn"
+        },
+        {
+         "desc": "Máy tìm quy luật trong dữ liệu",
+         "title": "Lọc thư rác, học từ dữ liệu"
+        },
+        {
+         "desc": "Mô hình học được",
+         "title": "Quy luật tự rút ra"
+        },
+        {
+         "desc": "Kết quả: dự đoán cho thư chưa từng thấy",
+         "title": "Thư mới được phân loại"
+        }
+       ],
+       "orientation": "horizontal"
+      }
+     },
+     {
+      "id": "s09_co",
+      "type": "tls.t.callout",
+      "props": {
+       "fill": "tint",
+       "text": "Máy không được lập trình từng quy tắc: nó **tự rút ra quy luật** từ dữ liệu đã gán nhãn.",
+       "title": "Điểm nhấn",
+       "variant": "tip"
+      }
+     }
+    ]
+   },
+   "transition": {
+    "kind": "fade"
+   },
+   "choreography": "worked-steps"
+  },
+  {
+   "id": "s16",
+   "intent": "dense",
+   "layout": "timeline",
+   "valign": "auto",
+   "regions": {
+    "title": [
+     {
+      "id": "s16_t",
+      "type": "tls.t.title",
+      "props": {
+       "text": "Mỗi chặng trả lời một câu hỏi"
+      }
+     },
+     {
+      "id": "s16_dec",
+      "type": "tls.m.decoration",
+      "layer": "overlay",
+      "props": {
+       "shape": "star"
+      },
+      "anchor": "right"
+     }
+    ],
+    "timeline": [
+     {
+      "id": "s16_m",
+      "type": "tls.g.matrix-2x2",
+      "props": {
+       "style": "tinted",
+       "xAxis": {
+        "low": "Chặng đầu",
+        "high": "Chặng sau"
+       },
+       "yAxis": {
+        "low": "Cách làm",
+        "high": "Cách nghĩ"
+       },
+       "highlight": "TL",
+       "quadrants": [
+        {
+         "text": "Học kiểu nào cho bài toán?",
+         "label": "Chặng 1 · Ba kiểu học chính"
+        },
+        {
+         "text": "Sáu bước từ dữ liệu đến mô hình",
+         "label": "Chặng 2 · Quy trình dự án"
+        },
+        {
+         "text": "Lấy gì làm thước đo chất lượng?",
+         "label": "Chặng 3 · Đánh giá mô hình"
+        },
+        {
+         "text": "Cái bẫy nào hay mắc khi làm bài tập?",
+         "label": "Chặng 4 · Lỗi thường gặp"
+        }
+       ]
+      }
+     },
+     {
+      "id": "s16_c",
+      "type": "tls.t.callout",
+      "props": {
+       "fill": "tint",
+       "text": "Đi hết bốn chặng: **chọn kiểu học**, theo quy trình, đo chất lượng rồi tránh bẫy.",
+       "title": "Cách nhớ",
+       "variant": "tip"
+      }
+     }
+    ]
+   },
+   "transition": {
+    "kind": "fade"
+   },
+   "choreography": "matrix"
+  },
+  {
+   "id": "s17",
+   "intent": "dense",
+   "layout": "timeline",
+   "valign": "auto",
+   "regions": {
+    "title": [
+     {
+      "id": "s17_b1",
+      "type": "tls.t.title",
+      "props": {
+       "text": {
+        "runs": [
+         {
+          "text": "Ôn tập nhanh "
+         },
+         {
+          "bold": true,
+          "text": "cuối bài"
+         }
+        ]
+       }
+      }
+     }
+    ],
+    "timeline": [
+     {
+      "id": "s17_b2",
+      "type": "tls.c.cards",
+      "props": {
+       "lead": "number",
+       "cards": [
+        {
+         "text": "Học máy để máy tự tìm quy luật từ dữ liệu thay vì được lập trình sẵn.",
+         "title": "Máy tự tìm quy luật",
+         "number": "1"
+        },
+        {
+         "text": "Danh sách từ khoá viết tay cho từng trường hợp cụ thể.",
+         "title": "Cách cũ",
+         "number": "2"
+        },
+        {
+         "text": "Học từ hàng nghìn thư đã gán nhãn để tự rút ra quy luật.",
+         "title": "Cách mới",
+         "number": "3"
+        },
+        {
+         "text": "Ba kiểu học, quy trình, đánh giá và lỗi thường gặp.",
+         "title": "Bốn chặng",
+         "number": "4"
+        }
+       ],
+       "numeral": "giant"
+      }
+     }
+    ]
+   },
+   "transition": {
+    "kind": "fade"
+   },
+   "choreography": "quick-check"
+  },
+  {
+   "id": "s20",
+   "intent": "poster",
+   "layout": "timeline",
+   "regions": {
+    "title": [
+     {
+      "id": "s20_title",
+      "type": "tls.t.title",
+      "props": {
+       "text": {
+        "runs": [
+         {
+          "text": "Học máy là học "
+         },
+         {
+          "bold": true,
+          "text": "quy luật"
+         },
+         {
+          "text": " từ dữ liệu"
+         }
+        ]
+       },
+       "align": "start"
+      }
+     }
+    ],
+    "timeline": [
+     {
+      "id": "s20_steps",
+      "type": "tls.l.row",
+      "props": {
+       "gap": "xl",
+       "sizing": "equal",
+       "children": [
+        {
+         "id": "s20_c1",
+         "type": "tls.l.card",
+         "props": {
+          "children": [
+           {
+            "id": "s20_m1",
+            "type": "tls.t.marker",
+            "props": {
+             "tone": "solid",
+             "align": "center",
+             "value": "1"
+            }
+           },
+           {
+            "id": "s20_h1",
+            "type": "tls.t.title",
+            "props": {
+             "size": "heading",
+             "text": {
+              "runs": [
+               {
+                "text": "Phát biểu lại định nghĩa"
+               }
+              ]
+             },
+             "align": "center",
+             "color": "text"
+            }
+           },
+           {
+            "id": "s20_b1",
+            "type": "tls.t.body",
+            "props": {
+             "size": "lead",
+             "text": {
+              "runs": [
+               {
+                "text": "Viết định nghĩa học máy bằng lời của bạn."
+               }
+              ]
+             },
+             "align": "center"
+            }
+           }
+          ]
+         }
+        },
+        {
+         "id": "s20_c2",
+         "type": "tls.l.card",
+         "props": {
+          "children": [
+           {
+            "id": "s20_m2",
+            "type": "tls.t.marker",
+            "props": {
+             "tone": "solid",
+             "align": "center",
+             "value": "2"
+            }
+           },
+           {
+            "id": "s20_h2",
+            "type": "tls.t.title",
+            "props": {
+             "size": "heading",
+             "text": {
+              "runs": [
+               {
+                "text": "Kể một ứng dụng"
+               }
+              ]
+             },
+             "align": "center",
+             "color": "text"
+            }
+           },
+           {
+            "id": "s20_b2",
+            "type": "tls.t.body",
+            "props": {
+             "size": "lead",
+             "text": {
+              "runs": [
+               {
+                "text": "Một ứng dụng học máy bạn gặp hôm nay."
+               }
+              ]
+             },
+             "align": "center"
+            }
+           }
+          ]
+         }
+        },
+        {
+         "id": "s20_c3",
+         "type": "tls.l.card",
+         "props": {
+          "children": [
+           {
+            "id": "s20_m3",
+            "type": "tls.t.marker",
+            "props": {
+             "tone": "solid",
+             "align": "center",
+             "value": "3"
+            }
+           },
+           {
+            "id": "s20_h3",
+            "type": "tls.t.title",
+            "props": {
+             "size": "heading",
+             "text": {
+              "runs": [
+               {
+                "text": "Chuẩn bị bài sau"
+               }
+              ]
+             },
+             "align": "center",
+             "color": "text"
+            }
+           },
+           {
+            "id": "s20_b3",
+            "type": "tls.t.body",
+            "props": {
+             "size": "lead",
+             "text": {
+              "runs": [
+               {
+                "text": "Ba kiểu học và quy trình dự án học máy."
+               }
+              ]
+             },
+             "align": "center"
+            }
+           }
+          ]
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "transition": {
+    "kind": "fade"
+   },
+   "motionStyle": "expressive",
+   "choreography": "callback"
+  },
+  {
+   "id": "s_tbl",
+   "layout": "full-bleed",
+   "regions": {
+    "content": [
+     {
+      "id": "tbl",
+      "type": "tls.d.table",
+      "props": {
+       "columns": [
+        {
+         "label": "Thuật toán"
+        },
+        {
+         "label": "Kiểu học"
+        },
+        {
+         "label": "Ví dụ"
+        }
+       ],
+       "rows": [
+        [
+         "Hồi quy tuyến tính",
+         "Có giám sát",
+         "Dự đoán giá nhà"
+        ],
+        [
+         "K-means",
+         "Không giám sát",
+         "Phân nhóm khách hàng"
+        ],
+        [
+         "Q-learning",
+         "Tăng cường",
+         "Chơi cờ"
+        ]
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "s_img",
+   "layout": "image-left",
+   "regions": {
+    "image": [
+     {
+      "id": "img",
+      "type": "tls.m.image",
+      "props": {
+       "src": "https://example.com/robot.png",
+       "alt": "Robot học"
+      }
+     }
+    ],
+    "text": [
+     {
+      "id": "cap",
+      "type": "tls.t.body",
+      "props": {
+       "text": "Máy học từ dữ liệu, không từ luật viết tay."
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "tokens": {
+  "locale": "vi"
+ },
+ "version": 1
+}
