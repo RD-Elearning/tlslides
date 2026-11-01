@@ -108,4 +108,11 @@ describe('editor E01 — editorProfile', () => {
     })
     expect(document.querySelector('.tl-rotate-handle, [aria-label="rotate handle"]')).toBeNull()
   })
+
+  test('basic slide strip: no footer buttons, a count and a per-slide menu button', async () => {
+    await mount('basic', { messages: { 'strip.count': '{n} slide' } })
+    expect(document.body.textContent).not.toContain('Duplicate Slide')
+    expect(document.body.textContent).toContain('1 slide')
+    expect(document.querySelector('[aria-label="Slide actions"]')).not.toBeNull()
+  })
 })

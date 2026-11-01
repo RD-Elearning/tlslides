@@ -8,7 +8,7 @@ import { Panel } from '~components/Primitives/Panel'
 import { RowButton } from '~components/Primitives/RowButton'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { ReadOnlyEditor } from '~components/ReadOnlyEditor'
-import { useTldrawApp } from '~hooks'
+import { useTldrawApp, useEditorProfile, useMsg } from '~hooks'
 import { styled } from '~styles'
 import { TDPage, TDSnapshot } from '~types'
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
@@ -33,8 +33,19 @@ function getSlideHeight(page: TDPage): number {
   return (DECK_SLIDE_WIDTH * height) / width + DECK_SLIDE_PADDING_Y * 2
 }
 
+/** Editor E06 — open a thumbnail's slide menu from its `⋯` button (the same menu as right-click). */
+function openSlideMenu(e: React.MouseEvent<HTMLElement>) {
+  e.preventDefault()
+  e.stopPropagation()
+  const trigger = (e.currentTarget.closest('[data-page-id]') as HTMLElement | null)?.querySelector('[data-slide-menu-trigger]')
+  const r = e.currentTarget.getBoundingClientRect()
+  trigger?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left, clientY: r.bottom + 4 }))
+}
+
 export const Deck = React.memo(function Deck(): JSX.Element {
   const app = useTldrawApp()
+  const basic = useEditorProfile() === 'basic'
+  const t = useMsg()
 
   // The strip floats over the canvas's right edge: fitting a slide leaves that edge free.
   React.useEffect(() => {
@@ -153,7 +164,9 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                             index={index}
                             count={sortedPages.length}
                           >
-                            <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                            <div data-slide-menu-trigger="" style={{ width: '100%', height: '100%' }}>
+                              <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                            </div>
                           </DeckContextMenu>
                         </StyledSlideContent>
                         {/* Visible without opening the context menu, so scanning the deck panel
@@ -161,12 +174,27 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                         {page.skipInPresentation && (
                           <StyledSkipBadge>Skipped</StyledSkipBadge>
                         )}
+                        {basic && (
+                          <StyledSlideNumber>{index + 1}</StyledSlideNumber>
+                        )}
+                        {basic && (
+                          <StyledMoreButton
+                            type="button"
+                            aria-label={t('strip.more')}
+                            title={t('strip.more')}
+                            onClick={openSlideMenu}
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            ⋯
+                          </StyledMoreButton>
+                        )}
                       </StyledSlideContainerInner>
                     </StyledSlideContainer>
                   </React.Fragment>
                 ))}
                 {dropIndex === sortedPages.length && <StyledDropIndicator data-drop-indicator="" />}
-                <StyledSlideContainer
+                {/* editor E06: a new slide from a template is not in the basic editor (the AI adds slides) */}
+                {!basic && <StyledSlideContainer
                   style={{
                     height:
                       (DECK_SLIDE_WIDTH * DEFAULT_SLIDE_SIZE[1]) / DEFAULT_SLIDE_SIZE[0] +
@@ -180,7 +208,7 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                       </IconButton>
                     </TemplatePicker>
                   </StyledAddPage>
-                </StyledSlideContainer>
+                </StyledSlideContainer>}
               </StyledSlideStripContainer>
             </StyledViewport>
             <StyledScrollbar orientation="vertical">
@@ -188,7 +216,10 @@ export const Deck = React.memo(function Deck(): JSX.Element {
             </StyledScrollbar>
           </StyledScrollArea>
 
-          {/* Slide Controls */}
+          {/* Slide Controls (editor E06: per-slide `⋯` menus instead, in basic) */}
+          {basic ? (
+            <StyledCount>{t('strip.count', { n: sortedPages.length })}</StyledCount>
+          ) : (
           <StyledControls>
             <RowButton onClick={handleDuplicatePage}>
               <span>Duplicate Slide</span>
@@ -203,10 +234,52 @@ export const Deck = React.memo(function Deck(): JSX.Element {
               </SmallIcon>
             </RowButton>
           </StyledControls>
+          )}
         </StyledPanel>
       </StyledCenterWrap>
     </StyledDeckContainer>
   )
+})
+
+const StyledMoreButton = styled('button', {
+  position: 'absolute',
+  top: 4,
+  right: 4,
+  width: 24,
+  height: 20,
+  border: 'none',
+  borderRadius: 6,
+  cursor: 'pointer',
+  font: '700 14px/20px system-ui, sans-serif',
+  color: '$text',
+  backgroundColor: '$panel',
+  boxShadow: '$panel',
+  opacity: 0,
+  transition: 'opacity .12s',
+  '[data-page-id]:hover &, &:focus-visible': { opacity: 1 },
+})
+
+const StyledSlideNumber = styled('span', {
+  position: 'absolute',
+  left: 4,
+  bottom: 4,
+  minWidth: 18,
+  padding: '0 4px',
+  borderRadius: 4,
+  font: '600 11px/16px system-ui, sans-serif',
+  textAlign: 'center',
+  color: '$text',
+  backgroundColor: '$panel',
+  opacity: 0.85,
+  pointerEvents: 'none',
+})
+
+const StyledCount = styled('div', {
+  padding: '6px 8px 2px',
+  font: '500 12px/16px system-ui, sans-serif',
+  color: '$text',
+  opacity: 0.7,
+  textAlign: 'center',
 })
 
 const StyledDeckContainer = styled('div', {

@@ -133,6 +133,12 @@ export interface TldrawProps extends TDCallbacks {
   /** (optional) Editor E04 — the camera after every pan/zoom (rAF-throttled). */
   onCameraChange?: (app: TldrawApp, camera: { point: number[]; zoom: number }) => void
 
+  /** (optional) Editor E06 — the host's own items in each slide's menu (basic profile). */
+  slideMenuItems?: TldrawApp['slideMenuItems']
+
+  /** (optional) Editor E06 — how to ask before deleting a slide (default `window.confirm`). */
+  confirmAction?: TldrawApp['confirmAction']
+
   /** (optional) Editor E08 — chrome strings (English defaults in `DEFAULT_MESSAGES`). */
   messages?: Partial<TldrawMessages>
 
@@ -213,6 +219,8 @@ export function Tldraw({
   onCameraChange,
   messages,
   labels,
+  slideMenuItems,
+  confirmAction,
   darkMode,
   showSponsorLink = false,
   disableAssets = false,
@@ -343,6 +351,8 @@ export function Tldraw({
 
   // Editor E01 — commands, hotkeys and paste read the profile off the app.
   app.profile = editorProfile
+  app.slideMenuItems = slideMenuItems
+  app.confirmAction = confirmAction
 
   useBlockSelectionReport(app, onBlockSelection, onCameraChange)
 

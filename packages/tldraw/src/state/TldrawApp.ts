@@ -245,6 +245,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   /** Editor E01 — `'basic'` hides and refuses everything a deck spec cannot save (`Tldraw` sets it). */
   profile: 'full' | 'basic' = 'full'
 
+  /** Editor E06 — the host's own items in a slide's menu (`slideId` = the spec's slide id). */
+  slideMenuItems?: (slideId: string, pageId: string) => Array<{ id: string; label: string; onSelect: () => void; disabled?: boolean }>
+
+  /** Editor E06 — how the editor asks before a destructive action (default `window.confirm`). */
+  confirmAction?: (message: string) => boolean | Promise<boolean>
+
   get isBasic(): boolean {
     return this.profile === 'basic'
   }
