@@ -190,3 +190,68 @@ export function dropUnresolved(node: LayoutNode, props: Record<string, unknown>)
     if (g.itemPath && !hasPath(props, g.itemPath)) delete g.itemPath
   })
 }
+
+/* ── E07: leaves a layout drew from a prop value without naming it ────────────────────────── */
+
+type TextLeaf = Extract<LayoutNode, { k: 'text' }>
+
+const squash = (s: string) => s.replace(/\*\*/g, '').replace(/\s+/g, '').toLowerCase()
+
+/** Text props of a block (dot paths → squashed text): strings and rich texts, at any depth. */
+function propTexts(props: Record<string, unknown>): Map<string, string> {
+  const out = new Map<string, string>()
+  const walk = (v: unknown, path: string, depth: number) => {
+    if (typeof v === 'string') {
+      if (path) out.set(path, squash(v))
+      return
+    }
+    if (!isObj(v) || depth > MAX_DEPTH) return
+    const runs = (v as { runs?: unknown }).runs
+    if (Array.isArray(runs)) {
+      if (path) out.set(path, squash(runs.map((r) => (isObj(r) && typeof r.text === 'string' ? r.text : '')).join('')))
+      return
+    }
+    for (const [k, c] of Object.entries(v)) if (k !== '$block') walk(c, path ? `${path}.${k}` : k, depth + 1)
+  }
+  walk(props, '', 0)
+  return out
+}
+
+/**
+ * `layoutBlock` at depth 0, after `dropUnresolved`: a text the layout drew straight from a prop
+ * (a diagram's `placeLines`, a table cell) carries no path. Give it the path of the one prop whose
+ * text equals it — a **unique** match on both sides only (README D4): a value found twice, a text
+ * drawn twice, a cut (`truncated`) or computed text stays panel-only. One text split into one node
+ * per line (`part`, `part.1`, … as `placeLines` centres them) is matched as a whole.
+ */
+export function inferLeafPaths(node: LayoutNode, props: Record<string, unknown>): void {
+  const groups: TextLeaf[][] = []
+  let open: { base: string; nodes: TextLeaf[] } | undefined
+  eachText(node, (leaf) => {
+    const part = leaf.part ?? ''
+    const m = /^(.*)\.(\d+)$/.exec(part)
+    if (open && m && m[1] === open.base && Number(m[2]) === open.nodes.length && !leaf.propPath) {
+      open.nodes.push(leaf)
+      return
+    }
+    open = { base: part, nodes: [leaf] }
+    groups.push(open.nodes)
+  })
+  const todo = groups.filter((g) => g.every((l) => !l.propPath && !l.truncated))
+  if (!todo.length) return
+  const texts = propTexts(props)
+  const byText = new Map<string, string[]>()
+  for (const [p, t] of texts) if (t) byText.set(t, [...(byText.get(t) ?? []), p])
+  const drawn = new Map<string, number>()
+  const textOf = (g: TextLeaf[]) => squash(g.map((l) => l.lines.map((x) => x.text).join(' ')).join(' '))
+  for (const g of groups) {
+    const t = textOf(g)
+    drawn.set(t, (drawn.get(t) ?? 0) + 1)
+  }
+  for (const g of todo) {
+    const t = textOf(g)
+    const paths = byText.get(t)
+    if (!t || !paths || paths.length !== 1 || drawn.get(t) !== 1) continue
+    for (const l of g) l.propPath = paths[0]
+  }
+}

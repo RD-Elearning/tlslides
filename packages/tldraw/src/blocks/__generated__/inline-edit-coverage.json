@@ -36,12 +36,12 @@
     "none": 0
   },
   "tls.c.agenda": {
-    "ok": 0,
-    "none": 12
+    "ok": 8,
+    "none": 4
   },
   "tls.c.bento": {
-    "ok": 7,
-    "none": 1
+    "ok": 8,
+    "none": 0
   },
   "tls.c.big-stat": {
     "ok": 0,
@@ -52,8 +52,8 @@
     "none": 0
   },
   "tls.c.cards": {
-    "ok": 3,
-    "none": 3
+    "ok": 6,
+    "none": 0
   },
   "tls.c.case-study": {
     "ok": 6,
@@ -64,20 +64,20 @@
     "none": 0
   },
   "tls.c.chart-insight": {
-    "ok": 1,
-    "none": 10
+    "ok": 6,
+    "none": 5
   },
   "tls.c.closing": {
-    "ok": 4,
-    "none": 3
+    "ok": 6,
+    "none": 1
   },
   "tls.c.comparison": {
-    "ok": 0,
-    "none": 12
+    "ok": 12,
+    "none": 0
   },
   "tls.c.contact": {
-    "ok": 2,
-    "none": 3
+    "ok": 4,
+    "none": 1
   },
   "tls.c.cover": {
     "ok": 4,
@@ -88,8 +88,8 @@
     "none": 0
   },
   "tls.c.dashboard": {
-    "ok": 1,
-    "none": 14
+    "ok": 5,
+    "none": 10
   },
   "tls.c.divider": {
     "ok": 3,
@@ -136,8 +136,8 @@
     "none": 0
   },
   "tls.c.image-text": {
-    "ok": 0,
-    "none": 3
+    "ok": 3,
+    "none": 0
   },
   "tls.c.journey": {
     "ok": 0,
@@ -148,12 +148,12 @@
     "none": 0
   },
   "tls.c.kpi-row": {
-    "ok": 0,
-    "none": 9
+    "ok": 3,
+    "none": 6
   },
   "tls.c.kpi-tile": {
-    "ok": 0,
-    "none": 3
+    "ok": 1,
+    "none": 2
   },
   "tls.c.magazine": {
     "ok": 3,
@@ -172,16 +172,16 @@
     "none": 0
   },
   "tls.c.photo-essay": {
-    "ok": 1,
-    "none": 2
+    "ok": 3,
+    "none": 0
   },
   "tls.c.poster-cover": {
     "ok": 3,
     "none": 0
   },
   "tls.c.problem-solution": {
-    "ok": 2,
-    "none": 2
+    "ok": 4,
+    "none": 0
   },
   "tls.c.profile-card": {
     "ok": 4,
@@ -236,8 +236,8 @@
     "none": 2
   },
   "tls.c.team": {
-    "ok": 4,
-    "none": 12
+    "ok": 12,
+    "none": 4
   },
   "tls.c.testimonial": {
     "ok": 0,
@@ -248,244 +248,244 @@
     "none": 0
   },
   "tls.d.annotated-line": {
-    "ok": 0,
-    "none": 12
+    "ok": 2,
+    "none": 10
   },
   "tls.d.area": {
-    "ok": 0,
-    "none": 10
-  },
-  "tls.d.bar": {
-    "ok": 0,
-    "none": 15
-  },
-  "tls.d.bubble": {
-    "ok": 0,
-    "none": 15
-  },
-  "tls.d.bullet-chart": {
-    "ok": 0,
+    "ok": 6,
     "none": 4
   },
-  "tls.d.compare-table": {
-    "ok": 0,
-    "none": 5
-  },
-  "tls.d.donut": {
-    "ok": 0,
-    "none": 6
-  },
-  "tls.d.dot-plot": {
-    "ok": 0,
-    "none": 6
-  },
-  "tls.d.funnel-chart": {
-    "ok": 0,
-    "none": 8
-  },
-  "tls.d.gauge": {
-    "ok": 0,
-    "none": 6
-  },
-  "tls.d.grouped-bar": {
-    "ok": 0,
+  "tls.d.bar": {
+    "ok": 5,
     "none": 10
   },
-  "tls.d.heatmap": {
-    "ok": 0,
-    "none": 21
+  "tls.d.bubble": {
+    "ok": 3,
+    "none": 12
   },
-  "tls.d.icon-array": {
-    "ok": 0,
+  "tls.d.bullet-chart": {
+    "ok": 2,
     "none": 2
   },
+  "tls.d.compare-table": {
+    "ok": 5,
+    "none": 0
+  },
+  "tls.d.donut": {
+    "ok": 2,
+    "none": 4
+  },
+  "tls.d.dot-plot": {
+    "ok": 3,
+    "none": 3
+  },
+  "tls.d.funnel-chart": {
+    "ok": 3,
+    "none": 5
+  },
+  "tls.d.gauge": {
+    "ok": 1,
+    "none": 5
+  },
+  "tls.d.grouped-bar": {
+    "ok": 5,
+    "none": 5
+  },
+  "tls.d.heatmap": {
+    "ok": 7,
+    "none": 14
+  },
+  "tls.d.icon-array": {
+    "ok": 1,
+    "none": 1
+  },
   "tls.d.line": {
-    "ok": 0,
-    "none": 10
+    "ok": 5,
+    "none": 5
   },
   "tls.d.lollipop": {
-    "ok": 0,
-    "none": 6
+    "ok": 3,
+    "none": 3
   },
   "tls.d.pie": {
-    "ok": 0,
-    "none": 6
+    "ok": 3,
+    "none": 3
   },
   "tls.d.pricing": {
-    "ok": 0,
-    "none": 12
+    "ok": 12,
+    "none": 0
   },
   "tls.d.progress-bar": {
     "ok": 2,
     "none": 2
   },
   "tls.d.progress-ring": {
-    "ok": 0,
-    "none": 3
+    "ok": 2,
+    "none": 1
   },
   "tls.d.radar": {
-    "ok": 0,
-    "none": 8
+    "ok": 4,
+    "none": 4
   },
   "tls.d.ranking": {
-    "ok": 0,
-    "none": 9
+    "ok": 3,
+    "none": 6
   },
   "tls.d.scatter": {
-    "ok": 0,
-    "none": 17
+    "ok": 4,
+    "none": 13
   },
   "tls.d.scorecard": {
-    "ok": 0,
-    "none": 15
+    "ok": 9,
+    "none": 6
   },
   "tls.d.slope": {
-    "ok": 0,
-    "none": 6
+    "ok": 2,
+    "none": 4
   },
   "tls.d.sparkline": {
-    "ok": 0,
-    "none": 2
+    "ok": 1,
+    "none": 1
   },
   "tls.d.stacked-bar": {
-    "ok": 0,
-    "none": 11
+    "ok": 4,
+    "none": 7
   },
   "tls.d.stat-compare": {
-    "ok": 0,
-    "none": 6
+    "ok": 3,
+    "none": 3
   },
   "tls.d.table": {
-    "ok": 0,
-    "none": 12
+    "ok": 12,
+    "none": 0
   },
   "tls.d.treemap": {
-    "ok": 0,
-    "none": 6
+    "ok": 3,
+    "none": 3
   },
   "tls.d.trend-badge": {
-    "ok": 0,
-    "none": 2
+    "ok": 1,
+    "none": 1
   },
   "tls.d.waterfall": {
-    "ok": 0,
-    "none": 12
+    "ok": 4,
+    "none": 8
   },
   "tls.g.annotated": {
     "ok": 0,
     "none": 4
   },
   "tls.g.arrow": {
-    "ok": 0,
-    "none": 1
+    "ok": 1,
+    "none": 0
   },
   "tls.g.balance": {
     "ok": 6,
     "none": 4
   },
   "tls.g.before-after": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.bracket": {
-    "ok": 0,
-    "none": 4
+    "ok": 4,
+    "none": 0
   },
   "tls.g.breakdown": {
-    "ok": 0,
-    "none": 8
+    "ok": 8,
+    "none": 0
   },
   "tls.g.bridge": {
     "ok": 7,
     "none": 3
   },
   "tls.g.chevrons": {
-    "ok": 0,
-    "none": 8
+    "ok": 8,
+    "none": 0
   },
   "tls.g.connector": {
     "ok": 0,
     "none": 0
   },
   "tls.g.cycle": {
-    "ok": 0,
-    "none": 13
+    "ok": 9,
+    "none": 4
   },
   "tls.g.decision-tree": {
-    "ok": 0,
-    "none": 9
+    "ok": 5,
+    "none": 4
   },
   "tls.g.fishbone": {
     "ok": 8,
     "none": 4
   },
   "tls.g.flow": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.funnel": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.graph": {
-    "ok": 0,
-    "none": 9
-  },
-  "tls.g.hub-spoke": {
-    "ok": 0,
-    "none": 4
-  },
-  "tls.g.iceberg": {
-    "ok": 0,
+    "ok": 4,
     "none": 5
   },
+  "tls.g.hub-spoke": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.g.iceberg": {
+    "ok": 5,
+    "none": 0
+  },
   "tls.g.layers": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.matrix-2x2": {
-    "ok": 0,
-    "none": 13
+    "ok": 9,
+    "none": 4
   },
   "tls.g.milestones": {
-    "ok": 0,
-    "none": 8
+    "ok": 8,
+    "none": 0
   },
   "tls.g.mindmap": {
-    "ok": 0,
-    "none": 13
+    "ok": 13,
+    "none": 0
   },
   "tls.g.myth-fact": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.orbit": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.pros-cons": {
-    "ok": 0,
-    "none": 8
+    "ok": 6,
+    "none": 2
   },
   "tls.g.puzzle": {
     "ok": 7,
     "none": 0
   },
   "tls.g.pyramid": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.roadmap": {
-    "ok": 0,
-    "none": 11
+    "ok": 10,
+    "none": 1
   },
   "tls.g.spectrum": {
     "ok": 5,
     "none": 0
   },
   "tls.g.staircase": {
-    "ok": 0,
-    "none": 9
+    "ok": 6,
+    "none": 3
   },
   "tls.g.steps": {
     "ok": 8,
@@ -496,20 +496,20 @@
     "none": 9
   },
   "tls.g.target": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.timeline": {
-    "ok": 0,
-    "none": 13
+    "ok": 13,
+    "none": 0
   },
   "tls.g.tree": {
-    "ok": 0,
-    "none": 6
+    "ok": 6,
+    "none": 0
   },
   "tls.g.venn": {
-    "ok": 0,
-    "none": 3
+    "ok": 3,
+    "none": 0
   },
   "tls.l.card": {
     "ok": 2,
@@ -548,8 +548,8 @@
     "none": 0
   },
   "tls.l.section": {
-    "ok": 3,
-    "none": 4
+    "ok": 4,
+    "none": 3
   },
   "tls.l.sidebar": {
     "ok": 2,
@@ -568,20 +568,20 @@
     "none": 0
   },
   "tls.m.avatar": {
-    "ok": 0,
-    "none": 3
+    "ok": 2,
+    "none": 1
   },
   "tls.m.avatar-group": {
-    "ok": 0,
-    "none": 5
+    "ok": 1,
+    "none": 4
   },
   "tls.m.decoration": {
     "ok": 0,
     "none": 0
   },
   "tls.m.device-mock": {
-    "ok": 0,
-    "none": 1
+    "ok": 1,
+    "none": 0
   },
   "tls.m.emoji": {
     "ok": 0,
@@ -608,24 +608,24 @@
     "none": 0
   },
   "tls.m.image": {
-    "ok": 0,
-    "none": 1
+    "ok": 1,
+    "none": 0
   },
   "tls.m.image-compare": {
-    "ok": 0,
-    "none": 2
+    "ok": 2,
+    "none": 0
   },
   "tls.m.image-grid": {
-    "ok": 0,
-    "none": 1
+    "ok": 1,
+    "none": 0
   },
   "tls.m.logo": {
     "ok": 0,
     "none": 0
   },
   "tls.m.logo-wall": {
-    "ok": 0,
-    "none": 1
+    "ok": 1,
+    "none": 0
   },
   "tls.m.ornament": {
     "ok": 0,
@@ -664,8 +664,8 @@
     "none": 0
   },
   "tls.t.code": {
-    "ok": 8,
-    "none": 6
+    "ok": 9,
+    "none": 5
   },
   "tls.t.definition": {
     "ok": 5,

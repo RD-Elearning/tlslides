@@ -1,4 +1,4 @@
-import { bound, findValue, itemPrefix, mapChildPaths, mapOut } from './edit-scope'
+import { bound, findValue, inferLeafPaths, itemPrefix, mapChildPaths, mapOut } from './edit-scope'
 import type { BlockSpec, LayoutNode } from '../types'
 
 const text = (propPath: string): LayoutNode =>
@@ -40,5 +40,24 @@ describe('editor E02 — edit scopes', () => {
     expect(itemPrefix('title')).toBeUndefined()
     expect(findValue({ a: { runs: [{ text: 'x' }] } }, { runs: [{ text: 'x' }] })).toEqual(['a'])
     expect(findValue({ a: '' }, '')).toEqual([])
+  })
+})
+
+describe('editor E07 — inferLeafPaths', () => {
+  const t = (part: string, text: string, extra: Record<string, unknown> = {}) =>
+    ({ k: 'text', part, box: { x: 0, y: 0, width: 1, height: 1 }, lines: [{ text }], style: {}, ...extra }) as unknown as LayoutNode
+  const group = (...children: LayoutNode[]) => ({ k: 'group', box: { x: 0, y: 0, width: 1, height: 1 }, children }) as unknown as LayoutNode
+  const paths = (n: LayoutNode) => (n as { children: Array<{ propPath?: string }> }).children.map((c) => c.propPath)
+
+  it('names a text drawn straight from a unique prop, a centred text split per line as a whole', () => {
+    const n = group(t('title', 'PLAN'), t('label[0]', 'Thu thập'), t('label[0].1', 'dữ liệu'), t('n', '01'))
+    inferLeafPaths(n, { title: 'Plan', items: [{ label: 'Thu thập dữ liệu' }] })
+    expect(paths(n)).toEqual(['title', 'items.0.label', 'items.0.label', undefined])
+  })
+
+  it('leaves ambiguous, repeated, cut and already named texts alone', () => {
+    const n = group(t('a', 'Same'), t('b', 'Twice'), t('c', 'Twice'), t('d', 'Cut…', { truncated: true }), t('e', 'Kept', { propPath: 'x' }))
+    inferLeafPaths(n, { p: 'Same', q: 'Same', r: 'Twice', s: 'Cut long text', x: 'Kept', y: 'Kept' })
+    expect(paths(n)).toEqual([undefined, undefined, undefined, undefined, 'x'])
   })
 })

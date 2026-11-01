@@ -7,7 +7,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import { currentProps, dropUnresolved, mapChildPaths, withCurrentProps } from './edit-scope'
+import { currentProps, dropUnresolved, inferLeafPaths, mapChildPaths, withCurrentProps } from './edit-scope'
 import type {
   BlockDefinition,
   BlockSpec,
@@ -859,7 +859,11 @@ export function layoutBlock(
 ): LayoutNode {
   const node = withCurrentProps(props, () => layoutBlockInner(def, props, ctx))
   // Editor E02: a slide-level block keeps only the edit paths that resolve in its own props
-  if (ctx.depth === 0) dropUnresolved(node, props)
+  if (ctx.depth === 0) {
+    dropUnresolved(node, props)
+    // Editor E07: texts drawn straight from a prop without naming it get its path (unique match)
+    inferLeafPaths(node, props)
+  }
   // CMP2: a slide-level block (depth 0, authored level 1) — the ink guard re-solves derived ink
   // that fails contrast on what the block itself painted under it.
   const nest = NEST.get(ctx)
