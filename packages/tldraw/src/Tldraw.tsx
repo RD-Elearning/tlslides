@@ -13,7 +13,9 @@ import {
   TldrawComponentsRegistry,
   BlockRegistryContext,
   HostRegistryContext,
+  EditorProfileContext,
 } from '~hooks'
+import type { EditorProfile } from '~hooks'
 import type { BlockRegistry } from '~blocks/registry'
 import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
@@ -109,6 +111,15 @@ export interface TldrawProps extends TDCallbacks {
   readOnly?: boolean
 
   /**
+   * (optional) Editor E01 — `'basic'` = the touch-up editor for AI-generated decks (spro): no
+   * TopPanel, no tools panel, no block inserter/layers panel, no rotate/clone handles, gated
+   * hotkeys, a short context menu, safe paste, and an inspector that opens only through
+   * `app.openInspector`. Only operations that survive `documentToDeckSpec` stay reachable.
+   * Defaults to `'full'` (the whole editor, unchanged).
+   */
+  editorProfile?: EditorProfile
+
+  /**
    * (optional) Force the app's dark mode on or off. Omit to leave it alone (the app's own
    * default, or whatever the user has toggled via `toggleDarkMode`/the menu) — this only takes
    * effect when explicitly set to `true` or `false`, and stays reactive to prop changes.
@@ -177,6 +188,7 @@ export function Tldraw({
   showStyles = true,
   showUI = true,
   readOnly = false,
+  editorProfile = 'full',
   darkMode,
   showSponsorLink = false,
   disableAssets = false,
@@ -203,6 +215,7 @@ export function Tldraw({
   onAssetCreate,
   onAssetDelete,
   onExport,
+  onBlocked,
 }: TldrawProps) {
   const [sId, setSId] = React.useState(id)
 
@@ -227,6 +240,7 @@ export function Tldraw({
       onChangePage,
       onAssetDelete,
       onAssetCreate,
+      onBlocked,
     })
     return app
   })
@@ -254,6 +268,7 @@ export function Tldraw({
       onAssetDelete,
       onAssetCreate,
       onExport,
+      onBlocked,
     })
     setSId(id)
 
@@ -301,6 +316,9 @@ export function Tldraw({
   React.useEffect(() => {
     app.readOnly = readOnly
   }, [app, readOnly])
+
+  // Editor E01 — commands, hotkeys and paste read the profile off the app.
+  app.profile = editorProfile
 
   // Phase 14 — `darkMode` used to be declared here but never read anywhere in this component, a
   // silent no-op for any caller that passed it (found while building `DeckViewer`, which needs
@@ -373,6 +391,7 @@ export function Tldraw({
       onAssetDelete,
       onAssetCreate,
       onExport,
+      onBlocked,
     }
   }, [
     onMount,
@@ -394,6 +413,7 @@ export function Tldraw({
     onAssetDelete,
     onAssetCreate,
     onExport,
+    onBlocked,
   ])
 
   React.useLayoutEffect(() => {
@@ -415,6 +435,7 @@ export function Tldraw({
       <BlockRegistryContext.Provider value={blockRegistry}>
         <HostRegistryContext.Provider value={hostRegistry}>
           <TldrawComponentsContext.Provider value={components}>
+            <EditorProfileContext.Provider value={editorProfile}>
             <InnerTldraw
             key={sId || 'Tldraw'}
             id={sId}
@@ -429,7 +450,9 @@ export function Tldraw({
             showUI={showUI}
             showSponsorLink={showSponsorLink}
             readOnly={readOnly}
+            profile={editorProfile}
           />
+            </EditorProfileContext.Provider>
         </TldrawComponentsContext.Provider>
           </HostRegistryContext.Provider>
       </BlockRegistryContext.Provider>
@@ -450,6 +473,7 @@ interface InnerTldrawProps {
   showTools: boolean
   showSponsorLink: boolean
   readOnly: boolean
+  profile: EditorProfile
 }
 
 const InnerTldraw = React.memo(function InnerTldraw({
@@ -465,7 +489,9 @@ const InnerTldraw = React.memo(function InnerTldraw({
   showSponsorLink,
   readOnly,
   showUI,
+  profile,
 }: InnerTldrawProps) {
+  const basic = profile === 'basic'
   const app = useTldrawApp()
 
   const rWrapper = React.useRef<HTMLDivElement>(null)
@@ -480,6 +506,26 @@ const InnerTldraw = React.memo(function InnerTldraw({
   }, [settings])
 
   const isSelecting = state.appState.activeTool === 'select'
+
+  // Editor E01: the basic editor always shows the whole slide — on resize and on slide change.
+  const currentPageIdForFit = state.appState.currentPageId
+  React.useEffect(() => {
+    if (!basic) return
+    const el = rWrapper.current
+    let t: ReturnType<typeof setTimeout> | undefined
+    const fit = () => {
+      if (t) clearTimeout(t)
+      t = setTimeout(() => app.zoomToFit(), 100)
+    }
+    fit()
+    if (!el || typeof ResizeObserver === 'undefined') return () => t && clearTimeout(t)
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      if (t) clearTimeout(t)
+    }
+  }, [app, basic, currentPageIdForFit])
 
   const page = document.pages[appState.currentPageId]
   const pageState = document.pageStates[page.id]
@@ -579,7 +625,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
   return (
     <StyledLayout ref={rWrapper} tabIndex={-0} className={settings.isDarkMode ? dark : ''}>
       <Loading />
-      <OneOff focusableRef={rWrapper} autofocus={autofocus} showPresent={showPresent} />
+      <OneOff focusableRef={rWrapper} autofocus={autofocus} showPresent={showPresent} profile={profile} />
       <ContextMenu>
         <Renderer
           id={id}
@@ -599,9 +645,10 @@ const InnerTldraw = React.memo(function InnerTldraw({
           hideHandles={hideHandles}
           hideResizeHandles={isHideResizeHandlesShape}
           hideIndicators={hideIndicators}
-          hideBindingHandles={!settings.showBindingHandles}
-          hideCloneHandles={hideCloneHandles}
-          hideRotateHandles={!settings.showRotateHandles}
+          // Editor E01: rotation, clones and arrow bindings are not saved by the deck spec
+          hideBindingHandles={basic || !settings.showBindingHandles}
+          hideCloneHandles={basic || hideCloneHandles}
+          hideRotateHandles={basic || !settings.showRotateHandles}
           hideGrid={!settings.showGrid}
           showDashedBrush={showDashedBrush}
           performanceMode={app.session?.performanceMode}
@@ -665,7 +712,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
               !settings.isPresentationMode && <FocusButton onSelect={app.toggleFocusMode} />
             ) : (
               <>
-                <TopPanel
+                {!basic && <TopPanel
                   readOnly={readOnly}
                   showPages={showPages}
                   showMenu={showMenu}
@@ -674,25 +721,26 @@ const InnerTldraw = React.memo(function InnerTldraw({
                   showStyles={showStyles}
                   showZoom={showZoom}
                   showSponsorLink={showSponsorLink}
-                />
+                />}
                 <StyledSpacer />
-                {showTools && !readOnly && <ToolsPanel />}
+                {showTools && !readOnly && !basic && <ToolsPanel />}
               </>
             )}
           </StyledUI>
           {!settings.isFocusMode &&
             !settings.isPresentationMode &&
-            settings.showDeck &&
+            (settings.showDeck || basic) &&
             showPages && <Deck />}
           {!settings.isFocusMode &&
             !settings.isPresentationMode &&
             settings.showLayers &&
             showPages &&
-            !readOnly && <LayersPanel />}
+            !readOnly &&
+            !basic && <LayersPanel />}
           {!settings.isFocusMode && !settings.isPresentationMode && !readOnly && (
             <>
               <BlockInspectorPanel />
-              <BlockInserterPanel />
+              {!basic && <BlockInserterPanel />}
             </>
           )}
           {settings.isPresentationMode && (
@@ -714,12 +762,14 @@ const OneOff = React.memo(function OneOff({
   focusableRef,
   autofocus,
   showPresent,
+  profile,
 }: {
   autofocus?: boolean
   showPresent: boolean
   focusableRef: React.RefObject<HTMLDivElement>
+  profile: EditorProfile
 }) {
-  useKeyboardShortcuts(focusableRef, showPresent)
+  useKeyboardShortcuts(focusableRef, showPresent, profile)
   useStylesheet()
 
   React.useEffect(() => {

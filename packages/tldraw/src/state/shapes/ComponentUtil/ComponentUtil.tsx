@@ -82,10 +82,17 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
         initial: string
         style: InlineEditorStyle
         target: HTMLElement
+        selectAll?: boolean
       } | null>(null)
 
       // The text being edited is hidden while the overlay (drawn in its own type) sits on it, so
       // the two never show at once (spro demo T9).
+      React.useEffect(() => {
+        if (!editing) return
+        app.blockEdit.setEditingText(editing.propPath)
+        return () => app.blockEdit.setEditingText(undefined)
+      }, [app, editing])
+
       React.useEffect(() => {
         if (!editing) return
         const el = editing.target
@@ -111,36 +118,73 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
         target: null,
       })
 
-      const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
-        const target = (e.target as HTMLElement).closest('[data-prop-path]') as HTMLElement | null
-        const now = performance.now()
-        const isDouble =
-          !!target &&
-          lastPointerDownRef.current.target === target &&
-          now - lastPointerDownRef.current.time < 250
-        lastPointerDownRef.current = { time: now, target }
-        const propPath = target?.getAttribute('data-prop-path')
+      /** Open the inline editor on a `[data-prop-path]` element of this shape, if it may be edited. */
+      const openOn = React.useCallback(
+        (target: HTMLElement, opts?: { selectAll?: boolean; defer?: boolean }): boolean => {
+          const propPath = target.getAttribute('data-prop-path')
+          const root = (propsRef.current ?? {}) as Record<string, unknown>
+          // Editor E00: only a path that resolves in this block's own props opens the editor — a
+          // nested child's own path (`text` inside a composite) would open empty and write an
+          // orphan key; and nothing opens while the document is read-only (an AI run, presentation).
+          // `null` = a rich value with formatting plain text cannot carry: leave it to the inspector
+          const initial =
+            propPath != null && !app.readOnly && hasPath(root, propPath)
+              ? toEditable(getAtPath(root, propPath))
+              : null
+          if (!propPath || initial === null) return false
+          const go = () => {
+            const rect = target.getBoundingClientRect()
+            const style = editorStyleOf(target, rect)
+            setEditing({ propPath, rect, initial, style, target, selectAll: opts?.selectAll ?? true })
+          }
+          // Deferred on a double click: this same gesture's `pointerup` still has to reach
+          // `useShapeEvents`, which independently recognizes it as a double-click (its own timer,
+          // unrelated to ours) and runs `SelectTool.onDoubleClickShape` — unconditionally
+          // `app.select()`s the shape. That store write re-renders this shape and, empirically, wins
+          // a race against a `setEditing` made synchronously here: the state lands, renders once,
+          // and is then clobbered back to `null`. Opening on the next tick lets that settle first.
+          if (opts?.defer === false) go()
+          else window.setTimeout(go, 0)
+          return true
+        },
+        [app]
+      )
+
+      // Editor E04: the host opens the editor through `app.blockEdit.startTextEdit(id, path)`.
+      React.useEffect(
+        () =>
+          app.blockEdit.registerTextEditor(shape.id, (path, opts) => {
+            const el = document.getElementById(shape.id)
+            if (!el) return false
+            const all = Array.from(el.querySelectorAll('[data-prop-path]')) as HTMLElement[]
+            const target = path ? all.find((n) => n.getAttribute('data-prop-path') === path) : all.find((n) => openable(n))
+            return target ? openOn(target, { selectAll: opts?.selectAll }) : false
+          }),
+        [app, shape.id, openOn]
+      )
+      const openable = (n: HTMLElement) => {
+        const p = n.getAttribute('data-prop-path')
         const root = (propsRef.current ?? {}) as Record<string, unknown>
-        // Editor E00: only a path that resolves in this block's own props opens the editor — a
-        // nested child's own path (`text` inside a composite) would open empty and write an orphan
-        // key; and nothing opens while the document is read-only (an AI run, presentation).
-        // `null` = a rich value with formatting plain text cannot carry: leave it to the inspector
-        const initial =
-          propPath != null && !app.readOnly && hasPath(root, propPath)
-            ? toEditable(getAtPath(root, propPath))
-            : null
-        if (isDouble && target && propPath && initial !== null) {
-          const rect = target.getBoundingClientRect()
-          // Deferred: this same gesture's `pointerup` still has to reach `useShapeEvents`,
-          // which independently recognizes it as a double-click (its own timer, unrelated to
-          // ours) and runs `SelectTool.onDoubleClickShape` — unconditionally `app.select()`s
-          // the shape. That store write re-renders this shape and, empirically, wins a race
-          // against a `setEditing` made synchronously here: the state lands, renders once, and
-          // is then clobbered back to `null`. Opening on the next tick lets that settle first.
-          const style = editorStyleOf(target, rect)
-          window.setTimeout(() => setEditing({ propPath, rect, initial, style, target }), 0)
-        }
-      }, [app])
+        return !!p && hasPath(root, p) && toEditable(getAtPath(root, p)) !== null
+      }
+
+      const handlePointerDown = React.useCallback(
+        (e: React.PointerEvent) => {
+          const target = (e.target as HTMLElement).closest('[data-prop-path]') as HTMLElement | null
+          const now = performance.now()
+          const isDouble =
+            !!target &&
+            lastPointerDownRef.current.target === target &&
+            now - lastPointerDownRef.current.time < 250
+          lastPointerDownRef.current = { time: now, target }
+          if (isDouble && target) {
+            openOn(target, { selectAll: true })
+            return
+          }
+          app.blockEdit.onBlockPointerDown(shape.id, e.target as HTMLElement)
+        },
+        [app, openOn, shape.id]
+      )
 
       React.useLayoutEffect(() => {
         const wrapper = rWrapper.current

@@ -132,6 +132,14 @@ export interface TDSnapshot {
     // resets on every slide change (`TldrawApp.changePage`) and is never touched by undo/redo —
     // see `advancePresentation`/`previousPresentation` for the read/write side.
     presentationBuildStep: number
+    /** Editor E01 — the block whose inspector is open (basic profile opens it on demand only). */
+    inspectorFor?: string
+    inspectorTab?: 'content' | 'style' | 'motion'
+    inspectorField?: string
+    /** Editor E04 — the list item / child block selected inside the selected block. */
+    blockItem?: { shapeId: string; itemPath: string }
+    /** Editor E04 — an inline text editor is open (hosts hide their floating bars). */
+    editingText?: string
   }
   document: TDDocument
   room?: {

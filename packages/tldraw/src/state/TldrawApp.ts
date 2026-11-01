@@ -100,6 +100,9 @@ import { SpeechBubbleTool } from './tools/SpeechBubbleTool'
 import { StateManager } from './StateManager'
 import { clearPrevSize } from './shapes/shared/getTextSize'
 import { collectDeckIds, remintBlockIds } from '~blocks/remint-ids'
+import { defaultBlockRegistry } from '~blocks/validate-deck-spec'
+import { insertBlockShape } from './block-edit/insert'
+import { BlockEdit } from './block-edit/BlockEdit'
 
 const uuid = Utils.uniqueId()
 
@@ -185,6 +188,11 @@ export interface TDCallbacks {
    * (optional) A callback to run when the user exports their page or selection.
    */
   onExport?: (info: TDExport) => Promise<void>
+  /**
+   * (optional) Editor E01 — the basic profile refused something the user tried (pasting an image,
+   * dropping a file, a drawing tool). The host can say why.
+   */
+  onBlocked?: (app: TldrawApp, reason: 'paste-image' | 'drop-file' | 'tool') => void
 }
 
 export class TldrawApp extends StateManager<TDSnapshot> {
@@ -216,6 +224,14 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   // already populated by the time class fields below it initialize.
   readonly deck: Deck = new Deck(this)
 
+  /** Editor E01/E04 — headless block editing for the host's floating UI (`state/block-edit`). */
+  readonly blockEdit: BlockEdit = new BlockEdit(this)
+
+  /** Editor E01/E04 — transient editor UI state (inspector, selected item); not part of undo. */
+  patchEditorUi = (patch: Partial<TDSnapshot['appState']>): this => {
+    return this.patchState({ appState: patch }, 'editor_ui')
+  }
+
   session?: TldrawSession
 
   // The `readOnly` prop (Tldraw.tsx) and presentation mode (`togglePresentationMode`) both need
@@ -225,6 +241,13 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   // `isPresentationMode` is restored from persisted state on reload — `readOnly` is derived: true
   // if either is true. `_readOnly` holds only the explicit (prop-driven) half.
   private _readOnly = false
+
+  /** Editor E01 — `'basic'` hides and refuses everything a deck spec cannot save (`Tldraw` sets it). */
+  profile: 'full' | 'basic' = 'full'
+
+  get isBasic(): boolean {
+    return this.profile === 'basic'
+  }
 
   get readOnly(): boolean {
     return this._readOnly || this.settings.isPresentationMode
@@ -1317,6 +1340,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    */
   selectTool = (type: TDToolType): this => {
     if (this.readOnly || this.session) return this
+    // Editor E01: drawing tools make shapes the deck spec drops on save
+    if (this.isBasic && type !== 'select') {
+      this.callbacks.onBlocked?.(this, 'tool')
+      return this
+    }
 
     this.isPointing = false // reset pointer state, in case something weird happened
 
@@ -2414,7 +2442,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
           assets: TDAsset[]
         } = JSON.parse(result)
         if (data.type === 'tldr/clipboard') {
-          pasteInCurrentPage(data.shapes, data.bindings, data.assets)
+          // Editor E01: only blocks survive a save — drop drawn shapes from the clipboard
+          const shapes = this.isBasic ? data.shapes.filter((s) => s.type === TDShapeType.Component) : data.shapes
+          pasteInCurrentPage(shapes, this.isBasic ? [] : data.bindings, data.assets)
+        } else if (this.isBasic) {
+          this.pastePlainText(result)
         } else {
           TLDR.warn('The selected shape was not a tldraw shape, treating as text.')
           const shapeId = Utils.uniqueId()
@@ -2430,12 +2462,33 @@ export class TldrawApp extends StateManager<TDSnapshot> {
         }
       })
       .catch(() => {
+        // not JSON: plain text — the basic editor turns it into a text block (E01)
+        if (this.isBasic) {
+          const internal = () => {
+            const c = this.clipboard
+            if (c) pasteInCurrentPage(c.shapes.filter((s) => s.type === TDShapeType.Component), [], c.assets)
+          }
+          navigator.clipboard
+            .readText()
+            .then((text) => (text ? this.pastePlainText(text) : internal()))
+            .catch(internal)
+          return
+        }
         TLDR.warn('Read permissions denied!')
         if (this.clipboard) {
           pasteInCurrentPage(this.clipboard.shapes, this.clipboard.bindings, this.clipboard.assets)
         }
       })
     return this
+  }
+
+  /** Editor E01 — basic paste of plain text: a body-text block, never a tldraw text shape. */
+  private pastePlainText = (text: string) => {
+    const registry = this.deck.blockRegistry ?? defaultBlockRegistry()
+    const def = registry.get('tls.t.body')
+    const clean = TLDR.normalizeText(text).trim()
+    if (!def || !clean) return
+    insertBlockShape(this, def, { props: { text: clean } })
   }
 
   /**
@@ -3845,6 +3898,11 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     }
 
     if (e.dataTransfer.files?.length) {
+      // Editor E01: an image dropped on the basic editor would be a non-block shape (lost on save)
+      if (this.isBasic) {
+        this.callbacks.onBlocked?.(this, 'drop-file')
+        return this
+      }
       const file = e.dataTransfer.files[0]
       this.addMediaFromFile(file, [e.clientX, e.clientY])
     }

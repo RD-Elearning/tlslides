@@ -10,3 +10,5 @@ export * from './useFileSystemHandlers'
 export * from './useFileSystem'
 // Alias for convenience
 export { useTldrawApp as useTldraw } from './useTldrawApp'
+export * from './useEditorProfile'
+export * from './useMessages'

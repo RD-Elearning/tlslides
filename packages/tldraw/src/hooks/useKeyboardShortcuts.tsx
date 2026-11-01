@@ -1,10 +1,59 @@
 import * as React from 'react'
-import { useHotkeys } from 'react-hotkeys-hook'
+import { useHotkeys as useHotkeysRaw } from 'react-hotkeys-hook'
 import { AlignStyle, TDShapeType } from '~types'
 import { useFileSystemHandlers, useTldrawApp } from '~hooks'
 
-export function useKeyboardShortcuts(ref: React.RefObject<HTMLDivElement>, showPresent = true) {
+/**
+ * Editor E01 — the hotkeys the basic profile keeps (by their exact key string below). Everything
+ * else (drawing tools, group, flip, lock, z-order, copy-as-SVG, file menu, dark mode, focus mode,
+ * align) is a no-op in basic: those make changes a deck spec cannot save.
+ */
+export const BASIC_HOTKEYS: ReadonlySet<string> = new Set([
+  'v,1',
+  'esc',
+  'escape',
+  '⌘+z,ctrl+z',
+  'ctrl+shift+z,⌘+shift+z',
+  'ctrl+s,⌘+s',
+  '⌘+c,ctrl+c',
+  '⌘+x,ctrl+x',
+  '⌘+v,ctrl+v',
+  'ctrl+d,⌘+d',
+  'backspace,del',
+  '⌘+a,ctrl+a',
+  'up',
+  'right',
+  'down',
+  'left',
+  'shift+up',
+  'shift+right',
+  'shift+down',
+  'shift+left',
+  'ctrl+=,⌘+=,ctrl+num_subtract,⌘+num_subtract',
+  'ctrl+-,⌘+-,ctrl+num_add,⌘+num_add',
+  'shift+0,ctrl+numpad_0,⌘+numpad_0',
+  'shift+1',
+  'shift+2',
+])
+
+export function useKeyboardShortcuts(
+  ref: React.RefObject<HTMLDivElement>,
+  showPresent = true,
+  profile: 'full' | 'basic' = 'full'
+) {
   const app = useTldrawApp()
+  const profileRef = React.useRef(profile)
+  profileRef.current = profile
+  // Same signature as react-hotkeys-hook's, gated by the profile at call time.
+  const useHotkeys = ((keys: string, fn: (...args: unknown[]) => unknown, ...rest: unknown[]) =>
+    (useHotkeysRaw as (...a: unknown[]) => unknown)(
+      keys,
+      (...args: unknown[]) => {
+        if (profileRef.current === 'basic' && !BASIC_HOTKEYS.has(keys)) return
+        return fn(...args)
+      },
+      ...rest
+    )) as unknown as typeof useHotkeysRaw
 
   const canHandleEvent = React.useCallback(
     (ignoreMenus = false) => {

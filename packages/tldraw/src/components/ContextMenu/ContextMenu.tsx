@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { dark, styled } from '~styles'
 import * as RadixContextMenu from '@radix-ui/react-context-menu'
-import { useTheme, useTldrawApp } from '~hooks'
+import { useTheme, useTldrawApp, useEditorProfile, useMsg } from '~hooks'
 import { TDSnapshot, AlignType, DistributeType, StretchType, TDExportTypes } from '~types'
 import {
   AlignBottomIcon,
@@ -62,6 +62,8 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
   const hasGroupSelected = app.useStore(hasGroupSelectedSelector)
 
   const rContent = React.useRef<HTMLDivElement>(null)
+  const basic = useEditorProfile() === 'basic'
+  const t = useMsg()
 
   const handleFlipHorizontal = React.useCallback(() => {
     app.flipHorizontal()
@@ -166,7 +168,46 @@ const InnerMenu = React.memo(function InnerMenu({ onBlur }: InnerContextMenuProp
       className={theme === 'dark' ? dark : ''}
     >
       <MenuContent id="TD-ContextMenu">
-        {hasSelection ? (
+        {basic ? (
+          // Editor E01: only what a deck spec saves — no flip/lock/group/z-order/move-to-page/export
+          hasSelection ? (
+            <>
+              {app.blockEdit.canEditText() && (
+                <CMRowButton onClick={() => app.blockEdit.startTextEdit()} id="TD-ContextMenu-EditText">
+                  {t('menu.editText')}
+                </CMRowButton>
+              )}
+              <CMRowButton onClick={handleDuplicate} kbd="#D" id="TD-ContextMenu-Duplicate">
+                {t('menu.duplicate')}
+              </CMRowButton>
+              <CMRowButton onClick={handleDelete} kbd="⌫" id="TD-ContextMenu-Delete">
+                {t('menu.delete')}
+              </CMRowButton>
+              <Divider />
+              <CMRowButton onClick={handleCut} kbd="#X" id="TD-ContextMenu-Cut">
+                {t('menu.cut')}
+              </CMRowButton>
+              <CMRowButton onClick={handleCopy} kbd="#C" id="TD-ContextMenu-Copy">
+                {t('menu.copy')}
+              </CMRowButton>
+              <CMRowButton onClick={handlePaste} kbd="#V" id="TD-ContextMenu-Paste">
+                {t('menu.paste')}
+              </CMRowButton>
+            </>
+          ) : (
+            <>
+              <CMRowButton onClick={handlePaste} kbd="#V" id="TD-ContextMenu-Paste">
+                {t('menu.paste')}
+              </CMRowButton>
+              <CMRowButton onClick={handleUndo} kbd="#Z" id="TD-ContextMenu-Undo">
+                {t('menu.undo')}
+              </CMRowButton>
+              <CMRowButton onClick={handleRedo} kbd="#⇧Z" id="TD-ContextMenu-Redo">
+                {t('menu.redo')}
+              </CMRowButton>
+            </>
+          )
+        ) : hasSelection ? (
           <>
             <CMRowButton onClick={handleDuplicate} kbd="#D" id="TD-ContextMenu-Duplicate">
               Duplicate
