@@ -27,6 +27,22 @@ import { slotAt, textLimits } from '~state/block-edit/slots'
 type T = ComponentShape
 type E = HTMLDivElement
 
+/** The element of block `shapeId` an edit gesture at (x, y) is about: `target` when it (or an
+ *  ancestor) names a prop path; else the topmost text under the point that does (a decorative part
+ *  painted over the text took the pointer); else `target` when it sits in an item. */
+function editTargetAt(shapeId: string, target: HTMLElement, x: number, y: number): HTMLElement | undefined {
+  const text = (n: Element | null) => n?.closest?.('[data-prop-path]')
+  if (text(target)) return target
+  const root = typeof document !== 'undefined' ? document.getElementById(shapeId) : null
+  if (root && typeof document.elementsFromPoint === 'function') {
+    for (const el of document.elementsFromPoint(x, y)) {
+      const t = text(el)
+      if (t && root.contains(t)) return el as HTMLElement
+    }
+  }
+  return target.closest?.('[data-item-path]') ? target : undefined
+}
+
 export class ComponentUtil extends TDShapeUtil<T, E> {
   type = TDShapeType.Component as const
 
@@ -177,7 +193,10 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
 
       const handlePointerDown = React.useCallback(
         (e: React.PointerEvent) => {
-          const target = (e.target as HTMLElement).closest('[data-prop-path]') as HTMLElement | null
+          // a decorative part painted over the text (a connector line, a card face) can take the
+          // pointer: then the text under the pointer is the target (editor E10)
+          const hit = editTargetAt(shape.id, e.target as HTMLElement, e.clientX, e.clientY)
+          const target = hit?.closest('[data-prop-path]') as HTMLElement | null
           const now = performance.now()
           const isDouble =
             !!target &&
@@ -188,7 +207,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
             openOn(target, { selectAll: true })
             return
           }
-          app.blockEdit.onBlockPointerDown(shape.id, e.target as HTMLElement)
+          app.blockEdit.onBlockPointerDown(shape.id, hit ?? (e.target as HTMLElement))
         },
         [app, openOn, shape.id]
       )
