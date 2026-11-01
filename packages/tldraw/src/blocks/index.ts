@@ -325,3 +325,7 @@ export {
   stylePreference,
 } from './styles'
 export type { DeckStyle, FontRef, StyleConcept, StyleSurface } from './types'
+
+// spro v2 V3.1/V3.2 — palettes around one colour (pure colour maths: the deck dialogs and the sidecar)
+export { derivePalettes, partnerPalettes, paletteColors, hexToOklch, oklchToHex, hexContrast } from './palettes'
+export type { DerivedPalette, PaletteBase, PaletteHarmony } from './palettes'
