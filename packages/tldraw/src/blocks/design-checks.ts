@@ -539,7 +539,10 @@ function misaligned(b: DesignBlock, parent: string, type: string, peers: SubBloc
     const types = new Map((b.inspection?.subs ?? []).map((s) => [s.path, short(s.type)]))
     for (const { i, t, owner } of subTexts(b, p)) {
       // the owner's type names the leaf: a card's `title text` and `body text` are different leaves
-      const name = `${owner === p.path ? short(p.type) : types.get(owner) ?? ''} ${t.propPath ?? t.part ?? 'text'}`.trim()
+      // editor E02: paths name the slide-level block's props (`children.2.props.text`) — peers match
+      // on the path with item indices blanked
+      const leafKey = (t.propPath ?? t.part ?? 'text').replace(/(^|\.)\d+(?=\.|$)/g, '$1#')
+      const name = `${owner === p.path ? short(p.type) : types.get(owner) ?? ''} ${leafKey}`.trim()
       const n = counts.get(name) ?? 0
       counts.set(name, n + 1)
       m.set(`${name}#${n}`, { t, align: b.inspection?.textAlign[i] ?? 'start' })

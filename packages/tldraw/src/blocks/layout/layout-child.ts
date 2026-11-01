@@ -7,6 +7,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { currentProps, dropUnresolved, mapChildPaths, withCurrentProps } from './edit-scope'
 import type {
   BlockDefinition,
   BlockSpec,
@@ -533,7 +534,9 @@ export function createLayoutContext(
       const raw = spec.props as Record<string, unknown>
       const props = authoredChild ? filledProps(def, raw, nest.blockDefaults) : raw
       const childNode = layoutBlock(def, props, childCtx)
-      return { k: 'group' as const, box, ...ident, children: [childNode] }
+      // Editor E02: the child's text paths, mapped into this block's props (or dropped)
+      const itemPath = mapChildPaths(childNode, spec, props, currentProps())
+      return { k: 'group' as const, box, ...ident, ...(itemPath ? { itemPath } : {}), children: [childNode] }
     },
     // G8.5: bound the same way `layoutChild` above is — `registry` stays a closure variable,
     // never a raw field a block can read off `ctx` (matches this file's own `layoutChild`
@@ -854,7 +857,9 @@ export function layoutBlock(
   props: Record<string, unknown>,
   ctx: LayoutContext
 ): LayoutNode {
-  const node = layoutBlockInner(def, props, ctx)
+  const node = withCurrentProps(props, () => layoutBlockInner(def, props, ctx))
+  // Editor E02: a slide-level block keeps only the edit paths that resolve in its own props
+  if (ctx.depth === 0) dropUnresolved(node, props)
   // CMP2: a slide-level block (depth 0, authored level 1) — the ink guard re-solves derived ink
   // that fails contrast on what the block itself painted under it.
   const nest = NEST.get(ctx)

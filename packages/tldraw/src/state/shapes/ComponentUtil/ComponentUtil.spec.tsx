@@ -379,5 +379,20 @@ describe('Component shape', () => {
       expect(document.querySelector('[contenteditable="true"]')).toBeNull()
       expect(updateShapes).not.toHaveBeenCalled()
     })
+  
+    it('editor E02: a composite title opens on the composite prop and writes it back', async () => {
+      const { app } = renderTitleBlock({ title: 'Cover title', kicker: 'Lecture 5' }, 'tls.c.poster-cover')
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+      const target = document.querySelector('[data-prop-path="title"]') as HTMLElement
+      expect(target).toBeTruthy()
+      doubleClick(target)
+      const editor = await findEditor()
+      expect(editor.textContent).toBe('Cover title')
+      editor.textContent = 'New title'
+      fireEvent.blur(editor)
+      const props = (updateShapes.mock.calls[0][0] as { props: Record<string, unknown> }).props
+      expect(props.title).toBe('New title')
+      expect(props.text).toBeUndefined()
+    })
   })
 })

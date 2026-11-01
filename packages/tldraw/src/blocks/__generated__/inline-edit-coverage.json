@@ -1,0 +1,770 @@
+{
+  "tls.a.choice": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.fill-blank": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.flip-cards": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.match": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.order": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.reveal": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.sort": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.timer": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.a.true-false": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.agenda": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.c.bento": {
+    "ok": 7,
+    "none": 1
+  },
+  "tls.c.big-stat": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.callback": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.c.cards": {
+    "ok": 3,
+    "none": 3
+  },
+  "tls.c.case-study": {
+    "ok": 6,
+    "none": 3
+  },
+  "tls.c.chapter-divider": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.chart-insight": {
+    "ok": 1,
+    "none": 10
+  },
+  "tls.c.closing": {
+    "ok": 4,
+    "none": 3
+  },
+  "tls.c.comparison": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.c.contact": {
+    "ok": 2,
+    "none": 3
+  },
+  "tls.c.cover": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.cta": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.dashboard": {
+    "ok": 1,
+    "none": 14
+  },
+  "tls.c.divider": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.do-dont": {
+    "ok": 4,
+    "none": 2
+  },
+  "tls.c.feature-grid": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.feature-reveal": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.flashcards": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.full-bleed-type": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.gallery-wall": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.hero": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.homework": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.hook-cover": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.c.image-full": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.image-text": {
+    "ok": 0,
+    "none": 3
+  },
+  "tls.c.journey": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.kinetic-title": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.kpi-row": {
+    "ok": 0,
+    "none": 9
+  },
+  "tls.c.kpi-tile": {
+    "ok": 0,
+    "none": 3
+  },
+  "tls.c.magazine": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.number-story": {
+    "ok": 6,
+    "none": 0
+  },
+  "tls.c.objectives": {
+    "ok": 4,
+    "none": 3
+  },
+  "tls.c.one-question": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.photo-essay": {
+    "ok": 1,
+    "none": 2
+  },
+  "tls.c.poster-cover": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.problem-solution": {
+    "ok": 2,
+    "none": 2
+  },
+  "tls.c.profile-card": {
+    "ok": 4,
+    "none": 1
+  },
+  "tls.c.question-wall": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.quiz": {
+    "ok": 5,
+    "none": 3
+  },
+  "tls.c.quote-image": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.recap": {
+    "ok": 4,
+    "none": 4
+  },
+  "tls.c.route-agenda": {
+    "ok": 4,
+    "none": 3
+  },
+  "tls.c.split-cover": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.c.stat-card": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.c.stat-spotlight": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.steps": {
+    "ok": 8,
+    "none": 4
+  },
+  "tls.c.sticky-board": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.c.storyboard": {
+    "ok": 0,
+    "none": 5
+  },
+  "tls.c.takeaway-poster": {
+    "ok": 3,
+    "none": 2
+  },
+  "tls.c.team": {
+    "ok": 4,
+    "none": 12
+  },
+  "tls.c.testimonial": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.c.title-card": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.d.annotated-line": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.d.area": {
+    "ok": 0,
+    "none": 10
+  },
+  "tls.d.bar": {
+    "ok": 0,
+    "none": 15
+  },
+  "tls.d.bubble": {
+    "ok": 0,
+    "none": 15
+  },
+  "tls.d.bullet-chart": {
+    "ok": 0,
+    "none": 4
+  },
+  "tls.d.compare-table": {
+    "ok": 0,
+    "none": 5
+  },
+  "tls.d.donut": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.dot-plot": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.funnel-chart": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.d.gauge": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.grouped-bar": {
+    "ok": 0,
+    "none": 10
+  },
+  "tls.d.heatmap": {
+    "ok": 0,
+    "none": 21
+  },
+  "tls.d.icon-array": {
+    "ok": 0,
+    "none": 2
+  },
+  "tls.d.line": {
+    "ok": 0,
+    "none": 10
+  },
+  "tls.d.lollipop": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.pie": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.pricing": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.d.progress-bar": {
+    "ok": 2,
+    "none": 2
+  },
+  "tls.d.progress-ring": {
+    "ok": 0,
+    "none": 3
+  },
+  "tls.d.radar": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.d.ranking": {
+    "ok": 0,
+    "none": 9
+  },
+  "tls.d.scatter": {
+    "ok": 0,
+    "none": 17
+  },
+  "tls.d.scorecard": {
+    "ok": 0,
+    "none": 15
+  },
+  "tls.d.slope": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.sparkline": {
+    "ok": 0,
+    "none": 2
+  },
+  "tls.d.stacked-bar": {
+    "ok": 0,
+    "none": 11
+  },
+  "tls.d.stat-compare": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.table": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.d.treemap": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.d.trend-badge": {
+    "ok": 0,
+    "none": 2
+  },
+  "tls.d.waterfall": {
+    "ok": 0,
+    "none": 12
+  },
+  "tls.g.annotated": {
+    "ok": 0,
+    "none": 4
+  },
+  "tls.g.arrow": {
+    "ok": 0,
+    "none": 1
+  },
+  "tls.g.balance": {
+    "ok": 6,
+    "none": 4
+  },
+  "tls.g.before-after": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.bracket": {
+    "ok": 0,
+    "none": 4
+  },
+  "tls.g.breakdown": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.g.bridge": {
+    "ok": 7,
+    "none": 3
+  },
+  "tls.g.chevrons": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.g.connector": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.g.cycle": {
+    "ok": 0,
+    "none": 13
+  },
+  "tls.g.decision-tree": {
+    "ok": 0,
+    "none": 9
+  },
+  "tls.g.fishbone": {
+    "ok": 8,
+    "none": 4
+  },
+  "tls.g.flow": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.funnel": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.graph": {
+    "ok": 0,
+    "none": 9
+  },
+  "tls.g.hub-spoke": {
+    "ok": 0,
+    "none": 4
+  },
+  "tls.g.iceberg": {
+    "ok": 0,
+    "none": 5
+  },
+  "tls.g.layers": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.matrix-2x2": {
+    "ok": 0,
+    "none": 13
+  },
+  "tls.g.milestones": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.g.mindmap": {
+    "ok": 0,
+    "none": 13
+  },
+  "tls.g.myth-fact": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.orbit": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.pros-cons": {
+    "ok": 0,
+    "none": 8
+  },
+  "tls.g.puzzle": {
+    "ok": 7,
+    "none": 0
+  },
+  "tls.g.pyramid": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.roadmap": {
+    "ok": 0,
+    "none": 11
+  },
+  "tls.g.spectrum": {
+    "ok": 5,
+    "none": 0
+  },
+  "tls.g.staircase": {
+    "ok": 0,
+    "none": 9
+  },
+  "tls.g.steps": {
+    "ok": 8,
+    "none": 4
+  },
+  "tls.g.swot": {
+    "ok": 5,
+    "none": 9
+  },
+  "tls.g.target": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.timeline": {
+    "ok": 0,
+    "none": 13
+  },
+  "tls.g.tree": {
+    "ok": 0,
+    "none": 6
+  },
+  "tls.g.venn": {
+    "ok": 0,
+    "none": 3
+  },
+  "tls.l.card": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.l.field": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.l.footer": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.l.grid": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.l.grid-guide": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.l.overlay": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.l.repeater": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.l.row": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.l.safe-area": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.l.section": {
+    "ok": 3,
+    "none": 4
+  },
+  "tls.l.sidebar": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.l.spacer": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.l.split": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.l.stack": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.m.avatar": {
+    "ok": 0,
+    "none": 3
+  },
+  "tls.m.avatar-group": {
+    "ok": 0,
+    "none": 5
+  },
+  "tls.m.decoration": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.device-mock": {
+    "ok": 0,
+    "none": 1
+  },
+  "tls.m.emoji": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.icon": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.icon-cluster": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.icon-label": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.m.icon-list": {
+    "ok": 6,
+    "none": 0
+  },
+  "tls.m.illustration": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.image": {
+    "ok": 0,
+    "none": 1
+  },
+  "tls.m.image-compare": {
+    "ok": 0,
+    "none": 2
+  },
+  "tls.m.image-grid": {
+    "ok": 0,
+    "none": 1
+  },
+  "tls.m.logo": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.logo-wall": {
+    "ok": 0,
+    "none": 1
+  },
+  "tls.m.ornament": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.pattern": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.m.shape": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.badge": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.body": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.bullets": {
+    "ok": 3,
+    "none": 3
+  },
+  "tls.t.callout": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.caption": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.checklist": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.t.code": {
+    "ok": 8,
+    "none": 6
+  },
+  "tls.t.definition": {
+    "ok": 5,
+    "none": 0
+  },
+  "tls.t.drop-cap": {
+    "ok": 0,
+    "none": 2
+  },
+  "tls.t.footnote": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.formula": {
+    "ok": 6,
+    "none": 0
+  },
+  "tls.t.hero-number": {
+    "ok": 3,
+    "none": 0
+  },
+  "tls.t.highlight": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.kicker": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.kv-list": {
+    "ok": 6,
+    "none": 0
+  },
+  "tls.t.marker": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.numbered": {
+    "ok": 4,
+    "none": 4
+  },
+  "tls.t.pull-quote": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.qa": {
+    "ok": 4,
+    "none": 4
+  },
+  "tls.t.quote": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.speech-bubble": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.statement": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.subtitle": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.t.tags": {
+    "ok": 4,
+    "none": 0
+  },
+  "tls.t.takeaway": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.t.title": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.x.footer-text": {
+    "ok": 2,
+    "none": 1
+  },
+  "tls.x.header": {
+    "ok": 2,
+    "none": 0
+  },
+  "tls.x.logo-mark": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.x.page-number": {
+    "ok": 1,
+    "none": 0
+  },
+  "tls.x.rule": {
+    "ok": 0,
+    "none": 0
+  },
+  "tls.x.watermark": {
+    "ok": 1,
+    "none": 0
+  }
+}

@@ -7763,7 +7763,7 @@ tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by 
 also: tls.c.full-bleed-type, tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover, tls.c.title-card
 
 ## Dividers
-tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈364@840] knobs: variant=numeral|field|minimal, align=start|center
+tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈311+53/L@840] knobs: variant=numeral|field|minimal, align=start|center
 also: tls.c.chapter-divider
 
 ## Agenda
@@ -7771,7 +7771,7 @@ tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with no
 also: tls.c.objectives, tls.c.route-agenda
 
 ## Closing
-tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h≈413@840] knobs: variant=centered|split|big-type, ctaStyle=button|link
+tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h≈373+40/L@840] knobs: variant=centered|split|big-type, ctaStyle=button|link
 also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.question-wall, tls.c.recap, tls.c.takeaway-poster
 
 ## Learning

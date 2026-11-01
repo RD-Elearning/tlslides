@@ -796,6 +796,9 @@ export type LayoutNode =
        *  `id` and `type`. Lets an exporter, connectors and the report find a nested block. */
       blockId?: string
       type?: string
+      /** Editor E02: on a nested block's wrapper — the list item it is, in the slide-level block's
+       *  props (`children.2`, `items.1`). The editor selects and outlines items by it. */
+      itemPath?: string
       children: LayoutNode[]
     }
   | {
