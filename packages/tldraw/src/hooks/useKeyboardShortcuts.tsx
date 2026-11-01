@@ -463,9 +463,14 @@ export function useKeyboardShortcuts(
     'ctrl+d,⌘+d',
     (e) => {
       if (!canHandleEvent()) return
-
-      app.duplicate()
       e.preventDefault()
+      // editor E04: an item selected inside a block is duplicated, not the whole block
+      const item = app.blockEdit.selectedItem
+      if (item) {
+        app.blockEdit.duplicateItem(item.shapeId, item.itemPath)
+        return
+      }
+      app.duplicate()
     },
     undefined,
     [app]
@@ -499,6 +504,8 @@ export function useKeyboardShortcuts(
     'escape',
     () => {
       if (!canHandleEvent(true)) return
+      // editor E04: Esc climbs out of a selected item first (item → parent item → block)
+      if (app.blockEdit.selectParent()) return
 
       app.cancel()
     },
@@ -512,6 +519,13 @@ export function useKeyboardShortcuts(
     'backspace,del',
     () => {
       if (!canHandleEvent()) return
+      // editor E04: Delete removes the selected item of a block (refused at the list's minimum),
+      // never the item and the whole block together
+      const item = app.blockEdit.selectedItem
+      if (item) {
+        app.blockEdit.removeItem(item.shapeId, item.itemPath)
+        return
+      }
       app.delete()
     },
     undefined,

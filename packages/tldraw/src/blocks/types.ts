@@ -501,6 +501,15 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   scope?: BlockScope
   /** Sibling block types worth considering instead. Each must resolve in the registry. */
   related?: string[]
+  /** Editor E04 — optional tweaks of the actions the basic editor derives from the schema. */
+  editor?: {
+    /** Actions never offered for this block (`'variant'`, `'item-add'`, …). */
+    hide?: string[]
+    /** The list slots that are user items (default: every content list / blocks slot). */
+    lists?: string[]
+    /** The text path "Edit text" opens first. */
+    primaryText?: string
+  }
   /** LO2 — paint layer. Absent = derived: category `decoration` → `backdrop`, else `content`.
    *  Set it only where the derivation is wrong. See `BlockLayer`. */
   layer?: BlockLayer

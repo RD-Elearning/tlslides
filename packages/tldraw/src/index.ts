@@ -90,3 +90,10 @@ export { stopKeyPropagationUnlessEscape } from './components/preventEvent'
 // the editor independent of any concrete block (no circular dependency), and lets a host import
 // the library alone without mounting the editor.
 export * from './blocks'
+
+// Editor E01–E08 — the basic editor a host drives: profile, block-edit API types, chrome strings.
+export type { EditorProfile, TldrawMessages, TldrawMessageId, TldrawLabels } from './hooks'
+export { DEFAULT_MESSAGES } from './hooks'
+export type { BlockSelection, BlockAction, EditRefusal, Rect as BlockRect } from './state/block-edit/BlockEdit'
+export { BlockEdit } from './state/block-edit/BlockEdit'
+export { ICONS as BLOCK_ICONS } from './blocks/icons'

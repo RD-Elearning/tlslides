@@ -14,8 +14,12 @@ import {
   BlockRegistryContext,
   HostRegistryContext,
   EditorProfileContext,
+  MessagesContext,
+  DEFAULT_MESSAGES,
+  useBlockSelectionReport,
 } from '~hooks'
-import type { EditorProfile } from '~hooks'
+import type { EditorProfile, TldrawMessages, TldrawLabels } from '~hooks'
+import type { BlockSelection } from '~state/block-edit/BlockEdit'
 import type { BlockRegistry } from '~blocks/registry'
 import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
@@ -120,6 +124,22 @@ export interface TldrawProps extends TDCallbacks {
   editorProfile?: EditorProfile
 
   /**
+   * (optional) Editor E04 — the selected block (and item) with its screen rect and the actions
+   * that fit it, every time it changes; `null` when nothing is selected or during a drag. The host
+   * draws its floating bars from it and acts through `app.blockEdit`.
+   */
+  onBlockSelection?: (app: TldrawApp, sel: BlockSelection | null) => void
+
+  /** (optional) Editor E04 — the camera after every pan/zoom (rAF-throttled). */
+  onCameraChange?: (app: TldrawApp, camera: { point: number[]; zoom: number }) => void
+
+  /** (optional) Editor E08 — chrome strings (English defaults in `DEFAULT_MESSAGES`). */
+  messages?: Partial<TldrawMessages>
+
+  /** (optional) Editor E08 — names from the schema in the host's language. */
+  labels?: TldrawLabels
+
+  /**
    * (optional) Force the app's dark mode on or off. Omit to leave it alone (the app's own
    * default, or whatever the user has toggled via `toggleDarkMode`/the menu) — this only takes
    * effect when explicitly set to `true` or `false`, and stays reactive to prop changes.
@@ -189,6 +209,10 @@ export function Tldraw({
   showUI = true,
   readOnly = false,
   editorProfile = 'full',
+  onBlockSelection,
+  onCameraChange,
+  messages,
+  labels,
   darkMode,
   showSponsorLink = false,
   disableAssets = false,
@@ -320,6 +344,13 @@ export function Tldraw({
   // Editor E01 — commands, hotkeys and paste read the profile off the app.
   app.profile = editorProfile
 
+  useBlockSelectionReport(app, onBlockSelection, onCameraChange)
+
+  const messagesValue = React.useMemo(
+    () => ({ messages: { ...DEFAULT_MESSAGES, ...(messages ?? {}) }, labels: labels ?? {} }),
+    [messages, labels]
+  )
+
   // Phase 14 — `darkMode` used to be declared here but never read anywhere in this component, a
   // silent no-op for any caller that passed it (found while building `DeckViewer`, which needs
   // exactly this). `undefined` (the default — no prop passed) deliberately does nothing, so a
@@ -436,6 +467,7 @@ export function Tldraw({
         <HostRegistryContext.Provider value={hostRegistry}>
           <TldrawComponentsContext.Provider value={components}>
             <EditorProfileContext.Provider value={editorProfile}>
+            <MessagesContext.Provider value={messagesValue}>
             <InnerTldraw
             key={sId || 'Tldraw'}
             id={sId}
@@ -452,6 +484,7 @@ export function Tldraw({
             readOnly={readOnly}
             profile={editorProfile}
           />
+            </MessagesContext.Provider>
             </EditorProfileContext.Provider>
         </TldrawComponentsContext.Provider>
           </HostRegistryContext.Provider>
