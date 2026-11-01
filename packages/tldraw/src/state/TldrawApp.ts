@@ -251,6 +251,15 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   /** Editor E06 — how the editor asks before a destructive action (default `window.confirm`). */
   confirmAction?: (message: string) => boolean | Promise<boolean>
 
+  /**
+   * Editor E11: the basic editor keeps the slide frame fixed — no pan, scroll or zoom (wheel,
+   * pinch, space-drag, hotkeys). The camera only moves to fit the slide (`zoomToFit`: load,
+   * resize, slide change).
+   */
+  get cameraLocked(): boolean {
+    return this.isBasic
+  }
+
   get isBasic(): boolean {
     return this.profile === 'basic'
   }
@@ -2681,6 +2690,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Reset the camera to the default position
    */
   resetCamera = (): this => {
+    if (this.cameraLocked) return this
     return this.setCamera(this.centerPoint, 1, `reset_camera`)
   }
 
@@ -2689,6 +2699,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param delta
    */
   pan = (delta: number[]): this => {
+    if (this.cameraLocked) return this
     const { camera } = this.pageState
     return this.setCamera(Vec.toFixed(Vec.sub(camera.point, delta)), camera.zoom, `panned`)
   }
@@ -2700,6 +2711,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param zoomDelta The zoom detal
    */
   pinchZoom = (point: number[], delta: number[], zoom: number): this => {
+    if (this.cameraLocked) return this
     if (this.atMinZoom(zoom)) return this.fitAtMinZoom(`pinch_zoomed`)
     const { camera } = this.pageState
     const nextPoint = Vec.sub(camera.point, Vec.div(delta, camera.zoom))
@@ -2719,6 +2731,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param center The point to zoom towards (defaults to screen center).
    */
   zoomTo = (next: number, center = this.centerPoint): this => {
+    if (this.cameraLocked) return this
     if (this.atMinZoom(next)) return this.fitAtMinZoom(`zoomed_camera`)
     const { zoom, point } = this.pageState.camera
     const p0 = Vec.sub(Vec.div(center, zoom), point)
@@ -2741,6 +2754,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom out by 25%
    */
   zoomIn = (): this => {
+    if (this.cameraLocked) return this
     const i = Math.round((this.pageState.camera.zoom * 100) / 25)
     const nextZoom = TLDR.getCameraZoom((i + 1) * 0.25)
     return this.zoomTo(nextZoom)
@@ -2750,6 +2764,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom in by 25%.
    */
   zoomOut = (): this => {
+    if (this.cameraLocked) return this
     const i = Math.round((this.pageState.camera.zoom * 100) / 25)
     const nextZoom = TLDR.getCameraZoom((i - 1) * 0.25)
     return this.zoomTo(nextZoom)
@@ -2763,7 +2778,8 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const fit = this.fitView()
     if (!fit) return this
     const { camera } = this.pageState
-    const zoom = camera.zoom === fit.zoom || camera.zoom < 1 ? Math.min(1, fit.zoom) : fit.zoom
+    // a locked camera (basic editor) always fills the canvas with the slide
+    const zoom = !this.cameraLocked && (camera.zoom === fit.zoom || camera.zoom < 1) ? Math.min(1, fit.zoom) : fit.zoom
     return this.setCamera(fit.pointAt(zoom), zoom, `zoomed_to_fit`)
   }
 
@@ -2812,6 +2828,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom to the selected shapes.
    */
   zoomToSelection = (): this => {
+    if (this.cameraLocked) return this
     if (this.selectedIds.length === 0) return this
 
     const { rendererBounds } = this
@@ -2843,6 +2860,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom back to content when the canvas is empty.
    */
   zoomToContent = (): this => {
+    if (this.cameraLocked) return this
     const shapes = this.shapes
     const pageState = this.pageState
 
@@ -2866,6 +2884,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * Zoom the camera to 100%.
    */
   resetZoom = (): this => {
+    if (this.cameraLocked) return this
     return this.zoomTo(1)
   }
 
@@ -2875,6 +2894,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
    * @param center The point to zoom toward.
    */
   zoomBy = Utils.throttle((delta: number, center?: number[]): this => {
+    if (this.cameraLocked) return this
     const { zoom } = this.pageState.camera
     // exponential, so in and out by the same delta cancel out, and one step is capped: a mouse
     // wheel notch (delta 100 px) moves ~20%, not the whole range at once
@@ -3930,7 +3950,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   onPinch: TLPinchEventHandler = (info, e) => this.currentTool.onPinch?.(info, e)
 
   onPan: TLWheelEventHandler = (info, e) => {
-    if (this.appState.status === 'pinching') return
+    if (this.appState.status === 'pinching' || this.cameraLocked) return
     // TODO: Pan and pinchzoom are firing at the same time. Considering turning one of them off!
 
     const delta = Vec.div(info.delta, this.pageState.camera.zoom)
@@ -3946,7 +3966,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
   }
 
   onZoom: TLWheelEventHandler = (info, e) => {
-    if (this.state.appState.status !== TDStatus.Idle) return
+    if (this.state.appState.status !== TDStatus.Idle || this.cameraLocked) return
     const delta = info.delta[2] / WHEEL_ZOOM_SPEED
     this.zoomBy(delta, info.point)
     this.onPointerMove(info, e as unknown as React.PointerEvent)
