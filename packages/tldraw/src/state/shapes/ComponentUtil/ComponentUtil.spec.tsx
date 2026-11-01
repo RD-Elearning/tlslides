@@ -329,21 +329,51 @@ describe('Component shape', () => {
       const editor = await findEditor()
       // the overlay is portalled to <body>, outside the transformed canvas
       expect(editor.closest('[data-prop-path]')?.parentElement).toBe(document.body)
-      expect(editor.textContent).toBe('Plain **bold**')
-      editor.textContent = 'Plain **bolder**'
+      // editor E03: bold shows as bold — no `**` markers in the overlay
+      expect(editor.textContent).toBe('Plain bold')
+      expect(editor.querySelector('span[data-bold]')?.textContent).toBe('bold')
+      ;(editor.querySelector('span[data-bold]') as HTMLElement).textContent = 'bolder'
       fireEvent.blur(editor)
       const call = updateShapes.mock.calls[0][0] as unknown as { props: { items: Array<{ text: unknown }> } }
       expect(call.props.items[0].text).toEqual({ runs: [{ text: 'Plain ' }, { text: 'bolder', bold: true }] })
     })
 
-    it('a rich value with italic runs is not edited inline (the inspector keeps it intact)', async () => {
-      renderTitleBlock({
+    it('editor E03: a rich value with italic runs is edited inline and keeps its italic', async () => {
+      const { app } = renderTitleBlock({
         items: [{ text: { runs: [{ text: 'Slanted', italic: true }] } }, { text: 'x' }],
         marker: 'dot',
       })
+      const updateShapes = jest.spyOn(app, 'updateShapes')
       doubleClick(document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement)
-      await new Promise((r) => setTimeout(r, 20))
-      expect(document.querySelector('[contenteditable="true"]')).toBeNull()
+      const editor = await findEditor()
+      expect(editor.querySelector('span[data-italic]')?.textContent).toBe('Slanted')
+      ;(editor.querySelector('span[data-italic]') as HTMLElement).textContent = 'Leaning'
+      fireEvent.blur(editor)
+      const props = (updateShapes.mock.calls[0][0] as unknown as { props: { items: Array<{ text: unknown }> } }).props
+      expect(props.items[0].text).toEqual({ runs: [{ text: 'Leaning', italic: true }] })
+    })
+
+    it('editor E03: Enter while an IME composes does not commit; Enter commits', async () => {
+      const { app } = renderTitleBlock(bulletsProps)
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+      doubleClick(document.querySelector('[data-prop-path="items.0.text"]') as HTMLElement)
+      const editor = await findEditor()
+      editor.textContent = 'Học máy'
+      fireEvent.keyDown(editor, { key: 'Enter', keyCode: 229 })
+      expect(updateShapes).not.toHaveBeenCalled()
+      fireEvent.keyDown(editor, { key: 'Enter' })
+      expect(updateShapes).toHaveBeenCalledTimes(1)
+    })
+
+    it('editor E03: an emptied required slot is not committed', async () => {
+      const { app } = renderTitleBlock({ title: 'Cover title' }, 'tls.c.poster-cover')
+      const updateShapes = jest.spyOn(app, 'updateShapes')
+      doubleClick(document.querySelector('[data-prop-path="title"]') as HTMLElement)
+      const editor = await findEditor()
+      editor.textContent = '   '
+      fireEvent.keyDown(editor, { key: 'Enter' })
+      expect(updateShapes).not.toHaveBeenCalled()
+      expect(document.querySelector('[contenteditable="true"]')).not.toBeNull()
     })
 
     it('Escape cancels without calling updateShapes', async () => {

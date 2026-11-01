@@ -12,7 +12,7 @@ import {
   transformSingleRectangle,
 } from '~state/shapes/shared'
 import { styled } from '@stitches/react'
-import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutContext } from '~hooks'
+import { useTldrawApp, useTldrawComponents, useBlockRegistry, useBlockLayoutContext, useMsg } from '~hooks'
 import { renderNodeToDom, HostLayoutContext } from '~blocks/render-dom'
 import { getAtPath, hasPath, setAtPath } from '~blocks/prop-path'
 import { layoutBlock } from '~blocks/layout/layout-child'
@@ -21,7 +21,8 @@ import { blockTreatment } from '~blocks/look'
 import { MissingBlockPlaceholder } from './MissingBlockPlaceholder'
 import { BlockErrorBoundary } from './BlockErrorBoundary'
 import { InlineEditor, editorStyleOf, type InlineEditorStyle } from '~components/InlineEditor'
-import { fromEdited, toEditable } from '~components/InlineEditor/rich-edit'
+import { runsOf, valueFromRuns, type EditRun } from '~components/InlineEditor/rich-edit'
+import { slotAt, textLimits } from '~state/block-edit/slots'
 
 type T = ComponentShape
 type E = HTMLDivElement
@@ -83,7 +84,10 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
         style: InlineEditorStyle
         target: HTMLElement
         selectAll?: boolean
+        runs: EditRun[]
+        limits: { maxChars?: number; multiline: boolean; required: boolean }
       } | null>(null)
+      const t = useMsg()
 
       // The text being edited is hidden while the overlay (drawn in its own type) sits on it, so
       // the two never show at once (spro demo T9).
@@ -127,15 +131,18 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           // nested child's own path (`text` inside a composite) would open empty and write an
           // orphan key; and nothing opens while the document is read-only (an AI run, presentation).
           // `null` = a rich value with formatting plain text cannot carry: leave it to the inspector
-          const initial =
+          const runs =
             propPath != null && !app.readOnly && hasPath(root, propPath)
-              ? toEditable(getAtPath(root, propPath))
+              ? runsOf(getAtPath(root, propPath))
               : null
-          if (!propPath || initial === null) return false
+          if (!propPath || runs === null) return false
+          const def = blockRegistry?.get(componentId)
+          const limits = textLimits(slotAt(def, root, propPath, blockRegistry))
           const go = () => {
             const rect = target.getBoundingClientRect()
             const style = editorStyleOf(target, rect)
-            setEditing({ propPath, rect, initial, style, target, selectAll: opts?.selectAll ?? true })
+            const initial = runs.map((r) => r.text).join('')
+            setEditing({ propPath, rect, initial, style, target, selectAll: opts?.selectAll ?? true, runs, limits })
           }
           // Deferred on a double click: this same gesture's `pointerup` still has to reach
           // `useShapeEvents`, which independently recognizes it as a double-click (its own timer,
@@ -147,7 +154,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           else window.setTimeout(go, 0)
           return true
         },
-        [app]
+        [app, blockRegistry, componentId]
       )
 
       // Editor E04: the host opens the editor through `app.blockEdit.startTextEdit(id, path)`.
@@ -165,7 +172,7 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
       const openable = (n: HTMLElement) => {
         const p = n.getAttribute('data-prop-path')
         const root = (propsRef.current ?? {}) as Record<string, unknown>
-        return !!p && hasPath(root, p) && toEditable(getAtPath(root, p)) !== null
+        return !!p && hasPath(root, p) && runsOf(getAtPath(root, p)) !== null
       }
 
       const handlePointerDown = React.useCallback(
@@ -304,18 +311,40 @@ export class ComponentUtil extends TDShapeUtil<T, E> {
           {editing && (
             <InlineEditor
               propPath={editing.propPath}
-              initialValue={editing.initial}
+              initialRuns={editing.runs}
               rect={editing.rect}
               style={editing.style}
-              onSave={(value) => {
+              selectAll={editing.selectAll}
+              multiline={editing.limits.multiline}
+              maxChars={editing.limits.maxChars}
+              required={editing.limits.required}
+              messages={{ required: t('edit.required'), limit: (n, max) => t('edit.limit', { n, max }) }}
+              onSave={(_text, runs) => {
                 const currentProps = (props ?? {}) as Record<string, unknown>
-                // a rich-text slot (`{ runs }`) stays rich: bold survives as `**…**` (rich-edit.ts)
+                // same shape as before: a string slot stays a string (bold as `**…**`), a rich
+                // slot (`{ runs }`) keeps its runs (editor E03)
                 const original = getAtPath(currentProps, editing.propPath)
-                const newProps = setAtPath(currentProps, editing.propPath, fromEdited(original, value))
+                const newProps = setAtPath(currentProps, editing.propPath, valueFromRuns(original, runs))
                 app.updateShapes({ id: shape.id, props: newProps })
                 setEditing(null)
               }}
               onCancel={() => setEditing(null)}
+              onTab={(dir) => {
+                // editor E03: Tab walks the texts of this block
+                const fromPath = editing.propPath
+                setEditing(null)
+                window.setTimeout(() => {
+                  const el = document.getElementById(shape.id)
+                  if (!el) return
+                  // one entry per path (a centred paragraph is one node per line)
+                  const all = (Array.from(el.querySelectorAll('[data-prop-path]')) as HTMLElement[]).filter(openable)
+                  const paths = [...new Set(all.map((n) => n.getAttribute('data-prop-path') as string))]
+                  const at = paths.indexOf(fromPath)
+                  const nextPath = paths[(at + dir + paths.length) % paths.length]
+                  const next = all.find((n) => n.getAttribute('data-prop-path') === nextPath)
+                  if (next && nextPath !== fromPath) openOn(next, { selectAll: true, defer: false })
+                }, 0)
+              }}
             />
           )}
         </HTMLContainer>
