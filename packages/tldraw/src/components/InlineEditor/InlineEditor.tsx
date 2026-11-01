@@ -43,6 +43,9 @@ export interface InlineEditorStyle {
   lineHeight?: number
   letterSpacing?: number
   align?: string
+  /** False when the target never wraps (`white-space: nowrap`/`pre`, e.g. an html block painting
+   *  poster lines): the overlay may then grow a little past the target box before it wraps. */
+  wrap?: boolean
 }
 
 /**
@@ -65,6 +68,7 @@ export function editorStyleOf(target: HTMLElement, rect: DOMRect): InlineEditorS
     lineHeight: px(cs.lineHeight),
     letterSpacing: px(cs.letterSpacing),
     align: cs.textAlign,
+    wrap: !/^(nowrap|pre)$/.test(cs.whiteSpace),
   }
 }
 
@@ -353,7 +357,11 @@ export const InlineEditor: React.FC<InlineEditorProps> = ({
         style={{
           left: rect.left,
           top: rect.top,
-          width: rect.width,
+          // a target painting pre-broken lines fits them exactly: give the overlay some slack so
+          // sub-pixel metrics do not wrap a line the slide shows whole
+          ...(style?.wrap === false
+            ? { width: 'max-content', minWidth: rect.width, maxWidth: rect.width * 1.15 + 16 }
+            : { width: rect.width }),
           minHeight: rect.height,
           fontSize: style?.size,
           color: style?.color,

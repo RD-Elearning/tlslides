@@ -245,6 +245,8 @@ const StyledMoreButton = styled('button', {
   position: 'absolute',
   top: 4,
   right: 4,
+  // above the thumbnail's own painted shapes (positioned, later in the DOM)
+  zIndex: 2,
   width: 24,
   height: 20,
   border: 'none',
@@ -263,6 +265,7 @@ const StyledSlideNumber = styled('span', {
   position: 'absolute',
   left: 4,
   bottom: 4,
+  zIndex: 2,
   minWidth: 18,
   padding: '0 4px',
   borderRadius: 4,
