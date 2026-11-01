@@ -130,3 +130,50 @@ describe('editor E04 — operations keep the deck saveable, one undo step each',
     expect(app.blockEdit.selectedItem).toBeUndefined()
   })
 })
+
+describe('editor E09 — reflowPage', () => {
+  const three = {
+    version: 1,
+    id: 'deck',
+    title: 'Deck',
+    theme: 'default',
+    aspect: '16:9',
+    style: 'corporate',
+    slides: [
+      {
+        id: 's1',
+        layout: 'sidebar-title',
+        regions: {
+          title: [{ id: 'ttl', type: 'tls.t.title', props: { text: 'Heading' } }],
+          content: [
+            { id: 'b1', type: 'tls.t.body', props: { text: 'First paragraph of the slide.' } },
+            { id: 'b2', type: 'tls.t.body', props: { text: 'Second paragraph in the middle.' } },
+            { id: 'b3', type: 'tls.t.body', props: { text: 'Third paragraph at the end.' } },
+          ],
+        },
+        free: [{ block: { id: 'note', type: 'tls.t.caption', props: { text: 'Moved by hand' } }, box: { x: 1500, y: 60, width: 360, height: 60 } }],
+      },
+    ],
+  } as unknown as DeckSpec
+  const byBlock = (app: TldrawTestApp, id: string) =>
+    Object.values(app.document.pages[app.currentPageId].shapes).find((s) => ((s as ComponentShape).props as { $block?: { id?: string } })?.$block?.id === id) as ComponentShape | undefined
+
+  test('delete the middle block → reflow closes the hole, keeps ids and moved blocks, one undo', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(deckSpecToDocument(three).document)
+    const b3 = byBlock(app, 'b3')!
+    const y3 = b3.point[1]
+    const note = byBlock(app, 'note')!
+    app.blockEdit.deleteBlock(byBlock(app, 'b2')!.id)
+    expect(byBlock(app, 'b3')!.point[1]).toBe(y3) // the canvas leaves a hole
+    expect(app.blockEdit.reflowPage()).toBe(true)
+    const after = byBlock(app, 'b3')!
+    expect(after.id).toBe(b3.id)
+    expect(after.point[1]).toBeLessThan(y3)
+    expect(byBlock(app, 'note')!.point).toEqual(note.point)
+    expect(errors(app)).toEqual([])
+    app.undo()
+    expect(byBlock(app, 'b3')!.point[1]).toBe(y3)
+    expect(byBlock(app, 'b2')).toBeUndefined()
+  })
+})

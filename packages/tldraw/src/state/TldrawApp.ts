@@ -2167,6 +2167,12 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     return this.setState(Commands.setDeckTheme(this, theme))
   }
 
+  /** Editor E09: replace (or remove, `undefined`) shapes of a page in one undoable step. */
+  replacePageShapes = (pageId: string, next: Record<string, TDShape | undefined>): this => {
+    if (this.readOnly || !Object.keys(next).length) return this
+    return this.setState(Commands.replacePageShapes(this, pageId, next))
+  }
+
   /**
    * Add a new slide built from a template (Phase 13), filling in any matching `content[slot]`
    * values, and switch to it — the template-driven counterpart to `createPage`. See

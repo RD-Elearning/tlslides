@@ -11,6 +11,9 @@ import { defaultBlockRegistry } from '~blocks/validate-deck-spec'
 import { collectDeckIds, remintBlockIds } from '~blocks/remint-ids'
 import { runsOf } from '~components/InlineEditor/rich-edit'
 import { insertBlockShape } from './insert'
+import { deckSpecToDocument } from '~blocks/deck-document'
+import { documentToDeckSpec } from '~blocks/slide-decompiler'
+import type { TDDocument, TDShape } from '~types'
 import { itemChain, itemOfPath, listOf, parentItem } from './items'
 import { blockActions, itemActions, type BlockAction } from './actions'
 
@@ -39,7 +42,7 @@ export interface BlockSelection {
 }
 
 /** Why an operation was refused (the host may say it). */
-export type EditRefusal = 'read-only' | 'no-block' | 'min' | 'max' | 'connector' | 'not-a-list'
+export type EditRefusal = 'read-only' | 'no-block' | 'min' | 'max' | 'connector' | 'not-a-list' | 'reflow-drops'
 
 type TextOpener = (path?: string, opts?: { selectAll?: boolean }) => boolean
 
@@ -185,6 +188,34 @@ export class BlockEdit {
     const shape = this.getBlock(shapeId)
     if (!shape) return this.refuse('no-block')
     this.app.delete([shape.id])
+    return true
+  }
+
+  /**
+   * Editor E09 — "Căn lại bố cục": compile the slide again from what it holds now (the page is
+   * decompiled, regions keep their order, user-moved blocks stay in `free[]` at their box) and put
+   * the result in place of its blocks, in one undo step. Shapes keep their ids (matched by block id),
+   * so selection and history stay meaningful. Refused (`reflow-drops`) when the compile would leave
+   * a block out (a region past its capacity drops blocks): nothing is lost silently.
+   */
+  reflowPage(pageId: string = this.app.currentPageId): boolean {
+    if (this.app.readOnly) return this.refuse('read-only')
+    const doc = this.app.document
+    const page = doc.pages[pageId]
+    if (!page) return this.refuse('no-block')
+    const blockId = (sh: TDShape) => ((sh as ComponentShape).props as { $block?: { id?: string } })?.$block?.id
+    const isBlock = (sh: TDShape) => sh.type === TDShapeType.Component && !!blockId(sh)
+    const one = { ...doc, pages: { [pageId]: page }, pageStates: { [pageId]: doc.pageStates[pageId] } } as TDDocument
+    const { spec } = documentToDeckSpec(one)
+    const again = Object.values(deckSpecToDocument(spec).document.pages)[0]
+    if (!again) return this.refuse('no-block')
+    const fresh = new Map<string, TDShape>()
+    for (const sh of Object.values(again.shapes)) if (isBlock(sh)) fresh.set(blockId(sh)!, sh)
+    const old = Object.values(page.shapes).filter(isBlock)
+    if (old.some((sh) => !fresh.has(blockId(sh)!))) return this.refuse('reflow-drops')
+    const next: Record<string, TDShape | undefined> = {}
+    for (const sh of old) next[sh.id] = { ...fresh.get(blockId(sh)!)!, id: sh.id, parentId: pageId } as TDShape
+    this.app.replacePageShapes(pageId, next)
     return true
   }
 
