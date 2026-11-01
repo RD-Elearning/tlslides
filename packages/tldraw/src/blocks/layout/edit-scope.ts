@@ -118,7 +118,23 @@ export function mapOut(
     if (to) return tail.length ? `${to}.${tail.join('.')}` : to
   }
   const matches = findValue(parentProps, getAtPath(childProps, p))
-  return matches.length === 1 ? matches[0] : undefined
+  if (matches.length === 1) return matches[0]
+  // E10: a value repeated in the list (a duplicated item) — the child's own id names its item
+  // (`step-1-title`): the one match whose list indices are exactly those numbers
+  return byIndices(matches, indicesIn(spec.id))
+}
+
+/** The integers a builder wrote into an id or part (`step-1-title` → [1], `label[2].1` → [2, 1]). */
+function indicesIn(s: string | undefined): number[] {
+  return s ? (s.match(/\d+/g) ?? []).map(Number) : []
+}
+
+/** The one path whose numeric segments are exactly `nums`, else undefined. */
+export function byIndices(paths: string[], nums: number[]): string | undefined {
+  if (!nums.length || paths.length < 2) return undefined
+  const key = nums.join('.')
+  const hit = paths.filter((p) => parsePropPath(p).filter((k): k is number => typeof k === 'number').join('.') === key)
+  return hit.length === 1 ? hit[0] : undefined
 }
 
 function eachText(node: LayoutNode, fn: (leaf: Extract<LayoutNode, { k: 'text' }>) => void): void {
@@ -251,7 +267,11 @@ export function inferLeafPaths(node: LayoutNode, props: Record<string, unknown>)
   for (const g of todo) {
     const t = textOf(g)
     const paths = byText.get(t)
-    if (!t || !paths || paths.length !== 1 || drawn.get(t) !== 1) continue
-    for (const l of g) l.propPath = paths[0]
+    if (!t || !paths) continue
+    let path = paths.length === 1 && drawn.get(t) === 1 ? paths[0] : undefined
+    // E10: the same text in several items (a duplicated item): the leaf's part names its item
+    // (`label[2]`; a per-line suffix `.1` is not an index)
+    if (!path && paths.length === drawn.get(t)) path = byIndices(paths, indicesIn((g[0].part ?? '').replace(/\.\d+$/, '').match(/\[\d+\]/g)?.join('')))
+    if (path) for (const l of g) l.propPath = path
   }
 }

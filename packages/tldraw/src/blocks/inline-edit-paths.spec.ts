@@ -120,3 +120,44 @@ describe('editor E02 — inline edit paths', () => {
     for (const leaf of leaves(r.node)) if (leaf.path) expect(hasPath(r.props, leaf.path)).toBe(true)
   })
 })
+
+/* ── E10: a duplicated item keeps both copies editable, each at its own place ──────────────── */
+
+function placed(node: LayoutNode, dx = 0, dy = 0, out: Array<{ x: number; y: number; path?: string }> = []) {
+  const x = dx + (node.box?.x ?? 0)
+  const y = dy + (node.box?.y ?? 0)
+  if (node.k === 'text') out.push({ x, y, path: node.propPath })
+  // children of a group are placed relative to it (as the DOM renderer applies them)
+  for (const c of (node as { children?: LayoutNode[] }).children ?? []) placed(c, node.k === 'group' ? x : dx, node.k === 'group' ? y : dy, out)
+  return out
+}
+
+const listKey = (props: Record<string, unknown>) =>
+  Object.keys(props).find((k) => Array.isArray(props[k]) && (props[k] as unknown[]).length >= 2 && (props[k] as unknown[]).every((v) => v && typeof v === 'object' && !('type' in (v as object))))
+
+describe('editor E10 — duplicated items', () => {
+  const both: string[] = []
+  test.each(types)('%s: item 0 and its copy each map to their own place', (type) => {
+    const orig = exampleProps(type)
+    const key = listKey(orig)
+    if (!key) return
+    const props = exampleProps(type)
+    ;(props[key] as unknown[])[1] = JSON.parse(JSON.stringify((props[key] as unknown[])[0]))
+    const r0 = layOut(type, orig)
+    const r = layOut(type, props)
+    if (!r0 || !r) return
+    const anchor = (node: LayoutNode, i: number) => {
+      const ls = placed(node).filter((l) => l.path?.startsWith(`${key}.${i}.`))
+      return ls.length ? { x: Math.min(...ls.map((l) => l.x)), y: Math.min(...ls.map((l) => l.y)) } : undefined
+    }
+    const [o0, o1, d0, d1] = [anchor(r0.node, 0), anchor(r0.node, 1), anchor(r.node, 0), anchor(r.node, 1)]
+    if (!o0 || !o1 || !d0 || !d1) return
+    both.push(type)
+    const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
+    // each copy sits where its own item sat, not where the other one did
+    expect({ type, ok: dist(d0, o0) <= dist(d0, o1) && dist(d1, o1) <= dist(d1, o0) }).toEqual({ type, ok: true })
+  })
+  afterAll(() => {
+    if (process.env.VERBOSE) console.log(`duplicated items editable in ${both.length} blocks: ${both.join(' ')}`)
+  })
+})
