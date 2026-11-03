@@ -17,6 +17,17 @@ describe('number formatting by deck locale', () => {
     expect(formatValue(1240, 'currency', { locale: 'vi', currency: '₫' })).toBe('₫1.240')
     expect(localizeNumber('1,240.5 units', 'vi-VN')).toBe('1.240,5 units')
   })
+  it('S01: other decimal-comma languages swap the separators, keep the scale letters', () => {
+    expect(localizeNumber('1,240.5', 'de')).toBe('1.240,5')
+    expect(localizeNumber('1,240.5', 'fr')).toBe('1\u00a0240,5')
+    expect(localizeNumber('1,240,500', 'pl-PL')).toBe('1\u00a0240\u00a0500')
+    expect(formatValue(4.2e6, 'compact', { locale: 'es' })).toBe('4,2M')
+    expect(formatValue(12.4, 'percent', { locale: 'it' })).toBe('12,4%')
+    expect(formatValue(1240, 'currency', { locale: 'pt', currency: '€' })).toBe('€1.240')
+    expect(localizeNumber('1,240.5', 'en')).toBe('1,240.5')
+    expect(localizeNumber('1,240.5', 'ms')).toBe('1,240.5')
+    expect(localizeNumber('1,240.5', 'xx')).toBe('1,240.5')
+  })
   it('chart axes and big stats follow the same rule', () => {
     expect(fmtNum(2500000, 'compact', 'vi')).toBe('2,5 triệu')
     expect(fmtSigned(-3.5, 'percent', 'vi')).toBe('-3,5%')

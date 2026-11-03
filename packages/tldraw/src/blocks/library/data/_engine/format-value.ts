@@ -15,18 +15,43 @@ export interface FormatOptions {
 }
 
 const VI_SCALE: Record<string, string> = { K: ' nghìn', M: ' triệu', B: ' tỷ' }
+const NBSP = '\u00a0'
+
+/** Number format of a deck language (S01 §2.4). A language missing here keeps the English format. */
+interface NumberFormat {
+  decimal: string
+  group: string
+  /** compact scales as words; absent = the English letters ("4,2M") */
+  scales?: Record<string, string>
+}
+
+const FORMATS: Record<string, NumberFormat> = {
+  vi: { decimal: ',', group: '.', scales: VI_SCALE },
+  fr: { decimal: ',', group: NBSP },
+  pl: { decimal: ',', group: NBSP },
+  de: { decimal: ',', group: '.' },
+  es: { decimal: ',', group: '.' },
+  pt: { decimal: ',', group: '.' },
+  it: { decimal: ',', group: '.' },
+  nl: { decimal: ',', group: '.' },
+  tr: { decimal: ',', group: '.' },
+  id: { decimal: ',', group: '.' },
+}
 
 /**
- * An English-formatted number text in the deck's language. Only `vi` differs today: decimal comma,
- * dot thousands, and compact scales as words ("4.2M" → "4,2 triệu", "620B" → "620 tỷ",
- * "1,240.5" → "1.240,5", "12.4%" → "12,4%"). Other text in the string is left alone. Pure.
+ * An English-formatted number text in the deck's language: the language's decimal and thousands
+ * separators (vi/de/es/pt/it/nl/tr/id: "1,240.5" → "1.240,5"; fr/pl: "1 240,5" with a no-break
+ * space), and in Vietnamese the compact scales as words ("4.2M" → "4,2 triệu", "620B" → "620 tỷ").
+ * English, Malay and unknown languages are left as they are. Other text in the string is left
+ * alone. Pure.
  */
 export function localizeNumber(text: string, locale?: string): string {
-  if (!locale || !/^vi\b/i.test(locale)) return text
+  const f = FORMATS[(locale ?? '').toLowerCase().split(/[-_]/)[0]]
+  if (!f) return text
   return text.replace(/(\d+(?:,\d{3})*(?:\.\d+)?)([KMB](?![A-Za-z]))?/g, (_m, num: string, scale?: string) => {
     const [int, frac] = num.split('.')
-    const swapped = int.replace(/,/g, '.') + (frac !== undefined ? `,${frac}` : '')
-    return swapped + (scale ? VI_SCALE[scale] : '')
+    const swapped = int.replace(/,/g, f.group) + (frac !== undefined ? `${f.decimal}${frac}` : '')
+    return swapped + (scale ? (f.scales?.[scale] ?? scale) : '')
   })
 }
 
