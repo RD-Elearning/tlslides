@@ -221,5 +221,5 @@ export function budgetLine(b: BlockBudget, band: [number, number]): string {
     if (s.short) return s.max ? `${name} ≤ ${s.max} chars` : ''
     return `${name} ${Math.round(s.fit * band[0])}–${Math.round(s.fit * band[1])} chars`
   })
-  return (b.items ? 'per item: ' : '') + parts.filter(Boolean).join(', ')
+  return (b.items ? `per item (at ${b.items} items; fewer when there are more): ` : '') + parts.filter(Boolean).join(', ')
 }
