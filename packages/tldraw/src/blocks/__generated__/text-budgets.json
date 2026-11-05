@@ -8847,6 +8847,170 @@
     }
    }
   },
+  "tls.c.section-brief": {
+   "full": {
+    "vi": {
+     "items": 3,
+     "factor": 6,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 306,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 48,
+       "short": false,
+       "max": 90
+      }
+     }
+    },
+    "en": {
+     "items": 3,
+     "factor": 4.25,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 216,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 34,
+       "short": false,
+       "max": 90
+      }
+     }
+    }
+   },
+   "half": {
+    "vi": {
+     "items": 3,
+     "factor": 3.25,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 165,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 26,
+       "short": false,
+       "max": 90
+      }
+     }
+    },
+    "en": {
+     "items": 3,
+     "factor": 3.25,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 165,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 26,
+       "short": false,
+       "max": 90
+      }
+     }
+    }
+   },
+   "third": {
+    "vi": {
+     "items": 3,
+     "factor": 1.88,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 95,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 15,
+       "short": false,
+       "max": 90
+      }
+     }
+    },
+    "en": {
+     "items": 3,
+     "factor": 1.38,
+     "slots": {
+      "title": {
+       "base": 15,
+       "fit": 15,
+       "short": true,
+       "max": 70
+      },
+      "question": {
+       "base": 51,
+       "fit": 70,
+       "short": false,
+       "max": 140
+      },
+      "points[]": {
+       "base": 8,
+       "fit": 11,
+       "short": false,
+       "max": 90
+      }
+     }
+    }
+   },
+   "band": {
+    "vi": {
+     "items": 3,
+     "factor": 0,
+     "slots": null
+    },
+    "en": {
+     "items": 3,
+     "factor": 0,
+     "slots": null
+    }
+   }
+  },
   "tls.c.split-cover": {
    "full": {
     "vi": {
@@ -22641,18 +22805,18 @@
    "full": {
     "vi": {
      "items": 0,
-     "factor": 24,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 2520,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 144,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22665,18 +22829,18 @@
     },
     "en": {
      "items": 0,
-     "factor": 22,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 2310,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 132,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22691,18 +22855,18 @@
    "half": {
     "vi": {
      "items": 0,
-     "factor": 10,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 1050,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 60,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22715,18 +22879,18 @@
     },
     "en": {
      "items": 0,
-     "factor": 10,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 1050,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 60,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22741,18 +22905,18 @@
    "third": {
     "vi": {
      "items": 0,
-     "factor": 6,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 630,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 36,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22765,18 +22929,18 @@
     },
     "en": {
      "items": 0,
-     "factor": 6,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 630,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 36,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22791,18 +22955,18 @@
    "band": {
     "vi": {
      "items": 0,
-     "factor": 8,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 840,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 48,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -22815,18 +22979,18 @@
     },
     "en": {
      "items": 0,
-     "factor": 8,
+     "factor": 1,
      "slots": {
       "code": {
        "base": 105,
-       "fit": 840,
-       "short": false,
+       "fit": 105,
+       "short": true,
        "max": 900
       },
       "language": {
        "base": 6,
-       "fit": 48,
-       "short": false,
+       "fit": 6,
+       "short": true,
        "max": 20
       },
       "caption": {
@@ -23353,12 +23517,12 @@
    "full": {
     "vi": {
      "items": 0,
-     "factor": 3.25,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 61,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23371,12 +23535,12 @@
     },
     "en": {
      "items": 0,
-     "factor": 3.5,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 66,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23391,12 +23555,12 @@
    "half": {
     "vi": {
      "items": 0,
-     "factor": 1.63,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 30,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23409,12 +23573,12 @@
     },
     "en": {
      "items": 0,
-     "factor": 1.75,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 33,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23429,12 +23593,12 @@
    "third": {
     "vi": {
      "items": 0,
-     "factor": 1.13,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 21,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23447,12 +23611,12 @@
     },
     "en": {
      "items": 0,
-     "factor": 1.06,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 20,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23467,12 +23631,12 @@
    "band": {
     "vi": {
      "items": 0,
-     "factor": 3.25,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 61,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {
@@ -23485,12 +23649,12 @@
     },
     "en": {
      "items": 0,
-     "factor": 3.5,
+     "factor": 1,
      "slots": {
       "expression": {
        "base": 19,
-       "fit": 66,
-       "short": false,
+       "fit": 19,
+       "short": true,
        "max": 200
       },
       "caption": {

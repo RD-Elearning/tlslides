@@ -33,6 +33,10 @@ export const REGION_CLASSES: Record<RegionClass, { width: number; height: number
 /** Slot (field) names that stay short whatever the room: they name, they do not explain. */
 export const SHORT_FIELD = /^(title|label|heading|name|term|kicker|badge|value|number|unit|tag|icon|eyebrow|year|date|when|step|prefix|suffix|caption|subtitle|role|period|price|metric|delta|source|attribution|cta|button|url|alt|emoji|mark|lead|left|right|before|after|from|to|status)$/i
 
+/** Verbatim or label-like slots (spro S05-E real round b7: a code block was asked for 1 260–2 142 chars of
+ *  code and a 72–122 char `language`, a formula for a 31–52 char expression): copied, never grown to a box. */
+export const VERBATIM_FIELD = /^(code|expression|latex|formula|equation|language|lang|syntax)$/i
+
 /** spro `type_floors` body (learning L01): a text that shrinks below it no longer "fits". Leaves under 8
  *  characters (numbers, units) are exempt, as in the gate's min-type rule. */
 export const READING_FLOOR = 24
@@ -78,7 +82,7 @@ export function leaves(props: Record<string, unknown>, schema: Record<string, Sl
   const visit = (v: unknown, t: SlotType, key: string, field: string, path: Array<string | number>) => {
     if (t.kind === 'text' || t.kind === 'richText') {
       const s = plainText(v)
-      if (s && /\p{L}{2}/u.test(s)) out.push({ key, path, rich: t.kind === 'richText' || (typeof v === 'object' && v !== null), short: SHORT_FIELD.test(field), base: s, ...(t.maxChars ? { max: t.maxChars } : {}) })
+      if (s && /\p{L}{2}/u.test(s)) out.push({ key, path, rich: t.kind === 'richText' || (typeof v === 'object' && v !== null), short: SHORT_FIELD.test(field) || VERBATIM_FIELD.test(field), base: s, ...(t.maxChars ? { max: t.maxChars } : {}) })
     } else if (t.kind === 'list' && Array.isArray(v)) {
       v.forEach((x, i) => visit(x, t.of, `${key}[]`, field, [...path, i]))
     } else if (t.kind === 'object' && v && typeof v === 'object') {

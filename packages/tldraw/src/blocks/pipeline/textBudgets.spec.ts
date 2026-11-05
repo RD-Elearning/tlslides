@@ -34,6 +34,14 @@ describe('text budgets', () => {
     expect(line).toMatch(/^per item \(at \d+ items; fewer when there are more\): (title ≤ \d+ chars, )?text \d+–\d+ chars$/)
   })
 
+  it('verbatim slots (code, formula, the code language) are copied, not grown', () => {
+    const code = blockBudget('tls.t.code', 'full', 'en', registry)
+    const slots = code?.slots ?? {}
+    for (const [k, v] of Object.entries(slots)) if (/^(code|language)$/.test(k)) expect(v.short).toBe(true)
+    const f = blockBudget('tls.t.formula', 'full', 'en', registry)
+    for (const [k, v] of Object.entries(f?.slots ?? {})) if (k === 'expression') expect(v.short).toBe(true)
+  })
+
   // the full table takes ~40 s to rebuild: a sample keeps the committed file honest
   // (regenerate: node tools/text-budgets/cli.js; --check compares the whole file)
   it('the committed table matches the code on a sample', () => {
