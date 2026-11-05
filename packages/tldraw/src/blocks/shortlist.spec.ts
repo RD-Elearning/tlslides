@@ -89,6 +89,8 @@ describe('spro sprint 2026-11b S07-b learning decks', () => {
     expect(learningBlock('tls.t.statement', 'highlight', statement, { purpose: 'self_study' })).toMatch(/self-study/)
     expect(learningBlock('tls.t.statement', 'highlight', { relations: ['definition'] }, { purpose: 'in_class' })).toMatch(/statement only/)
     expect(learningBlock('tls.t.statement', 'highlight', statement, {})).toBeNull()
+    // a statement on a statement slide is not a number highlight (its cap is the deck's)
+    expect(learningBlock('tls.t.statement', 'highlight', statement, { purpose: 'in_class', highlightsLeft: 0 })).toBeNull()
   })
   it('a number highlight needs the slide to have the number, within the deck budget', () => {
     expect(learningBlock('tls.c.big-stat', 'highlight', { relations: ['number'], data: 'single' }, { purpose: 'self_study' })).toBeNull()

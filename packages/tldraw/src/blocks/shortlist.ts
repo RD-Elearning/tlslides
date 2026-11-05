@@ -60,6 +60,7 @@ export function learningBlock(type: string, use: string | undefined, slide: Shor
   if (type === 'tls.t.statement') {
     if (o.purpose === 'self_study') return 'no statement slides in self-study'
     if (!['quote', 'question', 'statement'].includes(slide.relations[0] ?? '')) return 'a statement only for a quote, question or statement slide'
+    return null // on its own kind of slide: the deck's statement cap is the direction's (spro), not a number highlight
   }
   if (use === 'highlight') {
     const quote = slide.relations[0] === 'quote'
