@@ -272,6 +272,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.c.hook-cover': [v('question', 'a question opens the deck', { variant: 'question' }), v('number', 'one number opens the deck', { variant: 'number' })],
   'tls.c.route-agenda': [v('road', 'the parts as a road of stops', { variant: 'road' }), v('metro', 'a metro line of stations', { variant: 'metro' }), v('stones', 'stepping stones', { variant: 'stepping-stones' })],
   'tls.c.chapter-divider': [v('numeral', 'a giant section number', { variant: 'numeral' }), v('question', "the section's question large", { variant: 'question' }), v('progress', 'how far through the deck', { variant: 'progress' })],
+  'tls.c.section-brief': [v('left-rail', 'the number in a side rail', { variant: 'left-rail' }), v('split', 'the section left, its points right', { variant: 'split' }), v('numbered', 'one column under a number badge', { variant: 'numbered' })],
   'tls.c.sticky-board': [v('grid', 'notes in a grid', { variant: 'grid' }), v('columns', 'notes in two columns', { variant: 'columns' })],
   'tls.c.question-wall': [v('grid', 'questions as notes', { variant: 'grid' }), v('scattered', 'questions pinned loosely', { variant: 'scattered' })],
   'tls.c.homework': [v('card', 'the assignment on a card', { variant: 'card' }), v('notebook', 'the assignment as a page', { variant: 'notebook' })],

@@ -56,6 +56,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.c.quote-image': 'h=fill',
   'tls.c.recap': 'h≈154+68/item@1728',
   'tls.c.route-agenda': 'h=fill',
+  'tls.c.section-brief': 'h≈366+48/L@1728',
   'tls.c.split-cover': 'h=fill',
   'tls.c.stat-card': 'h=fill',
   'tls.c.stat-spotlight': 'h=fill',

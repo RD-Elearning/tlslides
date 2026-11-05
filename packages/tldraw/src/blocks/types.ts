@@ -279,7 +279,15 @@ export interface BlockFits {
   moves?: string[]
   /** What it cannot do without (the picker's asset needs). */
   needs?: Array<'images' | 'logos' | 'portraits' | 'chartData' | 'prices'>
+  /** spro sprint 2026-11b S07-a (D32) — what the block is for on a slide: `info` shows information,
+   *  `highlight` makes one number or quote stand out, `decor` ornaments, `frame` carries a cover,
+   *  divider, agenda or closing, `activity` asks the audience. A learning deck's content slide takes an
+   *  `info` or `activity` main (a `highlight` only with the number). */
+  use?: FitsUse
 }
+
+export type FitsUse = 'info' | 'highlight' | 'decor' | 'frame' | 'activity'
+export const FITS_USES: readonly FitsUse[] = ['info', 'highlight', 'decor', 'frame', 'activity']
 
 /** spro creative CR2 — a named preset over a block's look knobs (PLAN §6.2). */
 export interface VariantPreset {

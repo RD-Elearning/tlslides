@@ -4,6 +4,7 @@
 
 import type { BlockDefinition } from '../../types'
 import { wave1Blocks } from './wave1'
+import { tlsCSectionBrief } from './tls-c-section-brief'
 import { wave2Blocks } from './wave2'
 
 import { tlsCHero } from './tls-c-hero'
@@ -75,6 +76,7 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCImageFull,
   // spro creative CR8: wave 1
   ...wave1Blocks,
+  tlsCSectionBrief, // spro sprint 2026-11b S07-c
   // spro creative CR13: waves 2 and 3
   ...wave2Blocks,
 ]

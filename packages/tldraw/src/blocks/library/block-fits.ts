@@ -13,7 +13,7 @@
  * - `needs` equals the asset needs the picker uses (`recipes.ts` `TYPE_NEEDS`).
  */
 
-import type { BlockFits, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from '../types'
+import type { BlockFits, FitsData, FitsEnergy, FitsTextLoad, FitsUse, FrameRole, LookFamily, Relation } from '../types'
 
 /** Containers and editing aids: arranged by the AI through layouts and compositions, never
  *  chosen as a slide's main block; page chrome is placed by the style masters. */
@@ -43,7 +43,7 @@ const f = (
 const PLAYFUL: LookFamily[] = ['playful', 'classroom', 'modern']
 const SERIOUS: LookFamily[] = ['academic', 'professional', 'elegant', 'modern']
 
-export const BLOCK_FITS: Record<string, BlockFits> = {
+const FITS_ROWS: Record<string, BlockFits> = {
   // ── heading ──
   'tls.t.title': f(['statement'], null, 'lines', 'neutral', { frames: ['cover', 'divider', 'closing'] }),
   'tls.t.subtitle': f(['statement'], null, 'lines', 'calm'),
@@ -220,6 +220,7 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.hook-cover': f(['question', 'number'], null, 'labels', 'lively', { frames: ['cover'] }),
   'tls.c.route-agenda': f(['sequence', 'timeline', 'story'], [3, 7], 'labels', 'lively', { frames: ['agenda', 'divider'] }),
   'tls.c.chapter-divider': f(['statement', 'question'], null, 'labels', 'neutral', { frames: ['divider'] }),
+  'tls.c.section-brief': f([], [2, 4], 'lines', 'calm', { frames: ['divider'] }),
   'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
   'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),
@@ -256,3 +257,34 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.m.ornament': f([], null, 'labels', 'calm', { families: ['elegant'] }),
   'tls.x.rule': f([], null, 'labels', 'calm'),
 }
+
+/** spro sprint 2026-11b S07-a (D32): the `use` of each block, by list; every other rankable block is `info`.
+ *  `tls.t.qa` is `info` (it shows questions WITH their answers). */
+export const USE_DECOR: ReadonlySet<string> = new Set([
+  'tls.m.decoration', 'tls.m.icon-cluster', 'tls.m.pattern', 'tls.m.ornament', 'tls.x.rule', 'tls.g.arrow',
+  'tls.m.emoji', 'tls.m.illustration', 'tls.m.shape', 'tls.t.badge', 'tls.t.kicker', 'tls.t.marker',
+])
+export const USE_FRAME: ReadonlySet<string> = new Set([
+  'tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title', 'tls.c.poster-cover', 'tls.c.split-cover', 'tls.c.hook-cover',
+  'tls.c.title-card', 'tls.c.full-bleed-type', 'tls.c.divider', 'tls.c.chapter-divider', 'tls.c.agenda',
+  'tls.c.route-agenda', 'tls.c.closing', 'tls.c.cta', 'tls.c.callback', 'tls.c.contact', 'tls.c.one-question',
+  'tls.c.takeaway-poster', 'tls.c.section-brief',
+])
+export const USE_HIGHLIGHT: ReadonlySet<string> = new Set([
+  'tls.c.big-stat', 'tls.t.hero-number', 'tls.c.stat-spotlight', 'tls.c.stat-card', 'tls.c.kpi-tile', 'tls.c.kpi-row',
+  'tls.c.number-story', 'tls.d.icon-array', 'tls.d.gauge', 'tls.d.progress-ring', 'tls.d.trend-badge',
+  'tls.d.stat-compare', 'tls.t.statement', 'tls.t.quote', 'tls.t.pull-quote', 'tls.c.quote-image', 'tls.c.testimonial',
+])
+
+export function useOf(type: string): FitsUse {
+  if (USE_DECOR.has(type)) return 'decor'
+  if (USE_FRAME.has(type)) return 'frame'
+  if (USE_HIGHLIGHT.has(type)) return 'highlight'
+  if (type.startsWith('tls.a.') || type === 'tls.c.quiz' || type === 'tls.c.question-wall') return 'activity'
+  return 'info'
+}
+
+export const BLOCK_FITS: Record<string, BlockFits> = Object.fromEntries(
+  Object.entries(FITS_ROWS).map(([type, row]) => [type, { ...row, use: row.use ?? useOf(type) }])
+)
+

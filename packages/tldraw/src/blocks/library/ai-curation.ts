@@ -261,6 +261,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.hook-cover': t2(['variant']),
   'tls.c.route-agenda': t2(['variant']),
   'tls.c.chapter-divider': t2(['variant']),
+  'tls.c.section-brief': t2(['variant']), // spro sprint 2026-11b S07-c
   'tls.c.sticky-board': t2(['variant']),
   'tls.c.question-wall': t2(['variant']),
   'tls.c.homework': t2(['variant']),

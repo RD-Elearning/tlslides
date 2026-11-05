@@ -1995,6 +1995,38 @@ The agenda drawn as a route with three to seven stops. _(family: composite; keyw
 }
 \`\`\`
 
+### \`tls.c.section-brief\` — Section brief
+
+A teaching section divider: number, title, guiding question and the points it covers. _(family: composite; keywords: divider, section, objectives, overview, chapter, learning)_
+
+**When:** Open a section of a teaching deck: its title, the question it answers and the 2–4 things it covers.
+**Avoid:** A section with nothing to list (a big number and a title only): tls.c.chapter-divider.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`number\` | no | text (max 4 chars) |  |
+| \`title\` | yes | text (max 70 chars) |  |
+| \`question\` | no | text (max 140 chars) | The question this section answers, or its one-line objective. |
+| \`points\` | no | list of text (max 90 chars) (0–4 items) | 2–4 things the section covers, each a short phrase from its passages. |
+| \`variant\` | no | enum: left-rail \\\\| split \\\\| numbered |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_section_brief\\",
+  \\"type\\": \\"tls.c.section-brief\\",
+  \\"props\\": {
+    \\"number\\": \\"02\\",
+    \\"title\\": \\"Sets of numbers\\",
+    \\"question\\": \\"How do the natural numbers grow into the rationals?\\",
+    \\"points\\": [
+      \\"Natural numbers\\",
+      \\"Integers\\",
+      \\"Fractions and decimals\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.split-cover\` — Split cover
 
 A cover split into a colour field with a visual and the title beside it. _(family: composite; keywords: cover, title, split, colour field, opening)_
@@ -7306,7 +7338,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 192,
+  "blockCount": 193,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -7360,6 +7392,7 @@ Object {
     "tls.c.quote-image",
     "tls.c.recap",
     "tls.c.route-agenda",
+    "tls.c.section-brief",
     "tls.c.split-cover",
     "tls.c.stat-card",
     "tls.c.stat-spotlight",
@@ -7764,7 +7797,7 @@ also: tls.c.full-bleed-type, tls.c.hook-cover, tls.c.poster-cover, tls.c.split-c
 
 ## Dividers
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈311+53/L@840] knobs: variant=numeral|field|minimal, align=start|center
-also: tls.c.chapter-divider
+also: tls.c.chapter-divider, tls.c.section-brief
 
 ## Agenda
 tls.c.agenda · agenda · slide · ≤12 items — Numbered agenda items with notes; one can be marked current [h 169–970@1728] knobs: variant=list|cards, numbering=plain|badge|none

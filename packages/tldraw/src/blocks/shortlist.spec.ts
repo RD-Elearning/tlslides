@@ -4,7 +4,7 @@
  */
 
 import { BUILT_IN_BLOCKS } from './library'
-import { blockKind, shortlist } from './shortlist'
+import { blockKind, learningBlock, shortlist } from './shortlist'
 import type { ShortlistSlide } from './shortlist'
 
 const top = (slide: ShortlistSlide, n = 3, o = {}) => shortlist(BUILT_IN_BLOCKS, slide, o).slice(0, n).map((e) => e.type)
@@ -80,5 +80,28 @@ describe('spro sprint 2026-11b S05-D softLoad', () => {
     // tls.c.cards is a lines block, tls.t.tags a labels block
     expect(score({ ...slide, softLoad: true }, 'tls.c.cards')).toBeGreaterThan(score(slide, 'tls.c.cards'))
     expect(score({ ...slide, softLoad: true }, 'tls.t.tags')).toBeCloseTo(score(slide, 'tls.t.tags'), 5)
+  })
+})
+
+describe('spro sprint 2026-11b S07-b learning decks', () => {
+  const statement: ShortlistSlide = { relations: ['statement', 'definition'] }
+  it('tls.t.statement: never in self-study, in class only for a quote/question/statement slide', () => {
+    expect(learningBlock('tls.t.statement', 'highlight', statement, { purpose: 'self_study' })).toMatch(/self-study/)
+    expect(learningBlock('tls.t.statement', 'highlight', { relations: ['definition'] }, { purpose: 'in_class' })).toMatch(/statement only/)
+    expect(learningBlock('tls.t.statement', 'highlight', statement, {})).toBeNull()
+  })
+  it('a number highlight needs the slide to have the number, within the deck budget', () => {
+    expect(learningBlock('tls.c.big-stat', 'highlight', { relations: ['number'], data: 'single' }, { purpose: 'self_study' })).toBeNull()
+    expect(learningBlock('tls.c.big-stat', 'highlight', { relations: ['number'], data: 'none' }, { purpose: 'self_study' })).toMatch(/number/)
+    expect(learningBlock('tls.t.quote', 'highlight', { relations: ['quote'] }, { purpose: 'in_class' })).toBeNull()
+    expect(learningBlock('tls.c.big-stat', 'highlight', { relations: ['number'], data: 'single' }, { purpose: 'in_class', highlightsLeft: 0 })).toMatch(/highlights/)
+    expect(learningBlock('tls.c.big-stat', 'highlight', { relations: ['number'], data: 'none' }, { purpose: 'general' })).toBeNull()
+  })
+  it('decor and frame blocks never carry a learning content slide; general purpose is unchanged', () => {
+    const slide: ShortlistSlide = { relations: ['statement'] }
+    const useOf = (t: string) => BUILT_IN_BLOCKS.find((d) => d.type === t)?.fits?.use
+    const learning = shortlist(BUILT_IN_BLOCKS, slide, { purpose: 'in_class', best: 16, stretch: 6 })
+    expect(learning.filter((e) => ['decor', 'frame'].includes(useOf(e.type) ?? ''))).toEqual([])
+    expect(shortlist(BUILT_IN_BLOCKS, slide, { purpose: 'general' })).toEqual(shortlist(BUILT_IN_BLOCKS, slide))
   })
 })

@@ -13,7 +13,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { BUILT_IN_BLOCKS, registerBuiltInBlocks } from './index'
 import { BlockRegistry } from '../registry'
-import { BLOCK_CATEGORIES, BLOCK_SCOPES, FITS_DATA, FITS_ENERGY, FITS_TEXT_LOADS, FRAME_ROLES, LOOK_FAMILIES, RELATIONS } from '../types'
+import { BLOCK_CATEGORIES, BLOCK_SCOPES, FITS_DATA, FITS_ENERGY, FITS_TEXT_LOADS, FITS_USES, FRAME_ROLES, LOOK_FAMILIES, RELATIONS } from '../types'
 import { ASSET_KINDS, blockNeeds } from '../recipes'
 import { validateDeckSpec } from '../validate-deck-spec'
 import { capabilityDigest } from '../capability-digest'
@@ -36,7 +36,7 @@ function collectSpecTypes(spec: BlockSpec): string[] {
 
 // AC6: + tls.c.bento, tls.c.image-full
 // CMP3: + tls.t.badge, tls.t.marker, tls.m.shape (atoms), tls.g.connector (compiled connectors)
-const EXPECTED_BLOCK_COUNT = 192 // learning L03: + tls.a.choice, true-false, flip-cards, reveal, fill-blank (wave 1), match, order, sort, timer (wave 2); spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
+const EXPECTED_BLOCK_COUNT = 193 // spro sprint 2026-11b S07-c: + section-brief; learning L03: + tls.a.choice, true-false, flip-cards, reveal, fill-blank (wave 1), match, order, sort, timer (wave 2); spro creative CR8: + 16 wave-1 blocks; CR9: + emoji, illustration; CR13: + 16 wave-2/3; CR13 round 2: + lollipop, dot-plot, treemap, annotated-line, ornament
 
 function freshBuiltInRegistry(): BlockRegistry {
   const registry = new BlockRegistry()
@@ -102,6 +102,9 @@ export function fitsViolations(def: BlockDefinition): string[] {
   for (const r of f.relations) if (!RELATIONS.includes(r)) out.push(`relation "${r}" is unknown`)
   if (!FITS_TEXT_LOADS.includes(f.textLoad)) out.push(`textLoad "${f.textLoad}" is unknown`)
   if (!FITS_ENERGY.includes(f.energy)) out.push(`energy "${f.energy}" is unknown`)
+  // spro sprint 2026-11b S07-a: every row has a use; a block whose only job is a frame says so
+  if (!f.use || !FITS_USES.includes(f.use)) out.push(`use "${f.use}" is missing or unknown`)
+  if (f.frames?.length && !f.relations.length && f.use !== 'frame') out.push('a frame-only block (frames, no relations) has use "frame"')
   if (f.data !== undefined && !FITS_DATA.includes(f.data)) out.push(`data "${f.data}" is unknown`)
   for (const x of f.families ?? []) if (!LOOK_FAMILIES.includes(x)) out.push(`family "${x}" is unknown`)
   for (const x of f.frames ?? []) if (!FRAME_ROLES.includes(x)) out.push(`frame "${x}" is unknown`)

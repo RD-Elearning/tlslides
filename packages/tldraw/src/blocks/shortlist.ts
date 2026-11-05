@@ -42,6 +42,31 @@ export interface ShortlistOptions {
   /** Best candidates (default 8) and stretch candidates (default 2). */
   best?: number
   stretch?: number
+  /** spro sprint 2026-11b S07-b (D32): a learning deck's purpose. Under `in_class`/`self_study` a content
+   *  slide's main is an `info` or `activity` block; a `highlight` only when the slide has the number
+   *  (data single/share/series) or its first relation is `quote`; `tls.t.statement` never in self-study,
+   *  in class only for a quote/question/statement slide. Absent or `general` = today's ranking. */
+  purpose?: 'in_class' | 'self_study' | 'general'
+  /** Highlight mains the deck may still take (S07-b: ceil(content / 6)); 0 = none left. */
+  highlightsLeft?: number
+}
+
+const NUMBER_DATA = new Set<FitsData>(['single', 'share', 'series'])
+
+/** S07-b — why a learning deck's content slide may not take this main (null = it may). */
+export function learningBlock(type: string, use: string | undefined, slide: ShortlistSlide, o: ShortlistOptions): string | null {
+  if (!o.purpose || o.purpose === 'general' || slide.frame) return null
+  if (use === 'decor' || use === 'frame') return `a ${use} block`
+  if (type === 'tls.t.statement') {
+    if (o.purpose === 'self_study') return 'no statement slides in self-study'
+    if (!['quote', 'question', 'statement'].includes(slide.relations[0] ?? '')) return 'a statement only for a quote, question or statement slide'
+  }
+  if (use === 'highlight') {
+    const quote = slide.relations[0] === 'quote'
+    if (!quote && !NUMBER_DATA.has(slide.data ?? 'none')) return 'a highlight needs the slide\'s number'
+    if (o.highlightsLeft !== undefined && o.highlightsLeft <= 0) return 'the deck has its highlights'
+  }
+  return null
 }
 
 export interface ShortlistEntry {
@@ -107,6 +132,7 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
   if (slide.frame) {
     if (!f.frames?.includes(slide.frame)) return null
   } else if (!f.relations.length) return null
+  if (learningBlock(def.type, f.use, slide, o)) return null
 
   const why: string[] = []
   let score: number
