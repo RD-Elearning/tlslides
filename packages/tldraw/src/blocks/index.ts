@@ -221,6 +221,10 @@ export {
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
 export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, INK_GATE, CARD_LIKE, inkMeasures, geometryProblems, slideProblems } from './pipeline/quality'
+export { textBudgets, blockBudget, budgetLine, REGION_CLASSES, SHORT_FIELD } from './pipeline/textBudgets'
+export type { BlockBudget, SlotBudget, RegionClass } from './pipeline/textBudgets'
+export { slotFill, FILL_FLOOR } from './pipeline/budgets'
+export type { SlotFill } from './pipeline/budgets'
 export type { GateProfile } from './pipeline/quality'
 export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID } from './motif-zone'
 // spro creative CR7b — look axes (`look.ts`)
