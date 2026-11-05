@@ -29,6 +29,10 @@ export interface SlotFill {
 const PROBE_MAX = 4
 /** Relations of frames and decoration: their text is not judged for fill. */
 const NOT_INFO = new Set(['cover', 'divider', 'agenda', 'closing', 'statement'])
+/** Accents, headings and ornaments keep their own short sizes (a takeaway is one line by design). */
+const NOT_JUDGED_CATEGORY = new Set(['emphasis', 'heading', 'decoration', 'chrome', 'structure', 'cover', 'divider', 'closing'])
+/** Terse by design: a key-value list's pairs are labels and figures (calibrated on the fixed set, S05-B). */
+const TERSE = new Set(['tls.t.kv-list'])
 
 /** `text` repeated word by word until it is about `n` characters. */
 function lengthen(text: string, n: number): string {
@@ -65,6 +69,7 @@ export function slotFill(deck: DeckSpec, slideIndex: number, report: LayoutRepor
     const def = registry.get(r.type)
     const load = def?.fits?.textLoad
     if (!def || !(load === 'lines' || load === 'paragraphs')) continue
+    if (NOT_JUDGED_CATEGORY.has(def.category ?? '') || TERSE.has(r.type)) continue
     const rel = def.fits?.relations ?? []
     if (!rel.length || rel.every((x) => NOT_INFO.has(x))) continue
     const spec = blockOf(deck, slideIndex, r.id)

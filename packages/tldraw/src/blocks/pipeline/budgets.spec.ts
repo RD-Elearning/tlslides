@@ -45,4 +45,12 @@ describe('slotFill', () => {
     expect(f.map((x) => x.block)).not.toContain('t')
     expect(f.map((x) => x.block)).not.toContain('tg')
   })
+
+  it('accents and key-value lists are not judged', () => {
+    const f = fill({ id: 's', role: 'content', layout: 'timeline', regions: { title: [T], timeline: [
+      { id: 'kv', type: 'tls.t.kv-list', props: { items: [{ key: 'Tín chỉ', value: '04' }, { key: 'Tiết', value: '60' }] } },
+      { id: 'tk', type: 'tls.t.takeaway', props: { text: 'Một ý cần nhớ.' } },
+    ] } })
+    expect(f).toEqual([])
+  })
 })
