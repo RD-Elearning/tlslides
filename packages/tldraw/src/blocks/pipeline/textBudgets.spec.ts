@@ -31,7 +31,7 @@ describe('text budgets', () => {
   it('the kit line names the band per item', () => {
     const b = blockBudget('tls.c.cards', 'half', 'vi', registry)!
     const line = budgetLine(b, [0.65, 0.95])
-    expect(line).toMatch(/^per item: title ≤ \d+ chars, text \d+–\d+ chars$/)
+    expect(line).toMatch(/^per item: (title ≤ \d+ chars, )?text \d+–\d+ chars$/)
   })
 
   // the full table takes ~40 s to rebuild: a sample keeps the committed file honest

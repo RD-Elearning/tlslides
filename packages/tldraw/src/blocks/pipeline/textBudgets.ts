@@ -45,6 +45,8 @@ export interface SlotBudget {
   /** Most characters it holds at the class box; equals `base` for a short slot. */
   fit: number
   short: boolean
+  /** Schema `maxChars` (the short slots' only budget). */
+  max?: number
 }
 
 export interface BlockBudget {
@@ -66,6 +68,8 @@ export interface Leaf {
   rich: boolean
   short: boolean
   base: string
+  /** The slot's schema `maxChars`, when it has one. */
+  max?: number
 }
 
 /** Every content text leaf of a block's props, with the schema key it belongs to. */
@@ -74,7 +78,7 @@ export function leaves(props: Record<string, unknown>, schema: Record<string, Sl
   const visit = (v: unknown, t: SlotType, key: string, field: string, path: Array<string | number>) => {
     if (t.kind === 'text' || t.kind === 'richText') {
       const s = plainText(v)
-      if (s && /\p{L}{2}/u.test(s)) out.push({ key, path, rich: t.kind === 'richText' || (typeof v === 'object' && v !== null), short: SHORT_FIELD.test(field), base: s })
+      if (s && /\p{L}{2}/u.test(s)) out.push({ key, path, rich: t.kind === 'richText' || (typeof v === 'object' && v !== null), short: SHORT_FIELD.test(field), base: s, ...(t.maxChars ? { max: t.maxChars } : {}) })
     } else if (t.kind === 'list' && Array.isArray(v)) {
       v.forEach((x, i) => visit(x, t.of, `${key}[]`, field, [...path, i]))
     } else if (t.kind === 'object' && v && typeof v === 'object') {
@@ -194,7 +198,7 @@ export function blockBudget(type: string, cls: RegionClass, lang: StressLang, re
     const fit = l.short ? base : Math.floor(base * lo)
     const prev = slots[l.key]
     // list items: the smallest item's budget is the per-item budget
-    if (!prev || fit < prev.fit) slots[l.key] = { base, fit, short: l.short }
+    if (!prev || fit < prev.fit) slots[l.key] = { base, fit, short: l.short, ...(l.max ? { max: l.max } : {}) }
   }
   return { type, cls, lang, items, slots, factor: Math.round(lo * 100) / 100 }
 }
@@ -214,8 +218,8 @@ export function budgetLine(b: BlockBudget, band: [number, number]): string {
   if (!b.slots) return 'does not fit this region'
   const parts = Object.entries(b.slots).map(([k, s]) => {
     const name = k.replace(/^[^.]*\[\]\.?/, '') || k.replace(/\[\]$/, '')
-    if (s.short) return `${name} ≤ ${Math.max(s.base, Math.round(s.fit))} chars`
+    if (s.short) return s.max ? `${name} ≤ ${s.max} chars` : ''
     return `${name} ${Math.round(s.fit * band[0])}–${Math.round(s.fit * band[1])} chars`
   })
-  return (b.items ? 'per item: ' : '') + parts.join(', ')
+  return (b.items ? 'per item: ' : '') + parts.filter(Boolean).join(', ')
 }
