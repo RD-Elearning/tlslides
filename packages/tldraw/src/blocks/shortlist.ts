@@ -19,6 +19,9 @@ export interface ShortlistSlide {
   items?: number
   data?: FitsData
   textLoad?: FitsTextLoad
+  /** spro sprint 2026-11b S05-D: at a `paragraphs` load, a `lines` block loses less (× 0.85, not
+   *  × 0.75) — it can carry two-line descriptions. Sent by spro under its `DECK_TEXT_BUDGETS` flag. */
+  softLoad?: boolean
   energy?: FitsEnergy
   /** Set for a frame slide: only frame blocks of that role are ranked. */
   frame?: FrameRole
@@ -139,7 +142,8 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
   // text load
   if (slide.textLoad) {
     const d = Math.abs(LOADS.indexOf(slide.textLoad) - LOADS.indexOf(f.textLoad))
-    score *= [1, 0.75, 0.45][d]
+    const soft = slide.softLoad && slide.textLoad === 'paragraphs' && f.textLoad === 'lines'
+    score *= soft ? 0.85 : [1, 0.75, 0.45][d]
   }
   // family and energy
   if (o.family && f.families && !f.families.includes(o.family)) score *= 0.6

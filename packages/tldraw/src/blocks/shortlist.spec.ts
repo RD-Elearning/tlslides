@@ -72,3 +72,13 @@ describe('creative CR2 shortlist', () => {
     expect(score({ used: ['tls.g.cycle'] })).toBeLessThan(score())
   })
 })
+
+describe('spro sprint 2026-11b S05-D softLoad', () => {
+  it('at a paragraphs load a lines block loses less with softLoad, others unchanged', () => {
+    const slide: ShortlistSlide = { relations: ['group'], items: 4, textLoad: 'paragraphs' }
+    const score = (s: ShortlistSlide, type: string) => shortlist(BUILT_IN_BLOCKS, s).find((e) => e.type === type)?.score ?? 0
+    // tls.c.cards is a lines block, tls.t.tags a labels block
+    expect(score({ ...slide, softLoad: true }, 'tls.c.cards')).toBeGreaterThan(score(slide, 'tls.c.cards'))
+    expect(score({ ...slide, softLoad: true }, 'tls.t.tags')).toBeCloseTo(score(slide, 'tls.t.tags'), 5)
+  })
+})
