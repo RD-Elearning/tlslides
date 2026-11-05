@@ -220,7 +220,7 @@ export {
   CALM_WEIGHT,
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
-export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, geometryProblems, slideProblems } from './pipeline/quality'
+export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, INK_GATE, CARD_LIKE, inkMeasures, geometryProblems, slideProblems } from './pipeline/quality'
 export type { GateProfile } from './pipeline/quality'
 export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID } from './motif-zone'
 // spro creative CR7b — look axes (`look.ts`)
@@ -229,7 +229,7 @@ export type { LookAxis, Treatment } from './look'
 // CS0 — content stress + design capacity (`reviews/blocks/content-stress/README.md`).
 export { STRESS_LEVELS, STRESS_TEXT, stressSlide, soloDeck, soloProblems, designCapacity, runContentStress, plainText } from './pipeline/contentStress'
 export type { StressLevel, StressLang, StressCase, StressRow, DesignCapacity, ListCapacity } from './pipeline/contentStress'
-export type { SlideQuality, QualityFinding, QualityCode } from './pipeline/quality'
+export type { SlideQuality, QualityFinding, QualityCode, HollowBox } from './pipeline/quality'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
 // geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact
