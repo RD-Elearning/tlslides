@@ -65,8 +65,32 @@ function allRegionsPositiveSize(regions: Record<string, Box>): void {
 /* ── SLIDE_LAYOUTS module-level object ─────────────────────────────────────── */
 
 describe('SLIDE_LAYOUTS module-level', () => {
-  it('contains exactly 28 layouts (AC6: + full-bleed, AC8.6: + section-stack, enhance L2: + sidebar-title, band, creative CR13: + 8 layouts v2)', () => {
-    expect(SLIDE_LAYOUTS).toHaveLength(28)
+  it('contains exactly 36 layouts (AC6: + full-bleed, AC8.6: + section-stack, enhance L2: + sidebar-title, band, creative CR13: + 8 layouts v2, spro sprint 2026-11b S12: + 8 page skeletons)', () => {
+    expect(SLIDE_LAYOUTS).toHaveLength(36)
+  })
+
+  it('S12: the new skeletons keep the title where the other title layouts put it (framed and hero-top aside); painted surfaces sit inside the frame and under no title text', () => {
+    const frame = { width: 1920, height: 1080 }
+    const ref = getSlideLayout('timeline')!.compile(frame, TEST_TOKENS).title
+    for (const id of ['header-band', 'magazine', 'mosaic', 'two-rows', 'aside', 'stage'] as const) {
+      const t = getSlideLayout(id)!.compile(frame, TEST_TOKENS).title
+      expect([id, t.x, t.y, t.height]).toEqual([id, ref.x, ref.y, ref.height])
+    }
+    for (const l of SLIDE_LAYOUTS.filter((x) => x.paint)) {
+      const regions = l.compile(frame, TEST_TOKENS)
+      for (const p of l.paint!(frame, TEST_TOKENS)) {
+        expect(p.box.x).toBeGreaterThanOrEqual(0)
+        expect(p.box.y).toBeGreaterThanOrEqual(0)
+        expect(p.box.x + p.box.width).toBeLessThanOrEqual(frame.width)
+        expect(p.box.y + p.box.height).toBeLessThanOrEqual(frame.height)
+      }
+      // the header band holds the title; the aside panel holds the aside region; the frame holds both
+      const p = l.paint!(frame, TEST_TOKENS)[0].box
+      const inside = (b: { x: number; y: number; width: number; height: number }) => b.x >= p.x && b.y >= p.y && b.x + b.width <= p.x + p.width + 0.5 && b.y + b.height <= p.y + p.height + 0.5
+      if (l.id === 'header-band') expect(inside(regions.title)).toBe(true)
+      if (l.id === 'aside') expect([inside(regions.aside), inside(regions.main)]).toEqual([true, false])
+      if (l.id === 'framed') expect([inside(regions.title), inside(regions.content)]).toEqual([true, true])
+    }
   })
 
   it('enhance L2: sidebar-title puts the title in a left column the full height; band stacks a wide band over a foot', () => {
@@ -144,7 +168,12 @@ describe.each(ASPECTS)('layouts at $label (%dx%d)', ({ label, width, height }) =
       it(layout.id === 'full-bleed' ? 'its one region is exactly the frame' : 'all regions are inside the safe margin', () => {
         if (layout.id === 'full-bleed') expect(regions).toEqual({ content: { x: 0, y: 0, width: frame.width, height: frame.height } })
         // spro creative CR13: `full-bleed-half`'s visual bleeds by design; its other regions keep the margin
-        else if (layout.id === 'full-bleed-half') {
+        // (spro sprint 2026-11b S12: `hero-top`'s visual band too)
+        else if (layout.id === 'hero-top') {
+          expect(regions.visual).toEqual({ x: 0, y: 0, width: frame.width, height: Math.round(frame.height * 0.42) })
+          const { visual: _v, ...rest } = regions
+          allRegionsInsideSafeMargin(rest, frame, TEST_TOKENS)
+        } else if (layout.id === 'full-bleed-half') {
           expect(regions.visual).toEqual({ x: 0, y: 0, width: Math.round(frame.width / 2), height: frame.height })
           const { visual: _v, ...rest } = regions
           allRegionsInsideSafeMargin(rest, frame, TEST_TOKENS)

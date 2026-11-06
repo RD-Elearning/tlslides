@@ -47,7 +47,7 @@ import { paintAt, parseInk, type Background } from './layout/paint-model'
 import { shapeToRevealBlock } from './shape-bridge'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
-import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
+import { compileSlide, layoutPaintBlocks, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
 import { CONNECTOR_BLOCK_TYPE } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH, polylineHitsBox } from './layout/connector-route'
 import { blockLayer } from './block-layer'
@@ -506,6 +506,8 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const free = spec.free ?? []
   free.forEach((entry, i) => placed.push({ block: entry.block, path: `free[${i}]`, region: 'free' }))
   if (split) placed.push(...layeredPlaced(split.overlays))
+  // spro sprint 2026-11b S12: the surfaces the layout paints (header band, aside panel, frame) are style-owned backdrops
+  for (const lp of layoutPaintBlocks(spec.layout, frame, tokens)) placed.push({ block: lp.block, path: `layout.${lp.name}`, region: 'free' })
 
   const findings: LayoutFinding[] = []
   const visual: VisualCheck[] = []
@@ -772,7 +774,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   // guide that content crosses by design (swiss columns), not a separator; a full-bleed slide's
   // picture runs under the chrome by design too.
   const clearance = tokens.space.sm
-  for (const rule of spec.layout === 'full-bleed' ? [] : blocks) {
+  for (const rule of spec.layout === 'full-bleed' || spec.layout === 'hero-top' ? [] : blocks) {
     if (!styleOwned(rule) || !rule.painted) continue
     const p = rule.painted
     const horizontal = p.height <= RULE_THICKNESS && p.width >= p.height * 8 && p.width < frame.width

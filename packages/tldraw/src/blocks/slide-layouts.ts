@@ -557,6 +557,133 @@ function layoutOffsetGrid(frame: Frame, tokens: ResolvedTokens): Record<string, 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
+/* spro sprint 2026-11b S12 — layouts v2: page skeletons with painted bands / panels    */
+/* ─────────────────────────────────────────────────────────────────────────────── */
+
+/** The title box every title layout shares (S12-b: the title y is the same across skeletons). */
+function titleTop(frame: Frame, tokens: ResolvedTokens, width?: number): { title: Box; bodyTop: number; bodyH: number } {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  return { title: { x: ca.x, y: ca.y, width: width ?? ca.width, height: tH }, bodyTop: ca.y + tH + g, bodyH: ca.height - tH - g }
+}
+
+/** A painted band behind the title (full bleed), one content region under it. */
+function layoutHeaderBand(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens)
+  return { title, content: { x: ca.x, y: bodyTop, width: ca.width, height: bodyH } }
+}
+function paintHeaderBand(frame: Frame, tokens: ResolvedTokens): LayoutPaint[] {
+  const { title } = titleTop(frame, tokens)
+  return [{ name: 'band', box: { x: 0, y: 0, width: frame.width, height: title.y + title.height + tokens.space.lg }, surface: 'surfaceAlt', bleed: true }]
+}
+
+/** Title over a 2/3 main column and a 1/3 side column of two stacked regions. */
+function layoutMagazine(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens)
+  const [main, side] = splitX(ca.x, bodyTop, ca.width, bodyH, 0.67, g)
+  const [sideA, sideB] = splitY(side.x, side.y, side.width, side.height, 0.5, g)
+  return { title, main, 'side-a': sideA, 'side-b': sideB }
+}
+
+/** One large region left (0.58) and two stacked regions right. */
+function layoutMosaic(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens)
+  const [lead, right] = splitX(ca.x, bodyTop, ca.width, bodyH, 0.58, g)
+  const [a, b] = splitY(right.x, right.y, right.width, right.height, 0.5, g)
+  return { title, lead, a, b }
+}
+
+/** A full-width top region, then two regions side by side. */
+function layoutTwoRows(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens)
+  const [top, bottom] = splitY(ca.x, bodyTop, ca.width, bodyH, 0.5, g)
+  const [bottomLeft, bottomRight] = splitX(bottom.x, bottom.y, bottom.width, bottom.height, 0.5, g)
+  return { title, top, 'bottom-left': bottomLeft, 'bottom-right': bottomRight }
+}
+
+/** A full-bleed visual band on the top 42 %, the title and a content region under it. */
+function layoutHeroTop(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const vH = Math.round(frame.height * 0.42)
+  const titleY = vH + g
+  const bodyTop = titleY + tH + tokens.space.md
+  return {
+    visual: { x: 0, y: 0, width: frame.width, height: vH },
+    title: { x: ca.x, y: titleY, width: ca.width, height: tH },
+    content: { x: ca.x, y: bodyTop, width: ca.width, height: Math.max(0, ca.y + ca.height - bodyTop) },
+  }
+}
+
+/** An inset panel holding the title and the content; the page around it shows the backdrop. */
+function framedPanel(frame: Frame, tokens: ResolvedTokens): Box {
+  const p = tokens.space['2xl']
+  return { x: p, y: p, width: frame.width - 2 * p, height: frame.height - 2 * p }
+}
+function layoutFramed(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const panel = framedPanel(frame, tokens)
+  const pad = tokens.space['2xl']
+  const g = gutter(tokens)
+  const tH = titleBand(tokens)
+  const inner = { x: panel.x + pad, y: panel.y + pad, width: panel.width - 2 * pad, height: panel.height - 2 * pad }
+  return {
+    title: { x: inner.x, y: inner.y, width: inner.width, height: tH },
+    content: { x: inner.x, y: inner.y + tH + g, width: inner.width, height: inner.height - tH - g },
+  }
+}
+function paintFramed(frame: Frame, tokens: ResolvedTokens): LayoutPaint[] {
+  return [{ name: 'panel', box: framedPanel(frame, tokens), surface: 'surface' }]
+}
+
+/** Title and a main region (0.68) beside a full-height painted aside panel for notes, a term, a number. */
+function asideColumns(frame: Frame, tokens: ResolvedTokens): { main: Box; aside: Box } {
+  const ca = contentArea(frame, tokens)
+  const [main, aside] = splitX(ca.x, ca.y, ca.width, ca.height, 0.68, gutter(tokens) * 2)
+  return { main, aside }
+}
+function layoutAside(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const g = gutter(tokens)
+  const { main, aside } = asideColumns(frame, tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens, main.width)
+  return { title, main: { x: main.x, y: bodyTop, width: main.width, height: bodyH }, aside: { x: aside.x + g / 2, y: aside.y, width: aside.width - g / 2, height: aside.height } }
+}
+function paintAside(frame: Frame, tokens: ResolvedTokens): LayoutPaint[] {
+  const { aside } = asideColumns(frame, tokens)
+  const x = aside.x - gutter(tokens) / 2
+  return [{ name: 'aside', box: { x, y: 0, width: frame.width - x, height: frame.height }, surface: 'surfaceAlt', bleed: true }]
+}
+
+/** Title, a content region and a bottom strip (≤ 22 %) for a takeaway, a source or a formula. */
+function layoutStage(frame: Frame, tokens: ResolvedTokens): Record<string, Box> {
+  const ca = contentArea(frame, tokens)
+  const g = gutter(tokens)
+  const { title, bodyTop, bodyH } = titleTop(frame, tokens)
+  const [content, strip] = splitY(ca.x, bodyTop, ca.width, bodyH, 0.78, g)
+  return { title, content, strip }
+}
+
+/**
+ * S12: a surface a layout paints itself (a header band, an aside panel, a frame) — drawn by the compiler
+ * as a locked backdrop card in the deck style's card treatment (`style:` id: the style's, never written
+ * back to the slide). `bleed`: square corners, no shadow (it runs off the page).
+ */
+export interface LayoutPaint {
+  name: string
+  box: Box
+  surface: 'surface' | 'surfaceAlt'
+  bleed?: boolean
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────── */
 /* Public API                                                                      */
 /* ─────────────────────────────────────────────────────────────────────────────── */
 
@@ -590,6 +717,15 @@ export type SlideLayoutId =
   | 'poster'
   | 'corner-title'
   | 'offset-grid'
+  // spro sprint 2026-11b S12: layouts v2
+  | 'header-band'
+  | 'magazine'
+  | 'mosaic'
+  | 'two-rows'
+  | 'hero-top'
+  | 'framed'
+  | 'aside'
+  | 'stage'
 
 /**
  * A slide layout: a pure function from a frame and resolved tokens to named boxes.
@@ -611,6 +747,8 @@ export interface SlideLayout {
    *  centred as one stack across the regions' span, one gap apart, instead of each region
    *  centring its own blocks (which left an empty band between the diagram and its caption). */
   regionStack?: string[][]
+  /** spro sprint 2026-11b S12: surfaces the layout paints under its regions (band, aside panel, frame). */
+  paint?(frame: { width: number; height: number }, tokens: ResolvedTokens): LayoutPaint[]
 }
 
 /**
@@ -646,6 +784,15 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'poster', name: 'Poster', compile: layoutPoster, regionAlign: { poster: 'center' } },
   { id: 'corner-title', name: 'Corner Title', compile: layoutCornerTitle },
   { id: 'offset-grid', name: 'Offset Grid', compile: layoutOffsetGrid },
+  // spro sprint 2026-11b S12: layouts v2
+  { id: 'header-band', name: 'Header Band', compile: layoutHeaderBand, paint: paintHeaderBand, regionAlign: { content: 'center' } },
+  { id: 'magazine', name: 'Magazine', compile: layoutMagazine },
+  { id: 'mosaic', name: 'Mosaic', compile: layoutMosaic, regionAlign: { lead: 'center' } },
+  { id: 'two-rows', name: 'Two Rows', compile: layoutTwoRows },
+  { id: 'hero-top', name: 'Hero Top', compile: layoutHeroTop, regionAlign: { content: 'center' } },
+  { id: 'framed', name: 'Framed', compile: layoutFramed, paint: paintFramed, regionAlign: { content: 'center' } },
+  { id: 'aside', name: 'Aside', compile: layoutAside, paint: paintAside, regionAlign: { main: 'center', aside: 'center' } },
+  { id: 'stage', name: 'Stage', compile: layoutStage, regionAlign: { content: 'center', strip: 'center' }, regionStack: [['content', 'strip']] },
 ]
 
 /** Lookup a layout by id. Returns undefined for unknown ids. */

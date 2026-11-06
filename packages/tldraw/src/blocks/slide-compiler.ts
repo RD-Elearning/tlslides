@@ -60,7 +60,7 @@ import { MOTION_PRESETS } from './motion/presets'
 import { deriveShapeAnimation } from './motion/resolve-motion'
 import { mayLoop } from './motion/ambient'
 import { blockAnchor } from './block-layer'
-import { applyStyleBlockDefaults } from './styles'
+import { applyStyleBlockDefaults, STYLE_MASTER_PREFIX } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS } from './design-checks'
 import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
@@ -143,10 +143,41 @@ export function compileSlide(
   const grown = registry ? growText(spec, frame, tokens, registry, opts) : null
   let result = grown?.result ?? compileSlideBlocks(spec, frame, tokens, registry, opts)
   if (registry) result = harmonizeTypes(grown?.spec ?? spec, result, frame, tokens, registry, opts)
+  result = withLayoutPaint(spec, result, frame, tokens)
   stampAmbient(result.shapes, effectiveMotionStyle(spec.motionStyle, opts?.motionStyle), registry)
   // CMP3: connectors are compiled after every block is placed (they attach to painted boxes).
   if (!Array.isArray(spec.connectors) || spec.connectors.length === 0) return result
   return compileConnectors(spec, result, tokens, registry, opts)
+}
+
+/**
+ * spro sprint 2026-11b S12 — the surfaces a layout paints itself (a header band, an aside panel, a frame):
+ * a locked backdrop card per surface, in the deck style's card treatment, under every other shape. The
+ * `style:` id makes it the style's (the decompiler never writes it back; the oracle treats it as a
+ * style-owned backdrop).
+ */
+/** S12: the backdrop blocks a slide's layout paints, with their boxes (the compiler's and the oracle's). */
+export function layoutPaintBlocks(layoutId: string | undefined, frame: { width: number; height: number }, tokens: ResolvedTokens): Array<{ name: string; block: BlockSpec; box: Box }> {
+  const layout = getSlideLayout(layoutId as Parameters<typeof getSlideLayout>[0])
+  return (layout?.paint?.(frame, tokens) ?? []).map((p) => ({
+    name: p.name,
+    box: p.box,
+    block: {
+      id: `${STYLE_MASTER_PREFIX}layout-${p.name}`,
+      type: 'tls.l.card',
+      props: { padding: 'xs', children: [] },
+      layer: 'backdrop',
+      style: { surface: p.surface, align: 'start', ...(p.bleed ? { radius: 0, elevation: 0 } : {}) },
+    },
+  }))
+}
+
+function withLayoutPaint(spec: SlideSpec, result: CompileSlideResult, frame: { width: number; height: number }, tokens: ResolvedTokens): CompileSlideResult {
+  const paints = layoutPaintBlocks(spec.layout, frame, tokens)
+  if (!paints.length) return result
+  const shapes = paints.map((p, k) => blockToShape(p.block, p.box, { id: `${STYLE_MASTER_PREFIX}layout:${spec.id}:${p.name}`, childIndex: (k + 1) / (paints.length + 1) / 1000 }))
+  for (const sh of shapes) (sh as { isLocked?: boolean }).isLocked = true
+  return { ...result, shapes: [...shapes, ...result.shapes] }
 }
 
 /**
