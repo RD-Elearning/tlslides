@@ -25,6 +25,11 @@ describe.each(['deep', 'accent'] as const)('slideTheme %s', (tone) => {
     expect(hexContrast(c.textMuted, c.background)).toBeGreaterThanOrEqual(4.5)
     expect(hexContrast(c.accent1, c.background)).toBeGreaterThanOrEqual(3)
     expect(hexContrast(c.accent2, c.background)).toBeGreaterThanOrEqual(3)
+    // a deep ground carries small accent text (kickers): accents read as body text there
+    if (tone === 'deep') {
+      expect(hexContrast(c.accent1, c.background)).toBeGreaterThanOrEqual(4.5)
+      expect(hexContrast(c.accent2, c.background)).toBeGreaterThanOrEqual(4.5)
+    }
     expect(t.tone).toBe(tone)
     // the resolved roles follow the ground (no deck colour override leaks in)
     const tokens = resolveTokens(t, { color: { surface: '#FFFFFF', accent: '#FFFF00' } })

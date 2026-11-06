@@ -216,7 +216,8 @@ export function slideTheme<T extends { id: string; colors: Record<string, string
     text = options.reduce((best, o) => (hexContrast(o, ground) > hexContrast(best, ground) + 0.01 ? o : best), options[0])
   }
   ground = walkGround(ground, text)
-  const solve = (hex: string | undefined) => (hex ? accentOn(hex, ground) : undefined)
+  // a deep ground carries small accent text (kickers, labels at 22 units): solve to body contrast there
+  const solve = (hex: string | undefined) => (hex ? solveForContrast(hex, lum(ground), tone === 'deep' ? BODY_MIN : GRAPHIC_MIN).color : undefined)
   const colors: Record<string, string | undefined> = {
     ...c,
     background: ground,
