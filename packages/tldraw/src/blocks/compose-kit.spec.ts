@@ -56,3 +56,17 @@ describe('compose kit', () => {
     expect(kit.markdown).toContain('listed with the slide')
   })
 })
+
+describe('S11 composition v2 section', () => {
+  const { compositionV2Card } = require('./compose-kit') as typeof import('./compose-kit')
+  const style = BUILT_IN_STYLES[0]
+  it('is added only when asked, names every v2 field and stays short', () => {
+    const plain = composeKit({ types: ['tls.l.panel'], style }, defaultBlockRegistry()).markdown
+    const v2 = composeKit({ types: ['tls.l.panel'], style, compositionV2: true }, defaultBlockRegistry()).markdown
+    expect(plain).not.toContain('grammar v2')
+    expect(v2).toContain('## Composing your own (grammar v2)')
+    const card = compositionV2Card()
+    for (const w of ['tls.l.panel', 'surface', 'emphasis', 'ratio', 'spans', 'justify', 'ONE template', '60 %']) expect(card).toContain(w)
+    expect(card.length).toBeLessThanOrEqual(2000)
+  })
+})

@@ -155,8 +155,32 @@ export function styleConceptCard(style: DeckStyle): string {
   return lines.join('\n')
 }
 
+/**
+ * spro sprint 2026-11b S11-D — the v2 composition section (spro `DECK_COMPOSITION_V2`, a slide whose main
+ * block is `composition`): the v2 containers and fields, and one short example per idiom. The examples
+ * show structure, never content to copy.
+ */
+export function compositionV2Card(): string {
+  return [
+    '## Composing your own (grammar v2)',
+    'The brief asks you to design this slide yourself. Use structure, not decoration: one focal panel or number, peers as one template, a ratio that makes one side lead, everything from the passages.',
+    '- `tls.l.panel` (`surface`: base | alt | accent | inverted | glass | outline; `emphasis`: none | band | corner) — a card in a deck surface; at most ONE accent or inverted panel per slide.',
+    '- `tls.l.split` `ratio`: 0.33 | 0.4 | 0.5 | 0.6 | 0.67. `tls.l.grid` `columns` 2-4 and `spans` (1 or 2 per child, in order; rows grow). `tls.l.row` / `tls.l.stack` `justify` (start | center | end | between, with `sizing: "content"`).',
+    '- Cells of a row or grid repeat ONE template (the same parts in the same order); 8 children per container; at least 60 % of the parts carry content (a kicker or a rule is decoration).',
+    '- Lead text: `tls.t.body` `size: "lead"`; an eyebrow: `tls.t.kicker`; a big number: `tls.t.hero-number` (`value`, `unit`); an icon chip: `tls.m.icon` `iconStyle: "disc"`.',
+    'Idioms (shape only):',
+    '- claim + evidence: `split` 0.4 [stack: kicker, heading, body | panel alt: 3 × body]',
+    '- number band: `stack` [body lead, panel accent: hero-number, body lead, body source]',
+    '- KPI grid: `grid` 3 cols `spans` [2,1,1,1,1] of panels [heading value, body] (the first accent)',
+    '- matrix: `grid` 3×2 of panels outline [heading, body]',
+    '- sidebar note: `split` 0.67 [stack: heading, 2 × body | panel alt: kicker, 2 × body]',
+    '- two-tone: `split` 0.5 [panel inverted: kicker, heading, body | stack justify center: 3 × body]',
+    '- definition: `panel` base emphasis band [kicker, heading term, body lead, 2 × body example]',
+  ].join('\n')
+}
+
 /** The composition card for a slide the model composes (not "prefer a pattern": it composes). */
-export function composeCard(): string {
+export function composeCard(v2 = false): string {
   return [
     '# Composing a slide',
     'You design the slide: pick a layout, then the blocks for each of its regions. The engine lays it out, checks it and draws it in the deck style.',
@@ -179,6 +203,7 @@ export function composeCard(): string {
     `- At most one accent beside it: ${ACCENT_BLOCKS.map((t) => `\`${t}\``).join(', ')} — e.g. a takeaway under a diagram, a hero number beside a short text. Never a second focal point.`,
     `- At most one decorative element (${DECORATION_BLOCKS.map((t) => `\`${t}\``).join(', ')}), only where the style concept allows, never over text.`,
     '- Fill the slide: a short text alone in a wide region looks empty; a lead size or a split with a visual fixes it.',
+    ...(v2 ? ['', compositionV2Card()] : []),
   ].join('\n')
 }
 
@@ -211,6 +236,8 @@ export interface ComposeKitOptions {
   budget?: number
   /** The slide's words: the icon card lists the icons that fit them (absent = a note only). */
   iconText?: string
+  /** spro sprint 2026-11b S11-D: add the v2 composition section (the slide's main is `composition`). */
+  compositionV2?: boolean
 }
 
 export interface ComposeKit {
@@ -243,7 +270,7 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   }
   // the generic detail header and icon line are replaced by the kit's own sections
   detail = detail.replace(/^Valid icon names:.*$/m, '').trim()
-  const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
+  const markdown = [composeCard(opts.compositionV2), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
   return { markdown, types, shape: opts.shape }
 }
 
@@ -265,6 +292,6 @@ function typesKit(opts: ComposeKitOptions, reg: BlockRegistry): ComposeKit {
   const main = types[0]
   const layouts = [...new Set(DESIGN_MOVES.filter((m) => main && m.main.includes(main)).flatMap((m) => m.layouts))]
   const variantCard = lines.length ? ['## Variants (set the knobs of the one the brief names)', ...lines].join('\n') : ''
-  const markdown = [composeCard(), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
+  const markdown = [composeCard(opts.compositionV2), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
   return { markdown, types, variants, layouts }
 }
