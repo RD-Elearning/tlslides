@@ -66,6 +66,24 @@ describe('S10 reveal blocks', () => {
     expect(css()).toContain('[data-part^="item[0]."]:not([data-part^="item[0].lead"])')
   })
 
+  it('a viewer re-render with an equal props object and a new runtime factory keeps the open tab', () => {
+    const def = registry.get('tls.c.tabs') as BlockDefinition
+    const props = def.describe!.example.props as Record<string, unknown>
+    const node = def.layout(props as any, createLayoutContext({ box: { width: 1600, height: 760 }, tokens: TOKENS, surface: SURFACE, registry }))
+    const tree = (p: Record<string, unknown>) => (
+      <BlockRegistryContext.Provider value={registry}>
+        <HostLayoutContext.Provider value={{ tokens: TOKENS, surface: SURFACE, props: p, headless: false, activity: () => rt() }}>
+          <RevealMount def={def} props={p} blockKey="s1:b1">{renderNodeToDom(node)}</RevealMount>
+        </HostLayoutContext.Provider>
+      </BlockRegistryContext.Provider>
+    )
+    const w = render(tree({ ...props }))
+    const lead = (i: number) => Array.from(w.container.querySelectorAll<HTMLElement>('[data-part]')).find((e) => (e.dataset.part ?? '').startsWith(`item[${i}].lead`)) as HTMLElement
+    fireEvent.keyDown(lead(2), { key: 'Enter' })
+    w.rerender(tree({ ...props }))
+    expect(lead(2).getAttribute('aria-selected')).toBe('true')
+  })
+
   it('accordion: the first section open, the heads below a closed one move up by its body', () => {
     const { css, part } = setup('tls.c.accordion', true)
     expect(part('item[0].lead').getAttribute('aria-expanded')).toBe('true')

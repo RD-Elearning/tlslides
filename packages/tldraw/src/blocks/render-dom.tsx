@@ -62,11 +62,18 @@ export function RevealMount({ def, props, blockKey, children }: { def: BlockDefi
   const ref = React.useRef<HTMLDivElement>(null)
   const hctx = React.useContext(HostLayoutContext)
   const factory = hctx?.activity
+  // the viewer re-renders on every slide tick: a new props object or runtime factory must not tear the block down
+  // (that would reset the open tab / step); only a real content change re-mounts the reveal
+  const latest = React.useRef({ props, factory })
+  latest.current = { props, factory }
+  const propsKey = React.useMemo(() => JSON.stringify(props), [props])
+  const live = !!factory
   useIsomorphicLayoutEffect(() => {
     const el = ref.current
-    if (!el || !def.reveal || !factory) return
-    return def.reveal(el, factory(blockKey), props as never)
-  }, [def, props, factory, blockKey])
+    const { props: p, factory: f } = latest.current
+    if (!el || !def.reveal || !f) return
+    return def.reveal(el, f(blockKey), p as never)
+  }, [def, propsKey, live, blockKey])
   if (!def.reveal || !factory) return <React.Fragment>{children}</React.Fragment>
   return (
     <div ref={ref} data-reveal={def.type} style={{ display: 'contents' }}>
