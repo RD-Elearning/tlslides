@@ -611,6 +611,9 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
 
   /** Run static design lint rules. */
   lint?(props: P, ctx: LintContext): LintFinding[]
+  /** spro sprint 2026-11b S09 — `lint` checks props that refer to each other (a concept map's link ids):
+   *  its findings are validation findings, as an activity's are (the model's error goes back to it). */
+  lintIsValidation?: boolean
 
   /** Escape hatch: return a TDShape array when a block cannot be expressed as LayoutNode. */
   toShapes?(props: P, box: Box, ctx: LayoutContext): TDShape[]

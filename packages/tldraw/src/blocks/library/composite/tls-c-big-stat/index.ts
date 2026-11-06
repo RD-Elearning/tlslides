@@ -269,7 +269,7 @@ export const tlsCBigStat: BlockDefinition = {
   related: ['tls.t.hero-number'],
   describe: {
     when: 'Use for a single hero statistic — one big number with a label and optional context.',
-    avoid: 'Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number) or nested in another block.',
+    avoid: 'Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number), nested in another block, or for a number that needs its explanation (use tls.c.stat-explain).',
     example: {
       id: 'b_big_stat',
       type: 'tls.c.big-stat',

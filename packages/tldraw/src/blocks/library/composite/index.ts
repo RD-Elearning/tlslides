@@ -17,6 +17,11 @@ import { tlsCProcessDetail } from './tls-c-process-detail'
 import { tlsCCompareDetail } from './tls-c-compare-detail'
 import { tlsCSummarySheet } from './tls-c-summary-sheet'
 import { tlsCSidenotes } from './tls-c-sidenotes'
+import { tlsCStatExplain } from './tls-c-stat-explain'
+import { tlsCNumberGrid } from './tls-c-number-grid'
+import { tlsCInfographicRow } from './tls-c-infographic-row'
+import { tlsCSplitStatement } from './tls-c-split-statement'
+import { tlsCQuoteContext } from './tls-c-quote-context'
 import { wave2Blocks } from './wave2'
 
 import { tlsCHero } from './tls-c-hero'
@@ -101,6 +106,11 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCCompareDetail, // spro sprint 2026-11b S08
   tlsCSummarySheet, // spro sprint 2026-11b S08
   tlsCSidenotes, // spro sprint 2026-11b S08
+  tlsCStatExplain, // spro sprint 2026-11b S09
+  tlsCNumberGrid, // spro sprint 2026-11b S09
+  tlsCInfographicRow, // spro sprint 2026-11b S09
+  tlsCSplitStatement, // spro sprint 2026-11b S09
+  tlsCQuoteContext, // spro sprint 2026-11b S09
   // spro creative CR13: waves 2 and 3
   ...wave2Blocks,
 ]

@@ -21,14 +21,20 @@ export interface RichItem {
   formula?: string
   /** The marker text for `marker: 'label'` (a date, a cue), or an icon name for `marker: 'icon'`. */
   marker?: string
+  /** S09 `marker: 'figure'`: the number (its own part `value[i]`, so `count-up` sees a numeric text)
+   *  and its unit (`item[i].unit`), as the author wrote them (deck language, never re-localized). */
+  value?: string
+  unit?: string
+  /** S09: a small muted line under the text (a source). Part `item[i].note`. */
+  note?: string
 }
 
-export type RichMarker = 'number' | 'letter' | 'icon' | 'label' | 'none'
+export type RichMarker = 'number' | 'letter' | 'icon' | 'label' | 'figure' | 'none'
 /** `card`: each cell on the deck style's card (filled, outline, glass… by the style). */
 export type RichCard = 'none' | 'card'
 
 export interface RichOptions {
-  columns?: 1 | 2 | 3
+  columns?: 1 | 2 | 3 | 4
   marker?: RichMarker
   /** `left`: the marker in a column left of the text (a rail); `top`: above the lead. */
   markerSide?: 'left' | 'top'
@@ -46,11 +52,23 @@ export interface RichOptions {
 }
 
 /** The type rungs tried, largest first: lead line and paragraph sizes. */
-export const RICH_RUNGS: ReadonlyArray<{ lead: 'subheading' | 'lead' | 'body'; text: 'lead' | 'body' }> = [
-  { lead: 'subheading', text: 'body' },
-  { lead: 'lead', text: 'body' },
-  { lead: 'body', text: 'body' },
+export const RICH_RUNGS: ReadonlyArray<{ lead: 'subheading' | 'lead' | 'body'; text: 'lead' | 'body'; figure: TypeToken }> = [
+  { lead: 'subheading', text: 'body', figure: 'display' },
+  { lead: 'lead', text: 'body', figure: 'title' },
+  { lead: 'body', text: 'body', figure: 'heading' },
 ]
+
+const FIGURE_LADDER: TypeToken[] = ['display', 'title', 'heading', 'subheading']
+
+/** The largest figure size, from `start` down, at which `value` stays on one line in `w`. */
+export function figureToken(ctx: LayoutContext, value: string, w: number, start: TypeToken): TypeToken {
+  const from = Math.max(0, FIGURE_LADDER.indexOf(start))
+  for (const t of FIGURE_LADDER.slice(from)) {
+    const st = ctx.resolveText(t, { letterSpacing: -0.03 })
+    if (ctx.measureText(value, st, w * 0.94).lines.length <= 1) return t
+  }
+  return FIGURE_LADDER[FIGURE_LADDER.length - 1]
+}
 
 const LETTERS = 'ABCDEFGHIJ'
 
@@ -62,6 +80,7 @@ function hasText(t: unknown): boolean {
 /** The cells' child specs (without boxes), one per present slot. */
 function parts(item: RichItem, i: number, o: Required<Pick<RichOptions, 'marker' | 'part'>> & RichOptions, rung: (typeof RICH_RUNGS)[number]): {
   marker?: BlockSpec
+  unit?: BlockSpec
   body: Array<{ key: string; spec: BlockSpec }>
 } {
   const p = `${o.part}[${i}]`
@@ -70,13 +89,17 @@ function parts(item: RichItem, i: number, o: Required<Pick<RichOptions, 'marker'
   else if (o.marker === 'letter') marker = { id: `${p}.marker`, type: 'tls.t.marker', props: { value: LETTERS[i % LETTERS.length], tone: 'soft', size: 'sm' } }
   else if (o.marker === 'icon' && item.marker) marker = { id: `${p}.marker`, type: 'tls.m.icon', props: { icon: item.marker, size: 'md', iconStyle: 'disc' } }
   else if (o.marker === 'label' && item.marker) marker = { id: `${p}.marker`, type: 'tls.t.title', props: { text: item.marker, size: rung.lead, color: 'accent' } }
+  else if (o.marker === 'figure' && item.value && item.value.trim()) marker = { id: `value[${i}]`, type: 'tls.t.title', props: { text: item.value.trim(), size: rung.figure, color: 'accent', maxLines: 1 } }
+  let unit: BlockSpec | undefined
+  if (marker && o.marker === 'figure' && item.unit && item.unit.trim()) unit = { id: `${p}.unit`, type: 'tls.t.title', props: { text: item.unit.trim(), size: rung.lead, color: 'textMuted' } }
   const body: Array<{ key: string; spec: BlockSpec }> = []
   if (hasText(item.lead)) body.push({ key: 'lead', spec: { id: `${p}.lead`, type: 'tls.t.title', props: { text: item.lead, size: rung.lead } } })
   if (hasText(item.text)) body.push({ key: 'text', spec: { id: `${p}.text`, type: 'tls.t.body', props: { text: item.text, size: rung.text } } })
   const pts = (item.points ?? []).filter((t) => typeof t === 'string' && t.trim())
   if (pts.length) body.push({ key: 'points', spec: { id: `${p}.points`, type: 'tls.t.bullets', props: { items: pts.map((text) => ({ text })), spacing: 'sm' } } })
+  if (item.note && item.note.trim()) body.push({ key: 'note', spec: { id: `${p}.note`, type: 'tls.t.body', props: { text: item.note.trim(), size: 'body', color: 'textMuted' } } })
   if (item.formula && item.formula.trim()) body.push({ key: 'formula', spec: { id: `${p}.formula`, type: 'tls.t.formula', props: { expression: item.formula, size: 'lead', align: 'start' } } })
-  return { marker, body }
+  return { marker, unit, body }
 }
 
 export interface RichPlan {
@@ -95,13 +118,20 @@ export function richCells(ctx: LayoutContext, items: RichItem[], w: number, opts
   const inner = Math.max(60, cw - 2 * pad)
   const inGap = o.compact ? sp.xs : sp.sm
   const cells = items.map((item, i) => {
-    const { marker, body } = parts(item, i, o, rung)
+    const { marker: m0, unit, body } = parts(item, i, o, rung)
+    let marker = m0
     let mw = 0
     let mh = 0
+    let uh = 0
     if (marker) {
-      if (o.marker === 'label') mw = o.markerSide === 'left' ? Math.round(inner * (o.labelShare ?? 0.26)) : inner
+      if (o.marker === 'label' || o.marker === 'figure') mw = o.markerSide === 'left' ? Math.round(inner * (o.labelShare ?? 0.26)) : inner
       else mw = o.marker === 'icon' ? 84 : 48
+      if (o.marker === 'figure') marker = { ...marker, props: { ...marker.props, size: figureToken(ctx, String(marker.props.text), mw, rung.figure) } }
       mh = measureHeights(ctx, [marker], mw)[0]
+      if (unit) {
+        uh = measureHeights(ctx, [unit], mw)[0]
+        mh += uh
+      }
     }
     const left = marker && o.markerSide === 'left'
     const tx = left ? mw + sp.md : 0
@@ -109,7 +139,7 @@ export function richCells(ctx: LayoutContext, items: RichItem[], w: number, opts
     const hs = body.map((b) => measureHeights(ctx, [b.spec], tw)[0])
     const textH = hs.reduce((a, h) => a + h, 0) + inGap * Math.max(0, hs.length - 1)
     const contentH = left ? Math.max(mh, textH) : (marker ? mh + inGap : 0) + textH
-    return { marker, body, mw, mh, tx, tw, hs, height: contentH + 2 * pad, left }
+    return { marker, unit, uh, body, mw, mh, tx, tw, hs, height: contentH + 2 * pad, left }
   })
   const rows: number[] = []
   cells.forEach((c, i) => {
@@ -137,7 +167,8 @@ export function richCells(ctx: LayoutContext, items: RichItem[], w: number, opts
         }
         let cy = top + pad
         if (c.marker) {
-          out.push({ id: `${p}.marker`, spec: c.marker, box: { x: x + pad, y: cy, width: c.mw, height: c.mh } })
+          out.push({ id: c.marker.id, spec: c.marker, box: { x: x + pad, y: cy, width: c.mw, height: c.mh - c.uh } })
+          if (c.unit) out.push({ id: c.unit.id, spec: c.unit, box: { x: x + pad, y: cy + c.mh - c.uh, width: c.mw, height: c.uh } })
           if (!c.left) cy += c.mh + inGap
         }
         c.body.forEach((b, k) => {
@@ -214,8 +245,8 @@ export function richLayout(ctx: LayoutContext, items: RichItem[], opts: RichOpti
 export function richBuild(id: string, items: RichItem[], opts: RichOptions = {}, head: RichSection[] = [], foot: RichSection[] = []): BlockSpec {
   const o = { marker: 'none' as RichMarker, part: 'item', ...opts }
   const cells = items.map((item, i): BlockSpec => {
-    const { marker, body } = parts(item, i, o, RICH_RUNGS[0])
-    const kids = [...(marker ? [marker] : []), ...body.map((b) => b.spec)]
+    const { marker, unit, body } = parts(item, i, o, RICH_RUNGS[0])
+    const kids = [...(marker ? [marker] : []), ...(unit ? [unit] : []), ...body.map((b) => b.spec)]
     return o.card !== 'card'
       ? { id: `${o.part}-${i}`, type: 'tls.l.stack', props: { gap: 'sm', sizing: 'content', children: kids } }
       : { id: `${o.part}-${i}`, type: 'tls.l.card', props: { padding: 'md', children: kids } }
@@ -226,3 +257,16 @@ export function richBuild(id: string, items: RichItem[], opts: RichOptions = {},
 }
 
 export type { TypeToken }
+
+/** S09 — specs stacked top-down in a `w`-wide column at (x, y): their pieces and the column height. */
+export function stackPieces(ctx: LayoutContext, specs: Array<BlockSpec | undefined | false>, x: number, y: number, w: number, gap: number): { pieces: Piece[]; height: number } {
+  const list = specs.filter((s): s is BlockSpec => !!s)
+  const hs = measureHeights(ctx, list, w)
+  const pieces: Piece[] = []
+  let cy = y
+  list.forEach((s, i) => {
+    pieces.push({ id: s.id, spec: s, box: { x, y: cy, width: w, height: hs[i] } })
+    cy += hs[i] + gap
+  })
+  return { pieces, height: list.length ? cy - gap - y : 0 }
+}

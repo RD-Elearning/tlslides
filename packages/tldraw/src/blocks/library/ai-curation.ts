@@ -263,6 +263,11 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.chapter-divider': t2(['variant']),
   'tls.c.section-brief': t2(['variant']), // spro sprint 2026-11b S07-c
   'tls.c.key-points': t2(['variant', 'numbering']), // spro sprint 2026-11b S08
+  'tls.c.stat-explain': t2(['variant', 'visual']), // spro sprint 2026-11b S09
+  'tls.c.number-grid': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.infographic-row': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.split-statement': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.quote-context': t2(['variant']), // spro sprint 2026-11b S09
   'tls.c.explainer': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.frayer': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.worked-example': t2(['variant']), // spro sprint 2026-11b S08

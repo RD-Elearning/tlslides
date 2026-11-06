@@ -3,7 +3,7 @@
  * props to rich cells (`_rich.ts`) plus head / foot sections; the factory gives it the layout, the build
  * tree, capacity, motion (one stagger over the cells) and the S06 fill policy.
  */
-import type { BlockCategory, BlockDefinition, BlockSchema, BlockSpec, FillStep, LayoutContext, LayoutNode, SlotSpec, SlotType } from '../../types'
+import type { BlockCategory, BlockDefinition, BlockSchema, BlockSpec, FillStep, LayoutContext, LayoutNode, PartMotionRecipe, SlotSpec, SlotType } from '../../types'
 import { defineCompositeBlock } from '../../layout/define-composite'
 import { schemaCapacity } from './_poster'
 import { richBuild, richLayout, type RichItem, type RichOptions, type RichSection } from './_rich'
@@ -35,6 +35,8 @@ export interface RichBlockConfig<P extends Record<string, unknown>> {
   fillPolicy?: readonly FillStep[]
   /** Motion parts of the head / foot sections (shown before / after the cells). */
   sections?: { head?: string[]; foot?: string[] }
+  /** S09: figures (`value[i]` parts) count up as their cells arrive. */
+  countUp?: boolean
 }
 
 const BUILDERS = new WeakMap<BlockDefinition, (props: Record<string, unknown>) => BlockSpec>()
@@ -52,10 +54,12 @@ export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBloc
   }
   const head = cfg.sections?.head ?? []
   const foot = cfg.sections?.foot ?? []
-  const partMotion: Record<string, { preset: 'fade-up'; delay: number; stagger: number }> = {}
+  const partMotion: Record<string, PartMotionRecipe> = {}
   head.forEach((p, i) => (partMotion[p] = { preset: 'fade-up', delay: i * 120, stagger: 60 }))
   partMotion.item = { preset: 'fade-up', delay: head.length * 120, stagger: 110 }
   foot.forEach((p, i) => (partMotion[p] = { preset: 'fade-up', delay: (head.length + 2 + i) * 120, stagger: 60 }))
+  const countParts: string[] = cfg.countUp ? ['value'] : []
+  if (cfg.countUp) partMotion.value = { preset: 'count-up', delay: head.length * 120 + 80, stagger: 110 }
   const composite = defineCompositeBlock<P>({
     type: cfg.type,
     name: cfg.name,
@@ -70,7 +74,7 @@ export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBloc
     defaults: cfg.defaults,
     size: cfg.size,
     describe: cfg.describe,
-    motion: { parts: [...head, 'item', ...foot], preset: 'fade-up', partMotion },
+    motion: { parts: [...head, ...countParts, 'item', ...foot], preset: 'fade-up', partMotion },
     build,
   })
   const def: BlockDefinition = {

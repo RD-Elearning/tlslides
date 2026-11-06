@@ -234,6 +234,12 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.compare-detail': f(['contrast', 'group'], [2, 3], 'paragraphs', 'neutral'),
   'tls.c.summary-sheet': f(['recap'], [3, 6], 'paragraphs', 'calm', { frames: ['summary'] }),
   'tls.c.sidenotes': f(['story', 'definition', 'cause-effect'], null, 'paragraphs', 'calm', { families: ['academic', 'elegant', 'professional', 'classroom'] }),
+  // spro sprint 2026-11b S09 — wave B, visual / diagram / number blocks
+  'tls.c.stat-explain': f(['number', 'share', 'cause-effect'], null, 'lines', 'lively', { data: 'single' }),
+  'tls.c.number-grid': f(['number', 'group'], [3, 6], 'lines', 'lively', { data: 'single' }),
+  'tls.c.infographic-row': f(['group', 'number', 'sequence'], [3, 5], 'labels', 'lively'),
+  'tls.c.split-statement': f(['statement', 'cause-effect', 'contrast'], [2, 4], 'lines', 'neutral'),
+  'tls.c.quote-context': f(['quote', 'story', 'people'], null, 'lines', 'calm'),
   'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
   'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),
@@ -286,7 +292,7 @@ export const USE_FRAME: ReadonlySet<string> = new Set([
 export const USE_HIGHLIGHT: ReadonlySet<string> = new Set([
   'tls.c.big-stat', 'tls.t.hero-number', 'tls.c.stat-spotlight', 'tls.c.stat-card', 'tls.c.kpi-tile', 'tls.c.kpi-row',
   'tls.c.number-story', 'tls.d.icon-array', 'tls.d.gauge', 'tls.d.progress-ring', 'tls.d.trend-badge',
-  'tls.d.stat-compare', 'tls.t.statement', 'tls.t.quote', 'tls.t.pull-quote', 'tls.c.quote-image', 'tls.c.testimonial',
+  'tls.d.stat-compare', 'tls.c.stat-explain', 'tls.c.number-grid', 'tls.t.statement', 'tls.t.quote', 'tls.t.pull-quote', 'tls.c.quote-image', 'tls.c.testimonial',
 ])
 
 export function useOf(type: string): FitsUse {
