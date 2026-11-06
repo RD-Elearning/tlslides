@@ -34,7 +34,7 @@ import { validateDeckSpec } from './validate-deck-spec'
 import type { DeckFinding } from './validate-deck-spec'
 
 /** Containers the grammar allows. */
-export const GRAMMAR_CONTAINERS: readonly string[] = ['tls.l.stack', 'tls.l.row', 'tls.l.grid', 'tls.l.split', 'tls.l.card', 'tls.l.overlay']
+export const GRAMMAR_CONTAINERS: readonly string[] = ['tls.l.stack', 'tls.l.row', 'tls.l.grid', 'tls.l.split', 'tls.l.card', 'tls.l.panel', 'tls.l.overlay']
 /** Authored levels a composition may use (region block = 1). */
 export const GRAMMAR_MAX_DEPTH = 3
 /** Children per container. */
@@ -75,8 +75,12 @@ export function checkGrammar(slide: SlideSpec, registry: BlockRegistry, basePath
       if (!GRAMMAR_STYLE_FIELDS.includes(k)) out.push({ level: 'warning', rule: 'grammar/style', path: `${path}.style.${k}`, message: `\`style.${k}\` is not read by the engine; use ${GRAMMAR_STYLE_FIELDS.join(', ')}.` })
     }
   }
+  const strongPanels: string[] = []
   const visit = (b: BlockSpec, path: string, level: number) => {
     style(b, path)
+    // S11-d: one focal panel per slide (an accent or inverted surface)
+    const surf = (b.props as { surface?: unknown } | undefined)?.surface
+    if (b.type === 'tls.l.panel' && (surf === 'accent' || surf === 'inverted')) strongPanels.push(path)
     const children = kids(b)
     const isContainer = b.type.startsWith('tls.l.')
     if (isContainer && b.type !== SPACER && !GRAMMAR_CONTAINERS.includes(b.type)) {
@@ -152,6 +156,9 @@ export function checkGrammar(slide: SlideSpec, registry: BlockRegistry, basePath
   }
   if (accents.length > 1) {
     out.push({ level: 'warning', rule: 'grammar/accent', path: accents[1], message: `${accents.length} takeaways or callouts on one slide; keep one accent beside the main structure (drop or merge the others).` })
+  }
+  if (strongPanels.length > 1) {
+    out.push({ level: 'warning', rule: 'grammar/accent', path: strongPanels[1], message: `${strongPanels.length} accent or inverted panels on one slide; keep one focal panel (make the others base, alt or outline).` })
   }
   if (decorations.length > 1) {
     out.push({ level: 'warning', rule: 'grammar/decoration', path: decorations[1], message: `${decorations.length} decorative blocks on one slide; keep at most one.` })

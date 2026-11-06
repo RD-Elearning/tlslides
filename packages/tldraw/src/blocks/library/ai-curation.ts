@@ -47,6 +47,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.l.split': t2(['gutter', 'axis']),
   'tls.l.overlay': t2(),
   'tls.l.card': t2(['padding']),
+  'tls.l.panel': t2(['surface', 'emphasis', 'padding']),
   'tls.l.section': t2(['showTitle', 'showDivider', 'gap']),
   'tls.l.repeater': t2(['direction', 'gap']),
   'tls.l.spacer': t2(),

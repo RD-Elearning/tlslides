@@ -18,7 +18,7 @@ import type { BlockFits, FitsData, FitsEnergy, FitsTextLoad, FitsUse, FrameRole,
 /** Containers and editing aids: arranged by the AI through layouts and compositions, never
  *  chosen as a slide's main block; page chrome is placed by the style masters. */
 export const EDITOR_ONLY: ReadonlySet<string> = new Set([
-  'tls.l.card', 'tls.l.footer', 'tls.l.grid', 'tls.l.grid-guide', 'tls.l.overlay', 'tls.l.repeater',
+  'tls.l.card', 'tls.l.panel', 'tls.l.footer', 'tls.l.grid', 'tls.l.grid-guide', 'tls.l.overlay', 'tls.l.repeater',
   'tls.l.row', 'tls.l.safe-area', 'tls.l.section', 'tls.l.sidebar', 'tls.l.spacer', 'tls.l.split',
   'tls.l.stack', 'tls.l.field', 'tls.g.connector',
   'tls.x.footer-text', 'tls.x.header', 'tls.x.logo-mark', 'tls.x.page-number', 'tls.x.watermark',

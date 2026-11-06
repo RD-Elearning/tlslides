@@ -6429,6 +6429,49 @@ Layered children z-stacked in the same box. _(family: layout; keywords: overlay,
 }
 \`\`\`
 
+### \`tls.l.panel\` — Panel
+
+A card in one of the deck surfaces (base, alt, accent, inverted, glass, outline), with an optional accent band. _(family: layout; keywords: panel, card, band, accent, inverted, surface)_
+
+**When:** Container: a padded panel whose surface is one of the deck's roles — an accent or inverted panel for the one focal number or claim, alt or outline for side notes, base for peers. Two or more children are stacked.
+**Avoid:** More than one accent or inverted panel on a slide; a panel around a single decoration.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`surface\` | no | enum: base \\\\| alt \\\\| accent \\\\| inverted \\\\| glass \\\\| outline | base = the deck's card look; alt = the second surface; accent = the accent colour; inverted = text colour as background; glass = the style's own card treatment; outline = a hairline, no fill. At most one accent or inverted panel per slide. |
+| \`emphasis\` | no | enum: none \\\\| band \\\\| corner | band = an accent strip along the left edge; corner = an accent mark in the top-left corner; none. |
+| \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Inner padding of the panel. |
+| \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the panel (two or more are stacked). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_panel\\",
+  \\"type\\": \\"tls.l.panel\\",
+  \\"props\\": {
+    \\"surface\\": \\"accent\\",
+    \\"emphasis\\": \\"none\\",
+    \\"padding\\": \\"lg\\",
+    \\"children\\": [
+      {
+        \\"id\\": \\"b_panel_1\\",
+        \\"type\\": \\"tls.t.title\\",
+        \\"props\\": {
+          \\"text\\": \\"42%\\",
+          \\"size\\": \\"subheading\\"
+        }
+      },
+      {
+        \\"id\\": \\"b_panel_2\\",
+        \\"type\\": \\"tls.t.body\\",
+        \\"props\\": {
+          \\"text\\": \\"of first-year students change their major once.\\"
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.l.repeater\` — Repeater
 
 Repeats a template child for each item in a given direction. _(family: layout; keywords: repeater, repeat, loop, list)_
@@ -8391,7 +8434,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 221,
+  "blockCount": 222,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8556,6 +8599,7 @@ Object {
     "tls.l.grid",
     "tls.l.grid-guide",
     "tls.l.overlay",
+    "tls.l.panel",
     "tls.l.repeater",
     "tls.l.row",
     "tls.l.safe-area",
@@ -8784,7 +8828,7 @@ closing-split · blank — tls.c.closing(variant=split) — contacts beside the 
 patterns: closing-next-steps(plain) · closing-photo-scrim(left) · closing-contact-cards(plain)
 
 ## Structure
-also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.overlay, tls.l.repeater, tls.l.row, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
+also: tls.l.card, tls.l.footer, tls.l.grid, tls.l.overlay, tls.l.panel, tls.l.repeater, tls.l.row, tls.l.section, tls.l.sidebar, tls.l.spacer, tls.l.split, tls.l.stack
 
 ## Headings
 tls.t.title · heading · element — Slide title, auto-fitted, with optional rule [h≈0+104/L@840] knobs: size=display|title|heading|subheading|fit, align=start|center|end, rule

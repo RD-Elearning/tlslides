@@ -143,6 +143,23 @@ export function contextPeerStep(ctx: LayoutContext): number | undefined {
   return PEER_STEP.get(ctx)
 }
 
+/**
+ * S11 (sprint 2026-11b) — the same context with another `style` (a block that is another block with a
+ * derived style, as `tls.l.panel` is a card): nesting, peer tracks and options carry over.
+ */
+export function withStyle(ctx: LayoutContext, style: BlockStyleSpec | undefined): LayoutContext {
+  const out = { ...ctx, style } as LayoutContext
+  const nest = NEST.get(ctx)
+  if (nest) NEST.set(out, nest)
+  const tracks = TRACKS.get(ctx)
+  if (tracks) TRACKS.set(out, tracks)
+  const step = PEER_STEP.get(ctx)
+  if (step !== undefined) PEER_STEP.set(out, step)
+  const opts = OPTIONS.get(ctx)
+  if (opts) OPTIONS.set(out, opts)
+  return out
+}
+
 /** CMP2 — the options a context was built from (to rebuild it with another surface). */
 const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
 
@@ -153,6 +170,7 @@ const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
  */
 export const SURFACE_PAINTERS: ReadonlySet<string> = new Set([
   'tls.l.card',
+  'tls.l.panel', // S11: a card with a derived surface
   'tls.l.section',
   'tls.l.overlay',
   'tls.l.field',
