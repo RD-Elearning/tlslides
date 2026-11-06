@@ -19,7 +19,7 @@
 import { documentDeckTokens, getDeckStyle } from './styles'
 import type { TDAssets, TDDocument, SlideBackground } from '~types'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
-import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
+import { pageTheme } from '~state/shapes/shared/deck-theme'
 import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { createLayoutContext } from './layout'
 import { BLOCK_PROP_KEY } from './shape-bridge'
@@ -79,9 +79,11 @@ export function deckLayoutContext(
     registry?: BlockRegistry
     /** CMP1: the block sits on a layered image backdrop (`$block.overImage`). */
     overImage?: boolean
+    /** S13-a: the page's tone (`TDPage.tone`) — colours resolve through the derived slide theme. */
+    tone?: string
   }
 ): LayoutContext {
-  const theme = activeDeckTheme(doc.theme)
+  const theme = pageTheme(doc.theme, { tone: opts.tone })
   const tokens = resolveTokens(theme, documentDeckTokens(doc))
   const pageSize: [number, number] = [
     doc.defaultPageSize?.[0] ?? DEFAULT_SLIDE_SIZE[0],
@@ -140,6 +142,8 @@ export function contextForBlock(
     depth?: number
     /** Block registry, so container blocks' `layoutChild` can resolve their children. */
     registry?: BlockRegistry
+    /** S13-a: defaults to the tone of the shape's page (`shape.parentId`). */
+    tone?: string
   }
 ): LayoutContext {
   const box: Box = {
@@ -153,5 +157,6 @@ export function contextForBlock(
     | undefined
   const style = meta?.style as BlockStyleSpec | undefined
   const overImage = meta?.overImage === true
-  return deckLayoutContext(doc, box, { ...opts, style, ...(overImage ? { overImage } : {}) })
+  const tone = opts.tone ?? doc.pages?.[shape.parentId]?.tone
+  return deckLayoutContext(doc, box, { ...opts, style, ...(overImage ? { overImage } : {}), ...(tone ? { tone } : {}) })
 }

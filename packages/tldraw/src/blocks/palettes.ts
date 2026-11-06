@@ -147,3 +147,90 @@ export function partnerPalettes(
     contrast: { ...d.contrast, accent: d.contrast.accent2, accent2: d.contrast.accent },
   }))
 }
+
+/* -------------------------------- slide tone -------------------------------- */
+
+/** S13-a — the tones a slide can take (`SlideSpec.tone`). */
+export type SlideToneName = 'base' | 'deep' | 'accent'
+
+const BODY_MIN = 4.5
+const GRAPHIC_MIN = 3
+
+/** Walk `ground` along OKLCH lightness (away from `text`) until body text reads on it and on a card
+ *  surface mixed from the two (`surface` = 10 % of the text into the ground). */
+function walkGround(ground: Hex, text: Hex): Hex {
+  const [L0, C, H] = hexToOklch(ground)
+  const dir = lum(text) > lum(ground) ? -1 : 1
+  const ok = (g: Hex) => hexContrast(text, g) >= BODY_MIN && hexContrast(text, mixHex(g, text, 0.1)) >= BODY_MIN
+  for (let i = 0; i <= 50; i++) {
+    const g = oklchToHex(clamp(L0 + dir * 0.02 * i, 0.03, 0.98), C, H)
+    if (ok(g)) return g
+  }
+  return dir < 0 ? '#111111' : '#FAFAFA'
+}
+
+/** A muted text colour on `ground`: `text` mixed toward the ground, as far as body contrast allows. */
+function mutedOn(text: Hex, ground: Hex): Hex {
+  for (const t of [0.3, 0.22, 0.15, 0.08, 0]) {
+    const c = mixHex(text, ground, t)
+    if (hexContrast(c, ground) >= BODY_MIN) return c
+  }
+  return text
+}
+
+const toneCache = new WeakMap<object, Map<string, unknown>>()
+
+/**
+ * S13-a — the theme a slide of `tone` paints with, derived from the deck theme: `deep` is a dark ground
+ * (the palette's own dark text, or a coloured dark from `accent2` in a dark deck) with light text;
+ * `accent` is the `accent1` ground with whichever of the palette's text/background reads on it. The
+ * ground walks in OKLCH lightness until body text passes 4.5:1 (on the ground and on a card), the
+ * accents and status colours are re-solved to 3:1 on the new ground. Pure; memoised per theme object,
+ * so React memos keyed on the result stay stable. `base` / absent returns the theme itself.
+ */
+export function slideTheme<T extends { id: string; colors: Record<string, string | undefined> }>(theme: T, tone?: SlideToneName | string): T {
+  if (tone !== 'deep' && tone !== 'accent') return theme
+  let byTone = toneCache.get(theme)
+  if (!byTone) toneCache.set(theme, (byTone = new Map()))
+  const hit = byTone.get(tone)
+  if (hit) return hit as T
+  const c = theme.colors as Record<string, string>
+  const bg = c.background
+  const darkDeck = lum(bg) < 0.2
+  const accent2 = c.accent2 ?? c.accent1
+  let ground: Hex
+  let text: Hex
+  if (tone === 'deep') {
+    if (darkDeck) {
+      const [, C, H] = hexToOklch(accent2)
+      ground = oklchToHex(0.2, Math.min(C, 0.09), H)
+      text = c.text
+    } else {
+      const [Lt, Ct, Ht] = hexToOklch(c.text)
+      ground = Lt <= 0.32 ? c.text : oklchToHex(0.24, Ct, Ht)
+      text = bg
+    }
+  } else {
+    ground = c.accent1
+    const options = [bg, c.text, '#FFFFFF', '#111111']
+    text = options.reduce((best, o) => (hexContrast(o, ground) > hexContrast(best, ground) + 0.01 ? o : best), options[0])
+  }
+  ground = walkGround(ground, text)
+  const solve = (hex: string | undefined) => (hex ? accentOn(hex, ground) : undefined)
+  const colors: Record<string, string | undefined> = {
+    ...c,
+    background: ground,
+    surface: mixHex(ground, text, 0.1),
+    text,
+    textMuted: mutedOn(text, ground),
+    accent1: tone === 'accent' ? (hexContrast(accent2, ground) >= GRAPHIC_MIN ? accent2 : text) : solve(c.accent1)!,
+    accent2: tone === 'accent' ? text : solve(accent2)!,
+    positive: solve(c.positive),
+    negative: solve(c.negative),
+    warning: solve(c.warning),
+  }
+  for (const k of ['positive', 'negative', 'warning']) if (colors[k] === undefined) delete colors[k]
+  const out = { ...theme, id: `${theme.id}~${tone}`, colors, tone } as T
+  byTone.set(tone, out)
+  return out
+}

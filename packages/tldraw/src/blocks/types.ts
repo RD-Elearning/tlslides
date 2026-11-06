@@ -1354,6 +1354,9 @@ export interface PlacedBlock {
  * A slide authored by AI or human. Pure JSON — round-trips through
  * `JSON.parse(JSON.stringify(...))` unchanged.
  */
+/** S13-a — a slide's tone (`SlideSpec.tone`). */
+export type SlideTone = 'base' | 'deep' | 'accent'
+
 export interface SlideSpec {
   /** Unique slide identifier. */
   id: string
@@ -1374,6 +1377,10 @@ export interface SlideSpec {
   intent?: SlideIntent
   /** spro creative CR7b — the look of every block on this slide, over the deck's (`blocks/look.ts`). */
   look?: LookAxes
+  /** spro sprint 2026-11b S13-a — the slide's tone: `deep` (a dark ground with light text) or `accent`
+   *  (the accent as the ground), derived from the deck theme by `palettes.ts::slideTheme`. Every block
+   *  reads its colours through roles, so the whole page follows. Absent / `base` = the deck theme. */
+  tone?: SlideTone
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */

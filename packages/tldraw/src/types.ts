@@ -263,6 +263,9 @@ export interface DeckTheme {
     bodyFamily?: string
   }
   shapeDefaults?: Partial<ShapeStyles>
+  /** S13-a — set on a theme derived for a toned slide (`palettes.ts::slideTheme`); `resolveTokens` then
+   *  ignores the deck's colour/categorical token overrides, which were picked for the base ground. */
+  tone?: 'deep' | 'accent'
 }
 
 // The shape of a single page in the Tldraw document
@@ -290,6 +293,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   intent?: 'poster' | 'diagram' | 'dense'
   // CR7b — the authored `SlideSpec.look`, carried back by `documentToDeckSpec`.
   look?: LookAxes
+  /** S13-a — the slide's tone (`SlideSpec.tone`); renderers resolve colours through `pageTheme`. */
+  tone?: 'base' | 'deep' | 'accent'
   // CR10 — the authored `SlideSpec.transition` (the viewer plays it) and `choreography`.
   transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'; dir?: 'left' | 'right' | 'up' | 'down' }
   choreography?: string

@@ -227,6 +227,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
     if (slideSpec.look !== undefined) page.look = slideSpec.look
+    if (slideSpec.tone !== undefined) page.tone = slideSpec.tone
     if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
     if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page

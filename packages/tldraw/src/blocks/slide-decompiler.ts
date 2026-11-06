@@ -406,6 +406,7 @@ export function pageToSlideSpec(
   if (page.look !== undefined) {
     spec.look = page.look
   }
+  if (page.tone !== undefined) spec.tone = page.tone
 
   return { spec, findings }
 }

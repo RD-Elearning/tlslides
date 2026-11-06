@@ -976,7 +976,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
     return deckLayoutContext(
       document,
       { x: 0, y: 0, width: frameWidth, height: frameHeight },
-      { headless: false, slideBackground: page.background }
+      { headless: false, slideBackground: page.background, ...(page.tone ? { tone: page.tone } : {}) }
     )
   }, [document, page, frameWidth, frameHeight])
 
@@ -1052,6 +1052,7 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
               headless: false,
               slideBackground: page.background,
               registry: blockRegistry,
+              ...(page.tone ? { tone: page.tone } : {}),
             })
             const blockSpec = shapeToBlock(shape)
             const blockDef = blockSpec ? blockRegistry.get(blockSpec.type) : undefined

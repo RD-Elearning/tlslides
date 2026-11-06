@@ -5,7 +5,7 @@ import { imageSurface, resolveTokens, surfaceFromBackground } from '~blocks/toke
 import { createLayoutContext } from '~blocks/layout'
 import { resolveAssetUrl } from '~blocks/deck-context'
 import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
-import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
+import { pageTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
 import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext } from '~blocks/types'
 
@@ -18,12 +18,15 @@ import type { BlockStyleSpec, Box, LayoutContext, ResolvedTokens, SurfaceContext
  * each call, so memoising on the resolved value would defeat the purpose (an unmemoised call
  * re-lays-out every block on every store tick).
  */
-export function useDeckTokens(): ResolvedTokens {
+export function useDeckTokens(pageId?: string): ResolvedTokens {
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
+  const currentPageId = app.useStore((s) => s.appState.currentPageId)
+  // S13-a: a page with a `tone` paints with its derived theme (a thumbnail passes its own page)
+  const tone = doc.pages[pageId ?? currentPageId]?.tone
   return React.useMemo(
-    () => resolveTokens(activeDeckTheme(doc.theme), documentDeckTokens(doc)),
-    [doc.theme, doc.tokens, doc.styleId],
+    () => resolveTokens(pageTheme(doc.theme, { tone }), documentDeckTokens(doc)),
+    [doc.theme, doc.tokens, doc.styleId, tone],
   )
 }
 
@@ -46,15 +49,15 @@ export function useDeckTokens(): ResolvedTokens {
  * `ComponentUtil`) construct a fresh `{ x, y, width, height }` literal every render, so memoising
  * on identity would never hit and every store tick would re-sample the background.
  */
-export function useBlockSurface(box: Box): SurfaceContext {
+export function useBlockSurface(box: Box, pageId?: string): SurfaceContext {
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
   const currentPageId = app.useStore((s) => s.appState.currentPageId)
-  const page = doc.pages[currentPageId]
+  const page = doc.pages[pageId ?? currentPageId]
   const background = page?.background
   const pageWidth = page?.size?.[0] ?? DEFAULT_SLIDE_SIZE[0]
   const pageHeight = page?.size?.[1] ?? DEFAULT_SLIDE_SIZE[1]
-  const theme = activeDeckTheme(doc.theme)
+  const theme = pageTheme(doc.theme, page)
 
   return React.useMemo(
     () => surfaceFromBackground(background, box, [pageWidth, pageHeight], theme),
@@ -76,10 +79,11 @@ export function useBlockSurface(box: Box): SurfaceContext {
  */
 export function useBlockLayoutContext(
   box: Box,
-  opts: { headless?: boolean; depth?: number; style?: BlockStyleSpec; overImage?: boolean } = {},
+  opts: { headless?: boolean; depth?: number; style?: BlockStyleSpec; overImage?: boolean; pageId?: string } = {},
 ): LayoutContext {
-  const tokens = useDeckTokens()
-  const pageSurface = useBlockSurface(box)
+  // S13-a: the page the block sits on (a thumbnail's, not the current page's) picks the tone
+  const tokens = useDeckTokens(opts.pageId)
+  const pageSurface = useBlockSurface(box, opts.pageId)
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
   const assets = doc.assets

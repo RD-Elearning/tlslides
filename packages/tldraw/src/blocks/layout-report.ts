@@ -55,6 +55,7 @@ import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { MAX_NESTING_DEPTH } from './types'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
+import { slideTheme } from './palettes'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
 import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
@@ -976,11 +977,13 @@ export function analyzeDeck(
   }
   return deck.slides.map((s) => {
     const background = backgroundOf(s)
+    // S13-a: a toned slide is checked (contrast) against its derived theme
+    const slideTh = slideTheme(theme, s.tone)
     return analyzeSlide(withMaster(s), {
       ...opts,
       frame,
-      tokens,
-      theme,
+      tokens: slideTh === theme ? tokens : resolveTokens(slideTh, deckSpecTokens(deck)),
+      theme: slideTh,
       ...(background ? { background } : {}),
       ...(motionStyle ? { motionStyle } : {}),
       ...(style ? { family: style.family } : {}),

@@ -355,6 +355,11 @@ function validateSlide(
   checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
   for (const f of lookProblems((slide as { look?: unknown }).look, `${slidePath}.look`, `Slide "${slideLabel}"`)) findings.push({ level: 'error', ...f })
   checkTransition((slide as { transition?: unknown }).transition, `${slidePath}.transition`, `Slide "${slideLabel}"`, findings)
+  // S13-a: a slide tone outside base | deep | accent is ignored (the deck theme)
+  const tone = (slide as { tone?: unknown }).tone
+  if (tone !== undefined && tone !== 'base' && tone !== 'deep' && tone !== 'accent') {
+    findings.push({ level: 'warning', rule: 'slide/unknown-tone', path: `${slidePath}.tone`, message: `Slide "${slideLabel}" has tone ${stringifyForMessage(tone)}; use base | deep | accent. It paints with the deck theme.` })
+  }
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []

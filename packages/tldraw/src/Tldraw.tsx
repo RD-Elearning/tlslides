@@ -23,7 +23,7 @@ import type { BlockSelection } from '~state/block-edit/BlockEdit'
 import type { BlockRegistry } from '~blocks/registry'
 import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
-import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
+import { resolveSlideBackground, pageTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
 import { TopPanel } from '~components/TopPanel'
 import { ContextMenu } from '~components/ContextMenu'
@@ -580,8 +580,8 @@ const InnerTldraw = React.memo(function InnerTldraw({
   // the background or the asset table actually changes, not on every render (a gradient's `stops`
   // array would otherwise get a fresh `<defs>` id-stable-but-object-unstable prop each frame).
   const frameBackground = React.useMemo(
-    () => resolveSlideBackground(page.background, page.id, assets, activeDeckTheme(document.theme)),
-    [page.background, page.id, assets, document.theme]
+    () => resolveSlideBackground(page.background, page.id, assets, pageTheme(document.theme, page)),
+    [page.background, page.id, page.tone, assets, document.theme]
   )
 
   const isHideBoundsShape =
@@ -599,8 +599,8 @@ const InnerTldraw = React.memo(function InnerTldraw({
   // the one place a document-level theme needs to be threaded for every shape to resolve its own
   // colour tokens (see `getShapeStyle`'s `deckTheme` parameter).
   const meta = React.useMemo(() => {
-    return { isDarkMode: settings.isDarkMode, deckTheme: activeDeckTheme(document.theme) }
-  }, [settings.isDarkMode, document.theme])
+    return { isDarkMode: settings.isDarkMode, deckTheme: pageTheme(document.theme, page) }
+  }, [settings.isDarkMode, document.theme, page.tone])
 
   const showDashedBrush = settings.isCadSelectMode
     ? !appState.selectByContain
