@@ -187,12 +187,13 @@ function spannedLayout(props: GridProps, ctx: LayoutContext, cols: number, cells
   const cw = (W - gap * (cols - 1)) / cols
   const rh = (H - gap * (rows - 1)) / rows
   const boxes = cells.map((c) => ({ x: c.col * (cw + gap), y: c.row * (rh + gap), width: cw * c.span + gap * (c.span - 1), height: rh }))
-  // peers of one width share their children's tracks, row by row (as the classic grid)
+  // the cells of a row share their children's tracks (a wide cell too: its heading and body start on the
+  // lines of its neighbours'), row by row as the classic grid
   const tracksOf: Array<number[] | undefined> = new Array(children.length)
   if (isAuthoredContext(ctx)) {
     for (let r = 0; r < rows; r++) {
       const idx = cells.map((c, i) => (c.row === r ? i : -1)).filter((i) => i >= 0)
-      if (idx.length > 1 && idx.every((i) => cells[i].span === cells[idx[0]].span)) {
+      if (idx.length > 1) {
         const t = peerTracks(idx.map((i) => children[i]), idx.map((i) => boxes[i].width), ctx, rh)
         idx.forEach((i) => (tracksOf[i] = t))
       }

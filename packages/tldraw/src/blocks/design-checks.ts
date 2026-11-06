@@ -492,9 +492,11 @@ function peerChecks(b: DesignBlock, out: Draft[]): void {
     for (const [type, peers] of byType) {
       if (peers.length < 2) continue
       // rows: peers side by side (same top)
+      // S11: a grid with wide cells (`spans`) has unequal widths by design; heights still count
+      const spanned = c.type === 'tls.l.grid' && hasSpans(specAt(b.spec, c.path))
       for (const row of cluster(peers, (p) => p.box.y, DESIGN_THRESHOLDS.alignDrift)) {
         if (row.length < 2) continue
-        unequal(b, c.path, type, row, peers.length, out)
+        unequal(b, c.path, type, row, peers.length, out, spanned)
         misaligned(b, c.path, type, row, peers.length, 'y', out)
       }
       // columns: peers stacked (same left)
@@ -506,7 +508,19 @@ function peerChecks(b: DesignBlock, out: Draft[]): void {
   }
 }
 
-function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], total: number, out: Draft[]): void {
+/** The authored spec at an id path (`g1/c2`) under a slide-level block. */
+function specAt(root: BlockSpec | undefined, path: string): BlockSpec | undefined {
+  const ids = path.split('/')
+  let cur: BlockSpec | undefined = root && root.id === ids[0] ? root : undefined
+  for (const id of ids.slice(1)) {
+    const kids = (cur?.props as { children?: BlockSpec[] } | undefined)?.children
+    cur = Array.isArray(kids) ? kids.find((k) => k?.id === id) : undefined
+  }
+  return cur
+}
+const hasSpans = (spec: BlockSpec | undefined): boolean => ((spec?.props as { spans?: unknown } | undefined)?.spans as unknown[] | undefined)?.some?.((v) => Number(v) > 1) ?? false
+
+function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], total: number, out: Draft[], spanned = false): void {
   const sizes = row.map((p) => (paintsSurface(b, p) ? subPainted(b, p) ?? p.box : p.box))
   const spread = (vals: number[]) => {
     const lo = Math.min(...vals)
@@ -515,7 +529,7 @@ function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], 
   }
   const w = sizes.map((s) => s.width)
   const h = sizes.map((s) => s.height)
-  const sw = spread(w)
+  const sw = spanned ? 0 : spread(w)
   const sh = spread(h)
   if (sw > DESIGN_THRESHOLDS.peerSpread || sh > DESIGN_THRESHOLDS.peerSpread) {
     const axis = sw >= sh ? 'widths' : 'heights'
