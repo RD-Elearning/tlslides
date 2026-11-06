@@ -89,7 +89,9 @@ function bottomOf(node: LayoutNode): number {
   return node.children.length ? b : node.box.height
 }
 
-const ITEM = /\[(\d+)[\].]/
+// the item parts of a list (`item[i]…`, a kv-list's `key[i]`…); a composite's other parts numbered by
+// `composeFlat` (`summary[0]`: three leaves of one callout) are not items
+const ITEM = /^(?:item|key|value|leader|rule)\[(\d+)[\].]/
 function itemOf(node: LayoutNode): number | undefined {
   const m = node.part ? ITEM.exec(node.part) : null
   if (m) return Number(m[1])
@@ -109,26 +111,37 @@ export function spreadItems(node: LayoutNode, H: number, ctx: LayoutContext, max
   const room = H - bottomOf(node)
   if (room <= 1) return node
   const cap = Math.max(ctx.tokens.space.xl, FILL_GAP_LINES * maxSize)
-  const extra = Math.min(cap, room / (items.length - 1))
-  const rank = new Map(items.map((i, r) => [i, r]))
-  const lastTop = Math.max(...node.children.filter((_, j) => idx[j] !== undefined).map((c) => c.box.y))
+  // items side by side (a grid row, a two-column kv-list) move as one row: rows are ranked by their top
+  const topOf = new Map(items.map((i) => [i, Math.min(...node.children.filter((_, j) => idx[j] === i).map((c) => c.box.y))]))
+  const rowTops = [...new Set([...topOf.values()].map((t) => Math.round(t)))].sort((x, y) => x - y)
+  if (rowTops.length < 2) {
+    // columns drawn as groups (a two-column kv-list): each column spreads its own items
+    if (!node.children.some((c) => c.k === 'group')) return node
+    const children = node.children.map((c) => (c.k === 'group' ? { ...spreadItems(c, H - c.box.y, ctx, maxSize), box: c.box } : c))
+    return { ...node, children }
+  }
+  const rowOf = (t: number) => rowTops.findIndex((r) => Math.abs(r - Math.round(t)) <= 1)
+  const extra = Math.min(cap, room / (rowTops.length - 1))
+  const lastTop = rowTops[rowTops.length - 1]
   const children = node.children.map((c, j) => {
     const i = idx[j]
-    const r = i !== undefined ? rank.get(i)! : c.box.y > lastTop ? items.length - 1 : 0
+    const r = i !== undefined ? rowOf(topOf.get(i)!) : c.box.y > lastTop ? rowTops.length - 1 : 0
     return r ? ({ ...c, box: { ...c.box, y: c.box.y + r * extra } } as LayoutNode) : c
   })
   return { ...node, children, box: { ...node.box, height: Math.max(node.box.height, bottomOf({ ...node, children })) } }
 }
 
-/** A larger type that wraps a short text (a key, a label: `SHORT_TEXT` characters or fewer) or leaves a
- *  word alone on a new last line (under `ORPHAN` of the line) reads worse than the smaller type. */
-export const SHORT_TEXT = 24
-export const ORPHAN = 0.3
+/** A larger type that wraps a short text (a key, a label: `SHORT_TEXT` characters or fewer) or breaks a
+ *  one-line text with a word alone on its new last line (under `ORPHAN` of the line) reads worse than
+ *  the smaller type. */
+export const SHORT_TEXT = 20
+export const ORPHAN = 0.2
 function rewraps(base: Stats, next: Stats): boolean {
   return next.leaves.some((l, i) => {
     const b = base.leaves[i]
     if (!b || l.lines <= b.lines) return false
-    return l.chars <= SHORT_TEXT || l.last < ORPHAN
+    // a paragraph may take a line more; a one-liner may not break with a word alone on its new line
+    return l.chars <= SHORT_TEXT || (b.lines === 1 && l.last < ORPHAN)
   })
 }
 
@@ -148,7 +161,9 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
     let roomy: LayoutNode | undefined
     let any: LayoutNode | undefined
     for (let n = FILL_STEPS - (ctx.tokens.typeStep ?? 0); n >= 1 && !roomy; n--) {
-      const t = lay(promote(base, n))
+      // a composite lays its text out through child blocks: the context is rebuilt on the shifted scale
+      const up = shiftTypeContext(ctx, n, LADDER)
+      const t = lay({ ...up, tokens: { ...up.tokens, filling: true } })
       const ts = stats(t, W, H)
       if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts)) continue
       if (bottomOf(t) <= H * FILL_TYPE_SHARE) roomy = t

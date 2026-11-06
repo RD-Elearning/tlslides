@@ -262,6 +262,18 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.route-agenda': t2(['variant']),
   'tls.c.chapter-divider': t2(['variant']),
   'tls.c.section-brief': t2(['variant']), // spro sprint 2026-11b S07-c
+  'tls.c.key-points': t2(['variant', 'numbering']), // spro sprint 2026-11b S08
+  'tls.c.explainer': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.frayer': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.worked-example': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.cornell': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.faq': t2(['variant', 'columns']), // spro sprint 2026-11b S08
+  'tls.c.glossary': t2(['variant', 'marker']), // spro sprint 2026-11b S08
+  'tls.c.timeline-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.process-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.compare-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.summary-sheet': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.sidenotes': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.sticky-board': t2(['variant']),
   'tls.c.question-wall': t2(['variant']),
   'tls.c.homework': t2(['variant']),

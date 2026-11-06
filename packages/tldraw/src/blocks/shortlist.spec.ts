@@ -76,7 +76,7 @@ describe('creative CR2 shortlist', () => {
 describe('spro sprint 2026-11b S05-D softLoad', () => {
   it('at a paragraphs load a lines block loses less with softLoad, others unchanged', () => {
     const slide: ShortlistSlide = { relations: ['group'], items: 4, textLoad: 'paragraphs' }
-    const score = (s: ShortlistSlide, type: string) => shortlist(BUILT_IN_BLOCKS, s).find((e) => e.type === type)?.score ?? 0
+    const score = (s: ShortlistSlide, type: string) => shortlist(BUILT_IN_BLOCKS, s, { best: 40 }).find((e) => e.type === type)?.score ?? 0
     // tls.c.cards is a lines block, tls.t.tags a labels block
     expect(score({ ...slide, softLoad: true }, 'tls.c.cards')).toBeGreaterThan(score(slide, 'tls.c.cards'))
     expect(score({ ...slide, softLoad: true }, 'tls.t.tags')).toBeCloseTo(score(slide, 'tls.t.tags'), 5)
@@ -105,5 +105,36 @@ describe('spro sprint 2026-11b S07-b learning decks', () => {
     const learning = shortlist(BUILT_IN_BLOCKS, slide, { purpose: 'in_class', best: 16, stretch: 6 })
     expect(learning.filter((e) => ['decor', 'frame'].includes(useOf(e.type) ?? ''))).toEqual([])
     expect(shortlist(BUILT_IN_BLOCKS, slide, { purpose: 'general' })).toEqual(shortlist(BUILT_IN_BLOCKS, slide))
+  })
+})
+
+describe('spro sprint 2026-11b S08 wave A reach', () => {
+  const best8 = (s: ShortlistSlide) => shortlist(BUILT_IN_BLOCKS, s).slice(0, 8).map((e) => e.type)
+  const CASES: Array<[string, ShortlistSlide]> = [
+    ['tls.c.key-points', { relations: ['group', 'cause-effect'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.explainer', { relations: ['definition', 'cause-effect'], textLoad: 'paragraphs' }],
+    ['tls.c.frayer', { relations: ['definition', 'terms', 'contrast'], textLoad: 'lines' }],
+    ['tls.c.worked-example', { relations: ['worked-example', 'formula'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.cornell', { relations: ['recap', 'question'], items: 3, textLoad: 'paragraphs' }],
+    ['tls.c.faq', { relations: ['question'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.glossary', { relations: ['terms', 'definition'], items: 6, textLoad: 'paragraphs' }],
+    ['tls.c.timeline-detail', { relations: ['timeline', 'story'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.process-detail', { relations: ['sequence', 'action'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.compare-detail', { relations: ['contrast'], items: 2, textLoad: 'paragraphs' }],
+    ['tls.c.summary-sheet', { relations: ['recap'], items: 4, textLoad: 'paragraphs' }],
+    ['tls.c.sidenotes', { relations: ['story', 'definition'], textLoad: 'paragraphs' }],
+  ]
+  it.each(CASES)('%s ranks in the best 8 for the slide it is made for', (type, slide) => {
+    expect(best8(slide)).toContain(type)
+  })
+  it('on a labels slide a paragraph block never leads and drops behind the blocks made for labels', () => {
+    for (const [type, slide] of CASES) {
+      if (type === 'tls.c.frayer') continue
+      const got = shortlist(BUILT_IN_BLOCKS, { ...slide, textLoad: 'labels' }, { best: 40 })
+      const at = got.findIndex((e) => e.type === type)
+      expect([type, at]).not.toEqual([type, 0])
+      const own = shortlist(BUILT_IN_BLOCKS, slide, { best: 40 }).find((e) => e.type === type)!.score
+      expect(got[at]?.score ?? 0).toBeLessThan(own * 0.5)
+    }
   })
 })

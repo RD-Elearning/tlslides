@@ -114,8 +114,8 @@ describe('a floating body', () => {
     expect(q.findings.map((f) => f.code)).toContain('quality/floating-body')
   })
 
-  it('S06: the same list filling its region is no longer a floating strip', () => {
-    expect(judge(slide([kv])).findings.map((f) => f.code)).not.toContain('quality/floating-body')
+  it('S06: the list in one column fills its region and is no longer a floating strip', () => {
+    expect(judge(slide([{ ...kv, props: { ...kv.props, columns: '1' } }])).findings.map((f) => f.code)).not.toContain('quality/floating-body')
   })
 
   it('a lead intro over the list is not a floating body', () => {

@@ -21,10 +21,10 @@ export const schema: BlockSchema = {
     guidance: 'Optional: what the symbols mean, e.g. "N = number of nodes, h = height".',
   },
   size: {
-    type: { kind: 'enum', values: ['display', 'title', 'heading'] },
+    type: { kind: 'enum', values: ['display', 'title', 'heading', 'subheading', 'lead'] },
     role: 'option',
     label: 'Size',
-    help: 'The largest size that fits is used, down to heading.',
+    help: 'The largest size that fits is used, down to heading (subheading / lead: a line of working inside a step).',
   },
   align: {
     type: { kind: 'enum', values: ['center', 'start'] },

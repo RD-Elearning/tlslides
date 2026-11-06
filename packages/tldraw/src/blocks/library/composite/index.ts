@@ -5,6 +5,18 @@
 import type { BlockDefinition } from '../../types'
 import { wave1Blocks } from './wave1'
 import { tlsCSectionBrief } from './tls-c-section-brief'
+import { tlsCKeyPoints } from './tls-c-key-points'
+import { tlsCExplainer } from './tls-c-explainer'
+import { tlsCFrayer } from './tls-c-frayer'
+import { tlsCWorkedExample } from './tls-c-worked-example'
+import { tlsCCornell } from './tls-c-cornell'
+import { tlsCFaq } from './tls-c-faq'
+import { tlsCGlossary } from './tls-c-glossary'
+import { tlsCTimelineDetail } from './tls-c-timeline-detail'
+import { tlsCProcessDetail } from './tls-c-process-detail'
+import { tlsCCompareDetail } from './tls-c-compare-detail'
+import { tlsCSummarySheet } from './tls-c-summary-sheet'
+import { tlsCSidenotes } from './tls-c-sidenotes'
 import { wave2Blocks } from './wave2'
 
 import { tlsCHero } from './tls-c-hero'
@@ -77,6 +89,18 @@ export const compositeBlocks: BlockDefinition[] = [
   // spro creative CR8: wave 1
   ...wave1Blocks,
   tlsCSectionBrief, // spro sprint 2026-11b S07-c
+  tlsCKeyPoints, // spro sprint 2026-11b S08
+  tlsCExplainer, // spro sprint 2026-11b S08
+  tlsCFrayer, // spro sprint 2026-11b S08
+  tlsCWorkedExample, // spro sprint 2026-11b S08
+  tlsCCornell, // spro sprint 2026-11b S08
+  tlsCFaq, // spro sprint 2026-11b S08
+  tlsCGlossary, // spro sprint 2026-11b S08
+  tlsCTimelineDetail, // spro sprint 2026-11b S08
+  tlsCProcessDetail, // spro sprint 2026-11b S08
+  tlsCCompareDetail, // spro sprint 2026-11b S08
+  tlsCSummarySheet, // spro sprint 2026-11b S08
+  tlsCSidenotes, // spro sprint 2026-11b S08
   // spro creative CR13: waves 2 and 3
   ...wave2Blocks,
 ]

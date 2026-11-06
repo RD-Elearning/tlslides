@@ -809,6 +809,47 @@ Closing slide: thank-you title, call to action, contacts and a presenter. _(fami
 }
 \`\`\`
 
+### \`tls.c.compare-detail\` — Detailed comparison
+
+2–3 options compared in depth: heading, summary and points each, then a verdict. _(family: composite; keywords: compare, comparison, versus, options, trade-off, so sánh, ưu nhược)_
+
+**When:** Compare 2–3 options a reader must choose between, each explained with a summary and its points, and say when to pick which.
+**Avoid:** Many criteria in a grid: tls.d.compare-table. Two short columns of labels: tls.c.comparison.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`columns\` | yes | list of object (heading, summary, points) (2–3 items) | Each option: \`heading\` (≤ 40), \`summary\` (≤ 200), \`points\` (0–4, ≤ 90 each). |
+| \`verdict\` | no | text (max 160 chars) | Optional: when to choose which. |
+| \`verdictLabel\` | no | text (max 20 chars) |  |
+| \`variant\` | no | enum: columns \\\\| cards \\\\| versus | columns = side by side; cards = a card per option; versus = two cards with letters. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_compare_detail\\",
+  \\"type\\": \\"tls.c.compare-detail\\",
+  \\"props\\": {
+    \\"columns\\": [
+      {
+        \\"heading\\": \\"Array\\",
+        \\"summary\\": \\"Items side by side in memory, found by their index.\\",
+        \\"points\\": [
+          \\"Read any item at once\\",
+          \\"Inserting in the middle moves the rest\\"
+        ]
+      },
+      {
+        \\"heading\\": \\"Linked list\\",
+        \\"summary\\": \\"Items scattered in memory, each pointing to the next.\\",
+        \\"points\\": [
+          \\"Insert anywhere by relinking\\",
+          \\"Reading item k walks k links\\"
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.comparison\` — Comparison
 
 Side-by-side columns, each with a title and a list of items, to contrast options, plans or viewpoints. One column can be highlighted as the recommended one. _(family: composite; keywords: comparison, versus, compare, columns, side by side, options, contrast, pros, cons, alternatives)_
@@ -890,6 +931,40 @@ Contact block: an optional person and email, phone, website, address or social l
         \\"value\\": \\"stats.example.edu\\"
       }
     ]
+  }
+}
+\`\`\`
+
+### \`tls.c.cornell\` — Cornell notes
+
+Cue questions beside the notes that answer them, with a summary at the foot. _(family: composite; keywords: cornell, notes, cue, questions, study notes, summary, ghi chú, câu hỏi gợi ý)_
+
+**When:** Study notes a reader reviews: a cue question or keyword per row, the note that answers it, and the page summary.
+**Avoid:** Questions with one-line answers for the class: tls.t.qa. A recap of ideas without cues: tls.c.summary-sheet.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`rows\` | yes | list of object (cue, note) (2–5 items) | \`cue\` = a question or keyword (≤ 60), \`note\` = the note that answers it (≤ 220). |
+| \`summary\` | yes | text (max 220 chars) | The whole page in 1–2 sentences. |
+| \`summaryLabel\` | no | text (max 20 chars) | The word for \\"Summary\\" in the deck language. |
+| \`variant\` | no | enum: classic \\\\| boxed | classic = ruled rows; boxed = each row on a card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cornell\\",
+  \\"type\\": \\"tls.c.cornell\\",
+  \\"props\\": {
+    \\"rows\\": [
+      {
+        \\"cue\\": \\"What is photosynthesis?\\",
+        \\"note\\": \\"Plants turn light, water and carbon dioxide into sugar and oxygen in their leaves.\\"
+      },
+      {
+        \\"cue\\": \\"Where does it happen?\\",
+        \\"note\\": \\"In the chloroplasts, mostly in the leaf cells facing the light.\\"
+      }
+    ],
+    \\"summary\\": \\"Photosynthesis stores the energy of light as sugar and releases oxygen.\\"
   }
 }
 \`\`\`
@@ -1081,6 +1156,64 @@ What to do and what not to do, side by side. _(family: composite; keywords: do, 
 }
 \`\`\`
 
+### \`tls.c.explainer\` — Explainer
+
+One concept explained: a claim, a paragraph, sub-points and an example. _(family: composite; keywords: explain, concept, idea, why, example, giải thích, khái niệm, ví dụ)_
+
+**When:** One idea that needs explaining on its own slide: the claim, why it holds, and a concrete example.
+**Avoid:** A term with a short definition only: tls.t.definition. Several parallel points: tls.c.key-points.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`claim\` | yes | text (max 90 chars) | The idea in one line. |
+| \`text\` | yes | text (max 420 chars) | 2–4 sentences: what it means and why. |
+| \`points\` | no | list of text (max 120 chars) (0–3 items) |  |
+| \`example\` | no | object (label, text) | A concrete case: \`label\` (e.g. \\"Example\\") and \`text\`. |
+| \`variant\` | no | enum: stacked \\\\| side-example \\\\| boxed | stacked = the example under the text; side-example = the example in a right column; boxed = the whole explanation on a card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_explainer\\",
+  \\"type\\": \\"tls.c.explainer\\",
+  \\"props\\": {
+    \\"claim\\": \\"Interest compounds: you earn interest on the interest\\",
+    \\"text\\": \\"Each period the interest is added to the balance, so the next period pays interest on a larger amount. The growth is slow at first and fast later.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.faq\` — FAQ
+
+Questions a learner asks, each with its full answer. _(family: composite; keywords: faq, questions, answers, q&a, hỏi đáp, câu hỏi thường gặp)_
+
+**When:** Questions a learner will ask, each answered in full (rules, procedures, common doubts) — information, not a quiz.
+**Avoid:** Questions for the class to think about: tls.c.question-wall. One-line answers: tls.t.qa.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`pairs\` | yes | list of object (q, a) (2–5 items) | \`q\` = the question as a learner asks it (≤ 110), \`a\` = the full answer (≤ 260). |
+| \`columns\` | no | enum: 1 \\\\| 2 |  |
+| \`variant\` | no | enum: list \\\\| grid \\\\| bubbles | list = rows; grid = two columns of cards; bubbles = each answer on a card. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_faq\\",
+  \\"type\\": \\"tls.c.faq\\",
+  \\"props\\": {
+    \\"pairs\\": [
+      {
+        \\"q\\": \\"Do I need to attend every class?\\",
+        \\"a\\": \\"Attendance counts for 10 % of the grade; missing more than 20 % of the sessions bars you from the final exam.\\"
+      },
+      {
+        \\"q\\": \\"Can I resubmit an assignment?\\",
+        \\"a\\": \\"Once, within a week of the feedback. The higher of the two marks counts.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.feature-grid\` — Feature Grid [html]
 
 Grid of feature cells, each with an icon, title, and description. 2–6 cells arranged in 2/3/4 columns. _(family: composite; keywords: feature, grid, capabilities, benefits, icon, tiles, services, highlights)_
@@ -1197,6 +1330,46 @@ Two to six flashcards with a term and its meaning. _(family: composite; keywords
 }
 \`\`\`
 
+### \`tls.c.frayer\` — Frayer model
+
+A term with its definition, characteristics, examples and non-examples. _(family: composite; keywords: frayer, term, vocabulary, examples, non-examples, concept, thuật ngữ, ví dụ, phản ví dụ)_
+
+**When:** Teach a term so it sticks: what it is, its characteristics, examples and the near-misses that are not it.
+**Avoid:** A definition alone: tls.t.definition. Several terms: tls.c.glossary.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`term\` | yes | text (max 40 chars) |  |
+| \`definition\` | yes | text (max 220 chars) |  |
+| \`traits\` | yes | list of text (max 80 chars) (2–4 items) |  |
+| \`examples\` | yes | list of text (max 80 chars) (1–3 items) |  |
+| \`nonExamples\` | yes | list of text (max 80 chars) (1–3 items) |  |
+| \`labels\` | no | list of text (max 24 chars) (0–4 items) | The four box titles in the deck language (definition, characteristics, examples, non-examples). |
+| \`variant\` | no | enum: quadrant \\\\| stack | quadrant = four boxes under the term; stack = four rows. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_frayer\\",
+  \\"type\\": \\"tls.c.frayer\\",
+  \\"props\\": {
+    \\"term\\": \\"Prime number\\",
+    \\"definition\\": \\"A whole number greater than 1 whose only divisors are 1 and itself.\\",
+    \\"traits\\": [
+      \\"Exactly two divisors\\",
+      \\"Every whole number > 1 is a product of primes\\"
+    ],
+    \\"examples\\": [
+      \\"2, 3, 5, 7, 11\\",
+      \\"97\\"
+    ],
+    \\"nonExamples\\": [
+      \\"1 (one divisor)\\",
+      \\"9 = 3 × 3\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.full-bleed-type\` — Full-bleed type
 
 One word or a short phrase filling the slide, the rest small. _(family: composite; keywords: word, type, poster, statement, big text, cover)_
@@ -1252,6 +1425,46 @@ Three to six framed pictures or icons hung as on a wall, each with a label. _(fa
       {
         \\"visual\\": \\"users\\",
         \\"label\\": \\"Families\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.glossary\` — Glossary
+
+4–8 terms with their definitions. _(family: composite; keywords: glossary, terms, vocabulary, definitions, thuật ngữ, bảng thuật ngữ, từ vựng)_
+
+**When:** The vocabulary of a lesson: 4–8 terms, each with a definition of a sentence or two.
+**Avoid:** Short label–value pairs: tls.t.kv-list. One term in depth: tls.c.frayer or tls.t.definition.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`terms\` | yes | list of object (term, definition) (4–8 items) | \`term\` (≤ 40) and its \`definition\` in one or two sentences (≤ 170). |
+| \`marker\` | no | enum: letter \\\\| none | letter = each term led by A, B, C…; none (default). |
+| \`variant\` | no | enum: two-column \\\\| cards \\\\| index | two-column = two columns of entries; cards = a card per term; index = one column with the term in a left rail. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_glossary\\",
+  \\"type\\": \\"tls.c.glossary\\",
+  \\"props\\": {
+    \\"terms\\": [
+      {
+        \\"term\\": \\"Node\\",
+        \\"definition\\": \\"One element of the tree; it holds a value and links to its children.\\"
+      },
+      {
+        \\"term\\": \\"Root\\",
+        \\"definition\\": \\"The only node with no parent; every path starts here.\\"
+      },
+      {
+        \\"term\\": \\"Leaf\\",
+        \\"definition\\": \\"A node with no children.\\"
+      },
+      {
+        \\"term\\": \\"Height\\",
+        \\"definition\\": \\"The number of edges on the longest path from the root to a leaf.\\"
       }
     ]
   }
@@ -1468,6 +1681,38 @@ Milestones on a curved path; the path draws and each node pops as the line reach
       {
         \\"when\\": \\"2026\\",
         \\"title\\": \\"Triển khai\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.key-points\` — Key points
+
+2–5 key points, each a bold lead line and its explanation. _(family: composite; keywords: key points, main ideas, explanation, why, reasons, ý chính, giải thích)_
+
+**When:** A reading or detailed slide whose 2–5 points each need their explanation: the point in bold, why it holds under it.
+**Avoid:** Short phrases the audience only scans: tls.t.bullets. Icon-led feature tiles: tls.c.feature-grid.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`points\` | yes | list of object (lead, text, icon) (2–5 items) | Each point: \`lead\` = the point in one line (≤ 70 chars), \`text\` = why it holds or what it means (1–3 sentences, ≤ 260). |
+| \`numbering\` | no | enum: number \\\\| icon \\\\| none | number (default), icon (each point names an \`icon\`) or none. |
+| \`variant\` | no | enum: rail \\\\| columns \\\\| cards | rail = numbered rows; columns = two columns; cards = one card per point. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_key_points\\",
+  \\"type\\": \\"tls.c.key-points\\",
+  \\"props\\": {
+    \\"points\\": [
+      {
+        \\"lead\\": \\"Practice beats rereading\\",
+        \\"text\\": \\"Recalling an idea from memory strengthens it more than reading it again, even when recall feels harder.\\"
+      },
+      {
+        \\"lead\\": \\"Space the sessions\\",
+        \\"text\\": \\"Short sessions spread over days keep more than one long session the night before.\\"
       }
     ]
   }
@@ -1801,6 +2046,41 @@ A problem statement and its solution side by side, joined by an arrow. _(family:
 }
 \`\`\`
 
+### \`tls.c.process-detail\` — Detailed process
+
+3–6 steps of a method, each with a title and a description of how and why. _(family: composite; keywords: process, steps, method, procedure, how to, quy trình, các bước, phương pháp)_
+
+**When:** A method or procedure the reader follows: 3–6 steps, each with what to do and why, in 1–2 sentences.
+**Avoid:** Steps named in a few words: tls.c.steps. A calculation: tls.c.worked-example.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (title, text, icon) (3–6 items) | \`title\` = the step (≤ 60), \`text\` = how and why (≤ 220). |
+| \`variant\` | no | enum: vertical \\\\| zigzag \\\\| two-column | vertical = numbered rows; zigzag = two columns, numbers on top; two-column = a card per step. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_process_detail\\",
+  \\"type\\": \\"tls.c.process-detail\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"title\\": \\"State the question\\",
+        \\"text\\": \\"Write what you want to find out in one sentence, so you know what data to collect.\\"
+      },
+      {
+        \\"title\\": \\"Collect the data\\",
+        \\"text\\": \\"Measure the same way every time and note the conditions, so the results can be compared.\\"
+      },
+      {
+        \\"title\\": \\"Draw a conclusion\\",
+        \\"text\\": \\"Compare the results with your prediction and say what they show — and what they do not.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.profile-card\` — Profile Card
 
 Card with a portrait, name, role, short bio and a contact line; portrait above or beside. _(family: composite; keywords: profile, person, bio, speaker, lecturer, team lead, card)_
@@ -2027,6 +2307,41 @@ A teaching section divider: number, title, guiding question and the points it co
 }
 \`\`\`
 
+### \`tls.c.sidenotes\` — Text with side notes
+
+A main text of 2–3 paragraphs with margin notes beside the paragraphs they explain. _(family: composite; keywords: sidenotes, margin notes, reading, text, annotations, ghi chú lề, bài đọc)_
+
+**When:** A reading slide: 2–3 paragraphs of explanation with short notes in the margin (a definition, a warning, a source) beside the paragraph they belong to.
+**Avoid:** A paragraph alone: tls.t.body. An idea with an example box: tls.c.explainer.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`text\` | yes | text (max 640 chars) | 2–3 paragraphs separated by a blank line (≤ 640 chars in all). |
+| \`notes\` | yes | list of object (label, text, at) (2–4 items) | \`label\` (e.g. \\"Definition\\", \\"Careful\\"), \`text\` (≤ 120), \`at\` = the paragraph it belongs to (0 = first). |
+| \`variant\` | no | enum: right-margin \\\\| left-margin | right-margin (default) or left-margin. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_sidenotes\\",
+  \\"type\\": \\"tls.c.sidenotes\\",
+  \\"props\\": {
+    \\"text\\": \\"A hash table stores each key at a position computed from the key itself, so looking a key up takes about the same time however many keys there are.\\\\n\\\\nTwo keys can land on the same position. The table then keeps both, in a short list or in the next free slot, and a lookup checks them one by one.\\",
+    \\"notes\\": [
+      {
+        \\"label\\": \\"Definition\\",
+        \\"text\\": \\"Hash function: turns a key into a position in the table.\\",
+        \\"at\\": 0
+      },
+      {
+        \\"label\\": \\"Careful\\",
+        \\"text\\": \\"A table that is too full makes collisions frequent and lookups slow.\\",
+        \\"at\\": 1
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.split-cover\` — Split cover
 
 A cover split into a colour field with a visual and the title beside it. _(family: composite; keywords: cover, title, split, colour field, opening)_
@@ -2244,6 +2559,44 @@ Three or four panels with captions and speech bubbles: a scenario told in pictur
 }
 \`\`\`
 
+### \`tls.c.summary-sheet\` — Summary sheet
+
+A recap a reader keeps: 3–6 key ideas, a formula or definition box, a line to remember. _(family: composite; keywords: summary, recap, review, key ideas, tóm tắt, tổng kết, ghi nhớ)_
+
+**When:** Close a section of a teaching deck with what to keep: the key ideas in a sentence each, the formula or definition, the line to remember.
+**Avoid:** A light recap of three phrases: tls.c.recap.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`ideas\` | yes | list of object (title, text) (3–6 items) | \`title\` (≤ 40) and \`text\` = the idea in a sentence (≤ 150). |
+| \`box\` | no | object (label, text, formula) | Optional: a formula or a definition to keep (\`label\`, \`text\`, \`formula\`). |
+| \`remember\` | no | text (max 140 chars) | Optional: the one line to remember. |
+| \`rememberLabel\` | no | text (max 20 chars) |  |
+| \`variant\` | no | enum: grid \\\\| sheet | grid = numbered cards; sheet = two columns of ideas, the box under them. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_summary_sheet\\",
+  \\"type\\": \\"tls.c.summary-sheet\\",
+  \\"props\\": {
+    \\"ideas\\": [
+      {
+        \\"title\\": \\"A tree has no cycles\\",
+        \\"text\\": \\"There is exactly one path between any two nodes.\\"
+      },
+      {
+        \\"title\\": \\"Height bounds the work\\",
+        \\"text\\": \\"Search, insert and delete each take time proportional to the height.\\"
+      },
+      {
+        \\"title\\": \\"Balance keeps it low\\",
+        \\"text\\": \\"A balanced tree of n nodes has height about log2(n).\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.takeaway-poster\` — Takeaway poster
 
 One to three takeaways set large, each with a giant numeral. _(family: composite; keywords: takeaway, summary, closing, key points, remember, poster)_
@@ -2351,6 +2704,44 @@ Pull-quote testimonial with attribution. Quote text with speaker name, role, and
 }
 \`\`\`
 
+### \`tls.c.timeline-detail\` — Detailed timeline
+
+A timeline of 3–6 events, each with a date, a title and a paragraph. _(family: composite; keywords: timeline, history, events, dates, chronology, mốc thời gian, lịch sử, dòng thời gian)_
+
+**When:** A history or a chronology a reader studies: 3–6 dated events, each with what happened and why it matters.
+**Avoid:** Dates with a label only: tls.g.timeline. Steps of a method: tls.c.process-detail.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`events\` | yes | list of object (date, title, text) (3–6 items) | \`date\` (a year, a date or a period, ≤ 24), \`title\` (≤ 60) and \`text\` = what happened and why it matters (≤ 200). |
+| \`variant\` | no | enum: left-rail \\\\| zigzag \\\\| cards | left-rail = dates in a left rail; zigzag = two columns; cards = a card per event. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_timeline_detail\\",
+  \\"type\\": \\"tls.c.timeline-detail\\",
+  \\"props\\": {
+    \\"events\\": [
+      {
+        \\"date\\": \\"1936\\",
+        \\"title\\": \\"Turing machine\\",
+        \\"text\\": \\"Turing describes a machine that can compute anything computable, the model of every computer since.\\"
+      },
+      {
+        \\"date\\": \\"1945\\",
+        \\"title\\": \\"Stored program\\",
+        \\"text\\": \\"Von Neumann proposes keeping the program in memory with the data, so a machine can change tasks without rewiring.\\"
+      },
+      {
+        \\"date\\": \\"1971\\",
+        \\"title\\": \\"Microprocessor\\",
+        \\"text\\": \\"Intel puts a whole processor on one chip; computers start to fit on a desk.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.title-card\` — Title card
 
 A luxury frame for a title, a section or a quote. _(family: composite; keywords: title card, frame, elegant, cover, section, ornament)_
@@ -2373,6 +2764,45 @@ A luxury frame for a title, a section or a quote. _(family: composite; keywords:
     \\"kicker\\": \\"Chapter two\\",
     \\"title\\": \\"Where the beds went\\",
     \\"line\\": \\"A year of small changes on ward four\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.worked-example\` — Worked example
+
+A problem solved step by step, each step with its working and reason, then the result. _(family: composite; keywords: worked example, solution, steps, calculation, trace, bài giải, ví dụ mẫu, lời giải)_
+
+**When:** Show how to solve a problem: the problem, each step with its line of working and why, the result and a check.
+**Avoid:** A process with no calculation: tls.c.process-detail. One formula on its own: tls.t.formula.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`problem\` | yes | text (max 260 chars) | The problem as given (plain maths, no $…$). |
+| \`formula\` | no | text (max 90 chars) | Optional: the formula used, \`tls.t.formula\` syntax (\`_\` / \`^\`, never Unicode sub/superscripts). |
+| \`steps\` | yes | list of object (text, formula, why) (2–6 items) | Each step: \`text\` = what is done, \`formula\` = the line of working (optional), \`why\` = the reason (optional). |
+| \`result\` | yes | text (max 140 chars) |  |
+| \`check\` | no | text (max 120 chars) | Optional: how to check the answer. |
+| \`labels\` | no | object (result, check) | The words for \\"Result\\" and \\"Check\\" in the deck language. |
+| \`variant\` | no | enum: numbered \\\\| two-column \\\\| ledger | numbered = numbered rows; two-column = steps in two columns of cards; ledger = rows with no numbers. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_worked_example\\",
+  \\"type\\": \\"tls.c.worked-example\\",
+  \\"props\\": {
+    \\"problem\\": \\"A tree has 15 nodes and is perfectly balanced. What is its height?\\",
+    \\"steps\\": [
+      {
+        \\"text\\": \\"Put the node count into the formula\\",
+        \\"formula\\": \\"15 = 2^{h+1} - 1\\",
+        \\"why\\": \\"A perfect binary tree of height h has 2^{h+1} - 1 nodes.\\"
+      },
+      {
+        \\"text\\": \\"Add 1 to both sides\\",
+        \\"formula\\": \\"16 = 2^{h+1}\\"
+      }
+    ],
+    \\"result\\": \\"The height is h = 3.\\"
   }
 }
 \`\`\`
@@ -6605,7 +7035,7 @@ One to four lines of math with subscripts and superscripts set by the engine, an
 |---|---|---|---|
 | \`expression\` | yes | text (max 200 chars) | Plain characters; \`_\` / \`^\` lower / raise the letters or the digits right after them (\`h_min\`, \`log_2N\`, \`2^h\`), \`_{…}\` / \`^{…}\` a group: \\"h = log_2(N+1)\\", \\"n_0 = 2^{h+1} - 1\\", \\"O(n^2)\\". One line per step, separated by a new line (at most 4). Never Unicode sub/superscripts (₂, ²). |
 | \`caption\` | no | text (max 160 chars) | Optional: what the symbols mean, e.g. \\"N = number of nodes, h = height\\". |
-| \`size\` | no | enum: display \\\\| title \\\\| heading | The largest size that fits is used, down to heading. |
+| \`size\` | no | enum: display \\\\| title \\\\| heading \\\\| subheading \\\\| lead | The largest size that fits is used, down to heading (subheading / lead: a line of working inside a step). |
 | \`align\` | no | enum: center \\\\| start |  |
 | \`showCaption\` | no | boolean |  |
 
@@ -7338,7 +7768,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 193,
+  "blockCount": 205,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -7358,24 +7788,31 @@ Object {
     "tls.c.chapter-divider",
     "tls.c.chart-insight",
     "tls.c.closing",
+    "tls.c.compare-detail",
     "tls.c.comparison",
     "tls.c.contact",
+    "tls.c.cornell",
     "tls.c.cover",
     "tls.c.cta",
     "tls.c.dashboard",
     "tls.c.divider",
     "tls.c.do-dont",
+    "tls.c.explainer",
+    "tls.c.faq",
     "tls.c.feature-grid",
     "tls.c.feature-reveal",
     "tls.c.flashcards",
+    "tls.c.frayer",
     "tls.c.full-bleed-type",
     "tls.c.gallery-wall",
+    "tls.c.glossary",
     "tls.c.hero",
     "tls.c.homework",
     "tls.c.hook-cover",
     "tls.c.image-full",
     "tls.c.image-text",
     "tls.c.journey",
+    "tls.c.key-points",
     "tls.c.kinetic-title",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
@@ -7386,6 +7823,7 @@ Object {
     "tls.c.photo-essay",
     "tls.c.poster-cover",
     "tls.c.problem-solution",
+    "tls.c.process-detail",
     "tls.c.profile-card",
     "tls.c.question-wall",
     "tls.c.quiz",
@@ -7393,16 +7831,20 @@ Object {
     "tls.c.recap",
     "tls.c.route-agenda",
     "tls.c.section-brief",
+    "tls.c.sidenotes",
     "tls.c.split-cover",
     "tls.c.stat-card",
     "tls.c.stat-spotlight",
     "tls.c.steps",
     "tls.c.sticky-board",
     "tls.c.storyboard",
+    "tls.c.summary-sheet",
     "tls.c.takeaway-poster",
     "tls.c.team",
     "tls.c.testimonial",
+    "tls.c.timeline-detail",
     "tls.c.title-card",
+    "tls.c.worked-example",
     "tls.d.annotated-line",
     "tls.d.area",
     "tls.d.bar",
@@ -7712,7 +8154,7 @@ also: tls.t.kicker, tls.t.subtitle
 ## Text
 tls.t.body · text · element — Paragraph text, auto-fitted, optionally in columns [h≈0+41/L@840] knobs: align=start|center|end, autoFit
 tls.t.footnote · text · element · ≤4 items — Small-print source, reference or footnote line with optional marker [h≈-6+30/item@840] knobs: marker=none|number|asterisk|source, align=start|end
-also: tls.c.magazine, tls.t.caption, tls.t.code, tls.t.definition, tls.t.drop-cap, tls.t.formula
+also: tls.c.explainer, tls.c.faq, tls.c.magazine, tls.c.sidenotes, tls.t.caption, tls.t.code, tls.t.definition, tls.t.drop-cap, tls.t.formula
 
 ## Lists
 tls.c.bento · list · slide · 3–5 items — Asymmetric tile grid: a big stat, icon points, a photo, a quote [h=fill] knobs: pattern=1+2|2+1|hero+3|3+2
@@ -7720,7 +8162,7 @@ tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by 
 tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 221–574@1728] knobs: cell=plain|card, align=start|center, iconStyle=plain|circle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle=plain|circle|square, iconTone=accent|accent2|text, spacing=default|compact|roomy
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker=dot|dash|chevron|number|icon, spacing=xs|sm|md|lg
-also: tls.c.feature-reveal, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
+also: tls.c.feature-reveal, tls.c.key-points, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
 
 ## Emphasis
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
@@ -7753,17 +8195,17 @@ tls.d.pricing · comparison · group · 2–4 items — Plan cards with price, p
 tls.g.before-after · comparison · group — Before and after panels joined by an arrow, text or image in each [h=fill] knobs: arrow=arrow|chevron|none, emphasis=after|none
 tls.g.matrix-2x2 · comparison · group · 4–4 items — Two-by-two quadrant grid with axis labels and optional plotted items [h=fill] knobs: highlight=none|TL|TR|BL|BR, style=tinted|lines, showItems
 tls.g.pros-cons · comparison · group · ≤6 items — Two columns of advantages and disadvantages with check and cross icons [h 354–604@840] knobs: style=columns|cards, balance=equal|auto, showVerdict
-also: tls.c.case-study, tls.c.do-dont, tls.c.problem-solution, tls.g.balance, tls.g.iceberg, tls.g.myth-fact, tls.g.spectrum, tls.g.swot
+also: tls.c.case-study, tls.c.compare-detail, tls.c.do-dont, tls.c.problem-solution, tls.g.balance, tls.g.iceberg, tls.g.myth-fact, tls.g.spectrum, tls.g.swot
 
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
 tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill=gradient|single|series, textPlacement=inside|below
-also: tls.g.bridge, tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
+also: tls.c.process-detail, tls.g.bridge, tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none
 tls.g.timeline · timeline · group · 3–8 items — Dated events on one axis with a title and note per event; optional today marker [h=fill] knobs: axis=horizontal|vertical, alternate, nodeStyle=dot|icon|number
-also: tls.c.journey, tls.g.milestones
+also: tls.c.journey, tls.c.timeline-detail, tls.g.milestones
 
 ## Hierarchy
 tls.g.pyramid · hierarchy · group · 3–6 items — Stacked pyramid levels from base to tip, each with label and note [h≈-6+136/item@840] knobs: direction=up|down, notes=side|inside|none, fill=gradient|series|single
@@ -7813,7 +8255,7 @@ tls.a.fill-blank · learning · group — Fill the blanks of a definition from a
 tls.a.flip-cards · learning · group · 2–8 items — Interactive flip cards: term on the front, meaning on the back [h 281–709@1728]
 tls.a.reveal · learning · group — Question first, hints and answer on demand [h≈434@1728]
 tls.a.true-false · learning · group · 2–6 items — Interactive list of true/false statements [h≈67+103/item@1728] knobs: retry, showAnswer
-also: tls.a.match, tls.a.order, tls.a.sort, tls.a.timer, tls.c.flashcards, tls.c.homework, tls.c.quiz, tls.t.qa
+also: tls.a.match, tls.a.order, tls.a.sort, tls.a.timer, tls.c.cornell, tls.c.flashcards, tls.c.frayer, tls.c.glossary, tls.c.homework, tls.c.quiz, tls.c.summary-sheet, tls.c.worked-example, tls.t.qa
 
 ## Chrome
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark
