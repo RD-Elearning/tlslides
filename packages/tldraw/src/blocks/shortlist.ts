@@ -25,6 +25,10 @@ export interface ShortlistSlide {
   energy?: FitsEnergy
   /** Set for a frame slide: only frame blocks of that role are ranked. */
   frame?: FrameRole
+  /** spro sprint 2026-11b S10-C: an activity slide of a learning deck — only `activity` blocks are ranked
+   *  (content diagrams outranked `tls.a.order` / `tls.a.sort` on their own slide). Sent under the
+   *  teaching flag. */
+  activity?: boolean
 }
 
 export interface ShortlistOptions {
@@ -49,6 +53,9 @@ export interface ShortlistOptions {
   purpose?: 'in_class' | 'self_study' | 'general'
   /** Highlight mains the deck may still take (S07-b: ceil(content / 6)); 0 = none left. */
   highlightsLeft?: number
+  /** spro sprint 2026-11b S10-a: the deck is presented by a teacher (reading mode `presentation`).
+   *  Interactive reveal blocks are offered only with `purpose: 'in_class'` and this set. */
+  presented?: boolean
 }
 
 const NUMBER_DATA = new Set<FitsData>(['single', 'share', 'series'])
@@ -134,6 +141,9 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
     if (!f.frames?.includes(slide.frame)) return null
   } else if (!f.relations.length) return null
   if (learningBlock(def.type, f.use, slide, o)) return null
+  // S10-a: a reveal block only where a teacher clicks through it; S10-C: an activity slide takes an activity
+  if (f.interactive && !(o.purpose === 'in_class' && o.presented)) return null
+  if (slide.activity && !slide.frame && f.use !== 'activity') return null
 
   const why: string[] = []
   let score: number
@@ -177,6 +187,12 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
   if (slide.energy && slide.energy !== f.energy) score *= slide.energy === 'neutral' || f.energy === 'neutral' ? 0.92 : 0.8
   // the curated core (tier 1) wins a tie: its blocks are the best default of their kind
   if (def.aiTier === 1) score *= 1.03
+  // S10-a: in a presented in-class deck a reveal block is the paced form of its content (the only decks
+  // it reaches; its text is shown a part at a time, so a `labels` slide does not hold it back)
+  if (f.interactive) {
+    score *= 1.2
+    why.push('unfolds in class')
+  }
   // variety and novelty
   if (o.used?.includes(def.type)) {
     score *= 0.7

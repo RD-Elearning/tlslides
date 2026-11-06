@@ -25,6 +25,10 @@ import { tlsCQuoteContext } from './tls-c-quote-context'
 import { tlsCImageNotes } from './tls-c-image-notes'
 import { tlsCCoverMasthead } from './tls-c-cover-masthead'
 import { tlsCClosingRecap } from './tls-c-closing-recap'
+import { tlsCTabs } from './tls-c-tabs'
+import { tlsCAccordion } from './tls-c-accordion'
+import { tlsCStepThrough } from './tls-c-step-through'
+import { tlsCHotspots } from './tls-c-hotspots'
 import { wave2Blocks } from './wave2'
 
 import { tlsCHero } from './tls-c-hero'
@@ -117,6 +121,10 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCImageNotes, // spro sprint 2026-11b S09
   tlsCCoverMasthead, // spro sprint 2026-11b S09
   tlsCClosingRecap, // spro sprint 2026-11b S09
+  tlsCTabs, // spro sprint 2026-11b S10
+  tlsCAccordion, // spro sprint 2026-11b S10
+  tlsCStepThrough, // spro sprint 2026-11b S10
+  tlsCHotspots, // spro sprint 2026-11b S10
   // spro creative CR13: waves 2 and 3
   ...wave2Blocks,
 ]

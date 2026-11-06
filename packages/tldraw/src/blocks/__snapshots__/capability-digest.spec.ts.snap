@@ -463,6 +463,40 @@ Interactive true/false statements checked together (live in Present mode). _(fam
 }
 \`\`\`
 
+### \`tls.c.accordion\` — Accordion
+
+3–6 headed sections; one open at a time when presented, all open in the static form. _(family: composite; keywords: accordion, faq, sections, reveal, interactive, mở rộng, hỏi đáp)_
+
+**When:** An in-class slide of 3–6 questions or headings the teacher opens one at a time, each with its short answer.
+**Avoid:** A self-study or printed deck: tls.c.faq or tls.c.key-points show the answers at once. Parallel parts side by side: tls.c.tabs.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (head, text) (3–6 items) | Each: \`head\` = a question or a heading (≤ 70), \`text\` = its answer or explanation (≤ 240). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_accordion\\",
+  \\"type\\": \\"tls.c.accordion\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"head\\": \\"What is a variable?\\",
+        \\"text\\": \\"A named box in memory that holds a value; the value can change while the program runs.\\"
+      },
+      {
+        \\"head\\": \\"Why give it a type?\\",
+        \\"text\\": \\"The type says what the value can be (a number, a text) and so which operations make sense on it.\\"
+      },
+      {
+        \\"head\\": \\"What is scope?\\",
+        \\"text\\": \\"The part of the program where the name can be used; outside it the variable does not exist.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.agenda\` — Agenda
 
 Agenda or contents slide: numbered items with titles and optional notes. The current topic can be highlighted. _(family: composite; keywords: agenda, toc, table of contents, outline, topics, schedule, items)_
@@ -1642,6 +1676,52 @@ A cover that opens with a question or a striking number, then the title. _(famil
 }
 \`\`\`
 
+### \`tls.c.hotspots\` — Hotspots
+
+A picture with 2–6 numbered markers; when presented, a marker shows its note beside the picture. _(family: composite; keywords: hotspots, image, markers, explore, interactive, điểm nóng, hình)_
+
+**When:** An in-class slide that explores a figure or photo part by part: the teacher clicks a numbered marker and its note shows beside the picture.
+**Avoid:** A self-study or printed deck: tls.c.image-notes shows every note at once. A picture with one caption: tls.m.image.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image | A figure of the document (\`fig:\`) or a library picture (\`img:\`). |
+| \`alt\` | yes | text (max 200 chars) | What the picture shows (≤ 200). |
+| \`aspect\` | no | number (min 0.2, max 8) | Width / height of the picture when the asset table does not know it. |
+| \`spots\` | yes | list of object (fx, fy, label, text) (2–6 items) | Each: where the marker goes (\`fx\`, \`fy\` = fractions 0–1 from the left / top of the picture), \`label\` (≤ 24) and \`text\` (≤ 160). |
+| \`variant\` | no | enum: notes-right \\\\| notes-below | notes-right (default) or notes-below. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_hotspots\\",
+  \\"type\\": \\"tls.c.hotspots\\",
+  \\"props\\": {
+    \\"image\\": \\"img:plant-cell\\",
+    \\"alt\\": \\"A plant cell with its wall, nucleus and chloroplasts\\",
+    \\"spots\\": [
+      {
+        \\"fx\\": 0.08,
+        \\"fy\\": 0.5,
+        \\"label\\": \\"Cell wall\\",
+        \\"text\\": \\"A stiff layer of cellulose that keeps the cell rigid.\\"
+      },
+      {
+        \\"fx\\": 0.5,
+        \\"fy\\": 0.45,
+        \\"label\\": \\"Nucleus\\",
+        \\"text\\": \\"Holds the genetic material and controls the cell.\\"
+      },
+      {
+        \\"fx\\": 0.72,
+        \\"fy\\": 0.25,
+        \\"label\\": \\"Chloroplast\\",
+        \\"text\\": \\"Captures light and makes sugar by photosynthesis.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.image-full\` — Full-bleed photo
 
 A photo across the slide with a headline on a card, a side panel, split, a band or a dark fade. _(family: composite; keywords: full bleed, photo, image, hero image, background photo, headline, scene, location)_
@@ -2719,6 +2799,40 @@ One key number in a progress ring that counts up, label beside it, up to 3 suppo
 }
 \`\`\`
 
+### \`tls.c.step-through\` — Step-through
+
+3–6 steps; when presented, each click brings the next step forward and dims the others. _(family: composite; keywords: steps, process, spotlight, step by step, interactive, từng bước, quy trình)_
+
+**When:** An in-class slide that walks through 3–6 steps one at a time: the teacher clicks, the next step comes forward, the others dim.
+**Avoid:** A self-study or printed deck: tls.c.process-detail shows the same steps at once. An example solved with formulas: tls.c.worked-example.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`steps\` | yes | list of object (title, text) (3–6 items) | In order. Each: \`title\` (≤ 50) and \`text\` = what to do and why (≤ 200). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_step_through\\",
+  \\"type\\": \\"tls.c.step-through\\",
+  \\"props\\": {
+    \\"steps\\": [
+      {
+        \\"title\\": \\"Read the problem\\",
+        \\"text\\": \\"Underline what is given and circle what is asked, so you know where you start and where you must arrive.\\"
+      },
+      {
+        \\"title\\": \\"Choose a method\\",
+        \\"text\\": \\"Match the problem to a method you know: a formula, a diagram or a table.\\"
+      },
+      {
+        \\"title\\": \\"Solve and check\\",
+        \\"text\\": \\"Work it out, then put the answer back into the problem to see that it fits.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.steps\` — Steps
 
 Process or timeline of numbered steps with titles and optional descriptions. Arranges steps horizontally or vertically with thin connectors between them. _(family: composite; keywords: steps, process, timeline, flow, workflow, sequential, phases, roadmap, numbered)_
@@ -2863,6 +2977,41 @@ A recap a reader keeps: 3–6 key ideas, a formula or definition box, a line to 
       {
         \\"title\\": \\"Balance keeps it low\\",
         \\"text\\": \\"A balanced tree of n nodes has height about log2(n).\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.c.tabs\` — Tabs
+
+2–5 labelled panels; one at a time when presented, all shown in the static form. _(family: composite; keywords: tabs, panels, reveal, interactive, thẻ, tab)_
+
+**When:** An in-class slide whose 2–5 parallel parts (states, types, cases) the teacher opens one by one; each part a label and a short explanation.
+**Avoid:** A self-study or printed deck: tls.c.cards or tls.c.compare-detail show the same content at once. Steps in order: tls.c.step-through.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`tabs\` | yes | list of object (label, text, points) (2–5 items) | Each: \`label\` (≤ 24), \`text\` (≤ 320) and optional \`points\` (0–4 × ≤ 90). |
+| \`variant\` | no | enum: top-tabs \\\\| side-tabs | top-tabs (default: panels side by side when shown whole) or side-tabs (labels in a left column). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_tabs\\",
+  \\"type\\": \\"tls.c.tabs\\",
+  \\"props\\": {
+    \\"tabs\\": [
+      {
+        \\"label\\": \\"Solid\\",
+        \\"text\\": \\"Particles are packed tightly and only vibrate in place, so a solid keeps its shape and volume.\\"
+      },
+      {
+        \\"label\\": \\"Liquid\\",
+        \\"text\\": \\"Particles stay close but slide past each other, so a liquid keeps its volume and takes the shape of its container.\\"
+      },
+      {
+        \\"label\\": \\"Gas\\",
+        \\"text\\": \\"Particles move fast and far apart, so a gas fills any container it is in.\\"
       }
     ]
   }
@@ -8239,7 +8388,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 217,
+  "blockCount": 221,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8250,6 +8399,7 @@ Object {
     "tls.a.sort",
     "tls.a.timer",
     "tls.a.true-false",
+    "tls.c.accordion",
     "tls.c.agenda",
     "tls.c.bento",
     "tls.c.big-stat",
@@ -8282,6 +8432,7 @@ Object {
     "tls.c.hero",
     "tls.c.homework",
     "tls.c.hook-cover",
+    "tls.c.hotspots",
     "tls.c.image-full",
     "tls.c.image-notes",
     "tls.c.image-text",
@@ -8314,10 +8465,12 @@ Object {
     "tls.c.stat-card",
     "tls.c.stat-explain",
     "tls.c.stat-spotlight",
+    "tls.c.step-through",
     "tls.c.steps",
     "tls.c.sticky-board",
     "tls.c.storyboard",
     "tls.c.summary-sheet",
+    "tls.c.tabs",
     "tls.c.takeaway-poster",
     "tls.c.team",
     "tls.c.testimonial",
@@ -8738,7 +8891,7 @@ tls.a.fill-blank · learning · group — Fill the blanks of a definition from a
 tls.a.flip-cards · learning · group · 2–8 items — Interactive flip cards: term on the front, meaning on the back [h 281–709@1728]
 tls.a.reveal · learning · group — Question first, hints and answer on demand [h≈434@1728]
 tls.a.true-false · learning · group · 2–6 items — Interactive list of true/false statements [h≈67+103/item@1728] knobs: retry, showAnswer
-also: tls.a.match, tls.a.order, tls.a.sort, tls.a.timer, tls.c.cornell, tls.c.flashcards, tls.c.frayer, tls.c.glossary, tls.c.homework, tls.c.quiz, tls.c.summary-sheet, tls.c.worked-example, tls.t.qa
+also: tls.a.match, tls.a.order, tls.a.sort, tls.a.timer, tls.c.accordion, tls.c.cornell, tls.c.flashcards, tls.c.frayer, tls.c.glossary, tls.c.homework, tls.c.hotspots, tls.c.quiz, tls.c.step-through, tls.c.summary-sheet, tls.c.tabs, tls.c.worked-example, tls.t.qa
 
 ## Chrome
 also: tls.x.footer-text, tls.x.header, tls.x.logo-mark, tls.x.page-number, tls.x.watermark

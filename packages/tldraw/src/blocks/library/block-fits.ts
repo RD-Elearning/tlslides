@@ -24,7 +24,7 @@ export const EDITOR_ONLY: ReadonlySet<string> = new Set([
   'tls.x.footer-text', 'tls.x.header', 'tls.x.logo-mark', 'tls.x.page-number', 'tls.x.watermark',
 ])
 
-type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs'] }
+type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs']; interactive?: true }
 
 const f = (
   relations: Relation[],
@@ -247,6 +247,11 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.image-notes': f(['image-led', 'terms', 'worked-example'], [2, 5], 'lines', 'neutral', { needs: ['images'] }),
   'tls.c.cover-masthead': f(['statement'], null, 'labels', 'neutral', { frames: ['cover'] }),
   'tls.c.closing-recap': f(['recap', 'action'], [2, 3], 'lines', 'neutral', { frames: ['closing', 'summary'] }),
+  // spro sprint 2026-11b S10 — wave C, in-class reveal blocks (interactive: in-class presented learning decks only)
+  'tls.c.tabs': f(['group', 'contrast', 'terms'], [2, 5], 'lines', 'neutral', { interactive: true }),
+  'tls.c.accordion': f(['question', 'group', 'definition'], [3, 6], 'lines', 'calm', { interactive: true }),
+  'tls.c.step-through': f(['sequence', 'worked-example'], [3, 6], 'lines', 'neutral', { interactive: true }),
+  'tls.c.hotspots': f(['image-led', 'terms'], [2, 6], 'lines', 'lively', { needs: ['images'], interactive: true }),
   'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
   'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),

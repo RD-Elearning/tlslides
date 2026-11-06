@@ -46,7 +46,7 @@ export const defaults: ImageNotesProps = {
   variant: 'notes-right',
 }
 
-const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined)
+export const num = (v: unknown): number | undefined => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : undefined)
 
 function notesOf(p: ImageNotesProps) {
   return rows<{ text?: unknown; fx?: unknown; fy?: unknown }>(p.notes, 5).map((n) => ({ text: txt(n.text, 120), fx: num(n.fx), fy: num(n.fy) }))
@@ -73,12 +73,16 @@ export function pinCentres(pic: Box, notes: Array<{ fx?: number; fy?: number }>,
 }
 
 function layoutNotes(p: ImageNotesProps, ctx: LayoutContext): LayoutNode {
+  const notes = notesOf(p)
+  return layoutPinned(ctx, p, notes, notes.map((n) => ({ text: n.text })))
+}
+
+/** S09/S10 — a picture with numbered pins and the matching numbered cells (image-notes, hotspots). */
+export function layoutPinned(ctx: LayoutContext, p: { image?: unknown; alt?: unknown; aspect?: unknown; variant?: unknown }, notes: Array<{ fx?: number; fy?: number }>, items: RichItem[]): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
   const H0 = Math.max(0, ctx.box.height) || 0
   const sp = ctx.tokens.space
   const v = pick(p.variant, VARIANTS, 'notes-right')
-  const notes = notesOf(p)
-  const items: RichItem[] = notes.map((n) => ({ text: n.text }))
   const aspect = typeof p.aspect === 'number' && p.aspect > 0 ? Math.min(8, Math.max(0.2, p.aspect)) : undefined
   const size = ctx.asset?.(String(p.image ?? ''))
   const ratio = aspect ?? (size && size.width > 0 && size.height > 0 ? size.width / size.height : undefined)

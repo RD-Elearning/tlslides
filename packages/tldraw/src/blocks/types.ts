@@ -289,6 +289,10 @@ export interface BlockFits {
    *  divider, agenda or closing, `activity` asks the audience. A learning deck's content slide takes an
    *  `info` or `activity` main (a `highlight` only with the number). */
   use?: FitsUse
+  /** spro sprint 2026-11b S10-a — the block unfolds under the presenter's control in the viewer (tabs,
+   *  accordion, step-through, hotspots; `BlockDefinition.reveal`). Offered only for in-class presented
+   *  learning decks; every other render shows its static form. */
+  interactive?: true
 }
 
 export type FitsUse = 'info' | 'highlight' | 'decor' | 'frame' | 'activity'
@@ -611,6 +615,12 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
 
   /** Run static design lint rules. */
   lint?(props: P, ctx: LintContext): LintFinding[]
+  /** spro sprint 2026-11b S10 — a layout block that unfolds in the viewer (DeckViewer only, via
+   *  `RevealMount`): `root` holds the block's rendered DOM (`data-part` on every part); the hook adds
+   *  its controls and state and returns a disposer. The static layout (every part visible) is what the
+   *  editor, thumbnails, exports and the checks see. State is the hook's own and resets when the slide is
+   *  left (the root remounts). */
+  reveal?(root: HTMLElement, rt: ActivityRuntime, props: P): () => void
   /** spro sprint 2026-11b S09 — `lint` checks props that refer to each other (a concept map's link ids):
    *  its findings are validation findings, as an activity's are (the model's error goes back to it). */
   lintIsValidation?: boolean

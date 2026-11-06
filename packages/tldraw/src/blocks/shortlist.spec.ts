@@ -173,3 +173,32 @@ describe('spro sprint 2026-11b S09 wave B reach', () => {
     expect(got).not.toContain('tls.t.statement')
   })
 })
+
+describe('spro sprint 2026-11b S10 reveal blocks and activity slides', () => {
+  const top = (s: ShortlistSlide, o: ShortlistOptions) => shortlist(BUILT_IN_BLOCKS, s, o).slice(0, 8).map((e) => e.type)
+  const all = (s: ShortlistSlide, o: ShortlistOptions) => shortlist(BUILT_IN_BLOCKS, s, { ...o, best: 40 }).map((e) => e.type)
+  const IN_CLASS: ShortlistOptions = { purpose: 'in_class', presented: true }
+  const CASES: Array<[string, ShortlistSlide, ShortlistOptions]> = [
+    ['tls.c.tabs', { relations: ['contrast'], items: 3, textLoad: 'labels' }, IN_CLASS], // three states set side by side
+    ['tls.c.accordion', { relations: ['question', 'definition'], items: 4, textLoad: 'labels' }, IN_CLASS],
+    ['tls.c.step-through', { relations: ['sequence', 'worked-example'], items: 4, textLoad: 'labels' }, IN_CLASS],
+    ['tls.c.hotspots', { relations: ['image-led', 'terms'], items: 3, textLoad: 'labels' }, IN_CLASS],
+  ]
+  it.each(CASES)('%s ranks in the best 8 of an in-class presented deck', (type, slide, o) => {
+    expect(top(slide, o)).toContain(type)
+  })
+  it.each(CASES)('%s is never offered in self-study, a balanced in-class deck or a general deck', (type, slide) => {
+    expect(all(slide, { purpose: 'self_study', presented: true })).not.toContain(type)
+    expect(all(slide, { purpose: 'in_class' })).not.toContain(type)
+    expect(all(slide, {})).not.toContain(type)
+  })
+  it('an activity slide ranks only activity blocks: order and sort reach their own slides', () => {
+    // spro leaves the open activities out (owner 2026-10-31: `OPEN_ACTIVITY_BLOCKS`)
+    const o: ShortlistOptions = { purpose: 'in_class', exclude: ['tls.a.reveal', 'tls.a.flip-cards'] }
+    const order = top({ relations: ['sequence', 'question'], items: 4, textLoad: 'lines', activity: true }, o)
+    expect(order[0]).toBe('tls.a.order')
+    const sort = top({ relations: ['group', 'question'], items: 6, textLoad: 'lines', activity: true }, o)
+    expect(sort).toContain('tls.a.sort')
+    expect([...order, ...sort].every((t) => t.startsWith('tls.a.') || t === 'tls.c.quiz' || t === 'tls.c.question-wall' || t === 'composition')).toBe(true)
+  })
+})

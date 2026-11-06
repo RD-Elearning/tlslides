@@ -286,6 +286,8 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.c.image-notes': [v('notes-right', 'notes beside the picture', { variant: 'notes-right' }), v('notes-below', 'notes under the picture', { variant: 'notes-below' })],
   'tls.c.cover-masthead': [v('masthead', 'rules above and below', { variant: 'masthead' }), v('band', 'title on a colour band', { variant: 'band' }), v('boxed', 'in a box', { variant: 'boxed' })],
   'tls.c.closing-recap': [v('columns', 'takeaways beside the action', { variant: 'columns' }), v('stack', 'takeaways above the action', { variant: 'stack' })],
+  'tls.c.tabs': [v('top-tabs', 'panels side by side', { variant: 'top-tabs' }), v('side-tabs', 'labels in a left column', { variant: 'side-tabs' })],
+  'tls.c.hotspots': [v('notes-right', 'notes beside the picture', { variant: 'notes-right' }), v('notes-below', 'notes under the picture', { variant: 'notes-below' })],
   'tls.c.explainer': [v('stacked', 'the example under the text', { variant: 'stacked' }), v('side-example', 'the example in a right column', { variant: 'side-example' }), v('boxed', 'the explanation on a card', { variant: 'boxed' })],
   'tls.c.frayer': [v('quadrant', 'four boxes under the term', { variant: 'quadrant' }), v('stack', 'four rows, titles in a rail', { variant: 'stack' })],
   'tls.c.worked-example': [v('numbered', 'numbered steps', { variant: 'numbered' }), v('two-column', 'steps as cards in two columns', { variant: 'two-column' }), v('ledger', 'plain rows like a notebook', { variant: 'ledger' })],

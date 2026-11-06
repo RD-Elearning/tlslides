@@ -52,6 +52,29 @@ export interface HostLayoutContextValue {
 
 export const HostLayoutContext = React.createContext<HostLayoutContextValue | undefined>(undefined)
 
+/**
+ * spro sprint 2026-11b S10 — wraps a layout block's DOM in the viewer and runs its `reveal` hook when
+ * the host is interactive (`HostLayoutContext.activity`, set by DeckViewer only). `display: contents`:
+ * the wrapper adds no box, the block's parts keep their positions. Elsewhere it renders the children
+ * as they are (the static form).
+ */
+export function RevealMount({ def, props, blockKey, children }: { def: BlockDefinition; props: Record<string, unknown>; blockKey: string; children: React.ReactNode }): React.ReactElement {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const hctx = React.useContext(HostLayoutContext)
+  const factory = hctx?.activity
+  useIsomorphicLayoutEffect(() => {
+    const el = ref.current
+    if (!el || !def.reveal || !factory) return
+    return def.reveal(el, factory(blockKey), props as never)
+  }, [def, props, factory, blockKey])
+  if (!def.reveal || !factory) return <React.Fragment>{children}</React.Fragment>
+  return (
+    <div ref={ref} data-reveal={def.type} style={{ display: 'contents' }}>
+      {children}
+    </div>
+  )
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Paint → CSS helpers                                                             */
 /* ─────────────────────────────────────────────────────────────────────────────── */

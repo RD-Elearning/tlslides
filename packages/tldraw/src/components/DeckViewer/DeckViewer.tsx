@@ -10,7 +10,7 @@ import { TDShapeType } from '~types'
 // Verified with the same walker `import-graph.spec.ts` uses: none of these leaf modules reach
 // `parity-harness.ts`, `state/TldrawApp`, `state/sessions/`, or `mobx`.
 import type { DeckSpec, Box, BlockMotionRuntime, ActivityRuntime, ActivityState } from '~blocks/types'
-import { isActivitySlide } from '~blocks/activity/is-activity-slide'
+import { isInteractiveSlide } from '~blocks/activity/is-activity-slide'
 import { activityLabels } from '~blocks/activity/labels'
 import type { MotionDriver } from '~blocks/motion/driver'
 import type { BlockDefinition } from '~blocks/types'
@@ -18,7 +18,7 @@ import type { LayoutContext } from '~blocks/types'
 import { deckSpecToDocument } from '~blocks/deck-document'
 import { deckLayoutContext, contextForBlock } from '~blocks/deck-context'
 import { ambientStyleOf, revealStyleOf, shapeToBlock, shapeToRevealBlock } from '~blocks/shape-bridge'
-import { renderNodeToDom, paintToCSS, HostLayoutContext } from '~blocks/render-dom'
+import { renderNodeToDom, paintToCSS, HostLayoutContext, RevealMount } from '~blocks/render-dom'
 import { BlockRegistry } from '~blocks/registry'
 import { HostRegistry } from '~blocks/host-registry'
 import { layoutBlock } from '~blocks/layout/layout-child'
@@ -332,7 +332,8 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
   const reducedMotion = usePrefersReducedMotion()
 
   /* --- L04: activity slides — clicks belong to the activity; keys keep navigating ---------- */
-  const activitySlide = React.useMemo(() => isActivitySlide(spec.slides[currentSlideIndex] as never, blockRegistry), [spec, currentSlideIndex, blockRegistry])
+  // S10-b: an interactive reveal block takes the clicks like an activity
+  const activitySlide = React.useMemo(() => isInteractiveSlide(spec.slides[currentSlideIndex] as never, blockRegistry), [spec, currentSlideIndex, blockRegistry])
   // viewer-session state of each activity block, kept until the spec changes
   const activityStates = React.useRef<Map<string, ActivityState>>(new Map())
   const activityFactories = React.useRef<Map<string, (blockKey: string) => ActivityRuntime>>(new Map())
@@ -1080,7 +1081,9 @@ export const DeckViewer: React.FC<DeckViewerProps> = ({
                       headless: false,
                       activity: activityFactoryFor(page.id, shape.id, blockSpec.props),
                     }}>
-                      <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} meta={(shape.props as Record<string, unknown>).$block} />
+                      <RevealMount def={blockDef} props={blockSpec.props} blockKey={`${page.id}:${shape.id}`}>
+                        <BlockContent blockDef={blockDef} props={blockSpec.props} ctx={ctx} paintKey={`${blockSpec.type}|${blockSpec.id ?? ''}`} meta={(shape.props as Record<string, unknown>).$block} />
+                      </RevealMount>
                     </HostLayoutContext.Provider>
                   ) : (
                     <UnknownBlockPlaceholder type={shape.componentId} />

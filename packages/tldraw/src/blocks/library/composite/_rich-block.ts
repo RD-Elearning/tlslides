@@ -37,6 +37,8 @@ export interface RichBlockConfig<P extends Record<string, unknown>> {
   sections?: { head?: string[]; foot?: string[] }
   /** S09: figures (`value[i]` parts) count up as their cells arrive. */
   countUp?: boolean
+  /** S10: the viewer-only reveal hook (`BlockDefinition.reveal`). */
+  reveal?: BlockDefinition['reveal']
 }
 
 const BUILDERS = new WeakMap<BlockDefinition, (props: Record<string, unknown>) => BlockSpec>()
@@ -87,6 +89,7 @@ export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBloc
       return s.layout ? s.layout(ctx) : richLayout(ctx, s.items, s.opts, s.head, s.foot)
     }) as BlockDefinition['layout'],
     capacity: ((props: P) => schemaCapacity(cfg.schema, props)) as BlockDefinition['capacity'],
+    ...(cfg.reveal ? { reveal: cfg.reveal } : {}),
   }
   BUILDERS.set(def, build as (props: Record<string, unknown>) => BlockSpec)
   return def

@@ -275,6 +275,10 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.image-notes': t2(['variant']), // spro sprint 2026-11b S09
   'tls.c.cover-masthead': t2(['variant']), // spro sprint 2026-11b S09
   'tls.c.closing-recap': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.tabs': t2(['variant']), // spro sprint 2026-11b S10
+  'tls.c.accordion': t2([]), // spro sprint 2026-11b S10
+  'tls.c.step-through': t2([]), // spro sprint 2026-11b S10
+  'tls.c.hotspots': t2(['variant']), // spro sprint 2026-11b S10
   'tls.c.explainer': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.frayer': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.worked-example': t2(['variant']), // spro sprint 2026-11b S08
