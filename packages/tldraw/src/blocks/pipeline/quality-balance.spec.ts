@@ -106,11 +106,16 @@ describe('a floating body', () => {
   const slide = (body: BlockSpec[]): SlideSpec => ({ id: 's', layout: 'timeline', valign: 'auto', regions: { title: [T('Sáu mục tiêu của chương 1')], timeline: body } })
 
   it('a two-column key-value strip under a large title is flagged although its boxes fill the page', () => {
-    const q = judge(slide([kv]))
+    // as authored (S06: a block that opts out of `style.fill`)
+    const q = judge(slide([{ ...kv, style: { fill: false } }]))
     expect(q.fill).toBeGreaterThan(0.5)
     expect(q.regionFill).toBeGreaterThan(0.3)
     expect(q.bodyCover).toBeLessThan(0.55)
     expect(q.findings.map((f) => f.code)).toContain('quality/floating-body')
+  })
+
+  it('S06: the same list filling its region is no longer a floating strip', () => {
+    expect(judge(slide([kv])).findings.map((f) => f.code)).not.toContain('quality/floating-body')
   })
 
   it('a lead intro over the list is not a floating body', () => {
@@ -119,6 +124,6 @@ describe('a floating body', () => {
   })
 
   it('only judged on balance', () => {
-    expect(judge(slide([kv]), false).findings.map((f) => f.code)).not.toContain('quality/floating-body')
+    expect(judge(slide([{ ...kv, style: { fill: false } }]), false).findings.map((f) => f.code)).not.toContain('quality/floating-body')
   })
 })

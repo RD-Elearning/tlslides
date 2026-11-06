@@ -16,9 +16,11 @@ const registry = new BlockRegistry()
 registerBuiltInBlocks(registry)
 const FRAME = { width: 1920, height: 1080 }
 const T: BlockSpec = { id: 't', type: 'tls.t.title', props: { text: 'Three ways to walk a tree' } }
+// S06: a list opts out of `style.fill` here, so growText is what grows it (a filled list: below)
 const list = (n: number, text = 'Visit the node, then its children'): BlockSpec => ({
   id: 'l',
   type: 'tls.t.bullets',
+  style: { fill: false },
   props: { items: Array.from({ length: n }, (_, i) => ({ text: `${text} ${i + 1}` })) },
 })
 const slide = (body: BlockSpec[], valign?: 'auto'): SlideSpec => ({ id: 's', layout: 'title-content', ...(valign ? { valign } : {}), regions: { title: [T], content: body } }) as SlideSpec
@@ -67,9 +69,16 @@ describe('growText (L5)', () => {
   })
 
   it('the decompiler returns the authored style; renderers keep the scale', () => {
-    const shape = compileSlide(slide([{ ...list(3), style: { align: 'start' } }], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
+    const shape = compileSlide(slide([{ ...list(3), style: { align: 'start', fill: false } }], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
     expect(shapeToBlock(shape)?.style?.textScale).toBeGreaterThan(1)
-    expect(shapeToAuthoredBlock(shape)?.style).toEqual({ align: 'start' })
+    expect(shapeToAuthoredBlock(shape)?.style).toEqual({ align: 'start', fill: false })
+  })
+
+  it('S06: a list that fills its region is not scaled again', () => {
+    const { style: _, ...filled } = list(3)
+    expect(grownIds(slide([filled], 'auto'))).toEqual([])
+    const shape = compileSlide(slide([filled], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
+    expect((shape.props.$block as { filled?: boolean }).filled).toBe(true)
   })
 })
 

@@ -116,7 +116,7 @@ interface Plan {
   revealed: boolean
 }
 
-function plan(props: QuizProps, ctx: LayoutContext): Plan {
+function plan(props: QuizProps, ctx: LayoutContext, grow = 0): Plan {
   const W = Math.max(0, ctx.box.width) || 0
   const gap = ctx.tokens.space.md
   const padX = ctx.tokens.space.lg
@@ -131,7 +131,7 @@ function plan(props: QuizProps, ctx: LayoutContext): Plan {
   const qSize = 'subheading' as const
   const qH = measureHeights(ctx, [{ id: 'q', type: 'tls.t.title', props: { text: toMeasurable(props.question), size: qSize } }], W)[0]
   const textH = measureHeights(ctx, opts.map((t, i) => ({ id: `o${i}`, type: 'tls.t.body', props: { text: t } })), textW)
-  const rowH: number[] = opts.map((_, i) => Math.max(badge + 2 * padY, textH[i] + 2 * padY + 4))
+  const rowH: number[] = opts.map((_, i) => Math.max(badge + 2 * padY, textH[i] + 2 * padY + 4) + grow)
   // Equal height within a grid row.
   if (cols === 2) for (let i = 0; i < opts.length; i += 2) rowH[i] = rowH[i + 1] = Math.max(rowH[i], rowH[i + 1] ?? 0)
   const expl = revealed ? explanationSpec(props) : undefined
@@ -142,8 +142,9 @@ function plan(props: QuizProps, ctx: LayoutContext): Plan {
   return { qSize, qH, opts, cols, optW, textW, rowH, textH, expl, explH, needed, gap, badge, padX, revealed }
 }
 
-export function layoutQuiz(props: QuizProps, ctx: LayoutContext): LayoutNode {
-  const p = plan(props, ctx)
+/** `grow` (S06, a filled `tls.a.choice` poster): every option row that many units taller. */
+export function layoutQuiz(props: QuizProps, ctx: LayoutContext, grow = 0): LayoutNode {
+  const p = plan(props, ctx, grow)
   const ans = p.revealed ? answerIndex(props) : -1
   const total = Math.max(1, Math.ceil(p.needed))
   const surfaceAlt = ctx.resolveColor('surfaceAlt').color

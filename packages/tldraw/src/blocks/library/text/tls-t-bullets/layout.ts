@@ -70,7 +70,8 @@ function layoutAuthored(props: BulletsProps, ctx: LayoutContext): LayoutNode {
       const wraps = kids.some((c) => c.k === 'text' && !!c.part?.endsWith('.text') && c.lines.length > FIT_MAX_LINES)
       if (last || (tree.box.height <= H * FIT_SHARE && !wraps)) {
         // centred in the box: a short list beside a full-height photo sits at its middle
-        const dy = Math.max(0, (H - tree.box.height) / 2)
+        // S06: a filled list stays under the title (its gaps take the room)
+        const dy = ctx.tokens.filling ? 0 : Math.max(0, (H - tree.box.height) / 2)
         const children = (tree.k === 'group' ? tree.children : []).map((c) => ({ ...c, box: { ...c.box, y: c.box.y + dy } }) as LayoutNode)
         return { k: 'group', part: 'root', box: { ...tree.box, height: Math.max(H, tree.box.height) }, children }
       }

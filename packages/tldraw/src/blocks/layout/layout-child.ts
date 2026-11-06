@@ -7,6 +7,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { fillLayout } from './fill'
 import { currentProps, dropUnresolved, inferLeafPaths, mapChildPaths, withCurrentProps } from './edit-scope'
 import type {
   BlockDefinition,
@@ -165,6 +166,23 @@ function nestOptions(ctx: LayoutContext): Partial<CreateLayoutContextOptions> {
   return st
     ? { nestLevel: st.level, authoredBlock: st.authoredBlock, authored: st.authored, literalInks: st.literalInks, ...(st.blockDefaults ? { blockDefaults: st.blockDefaults } : {}) }
     : {}
+}
+
+/**
+ * S06 — `ctx` with every type token `n` steps up `ladder` (sizes stay on the scale), for the block
+ * and every child it lays out (a composed activity poster): the context is rebuilt from its options
+ * with the shifted type scale. A hand-built context (no options) gets a `resolveText` shift only.
+ */
+export function shiftTypeContext(ctx: LayoutContext, n: number, ladder: readonly TypeToken[]): LayoutContext {
+  if (n <= 0) return ctx
+  const up = (t: TypeToken): TypeToken => {
+    const i = ladder.indexOf(t)
+    return i < 0 ? t : ladder[Math.min(ladder.length - 1, i + n)]
+  }
+  const opts = OPTIONS.get(ctx)
+  if (!opts) return { ...ctx, resolveText: (t, over) => ctx.resolveText(up(t), over) }
+  const type = Object.fromEntries(Object.keys(ctx.tokens.type).map((k) => [k, { ...ctx.tokens.type[up(k as TypeToken)] }])) as ResolvedTokens['type']
+  return createLayoutContext({ ...opts, box: { width: ctx.box.width, height: ctx.box.height }, tokens: { ...ctx.tokens, type }, surface: ctx.surface, ...(ctx.style ? { style: ctx.style } : {}), ...nestOptions(ctx) })
 }
 
 /**
@@ -956,7 +974,8 @@ function layoutBlockInner(
 
   // Identity invariant: no style override → call layout directly, zero geometry change.
   if (!hasPadding && !hasAlign) {
-    return def.layout(props, ctx)
+    // S06: a `spread` region's main block uses its room by its `fillPolicy` (`style.fill`)
+    return fillLayout(def, props, ctx)
   }
 
   // Resolve padding into [vertical, horizontal].

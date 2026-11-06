@@ -4,6 +4,7 @@
  * "Đúng / Sai" slots; the live block puts a button pair over each row.
  */
 
+import { fillPoster } from '../../../layout/fill'
 import type { BlockDefinition, BlockSchema, LayoutContext, LayoutNode, LintFinding } from '../../../types'
 import { capacityOf } from '../../diagram/_kit'
 import { htmlHostNode } from '../../../html-block'
@@ -82,7 +83,10 @@ export function lintTrueFalse(props: TrueFalseProps): LintFinding[] {
 export function poster(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
   const p = props as TrueFalseProps
   const st = (Array.isArray(p.statements) ? p.statements : []).slice(0, TF_MAX)
-  return cellsPoster(ctx, { prompt: p.prompt, cells: st.map((s) => String(s?.text ?? '')), cols: 1, cellMin: 72, footer: FOOTER_H + (p.explanation ? EXPLANATION_H : 0) })
+  const build = (c: LayoutContext, grow: number) =>
+    cellsPoster(c, { prompt: p.prompt, cells: st.map((s) => String(s?.text ?? '')), cols: 1, cellMin: 72, footer: FOOTER_H + (p.explanation ? EXPLANATION_H : 0), grow })
+  // S06-D: a filled poster: larger type, then taller rows (each at most one more row height)
+  return fillPoster(ctx, build, st.length, 72)
 }
 
 export const tlsATrueFalse: BlockDefinition = {
@@ -106,6 +110,7 @@ export const tlsATrueFalse: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [1500, 820], min: [1050, 600] },
+  fillPolicy: ['type', 'stretch'],
   layout: ((props: Record<string, unknown>, ctx: LayoutContext) => htmlHostNode(poster, 'tls.a.true-false', props, ctx)) as BlockDefinition['layout'],
   poster,
   html: { template, interact: interact as NonNullable<BlockDefinition['html']>['interact'] },

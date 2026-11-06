@@ -156,6 +156,11 @@ export interface BlockStyleSpec {
   /** 2026-10-24: steps down a block's own type tiers (`fitTier`), 1-3. `compileSlide` sets it when
    *  the blocks that pick their type by box would give the slide more than five text sizes. */
   typeStep?: number
+  /** spro sprint 2026-11b S06-a: `compileSlide` sets it on a region's main block when the region is
+   *  placed with `spread` (under a heading, the body anchored at the top): the block may take the
+   *  whole room it is given and uses it by its `fillPolicy` (`layout/fill.ts`). Never authored;
+   *  recorded as `$block.filled` so the decompiler drops it. */
+  fill?: boolean
   /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
@@ -564,6 +569,11 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
    *  that is centred / bottom-aligned, the block keeps its content height instead of taking the
    *  leftover (for a block that only centres itself in a taller box — spro demo T19). */
   size: { preferred: [number, number]; min: [number, number]; aspect?: number; hug?: boolean }
+  /** spro sprint 2026-11b S06-b — what the block does with height beyond its natural height when
+   *  `compileSlide` gives it the room (`style.fill`), in order: `type` (its type tiers step up),
+   *  `spacing` (the gaps between its items grow), `stretch` (its rows grow taller). Absent = the
+   *  block cannot use more height: its region stays centred under the title. See `layout/fill.ts`. */
+  fillPolicy?: readonly FillStep[]
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
    *  This is the single source of truth for what the block looks like.
@@ -1019,6 +1029,9 @@ export interface IconPath {
  * The layout function is pure: given the same props, box, and context, it returns
  * the same tree. No `document`, no `window`, no `Date.now()`, no throwing.
  */
+/** S06-b — one step of a block's `fillPolicy`. */
+export type FillStep = 'type' | 'spacing' | 'stretch'
+
 export interface LayoutContext {
   /** The box this block must fill, in slide units. Origin at top-left (0,0). */
   box: Size
@@ -1137,6 +1150,8 @@ export interface ResolvedTokens {
   /** CR7a: set on an intrinsic measure (`measureIntrinsicSize`): list text keeps its authored type
    *  there (`growText`), so a container sizes it as authored and grows it only in the room it gives. */
   measuring?: boolean
+  /** S06: set while `fillLayout` drives a block's type (a list's own `growText` then stays out). */
+  filling?: boolean
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */

@@ -634,7 +634,7 @@ export const SLIDE_LAYOUTS: SlideLayout[] = [
   { id: 'kpi-row', name: 'KPI Row', compile: layoutKpiRow },
   { id: 'blank', name: 'Blank', compile: layoutBlank, regionAlign: { content: 'center' } },
   { id: 'full-bleed', name: 'Full Bleed', compile: layoutFullBleed },
-  { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'center', content: 'center' } },
+  { id: 'sidebar-title', name: 'Sidebar Title', compile: layoutSidebarTitle, regionAlign: { title: 'start', content: 'center' } },
   { id: 'band', name: 'Band', compile: layoutBand, regionAlign: { band: 'center', foot: 'center' }, regionStack: [['band', 'foot']] },
   { id: 'section-stack', name: 'Section Stack', compile: layoutSectionStack, regionAlign: { content: 'center' } },
   // spro creative CR13: layouts v2 (PLAN §6.12)

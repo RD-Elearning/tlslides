@@ -216,6 +216,8 @@ function growText(
   )
   if (!area) return null
   const base = compileSlideBlocks(spec, frame, tokens, registry, opts)
+  // S06: a block that filled its region already grew its type (`fillLayout`)
+  if (base.shapes.some((sh) => (sh.props[BLOCK_PROP_KEY] as { filled?: boolean } | undefined)?.filled)) return null
   const before = paintedContent(base, ids, tokens, registry, opts)
   if (!before.ok || !before.box) return null
   // the height share only for a structure (cards, a diagram): text alone sizes itself (a statement
@@ -351,6 +353,21 @@ function typeSizeCount(result: CompileSlideResult, tokens: ResolvedTokens, regis
 }
 
 /** Ornament and pictures: their size is not their type (`growText` leaves them as authored). */
+/** S06-a: a region's alignment; `spread` = anchored at the top, the main block given the room. */
+type RegionAlign = 'start' | 'center' | 'end' | 'spread'
+/** S06-a: blocks that are never a region's main block (decoration, accents, a rule). */
+const NOT_MAIN: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.m.icon-cluster', 'tls.x.rule', 'tls.t.kicker', 'tls.t.takeaway', 'tls.t.callout'])
+/** S06-a: layout region alignments that `spread` may replace (a body centred under a heading). */
+const SPREAD_OVER: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+  ['timeline', new Set(['timeline'])],
+  ['blank', new Set(['content'])],
+  ['sidebar-title', new Set(['content'])],
+])
+function hasText(t: unknown): boolean {
+  if (typeof t === 'string') return t.trim().length > 0
+  return !!t && typeof t === 'object' && Array.isArray((t as { runs?: unknown }).runs) && (t as { runs: Array<{ text?: string }> }).runs.some((r) => (r.text ?? '').trim().length > 0)
+}
+
 const GROW_SKIP: ReadonlySet<string> = new Set(['tls.m.decoration', 'tls.m.pattern', 'tls.x.rule', 'tls.m.image', 'tls.m.icon-cluster'])
 
 /** Blocks that may bleed off the frame edge in the `visual` region of `full-bleed-half`: pictures and colour fields. */
@@ -479,9 +496,29 @@ function compileSlideUnstyled(
 
   // 2. Get vertical alignment map from the resolved layout.
   const regionAlignMap = resolvedLayout?.regionAlign
-  // L1: `valign: 'auto'` centres the content regions the layout leaves at the top
-  const alignOf = (name: string): 'start' | 'center' | 'end' =>
-    regionAlignMap?.[name] ?? (spec.valign === 'auto' && name !== 'title' ? 'center' : 'start')
+  // S06-a: under a heading, a region whose main block can use more height (`fillPolicy`) is placed
+  // with `spread` — anchored under the title, the main block given the room (`style.fill`); any
+  // other region of a balanced slide keeps L1's `center`
+  const titled = (spec.regions.title ?? []).some((b) => b && !b.layer && b.type === 'tls.t.title' && hasText((b.props as { text?: unknown })?.text))
+  const mainOf = new Map<string, number>()
+  if (registry && spec.valign === 'auto' && titled) {
+    for (const [name, blocks] of Object.entries(spec.regions)) {
+      if (name === 'title' || !Array.isArray(blocks)) continue
+      const i = blocks.findIndex((b) => b && !b.layer && !NOT_MAIN.has(b.type))
+      if (i >= 0 && registry.get(blocks[i].type)?.fillPolicy?.length && blocks[i].style?.fill === undefined) mainOf.set(name, i)
+    }
+  }
+  const alignOf = (name: string): RegionAlign => {
+    const own = regionAlignMap?.[name]
+    if (own !== undefined && !SPREAD_OVER.get(resolvedLayout?.id ?? '')?.has(name)) return own
+    if (spec.valign === 'auto' && name !== 'title') return mainOf.has(name) ? 'spread' : own ?? 'center'
+    return own ?? 'start'
+  }
+  const regions: SlideSpec['regions'] = { ...spec.regions }
+  for (const [name, i] of mainOf) {
+    if (alignOf(name) !== 'spread') continue
+    regions[name] = regions[name].map((b, j) => (j === i ? { ...b, style: { ...(b.style ?? {}), fill: true } } : b))
+  }
 
   // V2.1: Two-pass region resolution.
   // Pass 1 — measure every region's blocks once (LO1.5: fill-aware, see `measureRegionBlocks`);
@@ -500,10 +537,23 @@ function compileSlideUnstyled(
   if (registry) {
     for (const regionName of knownRegionNames) {
       const regionBox = regionBoxes[regionName]
-      const blocks = spec.regions[regionName] ?? []
+      const blocks = regions[regionName] ?? []
       if (blocks.length === 0 || !regionBox) continue
 
-      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, alignOf(regionName), stackable.has(regionName))
+      const align = alignOf(regionName)
+      const blockHeights = measureRegionBlocks(blocks, regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, align === 'spread' ? 'center' : align, stackable.has(regionName))
+      if (align === 'spread' && blocks.length > 1) {
+        // S06-a: the other blocks keep their own height; the main block takes the rest of the region
+        const main = mainOf.get(regionName)!
+        blocks.forEach((b, j) => {
+          if (j === main) return
+          const [own] = measureRegionBlocks([b], regionBox, gap, tokens, registry, intrinsicSizeCache, opts?.blockDefaults, 'center')
+          if (own > 0 && own < regionBox.height - FLOW_TOL) blockHeights[j] = Math.min(blockHeights[j] > 0 ? Math.max(blockHeights[j], own) : own, own)
+        })
+        const others = blockHeights.reduce((sum, h, j) => (j !== main && h > 0 ? sum + h : sum), 0)
+        const room = regionBox.height - others - (blocks.length - 1) * gap
+        if (room > blockHeights[main]) blockHeights[main] = room
+      }
       regionBlockHeights.set(regionName, blockHeights)
 
       // Natural height = measured blocks + gaps.
@@ -518,7 +568,7 @@ function compileSlideUnstyled(
   // it that horizontally overlap it and actually grew or moved; side-by-side columns flow
   // independently (an overfull `left` no longer pushes `right` below it).
   const regionYPositions = registry
-    ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (spec.regions[name] ?? []).length > 0, gap)
+    ? reflowRegions(knownRegionNames, regionBoxes, regionNaturalHeights, (name) => (regions[name] ?? []).length > 0, gap)
     : new Map<string, number>()
 
   // spro creative R3e: a `regionStack` group is centred as one stack across its regions' span
@@ -552,7 +602,7 @@ function compileSlideUnstyled(
   const shapes: ComponentShape[] = []
   let childIndex = 1
 
-  for (const [regionName, blocks] of Object.entries(spec.regions)) {
+  for (const [regionName, blocks] of Object.entries(regions)) {
     const regionBox: Box | undefined = regionBoxes[regionName]
 
     if (!regionBox) {
@@ -663,6 +713,7 @@ function compileSlideUnstyled(
         definitionMotion: blockDef?.motion,
       })
       if (stackedY.has(regionName)) (shape.props[BLOCK_PROP_KEY] as Record<string, unknown>).stackRegion = regionName
+      if (regionAlign === 'spread' && i === mainOf.get(regionName)) (shape.props[BLOCK_PROP_KEY] as Record<string, unknown>).filled = true
       shapes.push(shape)
       if (blockDef && block.motion === undefined) styleCandidates.push({ shape, block, def: blockDef, box })
       currentY += blockHeight + gap
@@ -831,7 +882,7 @@ function measureRegionBlocks(
   const ctxFor = (block: BlockSpec): LayoutContext => {
     const blockStyle = block.style
     const usePerBlock =
-      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined || blockStyle.textScale !== undefined)
+      blockStyle !== undefined && (blockStyle.padding !== undefined || blockStyle.align !== undefined || blockStyle.textScale !== undefined || blockStyle.fill !== undefined)
     return usePerBlock
       ? createLayoutContext({
           box: regionSize,

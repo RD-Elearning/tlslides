@@ -34,6 +34,7 @@ export const tlsTNumbered: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [800, 240], min: [440, 230] },
+  fillPolicy: ['type', 'spacing'],
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

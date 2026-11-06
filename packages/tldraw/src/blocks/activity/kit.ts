@@ -25,6 +25,8 @@ export interface CellsPoster {
   cellSize?: 'body' | 'subheading' | 'title'
   /** Footer band height (feedback and controls). */
   footer: number
+  /** S06: every cell this many units taller (a filled poster, `fillPoster`). */
+  grow?: number
 }
 
 export interface CellsPlan {
@@ -41,7 +43,7 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
   const cellW = Math.max(1, (W - gap * (cols - 1)) / cols)
   const qH = measureHeights(ctx, [{ id: 'q', type: 'tls.t.title', props: { text: toMeasurable(o.prompt), size: 'subheading' } }], W)[0]
   const textH = measureHeights(ctx, o.cells.map((t, i) => ({ id: `c${i}`, type: o.cellSize ? 'tls.t.title' : 'tls.t.body', props: o.cellSize ? { text: t, size: o.cellSize } : { text: t } })), Math.max(1, cellW - 2 * padX))
-  const heights = o.cells.map((_, i) => Math.max(o.cellMin ?? 0, textH[i] + 2 * padY + 4, 64))
+  const heights = o.cells.map((_, i) => Math.max(o.cellMin ?? 0, textH[i] + 2 * padY + 4, 64) + (o.grow ?? 0))
   // equal height within a grid row
   for (let r = 0; r * cols < o.cells.length; r++) {
     const row = heights.slice(r * cols, r * cols + cols)
