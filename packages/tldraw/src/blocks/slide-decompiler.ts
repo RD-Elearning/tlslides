@@ -23,6 +23,7 @@ import { connectorFromBlock, CONNECTOR_BLOCK_TYPE } from './connectors'
 import { BLOCK_PROP_KEY, shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
+import { slideTheme } from './palettes'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -458,6 +459,12 @@ export function documentToDeckSpec(
       const master = styleMasters(style).find((m) => m.name === spec.masterId)
       if (master?.background && JSON.stringify(master.background) === JSON.stringify(spec.background)) delete spec.background
       delete spec.masterId
+    }
+    // S13-H: the solid ground a toned slide was given (`tonePageBackground`) was filled in, not authored
+    if (spec.tone && spec.background && (spec.tone === 'deep' || spec.tone === 'accent')) {
+      const g = slideTheme(theme, spec.tone).colors.background
+      const bg = spec.background as { type?: string; color?: string }
+      if (bg.type === 'solid' && bg.color === g) delete spec.background
     }
     slides.push(spec)
     findings.push(...pageFindings)

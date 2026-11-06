@@ -9,6 +9,7 @@ import { BUILT_IN_STYLES } from './styles'
 import { hexContrast, slideTheme } from './palettes'
 import { analyzeDeck } from './layout-report'
 import { resolveDeckTheme } from './deck-document'
+import { documentToDeckSpec } from './slide-decompiler'
 import { deckSpecToDocument } from './deck-document'
 import { contextForBlock } from './deck-context'
 import { resolveTokens } from './tokens'
@@ -70,4 +71,41 @@ test.each(['corporate', 'academic-lecture', 'minimal'])('%s: a deep slide paints
   const findings = analyzeDeck(toned)[content].findings?.filter((f) => String((f as { kind?: string }).kind ?? '').startsWith('contrast')) ?? []
   const baseFindings = analyzeDeck(deck)[content].findings?.filter((f) => String((f as { kind?: string }).kind ?? '').startsWith('contrast')) ?? []
   expect(findings.length).toBeLessThanOrEqual(baseFindings.length)
+})
+
+describe('S13-H a toned slide paints its tone ground (the master only when the tone text reads on it)', () => {
+  const page = (style: string, tone?: 'deep' | 'accent', slide = 0) => {
+    const deck = deckOf(style)
+    const toned: DeckSpec = { ...deck, slides: deck.slides.map((s, k) => (k === slide && tone ? { ...s, tone } : s)) }
+    const { document } = deckSpecToDocument(toned)
+    return { page: document.pages[toned.slides[slide].id], doc: document, toned }
+  }
+  const ground = (style: string, tone: 'deep' | 'accent') => {
+    const { page: p, doc } = page(style, tone)
+    return { bg: p.background as { type?: string; color?: string } | undefined, theme: slideTheme(doc.theme as never, tone) }
+  }
+
+  it('a masterless style paints the tone ground as a solid page (it painted nothing, so the deck ground showed)', () => {
+    const { bg, theme } = ground('minimal', 'deep')
+    expect(bg).toEqual({ type: 'solid', color: theme.colors.background })
+    expect(hexContrast(theme.colors.text, bg!.color!)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('no tone: unchanged', () => {
+    expect(page('minimal').page.background).toBeUndefined()
+  })
+
+  it('a master page the tone text reads on is kept', () => {
+    const { page: base } = page('corporate')
+    const { bg } = ground('corporate', 'deep')
+    if (base.background) expect(bg).toBeDefined()
+  })
+
+  it('the compiled solid ground is not written back into the spec', () => {
+    const { doc, toned } = page('minimal', 'deep')
+    const back = documentToDeckSpec(doc).spec
+    expect(back.slides[0].background).toBeUndefined()
+    expect(back.slides[0].tone).toBe('deep')
+    expect(toned.slides[0].background).toBeUndefined()
+  })
 })

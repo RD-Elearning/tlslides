@@ -26,6 +26,8 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
 import { resolveMaster } from './master-renderer'
+import { slideTheme } from './palettes'
+import { tonePageBackground } from './tone-ground'
 import { placeDeckMotifs } from './motif-zone'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -228,7 +230,8 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      background: result.background ?? sm.background,
+      // S13-H: a deep / accent slide paints its tone's ground unless the master's own page already carries the tone's text
+      background: result.background ?? (slideSpec.tone === 'deep' || slideSpec.tone === 'accent' ? tonePageBackground(sm.background, slideTheme(theme, slideSpec.tone)) : sm.background),
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,

@@ -42,6 +42,7 @@ import type {
 } from './types'
 import type { ComponentShape, DeckTheme } from '~types'
 import { resolveThemeColor } from '~state/shapes/shared'
+import { tonePageBackground } from './tone-ground'
 import { designFindings, inspectBlock, type BlockInspection, type DesignBlock, type DesignCode } from './design-checks'
 import { paintAt, parseInk, type Background } from './layout/paint-model'
 import { shapeToRevealBlock } from './shape-bridge'
@@ -980,7 +981,9 @@ export function analyzeDeck(
   const backgroundOf = (s: SlideSpec): Paint | undefined => {
     if (s.background) return s.background
     const id = styleMasterFor(style, s)
-    return id ? masters[id]?.background : undefined
+    const master = id ? masters[id]?.background : undefined
+    // S13-H: a deep / accent slide's page is the master's when the tone's text reads on it, else the tone's ground
+    return s.tone === 'deep' || s.tone === 'accent' ? tonePageBackground(master, slideTheme(theme, s.tone)) : master
   }
   return deck.slides.map((s) => {
     const background = backgroundOf(s)
