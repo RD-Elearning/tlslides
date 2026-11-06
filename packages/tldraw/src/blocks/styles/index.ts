@@ -47,6 +47,29 @@ export const BUILT_IN_STYLES: readonly DeckStyle[] = [
 /** Reserved master-name prefix for style masters. */
 export const STYLE_MASTER_PREFIX = 'style:'
 
+/**
+ * spro sprint 2026-11b S12-D — the page skeletons v2 a style prefers and avoids (the art kit marks the
+ * preferred ones and leaves the avoided out). A variant style takes its family's entry (`doodle-*` → doodle).
+ */
+export const STYLE_LAYOUTS: Readonly<Record<string, { prefer: readonly string[]; avoid: readonly string[] }>> = {
+  corporate: { prefer: ['header-band', 'two-rows'], avoid: ['framed'] },
+  consulting: { prefer: ['header-band', 'aside', 'two-rows'], avoid: ['framed', 'mosaic'] },
+  editorial: { prefer: ['magazine', 'aside'], avoid: ['header-band'] },
+  luxury: { prefer: ['framed', 'aside'], avoid: ['header-band', 'mosaic'] },
+  minimal: { prefer: ['framed', 'stage'], avoid: ['header-band'] },
+  swiss: { prefer: ['two-rows', 'magazine'], avoid: ['framed'] },
+  glass: { prefer: ['mosaic', 'framed'], avoid: [] },
+  gradient: { prefer: ['hero-top', 'mosaic'], avoid: [] },
+  doodle: { prefer: ['mosaic', 'stage'], avoid: ['framed'] },
+  memphis: { prefer: ['mosaic', 'two-rows'], avoid: ['framed'] },
+  'academic-lecture': { prefer: ['aside', 'stage', 'header-band'], avoid: [] },
+}
+
+export function styleLayouts(id: string | undefined): { prefer: readonly string[]; avoid: readonly string[] } {
+  if (!id) return { prefer: [], avoid: [] }
+  return STYLE_LAYOUTS[id] ?? STYLE_LAYOUTS[id.split('-')[0]] ?? { prefer: [], avoid: [] }
+}
+
 export function getDeckStyle(id: string | undefined): DeckStyle | undefined {
   if (typeof id !== 'string') return undefined
   return BUILT_IN_STYLES.find((s) => s.id === id)

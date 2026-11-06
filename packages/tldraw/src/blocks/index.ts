@@ -187,7 +187,7 @@ export { checkGrammar, nearestPattern, validateFreeComposition, GRAMMAR_CONTAINE
 export type { GrammarFinding } from './composition-grammar'
 export { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
 export { iconsFor, queryWords } from './icons/search'
-export { composeKit, composeCard, compositionV2Card, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
+export { composeKit, composeCard, compositionV2Card, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, COMPOSE_LAYOUTS_V2, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
 export { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 export type { SlideShape, ComposeKit, ComposeKitOptions } from './compose-kit'
 // spro creative CR2: capability cards, moves and the shortlist
@@ -314,6 +314,8 @@ export type { DeckSpec } from './types'
 export {
   BUILT_IN_STYLES,
   STYLE_MASTER_PREFIX,
+  STYLE_LAYOUTS,
+  styleLayouts,
   getDeckStyle,
   stylePaletteById,
   stylePaletteIds,

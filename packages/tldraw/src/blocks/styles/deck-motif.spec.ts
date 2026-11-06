@@ -74,3 +74,15 @@ describe('deck motif (F1)', () => {
     expect(report[1].blocks.some((b) => b.id.startsWith('style:') && b.type === 'tls.l.split')).toBe(true)
   })
 })
+
+describe('S12 style layouts', () => {
+  const { STYLE_LAYOUTS, styleLayouts, BUILT_IN_STYLES } = require('./index') as typeof import('./index')
+  const { getSlideLayout } = require('../slide-layouts') as typeof import('../slide-layouts')
+  it('every style resolves an entry (variants by family); every named layout exists; prefer and avoid never overlap', () => {
+    for (const s of BUILT_IN_STYLES) expect([s.id, styleLayouts(s.id).prefer.length > 0]).toEqual([s.id, true])
+    for (const [id, e] of Object.entries(STYLE_LAYOUTS)) {
+      for (const l of [...e.prefer, ...e.avoid]) expect([id, l, !!getSlideLayout(l as never)]).toEqual([id, l, true])
+      expect(e.prefer.filter((l) => e.avoid.includes(l))).toEqual([])
+    }
+  })
+})
