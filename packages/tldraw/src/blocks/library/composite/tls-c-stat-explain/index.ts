@@ -87,12 +87,12 @@ function layoutStat(p: StatExplainProps, ctx: LayoutContext): LayoutNode {
       if (variant === 'ring') {
         const D = Math.max(120, Math.min(lw, H > 0 ? H : lw))
         pieces.push({ id: 'item[0].visual', spec: { id: 'item[0].visual', type: 'tls.d.progress-ring', props: { value: share, max: 100, thickness: 'md' } }, box: { x: (lw - D) / 2, y: 0, width: D, height: D } })
-        s.value.props.size = figureToken(ctx, String(s.value.props.text), rw, rung.figure)
+        s.value.props.size = figureToken(ctx, String(s.value.props.text), rw, 'display')
         const col = stackPieces(ctx, [s.value, s.unit, s.label, s.text, s.source], lw + gap, 0, rw, sp.sm)
         pieces.push(...col.pieces)
         height = Math.max(D, col.height)
       } else {
-        s.value.props.size = figureToken(ctx, String(s.value.props.text), lw, rung.figure)
+        s.value.props.size = figureToken(ctx, String(s.value.props.text), lw, 'display')
         const left = stackPieces(ctx, [icon, s.value, s.unit, bar], 0, 0, lw, sp.sm)
         const right = stackPieces(ctx, [s.label, s.text, s.source], lw + gap, 0, rw, sp.sm)
         pieces.push(...left.pieces, ...right.pieces)

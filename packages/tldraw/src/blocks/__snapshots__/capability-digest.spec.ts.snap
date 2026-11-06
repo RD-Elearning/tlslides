@@ -556,7 +556,7 @@ Three to five tiles in an asymmetric grid, each a stat, an icon point, a photo o
 Big number slide. One enormous headline metric with a short label and optional context line. Use for KPIs, milestones, and hero stats. _(family: composite; keywords: stat, big, number, kpi, metric, hero, headline, count)_
 
 **When:** Use for a single hero statistic — one big number with a label and optional context.
-**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number) or nested in another block.
+**Avoid:** Do not use for several metrics side by side (use tls.c.kpi-row), for a number inside a layout with other content (use tls.t.hero-number), nested in another block, or for a number that needs its explanation (use tls.c.stat-explain).
 
 **Parts:** \`value\`, \`label\`, \`context\`
 
@@ -809,6 +809,36 @@ Closing slide: thank-you title, call to action, contacts and a presenter. _(fami
 }
 \`\`\`
 
+### \`tls.c.closing-recap\` — Closing recap
+
+A teaching closing: 2–3 takeaways and the one next action on its own panel. _(family: composite; keywords: closing, recap, takeaways, homework, next step, tổng kết, bài về nhà)_
+
+**When:** The last slide of a lesson: 2–3 takeaways as support and the one thing learners do next (homework, a question to carry home), landed on its own panel.
+**Avoid:** A thank-you or contact slide: tls.c.closing. A full summary of the lesson: tls.c.summary-sheet. Homework with several tasks: tls.c.homework.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`takeaways\` | yes | list of text (max 110 chars) (2–3 items) | 2–3 things to remember (≤ 110 each). |
+| \`action\` | yes | text (max 120 chars) | The one thing to do next: homework, a question to think about (≤ 120). |
+| \`actionLabel\` | no | text (max 24 chars) | A short label over the action in the deck language (≤ 24), e.g. \\"Bài về nhà\\". |
+| \`variant\` | no | enum: columns \\\\| stack | columns (default: takeaways beside the action) or stack (takeaways above it). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_closing_recap\\",
+  \\"type\\": \\"tls.c.closing-recap\\",
+  \\"props\\": {
+    \\"takeaways\\": [
+      \\"Plants make sugar from light, water and carbon dioxide.\\",
+      \\"Chlorophyll in the leaves captures the light.\\",
+      \\"Oxygen is released as a by-product.\\"
+    ],
+    \\"action\\": \\"Put a leaf in the dark for two days, then test it for starch.\\",
+    \\"actionLabel\\": \\"Try at home\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.compare-detail\` — Detailed comparison
 
 2–3 options compared in depth: heading, summary and points each, then a verdict. _(family: composite; keywords: compare, comparison, versus, options, trade-off, so sánh, ưu nhược)_
@@ -1005,6 +1035,37 @@ Title slide: kicker, title, subtitle, meta; centred, split or over a photo. _(fa
     \\"image\\": \\"/demo/photo-1.svg\\",
     \\"logo\\": \\"/demo/logo-1.svg\\",
     \\"variant\\": \\"split\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.cover-masthead\` — Masthead cover
+
+An editorial cover: masthead rule, course line, big title, subtitle and one meta row. _(family: composite; keywords: cover, masthead, editorial, title slide, bìa, trang bìa)_
+
+**When:** The cover of a lesson or report deck: course line, title, subtitle and up to three facts from the brief (author, date, course).
+**Avoid:** A cover with a big photo: tls.c.split-cover. A playful cover: tls.c.hook-cover.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kicker\` | no | text (max 60 chars) | The course, unit or issue line from the brief (≤ 60). |
+| \`title\` | yes | text (max 80 chars) | The deck title (≤ 80). |
+| \`subtitle\` | no | text (max 120 chars) | One line under the title (≤ 120). |
+| \`meta\` | no | list of text (max 40 chars) (0–3 items) | Up to 3 short facts from the brief only (author, date, course), shown in one row. |
+| \`variant\` | no | enum: masthead \\\\| band \\\\| boxed | masthead (default: rules above and below), band (title on a colour band) or boxed. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cover_masthead\\",
+  \\"type\\": \\"tls.c.cover-masthead\\",
+  \\"props\\": {
+    \\"kicker\\": \\"Biology · Unit 3\\",
+    \\"title\\": \\"How plants make their food\\",
+    \\"subtitle\\": \\"Light, water and air turned into sugar\\",
+    \\"meta\\": [
+      \\"Grade 7\\",
+      \\"Week 5\\"
+    ]
   }
 }
 \`\`\`
@@ -1615,6 +1676,49 @@ A photo across the slide with a headline on a card, a side panel, split, a band 
 }
 \`\`\`
 
+### \`tls.c.image-notes\` — Picture with notes
+
+A figure or photo with 2–5 numbered notes and the matching numbers pinned on it. _(family: composite; keywords: figure, image, notes, labels, annotated, diagram, hình, chú thích, ghi chú)_
+
+**When:** A figure from the document or a photo whose parts the slide explains: 2–5 numbered notes beside it, each number pinned on the part it explains.
+**Avoid:** A picture with one caption: tls.m.image. A picture beside a paragraph: tls.c.image-text.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`image\` | yes | image | A figure of the document (\`fig:\`) or a library picture (\`img:\`). |
+| \`alt\` | yes | text (max 200 chars) | What the picture shows (≤ 200). |
+| \`aspect\` | no | number (min 0.2, max 8) | Width / height of the picture when the asset table does not know it. |
+| \`notes\` | yes | list of object (text, fx, fy) (2–5 items) | Each: \`text\` (≤ 120) and optionally where its number goes on the picture: \`fx\`, \`fy\` = fractions 0–1 from the left / top. |
+| \`variant\` | no | enum: notes-right \\\\| notes-below | notes-right (default) or notes-below. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_image_notes\\",
+  \\"type\\": \\"tls.c.image-notes\\",
+  \\"props\\": {
+    \\"image\\": \\"img:plant-cell\\",
+    \\"alt\\": \\"A plant cell with its wall, nucleus and chloroplasts\\",
+    \\"notes\\": [
+      {
+        \\"text\\": \\"The cell wall keeps the cell rigid.\\",
+        \\"fx\\": 0.08,
+        \\"fy\\": 0.5
+      },
+      {
+        \\"text\\": \\"The nucleus holds the genetic material.\\",
+        \\"fx\\": 0.5,
+        \\"fy\\": 0.45
+      },
+      {
+        \\"text\\": \\"Chloroplasts capture light for photosynthesis.\\",
+        \\"fx\\": 0.72,
+        \\"fy\\": 0.25
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.image-text\` — Image + text
 
 Image beside or above a text cluster (kicker + title + body). Configurable placement and image ratio. _(family: composite; keywords: image, text, photo, picture, editorial, side-by-side, layout, composite)_
@@ -1647,6 +1751,44 @@ Image beside or above a text cluster (kicker + title + body). Configurable place
     \\"kicker\\": \\"OVERVIEW\\",
     \\"title\\": \\"Our design process\\",
     \\"body\\": \\"We start with research, prototype rapidly, and validate with users before shipping.\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.infographic-row\` — Infographic row
+
+A row of 3–5 icons, each with a keyword or figure and a caption, joined by a line. _(family: composite; keywords: infographic, icons, row, overview, at a glance, biểu đồ thông tin, tổng quan)_
+
+**When:** A presented slide that shows 3–5 parts, inputs or stages at a glance: an icon, a keyword or figure and a short caption each.
+**Avoid:** Points that each need a sentence or more: tls.c.key-points. Ordered steps with instructions: tls.c.process-detail.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`items\` | yes | list of object (icon, head, text) (3–5 items) | Each: \`icon\`, \`head\` = a keyword or a figure (≤ 24), \`text\` = a caption (≤ 90). |
+| \`variant\` | no | enum: line \\\\| circles \\\\| steps | line (default: icons on a line), circles (icons in large circles) or steps (numbers instead of icons). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_infographic_row\\",
+  \\"type\\": \\"tls.c.infographic-row\\",
+  \\"props\\": {
+    \\"items\\": [
+      {
+        \\"icon\\": \\"sun\\",
+        \\"head\\": \\"Sunlight\\",
+        \\"text\\": \\"Leaves catch the light energy.\\"
+      },
+      {
+        \\"icon\\": \\"droplet\\",
+        \\"head\\": \\"Water\\",
+        \\"text\\": \\"Roots draw water up the stem.\\"
+      },
+      {
+        \\"icon\\": \\"wind\\",
+        \\"head\\": \\"Carbon dioxide\\",
+        \\"text\\": \\"Air enters through tiny pores.\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -1854,6 +1996,44 @@ An editorial text column with a kicker, a pull quote beside it and an optional f
     \\"kicker\\": \\"Case study\\",
     \\"body\\": \\"The ward cut its waits by half in a year. Nurses triaged on tablets, beds were tracked live, and night shifts grew by two.\\",
     \\"pull\\": \\"beds were tracked live\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.number-grid\` — Number grid
+
+3–6 figures, each with what it counts and one line of meaning. _(family: composite; keywords: numbers, figures, stats, facts, grid, số liệu, con số)_
+
+**When:** 3–6 figures from the passage, each with what it counts and what it means: facts at a glance with their meaning. Allowed in learning decks.
+**Avoid:** One figure that needs a paragraph: tls.c.stat-explain. KPIs with deltas: tls.c.kpi-row. A series over time: a chart.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stats\` | yes | list of object (value, unit, label, text) (3–6 items) | Each: \`value\` as the passage gives it (≤ 10, deck language), optional word \`unit\`, \`label\` = what is counted (≤ 40), \`text\` = what it means (one line, ≤ 110). |
+| \`variant\` | no | enum: tiles \\\\| strip \\\\| rows | tiles (default, a card per figure), strip (one row, no cards) or rows (figure left of its text). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_number_grid\\",
+  \\"type\\": \\"tls.c.number-grid\\",
+  \\"props\\": {
+    \\"stats\\": [
+      {
+        \\"value\\": \\"71%\\",
+        \\"label\\": \\"of the surface is water\\",
+        \\"text\\": \\"Most of it is salt water in the oceans.\\"
+      },
+      {
+        \\"value\\": \\"2.5%\\",
+        \\"label\\": \\"of the water is fresh\\",
+        \\"text\\": \\"And two thirds of that is frozen in ice.\\"
+      },
+      {
+        \\"value\\": \\"0.3%\\",
+        \\"label\\": \\"of fresh water is in lakes and rivers\\",
+        \\"text\\": \\"The part people can reach easily.\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -2178,6 +2358,34 @@ Multiple-choice question with lettered options; the correct answer is highlighte
 }
 \`\`\`
 
+### \`tls.c.quote-context\` — Quote in context
+
+A quotation with its author and why it matters for the lesson. _(family: composite; keywords: quote, quotation, context, source, primary source, trích dẫn, bối cảnh)_
+
+**When:** A quotation from the passage that the learner must read with its context: who said it, when, and why it matters here.
+**Avoid:** A quote shown for mood in a presented deck: tls.t.quote or tls.t.pull-quote. A customer voice: tls.c.testimonial.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`quote\` | yes | text (max 240 chars) | The words quoted, exactly as the passage gives them (≤ 240). |
+| \`author\` | yes | text (max 60 chars) | Who said or wrote it (≤ 60). |
+| \`role\` | no | text (max 60 chars) | Who they are or when / where it was said (≤ 60). |
+| \`context\` | yes | text (max 220 chars) | Why it matters for the lesson or how to read it (1–2 sentences, ≤ 220). |
+| \`variant\` | no | enum: side-context \\\\| under-context | side-context (default: context beside the quote) or under-context. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_quote_context\\",
+  \\"type\\": \\"tls.c.quote-context\\",
+  \\"props\\": {
+    \\"quote\\": \\"If I have seen further, it is by standing on the shoulders of giants.\\",
+    \\"author\\": \\"Isaac Newton\\",
+    \\"role\\": \\"Letter to Robert Hooke, 1675\\",
+    \\"context\\": \\"Newton credits the scientists before him: every discovery builds on earlier work, which is why scientists publish and cite each other.\\"
+  }
+}
+\`\`\`
+
 ### \`tls.c.quote-image\` — Quote over photo
 
 Large quote set over a full-bleed photo with a dark scrim, with name and role. _(family: composite; keywords: quote, inspirational, full bleed, photo, scrim, statement, big quote)_
@@ -2372,6 +2580,38 @@ A cover split into a colour field with a visual and the title beside it. _(famil
 }
 \`\`\`
 
+### \`tls.c.split-statement\` — Claim and evidence
+
+A strong sentence and the 2–4 facts or examples that support it. _(family: composite; keywords: claim, evidence, statement, support, argument, luận điểm, dẫn chứng)_
+
+**When:** A slide whose point is one claim the passage supports with facts, figures or examples: the claim large, its evidence beside or under it. The teaching form of a statement slide.
+**Avoid:** A claim alone, for effect, in a presented deck: tls.t.statement. Several points of equal weight: tls.c.key-points.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`statement\` | yes | text (max 130 chars) | The claim in one strong sentence (≤ 130). |
+| \`evidence\` | yes | list of object (text, source) (2–4 items) | Each: \`text\` = a fact, figure or example that supports the claim (≤ 120); optional \`source\` (≤ 60). |
+| \`variant\` | no | enum: left-claim \\\\| top-claim \\\\| band | left-claim (default: claim beside the evidence), top-claim or band (claim on a tinted band). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_split_statement\\",
+  \\"type\\": \\"tls.c.split-statement\\",
+  \\"props\\": {
+    \\"statement\\": \\"Sleep is part of learning, not a break from it.\\",
+    \\"evidence\\": [
+      {
+        \\"text\\": \\"Students who slept after studying recalled 20–40% more the next day.\\",
+        \\"source\\": \\"Sleep and memory studies\\"
+      },
+      {
+        \\"text\\": \\"During deep sleep the brain replays what was learned during the day.\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.c.stat-card\` — Stat Card
 
 KPI on a card: icon, headline value, unit and caption. _(family: composite; keywords: stat, card, kpi, metric, number, composite)_
@@ -2402,6 +2642,38 @@ KPI on a card: icon, headline value, unit and caption. _(family: composite; keyw
     \\"format\\": \\"plain\\",
     \\"emphasis\\": \\"accent\\",
     \\"padding\\": \\"md\\"
+  }
+}
+\`\`\`
+
+### \`tls.c.stat-explain\` — Number explained
+
+One big number with what it counts, what it means and where it comes from. _(family: composite; keywords: stat, number, figure, explain, meaning, percent, số liệu, con số, ý nghĩa)_
+
+**When:** One figure from the passage that needs its explanation: what it counts, what it means or why it matters, and its source. Allowed in learning decks.
+**Avoid:** A number shown for effect with no explanation: tls.c.big-stat. Three to six figures: tls.c.number-grid. A trend: a chart.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`value\` | yes | text (max 12 chars) | The figure as the passage gives it, in the deck language (e.g. \\"62%\\", \\"1,5\\", \\"3 lần\\"), ≤ 12 chars. |
+| \`unit\` | no | text (max 12 chars) | Unit after the number when it is a word (≤ 12), e.g. \\"triệu người\\". |
+| \`label\` | yes | text (max 60 chars) | What is counted, one line (≤ 60). |
+| \`text\` | yes | text (max 240 chars) | What the number means and why it matters (1–2 sentences, ≤ 240). |
+| \`source\` | no | text (max 90 chars) | Where the number comes from (≤ 90). |
+| \`visual\` | no | enum: none \\\\| ring \\\\| bar \\\\| icon | none (default); ring or bar draw \`share\`; icon draws \`icon\`. |
+| \`share\` | no | number (min 0, max 100) | For ring / bar: the share 0–100 the figure stands for. |
+| \`icon\` | no | icon | For visual icon. |
+| \`variant\` | no | enum: left-number \\\\| top-number \\\\| ring | left-number (default), top-number or ring (needs \`share\`). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_stat_explain\\",
+  \\"type\\": \\"tls.c.stat-explain\\",
+  \\"props\\": {
+    \\"value\\": \\"62%\\",
+    \\"label\\": \\"of students who studied with practice tests passed\\",
+    \\"text\\": \\"Twice the share of those who only reread their notes: recalling an answer makes the memory stronger than reading it again.\\",
+    \\"source\\": \\"Study of 1,200 first-year students\\"
   }
 }
 \`\`\`
@@ -4361,6 +4633,38 @@ From where we are to where we want to be, over the gap. _(family: composite; key
 }
 \`\`\`
 
+### \`tls.g.cause-chain\` — Cause chain
+
+1–4 causes lead to one effect, which leads to 0–3 consequences, joined by arrows. _(family: diagram; keywords: cause, effect, consequence, why, chain, nguyên nhân, kết quả, hệ quả)_
+
+**When:** Why something happens and what follows: 1–4 causes, the effect they produce and its consequences.
+**Avoid:** Steps in order: tls.c.process-detail. Many causes in categories: a fishbone. Concepts with named relations: tls.g.concept-map.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`causes\` | yes | list of text (max 90 chars) (1–4 items) | 1–4 causes, each one short sentence (≤ 90). |
+| \`effect\` | yes | text (max 90 chars) | The effect they lead to (≤ 90). |
+| \`consequences\` | no | list of text (max 90 chars) (0–3 items) | 0–3 consequences of the effect (≤ 90 each). |
+| \`variant\` | no | enum: columns \\\\| funnel-in | columns (default: left to right) or funnel-in (top to bottom). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cause_chain\\",
+  \\"type\\": \\"tls.g.cause-chain\\",
+  \\"props\\": {
+    \\"causes\\": [
+      \\"Forests are cleared for farmland\\",
+      \\"Factories and cars burn coal, oil and gas\\"
+    ],
+    \\"effect\\": \\"More carbon dioxide stays in the air and traps heat\\",
+    \\"consequences\\": [
+      \\"Average temperatures rise\\",
+      \\"Sea levels rise as ice melts\\"
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.g.chevrons\` — Chevron Process
 
 Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(family: diagram; keywords: chevrons, phases, process, arrows, stages, method)_
@@ -4400,6 +4704,83 @@ Phases as nested arrow segments in a row, with a \\"we are here\\" highlight. _(
       }
     ],
     \\"currentIndex\\": 1
+  }
+}
+\`\`\`
+
+### \`tls.g.concept-map\` — Concept map
+
+4–9 concepts joined by labelled links (what each relation is), laid out automatically. _(family: diagram; keywords: concept map, relations, network, links, bản đồ khái niệm, sơ đồ tư duy, mối quan hệ)_
+
+**When:** Concepts and how they relate, where each relation has a name (\\"produces\\", \\"is part of\\"): a concept map of a topic.
+**Avoid:** A plain hierarchy: tls.g.tree. One centre with spokes and no named links: tls.g.hub-spoke. Causes and effects: tls.g.cause-chain.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`nodes\` | yes | list of object (id, label, detail) (4–9 items) | Each: a short unique \`id\`, \`label\` (≤ 32), optional \`detail\` (≤ 70). |
+| \`links\` | yes | list of object (from, to, label) (3–14 items) | \`from\` / \`to\` = concept ids (must exist), \`label\` = the relation as a verb phrase (≤ 24), e.g. \\"produces\\", \\"is part of\\". |
+| \`variant\` | no | enum: radial \\\\| layered \\\\| cluster | radial (default: the most linked concept in the centre), layered (rows by link depth) or cluster (a grid). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_concept_map\\",
+  \\"type\\": \\"tls.g.concept-map\\",
+  \\"props\\": {
+    \\"nodes\\": [
+      {
+        \\"id\\": \\"p\\",
+        \\"label\\": \\"Photosynthesis\\",
+        \\"detail\\": \\"How plants make food\\"
+      },
+      {
+        \\"id\\": \\"l\\",
+        \\"label\\": \\"Light\\"
+      },
+      {
+        \\"id\\": \\"w\\",
+        \\"label\\": \\"Water\\"
+      },
+      {
+        \\"id\\": \\"c\\",
+        \\"label\\": \\"Carbon dioxide\\"
+      },
+      {
+        \\"id\\": \\"s\\",
+        \\"label\\": \\"Sugar\\",
+        \\"detail\\": \\"Stored as starch\\"
+      },
+      {
+        \\"id\\": \\"o\\",
+        \\"label\\": \\"Oxygen\\"
+      }
+    ],
+    \\"links\\": [
+      {
+        \\"from\\": \\"l\\",
+        \\"to\\": \\"p\\",
+        \\"label\\": \\"powers\\"
+      },
+      {
+        \\"from\\": \\"w\\",
+        \\"to\\": \\"p\\",
+        \\"label\\": \\"feeds\\"
+      },
+      {
+        \\"from\\": \\"c\\",
+        \\"to\\": \\"p\\",
+        \\"label\\": \\"feeds\\"
+      },
+      {
+        \\"from\\": \\"p\\",
+        \\"to\\": \\"s\\",
+        \\"label\\": \\"makes\\"
+      },
+      {
+        \\"from\\": \\"p\\",
+        \\"to\\": \\"o\\",
+        \\"label\\": \\"releases\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -4458,7 +4839,7 @@ A line between two blocks of a slide, compiled from \`SlideSpec.connectors\` (ne
 Steps arranged on a ring with arrows that loop back to the first step. _(family: diagram; keywords: cycle, loop, pdca, lifecycle, feedback, circular)_
 
 **When:** Cycle: continuous loops such as PDCA, a product lifecycle or a feedback loop.
-**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps). By default prefer tls.c.steps for ordered steps.
+**Avoid:** A process with a clear end (use tls.g.chevrons or tls.g.steps); stages that need a sentence (use tls.g.cycle-detail). By default prefer tls.c.steps for ordered steps.
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -4494,6 +4875,47 @@ Steps arranged on a ring with arrows that loop back to the first step. _(family:
       }
     ],
     \\"center\\": \\"PDCA\\"
+  }
+}
+\`\`\`
+
+### \`tls.g.cycle-detail\` — Cycle with descriptions
+
+A cycle of 3–6 stages, each with its title and a sentence beside the ring. _(family: diagram; keywords: cycle, loop, stages, lifecycle, chu trình, vòng tuần hoàn, giai đoạn)_
+
+**When:** A cycle (a natural cycle, a life cycle, a feedback loop) whose 3–6 stages each need a sentence to explain them.
+**Avoid:** Stage names only: tls.g.cycle. Steps with a start and an end: tls.c.process-detail.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`stages\` | yes | list of object (title, text, icon) (3–6 items) | In cycle order. Each: \`title\` (≤ 32) and \`text\` = what happens in that stage (one sentence, ≤ 110). |
+| \`center\` | no | text (max 40 chars) | The name of the cycle (≤ 40), shown in the ring. |
+| \`variant\` | no | enum: ring \\\\| ring-cards | ring (default) or ring-cards (each stage on a card). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_cycle_detail\\",
+  \\"type\\": \\"tls.g.cycle-detail\\",
+  \\"props\\": {
+    \\"stages\\": [
+      {
+        \\"title\\": \\"Evaporation\\",
+        \\"text\\": \\"The sun heats water in seas and lakes, and it rises as vapour.\\"
+      },
+      {
+        \\"title\\": \\"Condensation\\",
+        \\"text\\": \\"The vapour cools high in the air and forms clouds of droplets.\\"
+      },
+      {
+        \\"title\\": \\"Precipitation\\",
+        \\"text\\": \\"Droplets join and fall as rain, snow or hail.\\"
+      },
+      {
+        \\"title\\": \\"Collection\\",
+        \\"text\\": \\"Water gathers in rivers, lakes and the ground, and flows back to the sea.\\"
+      }
+    ],
+    \\"center\\": \\"The water cycle\\"
   }
 }
 \`\`\`
@@ -5046,6 +5468,55 @@ A central idea with 2-6 curved branches to topics, each with up to four subtopic
       {
         \\"myth\\": \\"Seasons come from the distance to the Sun\\",
         \\"fact\\": \\"They come from the tilt of the Earth's axis\\"
+      }
+    ]
+  }
+}
+\`\`\`
+
+### \`tls.g.number-line\` — Number line
+
+A number line or scale with marked points and intervals; numbers in the deck language. _(family: diagram; keywords: number line, scale, axis, ruler, interval, trục số, thang đo, khoảng)_
+
+**When:** Values on a scale: points on a number line, a measurement scale, a grading scale with bands, where the position of each value is the point.
+**Avoid:** Events in time: tls.g.timeline. Amounts to compare: a bar chart. Progress towards a goal: tls.d.progress-bar.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`min\` | yes | number | The value at the left end. |
+| \`max\` | yes | number | The value at the right end (greater than \`min\`). |
+| \`step\` | no | number | Distance between ticks (absent = a round step, about ten ticks). |
+| \`points\` | yes | list of object (value, label) (1–6 items) | Each: \`value\` (between min and max) and \`label\` (≤ 24). |
+| \`intervals\` | no | list of object (from, to, label) (0–3 items) | Ranges to mark: \`from\`, \`to\` (within min..max) and \`label\` (≤ 24), e.g. a grade band. |
+| \`variant\` | no | enum: line \\\\| ruler \\\\| thermometer | line (default), ruler (minor ticks) or thermometer (a tube filled to the first point). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_number_line\\",
+  \\"type\\": \\"tls.g.number-line\\",
+  \\"props\\": {
+    \\"min\\": -5,
+    \\"max\\": 5,
+    \\"step\\": 1,
+    \\"points\\": [
+      {
+        \\"value\\": -3,
+        \\"label\\": \\"Debt of 3\\"
+      },
+      {
+        \\"value\\": 0,
+        \\"label\\": \\"Zero\\"
+      },
+      {
+        \\"value\\": 2.5,
+        \\"label\\": \\"Half way to 5\\"
+      }
+    ],
+    \\"intervals\\": [
+      {
+        \\"from\\": 0,
+        \\"to\\": 5,
+        \\"label\\": \\"Positive numbers\\"
       }
     ]
   }
@@ -7365,7 +7836,7 @@ A speech bubble with what someone says and who says it. _(family: text; keywords
 One large claim that fills the slide, key words emphasised. _(family: text; keywords: statement, claim, conclusion, message, big text)_
 
 **When:** A single claim or conclusion that should fill the slide's attention.
-**Avoid:** A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway).
+**Avoid:** A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway); a claim with its evidence (use tls.c.split-statement).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
@@ -7768,7 +8239,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 205,
+  "blockCount": 217,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -7788,11 +8259,13 @@ Object {
     "tls.c.chapter-divider",
     "tls.c.chart-insight",
     "tls.c.closing",
+    "tls.c.closing-recap",
     "tls.c.compare-detail",
     "tls.c.comparison",
     "tls.c.contact",
     "tls.c.cornell",
     "tls.c.cover",
+    "tls.c.cover-masthead",
     "tls.c.cta",
     "tls.c.dashboard",
     "tls.c.divider",
@@ -7810,13 +8283,16 @@ Object {
     "tls.c.homework",
     "tls.c.hook-cover",
     "tls.c.image-full",
+    "tls.c.image-notes",
     "tls.c.image-text",
+    "tls.c.infographic-row",
     "tls.c.journey",
     "tls.c.key-points",
     "tls.c.kinetic-title",
     "tls.c.kpi-row",
     "tls.c.kpi-tile",
     "tls.c.magazine",
+    "tls.c.number-grid",
     "tls.c.number-story",
     "tls.c.objectives",
     "tls.c.one-question",
@@ -7827,13 +8303,16 @@ Object {
     "tls.c.profile-card",
     "tls.c.question-wall",
     "tls.c.quiz",
+    "tls.c.quote-context",
     "tls.c.quote-image",
     "tls.c.recap",
     "tls.c.route-agenda",
     "tls.c.section-brief",
     "tls.c.sidenotes",
     "tls.c.split-cover",
+    "tls.c.split-statement",
     "tls.c.stat-card",
+    "tls.c.stat-explain",
     "tls.c.stat-spotlight",
     "tls.c.steps",
     "tls.c.sticky-board",
@@ -7883,9 +8362,12 @@ Object {
     "tls.g.bracket",
     "tls.g.breakdown",
     "tls.g.bridge",
+    "tls.g.cause-chain",
     "tls.g.chevrons",
+    "tls.g.concept-map",
     "tls.g.connector",
     "tls.g.cycle",
+    "tls.g.cycle-detail",
     "tls.g.decision-tree",
     "tls.g.fishbone",
     "tls.g.flow",
@@ -7898,6 +8380,7 @@ Object {
     "tls.g.milestones",
     "tls.g.mindmap",
     "tls.g.myth-fact",
+    "tls.g.number-line",
     "tls.g.orbit",
     "tls.g.pros-cons",
     "tls.g.puzzle",
@@ -8162,19 +8645,19 @@ tls.c.cards · list · group · 2–4 items — Row of equal cards, each led by 
 tls.c.feature-grid · list · group · 2–6 items — Grid of icon + title + description cells [h 221–574@1728] knobs: cell=plain|card, align=start|center, iconStyle=plain|circle
 tls.m.icon-list · list · element · 2–6 items — Vertical list of short points, each led by its own icon [h≈-18+96/item@840] knobs: iconStyle=plain|circle|square, iconTone=accent|accent2|text, spacing=default|compact|roomy
 tls.t.bullets · list · element · ≤40 items — Bulleted points with dot, dash or chevron markers and indent levels [h≈-18+59/item@840] knobs: marker=dot|dash|chevron|number|icon, spacing=xs|sm|md|lg
-also: tls.c.feature-reveal, tls.c.key-points, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
+also: tls.c.feature-reveal, tls.c.infographic-row, tls.c.key-points, tls.c.sticky-board, tls.t.checklist, tls.t.kv-list, tls.t.numbered, tls.t.tags
 
 ## Emphasis
 tls.t.quote · emphasis · element — Pull quote with a large quote mark and attribution [h≈66+87/L@1728] knobs: variant=classic|big|card|side|image, markStyle=glyph|rule|none
 tls.t.statement · emphasis · element — One large sentence stated as the slide's message, key words in accent [h≈97+73/L@840] knobs: size=display|xl|lg|md, align=start|center, emphasis=accent|underline|highlight, showMark
 tls.t.takeaway · emphasis · element — Highlighted insight with accent bar and label [h≈91+39/L@840] knobs: tone=accent|positive|warning|muted, size=body|lead|column
-also: tls.c.quote-image, tls.t.badge, tls.t.callout, tls.t.highlight, tls.t.marker, tls.t.pull-quote, tls.t.speech-bubble
+also: tls.c.quote-context, tls.c.quote-image, tls.c.split-statement, tls.t.badge, tls.t.callout, tls.t.highlight, tls.t.marker, tls.t.pull-quote, tls.t.speech-bubble
 
 ## Metrics
 tls.c.big-stat · metric · slide — One giant headline number filling the slide, with label and context [h≈388@840] knobs: variant=plain|accent|split, align=start|center
 tls.c.kpi-row · metric · group · 2–5 items — Equal-width row of KPI tiles [h 184–265@840] knobs: tile=plain|card|accent-bar, gap=xs|sm|md|lg
 tls.c.stat-spotlight · metric · group — One huge number in a progress ring, with label and up to three supporting figures [h=fill] knobs: visual=ring|plain, statsPlacement=below|side
-also: tls.c.dashboard, tls.c.kpi-tile, tls.c.number-story, tls.c.stat-card, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
+also: tls.c.dashboard, tls.c.kpi-tile, tls.c.number-grid, tls.c.number-story, tls.c.stat-card, tls.c.stat-explain, tls.d.bullet-chart, tls.d.gauge, tls.d.icon-array, tls.d.progress-bar, tls.d.progress-ring, tls.d.stat-compare, tls.d.trend-badge, tls.t.hero-number
 
 ## Charts
 tls.c.chart-insight · chart · group — Chart with a highlighted takeaway beside it and a source line [h=fill] knobs: side=right|left|below, ratio=2:1|3:2|1:1, insightSize=body|lead
@@ -8200,7 +8683,7 @@ also: tls.c.case-study, tls.c.compare-detail, tls.c.do-dont, tls.c.problem-solut
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
 tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill=gradient|single|series, textPlacement=inside|below
-also: tls.c.process-detail, tls.g.bridge, tls.g.cycle, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
+also: tls.c.process-detail, tls.g.bridge, tls.g.cycle, tls.g.cycle-detail, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none
@@ -8213,14 +8696,14 @@ tls.g.tree · hierarchy · group — Org chart or hierarchy of nodes linked from
 also: tls.g.breakdown, tls.g.decision-tree, tls.g.graph, tls.g.layers, tls.g.mindmap, tls.g.target
 
 ## Relationships
-also: tls.g.bracket, tls.g.fishbone, tls.g.hub-spoke, tls.g.orbit, tls.g.puzzle, tls.g.venn, tls.m.shape
+also: tls.g.bracket, tls.g.cause-chain, tls.g.concept-map, tls.g.fishbone, tls.g.hub-spoke, tls.g.number-line, tls.g.orbit, tls.g.puzzle, tls.g.venn, tls.m.shape
 
 ## Media
 tls.c.image-full · media · slide — Full-slide photo with a headline panel [h=fill] knobs: panel=bottom-left|left|center|right|split|band, scrim=medium|strong|gradient, frame
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.c.gallery-wall, tls.c.photo-essay, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
+also: tls.c.gallery-wall, tls.c.image-notes, tls.c.photo-essay, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio
@@ -8235,7 +8718,7 @@ also: tls.m.logo
 tls.c.cover · cover · slide — Title slide with kicker, title, subtitle and meta line, centred, split or over a photo [h=fill] knobs: variant=centered|split|bleed, decoration=none|blob|arc|dots
 tls.c.hero · cover · slide — Opening title with kicker, subtitle and optional call to action [h≈437+53/L@1728] knobs: variant=classic|split|gradient-sweep, align=start|center, decoration=none|rule
 tls.c.kinetic-title · cover · slide — Huge title whose words rise in one by one over drifting accent orbs [h=fill] knobs: align=start|center, decoration=orbs|none, tone=plain|accent
-also: tls.c.full-bleed-type, tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover, tls.c.title-card
+also: tls.c.cover-masthead, tls.c.full-bleed-type, tls.c.hook-cover, tls.c.poster-cover, tls.c.split-cover, tls.c.title-card
 
 ## Dividers
 tls.c.divider · divider · slide — Section break with a big section number, section title and one-line intro [h≈311+53/L@840] knobs: variant=numeral|field|minimal, align=start|center
@@ -8247,7 +8730,7 @@ also: tls.c.objectives, tls.c.route-agenda
 
 ## Closing
 tls.c.closing · closing · slide — Closing slide with thank-you title, call to action and contact details [h≈373+40/L@840] knobs: variant=centered|split|big-type, ctaStyle=button|link
-also: tls.c.callback, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.question-wall, tls.c.recap, tls.c.takeaway-poster
+also: tls.c.callback, tls.c.closing-recap, tls.c.contact, tls.c.cta, tls.c.one-question, tls.c.question-wall, tls.c.recap, tls.c.takeaway-poster
 
 ## Learning
 tls.a.choice · learning · group · 2–5 items — Interactive multiple-choice question with feedback [h≈67+108/item@1728] knobs: layout=list|grid, submit=instant|confirm, multiple

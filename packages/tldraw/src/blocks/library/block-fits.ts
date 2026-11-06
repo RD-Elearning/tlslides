@@ -242,8 +242,11 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.quote-context': f(['quote', 'story', 'people'], null, 'lines', 'calm'),
   'tls.g.concept-map': f(['network', 'hierarchy', 'cause-effect'], [4, 9], 'labels', 'neutral'),
   'tls.g.cycle-detail': f(['cycle', 'sequence'], [3, 6], 'lines', 'neutral'),
-  'tls.g.cause-chain': f(['cause-effect'], [2, 7], 'lines', 'neutral'),
+  'tls.g.cause-chain': f(['cause-effect'], [1, 4], 'lines', 'neutral'),
   'tls.g.number-line': f(['formula', 'ranking', 'number'], [1, 6], 'labels', 'calm', { families: ['classroom', 'academic', 'playful'] }),
+  'tls.c.image-notes': f(['image-led', 'terms', 'worked-example'], [2, 5], 'lines', 'neutral', { needs: ['images'] }),
+  'tls.c.cover-masthead': f(['statement'], null, 'labels', 'neutral', { frames: ['cover'] }),
+  'tls.c.closing-recap': f(['recap', 'action'], [2, 3], 'lines', 'neutral', { frames: ['closing', 'summary'] }),
   'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
   'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),
@@ -291,7 +294,7 @@ export const USE_FRAME: ReadonlySet<string> = new Set([
   'tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title', 'tls.c.poster-cover', 'tls.c.split-cover', 'tls.c.hook-cover',
   'tls.c.title-card', 'tls.c.full-bleed-type', 'tls.c.divider', 'tls.c.chapter-divider', 'tls.c.agenda',
   'tls.c.route-agenda', 'tls.c.closing', 'tls.c.cta', 'tls.c.callback', 'tls.c.contact', 'tls.c.one-question',
-  'tls.c.takeaway-poster', 'tls.c.section-brief',
+  'tls.c.takeaway-poster', 'tls.c.section-brief', 'tls.c.cover-masthead', 'tls.c.closing-recap',
 ])
 export const USE_HIGHLIGHT: ReadonlySet<string> = new Set([
   'tls.c.big-stat', 'tls.t.hero-number', 'tls.c.stat-spotlight', 'tls.c.stat-card', 'tls.c.kpi-tile', 'tls.c.kpi-row',

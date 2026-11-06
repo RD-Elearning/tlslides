@@ -39,7 +39,7 @@ export const tlsCNumberGrid = defineRichBlock<NumberGridProps>({
   summary: '3–6 figures, each with what it counts and one line of meaning.',
   keywords: ['numbers', 'figures', 'stats', 'facts', 'grid', 'số liệu', 'con số'],
   category: 'metric',
-  shortDescription: '3–6 figures with labels and one line of meaning each',
+  shortDescription: 'A few figures, each with a label and one line of meaning',
   related: ['tls.c.kpi-row', 'tls.c.stat-explain', 'tls.c.feature-grid'],
   schema,
   defaults,

@@ -343,6 +343,7 @@ const TYPE_NEEDS: Record<string, AssetKind> = {
   'tls.m.image': 'images',
   'tls.c.image-full': 'images',
   'tls.c.image-text': 'images',
+  'tls.c.image-notes': 'images', // spro sprint 2026-11b S09
   'tls.m.logo-wall': 'logos',
   'tls.d.bar': 'chartData',
   'tls.d.table': 'chartData',

@@ -5,7 +5,7 @@
 
 import { BUILT_IN_BLOCKS } from './library'
 import { blockKind, learningBlock, shortlist } from './shortlist'
-import type { ShortlistSlide } from './shortlist'
+import type { ShortlistOptions, ShortlistSlide } from './shortlist'
 
 const top = (slide: ShortlistSlide, n = 3, o = {}) => shortlist(BUILT_IN_BLOCKS, slide, o).slice(0, n).map((e) => e.type)
 const CHARTS = BUILT_IN_BLOCKS.filter((d) => d.category === 'chart' || d.fits?.data === 'series' || d.fits?.data === 'table').map((d) => d.type)
@@ -136,5 +136,40 @@ describe('spro sprint 2026-11b S08 wave A reach', () => {
       const own = shortlist(BUILT_IN_BLOCKS, slide, { best: 40 }).find((e) => e.type === type)!.score
       expect(got[at]?.score ?? 0).toBeLessThan(own * 0.5)
     }
+  })
+})
+
+describe('spro sprint 2026-11b S09 wave B reach', () => {
+  const best8 = (s: ShortlistSlide, o = {}) => shortlist(BUILT_IN_BLOCKS, s, o).slice(0, 8).map((e) => e.type)
+  const CASES: Array<[string, ShortlistSlide, ShortlistOptions]> = [
+    ['tls.c.stat-explain', { relations: ['number', 'cause-effect'], data: 'single', textLoad: 'lines' }, {}],
+    ['tls.c.number-grid', { relations: ['number', 'group'], items: 4, data: 'single', textLoad: 'lines' }, {}],
+    ['tls.c.infographic-row', { relations: ['group', 'sequence'], items: 4, textLoad: 'labels', energy: 'lively' }, {}],
+    // the slide S07 sends here: a statement-shaped slide of a learning deck (self-study blocks tls.t.statement)
+    ['tls.c.split-statement', { relations: ['statement'], items: 3, textLoad: 'lines' }, { purpose: 'self_study' }],
+    ['tls.c.quote-context', { relations: ['quote', 'story'], textLoad: 'lines' }, {}],
+    ['tls.g.concept-map', { relations: ['network', 'hierarchy'], items: 7, textLoad: 'labels' }, {}],
+    ['tls.g.cycle-detail', { relations: ['cycle'], items: 4, textLoad: 'lines' }, {}],
+    ['tls.g.cause-chain', { relations: ['cause-effect'], items: 3, textLoad: 'lines' }, {}],
+    ['tls.g.number-line', { relations: ['formula', 'ranking', 'number'], items: 3, textLoad: 'labels' }, {}],
+    ['tls.c.image-notes', { relations: ['image-led', 'terms'], items: 3, textLoad: 'lines' }, {}],
+    // a calm academic deck with no photos (the cover role holds 14 blocks; tier-1 ones win ties)
+    ['tls.c.cover-masthead', { relations: ['statement'], frame: 'cover', energy: 'neutral' }, { family: 'academic', assets: { images: false } }],
+    ['tls.c.closing-recap', { relations: ['recap', 'action'], items: 3, frame: 'closing' }, {}],
+  ]
+  it.each(CASES)('%s ranks in the best 8 for the slide it is made for', (type, slide, o) => {
+    expect(best8(slide, o)).toContain(type)
+  })
+  it('in a learning deck a number slide with its number reaches the explained highlights; without it they are blocked', () => {
+    const o = { purpose: 'in_class' as const, best: 8 }
+    expect(best8({ relations: ['number', 'cause-effect'], data: 'single', textLoad: 'lines' }, o)).toContain('tls.c.stat-explain')
+    const none = shortlist(BUILT_IN_BLOCKS, { relations: ['number', 'group'], items: 4, textLoad: 'lines' }, { ...o, best: 40 }).map((e) => e.type)
+    expect(none).not.toContain('tls.c.stat-explain')
+    expect(none).not.toContain('tls.c.number-grid')
+  })
+  it('a statement-shaped teaching slide reaches split-statement (an info block), not only tls.t.statement', () => {
+    const got = best8({ relations: ['statement'], items: 3, textLoad: 'lines' }, { purpose: 'self_study' })
+    expect(got).toContain('tls.c.split-statement')
+    expect(got).not.toContain('tls.t.statement')
   })
 })

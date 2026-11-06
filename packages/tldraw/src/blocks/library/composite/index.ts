@@ -22,6 +22,9 @@ import { tlsCNumberGrid } from './tls-c-number-grid'
 import { tlsCInfographicRow } from './tls-c-infographic-row'
 import { tlsCSplitStatement } from './tls-c-split-statement'
 import { tlsCQuoteContext } from './tls-c-quote-context'
+import { tlsCImageNotes } from './tls-c-image-notes'
+import { tlsCCoverMasthead } from './tls-c-cover-masthead'
+import { tlsCClosingRecap } from './tls-c-closing-recap'
 import { wave2Blocks } from './wave2'
 
 import { tlsCHero } from './tls-c-hero'
@@ -111,6 +114,9 @@ export const compositeBlocks: BlockDefinition[] = [
   tlsCInfographicRow, // spro sprint 2026-11b S09
   tlsCSplitStatement, // spro sprint 2026-11b S09
   tlsCQuoteContext, // spro sprint 2026-11b S09
+  tlsCImageNotes, // spro sprint 2026-11b S09
+  tlsCCoverMasthead, // spro sprint 2026-11b S09
+  tlsCClosingRecap, // spro sprint 2026-11b S09
   // spro creative CR13: waves 2 and 3
   ...wave2Blocks,
 ]

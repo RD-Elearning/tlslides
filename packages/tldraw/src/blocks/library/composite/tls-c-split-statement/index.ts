@@ -90,7 +90,7 @@ export const tlsCSplitStatement = defineRichBlock<SplitStatementProps>({
   summary: 'A strong sentence and the 2–4 facts or examples that support it.',
   keywords: ['claim', 'evidence', 'statement', 'support', 'argument', 'luận điểm', 'dẫn chứng'],
   category: 'emphasis',
-  shortDescription: 'A claim with 2–4 pieces of evidence',
+  shortDescription: 'A claim with the evidence that supports it',
   related: ['tls.t.statement', 'tls.c.key-points', 'tls.c.quote-context'],
   schema,
   defaults,
