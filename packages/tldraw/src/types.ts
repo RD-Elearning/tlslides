@@ -300,7 +300,7 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   /** S13-b — the authored `SlideSpec.backdrop`, carried back by `documentToDeckSpec`. */
   backdrop?: { kind?: string; tone?: 'deep' | 'accent' | 'calm' | 'quiet'; intensity?: 'soft' | 'medium'; seed?: number }
   // CR10 — the authored `SlideSpec.transition` (the viewer plays it) and `choreography`.
-  transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'; dir?: 'left' | 'right' | 'up' | 'down' }
+  transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip' | 'zoom' | 'cover' | 'reveal' | 'split' | 'morph'; dir?: 'left' | 'right' | 'up' | 'down' }
   choreography?: string
 }
 

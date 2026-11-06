@@ -1547,7 +1547,7 @@ export interface SlideBackdrop {
 
 /** spro creative CR10 — a slide transition (`SlideSpec.transition`). */
 export interface SlideTransition {
-  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'
+  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip' | 'zoom' | 'cover' | 'reveal' | 'split' | 'morph'
   dir?: 'left' | 'right' | 'up' | 'down'
 }
 

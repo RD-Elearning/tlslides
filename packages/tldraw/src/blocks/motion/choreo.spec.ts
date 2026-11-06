@@ -25,6 +25,14 @@ describe('choreography (CR10)', () => {
     expect(choreoPreset('versus', B('v', 'tls.c.comparison'), () => false)).toBeUndefined()
   })
 
+  it('S15-d: the text-rich move leads with the rich block and plays mask-up on it (only when the preset exists)', () => {
+    const blocks = [B('t', 'tls.t.title'), B('k', 'tls.c.key-points'), B('p', 'tls.t.paragraph')]
+    expect(choreoOrder('text-rich', blocks)).toEqual([1, 0, 2])
+    expect(choreoPreset('text-rich', B('k', 'tls.c.key-points'), () => true)).toBe('mask-up')
+    expect(choreoPreset('text-rich', B('p', 'tls.t.paragraph'), () => true)).toBeUndefined()
+    expect(choreoPreset('text-rich', B('k', 'tls.c.key-points'), (id) => id !== 'mask-up')).toBeUndefined()
+  })
+
   it('the compiler orders a choreographed slide, and authored motion is left alone', () => {
     const slide: SlideSpec = {
       id: 's', layout: 'blank', choreography: 'statement-poster',

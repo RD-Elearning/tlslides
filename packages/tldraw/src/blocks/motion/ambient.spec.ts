@@ -272,3 +272,28 @@ describe('style-master motifs loop with their slide (V3)', () => {
     expect(loops[0].ambient.preset.id).toBe('twinkle')
   })
 })
+
+describe('S15-e backdrop drift', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { motion } = require('../library/media/tls-m-backdrop/motion')
+  const run = (props: Record<string, unknown>, style: 'expressive' | 'subtle' | 'static' | undefined = 'expressive', reduced = false) =>
+    resolveAmbient({ props, layer: 'backdrop' } as never, { motion } as never, style, reduced)
+
+  it('mesh / aurora / waves / dots drift for 18–40 s, clipped; the other kinds and quiet grounds stay still', () => {
+    for (const kind of ['mesh', 'aurora', 'waves', 'dots']) {
+      const r = run({ kind, tone: 'calm', intensity: 'soft' })!
+      expect(r).not.toBeNull()
+      expect(r.periodMs).toBeGreaterThanOrEqual(18000)
+      expect(r.periodMs).toBeLessThanOrEqual(40000)
+      expect(r.clip).toBe(true)
+    }
+    for (const kind of ['flat', 'paper', 'halftone', 'blueprint', 'frame']) expect(run({ kind, tone: 'calm' })).toBeNull()
+    expect(run({ kind: 'mesh', tone: 'quiet' })).toBeNull()
+  })
+
+  it('off under reduced motion and on a static slide; calmer under subtle', () => {
+    expect(run({ kind: 'mesh', tone: 'deep' }, 'expressive', true)).toBeNull()
+    expect(run({ kind: 'mesh', tone: 'deep' }, 'static')).toBeNull()
+    expect(run({ kind: 'mesh', tone: 'deep' }, 'subtle')!.periodMs).toBeGreaterThan(run({ kind: 'mesh', tone: 'deep' })!.periodMs)
+  })
+})

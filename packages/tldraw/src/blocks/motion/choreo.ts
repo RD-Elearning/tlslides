@@ -11,6 +11,7 @@
  * | versus, compare-split, before-after | both sides, then the rest | split-in |
  * | path, timeline-river, route-agenda | the route stop by stop | sweep-nodes |
  * | statement-poster, question-hook, quote-hero, one-question | the statement | words-in |
+ * | text-rich (S15-d) | the text-rich block (key points, explainer, cornell, frayer, …), then the rest | mask-up |
  * | quiz-check | the question, then the options (the answer is a click build, set by spro) | — |
  * | anything else | the title, the main block, then the support blocks | the block's own |
  */
@@ -27,6 +28,7 @@ const isText = (t: string) => /^tls\.t\.(statement|big-statement|quote|highlight
 const isDiagram = (t: string) => t.startsWith('tls.g.') || /^tls\.c\.(process|cycle|journey|steps|flow)/.test(t)
 const isNumber = (t: string) => /stat|kpi|number|counter/.test(t)
 const isSides = (t: string) => /compar|versus|before-after|pros-cons|split/.test(t)
+const isRich = (t: string) => /^tls\.c\.(key-points|explainer|explain-deep|define-term|study-notes|cornell|frayer|case-study|process-detail|timeline-detail|compare-detail|worked-example|cause-chain|claim-evidence)$/.test(t)
 const isRoute = (t: string) => /timeline|route|journey|roadmap|path|steps/.test(t)
 
 const RULES: Record<string, Rule> = {
@@ -47,6 +49,9 @@ const RULES: Record<string, Rule> = {
   'question-hook': { lead: isText, preset: 'words-in' },
   'quote-hero': { lead: isText, preset: 'words-in' },
   'one-question': { lead: isText, preset: 'words-in' },
+  // S15-d: a move spro sets only on a presented lively / cinematic deck (DECK_MOTION_V2): the lead lines of a text-rich
+  // block are uncovered line by line. Old decks never carry this move name.
+  'text-rich': { lead: isRich, preset: 'mask-up' },
   'quiz-check': { lead: (t) => /title|question/.test(t) },
 }
 
