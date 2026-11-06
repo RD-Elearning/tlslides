@@ -8,6 +8,9 @@ import { tlsGSteps } from './tls-g-steps'
 import { tlsGChevrons } from './tls-g-chevrons'
 import { tlsGCycle } from './tls-g-cycle'
 import { tlsGConceptMap } from './tls-g-concept-map'
+import { tlsGCycleDetail } from './tls-g-cycle-detail'
+import { tlsGCauseChain } from './tls-g-cause-chain'
+import { tlsGNumberLine } from './tls-g-number-line'
 import { tlsGTimeline } from './tls-g-timeline'
 import { tlsGRoadmap } from './tls-g-roadmap'
 import { tlsGFunnel } from './tls-g-funnel'
@@ -35,12 +38,15 @@ import { tlsGConnector } from './tls-g-connector'
 import { tlsGGraph } from './tls-g-graph'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg, tlsGMindmap, tlsGConnector, tlsGGraph, tlsGStaircase, tlsGTarget, tlsGOrbit, tlsGMythFact, tlsGConceptMap]
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg, tlsGMindmap, tlsGConnector, tlsGGraph, tlsGStaircase, tlsGTarget, tlsGOrbit, tlsGMythFact, tlsGConceptMap, tlsGCycleDetail, tlsGCauseChain, tlsGNumberLine]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
 export { tlsGCycle } from './tls-g-cycle'
 export { tlsGConceptMap } from './tls-g-concept-map'
+export { tlsGCycleDetail } from './tls-g-cycle-detail'
+export { tlsGCauseChain } from './tls-g-cause-chain'
+export { tlsGNumberLine } from './tls-g-number-line'
 export { tlsGTimeline } from './tls-g-timeline'
 export { tlsGRoadmap } from './tls-g-roadmap'
 export { tlsGFunnel } from './tls-g-funnel'
