@@ -84,6 +84,12 @@ describe('S10 reveal blocks', () => {
     expect(lead(2).getAttribute('aria-selected')).toBe('true')
   })
 
+  it('a dim outranks the inline opacity the entrance motion leaves on parts', () => {
+    const { css } = setup('tls.c.step-through', true)
+    expect(css()).toMatch(/opacity:\.28!important/)
+    expect(css()).not.toMatch(/opacity:[\d.]+[;}]/)
+  })
+
   it('accordion: the first section open, the heads below a closed one move up by its body', () => {
     const { css, part } = setup('tls.c.accordion', true)
     expect(part('item[0].lead').getAttribute('aria-expanded')).toBe('true')
@@ -97,7 +103,7 @@ describe('S10 reveal blocks', () => {
   it('step-through: a spotlight on the current step; a click on the block brings the next', () => {
     const { w, css, part } = setup('tls.c.step-through', true)
     expect(part('item[0].marker').getAttribute('aria-current')).toBe('step')
-    expect(css()).toContain('[data-part^="item[1]."]{opacity:.28}')
+    expect(css()).toContain('[data-part^="item[1]."]{opacity:.28!important}')
     fireEvent.click(w.container.querySelector('[data-reveal]')!)
     expect(part('item[1].marker').getAttribute('aria-current')).toBe('step')
     fireEvent.keyDown(part('item[0].lead'), { key: ' ' })

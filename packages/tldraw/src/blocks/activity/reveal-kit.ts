@@ -36,7 +36,8 @@ export function revealScope(root: HTMLElement, rt: ActivityRuntime): RevealScope
   return {
     sel,
     css(rules) {
-      style.textContent = ease + rules
+      // the viewer's entrance motion leaves an inline `opacity: 1` on every part: a dim / hide must outrank it
+      style.textContent = ease + rules.replace(/opacity:\s*([\d.]+)(?=[;}])/g, 'opacity:$1!important')
     },
     part: (name) => group(name)[0] ?? null,
     group,
