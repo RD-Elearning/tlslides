@@ -6325,6 +6325,7 @@ Grid layout with configurable columns, rows, and gap. _(family: layout; keywords
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between grid cells. |
 | \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged in grid cells (row-major order). |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among cells: equal (same size) or content (sized to intrinsic). |
+| \`spans\` | no | list of number (min 1, max 2) (0–12 items) | S11: columns each child takes, in order (1 or 2; missing = 1) — one wide headline cell in a grid of small ones. Rows grow to fit. |
 
 \`\`\`json
 {
@@ -6475,6 +6476,7 @@ Horizontal row with gap. _(family: layout; keywords: row, horizontal, inline, ga
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between row children. |
 | \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks arranged horizontally. |
+| \`justify\` | no | enum: start \\\\| center \\\\| end \\\\| between | S11: with sizing content, where the children sit along the main axis (between = the free space between them). |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
@@ -6706,6 +6708,7 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 |---|---|---|---|
 | \`gap\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Spacing between stacked children. |
 | \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks stacked vertically. |
+| \`justify\` | no | enum: start \\\\| center \\\\| end \\\\| between | S11: with sizing content, where the children sit along the main axis (between = the free space between them). |
 | \`sizing\` | no | enum: equal \\\\| content | How to distribute space among children: equal (same size) or content (sized to intrinsic). |
 
 \`\`\`json
