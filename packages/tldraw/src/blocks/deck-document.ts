@@ -228,8 +228,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      // S13-H: a deep/accent slide paints its tone's ground; a master's own page colour must not cover it
-      background: result.background ?? (slideSpec.tone === 'deep' || slideSpec.tone === 'accent' ? undefined : sm.background),
+      background: result.background ?? sm.background,
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,

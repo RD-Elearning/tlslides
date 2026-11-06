@@ -979,7 +979,6 @@ export function analyzeDeck(
   const motionStyle = deck.motionStyle ?? style?.motionStyle
   const backgroundOf = (s: SlideSpec): Paint | undefined => {
     if (s.background) return s.background
-    if (s.tone === 'deep' || s.tone === 'accent') return undefined // S13-H: the tone's ground, not the master's
     const id = styleMasterFor(style, s)
     return id ? masters[id]?.background : undefined
   }
