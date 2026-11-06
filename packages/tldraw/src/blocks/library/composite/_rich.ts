@@ -41,6 +41,8 @@ export interface RichOptions {
   part?: string
   /** First item number (`number` markers). */
   start?: number
+  /** Tighter gaps (the last rungs `richFit` tries when the cells do not fit). */
+  compact?: boolean
 }
 
 /** The type rungs tried, largest first: lead line and paragraph sizes. */
@@ -87,11 +89,11 @@ export function richCells(ctx: LayoutContext, items: RichItem[], w: number, opts
   const o = { marker: 'none' as RichMarker, part: 'item', markerSide: 'left' as const, card: 'none' as RichCard, ...opts }
   const cols = Math.max(1, Math.min(o.columns ?? 1, items.length || 1))
   const sp = ctx.tokens.space
-  const gap = sp[o.gap ?? 'lg']
+  const gap = o.compact ? sp.sm : sp[o.gap ?? 'lg']
   const cw = Math.max(80, (w - gap * (cols - 1)) / cols)
   const pad = o.card === 'none' ? 0 : sp.md
   const inner = Math.max(60, cw - 2 * pad)
-  const inGap = sp.sm
+  const inGap = o.compact ? sp.xs : sp.sm
   const cells = items.map((item, i) => {
     const { marker, body } = parts(item, i, o, rung)
     let mw = 0
@@ -148,13 +150,19 @@ export function richCells(ctx: LayoutContext, items: RichItem[], w: number, opts
   }
 }
 
-/** The largest rung whose cells fit in `h` (else the smallest): the plan and its rung. */
+/** The largest rung whose cells fit in `h`, then the same rungs with tighter gaps, then (4+ cells in one
+ *  column of a wide box) in two columns; else the smallest. */
 export function richFit(ctx: LayoutContext, items: RichItem[], w: number, h: number, opts: RichOptions = {}): { plan: RichPlan; rung: (typeof RICH_RUNGS)[number] } {
   let last: { plan: RichPlan; rung: (typeof RICH_RUNGS)[number] } | undefined
-  for (const rung of RICH_RUNGS) {
-    const plan = richCells(ctx, items, w, opts, rung)
-    last = { plan, rung }
-    if (plan.height <= h) return last
+  // then a single column of 4+ cells in two columns (a long worked example, six steps)
+  const tries: RichOptions[] = [{ ...opts }, { ...opts, compact: true }]
+  if ((opts.columns ?? 1) === 1 && items.length >= 4 && w >= 1200) tries.push({ ...opts, compact: true, columns: 2 })
+  for (const o of tries) {
+    for (const rung of RICH_RUNGS) {
+      const plan = richCells(ctx, items, w, o, rung)
+      last = { plan, rung }
+      if (plan.height <= h) return last
+    }
   }
   return last!
 }

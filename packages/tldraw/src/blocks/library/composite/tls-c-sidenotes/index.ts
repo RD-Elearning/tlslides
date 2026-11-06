@@ -43,8 +43,17 @@ function layoutSidenotes(p: SidenotesProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(0, ctx.box.width) || 0
   const gap = ctx.tokens.space.lg
   const colGap = ctx.tokens.space.xl * 1.5
-  const mw = Math.round((W - colGap) * 0.66)
+  const H = Math.max(0, ctx.box.height) || 0
+  // notes heavier than the text get a wider margin (and stack from the top when they cannot follow
+  // their paragraphs inside the box)
+  const notesAt = (share: number) => {
+    const w = W - colGap - Math.round((W - colGap) * share)
+    return rows<{ label?: unknown; text?: unknown }>(p.notes, 4).reduce((a, n) => a + measureHeights(ctx, [{ id: 'n', type: 'tls.t.callout', props: { title: txt(n.label, 20) || 'Note', text: txt(n.text, 120), variant: 'info', fill: 'tint' } }], w)[0] + ctx.tokens.space.md, 0)
+  }
+  const share = notesAt(0.66) > H && H > 0 ? 0.56 : 0.66
+  const mw = Math.round((W - colGap) * share)
   const nw = W - colGap - mw
+  const follow = !(H > 0 && notesAt(share) > H)
   const left = pick(p.variant, VARIANTS, 'right-margin') === 'left-margin'
   const mx = left ? nw + colGap : 0
   const nx = left ? 0 : mw + colGap
@@ -66,7 +75,7 @@ function layoutSidenotes(p: SidenotesProps, ctx: LayoutContext): LayoutNode {
     const at = Math.max(0, Math.min(paras.length - 1, typeof n.at === 'number' ? Math.round(n.at) : i))
     const spec = { id: `note[${i}]`, type: 'tls.t.callout', props: { title: txt(n.label, 20) || 'Note', text: txt(n.text, 120), variant: 'info', fill: 'tint' } }
     const [h] = measureHeights(ctx, [spec], nw)
-    const top = Math.max(ny, tops[at] ?? 0)
+    const top = follow ? Math.max(ny, tops[at] ?? 0) : ny
     pieces.push({ id: `note[${i}]`, spec, box: { x: nx, y: top, width: nw, height: h } })
     ny = top + h + ctx.tokens.space.md
   })
