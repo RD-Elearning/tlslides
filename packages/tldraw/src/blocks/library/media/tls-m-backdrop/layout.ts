@@ -166,8 +166,9 @@ export function backdropNodes(kind: BackdropKind, W: number, H: number, c: Backd
         for (let s = 0; s <= 72; s++) {
           const th = (s / 72) * Math.PI * 2
           const r = base * (1 + 0.14 * Math.sin(3 * th + p1 + k * 0.3) + 0.07 * Math.sin(5 * th + p2))
-          const x = Math.min(W - 1, Math.max(1, cx + r * Math.cos(th)))
-          const y = Math.min(H - 1, Math.max(1, cy + r * 0.8 * Math.sin(th)))
+          // no clamping: a clamped ring ran along the edge as a straight line; the group clips
+          const x = cx + r * Math.cos(th)
+          const y = cy + r * 0.8 * Math.sin(th)
           d += `${s ? 'L' : 'M'}${f(x)} ${f(y)}`
         }
       }
