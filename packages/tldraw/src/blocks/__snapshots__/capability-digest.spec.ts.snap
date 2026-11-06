@@ -116,6 +116,14 @@ Region names belong to the layout — pick a \`layout\`, then only use the regio
 | \`poster\` (Poster) | \`poster\` |  |
 | \`corner-title\` (Corner Title) | \`content\`, \`title\` |  |
 | \`offset-grid\` (Offset Grid) | \`title\`, \`a\`, \`b\`, \`c\` |  |
+| \`header-band\` (Header Band) | \`title\`, \`content\` |  |
+| \`magazine\` (Magazine) | \`title\`, \`main\`, \`side-a\`, \`side-b\` |  |
+| \`mosaic\` (Mosaic) | \`title\`, \`lead\`, \`a\`, \`b\` |  |
+| \`two-rows\` (Two Rows) | \`title\`, \`top\`, \`bottom-left\`, \`bottom-right\` |  |
+| \`hero-top\` (Hero Top) | \`visual\`, \`title\`, \`content\` |  |
+| \`framed\` (Framed) | \`title\`, \`content\` |  |
+| \`aside\` (Aside) | \`title\`, \`main\`, \`aside\` |  |
+| \`stage\` (Stage) | \`title\`, \`content\`, \`strip\` |  |
 
 ## Connectors
 
@@ -6866,6 +6874,32 @@ Overlapping row of small portraits (initials when no photo) with a +N overflow b
 }
 \`\`\`
 
+### \`tls.m.backdrop\` — Backdrop [backdrop]
+
+The slide ground: soft glows, aurora bands, a split field, a diagonal band, rings, contours, halftone, blueprint, paper, ruled lines, slate, waves, a frame, a spotlight or a dot field. _(family: media; keywords: backdrop, background, ground, mesh, aurora, paper, blueprint, waves, topographic, halftone, frame, spotlight)_
+
+**When:** Under a whole slide (full bleed, backdrop layer). The deck rhythm places it: deep cover/closing, accent dividers, calm content, quiet dense slides.
+**Avoid:** Inside a region or a card (a texture there is tls.m.pattern); busy kinds (halftone, topo at medium) under text without a panel.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`kind\` | no | enum: flat \\\\| mesh \\\\| aurora \\\\| split \\\\| diagonal \\\\| arcs \\\\| topo \\\\| halftone \\\\| blueprint \\\\| paper \\\\| ruled \\\\| slate \\\\| waves \\\\| frame \\\\| spotlight \\\\| dots | The ground under the slide: soft glows (mesh, aurora), fields (split, diagonal), line work (arcs, topo, blueprint, ruled, frame), textures (paper, slate, halftone, dots), waves or a spotlight. |
+| \`tone\` | no | enum: calm \\\\| deep \\\\| accent \\\\| quiet | quiet = the plainest version (dense slides). |
+| \`intensity\` | no | enum: soft \\\\| medium |  |
+| \`seed\` | no | number (min 0, max 9999) | Varies the drawn marks (topo, paper fibres, slate smudges). |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_backdrop\\",
+  \\"type\\": \\"tls.m.backdrop\\",
+  \\"props\\": {
+    \\"kind\\": \\"aurora\\",
+    \\"tone\\": \\"calm\\",
+    \\"intensity\\": \\"soft\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.decoration\` — Decoration [backdrop]
 
 Decorative shape or motif in a theme colour; deterministic from a seed. _(family: media; keywords: decoration, blob, shape, wave, dots, ornament, background, accent, orb, sphere, star, sparkle, squiggle, memphis, doodle, cube, cylinder, isometric, 3d)_
@@ -8434,7 +8468,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 222,
+  "blockCount": 223,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8610,6 +8644,7 @@ Object {
     "tls.l.stack",
     "tls.m.avatar",
     "tls.m.avatar-group",
+    "tls.m.backdrop",
     "tls.m.decoration",
     "tls.m.device-mock",
     "tls.m.emoji",
@@ -8674,7 +8709,7 @@ Object {
     "line",
     "scrim",
   ],
-  "layoutCount": 28,
+  "layoutCount": 36,
   "layoutIds": Array [
     "title",
     "section",
@@ -8704,6 +8739,14 @@ Object {
     "poster",
     "corner-title",
     "offset-grid",
+    "header-band",
+    "magazine",
+    "mosaic",
+    "two-rows",
+    "hero-top",
+    "framed",
+    "aside",
+    "stage",
   ],
   "motionCount": 35,
   "motionPresetIds": Array [

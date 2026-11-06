@@ -407,6 +407,7 @@ export function pageToSlideSpec(
     spec.look = page.look
   }
   if (page.tone !== undefined) spec.tone = page.tone
+  if (page.backdrop !== undefined) spec.backdrop = page.backdrop
 
   return { spec, findings }
 }
@@ -497,5 +498,6 @@ export function documentToDeckSpec(
   if (doc.look !== undefined) deckSpec.look = doc.look
   if (doc.motionPersonality !== undefined) deckSpec.motionPersonality = doc.motionPersonality
   if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
+  if (doc.backdrops !== undefined) deckSpec.backdrops = doc.backdrops
   return { spec: deckSpec, findings }
 }

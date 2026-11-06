@@ -56,6 +56,7 @@ import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { MAX_NESTING_DEPTH } from './types'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
 import { slideTheme } from './palettes'
+import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
 import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
@@ -955,16 +956,22 @@ export function analyzeDeck(
   // (`deckSpecToDocument`); the report sees them as free backdrop blocks under the slide's flow.
   const masters = Object.fromEntries(styleMasters(style, deck.motif, deck.motifZone).map((m) => [m.name, m]))
   const withMaster = (s: SlideSpec): SlideSpec => {
+    // S13-b: the slide's backdrop goes under everything and replaces the master's texture blocks
+    const backdrop = slideBackdrop(deck, s)
+    const drawn = backdropBlock(backdrop, frame)
+    const under = drawn ? [{ block: { ...drawn.block, id: `${STYLE_MASTER_PREFIX}backdrop` }, box: drawn.box }] : []
     const id = styleMasterFor(style, s)
     const master = id ? masters[id] : undefined
-    if (!id || !master || !Object.keys(master.blocks).length) return s
+    if (!id || !master || !Object.keys(master.blocks).length) return under.length ? { ...s, free: [...under, ...(s.free ?? [])] } : s
     const shapes = resolveMaster(id, masters, frame, tokens)?.shapes ?? []
     const names = Object.keys(master.blocks).filter((k) => !isEditorOnly(master.blocks[k].type))
-    const free = names.map((name, i) => ({
-      block: { ...master.blocks[name], id: `${STYLE_MASTER_PREFIX}${name}`, layer: 'backdrop' as const },
-      box: { x: shapes[i].point[0], y: shapes[i].point[1], width: shapes[i].size[0], height: shapes[i].size[1] },
-    }))
-    return { ...s, free: [...(s.free ?? []), ...free] }
+    const free = names
+      .map((name, i) => ({
+        block: { ...master.blocks[name], id: `${STYLE_MASTER_PREFIX}${name}`, layer: 'backdrop' as const },
+        box: { x: shapes[i].point[0], y: shapes[i].point[1], width: shapes[i].size[0], height: shapes[i].size[1] },
+      }))
+      .filter((b) => !(backdrop && MASTER_TEXTURE_TYPES.has(b.block.type)))
+    return { ...s, free: [...under, ...(s.free ?? []), ...free] }
   }
   // CMP2: the page background (the slide's own, else its style master's) and the deck theme, so the
   // report lays blocks out on the real page and `contrast/low` composites down to it.

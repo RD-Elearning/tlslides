@@ -63,6 +63,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
+  // S13-b: placed by the style masters and the backdrop rhythm; AI-hidden (capability-digest AI_HIDDEN_TYPES).
+  'tls.m.backdrop': t2(['kind', 'tone', 'intensity']),
   'tls.m.ornament': t2(['shape', 'variant', 'tone', 'opacity']),
   // vivid V3: topic icons scattered as the slide's decoration (reached through the style concept)
   'tls.m.icon-cluster': t2(['tone', 'opacity', 'backing']),

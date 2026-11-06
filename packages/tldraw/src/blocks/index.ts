@@ -336,3 +336,8 @@ export type { DeckStyle, FontRef, StyleConcept, StyleSurface } from './types'
 export { derivePalettes, partnerPalettes, paletteColors, hexToOklch, oklchToHex, hexContrast, slideTheme } from './palettes'
 export type { SlideToneName } from './palettes'
 export type { DerivedPalette, PaletteBase, PaletteHarmony } from './palettes'
+// S13-b: the deck's backdrop set per slide role
+export { slideBackdrop, backdropBlock, MASTER_TEXTURE_TYPES } from './backdrops'
+export type { ResolvedBackdrop } from './backdrops'
+export { backdropEnvelope, backdropBusy, INKS as BACKDROP_INKS } from './library/media/tls-m-backdrop/layout'
+export { BACKDROP_KINDS, BACKDROP_TONES } from './library/media/tls-m-backdrop/schema'

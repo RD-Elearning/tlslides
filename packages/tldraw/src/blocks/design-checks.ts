@@ -30,6 +30,7 @@
 import type { BlockDefinition, BlockSpec, Box, DeckStyle, LayoutNode, Pt, ResolvedTokens } from './types'
 import type { BlockRegistry } from './registry'
 import { blockLayer } from './block-layer'
+import { backdropBusy } from './library/media/tls-m-backdrop/layout'
 import { collectPaint, floorOf, hexOf, inkContrast, parseInk, type Background, type InkLeaf, type PaintOp } from './layout/paint-model'
 import { relativeLuminance, rgbToHsl, solveForContrast } from './color-math'
 import { resolveBlockMotion, resolvePartMotion } from './motion/resolve-motion'
@@ -370,7 +371,11 @@ function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[])
     // A decoration's image is a texture (a pattern's grain tile, mostly transparent), not a photo:
     // it is left out of what text sits on. A photo backdrop is a media block (`tls.m.image`).
     const texture = ctx.registry.get(b.type)?.category === 'decoration'
-    const ops = b.inspection ? (texture ? b.inspection.ops.map((op) => (op.kind === 'unknown' ? { ...op, alpha: 0 } : op)) : b.inspection.ops) : []
+    let ops = b.inspection ? (texture ? b.inspection.ops.map((op) => (op.kind === 'unknown' ? { ...op, alpha: 0 } : op)) : b.inspection.ops) : []
+    // S13-b: a busy backdrop (halftone, topo at medium) is as unreadable under text as a photo — text
+    // on it needs a panel (the photo finding and its scrim / surface fix)
+    const bp = b.spec.props as Record<string, unknown> | undefined
+    if (b.type === 'tls.m.backdrop' && backdropBusy(bp?.kind, bp?.intensity)) ops = [{ kind: 'unknown', box: b.box, alpha: 1 }]
     offsets.set(b, all.length)
     all.push(...ops)
   }

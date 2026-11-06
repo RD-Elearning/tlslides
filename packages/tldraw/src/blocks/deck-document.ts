@@ -17,7 +17,8 @@
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, stampAmbient, type CompileFinding } from './slide-compiler'
-import { BLOCK_PROP_KEY } from './shape-bridge'
+import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
+import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { effectiveMotionStyle } from './motion/motion-style'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
@@ -134,10 +135,13 @@ export function styleMasterPage(
   /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
   motif?: string,
   /** CR7a: the deck's `motifZone` (`auto`: the page carries the signature motif, not the master). */
-  zone?: DeckSpec['motifZone']
+  zone?: DeckSpec['motifZone'],
+  /** S13-b: the slide paints a deck backdrop — the master's own texture blocks are left out. */
+  dropTextures?: boolean
 ): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
   const masterId = styleMasterFor(style, slideSpec)
-  const master = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
+  const found = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
+  const master = found && dropTextures ? { ...found, blocks: Object.fromEntries(Object.entries(found.blocks).filter(([, b]) => !MASTER_TEXTURE_TYPES.has(b.type))) } : found
   if (!masterId || !master) return { shapes: [] }
   const shapes: ComponentShape[] = []
   // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
@@ -190,7 +194,15 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone)
+    // S13-b: the slide's backdrop (the deck's set by role, or its own) replaces the master's texture
+    const backdrop = slideBackdrop(spec, slideSpec)
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone, backdrop !== undefined)
+    const drawn = backdropBlock(backdrop, frame)
+    if (drawn) {
+      const sh = blockToShape(drawn.block, drawn.box, { id: `${STYLE_MASTER_PREFIX}backdrop:${pageId}`, childIndex: 1e-6 })
+      ;(sh as { isLocked?: boolean }).isLocked = true
+      sm.shapes.unshift(sh)
+    }
     // vivid V3: the master's motifs (a corner sparkle, a doodle) loop with the slide's motion style
     stampAmbient(sm.shapes, effectiveMotionStyle(slideSpec.motionStyle, motionStyle), registry)
     findings.push(...result.findings)
@@ -228,6 +240,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
     if (slideSpec.look !== undefined) page.look = slideSpec.look
     if (slideSpec.tone !== undefined) page.tone = slideSpec.tone
+    if (slideSpec.backdrop !== undefined) page.backdrop = slideSpec.backdrop
     if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
     if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page
@@ -262,6 +275,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (spec.look !== undefined) document.look = spec.look
   if (spec.motionPersonality !== undefined) document.motionPersonality = spec.motionPersonality
   if (spec.ambient !== undefined) document.ambient = spec.ambient
+  if (spec.backdrops !== undefined) document.backdrops = spec.backdrops
 
   return { document, findings }
 }

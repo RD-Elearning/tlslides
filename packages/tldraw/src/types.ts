@@ -206,6 +206,8 @@ export interface TDDocument {
   motionPersonality?: 'calm' | 'lively' | 'cinematic'
   // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
   ambient?: boolean
+  /** S13-b — the deck's `DeckSpec.backdrops`, for the round trip. */
+  backdrops?: Partial<Record<'deep' | 'accent' | 'calm' | 'quiet', { kind: string; intensity?: 'soft' | 'medium' }>>
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -295,6 +297,8 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   look?: LookAxes
   /** S13-a — the slide's tone (`SlideSpec.tone`); renderers resolve colours through `pageTheme`. */
   tone?: 'base' | 'deep' | 'accent'
+  /** S13-b — the authored `SlideSpec.backdrop`, carried back by `documentToDeckSpec`. */
+  backdrop?: { kind?: string; tone?: 'deep' | 'accent' | 'calm' | 'quiet'; intensity?: 'soft' | 'medium'; seed?: number }
   // CR10 — the authored `SlideSpec.transition` (the viewer plays it) and `choreography`.
   transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'; dir?: 'left' | 'right' | 'up' | 'down' }
   choreography?: string

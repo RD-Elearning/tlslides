@@ -1381,6 +1381,8 @@ export interface SlideSpec {
    *  (the accent as the ground), derived from the deck theme by `palettes.ts::slideTheme`. Every block
    *  reads its colours through roles, so the whole page follows. Absent / `base` = the deck theme. */
   tone?: SlideTone
+  /** S13-b — this slide's backdrop over the deck's set (`DeckSpec.backdrops`). */
+  backdrop?: SlideBackdrop
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -1520,6 +1522,27 @@ export interface DeckSpec {
    *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
    *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
   ambient?: boolean
+  /** spro sprint 2026-11b S13-b — the deck's backdrop set, by role: a slide paints the one of its tone
+   *  (`deep` / `accent`, else `calm`; `quiet` when the slide's `backdrop.tone` says so) as a full-bleed
+   *  `tls.m.backdrop` under everything, in place of the style master's own texture. */
+  backdrops?: DeckBackdrops
+}
+
+/** S13-b — a backdrop role. */
+export type BackdropRole = 'deep' | 'accent' | 'calm' | 'quiet'
+/** S13-b — one backdrop: a `tls.m.backdrop` kind and how strong it is. */
+export interface BackdropChoice {
+  kind: string
+  intensity?: 'soft' | 'medium'
+}
+/** S13-b — `DeckSpec.backdrops`. */
+export type DeckBackdrops = Partial<Record<BackdropRole, BackdropChoice>>
+/** S13-b — `SlideSpec.backdrop`: the slide's own kind / role / intensity over the deck's set. */
+export interface SlideBackdrop {
+  kind?: string
+  tone?: BackdropRole
+  intensity?: 'soft' | 'medium'
+  seed?: number
 }
 
 /** spro creative CR10 — a slide transition (`SlideSpec.transition`). */

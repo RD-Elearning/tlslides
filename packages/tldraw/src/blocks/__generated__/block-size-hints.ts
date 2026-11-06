@@ -171,6 +171,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.l.stack': 'h=fill',
   'tls.m.avatar': 'h≈293@840',
   'tls.m.avatar-group': 'h≈80@840',
+  'tls.m.backdrop': 'h=fill',
   'tls.m.decoration': 'h=fill',
   'tls.m.device-mock': 'h≈565@840',
   'tls.m.emoji': 'h≈232@840',

@@ -129,7 +129,7 @@ export const CONNECTORS_LINE =
   'text out of its path. Never place `tls.g.connector` yourself.'
 
 /** AC1 — editor-only guides the AI never places (AC0 deferred item). */
-export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector']
+export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector', 'tls.m.backdrop']
 
 export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
