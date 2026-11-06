@@ -15,6 +15,19 @@ import { BUILT_IN_DECK_THEMES } from '~state/shapes/shared/deck-theme'
 const SURFACE = { behind: { type: 'solid' as const, color: '#ffffff' }, luminance: 1, overImage: false }
 const ASCII = Array.from({ length: 95 }, (_, i) => String.fromCharCode(32 + i))
 
+describe('S14 new families', () => {
+  // tables agree with the bundled TTFs (hmtx advances, checked by hand 2026-11-06: worst 0.0005 em on 11 families)
+  it('are registered under their CSS names, in the expected width order', () => {
+    const w = (family: string) => tableMetrics()('Quá khứ đẹp ngày xưa ấy', { family: `"${family}"`, size: 100, lineHeight: 1.2, letterSpacing: 0, color: '#000' }).width
+    for (const name of ['Lexend', 'Montserrat', 'Josefin Sans', 'Oswald', 'Lora', 'Merriweather', 'EB Garamond', 'Quicksand', 'Baloo 2', 'Pangolin', 'JetBrains Mono']) {
+      expect(faceForFamily(`"${name}", sans-serif`)).toBeDefined()
+    }
+    expect(w('Oswald')).toBeLessThan(w('Inter') * 0.85) // condensed
+    expect(w('JetBrains Mono')).toBeGreaterThan(w('Inter') * 1.05)
+    expect(w('Montserrat')).toBeGreaterThan(w('Lora'))
+  })
+})
+
 describe('AC3 font-metrics registry', () => {
   it('every face has every ASCII glyph at 400 and 700 (Inter: its LO5 table + bold factor), plus đ/Đ', () => {
     for (const face of FONT_FACES) {
@@ -70,8 +83,8 @@ describe('AC3 font-metrics registry', () => {
     const st = { family: '"Inter"', size: 100, lineHeight: 1.2, letterSpacing: 0, color: '#000' }
     const sum = [...'8.1'].reduce((a, ch) => a + faceCharEm(INTER_METRICS, ch) * 100, 0)
     expect(m('8.1', st).width).toBeLessThan(sum - 5)
-    // every measured face except the monospace one has kerning pairs
-    for (const face of FONT_FACES) if (face.key !== 'source-code-pro') expect(Object.keys(face.kern ?? {}).length).toBeGreaterThan(0)
+    // every measured face except the monospace ones has kerning pairs
+    for (const face of FONT_FACES) if (face.generic !== 'monospace') expect(Object.keys(face.kern ?? {}).length).toBeGreaterThan(0)
   })
 
   it('textWidthRatio: Inter is 1, a mono face is wider, Patrick Hand narrower', () => {

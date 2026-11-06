@@ -33,6 +33,18 @@ const JAKARTA_INTER = pair('Plus Jakarta Sans', 'sans-serif', 'Inter', 'sans-ser
 const PLAYFAIR_INTER = pair('Playfair Display', 'serif', 'Inter', 'sans-serif', FontStyle.Serif, FontStyle.Sans)
 const CRIMSON_INTER = pair('Crimson Pro', 'serif', 'Inter', 'sans-serif', FontStyle.Serif, FontStyle.Sans)
 const BRICOLAGE_NUNITO = pair('Bricolage Grotesque', 'sans-serif', 'Nunito', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+// S14 pairs (heading, body) on the second palette of each wave-2 variant; the faces are bundled in slide-engine/fonts
+const LEXEND_INTER = pair('Lexend', 'sans-serif', 'Inter', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const OSWALD_INTER = pair('Oswald', 'sans-serif', 'Inter', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const MONTSERRAT_INTER = pair('Montserrat', 'sans-serif', 'Inter', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const LEXEND_LEXEND = pair('Lexend', 'sans-serif', 'Lexend', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const MERRIWEATHER_SERIF = pair('Merriweather', 'serif', 'Source Serif 4', 'serif', FontStyle.Serif, FontStyle.Serif)
+const GARAMOND_LORA = pair('EB Garamond', 'serif', 'Lora', 'serif', FontStyle.Serif, FontStyle.Serif)
+const GARAMOND_INTER = pair('EB Garamond', 'serif', 'Inter', 'sans-serif', FontStyle.Serif, FontStyle.Sans)
+const MONTSERRAT_LEXEND = pair('Montserrat', 'sans-serif', 'Lexend', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const JOSEFIN_NUNITO = pair('Josefin Sans', 'sans-serif', 'Nunito', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const BALOO_QUICKSAND = pair('Baloo 2', 'sans-serif', 'Quicksand', 'sans-serif', FontStyle.Sans, FontStyle.Sans)
+const PANGOLIN_LEXEND: Fonts = { heading: FontStyle.Script, body: FontStyle.Sans, headingFamily: stack('Pangolin', 'cursive'), bodyFamily: stack('Lexend', 'sans-serif') }
 const HAND: Fonts = { heading: FontStyle.Script, body: FontStyle.Sans, headingFamily: '"Patrick Hand", cursive', bodyFamily: stack('Nunito', 'sans-serif') }
 
 const ref = (family: string, fallback: FontStyle, metricsKey: string) => ({ family, fallback, metricsKey })
@@ -57,8 +69,8 @@ export const CORPORATE_BAND_STYLE: DeckStyle = {
   brief: 'Banded corporate: a cool neutral page, titles on a full-width header band, square cards, split dividers, a blueprint grid behind dense slides.',
   palettes: [
     pal('corporate-band-steel', 'Band Steel', ARCHIVO_INTER, { background: '#F3F5F8', surface: '#FFFFFF', text: '#14202E', textMuted: '#4A5768', accent1: '#2F5D8A', accent2: '#1F8A80', ...STATUS }, 6),
-    pal('corporate-band-graphite', 'Band Graphite', ARCHIVO_INTER, { background: '#F4F4F2', surface: '#FFFFFF', text: '#1B1D21', textMuted: '#50545C', accent1: '#3B4A6B', accent2: '#B8641C', ...STATUS }, 6),
-    pal('corporate-band-harbor', 'Band Harbor', ARCHIVO_INTER, { background: '#EFF4F4', surface: '#FFFFFF', text: '#10262B', textMuted: '#46595D', accent1: '#1F6F78', accent2: '#B4472E', ...STATUS }, 6),
+    pal('corporate-band-graphite', 'Band Graphite', OSWALD_INTER, { background: '#F4F4F2', surface: '#FFFFFF', text: '#1B1D21', textMuted: '#50545C', accent1: '#3B4A6B', accent2: '#B8641C', ...STATUS }, 6),
+    pal('corporate-band-harbor', 'Band Harbor', LEXEND_INTER, { background: '#EFF4F4', surface: '#FFFFFF', text: '#10262B', textMuted: '#46595D', accent1: '#1F6F78', accent2: '#B4472E', ...STATUS }, 6),
   ],
   fonts: { heading: ref('Archivo', FontStyle.Sans, 'archivo'), body: INTER },
   masters: [
@@ -80,7 +92,7 @@ export const CONSULTING_RAIL_STYLE: DeckStyle = {
   brief: 'Rail consulting: white pages, a coloured left rail, sans action titles, thin rules.',
   palettes: [
     pal('consulting-rail-teal', 'Rail Teal', ARCHIVO_INTER, { background: '#FFFFFF', surface: '#F2F6F6', text: '#0E1A1C', textMuted: '#4D5B5E', accent1: '#0F6E6E', accent2: '#B07A12', ...STATUS }, 2),
-    pal('consulting-rail-plum', 'Rail Plum', ARCHIVO_INTER, { background: '#FFFFFF', surface: '#F6F2F6', text: '#1A1220', textMuted: '#5A4E5E', accent1: '#6B2D6B', accent2: '#2E7D4F', ...STATUS }, 2),
+    pal('consulting-rail-plum', 'Rail Plum', MONTSERRAT_INTER, { background: '#FFFFFF', surface: '#F6F2F6', text: '#1A1220', textMuted: '#5A4E5E', accent1: '#6B2D6B', accent2: '#2E7D4F', ...STATUS }, 2),
   ],
   fonts: { heading: ref('Archivo', FontStyle.Sans, 'archivo'), body: INTER },
   masters: [
@@ -101,7 +113,7 @@ export const ACADEMIC_MARGIN_STYLE: DeckStyle = {
   brief: 'Textbook page: a margin rule on the left, serif type, a section mark on dividers, ruled paper behind dense slides.',
   palettes: [
     pal('academic-margin-teal', 'Margin Teal', SERIF_SERIF, { background: '#FFFEFA', surface: '#F5F1E6', text: '#1A1A17', textMuted: '#55524A', accent1: '#1F5F66', accent2: '#A0601A', ...STATUS }, 4),
-    pal('academic-margin-slate', 'Margin Slate', SERIF_SERIF, { background: '#FFFFFF', surface: '#F2F3F5', text: '#15171C', textMuted: '#50545E', accent1: '#3A4F7A', accent2: '#8E3B46', ...STATUS }, 4),
+    pal('academic-margin-slate', 'Margin Slate', MERRIWEATHER_SERIF, { background: '#FFFFFF', surface: '#F2F3F5', text: '#15171C', textMuted: '#50545E', accent1: '#3A4F7A', accent2: '#8E3B46', ...STATUS }, 4),
   ],
   fonts: { heading: ref('Source Serif 4', FontStyle.Serif, 'source-serif-4'), body: ref('Source Serif 4', FontStyle.Serif, 'source-serif-4') },
   masters: [
@@ -123,7 +135,7 @@ export const ACADEMIC_LAB_STYLE: DeckStyle = {
   brief: 'Lab notebook: pale squared paper, sans headings with a coloured label bar, outlined result boxes, a finer grid behind dense slides. Practical and exact.',
   palettes: [
     pal('academic-lab-green', 'Lab Green', JAKARTA_INTER, { background: '#F6FBF5', surface: '#FFFFFF', text: '#13241A', textMuted: '#48594D', accent1: '#2F7D4F', accent2: '#C2531C', ...STATUS }, 6),
-    pal('academic-lab-blue', 'Lab Blue', JAKARTA_INTER, { background: '#F5F9FC', surface: '#FFFFFF', text: '#12202B', textMuted: '#475663', accent1: '#2369A8', accent2: '#B4400B', ...STATUS }, 6),
+    pal('academic-lab-blue', 'Lab Blue', LEXEND_LEXEND, { background: '#F5F9FC', surface: '#FFFFFF', text: '#12202B', textMuted: '#475663', accent1: '#2369A8', accent2: '#B4400B', ...STATUS }, 6),
   ],
   fonts: { heading: ref('Plus Jakarta Sans', FontStyle.Sans, 'plus-jakarta-sans'), body: INTER },
   masters: [
@@ -145,7 +157,7 @@ export const ELEGANT_LACQUER_STYLE: DeckStyle = {
   name: 'Elegant · Lacquer',
   brief: 'After lacquer painting: a brown-black ground, gold-leaf hairlines and frames, an eggshell texture on covers, one vermilion accent.',
   palettes: [
-    pal('elegant-lacquer-umber', 'Lacquer Umber', PLAYFAIR_INTER, { background: '#1C1310', surface: '#2A1D18', text: '#F3E9D8', textMuted: '#CBBBA2', accent1: '#C9A24A', accent2: '#E0603F', ...DARK_STATUS }, 4),
+    pal('elegant-lacquer-umber', 'Lacquer Umber', GARAMOND_LORA, { background: '#1C1310', surface: '#2A1D18', text: '#F3E9D8', textMuted: '#CBBBA2', accent1: '#C9A24A', accent2: '#E0603F', ...DARK_STATUS }, 4),
     pal('elegant-lacquer-cinnabar', 'Lacquer Cinnabar', PLAYFAIR_INTER, { background: '#26100C', surface: '#361A15', text: '#F5E8D6', textMuted: '#D0B9A0', accent1: '#D4AF5A', accent2: '#EE7A55', ...DARK_STATUS }, 4),
   ],
   fonts: { heading: ref('Playfair Display', FontStyle.Serif, 'playfair-display'), body: INTER },
@@ -168,7 +180,7 @@ export const ELEGANT_INKWASH_STYLE: DeckStyle = {
   brief: 'After ink-wash painting: white paper, soft grey washes, wide empty space, serif titles and a small red seal as the signature. Quiet and deliberate.',
   palettes: [
     pal('elegant-inkwash-sumi', 'Ink Sumi', CRIMSON_INTER, { background: '#FBFBF9', surface: '#F0F0EC', text: '#1C1C1A', textMuted: '#575752', accent1: '#B3261E', accent2: '#5B6B6D', ...STATUS }, 2),
-    pal('elegant-inkwash-indigo', 'Ink Indigo', CRIMSON_INTER, { background: '#FAFAF7', surface: '#EEEFEA', text: '#191B1F', textMuted: '#55585E', accent1: '#A4282A', accent2: '#2E4A6B', ...STATUS }, 2),
+    pal('elegant-inkwash-indigo', 'Ink Indigo', GARAMOND_INTER, { background: '#FAFAF7', surface: '#EEEFEA', text: '#191B1F', textMuted: '#55585E', accent1: '#A4282A', accent2: '#2E4A6B', ...STATUS }, 2),
   ],
   fonts: { heading: ref('Crimson Pro', FontStyle.Serif, 'crimson-pro'), body: INTER },
   masters: [
@@ -190,7 +202,7 @@ export const MODERN_AURORA_STYLE: DeckStyle = {
   brief: 'Aurora: a dark ground with soft light bands, frosted panels, one bright accent, rounded geometric sans.',
   palettes: [
     pal('modern-aurora-night', 'Aurora Night', JAKARTA_INTER, { background: '#0B1020', surface: '#151C33', text: '#EEF2FF', textMuted: '#A8B2CF', accent1: '#5EEAD4', accent2: '#A78BFA', ...DARK_STATUS }, 20),
-    pal('modern-aurora-dusk', 'Aurora Dusk', JAKARTA_INTER, { background: '#120B1E', surface: '#1E1530', text: '#F5F0FF', textMuted: '#B9AECF', accent1: '#F472B6', accent2: '#60A5FA', ...DARK_STATUS }, 20),
+    pal('modern-aurora-dusk', 'Aurora Dusk', MONTSERRAT_LEXEND, { background: '#120B1E', surface: '#1E1530', text: '#F5F0FF', textMuted: '#B9AECF', accent1: '#F472B6', accent2: '#60A5FA', ...DARK_STATUS }, 20),
   ],
   masters: [
     { name: 'cover', blocks: {}, background: solid('theme:background') },
@@ -211,7 +223,7 @@ export const MODERN_PRISM_STYLE: DeckStyle = {
   brief: 'Prism: a white ground with soft refracted-light rings in two hues, rounded geometric sans, light cards. Clear, optimistic, technical.',
   palettes: [
     pal('modern-prism-violet', 'Prism Violet', BRICOLAGE_NUNITO, { background: '#FFFFFF', surface: '#F4F5FB', text: '#121423', textMuted: '#4C5068', accent1: '#6246EA', accent2: '#D63F7A', ...STATUS }, 18),
-    pal('modern-prism-sun', 'Prism Sun', BRICOLAGE_NUNITO, { background: '#FFFFFF', surface: '#FBF6F0', text: '#1E1610', textMuted: '#5C4F45', accent1: '#C9530F', accent2: '#2D6FD9', ...STATUS }, 18),
+    pal('modern-prism-sun', 'Prism Sun', JOSEFIN_NUNITO, { background: '#FFFFFF', surface: '#FBF6F0', text: '#1E1610', textMuted: '#5C4F45', accent1: '#C9530F', accent2: '#2D6FD9', ...STATUS }, 18),
   ],
   fonts: { heading: ref('Bricolage Grotesque', FontStyle.Sans, 'bricolage-grotesque'), body: ref('Nunito', FontStyle.Sans, 'nunito') },
   masters: [
@@ -238,7 +250,7 @@ export const PLAYFUL_STICKER_STYLE: DeckStyle = {
   brief: 'Sticker book: pastel pages, die-cut sticker icons with white borders, round pill cards, dot fields and rings. Friendly and bright.',
   palettes: [
     pal('playful-sticker-grape', 'Sticker Grape', BRICOLAGE_NUNITO, { background: '#FFF7F0', surface: '#FFFFFF', text: '#22183A', textMuted: '#574C6E', accent1: '#7C4DFF', accent2: '#E8603D', ...STATUS }, 24),
-    pal('playful-sticker-mint', 'Sticker Mint', BRICOLAGE_NUNITO, { background: '#F1FBF7', surface: '#FFFFFF', text: '#12302A', textMuted: '#45625A', accent1: '#0B8A6D', accent2: '#E04A7E', ...STATUS }, 24),
+    pal('playful-sticker-mint', 'Sticker Mint', BALOO_QUICKSAND, { background: '#F1FBF7', surface: '#FFFFFF', text: '#12302A', textMuted: '#45625A', accent1: '#0B8A6D', accent2: '#E04A7E', ...STATUS }, 24),
   ],
   fonts: { heading: ref('Bricolage Grotesque', FontStyle.Sans, 'bricolage-grotesque'), body: ref('Nunito', FontStyle.Sans, 'nunito') },
   tokens: { ...MEMPHIS_STYLE.tokens, radius: { sm: 12, md: 24, lg: 32, xl: 40 } },
@@ -257,7 +269,7 @@ export const CLASSROOM_WHITEBOARD_STYLE: DeckStyle = {
   brief: 'Whiteboard: marker handwriting in blue and red, round magnets, ruled lines behind content, a slate board for covers.',
   palettes: [
     pal('classroom-whiteboard-blue', 'Board Blue', HAND, { background: '#FCFCFA', surface: '#F1F3F2', text: '#1E2430', textMuted: '#505866', accent1: '#1F63D1', accent2: '#C93636', ...STATUS }, 10),
-    pal('classroom-whiteboard-green', 'Board Green', HAND, { background: '#FDFDFB', surface: '#F2F4F1', text: '#1D2620', textMuted: '#4F5A52', accent1: '#1E7F47', accent2: '#C2531C', ...STATUS }, 10),
+    pal('classroom-whiteboard-green', 'Board Green', PANGOLIN_LEXEND, { background: '#FDFDFB', surface: '#F2F4F1', text: '#1D2620', textMuted: '#4F5A52', accent1: '#1E7F47', accent2: '#C2531C', ...STATUS }, 10),
   ],
   fonts: DOODLE_STYLE.fonts,
   masters: [
