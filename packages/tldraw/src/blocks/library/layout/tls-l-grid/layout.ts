@@ -16,8 +16,39 @@ import { isAuthoredContext } from '../../../layout/layout-child'
 import { peerTracks } from '../../../layout/peer-tracks'
 import { peerShapeSteps } from '../../media/tls-m-shape/layout'
 
+/**
+ * S11 (sprint 2026-11b): cells of a grid whose children span 1 or 2 columns, row-major; a wide cell that
+ * does not fit the rest of a row starts the next one. `null` when every span is 1 (the classic grid).
+ */
+export function spanCells(spans: readonly unknown[] | undefined, n: number, cols: number): Array<{ col: number; row: number; span: number }> | null {
+  const list = Array.from({ length: n }, (_, i) => {
+    const v = Math.floor(Number(spans?.[i] ?? 1))
+    return Math.max(1, Math.min(cols, v === 2 ? 2 : 1))
+  })
+  if (!list.some((s) => s > 1)) return null
+  const out: Array<{ col: number; row: number; span: number }> = []
+  let col = 0
+  let row = 0
+  for (const span of list) {
+    if (col + span > cols) {
+      col = 0
+      row++
+    }
+    out.push({ col, row, span })
+    col += span
+    if (col >= cols) {
+      col = 0
+      row++
+    }
+  }
+  return out
+}
+
 export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
   const cols = Math.max(1, Math.floor(props.columns ?? 2))
+  const allKids = (props as unknown as { children?: BlockSpec[] }).children ?? []
+  const cells = spanCells(props.spans, allKids.length, cols)
+  if (cells) return spannedLayout(props, ctx, cols, cells, allKids)
   const rows = Math.max(1, Math.floor(props.rows ?? 2))
   const gapToken = (props.gap ?? 'md') as SpaceToken
   const gap = styleGap(ctx, ctx.tokens.space[gapToken] ?? ctx.tokens.space.md) // CMP1: style.gap wins
@@ -145,4 +176,28 @@ export function layout(props: GridProps, ctx: LayoutContext): LayoutNode {
     part: 'root',
     children: tagChildren(childNodes), // RVM2: child/<i> motion parts
   }
+}
+
+/** S11: a grid with wide cells — equal columns and rows, a span-2 cell takes two columns and the gap between. */
+function spannedLayout(props: GridProps, ctx: LayoutContext, cols: number, cells: Array<{ col: number; row: number; span: number }>, children: BlockSpec[]): LayoutNode {
+  const gap = styleGap(ctx, ctx.tokens.space[(props.gap ?? 'md') as SpaceToken] ?? ctx.tokens.space.md)
+  const W = ctx.box.width
+  const H = ctx.box.height
+  const rows = Math.max(1, ...cells.map((c) => c.row + 1))
+  const cw = (W - gap * (cols - 1)) / cols
+  const rh = (H - gap * (rows - 1)) / rows
+  const boxes = cells.map((c) => ({ x: c.col * (cw + gap), y: c.row * (rh + gap), width: cw * c.span + gap * (c.span - 1), height: rh }))
+  // peers of one width share their children's tracks, row by row (as the classic grid)
+  const tracksOf: Array<number[] | undefined> = new Array(children.length)
+  if (isAuthoredContext(ctx)) {
+    for (let r = 0; r < rows; r++) {
+      const idx = cells.map((c, i) => (c.row === r ? i : -1)).filter((i) => i >= 0)
+      if (idx.length > 1 && idx.every((i) => cells[i].span === cells[idx[0]].span)) {
+        const t = peerTracks(idx.map((i) => children[i]), idx.map((i) => boxes[i].width), ctx, rh)
+        idx.forEach((i) => (tracksOf[i] = t))
+      }
+    }
+  }
+  const childNodes = children.map((child, i) => ctx.layoutChild(child, boxes[i], tracksOf[i] ? { tracks: tracksOf[i] } : undefined))
+  return { k: 'group', box: { x: 0, y: 0, width: W, height: H }, part: 'root', children: tagChildren(childNodes) }
 }

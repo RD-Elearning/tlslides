@@ -3,6 +3,7 @@
  */
 
 import { tlsLGrid } from './index'
+import { spanCells } from './layout'
 import { makeCtx, makeRegistry, makeChildren, SIZES, assertValidNode } from '../test-helpers'
 
 describe('tls.l.grid', () => {
@@ -73,6 +74,27 @@ describe('tls.l.grid', () => {
       expect(node.children).toHaveLength(1)
       expect(node.children[0].box.width).toBe(960)
       expect(node.children[0].box.height).toBe(540)
+    })
+  })
+
+  describe('S11 spans', () => {
+    it('places a wide headline cell over two columns and wraps a span that does not fit', () => {
+      expect(spanCells([2, 1, 1, 1], 4, 3)).toEqual([{ col: 0, row: 0, span: 2 }, { col: 2, row: 0, span: 1 }, { col: 0, row: 1, span: 1 }, { col: 1, row: 1, span: 1 }])
+      expect(spanCells([1, 1, 2], 3, 2)).toEqual([{ col: 0, row: 0, span: 1 }, { col: 1, row: 0, span: 1 }, { col: 0, row: 1, span: 2 }])
+      expect(spanCells([1, 2], 2, 3)).toEqual([{ col: 0, row: 0, span: 1 }, { col: 1, row: 0, span: 2 }])
+      expect(spanCells(undefined, 4, 2)).toBeNull()
+      expect(spanCells([1, 1, 1], 3, 3)).toBeNull()
+    })
+
+    it('a span-2 cell is two columns wide plus the gap; rows grow to fit', () => {
+      const ctx = makeCtx({ width: 1000, height: 500 }, registry)
+      const node = tlsLGrid.layout({ columns: 3, rows: 1, gap: 'md', spans: [2, 1, 1, 1, 1], children: makeChildren(5) } as any, ctx)
+      expect(node.children).toHaveLength(5)
+      const cw = (1000 - 48) / 3
+      expect(node.children[0].box.width).toBeCloseTo(cw * 2 + 24)
+      expect(node.children[1].box.x).toBeCloseTo(2 * (cw + 24))
+      expect(node.children[2].box.y).toBeCloseTo((500 - 24) / 2 + 24)
+      for (const c of node.children) expect(c.box.x + c.box.width).toBeLessThanOrEqual(1000.01)
     })
   })
 })

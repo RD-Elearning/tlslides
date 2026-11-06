@@ -29,7 +29,7 @@ describe('CMP4 composition grammar', () => {
     expect(rules(slide([{ id: 'sec', type: 'tls.l.section', props: { children: [body('b', 'x')] } }]))).toContain('grammar/container')
     const deep = card('c1', [{ id: 's2', type: 'tls.l.stack', props: { children: [card('c3', [body('b', 'x')])] } }])
     expect(rules(slide([deep]))).toContain('grammar/depth')
-    expect(rules(slide([{ id: 'st', type: 'tls.l.stack', props: { children: Array.from({ length: 7 }, (_, i) => body(`b${i}`, 'x')) } }]))).toContain('grammar/leaves')
+    expect(rules(slide([{ id: 'st', type: 'tls.l.stack', props: { children: Array.from({ length: 9 }, (_, i) => body(`b${i}`, 'x')) } }]))).toContain('grammar/leaves')
     expect(rules(slide([card('c', [{ id: 'cc', type: 'tls.c.cards', props: {} }])]))).toContain('grammar/scope')
     expect(rules(slide([{ id: 'r', type: 'tls.l.row', props: { children: [card('a', [body('b1', 'x')]), body('b2', 'y')] } }]))).toContain('grammar/peers')
     expect(rules(slide([{ ...card('c', [body('b', 'x')]), style: { density: 'roomy' } as never }]))).toContain('grammar/style')
@@ -61,9 +61,35 @@ describe('CMP4 random-composition dry run', () => {
     expect(r.runs).toBe(20)
     expect(r.grammarClean).toBe(true)
     expect(r.passed).toBeGreaterThan(0)
-    // what a gate rejects is a design verdict (quality), never an engine error or a grammar break
-    for (const c of r.rejected) expect(c.code).toMatch(/^quality\//)
+    // what a gate rejects is a design verdict (quality, or S11's advisory grammar warnings: cell templates,
+    // split ratios, content share), never an engine error or a grammar break (an error-level rule)
+    for (const c of r.rejected) expect(c.code).toMatch(/^quality\/|^grammar\/(content|template|ratio)$/)
   }, 60000)
+})
+
+describe('S11 grammar v2', () => {
+  const panel = (id: string, children: BlockSpec[]): BlockSpec => ({ id, type: 'tls.l.stack', props: { children } })
+  const kick = (id: string): BlockSpec => ({ id, type: 'tls.t.kicker', props: { text: 'Note' } })
+  it('cells of one template are peers whatever their container; differing cells are a template warning', () => {
+    const same = rules(slide([{ id: 'r', type: 'tls.l.row', props: { children: [card('a', [t('h1', 'One'), body('b1', 'x')]), panel('b', [t('h2', 'Two'), body('b2', 'y')])] } }]))
+    expect(same).toEqual([])
+    const diff = checkGrammar(slide([{ id: 'r', type: 'tls.l.row', props: { children: [card('a', [t('h1', 'One'), body('b1', 'x')]), card('b', [body('b2', 'y')])] } }]), registry)
+    expect(diff.map((f) => [f.rule, f.level])).toEqual([['grammar/template', 'warning']])
+    expect(diff[0].message).toContain('same parts')
+  })
+  it('up to 8 children; a split ratio outside the set names the nearest', () => {
+    expect(rules(slide([{ id: 'g', type: 'tls.l.grid', props: { columns: 4, rows: 2, children: Array.from({ length: 8 }, (_, i) => body(`b${i}`, 'x')) } }]))).toEqual([])
+    const f = checkGrammar(slide([{ id: 'sp', type: 'tls.l.split', props: { ratio: 0.72, children: [body('a', 'x'), body('b', 'y')] } }]), registry)
+    expect(f.map((x) => x.rule)).toEqual(['grammar/ratio'])
+    expect(f[0].message).toContain('use 0.67')
+    expect(rules(slide([{ id: 'sp', type: 'tls.l.split', props: { ratio: 0.4, children: [body('a', 'x'), body('b', 'y')] } }]))).toEqual([])
+  })
+  it('a composition that is mostly decoration is an error (< 50 %), a warning under 60 %', () => {
+    const decor = checkGrammar(slide([card('c', [kick('k1'), kick('k2'), { id: 'r1', type: 'tls.x.rule', props: {} }, body('b', 'x')])]), registry).filter((x) => x.rule === 'grammar/content')
+    expect(decor.map((x) => x.level)).toEqual(['error'])
+    const half = checkGrammar(slide([card('c', [kick('k1'), kick('k2'), kick('k3'), t('h', 'T'), body('b', 'x'), body('b2', 'y')])]), registry).filter((x) => x.rule === 'grammar/content')
+    expect(half.map((x) => x.level)).toEqual(['warning'])
+  })
 })
 
 describe('compose PLAN.md B2/B6 — one accent, one decoration', () => {

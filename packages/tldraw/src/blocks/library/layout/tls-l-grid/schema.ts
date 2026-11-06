@@ -37,6 +37,12 @@ export const schema: BlockSchema = {
     label: 'Sizing',
     help: 'How to distribute space among cells: equal (same size) or content (sized to intrinsic).',
   },
+  spans: {
+    type: { kind: 'list', of: { kind: 'number', min: 1, max: 2 }, max: 12 },
+    role: 'option',
+    label: 'Spans',
+    help: 'S11: columns each child takes, in order (1 or 2; missing = 1) — one wide headline cell in a grid of small ones. Rows grow to fit.',
+  },
 }
 
 export interface GridProps extends Record<string, unknown> {
@@ -45,6 +51,8 @@ export interface GridProps extends Record<string, unknown> {
   gap: string
   children?: BlockSpec[]
   sizing?: 'equal' | 'content'
+  /** S11 (sprint 2026-11b): columns per child (1 | 2), row-major flow; rows grow to fit. */
+  spans?: number[]
 }
 
 export const defaults: GridProps = {
