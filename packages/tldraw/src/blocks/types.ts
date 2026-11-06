@@ -1655,4 +1655,7 @@ export interface DeckStyle {
   /** spro enhance S1 — the family style this one is a variant of (`'doodle'` for
    *  `doodle-geo3d`); absent = a family's own base style. */
   variantOf?: string
+  /** spro sprint 2026-11b S13-D — the style's own backdrop set by role, used when the deck names none
+   *  (`DeckSpec.backdrops` wins). */
+  backdrops?: DeckBackdrops
 }

@@ -195,7 +195,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
     // S13-b: the slide's backdrop (the deck's set by role, or its own) replaces the master's texture
-    const backdrop = slideBackdrop(spec, slideSpec)
+    const backdrop = slideBackdrop({ backdrops: spec.backdrops ?? style?.backdrops }, slideSpec)
     const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone, backdrop !== undefined)
     const drawn = backdropBlock(backdrop, frame)
     if (drawn) {

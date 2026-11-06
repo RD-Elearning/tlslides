@@ -26,6 +26,7 @@ import { DOODLE_STYLE } from './doodle'
 import { MEMPHIS_STYLE } from './memphis'
 import { CONSULTING_STYLE } from './consulting'
 import { VARIANT_STYLES } from './variants'
+import { VARIANT_STYLES_2 } from './variants-2'
 import { textWidthRatio } from '../layout/font-metrics'
 
 /** Every built-in deck style (ai-curation §3.1: ten styles in four families). */
@@ -42,6 +43,8 @@ export const BUILT_IN_STYLES: readonly DeckStyle[] = [
   CONSULTING_STYLE,
   // spro enhance S3: wave-1 variants, each a complete style of its family (`variantOf`)
   ...VARIANT_STYLES,
+  // spro sprint 2026-11b S13-D: wave-2 variants (each with its own backdrop set)
+  ...VARIANT_STYLES_2,
 ]
 
 /** Reserved master-name prefix for style masters. */
@@ -63,6 +66,17 @@ export const STYLE_LAYOUTS: Readonly<Record<string, { prefer: readonly string[];
   doodle: { prefer: ['mosaic', 'stage'], avoid: ['framed'] },
   memphis: { prefer: ['mosaic', 'two-rows'], avoid: ['framed'] },
   'academic-lecture': { prefer: ['aside', 'stage', 'header-band'], avoid: [] },
+  // S13-D wave-2 variants
+  'corporate-band': { prefer: ['header-band', 'two-rows'], avoid: ['framed'] },
+  'consulting-rail': { prefer: ['aside', 'two-rows'], avoid: ['framed', 'mosaic'] },
+  'academic-margin': { prefer: ['aside', 'stage'], avoid: ['mosaic'] },
+  'academic-lab': { prefer: ['two-rows', 'header-band'], avoid: [] },
+  'elegant-lacquer': { prefer: ['framed', 'aside'], avoid: ['header-band', 'mosaic'] },
+  'elegant-inkwash': { prefer: ['stage', 'aside'], avoid: ['header-band', 'mosaic'] },
+  'modern-aurora': { prefer: ['hero-top', 'mosaic'], avoid: ['header-band'] },
+  'modern-prism': { prefer: ['mosaic', 'hero-top'], avoid: [] },
+  'playful-sticker': { prefer: ['mosaic', 'two-rows'], avoid: ['framed'] },
+  'classroom-whiteboard': { prefer: ['stage', 'two-rows'], avoid: ['framed'] },
 }
 
 export function styleLayouts(id: string | undefined): { prefer: readonly string[]; avoid: readonly string[] } {
