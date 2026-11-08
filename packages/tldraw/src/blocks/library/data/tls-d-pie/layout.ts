@@ -59,6 +59,9 @@ export interface PieExtra {
   centre?: { value: string; label?: string }
 }
 
+/** A legend box at least this large takes body text (half the height: caption). */
+export const LEGEND_ROOMY = { width: 900, height: 360 }
+
 export function layout(props: PieProps, ctx0: LayoutContext, extra?: PieExtra): LayoutNode {
   // Browser-true single-line widths for every label decision (RV05).
   const ctx = withRealWidths(ctx0)
@@ -110,13 +113,19 @@ export function layout(props: PieProps, ctx0: LayoutContext, extra?: PieExtra): 
   }
 
   let area = { x: 0, y: 0, width: W, height: H }
+  let legendNodes: LayoutNode[] = []
   if (mode === 'legend') {
+    // review 2026-11-08 (ecoride s8: an 18-unit legend at the far right of a 1 700-unit box): a roomy box
+    // takes a larger legend, which then sits beside the ring (below)
+    const token = H >= LEGEND_ROOMY.height && W >= LEGEND_ROOMY.width ? 'body' : H >= LEGEND_ROOMY.height / 2 ? 'caption' : 'footnote'
     const lg = layoutLegend(
       slices.map((s, i) => ({ label: showPct ? `${s.name} ${pctOf(s)}` : s.name, color: colorOf(s, i) })),
       area,
       ctx,
-      'right'
+      'right',
+      token
     )
+    legendNodes = lg.nodes
     nodes.push(...lg.nodes)
     area = lg.plotBox
   }
@@ -131,8 +140,22 @@ export function layout(props: PieProps, ctx0: LayoutContext, extra?: PieExtra): 
   const vMargin = outsideAll || wantsInside ? lh * 1.1 : 6
   let R = Math.min((area.width - (outsideAll || wantsInside ? 2 * colMargin : 0)) / 2, (area.height - 2 * vMargin) / 2)
   if (!(R > 12)) R = Math.max(6, Math.min(area.width, area.height) / 2 - 6)
-  const cx = area.x + area.width / 2
+  let cx = area.x + area.width / 2
   const cy = area.y + area.height / 2
+  // the ring and its legend are one group, centred in the box (the ring no longer floats between empty
+  // margins with its legend pinned to the far edge)
+  if (legendNodes.length) {
+    const left = Math.min(...legendNodes.map((n) => n.box.x))
+    const legendW = Math.max(...legendNodes.map((n) => n.box.x + n.box.width)) - left
+    const gap = ctx.tokens.space.xl
+    const group = 2 * R + gap + legendW
+    if (group < W - 1) {
+      const x0 = (W - group) / 2
+      cx = x0 + R
+      const dx = x0 + 2 * R + gap - left
+      for (const n of legendNodes) n.box = { ...n.box, x: n.box.x + dx }
+    }
+  }
 
   // The part of the ring a donut `total` leaves open.
   if (total > sum) {

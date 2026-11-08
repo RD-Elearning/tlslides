@@ -19,7 +19,7 @@
  * probe of `measureBlock`.
  */
 
-import type { BlockDefinition, LayoutContext, LayoutNode, TypeToken } from '../types'
+import type { BlockDefinition, FillStep, LayoutContext, LayoutNode, TypeToken } from '../types'
 import { DEFAULT_PROBE_HEIGHT } from './measure-block'
 import { shiftTypeContext } from './layout-child'
 import { loudTextCap } from './loud-text'
@@ -34,10 +34,25 @@ export const FILL_CENTRE_FROM = 0.2
 const LADDER: readonly TypeToken[] = ['footnote', 'caption', 'body', 'lead', 'subheading', 'heading', 'title']
 const POSTER_LADDER: readonly TypeToken[] = ['footnote', 'caption', 'body', 'lead', 'subheading', 'heading']
 
+/**
+ * Review 2026-11-08 — the families whose blocks step their type up by default when they are a region's main
+ * block (a route agenda, a milestone row, a diagram: drawn as a 28-unit strip in a 570-unit room on the
+ * notebook and ecoride decks). A block's own `fillPolicy` wins; charts (`data`) and html blocks keep theirs.
+ */
+export const DEFAULT_FILL_FAMILIES: ReadonlySet<string> = new Set(['diagram', 'composite'])
+
+/** The fill policy a block uses: its own, else `['type']` for a layout block of `DEFAULT_FILL_FAMILIES`. */
+export function fillPolicyOf(def: BlockDefinition | undefined): readonly FillStep[] | undefined {
+  if (!def) return undefined
+  if (def.fillPolicy) return def.fillPolicy
+  return def.kind !== 'html' && DEFAULT_FILL_FAMILIES.has(def.family) ? DEFAULT_FILL : undefined
+}
+const DEFAULT_FILL: readonly FillStep[] = ['type']
+
 /** Whether `fillLayout` drives this layout call. */
 export function fills(def: BlockDefinition, ctx: LayoutContext): boolean {
   return (
-    !!def.fillPolicy?.length &&
+    !!fillPolicyOf(def)?.length &&
     ctx.style?.fill === true &&
     (ctx.depth ?? 0) === 0 &&
     !ctx.tokens.measuring &&
@@ -137,10 +152,16 @@ export function spreadItems(node: LayoutNode, H: number, ctx: LayoutContext, max
  *  the smaller type. */
 export const SHORT_TEXT = 20
 export const ORPHAN = 0.2
-function rewraps(base: Stats, next: Stats): boolean {
+/** Review 2026-11-08: in a diagram or a composite (`labels`), a short label of a row of stops may take two
+ *  balanced lines (the last at least `BALANCED` of the line, past `ORPHAN`, `SHORT_TEXT_MIN_LINE` characters a line) —
+ *  a route of five stops otherwise stayed at 28 units in a 570-unit room. */
+export const BALANCED = 0.25
+export const SHORT_TEXT_MIN_LINE = 8
+function rewraps(base: Stats, next: Stats, labels = false): boolean {
   return next.leaves.some((l, i) => {
     const b = base.leaves[i]
     if (!b || l.lines <= b.lines) return false
+    if (labels && b.lines === 1 && l.lines === 2 && l.last >= BALANCED && l.chars / 2 >= SHORT_TEXT_MIN_LINE) return false
     // a paragraph may take a line more; a one-liner may not break with a word alone on its new line
     return l.chars <= SHORT_TEXT || (b.lines === 1 && l.last < ORPHAN)
   })
@@ -155,7 +176,7 @@ function loud(s: Stats): number {
 /** `def.layout` with the block's `fillPolicy` applied (see the module comment); as authored when `fills` is false. */
 export function fillLayout(def: BlockDefinition, props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
   if (!fills(def, ctx)) return def.layout(props, ctx)
-  const policy = def.fillPolicy!
+  const policy = fillPolicyOf(def)!
   const W = ctx.box.width
   const H = ctx.box.height
   const base: LayoutContext = { ...ctx, tokens: { ...ctx.tokens, filling: true } }
@@ -172,7 +193,7 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
       const up = shiftTypeContext(ctx, n, LADDER)
       const t = lay({ ...up, tokens: { ...up.tokens, filling: true } })
       const ts = stats(t, W, H)
-      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts) || loud(ts) > loud(s)) continue
+      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts, DEFAULT_FILL_FAMILIES.has(def.family)) || loud(ts) > loud(s)) continue
       if (bottomOf(t) <= H * FILL_TYPE_SHARE) roomy = t
       else if (!any && n <= 2) any = t
     }

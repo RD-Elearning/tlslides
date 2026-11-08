@@ -63,6 +63,7 @@ import { blockAnchor } from './block-layer'
 import { applyStyleBlockDefaults, STYLE_MASTER_PREFIX } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS, loudTextCap } from './design-checks'
+import { fillPolicyOf } from './layout/fill'
 import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH } from './layout/connector-route'
@@ -541,7 +542,7 @@ function compileSlideUnstyled(
     for (const [name, blocks] of Object.entries(spec.regions)) {
       if (name === 'title' || !Array.isArray(blocks)) continue
       const i = blocks.findIndex((b) => b && !b.layer && !NOT_MAIN.has(b.type))
-      if (i >= 0 && registry.get(blocks[i].type)?.fillPolicy?.length && blocks[i].style?.fill === undefined) mainOf.set(name, i)
+      if (i >= 0 && fillPolicyOf(registry.get(blocks[i].type))?.length && blocks[i].style?.fill === undefined) mainOf.set(name, i)
     }
   }
   const alignOf = (name: string): RegionAlign => {
