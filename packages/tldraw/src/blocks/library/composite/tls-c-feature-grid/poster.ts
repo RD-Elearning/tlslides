@@ -11,6 +11,7 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
 import { alignText, cardNodes, cardPaint } from '../_kit'
+import { breaksWord } from '../_poster'
 import { getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
 import { cssTextHeight } from '../../../html-block'
@@ -25,7 +26,9 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   const cellW = (ctx.box.width - (cols - 1) * (props.gap ?? 24)) / cols
   if (H > 0 && cellW >= FG_ROOMY_MIN_CELL) {
     const node = posterAt(props, ctx, roomy)
-    if (node.box.height <= H + 0.5) return node
+    // review 2026-11-08 (memphis s9 "Three-min / ute story", "experimen / t"): the roomy tier never cuts a
+    // word the base tier keeps whole
+    if (node.box.height <= H + 0.5 && !breaksWord(node)) return node
   }
   return posterAt(props, ctx, base)
 }

@@ -397,6 +397,9 @@ const SPREAD_OVER: ReadonlyMap<string, ReadonlySet<string>> = new Map([
   ['timeline', new Set(['timeline'])],
   ['blank', new Set(['content'])],
   ['sidebar-title', new Set(['content'])],
+  // review 2026-11-08 (memphis s3: a three-step process at 22/28 units in a 380-unit band): the band's process
+  // or timeline uses the band
+  ['band', new Set(['band'])],
 ])
 function hasText(t: unknown): boolean {
   if (typeof t === 'string') return t.trim().length > 0

@@ -18,7 +18,10 @@
 import { roughOutline, roughPaths } from './library/media/tls-m-decoration/rough'
 import { blobPath } from './library/media/tls-m-decoration/layout'
 import type { LayoutNode, Paint, Stroke } from './types'
-import { mixHex } from './color-math'
+import { hexToRgb, mixHex, relativeLuminance } from './color-math'
+
+/** Ink lighter than this (relative luminance) is light text: no highlighter band under it. */
+export const LIGHT_INK = 0.4
 import { editorMetrics } from './layout/measure'
 import { paintsAnything, type Treatment } from './look'
 import { emojiForIcon, emojiUrl, getIcon } from './icons'
@@ -209,10 +212,12 @@ function treatPath(node: Extract<LayoutNode, { k: 'path' }>, t: RenderTreatment,
 /** Hand marks on each bold run of a text node (emphasis `highlighter | underline | box | circle |
  *  color`), in the node's box, behind the text (a ring or a box over it, never covering glyphs). */
 function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment, seed: number): LayoutNode {
-  const e = t.emphasis
+  const ink = node.style.color && /^#[0-9a-f]{6}$/i.test(node.style.color) ? node.style.color : '#333333'
+  // review 2026-11-08 (notebook cover: a yellow marker under light ink on the navy ground read as a strike):
+  // a highlighter is for dark ink on a light page; light ink takes the hand underline in its own colour
+  const e = t.emphasis === 'highlighter' && relativeLuminance(hexToRgb(ink)) > LIGHT_INK ? 'underline' : t.emphasis
   if (!e || e === 'bold' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
   const color = t.highlight ?? '#FFE066'
-  const ink = node.style.color && /^#[0-9a-f]{6}$/i.test(node.style.color) ? node.style.color : '#333333'
   const fs = (node.style.size ?? 32) * (node.style.scale ?? 1)
   const lh = fs * (node.style.lineHeight ?? 1.3)
   const marks: LayoutNode[] = []

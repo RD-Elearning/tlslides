@@ -10,5 +10,12 @@ export function objects<T extends Record<string, unknown>>(v: unknown, max: numb
 
 /** A text prop as a string ('' for anything that is not text or a number). */
 export function text(v: unknown, max = 400): string {
-  return typeof v === 'string' ? v.slice(0, max) : typeof v === 'number' ? String(v) : ''
+  if (typeof v === 'number') return String(v)
+  if (typeof v !== 'string') return ''
+  if (v.length <= max) return v
+  // review 2026-11-08 (memphis s9 "They got con", "— then ch"): a text past its cap is cut at a word
+  // boundary and ends in an ellipsis — never in the middle of a word with nothing to show the cut
+  const head = v.slice(0, Math.max(1, max - 1))
+  const space = head.lastIndexOf(' ')
+  return `${(space >= max * 0.6 ? head.slice(0, space) : head).trimEnd()}…`
 }

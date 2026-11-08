@@ -67,6 +67,9 @@ function measure(raw: unknown): { nodes: number; maxKids: number; levels: number
  * whose labels show whole (two lines, a one-line sub) in boxes the level count and the slots allow;
  * `cross` caps a top-down node's width (`parent` a parent's), `main` a left-to-right node's.
  */
+/** Most label lines a left-to-right node takes (its pitch allowing). */
+export const LR_MAX_LINES = 3
+
 type Tier = { label: TypeToken; sub: TypeToken; cross: number; parent: number; main: number }
 const TIERS: readonly Tier[] = [
   // a small tree alone in a half slide (four nodes in 1142×888) still floated at subheading
@@ -178,9 +181,18 @@ function layoutTier(props: TreeProps, ctx: LayoutContext, tierAt: number): Layou
     nodeMain = Math.min(wantH, mainExtent / (levels + gapFactor * (levels - 1)))
     nodeMain = Math.max(nodeMain, Math.min(lhL + 6, mainExtent / levels))
   } else {
-    nodeMain = Math.min(compact ? 190 : 270, mainExtent / (levels + 0.7 * (levels - 1)))
-    const needTwo = [...byId.values()].some((n) => ctx.measureText(n.label, labelS).width * TEXT_SLACK > nodeMain - 24)
-    const wantLR = (compact ? 8 : 22) + lhL * (compact || !needTwo ? 1 : 2) + (hasSub ? lhS + 2 : 0)
+    const avail = mainExtent / (levels + 0.7 * (levels - 1))
+    nodeMain = Math.min(compact ? 190 : 270, avail)
+    // review 2026-11-08 (memphis s9: "Capture the requests — then ch…" in a 270-wide pill): a node widens
+    // within its level's share until every label keeps to two lines, then takes up to three
+    const most = (w: number) => Math.max(1, ...all.map((n) => linesNeeded(ctx, n.label, labelS, Math.max(1, w - 24))))
+    if (!compact && most(nodeMain) > 2) {
+      let w = nodeMain
+      while (w < avail && most(w) > 2) w = Math.min(avail, w + 20)
+      nodeMain = w
+    }
+    const lines = compact ? 1 : Math.min(LR_MAX_LINES, most(nodeMain))
+    const wantLR = (compact ? 8 : 22) + lhL * lines + (hasSub ? lhS + 2 : 0)
     nodeCross = Math.min(pitch - gapCross, wantLR)
   }
   nodeCross = Math.max(1, nodeCross)
@@ -326,7 +338,7 @@ function layoutTier(props: TreeProps, ctx: LayoutContext, tierAt: number): Layou
     w = Math.max(4, w)
     const wantSub = !compact && n.sub && b.height >= lhL + lhS + 10
     const subLines = wantSub ? 1 : 0
-    const labelLines = clamp(Math.floor((b.height - 2 * Math.min(pad, 4) - subLines * lhS) / lhL + 1e-6), 1, 2)
+    const labelLines = clamp(Math.floor((b.height - 2 * Math.min(pad, 4) - subLines * lhS) / lhL + 1e-6), 1, horizontal ? LR_MAX_LINES : 2)
     const lh = linesHeight(ctx, n.label, labelS, w, labelLines)
     const sh = subLines ? linesHeight(ctx, n.sub, subS, w, 1) : 0
     const total = lh + (sh ? 2 + sh : 0)
