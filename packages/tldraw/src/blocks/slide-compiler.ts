@@ -208,6 +208,14 @@ export const GROW_HEIGHT_BELOW = 0.6
 export const GROW_STEPS: readonly number[] = [1.3, 1.2, 1.1]
 /** A grown slide's content may cover at most this share of the content regions' height. */
 export const GROW_MAX_HEIGHT = 0.9
+/**
+ * Review 2026-11-08 round 4 (calculus closing: a question at 104 and its answer at 36 still a
+ * cluster on a quarter of a dark page after ×1.3): a `poster` slide whose content paints under
+ * `POSTER_GROW_BELOW` of its region tries these larger steps first — never past the theme's
+ * `display` size. Not a cover: its title already leads, and ×1.6 drew 160-unit cover titles.
+ */
+export const POSTER_GROW_STEPS: readonly number[] = [1.6, 1.45]
+export const POSTER_GROW_BELOW = 0.3
 
 /**
  * enhance L5 — content grows into the space. A balanced slide (`valign: 'auto'`, the content
@@ -261,8 +269,10 @@ function growText(
   const floats =
     before.box.width * before.box.height < GROW_BELOW * area.width * area.height || (structured && before.box.height < GROW_HEIGHT_BELOW * area.height)
   if (!floats) return null
+  const roomy = spec.layout === 'poster' && spec.role !== 'cover' && before.box.width * before.box.height < POSTER_GROW_BELOW * area.width * area.height
+  const display = tokens.type.display?.size ?? Infinity
   let baseSizes: number | undefined
-  for (const k of GROW_STEPS) {
+  for (const k of roomy ? [...POSTER_GROW_STEPS, ...GROW_STEPS] : GROW_STEPS) {
     const scaled: SlideSpec = {
       ...spec,
       regions: Object.fromEntries(
@@ -286,6 +296,7 @@ function growText(
     // nor raise a long text past the size its length allows (review 2026-11-08: a 150-character
     // bullet grown to 47 units)
     if (after.loud > before.loud) continue
+    if (k > GROW_STEPS[0] && after.largest > display + 0.5) continue
     // the scaled body must not add a text size the slide's type check counts (×1.2 turns 48/40/30
     // into 57/47/36, which no longer meet the title's or an unscaled block's sizes)
     if (typeSizeCount(result, tokens, registry, opts) > Math.max(DESIGN_THRESHOLDS.typeSizes, (baseSizes ??= typeSizeCount(base, tokens, registry, opts)))) continue
@@ -424,10 +435,11 @@ function paintedContent(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): { box: Box | null; ok: boolean; narrow: number; loud: number } {
+): { box: Box | null; ok: boolean; narrow: number; loud: number; largest: number } {
   const boxes: Box[] = []
   let narrow = 0
   let loud = 0
+  let largest = 0
   for (const shape of result.shapes) {
     const meta = shape.props[BLOCK_PROP_KEY] as { id?: unknown; style?: BlockStyleSpec } | undefined
     if (!meta || typeof meta.id !== 'string' || !ids.has(meta.id)) continue
@@ -447,18 +459,19 @@ function paintedContent(
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
       const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
-      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow, loud }
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow, loud, largest }
       narrow += c.text.filter((t) => t.lines > 1 && t.chars / t.lines < DESIGN_THRESHOLDS.narrowChars).length
       loud += c.text.filter((t) => t.fontSize > loudTextCap(t.chars) + 0.5).length
+      for (const t of c.text) largest = Math.max(largest, t.fontSize * (t.scale || 1))
       painted = paintedBounds(c)
     } catch {
-      return { box: null, ok: false, narrow, loud }
+      return { box: null, ok: false, narrow, loud, largest }
     }
     if (!painted) continue
-    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow, loud }
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow, loud, largest }
     boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
   }
-  return { box: unionBox(boxes), ok: true, narrow, loud }
+  return { box: unionBox(boxes), ok: true, narrow, loud, largest }
 }
 
 /** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */

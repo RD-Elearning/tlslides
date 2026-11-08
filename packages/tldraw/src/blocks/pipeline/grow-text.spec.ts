@@ -82,6 +82,28 @@ describe('growText (L5)', () => {
   })
 })
 
+describe('a sparse poster grows past ×1.3 (review 2026-11-08 round 4)', () => {
+  const closing = (role: 'closing' | 'cover'): SlideSpec =>
+    ({
+      id: 's', layout: 'poster', role,
+      regions: { poster: [
+        { id: 'q', type: 'tls.t.statement', props: { text: 'What is an instant rate?', size: 'xl', align: 'start', showMark: false } },
+        { id: 'a', type: 'tls.t.takeaway', props: { text: 'The derivative at a point: the slope of the tangent.', size: 'lead', label: 'Answer', variant: 'line' } },
+      ] },
+    }) as SlideSpec
+  const display = TEST_TOKENS.type.display.size
+
+  it('a closing question and its answer take a larger step, never past the display size', () => {
+    const g = new Map(grownOf(closing('closing')) as [string, number | undefined][])
+    expect(g.get('q') ?? 1).toBeGreaterThan(1.3)
+    expect(Math.max(...fonts(closing('closing')).map((f) => f.size))).toBeLessThanOrEqual(display + 1)
+  })
+
+  it('a cover keeps the ordinary steps', () => {
+    expect(new Map(grownOf(closing('cover')) as [string, number | undefined][]).get('q') ?? 1).toBeLessThanOrEqual(1.3)
+  })
+})
+
 describe('growText leaves html blocks alone', () => {
   it('a slide with a big-stat compiles as authored', () => {
     const stat: BlockSpec = { id: 'k', type: 'tls.c.big-stat', props: { value: 34.7, label: 'Error rate' } }
