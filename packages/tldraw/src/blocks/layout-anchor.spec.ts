@@ -228,7 +228,9 @@ describe('LO2.1 — validation, schema, digest', () => {
   it('the capability index mentions anchor/anchorTo and stays within 20k', () => {
     const md = capabilityIndex(registry)
     expect(md).toContain('`anchorTo')
-    expect(md.length).toBeLessThanOrEqual(24500) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178 (the model reads the 18.1k tier-1 index)
+    expect(md.length).toBeLessThanOrEqual(29000) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178; sprint 2026-11b S08–S10: 223 (28.7k)
+    // the index a model reads is the tier-1 one (20.2k at 223 blocks): it has its own ratchet
+    expect(capabilityIndex(registry, { tier: 1 }).length).toBeLessThanOrEqual(20500)
   })
 })
 

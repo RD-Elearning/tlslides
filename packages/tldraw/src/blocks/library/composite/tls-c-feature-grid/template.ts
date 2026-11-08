@@ -61,7 +61,14 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const cellW = (ctx.box.width - (cols - 1) * gap) / cols
   // AC3 pre-item: the poster chose the tier (it measures); a heading-size title leaf means roomy.
   const t0 = pt.leaves('cells.0.title')[0]
-  const tier = t0 && t0.style.size >= ctx.tokens.type.heading.size - 0.5 ? FG_TIERS[0] : FG_TIERS[1]
+  const d0 = pt.leaves('cells.0.desc')[0]
+  const sizeOf = (tok: string) => (ctx.tokens.type as unknown as Record<string, { size: number }>)[tok]?.size ?? 0
+  const tier =
+    t0 && t0.style.size >= ctx.tokens.type.heading.size - 0.5
+      ? FG_TIERS[0]
+      : d0 && Math.abs(d0.style.size - sizeOf(FG_TIERS[2].desc)) < 0.5 && Math.abs(d0.style.size - sizeOf(FG_TIERS[1].desc)) >= 0.5
+        ? FG_TIERS[2]
+        : FG_TIERS[1]
   const disc = tierCircleIcon(cellW, tier)
   const iconBox = circle ? disc.disc : tier.icon
   const glyph = circle ? disc.glyph : tier.icon

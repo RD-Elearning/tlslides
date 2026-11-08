@@ -21,7 +21,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   // AC3 pre-item: the roomy tier when it fits the box (see FG_TIERS); a ladder of fixed-height
   // candidates, so laid out again at its own height the grid picks the same tier.
   const H = ctx.box.height
-  const [roomy, base] = FG_TIERS
+  const [roomy, base, middle] = FG_TIERS
   const cols = effectiveColumns(ctx.box.width, props.columns, props.gap ?? 24, (props.cells ?? []).length)
   const cellW = (ctx.box.width - (cols - 1) * (props.gap ?? 24)) / cols
   if (H > 0 && cellW >= FG_ROOMY_MIN_CELL) {
@@ -29,6 +29,8 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     // review 2026-11-08 (memphis s9 "Three-min / ute story", "experimen / t"): the roomy tier never cuts a
     // word the base tier keeps whole
     if (node.box.height <= H + 0.5 && !breaksWord(node)) return node
+    const mid = posterAt(props, ctx, middle)
+    if (mid.box.height <= H + 0.5 && !breaksWord(mid)) return mid
   }
   return posterAt(props, ctx, base)
 }

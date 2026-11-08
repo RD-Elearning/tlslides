@@ -43,11 +43,11 @@ export function poster(props: BigStatProps, ctx: LayoutContext): LayoutNode {
 
   // AC2 (lead review): the large tier when the box has the room (see BIG_STAT_LARGE).
   const L = textStyles(true)
-  let split = props.variant === 'split' ? splitGeometry(w, valueText, display, B.valueTracking, realWidth) : null
+  let split = props.variant === 'split' ? splitGeometry(w, valueText, display, B.valueTracking, realWidth, props.align === 'start') : null
   let size: number | null
   if (split) {
     size = largeValueSize(display.size, ctx.box.height, 0, perSize, w * 0.55, width0)
-    const big = size !== null ? splitGeometry(w, valueText, { size }, B.valueTracking, realWidth) : null
+    const big = size !== null ? splitGeometry(w, valueText, { size }, B.valueTracking, realWidth, props.align === 'start') : null
     if (big && colHeight(L, big.colW) <= ctx.box.height) split = big
     else size = null
   } else {

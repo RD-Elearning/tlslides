@@ -156,6 +156,9 @@ export interface FgTier {
 export const FG_TIERS: readonly FgTier[] = [
   { roomy: true, title: 'heading', desc: 'lead', icon: 64, pad: 40, stretch: 1.25 },
   { roomy: false, title: 'subheading', desc: 'body', icon: 48, pad: FG_CARD_PAD, stretch: 1 },
+  // review 2026-11-08 (memphis s9: refused the roomy tier for a cut word, the base tier left the grid a thin
+  // band): the middle tier — base-size titles, roomy descriptions, padding and stretch — is tried between them
+  { roomy: true, title: 'subheading', desc: 'lead', icon: 56, pad: 32, stretch: 1.25 },
 ]
 /** Cells narrower than this keep the base tier (heading titles need the measure). */
 export const FG_ROOMY_MIN_CELL = 400

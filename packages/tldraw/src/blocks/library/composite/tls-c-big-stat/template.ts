@@ -34,7 +34,7 @@ export function template(props: BigStatProps, ctx: HtmlTemplateContext): string 
   // size is the poster's value leaf. Without a poster the compact tier, as before.
   const posterSize = pt.leaves('value')[0]?.style.size
   const large = isLargeTier(posterSize, display.size)
-  const split = props.variant === 'split' ? splitGeometry(ctx.box?.width ?? 1920, valueText, large ? { size: posterSize as number } : display, B.valueTracking, realWidth) : null
+  const split = props.variant === 'split' ? splitGeometry(ctx.box?.width ?? 1920, valueText, large ? { size: posterSize as number } : display, B.valueTracking, realWidth, props.align === 'start') : null
   const accent = props.variant === 'accent'
   const center = props.align === 'center' && !split
 

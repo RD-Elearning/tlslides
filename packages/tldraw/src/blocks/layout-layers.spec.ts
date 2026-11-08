@@ -73,6 +73,8 @@ describe('LO2 — layer vocabulary on the built-in blocks', () => {
     expect(nonContent).toEqual({
       'tls.l.field': 'backdrop',
       'tls.l.grid-guide': 'backdrop',
+      // sprint 2026-11b S13: the slide backdrop block
+      'tls.m.backdrop': 'backdrop',
       'tls.m.decoration': 'backdrop',
       'tls.m.icon-cluster': 'backdrop',
       'tls.m.ornament': 'backdrop',
@@ -329,7 +331,9 @@ describe('LO2 — validation, JSON schema, digest', () => {
 
   it('the capability index names the non-content layers and the stacking rule, within budget', () => {
     const md = capabilityIndex()
-    expect(md.length).toBeLessThanOrEqual(24500) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178 (the model reads the 18.1k tier-1 index)
+    expect(md.length).toBeLessThanOrEqual(29000) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178; sprint 2026-11b S08–S10: 223 (28.7k)
+    // the index a model reads is the tier-1 one (20.2k at 223 blocks): it has its own ratchet
+    expect(capabilityIndex(undefined, { tier: 1 }).length).toBeLessThanOrEqual(20500)
     expect(md).toContain('tls.m.decoration · decoration · element · backdrop — ')
     expect(md).toContain('tls.d.trend-badge · metric · element · overlay — ')
     expect(md).toContain('tls.t.title · heading · element — ')

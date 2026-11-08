@@ -200,12 +200,15 @@ export function splitGeometry(
   valueText: string,
   display: { size: number },
   tracking: number,
-  measure: (text: string, style: { size: number; letterSpacing: number }) => number
+  measure: (text: string, style: { size: number; letterSpacing: number }) => number,
+  start = false
 ): { valueW: number; valueSize: number; colX: number; colW: number; gap: number } | null {
   const rw = measure(valueText, { size: display.size, letterSpacing: tracking }) * 1.04 + 4
   const max = width * SPLIT.share
   const valueSize = rw > max ? (display.size * max) / rw : display.size
-  const valueW = Math.ceil(Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
+  // review 2026-11-08 (notebook s8: `align: start` drawn across the middle): an explicit `start` keeps the pair
+  // at the left edge — the number at its own width, the column right after it
+  const valueW = Math.ceil(start ? Math.min(rw, max) : Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
   const colX = valueW + SPLIT.gap
   const colW = width - colX
   return colW >= SPLIT.minCol ? { valueW, valueSize, colX, colW, gap: SPLIT.gap } : null

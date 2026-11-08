@@ -226,7 +226,10 @@ function growText(
   registry: BlockRegistry,
   opts?: CompileSlideOptions
 ): { result: CompileSlideResult; spec: SlideSpec } | null {
-  if (spec.valign !== 'auto' || opts?.growText === false) return null
+  // review 2026-11-08 (calculus closing: a question and its answer as a 250-unit cluster on an empty dark
+  // slide): a `poster` slide (cover / closing frames carry no valign) grows like a balanced one
+  const balanced = spec.valign === 'auto' || (spec.valign === undefined && spec.layout === 'poster')
+  if (!balanced || opts?.growText === false) return null
   const grows = (name: string, b: BlockSpec | undefined) =>
     name !== 'title' && !!b && typeof b.id === 'string' && !b.layer && !GROW_SKIP.has(b.type) && textScaleOf(b.style) === undefined
   const ids = new Set<string>()
@@ -550,7 +553,10 @@ function compileSlideUnstyled(
   }
   const alignOf = (name: string): RegionAlign => {
     const own = regionAlignMap?.[name]
-    if (own !== undefined && !SPREAD_OVER.get(resolvedLayout?.id ?? '')?.has(name)) return own
+    // the band spreads only over a stack (its process and the line under it): a lone band diagram stays centred (R3e)
+    const stacked = (spec.regions[name] ?? []).filter((b) => b && !b.layer).length > 1
+    const over = SPREAD_OVER.get(resolvedLayout?.id ?? '')?.has(name) && (resolvedLayout?.id !== 'band' || stacked)
+    if (own !== undefined && !over) return own
     if (spec.valign === 'auto' && name !== 'title') return mainOf.has(name) ? 'spread' : own ?? 'center'
     return own ?? 'start'
   }
@@ -1260,7 +1266,10 @@ function compileLayered(
     const inSafe = anchored ? intersectBox(region, safe) : undefined
     const container = target ?? inSafe ?? region
     const anchoredAt = anchoredBox(l.block, def, container, target ? tokens.space.sm : 0, tokens, registry, inSafe ?? region, blockDefaults)
-    const box = anchored && l.layer === 'backdrop' && isOpaqueMotif(l.block) ? clearOfContent(l.region, l.block, def, anchoredAt, container) : anchoredAt
+    // review 2026-11-08 (notebook s8: a squiggle overlay drawn over the progress bar's values and the callout): a
+    // decoration on the overlay layer paints over the words, so it clears the content the same way
+    const clears = anchored && ((l.layer === 'backdrop' && isOpaqueMotif(l.block)) || (l.layer === 'overlay' && l.block.type === 'tls.m.decoration'))
+    const box = clears ? clearOfContent(l.region, l.block, def, anchoredAt, container) : anchoredAt
     // a solid motif with no free corner beside the content is left out (it would cover it)
     if (!box) return []
     const shape = blockToShape(l.block, box, { definitionMotion: def?.motion })

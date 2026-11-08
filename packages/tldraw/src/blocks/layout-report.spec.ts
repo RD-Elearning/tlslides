@@ -8,6 +8,8 @@ import type { BlockSpec, DeckSpec, LayoutNode, SlideSpec } from './types'
 import { BlockRegistry } from './registry'
 import { BUILT_IN_BLOCKS } from './library'
 import { deckSpecToDocument } from './deck-document'
+import { BLOCK_PROP_KEY } from './shape-bridge'
+import { STYLE_MASTER_PREFIX } from './styles'
 import { definitionLayer } from './block-layer'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import {
@@ -20,7 +22,10 @@ import {
 } from './layout-report'
 
 const FIXTURES_DIR = path.resolve(__dirname, '__fixtures__')
-const FIXTURE_FILES = fs.readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.json'))
+// decks only: `golden-briefs.json` (CMP5) lives beside them but holds briefs, not a DeckSpec
+const FIXTURE_FILES = fs
+  .readdirSync(FIXTURES_DIR)
+  .filter((f) => f.endsWith('.json') && Array.isArray(JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, f), 'utf-8')).slides))
 
 function loadDeck(file: string): DeckSpec {
   return JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, file), 'utf-8'))
@@ -42,15 +47,23 @@ describe('LO1 — every fixture deck produces a report', () => {
       const deck = loadDeck(file)
       const reports = analyzeDeck(deck)
       expect(reports).toHaveLength(deck.slides.length)
+      const authoredLayer = new Map<string, string>()
+      for (const sl of deck.slides) {
+        for (const blocks of Object.values(sl.regions ?? {})) for (const blk of blocks ?? []) if (blk?.layer) authoredLayer.set(blk.id as string, blk.layer)
+      }
       const { document } = deckSpecToDocument(deck)
       for (const report of reports) {
         // One block report per compiled shape, boxes identical to the editor's.
         const shapes = Object.values(document.pages[report.slideId].shapes).filter(
           (s): s is ComponentShape => s.type === 'component'
         )
-        expect(report.blocks).toHaveLength(shapes.length)
-        for (const b of report.blocks) {
-          const shape = shapes.find((s) => s.childIndex === b.z)!
+        // a style master's blocks (`style:<name>`) live on the master page, not the slide's: the report lists them
+        // under the flow (its z counts them), so blocks are matched by id and master blocks the page lacks are skipped
+        const idOf = (s: ComponentShape) => (s.props[BLOCK_PROP_KEY] as { id?: string } | undefined)?.id
+        const onPage = report.blocks.filter((b) => !b.id.startsWith(STYLE_MASTER_PREFIX) || shapes.some((s) => idOf(s) === b.id))
+        expect(onPage).toHaveLength(shapes.length)
+        for (const b of onPage) {
+          const shape = shapes.find((s) => idOf(s) === b.id)!
           expect([b.id, b.box.x, b.box.y, b.box.width, b.box.height]).toEqual([
             b.id,
             shape.point[0],
@@ -59,8 +72,8 @@ describe('LO1 — every fixture deck produces a report', () => {
             shape.size[1],
           ])
           expect(Number.isFinite(b.natural.height)).toBe(true)
-          // LO2: no fixture sets an instance `layer`, so every block is on its definition's layer.
-          expect(b.layer).toBe(definitionLayer(defaultBlockRegistry().get(b.type)))
+          // LO2: a block is on its instance `layer` when the deck sets one (basic-editor-deck), else on its definition's.
+          expect(b.layer).toBe(authoredLayer.get(b.id) ?? definitionLayer(defaultBlockRegistry().get(b.type)))
         }
         const text = formatLayoutReport(report)
         expect(text).toBe(formatLayoutReport(report)) // deterministic
