@@ -27,7 +27,7 @@ export const schema: BlockSchema = {
 
 export const defaults: NumberStoryProps = { steps: [{ value: '1,200', label: 'patients a week' }, { value: '4 h', label: 'average wait' }, { value: '1 in 5', label: 'leave before seen', note: 'up from 1 in 10' }], variant: 'arrow-row' }
 
-function cells(props: NumberStoryProps, value: 'display' | 'title' = 'title', label: 'subheading' | 'lead' = 'lead'): { main: Cell[]; opts: PosterOptions } {
+function cells(props: NumberStoryProps, value: 'display' | 'title' = 'title', label: 'subheading' | 'lead' = 'lead', stacked = false): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'arrow-row')
   const steps = objects<{ value?: unknown; label?: unknown; note?: unknown }>(props.steps, 4).filter((s) => str(s.value, 12))
   const last = steps.length - 1
@@ -39,7 +39,7 @@ function cells(props: NumberStoryProps, value: 'display' | 'title' = 'title', la
     { id: `step-label-${i}`, type: 'tls.t.body', props: { text: str(s.label, 48), size: label } },
     ...(str(s.note, 80) ? [{ id: `step-note-${i}`, type: 'tls.t.caption', props: { text: str(s.note, 80) } }] : []),
   ], $block: { style: { surface: 'surfaceAlt' } } } }))
-  const columns = Math.max(1, items.length)
+  const columns = stacked ? 1 : Math.max(1, items.length)
   return { main: items.length ? [{ spec: { id: 'steps', type: 'tls.l.grid', props: { columns, gap: 'lg', sizing: 'equal', children: items } }, group: 'step', grid: { columns, items } }] : [], opts: {} }
 }
 
@@ -50,7 +50,12 @@ export function buildNumberStory(props: NumberStoryProps): BlockSpec {
 
 export function layoutNumberStory(props: NumberStoryProps, ctx: LayoutContext): LayoutNode {
   // the biggest type that fits the box: the numbers lead, the labels read from the back row
-  return posterFit(ctx, [cells(props, 'display', 'subheading'), cells(props, 'display', 'lead'), cells(props, 'title', 'subheading'), cells(props)])
+  // spro S17 (nova s4): in a narrow region the steps stack — a row of three cells 180 units wide cut
+  // "household" and "45 %" in two at every size
+  return posterFit(ctx, [
+    cells(props, 'display', 'subheading'), cells(props, 'display', 'lead'), cells(props, 'title', 'subheading'), cells(props),
+    cells(props, 'title', 'subheading', true), cells(props, 'title', 'lead', true),
+  ])
 }
 
 const composite = defineCompositeBlock<NumberStoryProps>({
