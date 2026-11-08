@@ -124,9 +124,18 @@ function stackSheets(W: number, H: number, fill: Paint | undefined, radius: numb
   return [sheet(2, 0.14), sheet(1, 0.07)]
 }
 
+/** A glow: a gradient fill that fades to clear (`tls.m.pattern` mesh, backdrop glows, spotlights). It is light, not
+ *  an object — spro S17 review: the look's shadow and corner radius turned the gradient deck's three mesh glows into
+ *  overlapping glass cards behind the cover title. */
+export function isGlow(fill: Paint | undefined): boolean {
+  if (!fill || (fill.type !== 'radialGradient' && fill.type !== 'linearGradient')) return false
+  return fill.stops.some((s) => /^transparent$/i.test(s.color) || /,\s*0(\.0+)?\s*\)$/.test(s.color) || /^#[0-9a-f]{6}00$/i.test(s.color))
+}
+
 function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment, seed: number): LayoutNode {
   const { width: W, height: H } = node.box
   if (W < 4 || H < 4) return node
+  if (isGlow(node.fill)) return node
   const p = pen(t)
   const sketch = !!p && sketchable(node.stroke)
   const fillHex = solid(node.fill)

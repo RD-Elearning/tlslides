@@ -66,6 +66,8 @@ export const DESIGN_THRESHOLDS = {
   decorativeAlpha: 0.3,
 } as const
 
+export { LOUD_TEXT_CAPS, loudTextCap } from './layout/loud-text'
+
 /** `accent/overuse`: accent uses a slide may make, per deck-style family (P10; luxury and
  *  editorial say "one accent", playful styles are colourful by design). No style: `default`. */
 export const ACCENT_BUDGET: Record<DeckStyle['family'] | 'default', number> = {

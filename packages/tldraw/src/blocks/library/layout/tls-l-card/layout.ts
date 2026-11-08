@@ -67,6 +67,7 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   // card, a card with `style.align`, a chart or a photo inside, or content that fills the box
   // keep the full box.
   const hug = hugBottom(ctx, children, childNodes, contentBox, padding)
+  if (hug === undefined) childNodes = centreLoose(ctx, children, childNodes, contentBox)
   const bg = hug !== undefined ? containerSurface(ctx, { x: 0, y: 0, width: W, height: hug }, surfaceFill, 'background', !(explicit || roleSurface)).nodes : background
 
   return {
@@ -82,6 +83,26 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
 
 /** Children that fill their box (a chart, a photo, a nested grid): a card holding one keeps its box. */
 const FILLS = /^tls\.(d\.|m\.(image|decoration|pattern|image-grid|device-mock|logo-wall)$|l\.(grid|row|split|overlay|field|repeater)$)/
+
+/** A kept box whose content paints under this share of its height has the content centred in it. */
+export const CARD_CENTRE_BELOW = 0.7
+
+/**
+ * Review 2026-11-08 — a card that keeps its box (a composite's card stretched to its region: a
+ * stat card beside a tall comparison) with content-sized children packed at the top paints a large
+ * empty band under them. The content is centred in the box instead. Not for a card with
+ * `style.align`, peer tracks (peers line up), or a child that fills its box.
+ */
+function centreLoose(ctx: LayoutContext, children: BlockSpec[], nodes: LayoutNode[], content: { x: number; y: number; width: number; height: number }): LayoutNode[] {
+  if (!children.length || ctx.style?.align !== undefined || contextTracks(ctx)) return nodes
+  if (children.some((c) => !c || typeof c.type !== 'string' || FILLS.test(c.type))) return nodes
+  const size = { width: ctx.box.width, height: ctx.box.height }
+  const b = paintedBounds(collectPaintedLeaves({ k: 'group', box: { x: 0, y: 0, ...size }, children: nodes }, size))
+  if (!b || b.height >= CARD_CENTRE_BELOW * content.height) return nodes
+  const dy = Math.round(content.y + (content.height - b.height) / 2 - b.y)
+  if (dy <= 1) return nodes
+  return nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode)
+}
 
 /** The card height that hugs its laid-out content, or `undefined` to keep the box (see above). */
 function hugBottom(ctx: LayoutContext, children: BlockSpec[], nodes: LayoutNode[], content: { y: number; height: number }, padding: number): number | undefined {

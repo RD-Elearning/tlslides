@@ -30,7 +30,7 @@ export const INKS: Readonly<Record<BackdropKind, ReadonlyArray<{ ink: Ink; soft:
   halftone: [{ ink: 'accent', soft: 0.16, medium: 0.26 }],
   blueprint: [{ ink: 'text', soft: 0.07, medium: 0.11 }, { ink: 'text', soft: 0.14, medium: 0.22 }],
   paper: [{ ink: 'text', soft: 0.06, medium: 0.1 }],
-  ruled: [{ ink: 'text', soft: 0.12, medium: 0.18 }, { ink: 'accent', soft: 0.35, medium: 0.5 }],
+  ruled: [{ ink: 'text', soft: 0.12, medium: 0.18 }],
   slate: [{ ink: 'text', soft: 0.05, medium: 0.08 }],
   waves: [{ ink: 'accent', soft: 0.16, medium: 0.24 }, { ink: 'accent2', soft: 0.12, medium: 0.18 }],
   frame: [{ ink: 'text', soft: 0.3, medium: 0.45 }],
@@ -213,8 +213,10 @@ export function backdropNodes(kind: BackdropKind, W: number, H: number, c: Backd
     case 'ruled': {
       let d = ''
       for (let y = 120; y < H - 20; y += 56) d += `M0 ${y}L${f(W)} ${y}`
-      const mx = Math.round(W * 0.085)
-      return [strokePath('lines', W, H, d, rgba(c.text, a(0)), 2), strokePath('margin', W, H, `M${mx} 0L${mx} ${f(H)}`, rgba(c.accent, a(1)), 3)]
+      // spro S17 review (notebook decks): the vertical margin rule at 8.5 % ran through the content column (text
+      // and cards start at the frame padding, left of it) — a ground never draws a line across the content, so
+      // the ruling stays horizontal only
+      return [strokePath('lines', W, H, d, rgba(c.text, a(0)), 2)]
     }
     case 'slate': {
       const smudges: LayoutNode[] = []

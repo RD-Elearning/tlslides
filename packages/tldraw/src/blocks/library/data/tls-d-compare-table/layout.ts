@@ -16,17 +16,25 @@ import { asArr, emptyState, numOrNull, str } from '../_chart/kit'
 import { buildTable, tableCapacity, type ColKind, type TableInput } from '../_table/kit'
 
 function read(props: CompareTableProps, width: number): { input: TableInput; rows: number; cols: number } | null {
-  const options = asArr<unknown>(props.options).map(str).slice(0, COMPARE_MAX_OPTIONS)
+  let options = asArr<unknown>(props.options).map(str)
   const criteria = asArr<unknown>(props.criteria).slice(0, COMPARE_MAX_CRITERIA).map(str)
-  if (options.length === 0 || criteria.length === 0) return null
   const cells = asArr<unknown>(props.cells).map((r) => asArr<unknown>(r))
+  // review 2026-11-08: options that also name the criteria column (three headers over two cell
+  // columns, every row one cell short) — the first is the criteria column's header, not an option;
+  // laid out as authored, every header sat one column right of its cells
+  let corner = ''
+  const widest = cells.reduce((m, r) => Math.max(m, r.length), 0)
+  if (options.length >= 2 && widest > 0 && widest === options.length - 1 && cells.length >= criteria.length) [corner, ...options] = options
+  options = options.slice(0, COMPARE_MAX_OPTIONS)
+  if (options.length === 0 || criteria.length === 0) return null
   const kind: ColKind = props.cellKind === 'text' ? 'text' : props.cellKind === 'rating' ? 'ratingOrCheck' : 'checkOrRating'
   const w = numOrNull(props.winner)
   const input: TableInput = {
-    head: ['', ...options],
+    head: [corner, ...options],
     rows: criteria.map((c, i) => [c, ...options.map((_, j) => cells[i]?.[j])]),
     kinds: ['text', ...options.map(() => kind)],
-    aligns: ['start', ...options.map(() => 'center')],
+    // text cells read as sentences, left-aligned; icons and dots stay centred under their header
+    aligns: ['start', ...options.map(() => (kind === 'text' ? 'start' : 'center'))],
     weights: [1.5, ...options.map(() => 1)],
     width,
     density: props.density === 'compact' ? 'compact' : 'default',
@@ -43,7 +51,7 @@ function read(props: CompareTableProps, width: number): { input: TableInput; row
 export function layout(props: CompareTableProps, ctx: LayoutContext): LayoutNode {
   const r = read(props, Math.max(1, ctx.box.width))
   // AC3 pre-item: one type step larger when the table fits its box that way.
-  return r ? buildTable(ctx, { ...r.input, fitHeight: ctx.box.height }).tree : emptyState(ctx)
+  return r ? buildTable(ctx, { ...r.input, fitHeight: ctx.box.height, stretch: ctx.style?.fill === true }).tree : emptyState(ctx)
 }
 
 export function capacity(props: CompareTableProps, box: Size, ctx: LayoutContext): CapacityReport {

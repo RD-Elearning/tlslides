@@ -88,6 +88,9 @@ export interface TableSpec {
   cellPad: number
   /** Extra space between rows. */
   rowGap: number
+  /** Review 2026-11-08: extra height per body row, shared above and below its text (a table
+   *  stretched over the room it was given: rows breathe instead of the stack floating centred). */
+  rowGrow?: number
   /** Tint every second body row. */
   zebra?: boolean
   /** Hairlines: under the header only, between every row, or none. */
@@ -282,8 +285,10 @@ function build(spec: TableSpec, ctx: LayoutContext): Built {
       built.push(prep.build(inner, spec.align?.[c] ?? defaultAlign))
     })
     const contentH = Math.max(style.size * style.lineHeight, ...built.map((b) => b.height))
-    const height = Math.ceil(contentH + padY * 2)
-    out.push({ top, height, cells: built.flatMap((b) => b.nodes) })
+    const grow = partOf(0).startsWith('head-') ? 0 : Math.max(0, spec.rowGrow ?? 0)
+    const height = Math.ceil(contentH + padY * 2 + grow)
+    const nodes = built.flatMap((b) => b.nodes)
+    out.push({ top, height, cells: grow > 0 ? nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + grow / 2 } }) as LayoutNode) : nodes })
     y += height
     return height
   }

@@ -35,6 +35,8 @@ export const tlsDCompareTable: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [1100, 520], min: [350, 180] },
+  // review 2026-11-08: a table under a title spreads its rows over the room (`stretch` in _table/kit)
+  fillPolicy: ['stretch'],
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

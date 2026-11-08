@@ -16,6 +16,7 @@ import { hasStrong, str, toMeasurable } from '../_engine/rich'
 import { tintOf } from '../_engine/color'
 import { isShown } from '../../../schema-helpers'
 import { tableMetrics } from '../../../layout/measure'
+import { loudTextCap } from '../../../layout/loud-text'
 
 /**
  * Run offsets for the underline / highlight rects come from the per-glyph advance table, not
@@ -95,6 +96,7 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     attrBlock = sp.md + placed.height
   }
 
+  const chars = plainLength(props.text)
   let chosen = rung(props.size)
   let result: { placed: PlacedText; style: ResolvedTextStyle } | undefined
   for (let r = chosen; r < LADDER.length; r++) {
@@ -103,6 +105,9 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     result = { placed, style }
     chosen = r
     const tooLong = LADDER[r].id === 'display' && placed.lineCount > DISPLAY_MAX_LINES && r < LADDER.length - 1
+    // review 2026-11-08: a long sentence never takes a rung larger than its length allows
+    const loud = style.size > loudTextCap(chars) + 0.5 && r < LADDER.length - 1
+    if (loud) continue
     if (!tooLong && markBlock + placed.height + attrBlock <= height + 0.5) break
   }
   const { placed, style } = result!

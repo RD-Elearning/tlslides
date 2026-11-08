@@ -22,6 +22,7 @@
 import type { BlockDefinition, LayoutContext, LayoutNode, TypeToken } from '../types'
 import { DEFAULT_PROBE_HEIGHT } from './measure-block'
 import { shiftTypeContext } from './layout-child'
+import { loudTextCap } from './loud-text'
 
 export const FILL_STEPS = 3
 export const FILL_TYPE_SHARE = 0.85
@@ -54,7 +55,7 @@ export function promote(ctx: LayoutContext, n: number): LayoutContext {
   return { ...ctx, resolveText: (t, over) => ctx.resolveText(up(t), over) }
 }
 
-type Leaf = { lines: number; chars: number; last: number }
+type Leaf = { lines: number; chars: number; last: number; size: number }
 type Stats = { chars: number; lines: number; maxSize: number; whole: boolean; leaves: Leaf[] }
 function stats(node: LayoutNode, W: number, H: number): Stats {
   const out: Stats = { chars: 0, lines: 0, maxSize: 0, whole: true, leaves: [] }
@@ -70,7 +71,7 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
     if ((n as { truncated?: boolean }).truncated) out.whole = false
     out.maxSize = Math.max(out.maxSize, n.style.size)
     const lastLine = n.lines[n.lines.length - 1]
-    out.leaves.push({ lines: n.lines.length, chars: n.lines.reduce((t, l) => t + l.text.replace(/[\s…]/g, '').length, 0), last: lastLine && n.box.width > 0 ? lastLine.width / n.box.width : 1 })
+    out.leaves.push({ lines: n.lines.length, chars: n.lines.reduce((t, l) => t + l.text.replace(/[\s…]/g, '').length, 0), last: lastLine && n.box.width > 0 ? lastLine.width / n.box.width : 1, size: n.style.size })
     for (const l of n.lines) {
       out.chars += l.text.replace(/[\s…]/g, '').length
       out.lines++
@@ -145,6 +146,12 @@ function rewraps(base: Stats, next: Stats): boolean {
   })
 }
 
+/** Review 2026-11-08: a larger type may not take a long text past the size its length allows
+ *  (`loudTextCap`: a 150-character bullet stepped up to the title size). */
+function loud(s: Stats): number {
+  return s.leaves.filter((l) => l.size > loudTextCap(l.chars) + 0.5).length
+}
+
 /** `def.layout` with the block's `fillPolicy` applied (see the module comment); as authored when `fills` is false. */
 export function fillLayout(def: BlockDefinition, props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
   if (!fills(def, ctx)) return def.layout(props, ctx)
@@ -165,7 +172,7 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
       const up = shiftTypeContext(ctx, n, LADDER)
       const t = lay({ ...up, tokens: { ...up.tokens, filling: true } })
       const ts = stats(t, W, H)
-      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts)) continue
+      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts) || loud(ts) > loud(s)) continue
       if (bottomOf(t) <= H * FILL_TYPE_SHARE) roomy = t
       else if (!any && n <= 2) any = t
     }
@@ -208,7 +215,7 @@ export function fillPoster(ctx: LayoutContext, build: (c: LayoutContext, grow: n
     const up = shiftTypeContext(ctx, n, POSTER_LADDER)
     const t = build(up, 0)
     const ts = stats(t, W, Number.MAX_SAFE_INTEGER)
-    if (t.box.height <= H * FILL_TYPE_SHARE && ts.whole && ts.lines <= 2 * base.lines + 1 && !rewraps(base, ts)) {
+    if (t.box.height <= H * FILL_TYPE_SHARE && ts.whole && ts.lines <= 2 * base.lines + 1 && !rewraps(base, ts) && loud(ts) <= loud(base)) {
       c = up
       node = t
       break

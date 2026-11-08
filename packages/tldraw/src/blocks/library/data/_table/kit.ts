@@ -221,6 +221,10 @@ export interface TableInput {
   /** AC3 pre-item: the box height; a default-density table that fits it one type step larger (and
    *  as wide) is laid out roomy. A ladder of fixed-height candidates, so it is a fixed point. */
   fitHeight?: number
+  /** Review 2026-11-08: the table fills `fitHeight` (it is a slide's main block, `style.fill`): any
+   *  authored density may take the larger tiers that fit, then its body rows grow taller, each by
+   *  at most `STRETCH_ROW_LINES` body lines, so the rows spread over the room. */
+  stretch?: boolean
   zebra?: boolean
   rules?: 'none' | 'head' | 'rows'
   header?: 'filled' | 'bold' | 'none'
@@ -276,18 +280,39 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
  * to the compact density (smaller text and padding) before words start wrapping letter by letter.
  */
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
-  if ((o.density ?? 'default') === 'default' && (o.fitHeight ?? 0) > 0) {
-    const grand = buildCore(ctx0, { ...o, density: 'grand' })
-    if (grand.natural <= Math.max(1, o.width) + 0.5 && grand.tree.box.height <= (o.fitHeight as number) + 0.5) return grand
-    const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
-    if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return roomy
-  }
-  const first = buildCore(ctx0, o)
-  if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return buildCore(ctx0, { ...o, density: 'compact' })
-  return first
+  const built = buildTiers(ctx0, o)
+  const H = o.fitHeight ?? 0
+  const n = built.measure.rowHeights.length
+  if (!o.stretch || H <= 0 || n === 0 || built.tree.box.height >= H - 1) return built
+  const line = ctx0.resolveText('body')
+  const cap = STRETCH_ROW_LINES * line.size * line.lineHeight
+  const grow = Math.min(cap, Math.floor((H - built.tree.box.height) / n))
+  if (grow < 2) return built
+  const density = built.density
+  return buildCore(ctx0, { ...o, density, rowGrow: grow })
 }
 
-function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: number } {
+/** Review 2026-11-08: a stretched table's row grows by at most this many body lines. */
+export const STRETCH_ROW_LINES = 1.5
+
+function buildTiers(ctx0: LayoutContext, o: TableInput): TableBuilt & { density: TableInput['density'] } {
+  const tiered = (o.density ?? 'default') === 'default' || o.stretch === true
+  if (tiered && (o.fitHeight ?? 0) > 0) {
+    const grand = buildCore(ctx0, { ...o, density: 'grand' })
+    if (grand.natural <= Math.max(1, o.width) + 0.5 && grand.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...grand, density: 'grand' }
+    const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
+    if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...roomy, density: 'roomy' }
+    if (o.density === 'compact') {
+      const plain = buildCore(ctx0, { ...o, density: 'default' })
+      if (plain.natural <= Math.max(1, o.width) + 0.5 && plain.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...plain, density: 'default' }
+    }
+  }
+  const first = buildCore(ctx0, o)
+  if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return { ...buildCore(ctx0, { ...o, density: 'compact' }), density: 'compact' }
+  return { ...first, density: o.density }
+}
+
+function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): TableBuilt & { natural: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
   const grand = o.density === 'grand'
@@ -309,7 +334,7 @@ function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: 
   const head: TableCell[] | undefined = o.head && header !== 'none' ? Array.from({ length: cols }, (_, c) => ({ kind: 'text' as const, text: cellText(o.head![c]) })) : undefined
   const rows = footRow ? [...bodyRows, footRow] : bodyRows
 
-  const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none' } as const
+  const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none', rowGrow: o.rowGrow ?? 0 } as const
   const measured = measureColumns({ head, rows, cellPad }, ctx).map((w) => w * 1.06)
   const bodyStyle = ctx.resolveText('body')
   const lineHeightOf = bodyStyle.size * bodyStyle.lineHeight
