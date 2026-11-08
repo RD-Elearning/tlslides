@@ -138,7 +138,9 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.steps': f(['sequence', 'action', 'worked-example'], [3, 5], 'lines', 'neutral', { frames: ['agenda', 'closing'] }),
   'tls.g.chevrons': f(['sequence', 'timeline'], [3, 6], 'labels', 'lively', { frames: ['agenda'] }),
   'tls.g.cycle': f(['cycle'], [3, 6], 'labels', 'lively'),
-  'tls.g.flow': f(['sequence', 'cause-effect', 'network', 'worked-example'], [3, 8], 'labels', 'neutral'),
+  // review 2026-11-08 (rv2): offered for `sequence` / `worked-example`, it drew three parallel examples and three
+  // traversal orders as a chain of arrows — its own `avoid` sends straight sequences to steps / chevrons
+  'tls.g.flow': f(['cause-effect', 'network'], [3, 8], 'labels', 'neutral'),
   'tls.g.funnel': f(['sequence', 'hierarchy'], [3, 5], 'lines', 'neutral'),
   'tls.g.staircase': f(['sequence', 'hierarchy'], [3, 5], 'lines', 'lively', { families: PLAYFUL.concat(['professional']) }),
   'tls.g.steps': f(['sequence'], [3, 6], 'labels', 'neutral'),
