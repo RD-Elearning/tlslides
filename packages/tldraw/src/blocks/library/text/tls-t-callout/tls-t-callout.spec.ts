@@ -4,7 +4,8 @@
 
 import { tlsTCallout } from './index'
 import { makeCtx as rv02Ctx } from '../test-helpers'
-import { VARIANTS, variantOf } from './layout'
+import { VARIANTS, variantOf, SUCCESS_SOLID_TINT } from './layout'
+import { tintOf } from '../_engine/color'
 import { makeCtx, makeRegistry } from '../test-helpers'
 import { standardBlockSuite, leavesOf } from '../standard-suite'
 import { createLayoutContext } from '../../../layout/layout-child'
@@ -63,7 +64,8 @@ describe('tls.t.callout', () => {
     expect(solid('tip')).toBe(c.resolveColor('accent2').color)
     expect(solid('warning')).toBe(c.resolveColor('warning').color)
     expect(solid('danger')).toBe(c.resolveColor('negative').color)
-    expect(solid('success')).toBe(c.resolveColor('positive').color)
+    // review 2026-11-08: a solid success callout is a strong tint of positive, not the saturated role
+    expect(solid('success')).toBe(tintOf(c.resolveColor('surface').color, c.resolveColor('positive').color, SUCCESS_SOLID_TINT))
     const outline = leavesOf(lay({ variant: 'danger', fill: 'outline' }), 'box')[0].node as any
     expect(outline.fill).toBeUndefined()
     expect(outline.stroke.color).toBe(c.resolveColor('negative').color)
