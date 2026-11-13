@@ -9,6 +9,7 @@
 
 import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode, RichText } from '../../../types'
 import { defineCompositeBlock } from '../../../layout/define-composite'
+import { blockWord } from '../../../labels'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { onSurface, composeFlat, measureHeights, pick, richItems, toMeasurable, type Piece } from '../_kit'
@@ -41,8 +42,9 @@ export const defaults: RecapProps = {
 
 const STYLES = ['numbered', 'cards'] as const
 
-const takeawaySpec = (props: RecapProps): BlockSpec | undefined =>
-  props.takeaway ? { id: 'takeaway', type: 'tls.t.takeaway', props: { text: props.takeaway, tone: 'accent', label: 'Remember' } } : undefined
+// sprint 2026-11c T30: the takeaway's label in the deck's language
+const takeawaySpec = (props: RecapProps, locale?: string): BlockSpec | undefined =>
+  props.takeaway ? { id: 'takeaway', type: 'tls.t.takeaway', props: { text: props.takeaway, tone: 'accent', label: blockWord('remember', locale) } } : undefined
 
 export function buildRecap(props: RecapProps): BlockSpec {
   const list: BlockSpec = { id: 'points', type: 'tls.t.numbered', props: { items: richItems(props.points, RECAP_MAX), markerStyle: 'badge', spacing: 'roomy' } }
@@ -55,7 +57,7 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
   const style = pick(props.style, STYLES, 'numbered')
   const pts = richItems(props.points, RECAP_MAX)
   const gap = ctx.tokens.space.lg
-  const take = takeawaySpec(props)
+  const take = takeawaySpec(props, ctx.tokens.locale)
   const pieces: Piece[] = []
   const cw = Math.min(W, 1500)
   const x0 = style === 'numbered' ? 0 : 0

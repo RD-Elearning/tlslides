@@ -16,10 +16,11 @@ import type { ScorecardProps } from './schema'
 import { SCORECARD_MAX_ITEMS } from './schema'
 import { asArr, emptyState, enumOf, str, tintOf } from '../_chart/kit'
 import { buildTable, tableCapacity, type ColKind, type TableInput } from '../_table/kit'
+import { blockWord } from '../../../labels'
 
-const WORD = { good: 'On track', watch: 'Watch', bad: 'Off track', none: '' } as const
+const WORD_KEY = { good: 'onTrack', watch: 'watch', bad: 'offTrack' } as const
+type St = 'good' | 'watch' | 'bad' | 'none'
 const ROLE = { good: 'positive', watch: 'warning', bad: 'negative' } as const
-type St = keyof typeof WORD
 
 interface Row {
   label: string
@@ -29,7 +30,7 @@ interface Row {
   note: string
 }
 
-function read(props: ScorecardProps, width: number) {
+function read(props: ScorecardProps, width: number, locale?: string) {
   const items: Row[] = asArr<Record<string, unknown>>(props.items)
     .slice(0, SCORECARD_MAX_ITEMS)
     .map((it) => ({ label: str(it?.label), value: str(it?.value), target: str(it?.target), status: enumOf(it?.status, ['good', 'watch', 'bad', 'none'] as const, 'none'), note: str(it?.note) }))
@@ -38,8 +39,10 @@ function read(props: ScorecardProps, width: number) {
   const showTarget = isShown(props, 'showTarget')
   const showNote = isShown(props, 'showNote') && items.some((i) => i.note)
   const cols = ['label', 'value', ...(showTarget ? ['target'] : []), ...(style === 'bar' ? [] : ['status']), ...(showNote ? ['note'] : [])]
-  const pick = (r: Row, c: string) => (c === 'status' ? WORD[r.status] : (r as unknown as Record<string, string>)[c])
-  const labels: Record<string, string> = { label: 'Metric', value: 'Actual', target: 'Target', status: 'Status', note: 'Note' }
+  // sprint 2026-11c T30: the head and the statuses in the deck's language
+  const word = (s: St) => (s === 'none' ? '' : blockWord(WORD_KEY[s], locale))
+  const pick = (r: Row, c: string) => (c === 'status' ? word(r.status) : (r as unknown as Record<string, string>)[c])
+  const labels: Record<string, string> = { label: blockWord('metric', locale), value: blockWord('actual', locale), target: blockWord('target', locale), status: blockWord('status', locale), note: blockWord('note', locale) }
   const input: TableInput = {
     head: cols.map((c) => labels[c]),
     rows: items.map((r) => cols.map((c) => pick(r, c))),
@@ -55,7 +58,7 @@ function read(props: ScorecardProps, width: number) {
 }
 
 export function layout(props: ScorecardProps, ctx: LayoutContext): LayoutNode {
-  const r = read(props, ctx.box.width)
+  const r = read(props, ctx.box.width, ctx.tokens.locale)
   if (!r) return emptyState(ctx)
   const text = ctx.resolveColor('text').color
   const muted = ctx.resolveColor('textMuted').color
@@ -96,7 +99,7 @@ export function layout(props: ScorecardProps, ctx: LayoutContext): LayoutNode {
 }
 
 export function capacity(props: ScorecardProps, box: Size, ctx: LayoutContext): CapacityReport {
-  const r = read(props, box.width)
+  const r = read(props, box.width, ctx.tokens.locale)
   const built = r ? buildTable(ctx, r.input) : { measure: { headHeight: 0, rowHeights: [], height: 0 }, rowGap: 0 }
   return tableCapacity(built, box, { rows: asArr(props.items).length, maxRows: SCORECARD_MAX_ITEMS, cols: r?.cols.length ?? 0, maxCols: 5, compact: false })
 }
