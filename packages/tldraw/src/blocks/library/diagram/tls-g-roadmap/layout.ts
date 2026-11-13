@@ -192,7 +192,7 @@ export function layout(props: RoadmapProps, ctx: LayoutContext): LayoutNode {
   if (legendH > 0) {
     let lx = gx0
     const ly = bodyBottom + 12
-    const names: Record<Status, string> = { done: 'Done', active: 'In progress', planned: 'Planned', risk: 'At risk' }
+    const names = statusNames(ctx.tokens.locale)
     pl.used.forEach((st, k) => {
       const fill = statusFill(st, 0)
       const w = Math.ceil(ctx.measureText(names[st], labelS).width * TEXT_SLACK) + 2
@@ -205,6 +205,16 @@ export function layout(props: RoadmapProps, ctx: LayoutContext): LayoutNode {
   const out = root(ctx, nodes)
   const paintedH = Math.ceil(bodyBottom + (legendH > 0 ? 12 + lineH(labelS) : 0))
   return paintedH < H - 1 ? { ...out, box: { ...out.box, height: paintedH } } : out
+}
+
+/** The legend's status words in the deck's language (sprint 2026-11c T30: a Vietnamese deck printed
+ * "In progress / Planned / At risk"). Only the statuses the lanes use are drawn. Unknown locale -> English. */
+const STATUS_NAMES: Record<string, Record<Status, string>> = {
+  en: { done: 'Done', active: 'In progress', planned: 'Planned', risk: 'At risk' },
+  vi: { done: 'Đã xong', active: 'Đang làm', planned: 'Kế hoạch', risk: 'Cần chú ý' },
+}
+export function statusNames(locale?: string): Record<Status, string> {
+  return STATUS_NAMES[(locale ?? 'en').toLowerCase().split(/[-_]/)[0]] ?? STATUS_NAMES.en
 }
 
 export function capacity(props: RoadmapProps, box: Size, ctx: LayoutContext): CapacityReport {

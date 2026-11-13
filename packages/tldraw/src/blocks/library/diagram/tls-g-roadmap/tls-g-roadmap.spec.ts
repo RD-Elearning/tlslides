@@ -149,3 +149,23 @@ describe('tls.g.roadmap roomy tier', () => {
     expect(nameSize(again)).toBe(nameSize(tall))
   })
 })
+
+describe('tls.g.roadmap — legend words in the deck language (sprint 2026-11c T30)', () => {
+  const texts = (t: any) => absoluteLeaves(t).filter((l) => l.k === 'text').map((l) => (l.node as any).lines.map((x: any) => x.text).join(' '))
+  const items = [{ label: 'Tuyên truyền', start: 0, end: 1, status: 'done' }, { label: 'Thu phí', start: 2, end: 3, status: 'planned' }]
+  it('a Vietnamese deck prints Vietnamese statuses, only the ones used', () => {
+    const ctx = chartCtx(SZ)
+    ;(ctx.tokens as any).locale = 'vi'
+    const t = tlsGRoadmap.layout({ ...(tlsGRoadmap.defaults as any), periods: periods(4), lanes: [{ name: 'Phường', items }] }, ctx)
+    const all = texts(t).join(' | ')
+    expect(all).toContain('Đã xong')
+    expect(all).toContain('Kế hoạch')
+    for (const en of ['Done', 'In progress', 'Planned', 'At risk', 'Đang làm', 'Cần chú ý']) expect(all).not.toContain(en)
+  })
+  it('an unknown locale falls back to English', () => {
+    const ctx = chartCtx(SZ)
+    ;(ctx.tokens as any).locale = 'xx'
+    const t = tlsGRoadmap.layout({ ...(tlsGRoadmap.defaults as any), periods: periods(4), lanes: [{ name: 'A', items }] }, ctx)
+    expect(texts(t).join(' ')).toContain('Done')
+  })
+})

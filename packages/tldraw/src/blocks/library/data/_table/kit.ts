@@ -89,6 +89,11 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
   const text = cellText(raw)
   switch (kind) {
     case 'number': {
+      // A string the author wrote with a separator or a sign of its own ("1.086", "2,70", "68.500", "$9", "12%") is
+      // drawn exactly as written: "." and "," mean opposite things in Vietnamese and English, so re-formatting it
+      // changed the number (sprint 2026-11c T28: 1.086 tấn -> 1,09; 2,70 -> 270). The column kind only aligns it.
+      // A JSON number, or a bare digit string, is still formatted in the deck's language.
+      if (typeof raw === 'string' && !/^\s*[-+]?\d+\s*$/.test(raw)) return { kind: 'text', text }
       const n = parseNumber(raw)
       if (!n) return { kind: 'text', text }
       const f = n.format ?? (format && format !== 'plain' ? format : undefined)
