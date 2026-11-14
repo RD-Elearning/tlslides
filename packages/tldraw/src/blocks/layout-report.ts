@@ -61,7 +61,7 @@ import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
 import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
-import { cutWordsIn } from './layout/words'
+import { cutWordsIn, propsText } from './layout/words'
 import {
   collectPaintedLeaves,
   measureBlock,
@@ -648,7 +648,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
 
     const confidence: MeasureConfidence = failed ? 'low' : measure.confidence
     const reason = failed ? `layout threw: ${failed}` : measure.reason
-    const cutWords = root ? cutWordsIn(root) : 0
+    const cutWords = root ? cutWordsIn(root, propsText(props)) : 0
     blocks.push({
       ...base,
       natural: measure.natural,

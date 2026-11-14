@@ -64,7 +64,7 @@ import { applyStyleBlockDefaults, STYLE_MASTER_PREFIX } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS, loudTextCap } from './design-checks'
 import { fillPolicyOf } from './layout/fill'
-import { cutWordsIn } from './layout/words'
+import { cutWordsIn, propsText } from './layout/words'
 import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH } from './layout/connector-route'
@@ -464,7 +464,7 @@ function paintedContent(
       })
       const laid = layoutBlock(def, props, ctx)
       const c = collectPaintedLeaves(laid, size)
-      broken += cutWordsIn(laid)
+      broken += cutWordsIn(laid, propsText(props))
       if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow, loud, largest, broken }
       narrow += c.text.filter((t) => t.lines > 1 && t.chars / t.lines < DESIGN_THRESHOLDS.narrowChars).length
       loud += c.text.filter((t) => t.fontSize > loudTextCap(t.chars) + 0.5).length

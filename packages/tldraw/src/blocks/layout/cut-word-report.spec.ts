@@ -25,4 +25,17 @@ describe('text/cut-word', () => {
     expect(report.blocks.find((x) => x.id === 'c')!.cutWords).toBeUndefined()
     expect(report.findings.some((f) => f.code === 'text/cut-word')).toBe(false)
   })
+
+  it('a wrap at a space the layout dropped is no cut (p1: a recap point, a cycle label)', () => {
+    const slide = {
+      id: 's',
+      layout: 'two-column',
+      regions: {
+        left: [{ id: 'r', type: 'tls.c.recap', props: { style: 'numbered', points: ['Ba hạng giá 3.490.000 / 4.290.000 / 5.190.000 đồng, biên gộp 31,8% / 29,6% / 25,0%; hoà vốn 6 khách mỗi đoàn', 'Ngân sách 420 triệu (marketing 180, đào tạo 90, homestay 150) duyệt trước 30/4/2027'] } }],
+        right: [{ id: 'g', type: 'tls.g.cycle', props: { center: '24 giờ', steps: [{ label: 'Trái Đất tự quay' }, { label: 'Nửa hướng Mặt Trời' }, { label: 'Nửa khuất Mặt Trời' }] } }],
+      },
+    }
+    const report = analyzeSlide(slide as never)
+    expect(report.findings.filter((f) => f.code === 'text/cut-word')).toEqual([])
+  })
 })

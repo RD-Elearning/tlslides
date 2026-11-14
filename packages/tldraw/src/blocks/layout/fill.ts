@@ -19,7 +19,7 @@
  * probe of `measureBlock`.
  */
 
-import { brokenWords, cutWordsIn } from './words'
+import { brokenWords, cutWordsIn, propsText } from './words'
 export { brokenWords }
 import type { BlockDefinition, FillStep, LayoutContext, LayoutNode, TypeToken } from '../types'
 import { DEFAULT_PROBE_HEIGHT } from './measure-block'
@@ -74,7 +74,7 @@ export function promote(ctx: LayoutContext, n: number): LayoutContext {
 
 type Leaf = { lines: number; chars: number; last: number; size: number }
 type Stats = { chars: number; lines: number; maxSize: number; whole: boolean; leaves: Leaf[]; broken: number }
-function stats(node: LayoutNode, W: number, H: number): Stats {
+function stats(node: LayoutNode, W: number, H: number, source?: string): Stats {
   const out: Stats = { chars: 0, lines: 0, maxSize: 0, whole: true, leaves: [], broken: 0 }
   const walk = (n: LayoutNode, ox: number, oy: number) => {
     const x = ox + n.box.x
@@ -96,7 +96,7 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
     }
   }
   walk(node, 0, 0)
-  out.broken = cutWordsIn(node)
+  out.broken = cutWordsIn(node, source)
   return out
 }
 
@@ -184,8 +184,9 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
   const H = ctx.box.height
   const base: LayoutContext = { ...ctx, tokens: { ...ctx.tokens, filling: true } }
   const lay = (c: LayoutContext) => def.layout(props, c)
+  const source = propsText(props)
   let node = lay(base)
-  let s = stats(node, W, H)
+  let s = stats(node, W, H, source)
   if (!s.whole) return def.layout(props, ctx)
   if (policy.includes('type')) {
     const title = ctx.resolveText('title').size
@@ -195,7 +196,7 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
       // a composite lays its text out through child blocks: the context is rebuilt on the shifted scale
       const up = shiftTypeContext(ctx, n, LADDER)
       const t = lay({ ...up, tokens: { ...up.tokens, filling: true } })
-      const ts = stats(t, W, H)
+      const ts = stats(t, W, H, source)
       if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts, DEFAULT_FILL_FAMILIES.has(def.family)) || loud(ts) > loud(s) || ts.broken > s.broken) continue
       if (bottomOf(t) <= H * FILL_TYPE_SHARE) roomy = t
       else if (!any && n <= 2) any = t
@@ -203,7 +204,7 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
     const pick = roomy ?? any
     if (pick) {
       node = pick
-      s = stats(node, W, H)
+      s = stats(node, W, H, source)
     }
   }
   if (policy.includes('spacing')) node = spreadItems(node, H, ctx, s.maxSize)
