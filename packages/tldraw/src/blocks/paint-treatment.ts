@@ -217,6 +217,10 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment,
   // a highlighter is for dark ink on a light page; light ink takes the hand underline in its own colour
   const e = t.emphasis === 'highlighter' && relativeLuminance(hexToRgb(ink)) > LIGHT_INK ? 'underline' : t.emphasis
   if (!e || e === 'bold' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
+  // S29 (c9 waste s05: a marker chip behind every column head of a table): a table head is set bold as its weight
+  // (`_table/kit` boldHeader), not words stressed inside a sentence — no marks. Not "every run bold": a centred
+  // title is placed one node per line, and a line that is all bold words keeps its marks
+  if (/^head\[\d+\]/.test(node.part ?? '')) return node
   const color = t.highlight ?? '#FFE066'
   const fs = (node.style.size ?? 32) * (node.style.scale ?? 1)
   const lh = fs * (node.style.lineHeight ?? 1.3)

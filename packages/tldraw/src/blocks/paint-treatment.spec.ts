@@ -83,6 +83,13 @@ describe('render treatment', () => {
     expect(roundedRectPath(100, 50, 0)).toBe('M0 0 L100 0 L100 50 L0 50 Z')
   })
 
+  it('a table head (bold as its weight) gets no marks; a line of bold words elsewhere keeps them', () => {
+    const line: LayoutNode = { k: 'text', box: { x: 0, y: 0, width: 200, height: 30 }, lines: [{ text: 'Mặt Trời', top: 0, baseline: 20, width: 90, runs: [{ text: 'Mặt Trời', bold: true }] }], style: { family: 'Inter', size: 20, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
+    expect(treatTree(line, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k')).not.toBe(line)
+    const head: LayoutNode = { k: 'text', part: 'head[0]', box: { x: 0, y: 0, width: 200, height: 30 }, lines: [{ text: 'Nhóm rác', top: 0, baseline: 20, width: 90, runs: [{ text: 'Nhóm rác', bold: true }] }], style: { family: 'Inter', size: 20, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
+    expect(treatTree(head, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k')).toBe(head)
+  })
+
   it('highlighter puts a band behind each bold run, under the text', () => {
     const text: LayoutNode = { k: 'text', box: { x: 100, y: 50, width: 600, height: 60 }, lines: [{ text: 'Tree is a graph', top: 0, baseline: 40, width: 300, runs: [{ text: 'Tree ' }, { text: 'is a graph', bold: true }] }], style: { family: 'Inter', size: 40, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
     const out = treatTree(text, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k') as Extract<LayoutNode, { k: 'group' }>

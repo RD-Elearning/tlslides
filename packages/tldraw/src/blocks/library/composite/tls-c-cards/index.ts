@@ -88,13 +88,16 @@ const GIANT_STEPS = ['display', 'title'] as const
 type NumeralStep = (typeof GIANT_STEPS)[number] | 'heading'
 const TONES = ['surface', 'alt', 'outline', 'accent-first'] as const
 
-const itemsOf = (props: CardsProps): CardItem[] =>
-  objs(props.cards)
+const itemsOf = (props: CardsProps): CardItem[] => {
+  const cards = objs(props.cards)
     .filter((c) => str(c.title) !== '')
     .slice(0, CARDS_MAX)
-    // AC5: with `lead: number` a card that names no number is numbered by its position ("01", "02", …),
-    // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content.
-    .map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined, tone: str(c.tone) || undefined }))
+  // AC5: with `lead: number` cards that name no number are numbered by their position ("01", "02", …),
+  // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content. S29 (c9 coffee s12:
+  // "1, 2, 3, 04"): once the author numbers some cards, a card left without one is not an item of the count — no numeral.
+  const authored = cards.some((c) => str(c.number) !== '')
+  return cards.map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' && !authored ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined, tone: str(c.tone) || undefined }))
+}
 
 /** The reference tree (a row of card > stack > leaves): 4 levels at most. Used for depth and measure checks. */
 export function buildCards(props: CardsProps): BlockSpec {

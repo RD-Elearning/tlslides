@@ -54,10 +54,13 @@ describe('tls.c.cards', () => {
     expect(leavesOf(num, 'text')).toHaveLength(3)
   })
 
-  it('AC5: lead number with no numbers numbers the cards by position; an authored number wins', () => {
-    const cards = [{ title: 'A', text: 'a' }, { number: '7', title: 'B', text: 'b' }, { title: 'C', text: 'c' }]
+  it('AC5: lead number with no numbers numbers the cards by position; once the author numbers some, the rest get none', () => {
+    const bare = [{ title: 'A', text: 'a' }, { title: 'B', text: 'b' }, { title: 'C', text: 'c' }]
+    expect(leavesOf(layoutAt(tlsCCards, { cards: bare, lead: 'number' }, 1500, 520), 'lead').map((l) => (l.node as any).lines[0].text)).toEqual(['01', '02', '03'])
+    // S29 (c9 coffee s12): three numbered motions and a note card drew "1, 2, 3, 04"
+    const cards = [{ number: '1', title: 'A', text: 'a' }, { number: '2', title: 'B', text: 'b' }, { title: 'Note', text: 'c' }]
     const t = layoutAt(tlsCCards, { cards, lead: 'number' }, 1500, 520)
-    expect(leavesOf(t, 'lead').map((l) => (l.node as any).lines[0].text)).toEqual(['01', '7', '03'])
+    expect(leavesOf(t, 'lead').map((l) => (l.node as any).lines[0].text)).toEqual(['1', '2'])
     expect(hasPart(layoutAt(tlsCCards, { cards, lead: 'icon' }, 1500, 520), 'lead')).toBe(false)
   })
 
