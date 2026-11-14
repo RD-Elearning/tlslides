@@ -127,3 +127,25 @@ describe('a floating body', () => {
     expect(judge(slide([{ ...kv, style: { fill: false } }]), false).findings.map((f) => f.code)).not.toContain('quality/floating-body')
   })
 })
+
+describe('S24-d: a heavy side beside a strip of small text', () => {
+  const callout: BlockSpec = { id: 'k', type: 'tls.t.callout', props: { title: 'Tip', text: 'One short reminder line.' } }
+  const heavy = (): BlockSpec[] => [
+    { id: 'h', type: 'tls.t.title', props: { text: 'Four things to take home', size: 'heading' } },
+    B('l', 'A notebook for the daily reading, one line every morning before breakfast. A balanced plate for the fridge door, with the portions drawn in. The Saturday club at the community hall, every first week of the month. The nurse on floor 2, who answers the phone during office hours. A walk of twenty minutes after the evening meal.'),
+  ]
+  const pairMsg = (q: { findings: Array<{ code: string; message: string }> }) => q.findings.filter((f) => f.code === 'quality/unbalanced' && /small strip/.test(f.message))
+  it('two columns: a titled list beside a one-line callout is flagged, naming both regions', () => {
+    const q = quality({ id: 's', layout: 'two-column', regions: { title: [T('Take home')], left: heavy(), right: [callout] } }, true)
+    const m = pairMsg(q)
+    expect(m).toHaveLength(1)
+    expect(m[0].message).toMatch(/region "right" is a small strip/)
+    expect(m[0].message).toMatch(/stack them in one wide region/)
+  })
+  it('two even columns pass, and nothing is judged without `balance`', () => {
+    const even = quality({ id: 's', layout: 'two-column', regions: { title: [T('Take home')], left: heavy(), right: heavy().map((b) => ({ ...b, id: b.id + '2' })) } }, true)
+    expect(pairMsg(even)).toHaveLength(0)
+    const unjudged = quality({ id: 's', layout: 'two-column', regions: { title: [T('Take home')], left: heavy(), right: [callout] } })
+    expect(pairMsg(unjudged)).toHaveLength(0)
+  })
+})

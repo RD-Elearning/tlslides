@@ -189,6 +189,10 @@ export const QUALITY_GATE = {
    *  0.6 it also took cards and icon rows whose panels fill the band. */
   floatingLead: 0.5,
   floatingCover: 0.55,
+  /** spro sprint 2026-11c S24-d: two side-by-side body regions whose ink areas differ by more than `pairInk` times and
+   *  whose largest text differs by more than `pairType` times read as one heavy side and one footnote (`balance` only). */
+  pairInk: 3,
+  pairType: 1.6,
   /** CR7a `diagram` profile: the diagrams must paint this share of the regions that hold them. */
   minDiagramFill: 0.45,
   /** CR7a `poster` profile: the lead must reach this share of the deck's title size. */
@@ -347,6 +351,8 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     } else if (innerGap > QUALITY_GATE.maxInnerGap) {
       findings.push({ code: 'quality/unbalanced', message: `an empty band of ${pct(innerGap)} of the page between blocks: keep the blocks of a region together, or put them side by side` })
     }
+    const pair = unbalancedPair(report, content)
+    if (pair) findings.push({ code: 'quality/unbalanced', message: pair })
     if (opts.titleSize && bodyLead > 0 && bodyLead <= opts.titleSize * QUALITY_GATE.floatingLead && bodyCover < QUALITY_GATE.floatingCover) {
       findings.push({
         code: 'quality/floating-body',
@@ -388,6 +394,37 @@ const boxArea = (b: { width: number; height: number }) => Math.max(0, b.width) *
  * S04 — ink and hollow boxes, from the report alone (no new measuring). Body = the painted
  * non-title blocks that are neither decorative nor backdrops.
  */
+/**
+ * S24-d: two text regions side by side (overlapping in height by half the shorter one) where one paints over
+ * `pairInk` times the other's area AND its largest text is over `pairType` times the other's — a heavy side beside a
+ * footnote. A picture region is left out (no text to weigh). The message names both regions and the remedy.
+ */
+export function unbalancedPair(report: LayoutReport, content: LayoutReport['blocks']): string | null {
+  const sides = Object.entries(report.regions)
+    .filter(([name]) => name !== 'title' && name !== 'foot' && name !== 'free')
+    .map(([name, box]) => {
+      const own = content.filter((b) => b.region === name && !b.outOfFlow && b.painted)
+      let lead = 0
+      for (const b of own) for (const t of b.text) lead = Math.max(lead, t.fontSize * (t.scale || 1))
+      return { name, box, ink: area(union(own.map((b) => b.painted))), lead }
+    })
+    .filter((x) => x.ink > 0 && x.lead > 0)
+  for (let i = 0; i < sides.length; i++) {
+    for (let j = 0; j < sides.length; j++) {
+      const a = sides[i]
+      const b = sides[j]
+      if (a === b || a.box.x + a.box.width > b.box.x + 1) continue // a left of b
+      const overlap = Math.min(a.box.y + a.box.height, b.box.y + b.box.height) - Math.max(a.box.y, b.box.y)
+      if (overlap < 0.5 * Math.min(a.box.height, b.box.height)) continue
+      const [big, small] = a.ink >= b.ink ? [a, b] : [b, a]
+      if (big.ink > QUALITY_GATE.pairInk * small.ink && big.lead > QUALITY_GATE.pairType * small.lead) {
+        return `region "${small.name}" is a small strip of ${Math.round(small.lead)}-unit text beside "${big.name}" (${Math.round(big.ink / Math.max(1, small.ink))}× its ink, ${Math.round(big.lead)}-unit text): stack them in one wide region, or give the small side the callout treatment (a lead size, a panel)`
+      }
+    }
+  }
+  return null
+}
+
 export function inkMeasures(content: LayoutReport['blocks']): Pick<SlideQuality, 'bodyInk' | 'bodyChars' | 'hollow'> {
   const body = content.filter((b) => b.region !== 'title' && b.layer !== 'backdrop' && !DECORATIVE.has(b.type))
   let painted = 0
