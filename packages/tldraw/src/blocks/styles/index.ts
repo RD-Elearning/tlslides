@@ -150,6 +150,9 @@ export function mergeDeckTokens(base: DeckTokens | undefined, over: DeckTokens |
   // The deck language: every built-in style has tokens, so dropping it here lost it for every spec.
   const locale = over.locale ?? base.locale
   if (locale) out.locale = locale
+  // spro sprint 2026-11c S21-c: the deck's ground (a style has none of its own)
+  const ground = over.ground ?? base.ground
+  if (ground) out.ground = ground
   return out
 }
 

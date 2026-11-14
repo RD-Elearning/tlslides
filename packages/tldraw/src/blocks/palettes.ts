@@ -93,20 +93,47 @@ export type DerivedPalette = {
   harmony: PaletteHarmony
   /** what the swatch shows */
   swatch: PaletteBase
-  /** `DeckTokens.color` overrides */
-  tokens: { accent: Hex; accent2: Hex; surface: Hex }
+  /** `DeckTokens.color` overrides; `ground` (spro sprint 2026-11c S21-c) is `DeckTokens.ground` — the page background,
+   *  present only when a ground was asked for and the palette's text reads on it */
+  tokens: { accent: Hex; accent2: Hex; surface: Hex; ground?: Hex }
   /** `DeckTokens.categorical` — chart colours from the accents */
   categorical: Hex[]
   contrast: { text: number; accent: number; accent2: number }
 }
 
-/** Palettes around `seed` on `base`'s background, one per harmony. */
+/** Text ≥ 4.5:1 and muted text ≥ 3:1 on a ground. */
+const readsOn = (base: PaletteBase, g: Hex) => hexContrast(base.text, g) >= 4.5 && hexContrast(base.textMuted, g) >= 3
+
+/**
+ * spro sprint 2026-11c S21-c — a page ground in the hue of `ground` that the base palette's text reads on: the
+ * colour itself when it passes, else its OKLCH lightness walked away from the text (a dark text lightens the
+ * ground, a light text darkens it, by at most 0.3) until text ≥ 4.5:1 and muted text ≥ 3:1. `undefined` when none passes,
+ * or when the colour sits on the other side of the text (a deep ground under a dark-text palette): the palette's
+ * own background stays, the text is never recoloured.
+ */
+export function groundFor(base: PaletteBase, ground: Hex): Hex | undefined {
+  if (readsOn(base, ground)) return ground
+  const darkText = lum(base.text) < lum(base.background)
+  if (darkText !== lum(ground) > lum(base.text)) return undefined
+  const [L, C, H] = hexToOklch(ground)
+  // at most 0.3 of OKLCH lightness: further, it is another colour (a navy walked to a pale slate is not the navy)
+  const end = darkText ? Math.min(0.99, L + 0.3) : Math.max(0.05, L - 0.3)
+  for (let l = L; darkText ? l <= end : l >= end; l += darkText ? 0.01 : -0.01) {
+    const g = oklchToHex(l, C, H)
+    if (readsOn(base, g)) return g
+  }
+  return undefined
+}
+
+/** Palettes around `seed` on `base`'s background (or on `opts.ground`, S21-c), one per harmony. */
 export function derivePalettes(
   base: PaletteBase,
   seed: Hex,
-  harmonies: PaletteHarmony[] = ['analogous', 'complementary', 'split', 'mono']
+  harmonies: PaletteHarmony[] = ['analogous', 'complementary', 'split', 'mono'],
+  opts: { ground?: Hex } = {}
 ): DerivedPalette[] {
-  const bg = base.background
+  const ground = opts.ground ? groundFor(base, opts.ground) : undefined
+  const bg = ground ?? base.background
   return harmonies.map((h) => {
     const accent = accentOn(seed, bg)
     const accent2 = accentOn(SECOND[h](seed), bg)
@@ -116,8 +143,8 @@ export function derivePalettes(
     return {
       id: `${h}-${accent.slice(1)}`.toLowerCase(),
       harmony: h,
-      swatch: { ...base, accent1: accent, accent2, surface },
-      tokens: { accent, accent2, surface },
+      swatch: { ...base, background: bg, accent1: accent, accent2, surface },
+      tokens: { accent, accent2, surface, ...(ground ? { ground } : {}) },
       categorical,
       contrast: {
         text: Math.round(hexContrast(base.text, surface) * 100) / 100,

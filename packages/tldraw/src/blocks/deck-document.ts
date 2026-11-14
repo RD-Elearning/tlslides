@@ -107,8 +107,10 @@ function resolveBaseTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme
 function withBrandAccents(theme: DeckTheme, tokens?: DeckTokens): DeckTheme {
   const a1 = tokens?.color?.accent
   const a2 = tokens?.color?.accent2
-  if (!a1 && !a2) return theme
-  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}) } }
+  // spro sprint 2026-11c S21-c: the deck's ground is the page background (style masters paint `background`)
+  const g = typeof tokens?.ground === 'string' && /^#[0-9a-fA-F]{6}$/.test(tokens.ground) ? tokens.ground : undefined
+  if (!a1 && !a2 && !g) return theme
+  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}), ...(g ? { background: g } : {}) } }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */

@@ -70,6 +70,9 @@ export interface DeckTokens {
   /** Literal-hex overrides per role. Whatever isn't listed here falls back to the theme-derived
    *  default in `resolveTokens` (see its doc comment for what that default is per role). */
   color?: Partial<Record<ColorRole, string>>
+  /** spro sprint 2026-11c S21-c — the page background over the palette's own (a document's cream, a theme's
+   *  sand). The caller makes sure the theme's text reads on it (`groundFor` / `derivePalettes(…, { ground })`). */
+  ground?: string
   /** Replaces the generated 6-hue categorical ramp wholesale — "or overridden wholesale by a
    *  host brand kit" (doc 02 §2.2). Not merged per-index: a host that cares about its chart
    *  colours supplies the whole list. */
