@@ -55,7 +55,18 @@ export function localizeNumber(text: string, locale?: string): string {
   })
 }
 
-export function formatValue(value: number, format?: ValueFormat | string, opts: FormatOptions = {}): string {
+/**
+ * `value` is a number, or the author's text. A text that carries its own separator, sign or unit
+ * ("1.200", "2,70", "−8%", "3 lần") is drawn as written — it is already in the deck's language, and
+ * reading it as English turns the Vietnamese "1.200" (one thousand two hundred) into "1,200"
+ * (spro sprint 2026-11c c0, the same rule as the table's T28 fix). Bare digits are a number.
+ */
+export function formatValue(value: number | string, format?: ValueFormat | string, opts: FormatOptions = {}): string {
+  if (typeof value === 'string') {
+    const t = value.trim()
+    if (!/^\d+$/.test(t)) return value
+    value = Number(t)
+  }
   return localizeNumber(formatValueEn(value, format, opts), opts.locale)
 }
 

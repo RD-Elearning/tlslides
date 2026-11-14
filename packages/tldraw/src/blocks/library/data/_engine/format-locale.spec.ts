@@ -38,4 +38,15 @@ describe('number formatting by deck locale', () => {
     expect(bigStat({ value: 120000, format: 'plain' } as never)).toBe('120000')
     expect(bigStat({ value: 2.5, format: 'plain' } as never)).toBe('2.5')
   })
+  it('sprint 2026-11c c0: a value the author wrote with its own separator, sign or unit is drawn as written', () => {
+    // a KPI tile of a Vietnamese deck: "1.200" (m²) used to come out as the English "1,200"
+    expect(formatValue('1.200', undefined, { locale: 'vi' })).toBe('1.200')
+    expect(formatValue('2,70', 'plain', { locale: 'vi' })).toBe('2,70')
+    expect(formatValue('1.200', undefined, { locale: 'en' })).toBe('1.200')
+    expect(formatValue('−8%', 'percent', { locale: 'vi' })).toBe('−8%')
+    expect(formatValue('3 lần', undefined, { locale: 'vi' })).toBe('3 lần')
+    // bare digits stay a number, formatted in the deck's language
+    expect(formatValue('4200000', 'compact', { locale: 'vi' })).toBe('4,2 triệu')
+    expect(formatValue(' 64 ', undefined, { locale: 'vi' })).toBe('64')
+  })
 })
