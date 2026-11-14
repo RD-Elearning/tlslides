@@ -238,3 +238,19 @@ describe('an opaque backdrop motif clears the content (2026-10-24)', () => {
     expect(blob.size[0]).toBeGreaterThan(300)
   })
 })
+
+describe('growText never cuts a word (spro sprint 2026-11c c1, MĂM s13)', () => {
+  const { createLayoutContext } = require('../layout/layout-child')
+  const { layoutBlock } = require('../layout')
+  const { cutWordsIn: cut } = require('../layout/words')
+  const CARDS = [['Vai trò', 'Senior Product Designer + Mobile UX Architect, không sao chép giao diện app nào.'], ['Deliverables', 'Màn hình high-fidelity, prototype clickable, design system, mock data thống nhất.'], ['Tài liệu kèm', 'Tóm tắt IA/UX, ghi chú mock vs API, đề xuất MVP và tính năng phase sau.'], ['Chất lượng', 'Visual concept trước, viewport 390 x 844 px, kiểm tra empty/loading/error.']].map(([title, text]) => ({ icon: 'user', title, text }))
+  it('four cards on a balanced timeline slide keep "Deliverables" whole', () => {
+    const s = { id: 's', layout: 'timeline', valign: 'auto', regions: { title: [T], timeline: [{ id: 'c', type: 'tls.c.cards', style: { fill: false }, props: { lead: 'icon', align: 'center', cards: CARDS } }] } } as unknown as SlideSpec
+    const sh = compileSlide(s, FRAME, TEST_TOKENS, registry).shapes.find((x) => (x.props.$block as { id?: string }).id === 'c')!
+    const meta = sh.props.$block as { style?: object }
+    const props = { ...sh.props } as Record<string, unknown>
+    delete props.$block
+    const ctx = createLayoutContext({ box: { width: sh.size[0], height: sh.size[1] }, tokens: TEST_TOKENS, surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1 }, registry, ...(meta.style ? { style: meta.style } : {}) })
+    expect(cut(layoutBlock(registry.get('tls.c.cards'), props, ctx))).toBe(0)
+  })
+})

@@ -8,6 +8,7 @@
 import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import type { TitleProps } from './schema'
 import { alignedTextNodes } from '../_engine/text-place'
+import { brokenWords } from '../../../layout/words'
 
 /**
  * Effective font size, accounting for the style's scale multiplier.
@@ -81,6 +82,9 @@ export function fitToken(text: TitleProps['text'], ctx: LayoutContext): TypeToke
   return TITLE_FIT.ladder[TITLE_FIT.ladder.length - 1]
 }
 
+const plainText = (t: unknown): string =>
+  typeof t === 'string' ? t : t && typeof t === 'object' && Array.isArray((t as { runs?: unknown }).runs) ? (t as { runs: Array<{ text?: string }> }).runs.map((r) => r.text ?? '').join('') : ''
+
 export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
   const typeToken = (props.size === 'fit' ? fitToken(props.text, ctx) : props.size ?? 'title') as TypeToken
   const textColor = props.color ?? 'text'
@@ -100,7 +104,8 @@ export function layout(props: TitleProps, ctx: LayoutContext): LayoutNode {
   let scale = 1
   let m = ctx.measureText(props.text, resolvedStyle, inner.width)
 
-  while (m.height > inner.height && scale > 0.79) {
+  // spro sprint 2026-11c c1: a word cut at a line end ("Delivera|bles" in a card) shrinks it the same way
+  while ((m.height > inner.height || brokenWords(m.lines, plainText(props.text)) > 0) && scale > 0.79) {
     scale -= 0.04
     m = ctx.measureText(props.text, withScale(resolvedStyle, scale), inner.width)
   }

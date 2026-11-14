@@ -64,6 +64,7 @@ import { applyStyleBlockDefaults, STYLE_MASTER_PREFIX } from './styles'
 import { MAX_NESTING_DEPTH } from './types'
 import { DESIGN_THRESHOLDS, loudTextCap } from './design-checks'
 import { fillPolicyOf } from './layout/fill'
+import { cutWordsIn } from './layout/words'
 import { TIERED_BLOCK_TYPES, TOP_LEVEL_TIERED } from './tiered'
 import { CONNECTOR_BLOCK_TYPE, connectorMotion, connectorProps, findBlockSpec, isRoundBlock } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH } from './layout/connector-route'
@@ -293,6 +294,8 @@ function growText(
     if (after.box.width * after.box.height <= before.box.width * before.box.height) continue
     // nor wrap a short text into narrow lines (a card title at 11 characters a line)
     if (after.narrow > before.narrow) continue
+    // nor cut a word the authored size kept whole (c1 MĂM s13: "Delivera|bles" in four cards at ×1.3)
+    if (after.broken > before.broken) continue
     // nor raise a long text past the size its length allows (review 2026-11-08: a 150-character
     // bullet grown to 47 units)
     if (after.loud > before.loud) continue
@@ -435,9 +438,10 @@ function paintedContent(
   tokens: ResolvedTokens,
   registry: BlockRegistry,
   opts?: CompileSlideOptions
-): { box: Box | null; ok: boolean; narrow: number; loud: number; largest: number } {
+): { box: Box | null; ok: boolean; narrow: number; loud: number; largest: number; broken: number } {
   const boxes: Box[] = []
   let narrow = 0
+  let broken = 0
   let loud = 0
   let largest = 0
   for (const shape of result.shapes) {
@@ -458,20 +462,22 @@ function paintedContent(
         ...(meta.style ? { style: meta.style } : {}),
         ...(opts?.blockDefaults ? { blockDefaults: opts.blockDefaults } : {}),
       })
-      const c = collectPaintedLeaves(layoutBlock(def, props, ctx), size)
-      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow, loud, largest }
+      const laid = layoutBlock(def, props, ctx)
+      const c = collectPaintedLeaves(laid, size)
+      broken += cutWordsIn(laid)
+      if (c.text.some((t) => t.truncated || (t.scale !== undefined && t.scale < 0.999))) return { box: null, ok: false, narrow, loud, largest, broken }
       narrow += c.text.filter((t) => t.lines > 1 && t.chars / t.lines < DESIGN_THRESHOLDS.narrowChars).length
       loud += c.text.filter((t) => t.fontSize > loudTextCap(t.chars) + 0.5).length
       for (const t of c.text) largest = Math.max(largest, t.fontSize * (t.scale || 1))
       painted = paintedBounds(c)
     } catch {
-      return { box: null, ok: false, narrow, loud, largest }
+      return { box: null, ok: false, narrow, loud, largest, broken }
     }
     if (!painted) continue
-    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow, loud, largest }
+    if (painted.y + painted.height > size.height + FLOW_TOL || painted.x + painted.width > size.width + FLOW_TOL) return { box: null, ok: false, narrow, loud, largest, broken }
     boxes.push({ x: shape.point[0] + painted.x, y: shape.point[1] + painted.y, width: painted.width, height: painted.height })
   }
-  return { box: unionBox(boxes), ok: true, narrow, loud, largest }
+  return { box: unionBox(boxes), ok: true, narrow, loud, largest, broken }
 }
 
 /** `compileSlide` without the connectors: the blocks of the slide (regions, layers, free[]). */

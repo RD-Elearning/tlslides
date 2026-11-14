@@ -19,6 +19,8 @@
  * probe of `measureBlock`.
  */
 
+import { brokenWords, cutWordsIn } from './words'
+export { brokenWords }
 import type { BlockDefinition, FillStep, LayoutContext, LayoutNode, TypeToken } from '../types'
 import { DEFAULT_PROBE_HEIGHT } from './measure-block'
 import { shiftTypeContext } from './layout-child'
@@ -87,7 +89,6 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
     out.maxSize = Math.max(out.maxSize, n.style.size)
     const lastLine = n.lines[n.lines.length - 1]
     out.leaves.push({ lines: n.lines.length, chars: n.lines.reduce((t, l) => t + l.text.replace(/[\s…]/g, '').length, 0), last: lastLine && n.box.width > 0 ? lastLine.width / n.box.width : 1, size: n.style.size })
-    out.broken += brokenWords(n.lines)
     for (const l of n.lines) {
       out.chars += l.text.replace(/[\s…]/g, '').length
       out.lines++
@@ -95,23 +96,8 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
     }
   }
   walk(node, 0, 0)
+  out.broken = cutWordsIn(node)
   return out
-}
-
-/** spro sprint 2026-11c (c1, MĂM s13 "Delivera|bles"): line ends that cut a word — a letter or digit on both
- *  sides of the break (a break at a space keeps the space on one of the lines). Han / kana / Thai break
- *  between letters by design. */
-const WORD_END = /[\p{L}\p{N}]$/u
-const WORD_START = /^[\p{L}\p{N}]/u
-const NO_SPACES = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u
-export function brokenWords(lines: ReadonlyArray<{ text: string }>): number {
-  let n = 0
-  for (let i = 1; i < lines.length; i++) {
-    const a = lines[i - 1].text
-    const b = lines[i].text
-    if (WORD_END.test(a) && WORD_START.test(b) && !NO_SPACES.test(a.slice(-1)) && !NO_SPACES.test(b[0])) n++
-  }
-  return n
 }
 
 /** The bottom of what a node paints, in its own coordinates. */

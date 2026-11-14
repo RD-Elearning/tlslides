@@ -4,11 +4,12 @@
  */
 import type { LayoutNode } from '../types'
 import { brokenWords, fillLayout } from './fill'
+import { cutWordsIn } from './words'
 import { makeCtx } from '../library/layout/test-helpers'
 import { registry } from '../library/composite/composite-test'
 import { tlsCCards } from '../library/composite/tls-c-cards/index'
 
-const broken = (n: LayoutNode): number => (n.k === 'group' ? n.children.reduce((t, c) => t + broken(c), 0) : n.k === 'text' ? brokenWords(n.lines) : 0)
+const broken = (n: LayoutNode): number => cutWordsIn(n)
 const sizes = (n: LayoutNode): number[] => (n.k === 'group' ? n.children.flatMap(sizes) : n.k === 'text' ? [n.style.size] : [])
 
 describe('fill keeps words whole', () => {
@@ -17,6 +18,11 @@ describe('fill keeps words whole', () => {
     expect(brokenWords([{ text: 'Food ' }, { text: 'explorers' }])).toBe(0)
     expect(brokenWords([{ text: 'Food' }, { text: ' explorers' }])).toBe(0)
     expect(brokenWords([{ text: '中文' }, { text: '字' }])).toBe(0)
+  })
+
+  it('a centred text placed one node per line is read as one text', () => {
+    const t = (part: string, text: string) => ({ k: 'text', part, lines: [{ text }] })
+    expect(cutWordsIn({ k: 'group', children: [t('title[1][0]', 'Deliverable'), t('title[1][1]', 's'), t('title[2][0]', 'Tài liệu '), t('title[2][1]', 'kèm')] } as never)).toBe(1)
   })
 
   it('four narrow cards in a tall room: filled, and no title cut', () => {
