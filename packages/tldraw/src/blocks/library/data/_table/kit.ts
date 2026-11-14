@@ -105,8 +105,9 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       return role ? { kind: 'status', status: role, label: text } : { kind: 'text', text }
     }
     case 'rating': {
+      // a percent or an amount is a measurement, never a score (S29, c9 lookbook s11: "9%" drew five squares)
       const n = parseNumber(raw)
-      return n && n.value >= 0 && n.value <= 10 ? { kind: 'rating', value: n.value } : { kind: 'text', text }
+      return n && !n.format && n.value >= 0 && n.value <= 10 ? { kind: 'rating', value: n.value } : { kind: 'text', text }
     }
     case 'checkOrRating':
     case 'ratingOrCheck': {
@@ -114,6 +115,9 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       const second = first === 'check' ? 'rating' : 'check'
       const a = parseCell(raw, first, part, ctx, format, place)
       if (typeof a === 'object' && a.kind !== 'text') return a
+      // the default kind (the author did not ask for ratings) reads only a whole score 0-5 as dots: "1.7" / "2.0" units per
+      // transaction are figures to print (S29, c9 lookbook s11 drew them as two squares each)
+      if (second === 'rating' && !(isNum(raw) ? Number.isInteger(raw) && raw >= 0 && raw <= 5 : /^\s*[0-5]\s*$/.test(text))) return { kind: 'text', text }
       return parseCell(raw, second, part, ctx, format, place)
     }
     case 'check': {
