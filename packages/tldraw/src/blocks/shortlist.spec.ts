@@ -202,3 +202,18 @@ describe('spro sprint 2026-11b S10 reveal blocks and activity slides', () => {
     expect([...order, ...sort].every((t) => t.startsWith('tls.a.') || t === 'tls.c.quiz' || t === 'tls.c.question-wall' || t === 'composition')).toBe(true)
   })
 })
+
+describe('spro sprint 2026-11c S25 content shapes', () => {
+  const pick = (slide: ShortlistSlide) => top(slide, 8)
+  it('a palette slide ranks swatches first; without the shape swatches is not offered', () => {
+    expect(pick({ relations: ['group', 'terms'], items: 5, textLoad: 'labels', shapes: ['colours'] }).slice(0, 3)).toContain('tls.d.swatches')
+    expect(pick({ relations: ['group', 'terms'], items: 5, textLoad: 'labels' })).not.toContain('tls.d.swatches')
+  })
+  it('price tiers only where each option has a price (P0/P1/P2 priorities are not tiers)', () => {
+    expect(pick({ relations: ['contrast', 'group'], items: 3, textLoad: 'labels', shapes: ['tiers'] }).slice(0, 3)).toContain('tls.d.pricing')
+    expect(pick({ relations: ['contrast', 'group'], items: 3, textLoad: 'labels' })).not.toContain('tls.d.pricing')
+  })
+  it('a schedule slide ranks the key-value list high', () => {
+    expect(pick({ relations: ['group', 'sequence'], items: 4, textLoad: 'lines', shapes: ['schedule'] }).slice(0, 3)).toContain('tls.t.kv-list')
+  })
+})

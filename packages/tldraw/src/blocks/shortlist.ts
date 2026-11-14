@@ -6,7 +6,7 @@
  * seed.
  */
 
-import type { BlockDefinition, BlockFits, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from './types'
+import type { BlockDefinition, BlockFits, ContentShape, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from './types'
 
 export type Creativity = 'safe' | 'balanced' | 'bold'
 type Asset = NonNullable<BlockFits['needs']>[number]
@@ -29,6 +29,9 @@ export interface ShortlistSlide {
    *  (content diagrams outranked `tls.a.order` / `tls.a.sort` on their own slide). Sent under the
    *  teaching flag. */
   activity?: boolean
+  /** spro sprint 2026-11c S25-b: content shapes code found in the slide's passages (hex colours, a price per option,
+   *  a day or time per row). A block that draws one ranks high; a `shapeOnly` block needs one. */
+  shapes?: ContentShape[]
 }
 
 export interface ShortlistOptions {
@@ -155,10 +158,17 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
     if (rel.fit) score += 0.2 * rel.fit
   } else {
     const rel = relationScore(slide.relations, f.relations)
-    if (!rel.fit) return null
-    score = rel.fit
-    rank = rel.rank
-    why.push(`shows ${rel.rel}`)
+    // S25-g: a shape-only block is offered only where its shape is; the shape stands in for the relation
+    const shape = f.shapes?.find((x) => slide.shapes?.includes(x))
+    if (f.shapeOnly && !shape) return null
+    if (!rel.fit && !shape) return null
+    score = Math.max(rel.fit, shape ? 0.8 : 0)
+    rank = rel.fit ? rel.rank : 0
+    if (rel.fit) why.push(`shows ${rel.rel}`)
+    if (shape) {
+      score *= 1.5
+      why.push(`draws the ${shape === 'colours' ? 'colours' : shape === 'tiers' ? 'price tiers' : 'schedule'}`)
+    }
   }
   // data: a series needs a chart-capable block; no data → no chart
   const data = slide.data ?? 'none'

@@ -118,6 +118,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.d.sparkline': 'h=fill',
   'tls.d.stacked-bar': 'h=fill',
   'tls.d.stat-compare': 'h≈195@840',
+  'tls.d.swatches': 'h 215–1424@840',
   'tls.d.table': 'h 222–332@840',
   'tls.d.treemap': 'h=fill',
   'tls.d.trend-badge': 'h≈43@840',

@@ -293,7 +293,16 @@ export interface BlockFits {
    *  accordion, step-through, hotspots; `BlockDefinition.reveal`). Offered only for in-class presented
    *  learning decks; every other render shows its static form. */
   interactive?: true
+  /** spro sprint 2026-11c S25-b/g — content shapes the block draws (a palette, price tiers, a schedule). A slide whose
+   *  passages carry one of them (`ShortlistSlide.shapes`, detected by code) ranks the block high; with `shapeOnly` the
+   *  block is offered only on such a slide. */
+  shapes?: ContentShape[]
+  shapeOnly?: true
 }
+
+/** S25: content shapes code can see in a slide's passages. */
+export type ContentShape = 'colours' | 'tiers' | 'schedule'
+export const CONTENT_SHAPES: readonly ContentShape[] = ['colours', 'tiers', 'schedule']
 
 export type FitsUse = 'info' | 'highlight' | 'decor' | 'frame' | 'activity'
 export const FITS_USES: readonly FitsUse[] = ['info', 'highlight', 'decor', 'frame', 'activity']

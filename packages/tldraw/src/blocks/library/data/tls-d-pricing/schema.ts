@@ -16,7 +16,7 @@ export const schema: BlockSchema = {
         kind: 'object',
         fields: {
           name: { type: { kind: 'text', maxChars: 24 }, required: true, role: 'content', label: 'Plan name' },
-          price: { type: { kind: 'text', maxChars: 14 }, required: true, role: 'content', label: 'Price', help: 'With symbol: "$29", "Free", "Custom"' },
+          price: { type: { kind: 'text', maxChars: 20 }, required: true, role: 'content', label: 'Price', help: 'With symbol: "$29", "Free", "Custom"' },
           period: { type: { kind: 'text', maxChars: 16 }, role: 'content', label: 'Period', help: '"/ month"' },
           description: { type: { kind: 'text', maxChars: 90 }, role: 'content', label: 'Description' },
           features: { type: { kind: 'list', of: { kind: 'text', maxChars: 50 }, max: PRICING_MAX_FEATURES }, required: true, role: 'content', label: 'Features' },
@@ -30,7 +30,7 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Plans',
     required: true,
-    guidance: 'Mark one plan featured. Keep feature lists to a similar length.',
+    guidance: 'Prices as the document writes them. Mark a plan featured only when the document recommends it. Keep feature lists to a similar length.',
   },
   featuredStyle: enumSlot(['raised', 'outline', 'filled'], 'Featured style'),
   checkIcon: { type: { kind: 'icon' }, role: 'option', label: 'Feature icon' },

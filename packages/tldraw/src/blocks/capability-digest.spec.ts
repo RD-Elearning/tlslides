@@ -631,7 +631,7 @@ describe('R7 — capability digest v2', () => {
       it('AC1: { style } applies the style prefer/avoid and heads the index with that style, within 18.9k (AC8, CMP4, CR8, CR13)', () => {
         for (const st of BUILT_IN_STYLES) {
           const md = capabilityIndex(reg, { tier: 1, style: st.id })
-          expect(md.length).toBeLessThanOrEqual(20200) // spro sprint 2026-11b S09: +12 tier-2 names; CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
+          expect(md.length).toBeLessThanOrEqual(20500) // spro sprint 2026-11c S25-d: the tier-1 index stays <= 20 500 (+ tier-2 swatches); 2026-11b S09: +12 tier-2 names; CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
           expect(md).toContain(`Deck style: ${styleLine(st)}`)
           for (const t of st.avoid) expect(fullLine(md, t)).toHaveLength(0)
           for (const t of st.avoid) expect(alsoNames(md)).not.toContain(t)

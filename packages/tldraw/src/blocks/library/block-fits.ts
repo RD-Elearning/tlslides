@@ -24,7 +24,7 @@ export const EDITOR_ONLY: ReadonlySet<string> = new Set([
   'tls.x.footer-text', 'tls.x.header', 'tls.x.logo-mark', 'tls.x.page-number', 'tls.x.watermark',
 ])
 
-type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs']; interactive?: true }
+type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs']; interactive?: true; shapes?: BlockFits['shapes']; shapeOnly?: true }
 
 const f = (
   relations: Relation[],
@@ -65,7 +65,7 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.m.icon-list': f(['group', 'recap', 'terms'], [3, 6], 'lines', 'neutral', { frames: ['agenda', 'summary'] }),
   'tls.t.bullets': f(['group', 'recap'], [2, 7], 'lines', 'calm'),
   'tls.t.checklist': f(['recap', 'action', 'question'], [3, 7], 'lines', 'neutral', { frames: ['summary', 'closing'] }),
-  'tls.t.kv-list': f(['terms', 'definition'], [3, 8], 'lines', 'calm'),
+  'tls.t.kv-list': f(['terms', 'definition'], [3, 8], 'lines', 'calm', { shapes: ['schedule'] }),
   'tls.t.numbered': f(['sequence', 'recap', 'ranking'], [3, 7], 'lines', 'calm', { frames: ['agenda', 'summary'] }),
   'tls.t.tags': f(['group', 'terms'], [3, 12], 'labels', 'neutral'),
 
@@ -126,7 +126,9 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.comparison': f(['contrast', 'group'], [2, 3], 'lines', 'neutral'),
   'tls.c.problem-solution': f(['contrast', 'cause-effect'], [2, 2], 'paragraphs', 'neutral'),
   'tls.d.compare-table': f(['contrast', 'matrix'], [3, 8], 'labels', 'calm', { data: 'table' }),
-  'tls.d.pricing': f(['contrast', 'action'], [2, 4], 'labels', 'neutral', { needs: ['prices'], families: ['professional', 'modern', 'elegant'] }),
+  // spro sprint 2026-11c S25: a palette, offered only where the passages give colour values
+  'tls.d.swatches': f(['group', 'terms'], [2, 10], 'labels', 'calm', { shapes: ['colours'], shapeOnly: true }),
+  'tls.d.pricing': f(['contrast', 'action'], [2, 4], 'labels', 'neutral', { needs: ['prices'], families: ['professional', 'modern', 'elegant'], shapes: ['tiers'], shapeOnly: true }),
   'tls.g.before-after': f(['contrast', 'story', 'cause-effect'], [2, 2], 'lines', 'lively'),
   'tls.g.iceberg': f(['contrast', 'hierarchy', 'cause-effect'], [2, 8], 'labels', 'lively'),
   'tls.g.matrix-2x2': f(['matrix', 'contrast'], [4, 4], 'labels', 'neutral'),

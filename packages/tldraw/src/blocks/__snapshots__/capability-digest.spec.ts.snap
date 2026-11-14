@@ -3943,7 +3943,7 @@ Side-by-side plan cards: name, price, features and a button, one plan featured. 
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`plans\` | yes | list of object (name, price, period, description, features, cta, featured) (2–4 items) | Mark one plan featured. Keep feature lists to a similar length. |
+| \`plans\` | yes | list of object (name, price, period, description, features, cta, featured) (2–4 items) | Prices as the document writes them. Mark a plan featured only when the document recommends it. Keep feature lists to a similar length. |
 | \`featuredStyle\` | no | enum: raised \\\\| outline \\\\| filled |  |
 | \`checkIcon\` | no | icon |  |
 | \`align\` | no | enum: top \\\\| stretch | stretch = equal height |
@@ -4377,6 +4377,44 @@ Two labelled numbers with a connector and a coloured change pill (percent or abs
     },
     \\"format\\": \\"compact\\",
     \\"caption\\": \\"Annual revenue\\"
+  }
+}
+\`\`\`
+
+### \`tls.d.swatches\` — Colour swatches
+
+A palette as colour chips, each with its name, value and use. _(family: data; keywords: palette, colours, colors, swatches, brand colours, bảng màu, màu sắc, tokens)_
+
+**When:** The colours a document names with their values: a brand palette, a collection's colours, design tokens.
+**Avoid:** Colour words without values, or categories that only happen to have colours (bins, priorities): tls.c.cards.
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`swatches\` | yes | list of object (name, value, use, tone) (2–10 items) | One swatch per colour the document names, in its order; tone \`category:<n>\` for the n-th document colour. |
+| \`shape\` | no | enum: square \\\\| round \\\\| strip |  |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_swatches\\",
+  \\"type\\": \\"tls.d.swatches\\",
+  \\"props\\": {
+    \\"swatches\\": [
+      {
+        \\"name\\": \\"Deep sea\\",
+        \\"value\\": \\"#1F4E5F\\",
+        \\"tone\\": \\"category:0\\"
+      },
+      {
+        \\"name\\": \\"Sand\\",
+        \\"value\\": \\"#E8D9B5\\",
+        \\"tone\\": \\"category:1\\"
+      },
+      {
+        \\"name\\": \\"Coral\\",
+        \\"value\\": \\"#E2725B\\",
+        \\"tone\\": \\"category:2\\"
+      }
+    ]
   }
 }
 \`\`\`
@@ -8468,7 +8506,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 223,
+  "blockCount": 224,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8584,6 +8622,7 @@ Object {
     "tls.d.sparkline",
     "tls.d.stacked-bar",
     "tls.d.stat-compare",
+    "tls.d.swatches",
     "tls.d.table",
     "tls.d.treemap",
     "tls.d.trend-badge",
@@ -8925,7 +8964,7 @@ also: tls.c.case-study, tls.c.compare-detail, tls.c.do-dont, tls.c.problem-solut
 
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
-tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 84–186@840] knobs: fill=gradient|single|series, textPlacement=inside|below
+tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 89–317@840] knobs: fill=gradient|single|series, textPlacement=inside|below
 also: tls.c.process-detail, tls.g.bridge, tls.g.cycle, tls.g.cycle-detail, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
@@ -8946,7 +8985,7 @@ tls.c.image-full · media · slide — Full-slide photo with a headline panel [h
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.c.gallery-wall, tls.c.image-notes, tls.c.photo-essay, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
+also: tls.c.gallery-wall, tls.c.image-notes, tls.c.photo-essay, tls.d.swatches, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio

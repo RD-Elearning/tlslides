@@ -318,6 +318,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.g.puzzle': [v('grid', 'pieces in a grid', { variant: 'grid' }), v('row', 'pieces in one row', { variant: 'row' })],
   'tls.g.bridge': [v('arch', 'roomy steps over the gap', { variant: 'arch' }), v('flat', 'tight steps over the gap', { variant: 'flat' })],
   'tls.c.number-story': [v('row', 'numbers in a row', { variant: 'arrow-row' }), v('zoom', 'the last number in focus', { variant: 'zoom' })],
+  'tls.d.swatches': [v('square', 'square chips in a row', { shape: 'square' }), v('round', 'round dots, names centred', { shape: 'round' }), v('strip', 'a band of colour over each name', { shape: 'strip' })],
   'tls.c.do-dont': [v('cards', 'do and don\'t on cards', { variant: 'cards' }), v('stamped', 'a big check and cross', { variant: 'stamped' })],
   'tls.c.storyboard': [v('strip', 'panels in a strip', { variant: 'strip' }), v('grid', 'panels in a 2×2 grid', { variant: 'grid' })],
   'tls.c.magazine': [v('column', 'a text column and its pull quote', { variant: 'two-column' }), v('figure', 'a figure beside the text', { variant: 'figure-right' })],
