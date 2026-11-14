@@ -71,9 +71,9 @@ export function promote(ctx: LayoutContext, n: number): LayoutContext {
 }
 
 type Leaf = { lines: number; chars: number; last: number; size: number }
-type Stats = { chars: number; lines: number; maxSize: number; whole: boolean; leaves: Leaf[] }
+type Stats = { chars: number; lines: number; maxSize: number; whole: boolean; leaves: Leaf[]; broken: number }
 function stats(node: LayoutNode, W: number, H: number): Stats {
-  const out: Stats = { chars: 0, lines: 0, maxSize: 0, whole: true, leaves: [] }
+  const out: Stats = { chars: 0, lines: 0, maxSize: 0, whole: true, leaves: [], broken: 0 }
   const walk = (n: LayoutNode, ox: number, oy: number) => {
     const x = ox + n.box.x
     const y = oy + n.box.y
@@ -87,6 +87,7 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
     out.maxSize = Math.max(out.maxSize, n.style.size)
     const lastLine = n.lines[n.lines.length - 1]
     out.leaves.push({ lines: n.lines.length, chars: n.lines.reduce((t, l) => t + l.text.replace(/[\s…]/g, '').length, 0), last: lastLine && n.box.width > 0 ? lastLine.width / n.box.width : 1, size: n.style.size })
+    out.broken += brokenWords(n.lines)
     for (const l of n.lines) {
       out.chars += l.text.replace(/[\s…]/g, '').length
       out.lines++
@@ -95,6 +96,22 @@ function stats(node: LayoutNode, W: number, H: number): Stats {
   }
   walk(node, 0, 0)
   return out
+}
+
+/** spro sprint 2026-11c (c1, MĂM s13 "Delivera|bles"): line ends that cut a word — a letter or digit on both
+ *  sides of the break (a break at a space keeps the space on one of the lines). Han / kana / Thai break
+ *  between letters by design. */
+const WORD_END = /[\p{L}\p{N}]$/u
+const WORD_START = /^[\p{L}\p{N}]/u
+const NO_SPACES = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Thai}]/u
+export function brokenWords(lines: ReadonlyArray<{ text: string }>): number {
+  let n = 0
+  for (let i = 1; i < lines.length; i++) {
+    const a = lines[i - 1].text
+    const b = lines[i].text
+    if (WORD_END.test(a) && WORD_START.test(b) && !NO_SPACES.test(a.slice(-1)) && !NO_SPACES.test(b[0])) n++
+  }
+  return n
 }
 
 /** The bottom of what a node paints, in its own coordinates. */
@@ -193,7 +210,7 @@ export function fillLayout(def: BlockDefinition, props: Record<string, unknown>,
       const up = shiftTypeContext(ctx, n, LADDER)
       const t = lay({ ...up, tokens: { ...up.tokens, filling: true } })
       const ts = stats(t, W, H)
-      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts, DEFAULT_FILL_FAMILIES.has(def.family)) || loud(ts) > loud(s)) continue
+      if (!ts.whole || ts.chars < s.chars || ts.lines > 2 * s.lines + 1 || ts.maxSize > title || rewraps(s, ts, DEFAULT_FILL_FAMILIES.has(def.family)) || loud(ts) > loud(s) || ts.broken > s.broken) continue
       if (bottomOf(t) <= H * FILL_TYPE_SHARE) roomy = t
       else if (!any && n <= 2) any = t
     }
@@ -236,7 +253,7 @@ export function fillPoster(ctx: LayoutContext, build: (c: LayoutContext, grow: n
     const up = shiftTypeContext(ctx, n, POSTER_LADDER)
     const t = build(up, 0)
     const ts = stats(t, W, Number.MAX_SAFE_INTEGER)
-    if (t.box.height <= H * FILL_TYPE_SHARE && ts.whole && ts.lines <= 2 * base.lines + 1 && !rewraps(base, ts) && loud(ts) <= loud(base)) {
+    if (t.box.height <= H * FILL_TYPE_SHARE && ts.whole && ts.lines <= 2 * base.lines + 1 && !rewraps(base, ts) && loud(ts) <= loud(base) && ts.broken <= base.broken) {
       c = up
       node = t
       break
