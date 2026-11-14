@@ -95,4 +95,21 @@ describe('render treatment', () => {
     const plain: LayoutNode = { ...text, lines: [{ ...text.lines[0], runs: [{ text: 'Tree is a graph' }] }] } as LayoutNode
     expect(treatTree(plain, { emphasis: 'highlighter' }, 'k')).toBe(plain)
   })
+
+  it('S24-k: a mark after a bold run starts where the laid-out text does (bold runs measured bold)', () => {
+    const { editorMetrics } = require('./layout/measure')
+    const style = { family: 'Inter', size: 48, lineHeight: 1.2, letterSpacing: 0, color: '#111111' }
+    const runs = [{ text: 'Xưởng: ' }, { text: '2 máy xát, 64', bold: true }, { text: ', thêm ' }, { text: 'máy sấy 6 tấn/mẻ', bold: true }]
+    const laid = editorMetrics({ runs }, style)
+    const text: LayoutNode = { k: 'text', box: { x: 0, y: 0, width: 1800, height: 60 }, lines: laid.lines, style }
+    const out = treatTree(text, { emphasis: 'box' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    const marks = out.children.filter((c) => c.part === 'highlight')
+    expect(marks).toHaveLength(2)
+    // where the second bold run really starts: the width of everything before it, as the layout measured it
+    const before = editorMetrics({ runs: runs.slice(0, 3) }, style).width
+    const pad = 48 * 0.12
+    expect(Math.abs(marks[1].box.x + 2 * pad - before)).toBeLessThan(4)
+    const wBold = editorMetrics({ runs: [runs[3]] }, style).width
+    expect(Math.abs(marks[1].box.width - 4 * pad - wBold)).toBeLessThan(4)
+  })
 })

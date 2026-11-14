@@ -226,7 +226,9 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment,
     let x = 0
     const top = line.top ?? i * lh
     for (const run of line.runs ?? []) {
-      const w = editorMetrics(run.text, node.style).width * (node.style.scale ?? 1)
+      // a bold run is measured bold (S24-k, T34: measured at the regular weight, each mark was narrower than its words
+      // and every mark after a bold run sat further left — "máy sấy 6 tấn/mẻ" boxed half a word early)
+      const w = editorMetrics({ runs: [{ text: run.text, ...(run.bold ? { bold: true } : {}) }] }, node.style).width * (node.style.scale ?? 1)
       if (run.bold && run.text.trim()) {
         const pad = fs * 0.12
         const s2 = seed + 31 * k++
