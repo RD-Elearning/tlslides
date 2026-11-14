@@ -17,6 +17,13 @@ describe('S25 swatches', () => {
     expect(chips[0].stroke).toBeUndefined()
     expect(chips[0].fill.color).not.toBe(chips[1].fill.color)
   })
+  it('a chip with a hex value shows that colour, whatever its tone (mam: Warm Cream was painted ochre)', () => {
+    const t = layoutOf(tlsDSwatches, { swatches: [{ name: 'Warm Cream', value: '#FFF8EC', tone: 'category:2' }, { name: 'Ink', value: '#2a1', tone: 'category:4' }, { name: 'Pantone', value: 'Pantone 342 C', tone: 'category:0' }] }, { width: 1400, height: 520 })
+    const chips = absoluteLeaves(t).filter((l) => /^chip\[/.test(l.part ?? '')).map((l) => l.node as any)
+    expect(chips.map((c) => c.fill.color).slice(0, 2)).toEqual(['#fff8ec', '#22aa11'])
+    expect(chips[2].fill.color).not.toBe('#fff8ec') // not a hex: the category tone
+    expect(chips[2].stroke).toBeUndefined()
+  })
   it('five named colours in a wide box: one row, every name and value whole, no overlap', () => {
     const t = layoutOf(tlsDSwatches, { swatches: five }, { width: 1728, height: 600 })
     const texts = absoluteLeaves(t).filter((l) => l.k === 'text')

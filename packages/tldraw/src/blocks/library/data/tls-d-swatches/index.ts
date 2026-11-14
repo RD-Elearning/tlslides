@@ -1,13 +1,23 @@
 /**
  * tls.d.swatches — spro sprint 2026-11c S25 (T17, lookbook s4 / mam s5): a colour palette as chips, each with its name,
- * the value as the document writes it and an optional use. A chip's colour is a `category:<n>` tone of the deck (S21-j:
- * the document's named colours, checked against the source) — the block holds no literal colour, so it cannot show a
- * colour the document does not have; a chip without a tone is drawn as an outline, never a guessed fill.
+ * the value as the document writes it and an optional use. A chip shows its own value when that is a hex colour (S29
+ * smoke, mam s05/s06: the deck's categorical palette held 2 document colours and 5 derived ones, so "Warm Cream
+ * #FFF8EC" was painted ochre and "Ink #24211F" green — a swatch exists to show the document's colour; spro checks the
+ * hex against the document). Otherwise its `category:<n>` tone of the deck (S21-j); with neither, an outline, never a
+ * guessed fill.
  * One row up to five, two rows past that; the text type is the largest tier at which every text is whole.
  */
 import type { BlockDefinition, BlockSchema, CapacityReport, LayoutContext, LayoutNode, MotionRecipe, Size, TypeToken } from '../../../types'
 import { capacityOf, emptyState, fitTier, lineH, linesNeeded, mutedStyle, objs, placeLines, root, str, style } from '../../diagram/_kit'
 import { slot } from '../../diagram/_motion'
+
+/** `#RGB` / `#RRGGBB` (as the document writes it) → `#rrggbb`; anything else (rgb(…), Pantone) → undefined. */
+export function hexOf(value: string): string | undefined {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value.trim())
+  if (!m) return undefined
+  const h = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1]
+  return `#${h.toLowerCase()}`
+}
 import { categoryColor } from '../../text/_engine/color'
 import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 
@@ -103,7 +113,7 @@ export function layout(props: SwatchesProps, ctx: LayoutContext): LayoutNode {
     const c = i % cols
     const x = c * (colW + GAP)
     const y = r * (rowH + GAP) + Math.max(0, (rowH - blockH) / 2)
-    const fill = categoryColor(ctx, it.tone)
+    const fill = hexOf(it.value) ?? categoryColor(ctx, it.tone)
     const chipW = shape === 'round' ? Math.min(colW, chipH) : colW
     const chipX = shape === 'round' ? x + (colW - chipW) / 2 : x
     const kids: LayoutNode[] = [
