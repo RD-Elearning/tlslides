@@ -81,7 +81,8 @@ function formatValueEn(value: number, format: ValueFormat | string | undefined, 
       return t(value)
     }
     case 'percent':
-      return `${value.toFixed(1)}%`
+      // ".0" dropped as in compact: a document's "38%" stays 38%, not an invented "38.0%" (c0, clinic s3)
+      return `${value.toFixed(1).replace(/\.0$/, '')}%`
     case 'currency':
       return `${opts.currency ?? '$'}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
     default:

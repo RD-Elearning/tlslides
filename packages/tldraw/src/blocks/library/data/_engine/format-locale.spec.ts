@@ -48,5 +48,8 @@ describe('number formatting by deck locale', () => {
     // bare digits stay a number, formatted in the deck's language
     expect(formatValue('4200000', 'compact', { locale: 'vi' })).toBe('4,2 triệu')
     expect(formatValue(' 64 ', undefined, { locale: 'vi' })).toBe('64')
+    // percent keeps the precision it was given
+    expect(formatValue(38, 'percent', { locale: 'vi' })).toBe('38%')
+    expect(formatValue(23.5, 'percent', { locale: 'vi' })).toBe('23,5%')
   })
 })
