@@ -61,6 +61,7 @@ import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
 import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
+import { cutWordsIn } from './layout/words'
 import {
   collectPaintedLeaves,
   measureBlock,
@@ -95,6 +96,8 @@ export type LayoutFindingCode =
   | 'text/shrunk'
   // enhance: a block cut its text to fit; a chart drew its empty state
   | 'text/truncated'
+  // S24-b: a line end that cuts a word in two (`Delivera|bles`)
+  | 'text/cut-word'
   | 'data/empty'
   | 'capacity/exceeded'
   // LO5b composition hints (no geometry error; help an LLM compose without a screenshot).
@@ -192,6 +195,8 @@ export interface BlockReport {
   /** How far painted content leaves the box (0 = inside). */
   contentOverflow: { dx: number; dy: number }
   text: TextLeafReport[]
+  /** S24-b: line ends that cut a word in two at the final box (`layout/words.ts`); absent = none. */
+  cutWords?: number
   /** `def.capacity()` at the final box, when the block defines it. */
   capacity?: CapacityReport
   confidence: MeasureConfidence
@@ -643,6 +648,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
 
     const confidence: MeasureConfidence = failed ? 'low' : measure.confidence
     const reason = failed ? `layout threw: ${failed}` : measure.reason
+    const cutWords = root ? cutWordsIn(root) : 0
     blocks.push({
       ...base,
       natural: measure.natural,
@@ -652,6 +658,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       ...(p.block.type === 'tls.m.decoration' && (props as { shape?: unknown }).shape === 'icon' ? { lineInk: true } : {}),
       contentOverflow,
       text,
+      ...(cutWords > 0 ? { cutWords } : {}),
       ...(capacity ? { capacity } : {}),
       confidence,
       ...(reason ? { reason } : {}),
@@ -1275,6 +1282,16 @@ function blockFindings(
       blockIds: [b.id],
       message: `${b.id} cut ${cut.length === 1 ? `\`${textName(cut[0])}\`` : `${cut.length} labels`} to fit (an ellipsis or dropped lines).`,
       fix: `shorten ${cut.map(textName).slice(0, 4).join(', ')} or give ${b.id} more room`,
+    })
+  }
+  // S24-b: a word split across two lines reads as two broken words
+  if ((b.cutWords ?? 0) > 0) {
+    out.push({
+      code: 'text/cut-word',
+      severity: 'warning',
+      blockIds: [b.id],
+      message: `${b.id} cuts ${b.cutWords === 1 ? 'a word' : `${b.cutWords} words`} across a line end: the column is narrower than the word.`,
+      fix: `give ${b.id} fewer columns or more width, or use a shorter word`,
     })
   }
   // enhance: a chart with no usable data draws "No data"
