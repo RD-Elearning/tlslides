@@ -16,6 +16,22 @@ import { collectPaintedLeaves, paintedBounds } from '../../../layout/measure-blo
 import type { BlockSpec } from '../../../types'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
+  return build(props, ctx).node
+}
+
+/**
+ * S24 (sprint 2026-11c): the card's natural height — what `hugBottom` paints — for a content-sized
+ * container (`tls.l.stack` / `tls.l.row` `sizing: 'content'`). Without it the container read the
+ * root box, which keeps the cell it was given: six one-line token cards in a stack measured 732
+ * each and were laid 758 units apart, five of them off the slide (MĂM p1 s05). A card that keeps
+ * its box (a composite's, a chart inside, `style.align`) still measures its box.
+ */
+export function intrinsicSize(props: CardProps, ctx: LayoutContext): { width: number; height: number } {
+  const { hug } = build(props, ctx)
+  return { width: ctx.box.width, height: hug ?? ctx.box.height }
+}
+
+function build(props: CardProps, ctx: LayoutContext): { node: LayoutNode; hug?: number } {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
   const padding = ctx.tokens.space[paddingToken] ?? ctx.tokens.space.md
   const children = props.children ?? []
@@ -71,13 +87,16 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   const bg = hug !== undefined ? containerSurface(ctx, { x: 0, y: 0, width: W, height: hug }, surfaceFill, 'background', !(explicit || roleSurface)).nodes : background
 
   return {
-    k: 'group',
-    box: outerBox,
-    part: 'root',
-    children: [
-      ...bg,
-      ...childNodes,
-    ],
+    node: {
+      k: 'group',
+      box: outerBox,
+      part: 'root',
+      children: [
+        ...bg,
+        ...childNodes,
+      ],
+    },
+    ...(hug !== undefined ? { hug } : {}),
   }
 }
 
