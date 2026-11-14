@@ -35,7 +35,7 @@ export const schema: BlockSchema = {
         fields: {
           label: { type: { kind: 'text', maxChars: 16 }, required: true, role: 'content', label: 'Day' },
           title: { type: { kind: 'text', maxChars: 48 }, required: true, role: 'content', label: 'Leg' },
-          meta: { type: { kind: 'text', maxChars: 32 }, role: 'content', label: 'Meta', help: 'Distance, hours or the night\'s stay.' },
+          meta: { type: { kind: 'text', maxChars: 32 }, role: 'content', label: 'Meta', help: 'One short fact: "160 km", "5 h drive". The places go in stops.' },
           stops: { type: { kind: 'list', of: { kind: 'text', maxChars: 48 }, max: STOPS_MAX }, role: 'content', label: 'Stops' },
         },
       },
@@ -45,7 +45,7 @@ export const schema: BlockSchema = {
     role: 'content',
     label: 'Days',
     required: true,
-    guidance: 'One per day, in order; 2-4 short stops each.',
+    guidance: 'One per day, in order; stops = the places, one per item (2-4).',
   },
 }
 
@@ -107,7 +107,7 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
     return (
       PAD + pillH + 14 +
       linesNeeded(ctx, d.title, ts, inner) * lineH(ts) +
-      (d.meta ? 6 + lineH(ms) : 0) +
+      (d.meta ? 6 + linesNeeded(ctx, d.meta, ms, inner) * lineH(ms) : 0) +
       (d.stops.length ? 18 + d.stops.reduce((a, s) => a + linesNeeded(ctx, s, ss, stopW) * lineH(ss) + 8, 0) : 0) +
       PAD
     )
@@ -117,7 +117,7 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
     const ss = style(ctx, t[1])
     const ms = mutedStyle(ctx, t[1])
     const stopW = inner - dot(ss) - 12
-    return items.every((d) => linesNeeded(ctx, d.title, ts, inner) <= 3 && (!d.meta || linesNeeded(ctx, d.meta, ms, inner) <= 1) && d.stops.every((s) => linesNeeded(ctx, s, ss, stopW) <= 3))
+    return items.every((d) => linesNeeded(ctx, d.title, ts, inner) <= 3 && (!d.meta || linesNeeded(ctx, d.meta, ms, inner) <= 2) && d.stops.every((s) => linesNeeded(ctx, s, ss, stopW) <= 3))
   }
   const tier = fitTier(TIERS, (t) => t === TIERS[TIERS.length - 1] || (sized && whole(t) && Math.max(...items.map((d) => contentH(t, d))) <= rowH), ctx)
   const titleS = style(ctx, tier[0])
@@ -149,7 +149,7 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
     kids.push(...tl.nodes)
     ty += tl.height
     if (d.meta) {
-      const m = placeLines(ctx, d.meta, metaS, { x: x + PAD, y: ty + 6, width: inner }, 'start', 1, `meta[${i}]`)
+      const m = placeLines(ctx, d.meta, metaS, { x: x + PAD, y: ty + 6, width: inner }, 'start', 2, `meta[${i}]`)
       kids.push(...m.nodes)
       ty += m.height + 6
     }

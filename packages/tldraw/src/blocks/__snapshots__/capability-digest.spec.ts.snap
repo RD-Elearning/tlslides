@@ -3823,7 +3823,7 @@ A day-by-day plan: one card per day with its leg, a fact and the stops. _(family
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`days\` | yes | list of object (label, title, meta, stops) (2–6 items) | One per day, in order; 2-4 short stops each. |
+| \`days\` | yes | list of object (label, title, meta, stops) (2–6 items) | One per day, in order; stops = the places, one per item (2-4). |
 
 \`\`\`json
 {
@@ -9073,6 +9073,6 @@ also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.ornament, tls.m.patter
 
 ## Icons
 
-Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic (+1118 by meaning)
+Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic (+1202 by meaning)
 "
 `;

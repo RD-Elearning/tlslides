@@ -33,3 +33,15 @@ describe('S25 itinerary', () => {
     expect(new Set(rectsOf(t, /^card\[\d+\]$/).map((r) => Math.round(r.y))).size).toBe(2)
   })
 })
+
+it('g1 ha-giang s04: a long meta line and long stops at 1728 x 756 stay whole', () => {
+  const g1 = [
+    { meta: '160 km · cột mốc số 0, dốc Bắc Sum, núi đôi Cô Tiên', label: 'Ngày 1', stops: ['Ngủ homestay người Dao ở Nặm Đăm'], title: 'Hà Nội → Hà Giang → Quản Bạ' },
+    { meta: '110 km · rừng thông Yên Minh, dốc Thẩm Mã, phố Cáo', label: 'Ngày 2', stops: ['Dinh thự họ Vương, cột cờ Lũng Cú, phố cổ Đồng Văn về đêm'], title: 'Quản Bạ → Yên Minh → Đồng Văn' },
+    { meta: '120 km · đèo Mã Pí Lèng, thuyền sông Nho Quế qua hẻm Tu Sản', label: 'Ngày 3', stops: ['Chợ phiên Mèo Vạc nếu trùng chủ nhật, ngủ ở bản Du Già'], title: 'Đồng Văn → Mã Pí Lèng → Mèo Vạc → Du Già' },
+    { meta: '230 km · tắm thác, bữa trưa cơm lam, về Hà Nội khoảng 21:00', label: 'Ngày 4', stops: ['Mỗi ngày tối đa 5 giờ lái, ít nhất hai điểm dừng dài trên 40 phút'], title: 'Du Già → thác Du Già → Hà Giang → Hà Nội' },
+  ]
+  const t = layoutOf(tlsDItinerary, { days: g1 }, { width: 1728, height: 640 })
+  const texts = absoluteLeaves(t).filter((l) => l.k === 'text')
+  expect(texts.flatMap((l) => (l.node as any).lines.map((x: any) => x.text)).join(' ')).not.toContain('…')
+})
