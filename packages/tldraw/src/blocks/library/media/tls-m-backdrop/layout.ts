@@ -15,6 +15,8 @@ import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import { hexToRgb, mixHex, relativeLuminance } from '../../../color-math'
 import { enumOf, side } from '../_kit'
 import { grainDataUri, meshNodes, rgba } from '../tls-m-pattern/layout'
+import { getIcon, iconStroke } from '../../../icons'
+import { scaleIconPath } from '../../../icons/scale-path'
 import { BACKDROP_KINDS, BACKDROP_TONES, type BackdropKind, type BackdropProps } from './schema'
 
 type Ink = 'accent' | 'accent2' | 'text' | 'shade'
@@ -36,6 +38,14 @@ export const INKS: Readonly<Record<BackdropKind, ReadonlyArray<{ ink: Ink; soft:
   frame: [{ ink: 'text', soft: 0.3, medium: 0.45 }],
   spotlight: [{ ink: 'shade', soft: 0.1, medium: 0.18 }],
   dots: [{ ink: 'accent', soft: 0.14, medium: 0.24 }],
+  // S20-f: 5-9 % on a calm ground; `toneFactor` lifts it to 10-16 % on deep / accent grounds
+  'icon-field': [{ ink: 'accent', soft: 0.07, medium: 0.11 }],
+}
+
+/** S20-f: a kind whose marks are stronger on a deep / accent ground (icons vanish at a calm alpha there). */
+export function toneFactor(kind: BackdropKind, tone: string): number {
+  if (tone === 'quiet') return QUIET
+  return kind === 'icon-field' && (tone === 'deep' || tone === 'accent') ? 1.5 : 1
 }
 
 /** A kind whose marks are too dense for text to sit on directly (a panel goes under it). */
@@ -89,7 +99,7 @@ export function backdropColors(ctx: LayoutContext): BackdropColors {
 export function backdropEnvelope(kind: BackdropKind, intensity: 'soft' | 'medium', tone: string, colors: BackdropColors): { min: number; max: number } {
   const lum = (hex: string) => relativeLuminance(hexToRgb(hex))
   const vals = [lum(colors.ground)]
-  for (const i of INKS[kind]) vals.push(lum(mixHex(colors.ground, colors[i.ink], i[intensity] * (tone === 'quiet' ? QUIET : 1))))
+  for (const i of INKS[kind]) vals.push(lum(mixHex(colors.ground, colors[i.ink], i[intensity] * toneFactor(kind, tone))))
   return { min: Math.min(...vals), max: Math.max(...vals) }
 }
 
@@ -102,8 +112,57 @@ const fillPath = (part: string, W: number, H: number, d: string, color: string):
 const rectFill = (part: string, x: number, y: number, w: number, h: number, fill: Paint): LayoutNode => ({ k: 'rect', part, box: { x, y, width: w, height: h }, fill })
 const dot = (x: number, y: number, r: number) => `M${f(x - r)} ${f(y)}A${f(r)} ${f(r)} 0 1 0 ${f(x + r)} ${f(y)}A${f(r)} ${f(r)} 0 1 0 ${f(x - r)} ${f(y)}Z`
 
+/** S20-f — the cell of the icon field's grid and the icon's side in it (slide units). */
+export const ICON_FIELD_CELL = 200
+const ICON_FIELD_SIDE = 76
+
+/**
+ * S20-f — `icon-field`: the deck's motif icons (2-4 known names) on a brick grid, each cell jittered
+ * and sized by the seed (steps 1 / 0.72), about one cell in four left empty; neighbours in a row and
+ * in a column never repeat an icon. Every icon stays inside the box (the group clips, but a mark cut
+ * by the edge reads as a mistake on a ground).
+ */
+export function iconFieldNodes(icons: readonly string[], W: number, H: number, color: string, seed: number): LayoutNode[] {
+  const defs = icons.map((n) => ({ name: n, def: getIcon(n) })).filter((d) => d.def).slice(0, 4)
+  if (!defs.length) return []
+  const R = rng(seed)
+  const out: LayoutNode[] = []
+  const cols = Math.max(1, Math.round(W / ICON_FIELD_CELL))
+  const rows = Math.max(1, Math.round(H / ICON_FIELD_CELL))
+  const cw = W / cols
+  const ch = H / rows
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const jx = R()
+      const jy = R()
+      const step = R() < 0.4 ? 0.72 : 1
+      const skip = R() < 0.25
+      // a shifted row's last cell would sit across the right edge
+      if (skip || (r % 2 === 1 && c === cols - 1)) continue
+      const side = ICON_FIELD_SIDE * step
+      const shift = r % 2 ? cw / 2 : 0
+      const cx = (c + 0.5) * cw + shift + (jx - 0.5) * cw * 0.3
+      const cy = (r + 0.5) * ch + (jy - 0.5) * ch * 0.3
+      const x = Math.min(W - side, Math.max(0, cx - side / 2))
+      const y = Math.min(H - side, Math.max(0, cy - side / 2))
+      const { name, def } = defs[(c + r) % defs.length]
+      const k = side / 24
+      out.push({
+        k: 'icon',
+        part: `icon[${out.length}]`,
+        box: { x: Math.round(x), y: Math.round(y), width: side, height: side },
+        icon: scaleIconPath(def!.path, k),
+        fill: color,
+        name,
+        ...iconStroke(def, Math.max(1.5, 1.15 * k)),
+      })
+    }
+  }
+  return out
+}
+
 /** The nodes of one kind in a W x H box. Pure; exported for tests. */
-export function backdropNodes(kind: BackdropKind, W: number, H: number, c: BackdropColors, a: (i: number) => number, seed: number): LayoutNode[] {
+export function backdropNodes(kind: BackdropKind, W: number, H: number, c: BackdropColors, a: (i: number) => number, seed: number, icons: readonly string[] = []): LayoutNode[] {
   const R = rng(seed)
   switch (kind) {
     case 'flat':
@@ -267,6 +326,8 @@ export function backdropNodes(kind: BackdropKind, W: number, H: number, c: Backd
         return fillPath(`dots[${band}]`, W, H, d, rgba(c.accent, a(0) * k))
       })
     }
+    case 'icon-field':
+      return iconFieldNodes(icons, W, H, rgba(c.accent, a(0)), seed)
   }
 }
 
@@ -277,13 +338,14 @@ export function layout(props: BackdropProps, ctx: LayoutContext): LayoutNode {
   const tone = enumOf(props.tone, BACKDROP_TONES, 'calm')
   const intensity = enumOf(props.intensity, ['soft', 'medium'] as const, 'soft')
   const seed = typeof props.seed === 'number' && Number.isFinite(props.seed) ? props.seed : 1
-  const k = tone === 'quiet' ? QUIET : 1
+  const k = toneFactor(kind, tone)
   const a = (i: number) => (INKS[kind][i]?.[intensity] ?? 0) * k
+  const icons = Array.isArray(props.icons) ? props.icons.filter((n): n is string => typeof n === 'string') : []
   return {
     k: 'group',
     part: 'backdrop',
     box: { x: 0, y: 0, width: W, height: H },
     clip: true,
-    children: backdropNodes(kind, W, H, backdropColors(ctx), a, seed),
+    children: backdropNodes(kind, W, H, backdropColors(ctx), a, seed, icons),
   }
 }

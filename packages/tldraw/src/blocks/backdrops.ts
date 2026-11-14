@@ -11,12 +11,15 @@
 
 import type { BackdropRole, BlockSpec, Box, DeckSpec, SlideSpec } from './types'
 import { BACKDROP_KINDS } from './library/media/tls-m-backdrop/schema'
+import { hasIcon } from './icons'
 
 export interface ResolvedBackdrop {
   kind: string
   tone: BackdropRole
   intensity: 'soft' | 'medium'
   seed: number
+  /** S20-f — `icon-field`: the deck's motif icons it tiles. */
+  icons?: string[]
 }
 
 /** The style-master block types a deck backdrop replaces. */
@@ -29,20 +32,34 @@ const hash = (s: string) => {
 }
 
 /** The slide's backdrop, or `undefined` when neither the slide nor the deck names one. */
-export function slideBackdrop(deck: Pick<DeckSpec, 'backdrops'>, slide: Pick<SlideSpec, 'id' | 'tone' | 'backdrop'>): ResolvedBackdrop | undefined {
+export function slideBackdrop(deck: Pick<DeckSpec, 'backdrops' | 'motifs'>, slide: Pick<SlideSpec, 'id' | 'tone' | 'backdrop'>): ResolvedBackdrop | undefined {
   const own = slide.backdrop
   const role: BackdropRole = own?.tone ?? (slide.tone === 'deep' ? 'deep' : slide.tone === 'accent' ? 'accent' : 'calm')
   const set = deck.backdrops?.[role]
-  const kind = own?.kind ?? set?.kind
+  let kind = own?.kind ?? set?.kind
   if (!kind || !(BACKDROP_KINDS as readonly string[]).includes(kind)) return undefined
-  return { kind, tone: role, intensity: own?.intensity ?? set?.intensity ?? 'soft', seed: typeof own?.seed === 'number' ? own.seed : hash(slide.id) }
+  const out: ResolvedBackdrop = { kind, tone: role, intensity: own?.intensity ?? set?.intensity ?? 'soft', seed: typeof own?.seed === 'number' ? own.seed : hash(slide.id) }
+  if (kind === 'icon-field') {
+    // S20-f: the field tiles the deck's motif icons; a deck without (known) ones gets the dot field
+    const icons = deckMotifIcons(deck)
+    if (icons.length) out.icons = icons
+    else out.kind = kind = 'dots'
+  }
+  return out
+}
+
+/** S20-g — the deck's motif icons that the engine knows (`DeckSpec.motifs.icons`, at most 4). */
+export function deckMotifIcons(deck: Pick<DeckSpec, 'motifs'>): string[] {
+  const icons = deck.motifs?.icons
+  if (!Array.isArray(icons)) return []
+  return [...new Set(icons.filter((n): n is string => typeof n === 'string' && hasIcon(n)))].slice(0, 4)
 }
 
 /** The full-frame block that draws it (`undefined` for `flat`). */
 export function backdropBlock(b: ResolvedBackdrop | undefined, frame: { width: number; height: number }): { block: BlockSpec; box: Box } | undefined {
   if (!b || b.kind === 'flat') return undefined
   return {
-    block: { id: 'style-backdrop', type: 'tls.m.backdrop', layer: 'backdrop', bleed: true, props: { kind: b.kind, tone: b.tone, intensity: b.intensity, seed: b.seed } } as BlockSpec,
+    block: { id: 'style-backdrop', type: 'tls.m.backdrop', layer: 'backdrop', bleed: true, props: { kind: b.kind, tone: b.tone, intensity: b.intensity, seed: b.seed, ...(b.icons ? { icons: b.icons } : {}) } } as BlockSpec,
     box: { x: 0, y: 0, width: frame.width, height: frame.height },
   }
 }

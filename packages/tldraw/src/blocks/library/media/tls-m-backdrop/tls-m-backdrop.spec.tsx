@@ -23,7 +23,10 @@ import type { DeckSpec, LayoutNode } from '../../../types'
 
 const W = 1920
 const H = 1080
-const lay = (props: Record<string, unknown>) => tlsMBackdrop.layout({ ...(tlsMBackdrop.defaults as object), ...props } as never, ctxNoAssets(W, H))
+const MOTIFS = ['pizza', 'coffee', 'leaf']
+// S20-f: the icon field draws the icons it is given (the deck's motifs)
+const lay = (props: Record<string, unknown>) =>
+  tlsMBackdrop.layout({ ...(tlsMBackdrop.defaults as object), ...(props.kind === 'icon-field' ? { icons: MOTIFS } : {}), ...props } as never, ctxNoAssets(W, H))
 
 standardBlockSuite(tlsMBackdrop, { noCapacity: true })
 
@@ -39,6 +42,7 @@ function drawn(node: LayoutNode, out: Array<{ color: string; alpha: number }> = 
     else node.fill.stops.forEach((s) => push(s.color))
   }
   if ((node.k === 'rect' || node.k === 'path') && node.stroke) push(node.stroke.color)
+  if (node.k === 'icon') push(node.fill)
   return out
 }
 
@@ -130,4 +134,48 @@ test('text straight on a busy backdrop is reported like text on a photo', () => 
   const before = quiet.reduce((n, r) => n + photo(r), 0)
   const after = busy.reduce((n, r) => n + photo(r), 0)
   expect(after).toBeGreaterThan(before)
+})
+
+describe('S20-f icon-field', () => {
+  const icons = (t: LayoutNode): Array<Extract<LayoutNode, { k: 'icon' }>> => (t.k === 'group' ? t.children.flatMap(icons) : t.k === 'icon' ? [t] : [])
+
+  test('tiles only known icons, neighbours in a row differ, unknown names draw nothing', () => {
+    const all = icons(lay({ kind: 'icon-field', icons: ['pizza', 'no-such-icon', 'coffee'], seed: 3 }))
+    expect(all.length).toBeGreaterThan(12)
+    expect(new Set(all.map((i) => i.name))).toEqual(new Set(['pizza', 'coffee']))
+    expect(icons(lay({ kind: 'icon-field', icons: ['no-such-icon'] }))).toHaveLength(0)
+  })
+
+  test('5-9 % on calm, 10-16 % on deep and accent', () => {
+    const alpha = (tone: string, intensity: string) => parseColorAlpha(icons(lay({ kind: 'icon-field', tone, intensity }))[0].fill)!.alpha
+    for (const i of ['soft', 'medium']) {
+      expect(alpha('calm', i)).toBeGreaterThanOrEqual(0.05)
+      expect(alpha('calm', i)).toBeLessThanOrEqual(0.09 + 0.02)
+      for (const t of ['deep', 'accent']) {
+        expect(alpha(t, i)).toBeGreaterThanOrEqual(0.1)
+        expect(alpha(t, i)).toBeLessThanOrEqual(0.17)
+      }
+    }
+  })
+
+  test('seeds differ', () => {
+    expect(JSON.stringify(lay({ kind: 'icon-field', seed: 1 }))).not.toBe(JSON.stringify(lay({ kind: 'icon-field', seed: 2 })))
+  })
+
+  test('the deck set fills it from deck.motifs; a deck without motif icons gets the dot field', () => {
+    const set = { backdrops: { accent: { kind: 'icon-field' } } }
+    expect(slideBackdrop({ ...set, motifs: { icons: ['pizza', 'zzz', 'coffee'] } }, { id: 'a', tone: 'accent' })).toMatchObject({ kind: 'icon-field', icons: ['pizza', 'coffee'] })
+    expect(slideBackdrop(set, { id: 'a', tone: 'accent' })?.kind).toBe('dots')
+    expect(slideBackdrop({ ...set, motifs: { icons: ['zzz'] } }, { id: 'a', tone: 'accent' })?.kind).toBe('dots')
+  })
+
+  test('a deck with motifs: the divider draws the icons, the document keeps motifs for the round trip', () => {
+    const deck: DeckSpec = { ...deckOf('gradient'), backdrops: { accent: { kind: 'icon-field' } }, motifs: { icons: ['pizza', 'coffee'] } }
+    deck.slides = deck.slides.map((s, i) => (i === 0 ? { ...s, tone: 'accent' } : s))
+    const { document } = deckSpecToDocument(deck)
+    expect(document.motifs).toEqual(deck.motifs)
+    const bd = Object.values(document.pages[deck.slides[0].id].shapes).find((sh) => sh.id === `style:backdrop:${deck.slides[0].id}`) as unknown as { props?: { props?: { icons?: string[]; kind?: string } } }
+    expect(JSON.stringify(bd)).toContain('icon-field')
+    expect(JSON.stringify(bd)).toContain('pizza')
+  })
 })

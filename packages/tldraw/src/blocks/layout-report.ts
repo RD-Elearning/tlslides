@@ -965,7 +965,7 @@ export function analyzeDeck(
   const masters = Object.fromEntries(styleMasters(style, deck.motif, deck.motifZone).map((m) => [m.name, m]))
   const withMaster = (s: SlideSpec): SlideSpec => {
     // S13-b: the slide's backdrop goes under everything and replaces the master's texture blocks
-    const backdrop = slideBackdrop({ backdrops: deck.backdrops ?? style?.backdrops }, s)
+    const backdrop = slideBackdrop({ backdrops: deck.backdrops ?? style?.backdrops, motifs: deck.motifs }, s)
     const drawn = backdropBlock(backdrop, frame)
     const under = drawn ? [{ block: { ...drawn.block, id: `${STYLE_MASTER_PREFIX}backdrop` }, box: drawn.box }] : []
     const id = styleMasterFor(style, s)

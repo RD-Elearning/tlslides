@@ -6921,10 +6921,11 @@ The slide ground: soft glows, aurora bands, a split field, a diagonal band, ring
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`kind\` | no | enum: flat \\\\| mesh \\\\| aurora \\\\| split \\\\| diagonal \\\\| arcs \\\\| topo \\\\| halftone \\\\| blueprint \\\\| paper \\\\| ruled \\\\| slate \\\\| waves \\\\| frame \\\\| spotlight \\\\| dots | The ground under the slide: soft glows (mesh, aurora), fields (split, diagonal), line work (arcs, topo, blueprint, ruled, frame), textures (paper, slate, halftone, dots), waves or a spotlight. |
+| \`kind\` | no | enum: flat \\\\| mesh \\\\| aurora \\\\| split \\\\| diagonal \\\\| arcs \\\\| topo \\\\| halftone \\\\| blueprint \\\\| paper \\\\| ruled \\\\| slate \\\\| waves \\\\| frame \\\\| spotlight \\\\| dots \\\\| icon-field | The ground under the slide: soft glows (mesh, aurora), fields (split, diagonal), line work (arcs, topo, blueprint, ruled, frame), textures (paper, slate, halftone, dots), waves or a spotlight. |
 | \`tone\` | no | enum: calm \\\\| deep \\\\| accent \\\\| quiet | quiet = the plainest version (dense slides). |
 | \`intensity\` | no | enum: soft \\\\| medium |  |
 | \`seed\` | no | number (min 0, max 9999) | Varies the drawn marks (topo, paper fibres, slate smudges). |
+| \`icons\` | no | list of text (max 40 chars) (0–4 items) | icon-field: 2-4 icon names tiled across the ground. |
 
 \`\`\`json
 {

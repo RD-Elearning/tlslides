@@ -16,6 +16,8 @@ import { analyzeDeck } from './layout-report'
 import { resolveDeckFrame } from './deck-document'
 import { getDeckStyle, styleMasterFor, styleMasters } from './styles'
 import { splitBox } from './layout/box-model'
+import { deckMotifIcons } from './backdrops'
+import { placeScenes } from './scenes'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, SlideSpec } from './types'
 
 /** The id of the placed signature motif. */
@@ -59,8 +61,25 @@ export function motifBox(own: Box, text: Box[], frame: { width: number; height: 
   return best
 }
 
-/** `deck` with its signature motif placed on every cover/section page (only under `motifZone: 'auto'`). */
+/**
+ * S20-g — the signature leaf drawn as the deck's motif icon `icon` (a `tls.m.decoration` signature
+ * becomes `shape: icon` in its own box, tone and opacity; a nested leaf is rewritten where it sits).
+ */
+export function withMotifIcon(block: BlockSpec, icon: string): BlockSpec {
+  if (block.type === 'tls.m.decoration') return { ...block, props: { ...block.props, shape: 'icon', icon, rotation: 0 } }
+  const children = (block.props as { children?: unknown })?.children
+  return Array.isArray(children) ? { ...block, props: { ...block.props, children: children.map((c) => withMotifIcon(c as BlockSpec, icon)) } } : block
+}
+
+/** `deck` with its signature motif placed on every cover/section page (only under `motifZone: 'auto'`).
+ *  S20-g: with `deck.motifs.icons`, the signature is the deck's motif icon, rotating by page so
+ *  neighbouring frames differ. */
 export function placeDeckMotifs(deck: DeckSpec): DeckSpec {
+  // S26-a: the frames' scenes are placed with the motif (a page with a scene takes no signature)
+  return placeScenes(placeSignatures(deck))
+}
+
+function placeSignatures(deck: DeckSpec): DeckSpec {
   if (deck.motifZone !== 'auto') return deck
   const style = getDeckStyle(deck.style)
   if (!style) return deck
@@ -72,15 +91,22 @@ export function placeDeckMotifs(deck: DeckSpec): DeckSpec {
   }
   if (!signatures.size) return deck
   let changed = false
+  const icons = deckMotifIcons(deck)
+  let page = 0
   const slides = deck.slides.map((slide): SlideSpec => {
     const id = styleMasterFor(style, slide)
     const sig = id ? signatures.get(id) : undefined
-    if (!sig || slide.free?.some((f) => f.block?.id === DECK_MOTIF_ID)) return slide
+    if (!sig) return slide
+    if (slide.scene && slide.scene.id !== 'type-only') return slide
+    // the rotation counts every signature page, placed before or not, so an edited deck keeps it
+    const n = page++
+    if (slide.free?.some((f) => f.block?.id === DECK_MOTIF_ID)) return slide
     // the page as the masters draw it under `auto` (no signature): where its text is
     const report = analyzeDeck({ ...deck, slides: [slide] })[0]
     const text = report.blocks.filter((b) => b.layer !== 'backdrop').flatMap((b) => b.text.map((t) => t.painted))
+    const leaf = icons.length ? withMotifIcon(sig.leaf, icons[n % icons.length]) : sig.leaf
     const placed: PlacedBlock = {
-      block: { ...sig.leaf, id: DECK_MOTIF_ID, layer: 'backdrop' },
+      block: { ...leaf, id: DECK_MOTIF_ID, layer: 'backdrop' },
       box: motifBox(sig.box, text, frame),
     }
     changed = true

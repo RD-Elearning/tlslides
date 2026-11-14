@@ -20,6 +20,8 @@ export const schema: BlockSchema = {
   opacity: { type: { kind: 'enum', values: ['soft', 'medium', 'strong'] }, role: 'option', label: 'Opacity', help: 'Ignored for tone alt, which is already quiet.' },
   rotation: { type: { kind: 'number', min: 0, max: 359 }, role: 'option', label: 'Rotation', help: 'Degrees.' },
   seed: { type: { kind: 'number', min: 0, max: 9999 }, role: 'option', label: 'Seed', help: 'Same seed, same shape (blob, wave).' },
+  // S20-e ghost: the icon motif drawn larger than its box and cut by it (the box sits on a slide edge)
+  crop: { type: { kind: 'enum', values: ['none', 'top-left', 'top-right', 'bottom-left', 'bottom-right'] }, role: 'option', label: 'Crop', help: 'shape icon: the icon 1.5 x the box, cut by the box on the named corner side (a ghost mark at a slide corner).', indexValues: ['none'] },
   // vivid V2: the loop the decoration plays once the slide is built (presentation only)
   ambient: {
     type: { kind: 'enum', values: ['auto', 'none', 'float', 'drift', 'spin', 'sway', 'pulse', 'twinkle'] },
@@ -40,6 +42,7 @@ export interface DecorationProps extends Record<string, unknown> {
   rotation?: number
   seed?: number
   icon?: string
+  crop?: 'none' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
   ambient?: 'auto' | 'none' | 'float' | 'drift' | 'spin' | 'sway' | 'pulse' | 'twinkle'
 }
 

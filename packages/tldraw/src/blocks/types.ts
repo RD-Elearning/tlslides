@@ -1392,6 +1392,9 @@ export interface SlideSpec {
   tone?: SlideTone
   /** S13-b — this slide's backdrop over the deck's set (`DeckSpec.backdrops`). */
   backdrop?: SlideBackdrop
+  /** spro sprint 2026-11c S26-a — the frame's scene (`scenes.ts`): art from the deck's motif icons placed
+   *  clear of the page's text (`placeScenes`, run with `placeDeckMotifs`). Absent = no scene. */
+  scene?: { id: string; seed?: number }
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -1535,6 +1538,15 @@ export interface DeckSpec {
    *  (`deep` / `accent`, else `calm`; `quiet` when the slide's `backdrop.tone` says so) as a full-bleed
    *  `tls.m.backdrop` under everything, in place of the style master's own texture. */
   backdrops?: DeckBackdrops
+  /** spro sprint 2026-11c S20-g — the deck's motifs from its theme: `icons` (2-4 built-in icon names, the
+   *  subject's objects) are tiled by the `icon-field` backdrop and drawn in a style's signature slot on
+   *  cover and section pages (`placeDeckMotifs`, rotating by page). Absent = today's drawing. */
+  motifs?: DeckMotifs
+}
+
+/** S20-g — `DeckSpec.motifs`. */
+export interface DeckMotifs {
+  icons?: string[]
 }
 
 /** S13-b — a backdrop role. */

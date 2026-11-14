@@ -293,20 +293,25 @@ const WATERMARK_OPACITY = { soft: 0.1, medium: 0.16, strong: 0.22 } as const
  * lighter than an inline icon (a big glyph at 1.5 units per 24 reads as a logo, not a motif). An
  * unknown name draws the fallback glyph (lint reports it). The `shape` part loops as one piece.
  */
-function iconMotif(name: unknown, W: number, H: number, color: string, alpha: number | undefined): LayoutNode {
+function iconMotif(name: unknown, W: number, H: number, color: string, alpha: number | undefined, crop = 'none'): LayoutNode {
   const def = (typeof name === 'string' ? getIcon(name) : undefined) ?? FALLBACK_ICON
-  const S = Math.max(1, Math.min(W, H) * 0.84)
+  // S20-e ghost: 1.5 x the box's short side, pushed past the box on the cropped corner (the group clips)
+  const cut = crop !== 'none'
+  const S = Math.max(1, Math.min(W, H) * (cut ? 1.5 : 0.84))
   const k = S / 24
+  // the glyph runs 30 % past the box on the cropped sides
+  const x = !cut ? (W - S) / 2 : crop.endsWith('left') ? -0.3 * S : W - 0.7 * S
+  const y = !cut ? (H - S) / 2 : crop.startsWith('top') ? -0.3 * S : H - 0.7 * S
   const node: LayoutNode = {
     k: 'icon',
     part: 'shape',
-    box: { x: (W - S) / 2, y: (H - S) / 2, width: S, height: S },
+    box: { x, y, width: S, height: S },
     icon: scaleIconPath(def.path, k),
     fill: color,
     ...(typeof name === 'string' && def !== FALLBACK_ICON ? { name } : {}),
     ...iconStroke(def, Math.max(1.5, 1.15 * k)),
   }
-  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
+  return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(cut ? { clip: true } : {}), ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
 }
 
 export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
@@ -335,7 +340,11 @@ export function layout(props: DecorationProps, ctx: LayoutContext): LayoutNode {
   } else if (shape === 'wave') d = wavePath(W, H, quarter, seed)
   else if (shape === 'corner') d = cornerPath(W, H, quarter)
   else if (shape === 'icon')
-    return iconMotif(props.icon, W, H, color, tone === 'alt' ? undefined : (Math.min(W, H) * 0.84 >= WATERMARK_SIDE ? WATERMARK_OPACITY : ICON_OPACITY)[op])
+    return iconMotif(
+      props.icon, W, H, color,
+      tone === 'alt' ? undefined : (Math.min(W, H) * 0.84 >= WATERMARK_SIDE ? WATERMARK_OPACITY : ICON_OPACITY)[op],
+      enumOf(props.crop, ['none', 'top-left', 'top-right', 'bottom-left', 'bottom-right'] as const, 'none')
+    )
   else if (shape === 'orb') return orbNode(W, H, color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))
   // enhance S4: isometric solids (lit, base, shaded faces + an ink outline), as solid as an orb
   else if ((SOLID_SHAPES as readonly string[]).includes(shape)) return solidNode(shape as SolidShape, W, H, color, ctx.resolveColor('text').color, tone === 'alt' ? undefined : Math.max(0.85, OPACITY[op]))

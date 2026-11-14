@@ -199,7 +199,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
     // S13-b: the slide's backdrop (the deck's set by role, or its own) replaces the master's texture
-    const backdrop = slideBackdrop({ backdrops: spec.backdrops ?? style?.backdrops }, slideSpec)
+    const backdrop = slideBackdrop({ backdrops: spec.backdrops ?? style?.backdrops, motifs: spec.motifs }, slideSpec)
     const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone, backdrop !== undefined)
     const drawn = backdropBlock(backdrop, frame)
     if (drawn) {
@@ -246,6 +246,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.look !== undefined) page.look = slideSpec.look
     if (slideSpec.tone !== undefined) page.tone = slideSpec.tone
     if (slideSpec.backdrop !== undefined) page.backdrop = slideSpec.backdrop
+    if (slideSpec.scene !== undefined) page.scene = slideSpec.scene
     if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
     if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page
@@ -281,6 +282,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (spec.motionPersonality !== undefined) document.motionPersonality = spec.motionPersonality
   if (spec.ambient !== undefined) document.ambient = spec.ambient
   if (spec.backdrops !== undefined) document.backdrops = spec.backdrops
+  if (spec.motifs !== undefined) document.motifs = spec.motifs
 
   return { document, findings }
 }
