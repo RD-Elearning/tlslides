@@ -16,6 +16,7 @@
 
 import type { CapacityReport, LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import { isShown } from '../../../schema-helpers'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 import { iconLeaf } from '../../text/_engine/icon'
 import type { TimelineProps } from './schema'
 import { TIMELINE_MAX } from './schema'
@@ -65,7 +66,7 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   if (N < 1) return emptyState(ctx, 'No events')
 
   const c = chartColors(ctx)
-  const mode: Mode = { vertical: enumOf(props.axis, ['horizontal', 'vertical'] as const, 'horizontal') === 'vertical', alternate: props.alternate === true }
+  let mode: Mode = { vertical: enumOf(props.axis, ['horizontal', 'vertical'] as const, 'horizontal') === 'vertical', alternate: props.alternate === true }
   const nodeStyle = enumOf(props.nodeStyle, ['dot', 'icon', 'number'] as const, 'dot')
   const showText = isShown(props, 'showText')
   const rawNow = numOrNull(props.nowIndex)
@@ -73,7 +74,20 @@ export function layout(props: TimelineProps, ctx: LayoutContext): LayoutNode {
   const past = (i: number) => now < 0 || i <= now
 
   const D0 = nodeStyle === 'dot' ? 18 : nodeStyle === 'icon' ? 44 : 40
-  const tier = fitTier(TIERS, (t) => fits(t, events, showText, mode, D0, W, H, ctx), ctx)
+  let tier = fitTier(TIERS, (t) => fits(t, events, showText, mode, D0, W, H, ctx), ctx)
+  // S24-c: a row of four or more events in a tall box alternates above and below the axis when that gives every card a
+  // larger type (each card is two slots wide): a 6-event timeline kept caption titles over an empty half (corpus
+  // 41c5a53f s9, 8f013536 s19)
+  // only in the box the slide gives: a measuring pass (huge probe height) would pick the taller two-sided row and ask
+  // the region for more height than it has (41c5a53f s09: timeline + callout overflowed by 64)
+  if (!mode.vertical && !mode.alternate && props.alternate === undefined && N >= 4 && !ctx.tokens.measuring && H < DEFAULT_PROBE_HEIGHT) {
+    const alt = { ...mode, alternate: true }
+    const tierAlt = fitTier(TIERS, (t) => fits(t, events, showText, alt, D0, W, H, ctx), ctx)
+    if (TIERS.indexOf(tierAlt) < TIERS.indexOf(tier) && fits(tierAlt, events, showText, alt, D0, W, H, ctx)) {
+      mode = alt
+      tier = tierAlt
+    }
+  }
   const dateS = style(ctx, tier.date, c.accent)
   const titleS = style(ctx, tier.title, c.text)
   const textS = mutedStyle(ctx, tier.text)

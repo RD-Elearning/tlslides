@@ -25,6 +25,8 @@ export interface CellsPoster {
   cellSize?: 'body' | 'subheading' | 'title'
   /** Footer band height (feedback and controls). */
   footer: number
+  /** S24-h (K7): a single column no wider than this, centred (the timer's clock is a chip, not a full-width bar). */
+  cellMaxW?: number
   /** S06: every cell this many units taller (a filled poster, `fillPoster`). */
   grow?: number
 }
@@ -40,7 +42,8 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
   const padX = ctx.tokens.space.lg
   const padY = ctx.tokens.space.sm
   const cols = o.cols ?? 1
-  const cellW = Math.max(1, (W - gap * (cols - 1)) / cols)
+  const cellW = Math.max(1, Math.min((W - gap * (cols - 1)) / cols, cols === 1 && o.cellMaxW ? o.cellMaxW : Infinity))
+  const x0 = cols === 1 ? Math.max(0, (W - cellW) / 2) : 0
   const qH = measureHeights(ctx, [{ id: 'q', type: 'tls.t.title', props: { text: toMeasurable(o.prompt), size: 'subheading' } }], W)[0]
   const textH = measureHeights(ctx, o.cells.map((t, i) => ({ id: `c${i}`, type: o.cellSize ? 'tls.t.title' : 'tls.t.body', props: o.cellSize ? { text: t, size: o.cellSize } : { text: t } })), Math.max(1, cellW - 2 * padX))
   const heights = o.cells.map((_, i) => Math.max(o.cellMin ?? 0, textH[i] + 2 * padY + 4, 64) + (o.grow ?? 0))
@@ -58,7 +61,7 @@ export function cellsPoster(ctx: LayoutContext, o: CellsPoster): LayoutNode {
   o.cells.forEach((text, i) => {
     const col = i % cols
     if (col === 0 && i > 0) rowTop += heights[i - 1] + gap
-    const box = { x: col * (cellW + gap), y: rowTop, width: cellW, height: heights[i] }
+    const box = { x: x0 + col * (cellW + gap), y: rowTop, width: cellW, height: heights[i] }
     pieces.push({ id: `cell[${i}]`, raw: [{ k: 'rect', box, fill: { type: 'solid', color: surfaceAlt }, radius } as LayoutNode], box })
     pieces.push({ id: `celltext[${i}]`, spec: { id: `celltext-${i}`, type: o.cellSize ? 'tls.t.title' : 'tls.t.body', props: o.cellSize ? { text, size: o.cellSize } : { text } }, box: { x: box.x + padX, y: box.y + (box.height - textH[i]) / 2, width: Math.max(1, cellW - 2 * padX), height: textH[i] } })
   })

@@ -93,3 +93,18 @@ describe('tls.g.steps adapts to its box (RV07)', () => {
     expect(rectsOf(tree, /\.badge$/)).toHaveLength(3)
   })
 })
+
+describe('S24-c: steps take the type their box allows', () => {
+  const { absoluteLeaves } = require('../../text/standard-suite')
+  const four = ['Survey the route', 'Book the homestays', 'Train the riders', 'Run two trial tours'].map((title) => ({ title, description: 'One short line about what this step settles' }))
+  const px = (t: any, re: RegExp) => absoluteLeaves(t).filter((l: any) => l.k === 'text' && re.test(l.part ?? '')).map((l: any) => l.node.style.size as number)
+  it('a tall box: larger titles and descriptions, every text whole, no overlap', () => {
+    const big = layoutOf(tlsGSteps, { steps: four }, { width: 1728, height: 586 })
+    const small = layoutOf(tlsGSteps, { steps: four }, { width: 1728, height: 150 })
+    expect(Math.min(...px(big, /\.title/))).toBeGreaterThan(Math.max(...px(small, /\.title/)))
+    expect(Math.min(...px(big, /\.description/))).toBeGreaterThan(Math.max(...px(small, /\.description/)))
+    const text = absoluteLeaves(big).filter((l: any) => l.k === 'text').flatMap((l: any) => l.node.lines.map((x: any) => x.text)).join(' ')
+    expect(text).not.toContain('…')
+    assertNoOverlap(rectsOf(big, /^step\[\d+\]$/))
+  })
+})

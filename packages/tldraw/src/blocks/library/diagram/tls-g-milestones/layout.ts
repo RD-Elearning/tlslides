@@ -9,13 +9,20 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../types'
+import type { CapacityReport, LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import type { MilestonesProps } from './schema'
 import { MILESTONES_MAX } from './schema'
-import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, objs, pathNode, placeLines, root, solidRect, str, style } from '../_kit'
+import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, fitTier, linesHeight, linesNeeded, lineH, objs, pathNode, placeLines, root, solidRect, str, style } from '../_kit'
 import { around, shapeSlot, slot } from '../_motion'
 
 const R = 14
+const LABEL_LINES = 3
+/** S24-c: label / date type pairs, largest first; the last is the block's old fixed pair (a small box keeps it). */
+const TIERS: ReadonlyArray<readonly [TypeToken, TypeToken]> = [
+  ['subheading', 'body'],
+  ['body', 'caption'],
+  ['caption', 'footnote'],
+]
 
 export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
@@ -28,8 +35,39 @@ export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
   const c = chartColors(ctx)
   const vertical = enumOf(props.axis, ['horizontal', 'vertical'] as const, 'horizontal') === 'vertical'
   const alt = enumOf(props.labels, ['alternate', 'below'] as const, 'alternate') === 'alternate'
-  const dateS = style(ctx, 'footnote', c.accent)
-  const labelS = style(ctx, 'caption', c.text)
+  // the largest pair at which every label shows whole and every date on one line, in the room its side has
+  const fitsAt = ([l, d]: (typeof TIERS)[number]) => {
+    const ls = style(ctx, l, c.text)
+    const ds = style(ctx, d, c.accent)
+    return items.every((it, i) => {
+      const g = room(i, ls, ds)
+      return (!it.date || linesNeeded(ctx, it.date, ds, g.w) <= 1) && linesNeeded(ctx, it.label, ls, g.w) <= g.ll && g.ok
+    })
+  }
+  const room = (i: number, ls: ReturnType<typeof style>, ds: ReturnType<typeof style>) => {
+    const dh = items[i].date ? lineH(ds) : 0
+    if (!vertical) {
+      const p = W / N
+      const cx = p * (i + 0.5)
+      const sideH = Math.max(0, H / 2 - R - 8)
+      const w = Math.max(8, Math.min(alt ? 2 * p - 12 : p - 8, 2 * Math.min(cx, W - cx)))
+      const free = alt ? sideH - dh - 2 : sideH
+      return { w, ll: Math.max(1, Math.min(LABEL_LINES, Math.floor(free / lineH(ls)))), ok: free >= lineH(ls) && (alt || dh <= sideH) }
+    }
+    const p = H / N
+    const cy = p * (i + 0.5)
+    const ax = alt ? W / 2 : clamp(W * 0.2, 90, 220) + 20
+    if (!alt) {
+      const free = p - 2
+      return { w: Math.max(8, W - (ax + R + 12)), ll: Math.max(1, Math.min(2, Math.floor(free / lineH(ls)))), ok: free >= lineH(ls) && linesNeeded(ctx, items[i].date, ds, Math.max(8, ax - R - 12)) <= 1 }
+    }
+    const budget = Math.max(lineH(ls), 2 * Math.min(cy, H - cy, p - 4))
+    const free = budget - dh - 2
+    return { w: Math.max(8, W / 2 - R - 12), ll: Math.max(1, Math.min(2, Math.floor(free / lineH(ls)))), ok: free >= lineH(ls) }
+  }
+  const [lName, dName] = fitTier(TIERS, fitsAt, ctx)
+  const dateS = style(ctx, dName, c.accent)
+  const labelS = style(ctx, lName, c.text)
   const lastDone = items.reduce((m, it, i) => (it.done ? i : m), -1)
   const nodes: LayoutNode[] = []
   const f = (v: number) => String(Math.round(v * 100) / 100)
@@ -59,7 +97,7 @@ export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
       const dh = it.date ? lineH(dateS) : 0
       if (alt) {
         const above = i % 2 === 1
-        const ll = Math.max(1, Math.min(2, Math.floor((sideH - dh - 2) / lineH(labelS))))
+        const ll = Math.max(1, Math.min(LABEL_LINES, Math.floor((sideH - dh - 2) / lineH(labelS))))
         const lh = linesHeight(ctx, it.label, labelS, w, ll)
         const total = dh + (dh ? 2 : 0) + lh
         let top = above ? y - R - 8 - total : y + R + 8
@@ -70,7 +108,7 @@ export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
         nodes.push(...placeLines(ctx, it.label, labelS, { x: left, y: top, width: w }, 'center', ll, `label[${i}]`).nodes)
       } else {
         if (dh) nodes.push(...placeLines(ctx, it.date, dateS, { x: left, y: y - R - 8 - dh, width: w }, 'center', 1, `date[${i}]`).nodes)
-        const ll = Math.max(1, Math.min(2, Math.floor(sideH / lineH(labelS))))
+        const ll = Math.max(1, Math.min(LABEL_LINES, Math.floor(sideH / lineH(labelS))))
         nodes.push(...placeLines(ctx, it.label, labelS, { x: left, y: y + R + 8, width: w }, 'center', ll, `label[${i}]`).nodes)
       }
     })

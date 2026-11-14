@@ -74,3 +74,22 @@ describe('tls.g.milestones example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGMilestones))
   it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGMilestones, { optional: /^rail-y$/ }))
 })
+
+describe('S24-c: labels take the type their room allows', () => {
+  const sizes = (t: any, re: RegExp) =>
+    absoluteLeaves(t).filter((l) => l.k === 'text' && re.test(l.part ?? '')).map((l) => (l.node as any).style.size as number)
+  const six = Array.from({ length: 6 }, (_, i) => ({ date: `Q${i + 1}/2027`, label: `Open the ${i + 1}th kitchen in town`, done: i < 2 }))
+  it('a tall box: labels larger than the old caption, whole (no ellipsis), no overlap', () => {
+    const big = lay({ items: six }, { width: 1600, height: 560 })
+    const small = lay({ items: six }, MIN)
+    expect(Math.min(...sizes(big, /^label\[/))).toBeGreaterThan(Math.max(...sizes(small, /^label\[/)))
+    const text = absoluteLeaves(big).filter((l) => l.k === 'text' && /^label\[/.test(l.part ?? '')).flatMap((l) => (l.node as any).lines.map((x: any) => x.text)).join(' ')
+    expect(text).not.toContain('…')
+    assertNoOverlap([...rectsOf(big, /^ms\[/), ...rectsOf(big, /^(date|label)\[/)])
+  })
+  it('a small box keeps the old caption / footnote pair', () => {
+    const t = lay({ items: items(8, true) }, MIN)
+    const ctx = chartCtx(MIN)
+    expect(Math.max(...sizes(t, /^label\[/))).toBe(ctx.resolveText('caption').size)
+  })
+})

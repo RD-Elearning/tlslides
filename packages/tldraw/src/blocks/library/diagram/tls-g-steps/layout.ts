@@ -17,12 +17,28 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
-import type { LayoutContext, LayoutNode } from '../../../types'
+import type { LayoutContext, LayoutNode, TypeToken } from '../../../types'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 import type { StepsProps } from './schema'
 import { STEPS_MAX } from './schema'
-import { arrowHead, bar, chartColors, clamp, enumOf, lineH, linesHeight, mutedStyle, objs, onColor, placeLines, root, str, style } from '../_kit'
+import { arrowHead, bar, chartColors, clamp, enumOf, fitTier, lineH, linesHeight, linesNeeded, mutedStyle, objs, onColor, placeLines, root, str, style } from '../_kit'
 
-const BADGE = 32
+interface Tier {
+  title: TypeToken
+  desc: TypeToken
+  num: TypeToken
+  badge: number
+}
+/**
+ * S24-c: type tiers, largest first; the last is the block's old fixed type (body titles, caption descriptions) and the
+ * only one that cuts a description to fit. A larger tier is taken only when every title shows whole in two lines and
+ * every description whole in three (corpus 8f013536 s19, d791dcc4 s07: 22/28 units over two empty thirds of the box).
+ */
+const TIERS: readonly Tier[] = [
+  { title: 'subheading', desc: 'body', num: 'body', badge: 48 },
+  { title: 'lead', desc: 'body', num: 'caption', badge: 40 },
+  { title: 'body', desc: 'caption', num: 'caption', badge: 32 },
+]
 const BADGE_GAP = 10
 const MIN_COL = 96
 const COL_GAP = 20
@@ -61,13 +77,16 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
   if (N === 0) return { k: 'group', box: { x: 0, y: 0, width: W, height: 0 }, part: 'root', children: [] }
 
   const c = chartColors(ctx)
-  const titleS = style(ctx, 'body', c.text)
-  const descS = mutedStyle(ctx, 'caption')
-  const numS = style(ctx, 'caption', onColor(ctx, c.accent))
   const xs = Math.max(2, ctx.tokens.space.xs)
-
   const horizontal = direction === 'horizontal'
+  // a measuring pass (huge probe height) keeps the old type, so the block never asks its region for more height than
+  // that; the slide's own box then picks the largest tier that fits in it
+  const sized = !ctx.tokens.measuring && H < DEFAULT_PROBE_HEIGHT
+  const arrange = (tier: Tier) => {
 
+  const titleS = style(ctx, tier.title, c.text)
+  const descS = mutedStyle(ctx, tier.desc)
+  const BADGE = tier.badge
   /** One arrangement: `rows` rows of `cols` columns, the description cut to what the height allows. */
   const plan = (rows: number) => {
     const cols = horizontal ? Math.ceil(N / rows) : 1
@@ -108,6 +127,13 @@ export function layout(props: StepsProps, ctx: LayoutContext): LayoutNode {
     }
     P = best
   }
+  const whole = P.fits && P.descLines === 3 && steps.every((s) => linesNeeded(ctx, s.title, titleS, P.textW) <= 2 && linesNeeded(ctx, s.description, descS, P.textW) <= 3)
+  return { P, titleS, descS, whole }
+  }
+  const tier = fitTier(TIERS, (t) => t === TIERS[TIERS.length - 1] || (sized && arrange(t).whole), ctx)
+  const { P, titleS, descS } = arrange(tier)
+  const BADGE = tier.badge
+  const numS = style(ctx, tier.num, onColor(ctx, c.accent))
   const { rows, cols, colW, textX, textW, rowGap, descLines, m } = P
   const stepH = m.h
   const top = Math.max(0, (H - P.total) / 2)

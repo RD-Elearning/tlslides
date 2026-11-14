@@ -169,3 +169,18 @@ describe('tls.g.roadmap — legend words in the deck language (sprint 2026-11c T
     expect(texts(t).join(' ')).toContain('Done')
   })
 })
+
+describe('S24-c: a roadmap alone in a tall region takes the large tier', () => {
+  const props = {
+    periods: ['Q1', 'Q2', 'Q3', 'Q4'],
+    lanes: [
+      { name: 'Product', items: [{ label: 'Beta', start: 0, end: 1, status: 'done' }, { label: 'Launch', start: 2, end: 3, status: 'active' }] },
+      { name: 'Sales', items: [{ label: 'Pilot clients', start: 1, end: 2, status: 'planned' }] },
+      { name: 'Ops', items: [{ label: 'Hire support', start: 0, end: 3, status: 'risk' }] },
+    ],
+  }
+  const px = (t: any) => Math.min(...absoluteLeaves(t).filter((l: any) => l.k === 'text' && /\.label$/.test(l.part ?? '')).map((l: any) => l.node.style.size))
+  it('labels grow past the roomy caption when the height is there', () => {
+    expect(px(layoutOf(tlsGRoadmap, props, { width: 1728, height: 586 }))).toBeGreaterThan(px(layoutOf(tlsGRoadmap, props, { width: 1728, height: 300 })))
+  })
+})
