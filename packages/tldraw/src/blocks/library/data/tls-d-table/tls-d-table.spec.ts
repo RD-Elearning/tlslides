@@ -124,9 +124,11 @@ describe('tls.d.table', () => {
     expect(absoluteLeaves(r).some((l) => l.k === 'line')).toBe(false)
   })
 
-  it('compact density is shorter and uses smaller text', () => {
-    const a = lay({ density: 'default' })
-    const b = lay({ density: 'compact' })
+  it('compact density is shorter and uses smaller text (a box the default does not fit)', () => {
+    // a box too short for any tier: the compact build's own height
+    const tight = { width: SZ.width, height: lay({ density: 'compact' }, { width: SZ.width, height: 1 }).box.height }
+    const a = lay({ density: 'default' }, tight)
+    const b = lay({ density: 'compact' }, tight)
     expect(b.box.height).toBeLessThan(a.box.height)
     expect((exact(b, 'row[0].c0').node as any).style.size).toBeLessThan((exact(a, 'row[0].c0').node as any).style.size)
   })
@@ -157,6 +159,21 @@ describe('tls.d.table', () => {
     expect((exact(t, 'row[0].c0').node as any).style.size).toBeLessThan((exact(wide, 'row[0].c0').node as any).style.size)
     expect((exact(t, 'row[0].c3/label').node as any).lines.length).toBe(1)
     expect((exact(t, 'row[0].c0').node as any).lines.length).toBe(1)
+  })
+
+  it('g1 (clinic s14): a two-column table of sentences in a tall box takes a larger tier, its text wrapping ≤ 3 lines', () => {
+    const props = { columns: [{ label: 'Hiểu lầm' }, { label: 'Sự thật' }], density: 'compact', footer: undefined, showFooter: false, rows: [
+      ['Phải kiêng hẳn cơm', 'Cần đúng lượng, không cần bỏ hẳn'],
+      ['Thuốc tây hại thận, uống thuốc nam cho lành', 'Đường huyết cao mới hại thận; thuốc nam không rõ thành phần có thể gây hạ đường huyết hoặc hại gan'],
+      ['Tiêm insulin nghĩa là bệnh đã rất nặng', 'Insulin là một cách điều trị, có người cần dùng sớm'],
+      ['Trái cây lành nên ăn bao nhiêu cũng được', 'Trái cây vẫn có đường — ăn một nắm tay mỗi lần'],
+    ] }
+    const tall = lay(props, { width: 1728, height: 596 })
+    const short = lay(props, { width: 1728, height: 280 })
+    const size = (t: any) => (exact(t, 'row[1].c1').node as any).style.size
+    expect(size(tall)).toBeGreaterThan(size(short))
+    expect(tall.box.height).toBeLessThanOrEqual(596.5)
+    expect((exact(tall, 'row[1].c1').node as any).lines.length).toBeLessThanOrEqual(3)
   })
 
   it('rating dots and icons sit on the vertical centre of the text line', () => {

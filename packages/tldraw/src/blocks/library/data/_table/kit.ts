@@ -31,6 +31,7 @@ import {
 } from '../../../layout/table'
 import { iconLeaf } from '../../text/_engine/icon'
 import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK, withRealWidths } from '../_chart/kit'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 
 export type ColKind = 'text' | 'number' | 'status' | 'rating' | 'check' | 'checkOrRating' | 'ratingOrCheck'
 /** The kinds an author may name (the two `...Or...` kinds are internal: compare-table cells). */
@@ -301,23 +302,36 @@ export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
 export const STRETCH_ROW_LINES = 1.5
 
 function buildTiers(ctx0: LayoutContext, o: TableInput): TableBuilt & { density: TableInput['density'] } {
-  const tiered = (o.density ?? 'default') === 'default' || o.stretch === true
-  if (tiered && (o.fitHeight ?? 0) > 0) {
+  const W = Math.max(1, o.width)
+  const fitH = o.fitHeight ?? 0
+  // sprint 2026-11c (g1: 5 of 8 decks had tables at the reading minimum in tall boxes): a tier is taken when it fits the
+  // box's height and its columns sit side by side on one line OR its text wraps to at most WRAP_LINES lines per cell —
+  // a sentence column used to bar every larger tier and even push a default table down to compact. An authored
+  // `compact` (the composer's guess that the table is long) takes a larger tier too when that fits.
+  // …only in a real box: in a measuring pass (a probe box of any height) a wrapping tier would ask the region for more
+  // height and squeeze its siblings (corpus: callouts 36 → 28 px, overflow) — there the old one-line rule holds
+  const sized = !ctx0.tokens.measuring && fitH < DEFAULT_PROBE_HEIGHT
+  const fits = (b: { natural: number; lines: number; tree: LayoutNode }) =>
+    b.tree.box.height <= fitH + 0.5 && (b.natural <= W + 0.5 || (sized && b.lines <= WRAP_LINES))
+  if (fitH > 0 && (sized || (o.density ?? 'default') === 'default' || o.stretch === true)) {
     const grand = buildCore(ctx0, { ...o, density: 'grand' })
-    if (grand.natural <= Math.max(1, o.width) + 0.5 && grand.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...grand, density: 'grand' }
+    if (fits(grand)) return { ...grand, density: 'grand' }
     const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
-    if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...roomy, density: 'roomy' }
-    if (o.density === 'compact') {
+    if (fits(roomy)) return { ...roomy, density: 'roomy' }
+    if (o.density === 'compact' && sized) {
       const plain = buildCore(ctx0, { ...o, density: 'default' })
-      if (plain.natural <= Math.max(1, o.width) + 0.5 && plain.tree.box.height <= (o.fitHeight as number) + 0.5) return { ...plain, density: 'default' }
+      if (fits(plain)) return { ...plain, density: 'default' }
     }
   }
   const first = buildCore(ctx0, o)
-  if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return { ...buildCore(ctx0, { ...o, density: 'compact' }), density: 'compact' }
+  if (o.density !== 'compact' && first.natural > W + 0.5 && !(fitH > 0 && fits(first))) return { ...buildCore(ctx0, { ...o, density: 'compact' }), density: 'compact' }
   return { ...first, density: o.density }
 }
 
-function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): TableBuilt & { natural: number } {
+/** The most lines a cell may wrap to at a larger type tier (a sentence column of a two-column table). */
+export const WRAP_LINES = 3
+
+function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): TableBuilt & { natural: number; /** body lines of the tallest row; Infinity when a non-text column would wrap */ lines: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
   const grand = o.density === 'grand'
@@ -434,7 +448,12 @@ function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): T
     }
   }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
-  return { tree, measure, widths, rowGap, natural: measured.reduce((a, b) => a + b, 0) }
+  // the most lines a body row's text takes at this tier (rows grown by `rowGrow` not counted)
+  const padY = Math.round(cellPad / 2)
+  const lines = Math.max(1, ...measure.rowHeights.map((h) => Math.round((h - (o.rowGrow ?? 0) - padY * 2) / lineHeightOf)))
+  // only text wraps: a number, status, rating or check column must keep its one-line width
+  const wraps = widths.every((w, c) => (o.kinds[c] ?? 'text') === 'text' || w + 0.5 >= (measured[c] ?? 0))
+  return { tree, measure, widths, rowGap, natural: measured.reduce((a, b) => a + b, 0), lines: wraps ? lines : Infinity }
 }
 
 /* ───────────────────────────── capacity ───────────────────────────── */
