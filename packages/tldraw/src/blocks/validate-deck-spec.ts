@@ -13,6 +13,7 @@
  */
 
 import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
+import { isLibRef } from './icons/resolve'
 import { SLIDE_ASPECT_PRESETS } from '~constants'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, getDeckStyle, stylePaletteIds } from './styles'
@@ -1279,6 +1280,10 @@ function checkIcons(
   findings: DeckFinding[]
 ): void {
   if (type.kind === 'icon') {
+    // spro S20-E: a `lib:` ref names a picture of the deck's asset table (`DeckSpec.assets`), drawn by
+    // `icons/resolve.ts` (nothing when the table lacks it) — not an icon of the built-in set (c9 mam: 11 of 16 slides
+    // fell back on this warning once designed slides took library icons)
+    if (isLibRef(value)) return
     if (typeof value === 'string' && value.trim() !== '' && !Object.prototype.hasOwnProperty.call(ICONS, value)) {
       const suggestion = nearestName(value, Object.keys(ICONS))
       findings.push({
