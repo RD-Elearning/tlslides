@@ -9,6 +9,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { isLibRef } from '../../../icons/resolve'
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { DECORATION_SHAPES, type DecorationProps } from './schema'
 import { enumOf, side, tintOf } from '../_kit'
@@ -294,7 +295,8 @@ const WATERMARK_OPACITY = { soft: 0.1, medium: 0.16, strong: 0.22 } as const
  * unknown name draws the fallback glyph (lint reports it). The `shape` part loops as one piece.
  */
 function iconMotif(name: unknown, W: number, H: number, color: string, alpha: number | undefined, crop = 'none'): LayoutNode {
-  const def = (typeof name === 'string' ? getIcon(name) : undefined) ?? FALLBACK_ICON
+  const lib = isLibRef(name)  // S20: a library picture — `resolveLibIcons` draws it after layout
+  const def = lib ? { name: String(name), path: '' } : (typeof name === 'string' ? getIcon(name) : undefined) ?? FALLBACK_ICON
   // S20-e ghost: the box's short side, pushed 16 % past the box on the cropped corner (the group clips) — more
   // and a large glyph turns into an unreadable blob (S20 offline sheet: clock, motorbike)
   const cut = crop !== 'none'
@@ -306,10 +308,10 @@ function iconMotif(name: unknown, W: number, H: number, color: string, alpha: nu
     k: 'icon',
     part: 'shape',
     box: { x, y, width: S, height: S },
-    icon: scaleIconPath(def.path, k),
+    icon: def.path ? scaleIconPath(def.path, k) : '',
     fill: color,
     ...(typeof name === 'string' && def !== FALLBACK_ICON ? { name } : {}),
-    ...iconStroke(def, Math.max(1.5, 1.15 * k)),
+    ...(lib ? {} : iconStroke(def, Math.max(1.5, 1.15 * k))),
   }
   return { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, ...(cut ? { clip: true } : {}), ...(alpha === undefined ? {} : { opacity: alpha }), children: [node] }
 }

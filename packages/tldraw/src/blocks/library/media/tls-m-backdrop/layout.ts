@@ -11,6 +11,7 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()` (a seeded PRNG).
  */
 
+import { isLibRef } from '../../../icons/resolve'
 import type { LayoutContext, LayoutNode, Paint } from '../../../types'
 import { hexToRgb, mixHex, relativeLuminance } from '../../../color-math'
 import { enumOf, side } from '../_kit'
@@ -123,7 +124,8 @@ const ICON_FIELD_SIDE = 76
  * by the edge reads as a mistake on a ground).
  */
 export function iconFieldNodes(icons: readonly string[], W: number, H: number, color: string, seed: number): LayoutNode[] {
-  const defs = icons.map((n) => ({ name: n, def: getIcon(n) })).filter((d) => d.def).slice(0, 4)
+  // S20: a deck motif may be a library picture (`lib:`): an empty glyph here, `resolveLibIcons` draws it after layout
+  const defs = icons.map((n) => ({ name: n, def: isLibRef(n) ? { name: n, path: '' } : getIcon(n) })).filter((d) => d.def).slice(0, 4)
   if (!defs.length) return []
   const R = rng(seed)
   const out: LayoutNode[] = []
@@ -151,10 +153,10 @@ export function iconFieldNodes(icons: readonly string[], W: number, H: number, c
         k: 'icon',
         part: `icon[${out.length}]`,
         box: { x: Math.round(x), y: Math.round(y), width: side, height: side },
-        icon: scaleIconPath(def!.path, k),
+        icon: def!.path ? scaleIconPath(def!.path, k) : '',
         fill: color,
         name,
-        ...iconStroke(def, Math.max(1.5, 1.15 * k)),
+        ...(isLibRef(name) ? {} : iconStroke(def, Math.max(1.5, 1.15 * k))),
       })
     }
   }

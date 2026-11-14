@@ -18,7 +18,8 @@
  */
 
 import type { DeckAsset, LayoutContext, LayoutNode } from '../types'
-import { mixHex, relativeLuminance } from '../color-math'
+import { mixHex, relativeLuminance, rgbToHex } from '../color-math'
+import { parseInk } from '../layout/paint-model'
 
 const HEX = /^#[0-9a-f]{6}$/i
 
@@ -66,11 +67,18 @@ export function resolveLibIcons(node: LayoutNode, ctx: LayoutContext): LayoutNod
       const asset = ctx.libAsset!(x.name)
       if (!asset) return { k: 'group', box: x.box, ...(x.part ? { part: x.part } : {}), children: [] }
       slots ??= slotColours(ctx)
-      const colour = HEX.test(x.fill) ? x.fill : slots.ink
-      return {
+      // a translucent glyph colour (the icon-field ground: `rgba(accent, α)`) → the hex, and α on a wrapping group
+      const ink = HEX.test(x.fill) ? { rgb: undefined, alpha: 1 } : parseInk(x.fill)
+      const colour = HEX.test(x.fill) ? x.fill : ink?.rgb ? rgbToHex(ink.rgb) : slots.ink
+      const image: LayoutNode = {
         k: 'image', box: x.box, ...(x.part ? { part: x.part } : {}), assetId: x.name,
         alt: x.name.slice(4).split('/').pop()!.replace(/-/g, ' '), fit: 'contain', url: assetUrl(asset, colour, slots),
       }
+      const alpha = ink?.alpha ?? 1
+      if (alpha >= 0.999) return image
+      const local = { ...image, box: { ...x.box, x: 0, y: 0 } }
+      delete (local as { part?: string }).part
+      return { k: 'group', box: x.box, ...(x.part ? { part: x.part } : {}), opacity: alpha, children: [local] }
     }
     const kids = (x as { children?: LayoutNode[] }).children
     if (Array.isArray(kids)) {

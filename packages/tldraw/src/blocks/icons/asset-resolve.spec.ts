@@ -11,6 +11,9 @@ import { deckSpecToDocument } from '../deck-document'
 import { documentToDeckSpec } from '../slide-decompiler'
 import { defaultBlockSvg, layoutDeck } from '../layout-slide'
 import { tlsCFeatureGrid } from '../library/composite/tls-c-feature-grid'
+import { tlsMBackdrop } from '../library/media/tls-m-backdrop'
+import { tlsMDecoration } from '../library/media/tls-m-decoration'
+import { tlsMIconCluster } from '../library/media/tls-m-icon-cluster'
 import { template as featureGridTemplate } from '../library/composite/tls-c-feature-grid/template'
 
 const BOWL: DeckAsset = { kind: 'icon', viewBox: '0 0 24 24', colourMode: 'mono', body: '<g fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></g>' }
@@ -116,5 +119,26 @@ describe('S20 library assets', () => {
       expect(html).toContain(`<img src="${imgs[0].url}"`)
       expect(html.match(/<path d=/g)).toHaveLength(1) // the built-in icon of cell 2 still draws its path
     }
+  })
+
+  it('deck motifs: the icon-field ground keeps its faintness (group opacity) and the decoration watermark draws the picture', () => {
+    const field = layoutBlock(tlsMBackdrop, { kind: 'icon-field', icons: ['lib:tabler/bowl', 'lib:circle-flags/vn'] }, ctx(1280, 720))
+    const imgs = imagesIn(field)
+    expect(imgs.length).toBeGreaterThan(4)
+    const faint: number[] = []
+    const walk = (n: LayoutNode, o = 1): void => {
+      const op = o * ((n as { opacity?: number }).opacity ?? 1)
+      if (n.k === 'image') faint.push(op)
+      for (const c of (n as { children?: LayoutNode[] }).children ?? []) walk(c, op)
+    }
+    walk(field)
+    expect(Math.max(...faint)).toBeLessThan(0.3) // never a solid glyph on a ground
+    expect(decodeURIComponent(imgs[0].url!)).not.toMatch(/rgba|currentColor/)
+    const deco = layoutBlock(tlsMDecoration, { shape: 'icon', icon: 'lib:tabler/bowl', opacity: 'soft' }, ctx(300, 300))
+    expect(imagesIn(deco)).toHaveLength(1)
+    expect(iconsIn(deco)).toHaveLength(0)
+    // the sticker-burst scene's cluster
+    const cluster = layoutBlock(tlsMIconCluster, { icons: ['lib:tabler/bowl', 'lib:noto/scene', 'zap'], backing: 'disc' }, ctx(400, 300))
+    expect(imagesIn(cluster)).toHaveLength(2)
   })
 })
