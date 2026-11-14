@@ -12,6 +12,7 @@
 import type { CapacityReport, LayoutContext, LayoutNode, Size, TypeToken } from '../../../types'
 import type { MilestonesProps } from './schema'
 import { MILESTONES_MAX } from './schema'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 import { asArr, capacityOf, chartColors, clamp, emptyState, enumOf, fitTier, linesHeight, linesNeeded, lineH, objs, pathNode, placeLines, root, solidRect, str, style } from '../_kit'
 import { around, shapeSlot, slot } from '../_motion'
 
@@ -65,7 +66,10 @@ export function layout(props: MilestonesProps, ctx: LayoutContext): LayoutNode {
     const free = budget - dh - 2
     return { w: Math.max(8, W / 2 - R - 12), ll: Math.max(1, Math.min(2, Math.floor(free / lineH(ls)))), ok: free >= lineH(ls) }
   }
-  const [lName, dName] = fitTier(TIERS, fitsAt, ctx)
+  // only in the slide's own box: a measuring pass (huge probe height) keeps the old pair, so the block never asks its
+  // region for more height than that (the timeline's ha-giang s09 overflow)
+  const sized = !ctx.tokens.measuring && H < DEFAULT_PROBE_HEIGHT
+  const [lName, dName] = fitTier(TIERS, (t) => t === TIERS[TIERS.length - 1] || (sized && fitsAt(t)), ctx)
   const dateS = style(ctx, dName, c.accent)
   const labelS = style(ctx, lName, c.text)
   const lastDone = items.reduce((m, it, i) => (it.done ? i : m), -1)

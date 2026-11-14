@@ -14,6 +14,7 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import { isShown } from '../../../schema-helpers'
 import { chevronPath } from '../../../layout/diagram'
 import type { ChevronsProps } from './schema'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 import { CHEVRONS_MAX } from './schema'
 import {
   asArr, capacityOf, chartColors, clamp, emptyState, enumOf, fitTier, linesHeight, linesNeeded, lineH, mutedStyle, numOrNull, objs, onColor, pathNode, placeLines, rampColor, root, str, style, tintOf,
@@ -69,8 +70,12 @@ export function layout(props: ChevronsProps, ctx: LayoutContext): LayoutNode {
   if (N > ROW_MAX && H >= TWO_ROW_MIN_H) {
     // two rows, the first one longer; the colours, parts and the current phase keep their deck-wide index
     const k = Math.ceil(N / 2)
-    const rowH = (H - ROW_GAP) / 2
-    return root(ctx, [...row(props, ctx, steps, 0, k, N, W, rowH, 0, H), ...row(props, ctx, steps, k, N, N, W, rowH, rowH + ROW_GAP, H)])
+    // a measuring pass must not spread the rows over its probe: what it paints is the height the block asks its region
+    // for (block metrics read 1280 at 840 wide), and a stacked region gives the block the rest of its height anyway;
+    // the compact row's tallest box (200) keeps the ask small enough for a takeaway under it (route agendas of 7 stops)
+    const sized = !ctx.tokens.measuring && H < DEFAULT_PROBE_HEIGHT
+    const rowH = sized ? (H - ROW_GAP) / 2 : Math.min((H - ROW_GAP) / 2, 200)
+    return root(ctx, [...row(props, ctx, steps, 0, k, N, W, rowH, 0, sized ? H : 2 * rowH + ROW_GAP), ...row(props, ctx, steps, k, N, N, W, rowH, rowH + ROW_GAP, sized ? H : 2 * rowH + ROW_GAP)])
   }
   return root(ctx, row(props, ctx, steps, 0, N, N, W, H, 0, H))
 }
