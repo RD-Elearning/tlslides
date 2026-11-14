@@ -204,3 +204,37 @@ describe('AC2 — look knob (numeral: giant)', () => {
     await assertParity(tlsCCards, { ...GIANT, cards: GIANT.cards.slice(0, 3) } as any, { width: 1500, height: 520 }, undefined, { registry: registry() })
   }, 30000)
 })
+
+describe('tls.c.cards — a named group in its colour (spro sprint 2026-11c S21-j)', () => {
+  const { createLayoutContext } = require('../../../layout/layout-child')
+  const { TEST_TOKENS, TEST_SURFACE } = require('../../layout/test-helpers')
+  const tokens = { ...TEST_TOKENS, categorical: ['#3E8E4E', '#4A4F55', '#FFFFFF', '#1F77B4'] }
+  const at = (cards: unknown[]) =>
+    tlsCCards.layout({ ...(tlsCCards.defaults as any), cards } as any, createLayoutContext({ box: { width: 1500, height: 520 }, tokens, surface: TEST_SURFACE, registry: registry() }))
+  const BAGS = [
+    { icon: 'leaf', title: 'Rác thực phẩm', text: 'túi xanh lá', tone: 'category:0' },
+    { icon: 'trash', title: 'Rác còn lại', text: 'túi xám', tone: 'category:1' },
+    { icon: 'refresh', title: 'Rác tái chế', text: 'túi trắng', tone: 'category:2' },
+  ]
+
+  it('rims each card in its group colour, a white group on a white page in the line colour', () => {
+    const b = bgs(at(BAGS)).map((l: any) => l.node)
+    expect(b).toHaveLength(3)
+    expect(b[0].stroke?.color?.toUpperCase()).toBe('#3E8E4E')
+    expect(b[1].stroke?.color?.toUpperCase()).toBe('#4A4F55')
+    expect(b[2].stroke?.color?.toUpperCase()).not.toBe('#FFFFFF')
+    expect(b[0].fill?.color).not.toBe(b[1].fill?.color)
+  })
+
+  it('a card with no tone, an unknown tone or an index past the ramp keeps the plain card', () => {
+    const plain = bgs(at([{ icon: 'leaf', title: 'A', text: 'a' }, { icon: 'leaf', title: 'B', text: 'b' }]))
+    const odd = bgs(at([{ icon: 'leaf', title: 'A', text: 'a', tone: 'category:9' }, { icon: 'leaf', title: 'B', text: 'b', tone: 'green' }]))
+    expect(odd.map((r: any) => [r.node.fill, r.node.stroke])).toEqual(plain.map((r: any) => [r.node.fill, r.node.stroke]))
+  })
+
+  it('keeps text inside and apart with group colours', () => {
+    const t = at(BAGS)
+    assertContained(t, { width: 1500, height: 520 })
+    assertNoTextOverlap(t)
+  })
+})

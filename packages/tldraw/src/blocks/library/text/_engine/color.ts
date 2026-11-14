@@ -31,3 +31,14 @@ export function readableOn(fg: string, bgHex: string, floor = 4.5): string {
   if (!tryHexToRgb(fg) || !tryHexToRgb(bgHex)) return fg
   return solveForContrast(fg, lumOf(bgHex), floor).color
 }
+
+/**
+ * spro sprint 2026-11c S21-j: an item's `tone: 'category:<n>'` — the colour the document gives one of
+ * its named groups ("túi xanh lá"), which the deck puts first in `tokens.categorical`. Undefined for
+ * any other tone or an index past the ramp.
+ */
+export function categoryColor(ctx: LayoutContext, tone: unknown): string | undefined {
+  const m = typeof tone === 'string' ? /^category:(\d{1,2})$/.exec(tone) : null
+  const hex = m ? ctx.tokens.categorical[Number(m[1])] : undefined
+  return hex && tryHexToRgb(hex) ? hex : undefined
+}
