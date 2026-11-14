@@ -108,3 +108,15 @@ describe('S24-c: steps take the type their box allows', () => {
     assertNoOverlap(rectsOf(big, /^step\[\d+\]$/))
   })
 })
+
+describe('S24-c: eight steps take two rows of four at a larger tier rather than cut', () => {
+  const { absoluteLeaves } = require('../../text/standard-suite')
+  const planets = ['Sao Thuỷ', 'Sao Kim', 'Trái Đất', 'Sao Hoả', 'Sao Mộc', 'Sao Thổ', 'Sao Thiên Vương', 'Sao Hải Vương'].map((title) => ({ title, description: 'Gần Mặt Trời nhất, một năm dài 88 ngày' }))
+  it('in a 1728 × 586 box: larger than body/caption, nothing cut', () => {
+    const t = layoutOf(tlsGSteps, { steps: planets }, { width: 1728, height: 586 })
+    const texts = absoluteLeaves(t).filter((l: any) => l.k === 'text')
+    expect(Math.min(...texts.filter((l: any) => /\.title/.test(l.part)).map((l: any) => l.node.style.size))).toBeGreaterThan(28)
+    expect(texts.flatMap((l: any) => l.node.lines.map((x: any) => x.text)).join(' ')).not.toContain('…')
+    assertNoOverlap(rectsOf(t, /^step\[\d+\]$/))
+  })
+})
