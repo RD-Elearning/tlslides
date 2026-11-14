@@ -295,13 +295,13 @@ const WATERMARK_OPACITY = { soft: 0.1, medium: 0.16, strong: 0.22 } as const
  */
 function iconMotif(name: unknown, W: number, H: number, color: string, alpha: number | undefined, crop = 'none'): LayoutNode {
   const def = (typeof name === 'string' ? getIcon(name) : undefined) ?? FALLBACK_ICON
-  // S20-e ghost: 1.5 x the box's short side, pushed past the box on the cropped corner (the group clips)
+  // S20-e ghost: the box's short side, pushed 16 % past the box on the cropped corner (the group clips) — more
+  // and a large glyph turns into an unreadable blob (S20 offline sheet: clock, motorbike)
   const cut = crop !== 'none'
-  const S = Math.max(1, Math.min(W, H) * (cut ? 1.5 : 0.84))
+  const S = Math.max(1, Math.min(W, H) * (cut ? 1 : 0.84))
   const k = S / 24
-  // the glyph runs 30 % past the box on the cropped sides
-  const x = !cut ? (W - S) / 2 : crop.endsWith('left') ? -0.3 * S : W - 0.7 * S
-  const y = !cut ? (H - S) / 2 : crop.startsWith('top') ? -0.3 * S : H - 0.7 * S
+  const x = !cut ? (W - S) / 2 : crop.endsWith('left') ? -0.16 * S : W - 0.84 * S
+  const y = !cut ? (H - S) / 2 : crop.startsWith('top') ? -0.16 * S : H - 0.84 * S
   const node: LayoutNode = {
     k: 'icon',
     part: 'shape',

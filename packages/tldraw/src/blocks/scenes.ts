@@ -135,14 +135,15 @@ export function sceneBlocks(id: SceneId, icons: string[], ink: Box[], frame: { w
   }
 }
 
-/** The ink a scene keeps clear of: the page's text and pictures, as laid out without a scene. */
+/** The ink a scene keeps clear of: everything the page paints above its ground (text, pictures, panels, rules), as
+ *  laid out without a scene. A page whose blocks fill the frame leaves no zone: its scene degrades to a corner mark. */
 function pageInk(deck: DeckSpec, slide: SlideSpec): Box[] {
   const report = analyzeDeck({ ...deck, slides: [slide] })[0]
   const out: Box[] = []
   for (const b of report.blocks) {
     if (b.layer === 'backdrop') continue
     out.push(...b.text.map((t) => t.painted))
-    if (/^tls\.m\.(image|image-grid|illustration|device-mock)$/.test(b.type) && b.painted) out.push(b.painted)
+    if (b.painted) out.push(b.painted)
   }
   return out
 }
