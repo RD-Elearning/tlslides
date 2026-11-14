@@ -40,11 +40,23 @@ export const defaults: SectionBriefProps = {
   variant: 'left-rail',
 }
 
+const wordsOf = (t: unknown): string[] => (typeof t === 'string' ? t.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [] : [])
+
+/** S29 (c9 solar s12: "Vì sao có ngày và đêm?" over "Vì sao chúng ta có ngày và đêm?"): a question that only restates the
+ *  title — every word of the shorter one in the longer, at most two words added — says nothing new. */
+export function restatesTitle(title: unknown, question: unknown): boolean {
+  const a = wordsOf(title), b = wordsOf(question)
+  if (!a.length || !b.length) return false
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a]
+  const set = new Set(long)
+  return long.length - short.length <= 2 && short.every((w) => set.has(w))
+}
+
 function cells(props: SectionBriefProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'left-rail')
   const points = strings(props.points).slice(0, 4)
   const title: Cell = { spec: { id: 'title', type: 'tls.t.title', props: { text: props.title, size: 'title' } } }
-  const question: Cell | null = props.question ? { spec: { id: 'question', type: 'tls.t.body', props: { text: props.question, size: 'lead' } } } : null
+  const question: Cell | null = props.question && !restatesTitle(props.title, props.question) ? { spec: { id: 'question', type: 'tls.t.body', props: { text: props.question, size: 'lead' } } } : null
   const list: Cell | null = points.length
     ? { spec: { id: 'points', type: 'tls.t.numbered', props: { items: points, markerStyle: 'badge', spacing: 'relaxed' } }, space: 1 }
     : null
