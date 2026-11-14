@@ -1096,6 +1096,8 @@ export interface LayoutContext {
   /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided
    *  or the asset is missing — the renderers show a dashed frame with alt text instead. */
   resolveAsset?(id: string): string | undefined
+  /** S20-a — the deck's library asset for a `lib:<pack>/<name>` ref (or the bare id); undefined without a table. */
+  libAsset?(id: string): DeckAsset | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
   /** Layout hops from the slide-level block (every `layoutChild` call, internal ones included).
@@ -1542,6 +1544,23 @@ export interface DeckSpec {
    *  subject's objects) are tiled by the `icon-field` backdrop and drawn in a style's signature slot on
    *  cover and section pages (`placeDeckMotifs`, rotating by page). Absent = today's drawing. */
   motifs?: DeckMotifs
+  /** spro sprint 2026-11c S20-a — the library pictures this deck uses, by id (`<pack>/<name>`); a block's icon prop
+   *  refers to one as `lib:<pack>/<name>`. Filled by the host from its asset library; the engine never fetches.
+   *  Absent = today's drawing. */
+  assets?: Record<string, DeckAsset>
+}
+
+/** S20-a — one library picture embedded in a deck: a cleaned SVG body (no `<svg>` wrapper) on `viewBox`.
+ *  `mono` paints with `currentColor`; `slots` with `var(--paper|ink|accent|accent2|soft)`, mapped to the theme
+ *  (lightness order kept); `fixed` is drawn as it is. */
+export interface DeckAsset {
+  kind: 'icon' | 'emoji' | 'sticker' | 'illustration' | 'pattern'
+  viewBox: string
+  body: string
+  colourMode: 'mono' | 'slots' | 'fixed'
+  style?: string
+  /** licence + attribution for the deck's credits (tier B) */
+  credit?: string
 }
 
 /** S20-g — `DeckSpec.motifs`. */

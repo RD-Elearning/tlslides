@@ -7,6 +7,8 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { resolveLibIcons } from '../icons/resolve'
+import type { DeckAsset } from '../types'
 import { fillLayout } from './fill'
 import { currentProps, dropUnresolved, inferLeafPaths, mapChildPaths, withCurrentProps } from './edit-scope'
 import type {
@@ -74,6 +76,8 @@ export interface CreateLayoutContextOptions {
   asset?: (assetId: string) => AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Returns `undefined` by default. */
   resolveAsset?: (id: string) => string | undefined
+  /** S20-a — the deck's library asset by id (`DeckSpec.assets`, `lib:` refs). */
+  libAsset?: (id: string) => DeckAsset | undefined
   /** Icon lookup. Returns `undefined` by default. */
   icon?: (id: string) => IconPath | undefined
   /** Current nesting depth. Defaults to 0. */
@@ -426,6 +430,7 @@ export function createLayoutContext(
 
   const assetFn = options.asset ?? (() => undefined)
   const resolveAssetFn = options.resolveAsset
+  const libAssetFn = options.libAsset
   const iconFn = options.icon ?? (() => undefined)
   const depth = options.depth ?? 0
   const headless = options.headless ?? false
@@ -545,6 +550,7 @@ export function createLayoutContext(
         resolveText: resolveTextFn,
         asset: assetFn,
         resolveAsset: resolveAssetFn,
+        ...(libAssetFn ? { libAsset: libAssetFn } : {}),
         icon: iconFn,
         depth: newDepth,
         headless,
@@ -604,6 +610,7 @@ export function createLayoutContext(
     },
     asset: assetFn,
     resolveAsset: resolveAssetFn,
+    ...(libAssetFn ? { libAsset: libAssetFn } : {}),
     icon: iconFn,
     depth,
     headless,
@@ -904,6 +911,8 @@ export function layoutBlock(
   // that fails contrast on what the block itself painted under it.
   const nest = NEST.get(ctx)
   if (ctx.depth === 0 && (!nest || nest.level <= 1)) guardInk(node, ctx.surface, nest?.literalInks ?? new Set())
+  // S20-b: `lib:` icons become the deck's library pictures, recoloured from the theme (no table = no-op)
+  if (ctx.depth === 0) return resolveLibIcons(node, ctx)
   return node
 }
 
@@ -1023,6 +1032,7 @@ function layoutBlockInner(
           resolveText: ctx.resolveText,
           asset: ctx.asset,
           resolveAsset: ctx.resolveAsset,
+          ...(ctx.libAsset ? { libAsset: ctx.libAsset } : {}),
           icon: ctx.icon,
           depth: ctx.depth,
           headless: ctx.headless,

@@ -42,6 +42,11 @@ const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpeg|gif|webp)[;,]/
  * Option B, with the "or URL" half of the schema's own contract implemented here rather than
  * inside the block, which stays asset-scheme-agnostic as its file doc already promises).
  */
+/** S20-a — a deck's library asset by `lib:<pack>/<name>` or bare id. */
+export function libAssetOf(id: string, table: TDDocument['libAssets']): import('./types').DeckAsset | undefined {
+  return table?.[id.startsWith('lib:') ? id.slice(4) : id]
+}
+
 export function resolveAssetUrl(id: string, assets: TDAssets | undefined): string | undefined {
   if (ABSOLUTE_URL_RE.test(id)) return id
   // AC4: an inline raster image (png/jpeg/gif/webp) is a URL too, the same set the testimonial
@@ -111,6 +116,7 @@ export function deckLayoutContext(
     // dashed fallback frame. G8.2: also accepts an already-absolute URL, per the schema's own
     // documented "asset id or URL" contract — see `resolveAssetUrl` above.
     resolveAsset: (id: string) => resolveAssetUrl(id, doc.assets),
+    ...(doc.libAssets ? { libAsset: (id: string) => libAssetOf(id, doc.libAssets) } : {}),
     // The asset table records each image's natural size; `ctx.asset()` hands it to blocks that
     // need an aspect ratio (logo, logo-wall), so they never have to guess it.
     asset: (id: string) => {

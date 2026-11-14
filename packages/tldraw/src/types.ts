@@ -210,6 +210,8 @@ export interface TDDocument {
   backdrops?: Partial<Record<'deep' | 'accent' | 'calm' | 'quiet', { kind: string; intensity?: 'soft' | 'medium' }>>
   /** S20-g — the deck's `DeckSpec.motifs`, for the round trip. */
   motifs?: { icons?: string[] }
+  /** S20-a — the deck's `DeckSpec.assets` (library pictures by id), for the layout context and the round trip. */
+  libAssets?: Record<string, import('~blocks/types').DeckAsset>
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —

@@ -508,5 +508,6 @@ export function documentToDeckSpec(
   if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
   if (doc.backdrops !== undefined) deckSpec.backdrops = doc.backdrops
   if (doc.motifs !== undefined) deckSpec.motifs = doc.motifs
+  if (doc.libAssets !== undefined) deckSpec.assets = doc.libAssets
   return { spec: deckSpec, findings }
 }

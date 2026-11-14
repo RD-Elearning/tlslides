@@ -14,6 +14,7 @@ import { alignText, cardNodes, cardPaint } from '../_kit'
 import { breaksWord } from '../_poster'
 import { getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
+import { isLibRef } from '../../../icons/resolve'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
 
@@ -115,14 +116,17 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
     const iconX = center ? ix + (innerW - iconSize) / 2 : ix
 
     // Icon - use icon node kind, or fallback rect for unknown icons
-    const iconDef = getIcon(cell.icon as string)
+    // S20-b: a `lib:` ref draws an empty icon node the slide's `resolveLibIcons` swaps for the deck's picture
+    const lib = isLibRef(cell.icon)
+    const iconDef = lib ? { name: String(cell.icon), path: '' } : getIcon(cell.icon as string)
     if (circle) {
       children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
       const g = tierCircleIcon(cellW, tier).glyph
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
       // creative CR7a: the icons are Lucide/Tabler outlines — stroked, as `iconLeaf` draws them (a
       // filled outline turned a globe into a dot)
-      if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, name: cell.icon as string, ...iconStroke(iconDef, Math.max(1.5, (1.5 * g) / 24)) })
+      if (lib) children.push({ k: 'icon', part: `cell[${i}].glyph`, box: gb, icon: '', fill: iconColor, name: cell.icon as string })
+      else if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, name: cell.icon as string, ...iconStroke(iconDef, Math.max(1.5, (1.5 * g) / 24)) })
     } else if (iconDef) {
       children.push({
         k: 'icon',
@@ -134,7 +138,7 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
         icon: scaleIconPath(iconDef.path, iconSize / 24),
         fill: iconColor,
         name: cell.icon as string,
-        ...iconStroke(iconDef, Math.max(1.5, (1.5 * iconSize) / 24)),
+        ...(lib ? {} : iconStroke(iconDef, Math.max(1.5, (1.5 * iconSize) / 24))),
       })
     } else {
       // Fallback rect for unknown icon names

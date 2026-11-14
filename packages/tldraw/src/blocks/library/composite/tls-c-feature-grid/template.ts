@@ -13,6 +13,7 @@ import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_TIERS, tierCirc
 import { ICONS, getIcon, iconPaintAttrs } from '../../../icons'
 import { posterText } from '../../../html-block'
 import { cardCssFromPoster } from '../_kit'
+import { isLibRef } from '../../../icons/resolve'
 
 /** The template's text metrics and gaps - the poster measures with the same numbers (LO7). */
 export const FG_LH = { title: 1.3, desc: 1.5 } as const
@@ -34,6 +35,18 @@ function solvedIconFill(poster: LayoutNode | undefined, i: number): string | und
   if (at < 0) return undefined
   const glyph = flat[at].k === 'icon' ? flat[at] : flat[at + 1]
   return glyph && glyph.k === 'icon' && glyph.solved ? glyph.fill : undefined
+}
+
+/** S20-b — the resolved library picture of cell `i` in the poster (`cell[i].icon` or the disc's `cell[i].glyph`). */
+function libImageUrl(poster: LayoutNode | undefined, i: number): string | undefined {
+  let url: string | undefined
+  const walk = (n: LayoutNode): void => {
+    if (url) return
+    if (n.k === 'image' && (n.part === `cell[${i}].icon` || n.part === `cell[${i}].glyph`)) url = n.url
+    for (const c of (n as { children?: LayoutNode[] }).children ?? []) walk(c)
+  }
+  if (poster) walk(poster)
+  return url
 }
 
 /**
@@ -88,6 +101,8 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
   const cellHtml = cells
     .map((cell, i) => {
       const iconPath = getIconPath(cell.icon as string)
+      // S20-b: a library picture — the poster already holds it as an image (resolved after layout); paint the same URL
+      const libUrl = isLibRef(cell.icon) ? libImageUrl(ctx.poster, i) : undefined
       // CMP2: the ink guard's colour when it re-solved this cell's icon (on its disc or card).
       const fillColor = solvedIconFill(ctx.poster, i) ?? ctx.cssVar('accent')
       
@@ -109,9 +124,11 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
             (circle ? `align-items:center;justify-content:center;border-radius:50%;background:${colors.disc};` : '') +
             (center ? `margin-left:auto;margin-right:auto;` : '') +
           `">` +
-            `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" ${iconPaintAttrs(getIcon(cell.icon as string), fillColor, 1.5)} style="display:block;">` +
-              `<path d="${iconPath}"/>` +
-            `</svg>` +
+            (isLibRef(cell.icon)
+              ? (libUrl ? `<img src="${ctx.esc(libUrl)}" alt="" width="${glyph}" height="${glyph}" style="display:block;object-fit:contain;">` : '')
+              : `<svg viewBox="0 0 24 24" width="${glyph}" height="${glyph}" ${iconPaintAttrs(getIcon(cell.icon as string), fillColor, 1.5)} style="display:block;">` +
+                `<path d="${iconPath}"/>` +
+              `</svg>`) +
           `</div>` +
           // Title
           `<div data-part="cell[${i}].title" style="` +

@@ -3,7 +3,7 @@ import { useTldrawApp } from './useTldrawApp'
 import { useBlockRegistry } from './useBlockRegistry'
 import { imageSurface, resolveTokens, surfaceFromBackground } from '~blocks/tokens'
 import { createLayoutContext } from '~blocks/layout'
-import { resolveAssetUrl } from '~blocks/deck-context'
+import { resolveAssetUrl, libAssetOf } from '~blocks/deck-context'
 import { documentDeckTokens, getDeckStyle } from '~blocks/styles'
 import { pageTheme } from '~state/shapes/shared/deck-theme'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
@@ -87,6 +87,7 @@ export function useBlockLayoutContext(
   const app = useTldrawApp()
   const doc = app.useStore((s) => s.document)
   const assets = doc.assets
+  const libAssets = doc.libAssets
   const blockRegistry = useBlockRegistry()
   const { headless = false, depth, style, overImage = false } = opts
   // CMP1: a block over a layered image backdrop (`$block.overImage`) sits on a photo.
@@ -108,10 +109,11 @@ export function useBlockLayoutContext(
         // builder) so the "asset id or already-absolute URL" resolution can't drift between the
         // editor and the read-only viewer (BACKLOG-visual-fix-2.md §8.2).
         resolveAsset: (id: string) => resolveAssetUrl(id, assets),
+        ...(libAssets ? { libAsset: (id: string) => libAssetOf(id, libAssets) } : {}),
         // Container blocks resolve `props.children` through the registry.
         registry: blockRegistry,
         ...(blockDefaults ? { blockDefaults } : {}),
       }),
-    [box.width, box.height, tokens, surface, headless, depth, style, assets, blockRegistry, blockDefaults],
+    [box.width, box.height, tokens, surface, headless, depth, style, assets, libAssets, blockRegistry, blockDefaults],
   )
 }

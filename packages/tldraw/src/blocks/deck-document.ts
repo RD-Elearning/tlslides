@@ -283,6 +283,7 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (spec.ambient !== undefined) document.ambient = spec.ambient
   if (spec.backdrops !== undefined) document.backdrops = spec.backdrops
   if (spec.motifs !== undefined) document.motifs = spec.motifs
+  if (spec.assets !== undefined) document.libAssets = spec.assets
 
   return { document, findings }
 }
