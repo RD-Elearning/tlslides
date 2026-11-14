@@ -48,10 +48,21 @@ export function richBuilder(def: BlockDefinition): (props: Record<string, unknow
   return BUILDERS.get(def)!
 }
 
+/**
+ * The defaults a rendered block may take under its props: options only (variant, visual…). Content
+ * defaults are the catalog's sample ("Study of 1,200 first-year students") — filled under an authored
+ * spec they print a fact nobody gave (spro sprint 2026-11c c0: a board deck's NRR stat carried that
+ * source line). An empty content prop stays empty, as `layoutChild` does for every other block.
+ */
+export function optionDefaults<P extends Record<string, unknown>>(schema: BlockSchema, defaults: P): Partial<P> {
+  return Object.fromEntries(Object.entries(defaults).filter(([k]) => schema[k]?.role === 'option')) as Partial<P>
+}
+
 export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBlockConfig<P>): BlockDefinition {
   const id = cfg.type.replace(/^tls\.c\./, '').replace(/-/g, '_')
+  const options = optionDefaults(cfg.schema, cfg.defaults)
   const build = (props: P): BlockSpec => {
-    const s = cfg.shape({ ...cfg.defaults, ...props })
+    const s = cfg.shape({ ...options, ...props } as P)
     return richBuild(id, s.items, s.opts, s.head, s.foot)
   }
   const head = cfg.sections?.head ?? []
@@ -85,7 +96,7 @@ export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBloc
     intrinsicSize: undefined,
     fillPolicy: cfg.fillPolicy ?? ['type', 'spacing'],
     layout: ((props: P, ctx: LayoutContext): LayoutNode => {
-      const s = cfg.shape({ ...cfg.defaults, ...props })
+      const s = cfg.shape({ ...options, ...props } as P)
       return s.layout ? s.layout(ctx) : richLayout(ctx, s.items, s.opts, s.head, s.foot)
     }) as BlockDefinition['layout'],
     capacity: ((props: P) => schemaCapacity(cfg.schema, props)) as BlockDefinition['capacity'],
