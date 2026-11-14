@@ -88,3 +88,19 @@ export function iconGroupOf(name: string): string {
   for (const [g, names] of Object.entries(ICON_GROUPS)) if (names.includes(name)) return g
   return 'misc'
 }
+
+/**
+ * spro sprint 2026-11c S19 phase 0: every pickable icon with what an embedding search reads — its name, its title
+ * (the icon's human name), its meaning group and its tags (Tabler's or Phosphor's; the Lucide set has its name only).
+ * One row per icon in `ICON_GROUPS`, in group order; `number-*` / `letter-*` glyphs are left out (no subject).
+ */
+export function iconCatalog(): Array<{ name: string; title: string; group: string; tags: string[] }> {
+  const out: Array<{ name: string; title: string; group: string; tags: string[] }> = []
+  for (const [group, names] of Object.entries(ICON_GROUPS)) {
+    for (const name of names) {
+      if (/^(number|letter)-/.test(name)) continue
+      out.push({ name, title: ICONS[name]?.name ?? name, group, tags: iconTags(name) })
+    }
+  }
+  return out
+}
