@@ -104,6 +104,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.d.grouped-bar': 'h=fill',
   'tls.d.heatmap': 'h=fill',
   'tls.d.icon-array': 'h=fill',
+  'tls.d.itinerary': 'h 249–521@840',
   'tls.d.line': 'h=fill',
   'tls.d.lollipop': 'h≈-55+96/item@840',
   'tls.d.pie': 'h≈286@544',

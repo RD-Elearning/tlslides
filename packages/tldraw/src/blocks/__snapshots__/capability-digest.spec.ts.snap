@@ -3814,6 +3814,45 @@ A share of a group as a pictogram: value of total icons filled (7 of 10 people),
 }
 \`\`\`
 
+### \`tls.d.itinerary\` — Itinerary
+
+A day-by-day plan: one card per day with its leg, a fact and the stops. _(family: data; keywords: itinerary, day by day, tour, trip, schedule by day, lịch trình, hành trình, ngày 1)_
+
+**When:** A plan the document lays out by day (a tour, an event over several days, a training week): each day's route or theme and its stops.
+**Avoid:** Dated milestones of a project (tls.g.timeline) or one day's hours (tls.t.kv-list).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`days\` | yes | list of object (label, title, meta, stops) (2–6 items) | One per day, in order; 2-4 short stops each. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_itinerary\\",
+  \\"type\\": \\"tls.d.itinerary\\",
+  \\"props\\": {
+    \\"days\\": [
+      {
+        \\"label\\": \\"Day 1\\",
+        \\"title\\": \\"Hanoi → Quan Ba\\",
+        \\"meta\\": \\"160 km\\",
+        \\"stops\\": [
+          \\"Km 0 marker\\",
+          \\"Fairy twin peaks\\"
+        ]
+      },
+      {
+        \\"label\\": \\"Day 2\\",
+        \\"title\\": \\"Quan Ba → Dong Van\\",
+        \\"stops\\": [
+          \\"Pine forest\\",
+          \\"Old town at night\\"
+        ]
+      }
+    ]
+  }
+}
+\`\`\`
+
 ### \`tls.d.line\` — Line Chart
 
 Line chart with one line per series, labelled at the line ends. _(family: data; keywords: line, trend, time, series, chart, over time)_
@@ -6954,6 +6993,7 @@ Decorative shape or motif in a theme colour; deterministic from a seed. _(family
 | \`opacity\` | no | enum: soft \\\\| medium \\\\| strong | Ignored for tone alt, which is already quiet. |
 | \`rotation\` | no | number (min 0, max 359) | Degrees. |
 | \`seed\` | no | number (min 0, max 9999) | Same seed, same shape (blob, wave). |
+| \`crop\` | no | enum: none \\\\| top-left \\\\| top-right \\\\| bottom-left \\\\| bottom-right | Ghost mark: the icon cut on that corner. |
 | \`ambient\` | no | enum: auto \\\\| none \\\\| float \\\\| drift \\\\| spin \\\\| sway \\\\| pulse \\\\| twinkle | auto = by shape (orbs float, rings turn, sparkles twinkle). Plays only in the viewer, never on a still deck. |
 
 \`\`\`json
@@ -8507,7 +8547,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 224,
+  "blockCount": 225,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8609,6 +8649,7 @@ Object {
     "tls.d.grouped-bar",
     "tls.d.heatmap",
     "tls.d.icon-array",
+    "tls.d.itinerary",
     "tls.d.line",
     "tls.d.lollipop",
     "tls.d.pie",
@@ -8966,7 +9007,7 @@ also: tls.c.case-study, tls.c.compare-detail, tls.c.do-dont, tls.c.problem-solut
 ## Process
 tls.c.steps · process · slide · ≤12 items — Full process slide: numbered badges joined by a rail, a title and description per step [h 233–613@840] knobs: orientation=horizontal|vertical
 tls.g.chevrons · process · group · 3–7 items — Arrow-shaped chevron segments in a row, one highlighted as the current phase [h 89–317@840] knobs: fill=gradient|single|series, textPlacement=inside|below
-also: tls.c.process-detail, tls.g.bridge, tls.g.cycle, tls.g.cycle-detail, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
+also: tls.c.process-detail, tls.d.itinerary, tls.g.bridge, tls.g.cycle, tls.g.cycle-detail, tls.g.flow, tls.g.funnel, tls.g.staircase, tls.g.steps
 
 ## Timeline
 tls.g.roadmap · timeline · group · 2–12 items — Gantt-style lanes of bars over time periods, with status colours [h≈346@840] knobs: statusColors, laneLabels=left|none

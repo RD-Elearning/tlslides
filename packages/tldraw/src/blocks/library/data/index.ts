@@ -6,6 +6,7 @@ import type { BlockDefinition } from '../../types'
 
 import { tlsDBar } from './tls-d-bar'
 import { tlsDSwatches } from './tls-d-swatches'
+import { tlsDItinerary } from './tls-d-itinerary'
 import { tlsDDonut } from './tls-d-donut'
 import { tlsDProgressBar } from './tls-d-progress-bar'
 import { tlsDProgressRing } from './tls-d-progress-ring'
@@ -37,7 +38,7 @@ import { tlsDDotPlot } from './tls-d-dot-plot'
 import { tlsDTreemap } from './tls-d-treemap'
 
 /** All built-in data block definitions. */
-export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDIconArray, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap, tlsDLollipop, tlsDDotPlot, tlsDTreemap, tlsDSwatches]
+export const dataBlocks: BlockDefinition[] = [tlsDBar, tlsDDonut, tlsDProgressBar, tlsDProgressRing, tlsDIconArray, tlsDStatCompare, tlsDLine, tlsDArea, tlsDGroupedBar, tlsDStackedBar, tlsDPie, tlsDGauge, tlsDSparkline, tlsDWaterfall, tlsDFunnelChart, tlsDScatter, tlsDRadar, tlsDTrendBadge, tlsDSlope, tlsDBubble, tlsDBulletChart, tlsDTable, tlsDCompareTable, tlsDScorecard, tlsDPricing, tlsDRanking, tlsDHeatmap, tlsDLollipop, tlsDDotPlot, tlsDTreemap, tlsDSwatches, tlsDItinerary]
 
 export { tlsDBar } from './tls-d-bar'
 export { tlsDDonut } from './tls-d-donut'
@@ -70,3 +71,4 @@ export { tlsDLollipop } from './tls-d-lollipop'
 export { tlsDDotPlot } from './tls-d-dot-plot'
 export { tlsDTreemap } from './tls-d-treemap'
 export { tlsDSwatches } from './tls-d-swatches'
+export { tlsDItinerary } from './tls-d-itinerary'

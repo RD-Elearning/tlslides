@@ -301,8 +301,8 @@ export interface BlockFits {
 }
 
 /** S25: content shapes code can see in a slide's passages. */
-export type ContentShape = 'colours' | 'tiers' | 'schedule'
-export const CONTENT_SHAPES: readonly ContentShape[] = ['colours', 'tiers', 'schedule']
+export type ContentShape = 'colours' | 'tiers' | 'schedule' | 'days'
+export const CONTENT_SHAPES: readonly ContentShape[] = ['colours', 'tiers', 'schedule', 'days']
 
 export type FitsUse = 'info' | 'highlight' | 'decor' | 'frame' | 'activity'
 export const FITS_USES: readonly FitsUse[] = ['info', 'highlight', 'decor', 'frame', 'activity']

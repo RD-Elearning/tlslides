@@ -169,6 +169,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.d.compare-table': t1(['cellKind', 'zebra', 'density']),
   'tls.d.pricing': t1(['featuredStyle', 'align']),
   'tls.d.swatches': t2(['shape']),
+  'tls.d.itinerary': t2([]),
   'tls.g.matrix-2x2': t1(['highlight', 'style', 'showItems'], ['tls.g.swot']),
   'tls.g.swot': t2(['style', 'letters']),
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),

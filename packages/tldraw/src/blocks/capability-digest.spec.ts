@@ -518,7 +518,7 @@ describe('R7 — capability digest v2', () => {
 
       const sizes = BUILT_IN_BLOCKS.map((d) => ({ type: d.type, n: capabilityDigest(reg, { types: [d.type] }).length }))
       const eight = sizes.sort((a, b) => b.n - a.n).slice(0, 8).map((x) => x.type)
-      expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12200) // spro sprint 2026-11b S09: avoid lines name the wave-B blocks
+      expect(capabilityDigest(reg, { types: eight }).length).toBeLessThanOrEqual(12300) // spro sprint 2026-11c S20: + decoration crop (ghost mark, 56 chars); 2026-11b S09: avoid lines name the wave-B blocks
     })
 
     it('the detail names the valid icons when a block has an icon slot (spro llm-eval: guessed icons)', () => {
@@ -561,7 +561,7 @@ describe('R7 — capability digest v2', () => {
       // 16,994 → 17,624) raised the ceiling to 17.7k; the per-role S2a prompt is ~14.7k at worst.
       // spro creative CR8: the 16 wave-1 blocks are tier 2 but named in the index (+~300 chars) → 18.1k; CR13 +16 → 18.4k.
       it('stays within 19.9k chars and matches its snapshot', () => {
-        expect(tier1.length).toBeLessThanOrEqual(20200) // spro sprint 2026-11b S09: +12 tier-2 names; CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
+        expect(tier1.length).toBeLessThanOrEqual(20500) // spro sprint 2026-11c S25-d: <= 20 500 (+ tier-2 itinerary); 2026-11b S09: +12 tier-2 names; CR13: +16 tier-2 names; learning L03: +5 tier-1 blocks (tls.a.* , ~180 chars each) -> 19.9k with 4 wave-1 activity blocks (L03-B)
         expect(tier1).toMatchSnapshot()
       })
 

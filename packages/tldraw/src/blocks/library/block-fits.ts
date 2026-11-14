@@ -128,6 +128,8 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.d.compare-table': f(['contrast', 'matrix'], [3, 8], 'labels', 'calm', { data: 'table' }),
   // spro sprint 2026-11c S25: a palette, offered only where the passages give colour values
   'tls.d.swatches': f(['group', 'terms'], [2, 10], 'labels', 'calm', { shapes: ['colours'], shapeOnly: true }),
+  // S25: a plan by day (a tour, a multi-day event), offered only where the passages lay one out
+  'tls.d.itinerary': f(['sequence', 'group'], [2, 6], 'labels', 'calm', { shapes: ['days'], shapeOnly: true }),
   'tls.d.pricing': f(['contrast', 'action'], [2, 4], 'labels', 'neutral', { needs: ['prices'], families: ['professional', 'modern', 'elegant'], shapes: ['tiers'], shapeOnly: true }),
   'tls.g.before-after': f(['contrast', 'story', 'cause-effect'], [2, 2], 'lines', 'lively'),
   'tls.g.iceberg': f(['contrast', 'hierarchy', 'cause-effect'], [2, 8], 'labels', 'lively'),
