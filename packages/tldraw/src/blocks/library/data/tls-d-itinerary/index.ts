@@ -15,6 +15,7 @@ export const STOPS_MAX = 6
 const ROW_MAX = 5
 const GAP = 24
 const PAD = 24
+const LINES_MAX = 4
 
 export interface ItineraryDay extends Record<string, unknown> {
   label: string
@@ -62,6 +63,8 @@ const TIERS: ReadonlyArray<readonly [TypeToken, TypeToken]> = [
   ['heading', 'subheading'],
   ['heading', 'body'],
   ['subheading', 'body'],
+  ['lead', 'body'],
+  ['subheading', 'caption'],
   ['body', 'caption'],
   ['caption', 'footnote'],
 ]
@@ -117,7 +120,9 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
     const ss = style(ctx, t[1])
     const ms = mutedStyle(ctx, t[1])
     const stopW = inner - dot(ss) - 12
-    return items.every((d) => linesNeeded(ctx, d.title, ts, inner) <= 3 && (!d.meta || linesNeeded(ctx, d.meta, ms, inner) <= 2) && d.stops.every((s) => linesNeeded(ctx, s, ss, stopW) <= 3))
+    // a narrow card wraps a long leg or stop: up to LINES_MAX lines each, the height check decides (ha-giang g1f s04:
+    // a 3-line cap on 50-character stops left 22-px text in 552-px cards under a 146-px numeral)
+    return items.every((d) => linesNeeded(ctx, d.title, ts, inner) <= LINES_MAX && (!d.meta || linesNeeded(ctx, d.meta, ms, inner) <= 2) && d.stops.every((s) => linesNeeded(ctx, s, ss, stopW) <= LINES_MAX))
   }
   const tier = fitTier(TIERS, (t) => t === TIERS[TIERS.length - 1] || (sized && whole(t) && Math.max(...items.map((d) => contentH(t, d))) <= rowH), ctx)
   const titleS = style(ctx, tier[0])
@@ -130,7 +135,8 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
   const pillInk = readableOn('#FFFFFF', accent, 4.5)
   const cardH = sized ? rowH : Math.max(...items.map((d) => contentH(tier, d)))
   // one numeral size for every card: the room the fullest card leaves
-  const numSize = Math.min((cardH - Math.max(...items.map((d) => contentH(tier, d)))) * 0.85, inner * 0.7, 260)
+  // …and never more than four times the leg's type: a faint numeral that outweighs the text reads as the slide's subject
+  const numSize = Math.min((cardH - Math.max(...items.map((d) => contentH(tier, d)))) * 0.85, inner * 0.7, 260, titleS.size * 4)
   const nodes: LayoutNode[] = []
   items.forEach((d, i) => {
     const r = Math.floor(i / cols)
@@ -145,7 +151,7 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
     kids.push({ k: 'rect', part: `pill[${i}]`, box: { x: x + PAD, y: ty, width: lw, height: pillH }, fill: { type: 'solid', color: accent }, radius: pillH / 2 })
     kids.push(...lab.nodes)
     ty += pillH + 14
-    const tl = placeLines(ctx, d.title, titleS, { x: x + PAD, y: ty, width: inner }, 'start', 3, `title[${i}]`)
+    const tl = placeLines(ctx, d.title, titleS, { x: x + PAD, y: ty, width: inner }, 'start', LINES_MAX, `title[${i}]`)
     kids.push(...tl.nodes)
     ty += tl.height
     if (d.meta) {
@@ -159,7 +165,7 @@ export function layout(props: ItineraryProps, ctx: LayoutContext): LayoutNode {
       ty += 10
       const ds = dot(stopS)
       d.stops.forEach((s, j) => {
-        const st = placeLines(ctx, s, stopS, { x: x + PAD + ds + 12, y: ty, width: inner - ds - 12 }, 'start', 3, `stop[${i}].${j}`)
+        const st = placeLines(ctx, s, stopS, { x: x + PAD + ds + 12, y: ty, width: inner - ds - 12 }, 'start', LINES_MAX, `stop[${i}].${j}`)
         kids.push({ k: 'rect', part: `stop[${i}].${j}.dot`, box: { x: x + PAD, y: ty + (lineH(stopS) - ds) / 2, width: ds, height: ds }, fill: { type: 'solid', color: accent }, radius: ds / 2 })
         kids.push(...st.nodes)
         ty += st.height + 8

@@ -45,3 +45,18 @@ it('g1 ha-giang s04: a long meta line and long stops at 1728 x 756 stay whole', 
   const texts = absoluteLeaves(t).filter((l) => l.k === 'text')
   expect(texts.flatMap((l) => (l.node as any).lines.map((x: any) => x.text)).join(' ')).not.toContain('…')
 })
+
+it('g1f ha-giang s04: long stops in four narrow cards keep a large leg, the numeral never outweighs it', () => {
+  const g1f = [
+    { label: 'Ngày 1', title: 'Hà Nội – Hà Giang – Quản Bạ', meta: '160 km · tối đa 5 giờ lái', stops: ['Cột mốc số 0, dốc Bắc Sum, núi đôi Cô Tiên', 'Homestay người Dao Nặm Đăm'] },
+    { label: 'Ngày 2', title: 'Quản Bạ – Yên Minh – Đồng Văn', meta: '110 km · tối đa 5 giờ lái', stops: ['Rừng thông Yên Minh, dốc Thẩm Mã, phố Cáo', 'Dinh thự họ Vương, cột cờ Lũng Cú, phố cổ Đồng Văn'] },
+    { label: 'Ngày 3', title: 'Đồng Văn – Mã Pí Lèng – Mèo Vạc – Du Già', meta: '120 km · tối đa 5 giờ lái', stops: ['Đèo Mã Pí Lèng, thuyền sông Nho Quế qua hẻm Tu Sản', 'Chợ phiên Mèo Vạc nếu trùng chủ nhật, ngủ bản Du Già'] },
+    { label: 'Ngày 4', title: 'Du Già – thác Du Già – Hà Giang – Hà Nội', meta: '230 km · về Hà Nội khoảng 21:00', stops: ['Tắm thác Du Già, bữa trưa cơm lam', 'Quãng ngắn dần về cuối, mỗi ngày hai điểm dừng dài'] },
+  ]
+  const leaves = absoluteLeaves(layoutOf(tlsDItinerary, { days: g1f }, { width: 1728, height: 552 }))
+  const size = (re: RegExp) => Math.max(0, ...leaves.filter((l) => re.test(l.part ?? '') && (l.node as any).style).map((l) => (l.node as any).style.size))
+  const title = size(/^title\[/)
+  expect(title).toBeGreaterThan(size(/^stop\[/))
+  expect(title).toBeGreaterThanOrEqual(36)
+  expect(size(/^num\[/)).toBeLessThanOrEqual(title * 4)
+})
