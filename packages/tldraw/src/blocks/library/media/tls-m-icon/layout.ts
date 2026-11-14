@@ -34,6 +34,8 @@ export function iconSide(props: IconProps, box: { width: number; height: number 
 
 export function layout(props: IconProps, ctx: LayoutContext): LayoutNode {
   const side = iconSide(props, ctx.box)
+  // S22-C: no icon (code found none that fits the meaning) draws nothing — never the warning glyph
+  if (typeof props.icon !== 'string' || !props.icon.trim()) return { k: 'group', part: 'root', box: { x: 0, y: 0, width: side, height: side }, children: [] }
   const color = ctx.resolveColor(props.color ?? 'accent')
   if (props.iconStyle === 'tile' || props.iconStyle === 'sticker' || props.iconStyle === 'blob') return treated(props, ctx, side, color.color)
   if (props.iconStyle === 'disc') {

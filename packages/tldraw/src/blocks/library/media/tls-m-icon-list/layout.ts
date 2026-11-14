@@ -68,7 +68,13 @@ function compute(props: IconListProps, ctx: LayoutContext, width: number, rung: 
         radius: style === 'circle' ? shape / 2 : Math.round(shape * 0.22),
       })
     }
-    nodes.push(iconLeaf(field(item, 'icon'), { x: (shape - glyph) / 2, y: iconTop + (shape - glyph) / 2, width: glyph, height: glyph }, tone, `icon[${i}]`))
+    const name = field(item, 'icon')
+    if (name.trim()) nodes.push(iconLeaf(name, { x: (shape - glyph) / 2, y: iconTop + (shape - glyph) / 2, width: glyph, height: glyph }, tone, `icon[${i}]`))
+    else {
+      // S22-C: an item with no icon (none fits its meaning) takes a dot in the icon's place, never the warning glyph
+      const r = Math.max(3, glyph * 0.18)
+      nodes.push({ k: 'rect', part: `icon[${i}]`, box: { x: shape / 2 - r, y: iconTop + shape / 2 - r, width: 2 * r, height: 2 * r }, fill: { type: 'solid', color: tone }, radius: r })
+    }
     nodes.push({
       k: 'text',
       part: `title[${i}]`,

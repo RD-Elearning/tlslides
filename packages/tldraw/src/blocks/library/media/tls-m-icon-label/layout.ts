@@ -27,7 +27,9 @@ export function layout(props: IconLabelProps, ctx: LayoutContext): LayoutNode {
   const byWidth = ctx.box.width > 0 ? ctx.box.width : want
   const iconSizePx = Math.max(14, Math.min(want, byHeight, byWidth))
 
-  const iconNode = iconLeaf(props.icon, { x: 0, y: 0, width: iconSizePx, height: iconSizePx }, iconColor, 'icon')
+  // S22-C: no icon draws the label alone (in the same place: peers keep one height)
+  const noIcon = typeof props.icon !== 'string' || !props.icon.trim()
+  const iconNode = noIcon ? undefined : iconLeaf(props.icon, { x: 0, y: 0, width: iconSizePx, height: iconSizePx }, iconColor, 'icon')
 
   const labelNode: LayoutNode = {
     k: 'text',
@@ -40,5 +42,5 @@ export function layout(props: IconLabelProps, ctx: LayoutContext): LayoutNode {
 
   const totalHeight = iconSizePx + GAP + m.height
 
-  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: totalHeight }, part: 'root', children: [iconNode, labelNode] }
+  return { k: 'group', box: { x: 0, y: 0, width: ctx.box.width, height: totalHeight }, part: 'root', children: iconNode ? [iconNode, labelNode] : [labelNode] }
 }
