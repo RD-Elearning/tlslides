@@ -42,7 +42,7 @@ import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec, SlideIntent } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | 'quality/min-type' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | 'quality/min-type' | 'quality/image-strip' | DesignCode
 
 /** CR7a (spro creative PLAN §6.8): the profile a slide is judged by, from `SlideSpec.intent`. */
 export type GateProfile = 'default' | SlideIntent
@@ -205,7 +205,14 @@ export const QUALITY_GATE = {
   /** A poster whose content hugs one side: the left and right empty bands differ by more than this
    *  share of the safe width (flags 9 of those 398; 0.3 flags 52, mostly left-aligned section titles). */
   posterMaxSideExcess: 0.4,
+  /** spro sprint 2026-11c C11 (solar s12: a night-side Earth photo squeezed to an 800 × 120 band under a
+   *  section brief — a black strip): a photo block whose box is longer than this many times its other side
+   *  shows a sliver of the picture. */
+  maxImageAspect: 3.5,
 } as const
+
+/** C11: the blocks that show one photo in their box. */
+const PHOTO_BLOCKS = new Set(['tls.m.image', 'tls.c.image-full'])
 
 /** CR7a: blocks that are a diagram or a chart for the `diagram` profile (connectors are lines). */
 const isDiagram = (type: string) => (type.startsWith('tls.g.') || type.startsWith('tls.d.')) && type !== 'tls.g.connector'
@@ -358,6 +365,16 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
         code: 'quality/floating-body',
         message: `the body is a strip of small text (largest ${Math.round(bodyLead)} units under a ${Math.round(opts.titleSize)} title) covering ${pct(bodyCover)} of its region: one column instead of two, a block that fills the region (cards, a grid, objectives), a split with a visual or an accent, or a lead size`,
       })
+    }
+  }
+  // C11: a photo squeezed to a band (any profile; a backdrop photo fills the slide and is not judged)
+  for (const b of content) {
+    if (!PHOTO_BLOCKS.has(b.type) || b.layer === 'backdrop' || b.outOfFlow) continue
+    const w = b.box.width
+    const h = b.box.height
+    if (w > 0 && h > 0 && Math.max(w / h, h / w) > QUALITY_GATE.maxImageAspect) {
+      findings.push({ code: 'quality/image-strip', message: `the photo \`${b.id}\` is squeezed to a ${Math.round(w)} × ${Math.round(h)} band and shows a sliver of the picture: give it its own region beside the text (a split or two-column layout), or a layout where it fills the side` })
+      break
     }
   }
   // learning L01 (D10): the smallest reading text against its floor, one finding naming the worst run

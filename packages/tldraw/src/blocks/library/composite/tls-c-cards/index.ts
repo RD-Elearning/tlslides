@@ -5,7 +5,9 @@
  * `defineCompositeBlock` supplies metadata and `build()` (a row of card > stack); `layout()` places the
  * same content by hand: a rounded rect per card (the card block has no stroke or radius) and
  * title/text/image pieces flattened to absolute leaves, so the tree stays 1 level deep and passes
- * DOM/SVG parity. Equal-height cards; content is top aligned.
+ * DOM/SVG parity. Equal-height cards; content is top aligned, except that the air a tall region adds
+ * goes between a numeral/icon lead and the words (C11: the words sit at the card's foot, not a
+ * half-empty card under them).
  */
 
 import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode, Paint, Size } from '../../../types'
@@ -219,6 +221,9 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const sm = ctx.tokens.space.sm
   // Cards hug their content with a little air; a tall region no longer stretches them to 460 (RV03).
   const total = p.roomy ? p.needed : Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
+  // C11: the stretch is air under the tallest card's words; with a numeral or icon lead it goes
+  // between the lead and the title instead, so the words end at the card's foot.
+  const slack = Math.max(0, Math.floor(total - (p.roomy ? p.needed / ROOMY_STRETCH : p.needed)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
   const small = p.small
@@ -285,7 +290,7 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
       } else if (lead === 'image' && c.image) {
         pieces.push({ id: `lead[${i}]`, spec: { id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } }, box: lbox })
       }
-      y += p.leadH + sm * 1.5
+      y += p.leadH + sm * 1.5 + (lead === 'image' ? 0 : slack)
     }
     pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: p.titleSize, ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
     y += p.titleH[i] + sm
