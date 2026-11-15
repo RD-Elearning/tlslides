@@ -55,8 +55,14 @@ export function restatesTitle(title: unknown, question: unknown): boolean {
 function cells(props: SectionBriefProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'left-rail')
   const points = strings(props.points, 4)
-  const title: Cell = { spec: { id: 'title', type: 'tls.t.title', props: { text: props.title, size: 'title' } } }
-  const question: Cell | null = props.question && !restatesTitle(props.title, props.question) ? { spec: { id: 'question', type: 'tls.t.body', props: { text: props.question, size: 'lead' } } } : null
+  // T31 (carry-over pass 2): a question that restates the title is not dropped — the two say one thing, so the slide
+  // shows it once, in the fuller wording (the author's question when it is the longer one, or the only one asked)
+  const same = !!props.question && restatesTitle(props.title, props.question)
+  const q = typeof props.question === 'string' ? props.question : ''
+  const asks = (t: unknown) => typeof t === 'string' && /[?？]\s*$/.test(t)
+  const useQuestion = same && (wordsOf(q).length > wordsOf(props.title).length || (asks(q) && !asks(props.title)))
+  const title: Cell = { spec: { id: 'title', type: 'tls.t.title', props: { text: useQuestion ? q : props.title, size: 'title' } } }
+  const question: Cell | null = props.question && !same ? { spec: { id: 'question', type: 'tls.t.body', props: { text: props.question, size: 'lead' } } } : null
   const list: Cell | null = points.length
     ? { spec: { id: 'points', type: 'tls.t.numbered', props: { items: points, markerStyle: 'badge', spacing: 'relaxed' } }, space: 1 }
     : null

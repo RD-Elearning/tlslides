@@ -20,3 +20,21 @@ describe('tls.c.section-brief — a question that restates the title (spro S29)'
     expect(restatesTitle('Mặt Trời', '')).toBe(false)
   })
 })
+
+describe('T31: the author\'s question is never dropped', () => {
+  const { layoutAt } = require('../composite-test')
+  const texts = (n: any, out: string[] = []): string[] => {
+    if (n.k === 'text') out.push(n.lines.map((l: any) => l.text).join(' '))
+    for (const c of n.children ?? []) texts(c, out)
+    return out
+  }
+  it('a restating question shows once, in its fuller wording', () => {
+    const t = texts(layoutAt(tlsCSectionBrief, { number: '03', title: 'Vì sao có ngày và đêm?', question: 'Vì sao chúng ta có ngày và đêm?', points: [] }, 1600, 700)).join(' | ')
+    expect(t.replace(/\s+/g, ' ')).toContain('chúng ta')
+    expect(t.replace(/\s+/g, ' ').split('ngày và').length - 1).toBe(1)
+  })
+  it('a title that is not a question gives way to the author\'s question of the same words', () => {
+    const t = texts(layoutAt(tlsCSectionBrief, { number: '01', title: 'Sets of numbers', question: 'Sets of numbers?', points: [] }, 1600, 700)).join(' ')
+    expect(t).toContain('?')
+  })
+})
