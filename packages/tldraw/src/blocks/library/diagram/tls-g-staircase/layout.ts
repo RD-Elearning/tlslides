@@ -14,6 +14,8 @@ import type { CapacityReport, LayoutContext, LayoutNode, Size } from '../../../t
 import type { StaircaseProps } from './schema'
 import { STAIR_MAX } from './schema'
 import { asArr, capacityOf, chartColors, emptyState, enumOf, lineH, linesHeight, mutedStyle, objs, onColor, placeLines, rampColor, root, solidRect, str, strokePath, style } from '../_kit'
+import { categoryColor, categoryInk, lumOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { textAligned } from '../../data/_chart/kit'
 import { iconLeaf } from '../../text/_engine/icon'
 import { slotsByIndex } from '../_motion'
@@ -25,7 +27,7 @@ export function layout(props: StaircaseProps, ctx: LayoutContext): LayoutNode {
   const H = Math.max(1, ctx.box.height)
   const steps = objs(props.steps)
     .slice(0, STAIR_MAX)
-    .map((s) => ({ label: str(s.label), text: str(s.text), icon: str(s.icon) }))
+    .map((s) => ({ label: str(s.label), text: str(s.text), icon: str(s.icon), tone: str(s.tone) }))
   const N = steps.length
   if (N < 1) return emptyState(ctx, 'No steps')
   const c = chartColors(ctx)
@@ -65,8 +67,12 @@ export function layout(props: StaircaseProps, ctx: LayoutContext): LayoutNode {
     const h = hOf(i)
     const y = H - h
     tops.push({ x0: x, x1: x + colW, y })
-    const fill = rampColor(ctx, fillMode, N - 1 - i, N)
-    nodes.push({ ...solidRect({ x, y, width: colW, height: h }, fill, `step[${i}]`, Math.min(10, colW * 0.06)), radius: [Math.min(10, colW * 0.06), Math.min(10, colW * 0.06), 0, 0] } as LayoutNode)
+    // C6: a step of a named group stands in the group's colour, its icon in a readable shade of it
+    const cat = categoryColor(ctx, s.tone)
+    const fill = cat ?? rampColor(ctx, fillMode, N - 1 - i, N)
+    // a white group on a white page: the step keeps a rim in the line colour
+    const rim = cat && contrastRatio(lumOf(cat), lumOf(ctx.resolveColor('surface').color)) < 1.3 ? { stroke: { color: ctx.resolveColor('line').color, width: 2 } } : {}
+    nodes.push({ ...solidRect({ x, y, width: colW, height: h }, fill, `step[${i}]`, Math.min(10, colW * 0.06)), ...rim, radius: [Math.min(10, colW * 0.06), Math.min(10, colW * 0.06), 0, 0] } as LayoutNode)
     if (numbered) {
       const ns = { ...style(ctx, 'heading', onColor(ctx, fill)) }
       const off = Math.max(2, Math.min(sp.xs, h * 0.12))
@@ -85,7 +91,7 @@ export function layout(props: StaircaseProps, ctx: LayoutContext): LayoutNode {
     let ty = y - sp.xs - nh - (nh ? sp['3xs'] : 0) - labelLines * lineH(labelS) - ih
     ty = Math.max(0, ty)
     if (s.icon && iconSize > 4 && ih <= room) {
-      nodes.push(iconLeaf(s.icon, { x: x + pad, y: ty, width: iconSize, height: iconSize }, ctx.resolveColor('accent').color, `icon[${i}]`))
+      nodes.push(iconLeaf(s.icon, { x: x + pad, y: ty, width: iconSize, height: iconSize }, categoryInk(ctx, s.tone, ctx.resolveColor('surface').color) ?? ctx.resolveColor('accent').color, `icon[${i}]`))
       ty += ih
     }
     if (labelLines > 0) {

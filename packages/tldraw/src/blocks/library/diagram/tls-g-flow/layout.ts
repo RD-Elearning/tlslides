@@ -20,6 +20,7 @@ import type { DagResult } from '../../../layout/diagram'
 import type { FlowProps } from './schema'
 import { FLOW_MAX_EDGES, FLOW_MAX_NODES } from './schema'
 import { readGraph, type Graph } from './graph'
+import { categoryColor, categoryInk } from '../../text/_engine/color'
 import {
   TEXT_SLACK, arrowHead, capacityOf, chartColors, clamp, emptyState, enumOf, linesHeight, lineH, mutedStyle, onColor, pathNode, placeLines, polyline, root, strokePath, style, tintOf, promoteToFit } from '../_kit'
 
@@ -134,6 +135,16 @@ function layoutAt(props: FlowProps, ctx: LayoutContext): LayoutNode {
     } else {
       fill = tintOf(c.surface, c.accent, 0.14)
       stroke = c.accent
+    }
+    // C6: a node of a named group — a pill filled with the group's colour, a box or diamond tinted
+    // with it and rimmed in a readable shade
+    const cat = categoryColor(ctx, n.tone)
+    if (cat && (n.kind === 'start' || n.kind === 'end')) {
+      fill = cat
+      ink = onColor(ctx, fill)
+    } else if (cat) {
+      fill = tintOf(c.surface, cat, 0.14)
+      stroke = categoryInk(ctx, n.tone, fill)
     }
     if (n.kind === 'decision') {
       const d = `M${f(b.x + b.width / 2)} ${f(b.y)}L${f(b.x + b.width)} ${f(b.y + b.height / 2)}L${f(b.x + b.width / 2)} ${f(b.y + b.height)}L${f(b.x)} ${f(b.y + b.height / 2)}Z`

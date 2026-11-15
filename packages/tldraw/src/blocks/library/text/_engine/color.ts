@@ -42,3 +42,21 @@ export function categoryColor(ctx: LayoutContext, tone: unknown): string | undef
   const hex = m ? ctx.tokens.categorical[Number(m[1])] : undefined
   return hex && tryHexToRgb(hex) ? hex : undefined
 }
+
+/**
+ * spro sprint 2026-11c C6 — the one rule every list-like block follows for an item of a named group:
+ * its MARK (icon, number, box, step, rim) takes the group's colour, nudged along its hue to read at
+ * 3 : 1 on `bgHex`; words keep the text colour, and state colours (a checklist's done / blocked)
+ * keep their meaning. Undefined when the item has no group tone.
+ */
+export function categoryInk(ctx: LayoutContext, tone: unknown, bgHex: string): string | undefined {
+  const cat = categoryColor(ctx, tone)
+  if (!cat) return undefined
+  return contrastRatio(lumOf(cat), lumOf(bgHex)) >= 3 ? cat : readableOn(cat, bgHex, 3)
+}
+
+/** C6: the light tint of a group's colour a container item (a card, a tile, a node) is filled with. */
+export function categoryTint(ctx: LayoutContext, tone: unknown, baseHex: string): string | undefined {
+  const cat = categoryColor(ctx, tone)
+  return cat ? tintOf(baseHex, cat, 0.14) : undefined
+}

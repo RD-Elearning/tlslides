@@ -2519,6 +2519,7 @@ Numbered key points to remember, closed by one takeaway line. _(family: composit
 | \`points\` | yes | list of richText (max 140 chars) (2–5 items) | One sentence each; **bold** the key term. |
 | \`takeaway\` | no | text (max 140 chars) | The one thing to remember. |
 | \`style\` | no | enum: numbered \\\\| cards | cards = one panel per point. |
+| \`pointTones\` | no | list of text (max 12 chars) | Per point: \`category:<n>\` draws the panel in the colour the document gives its group (set by the service). |
 
 \`\`\`json
 {

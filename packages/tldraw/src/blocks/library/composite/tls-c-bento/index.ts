@@ -21,7 +21,7 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../data/_chart/kit'
 import { altFindings, objs, str } from '../../media/_kit'
-import { onColor, tintOf } from '../../text/_engine/color'
+import { categoryInk, categoryTint, onColor, tintOf } from '../../text/_engine/color'
 import { iconLeaf } from '../../text/_engine/icon'
 import { scaledGlyphPath } from '../../text/tls-t-quote/layout'
 import { cardNodes, cardPaint, composeFlat, measureHeights, onSurface, pick, pickToken, plainOf, toMeasurable, type Piece } from '../_kit'
@@ -38,6 +38,8 @@ export interface BentoTile {
   alt?: string
   quote?: string
   name?: string
+  /** C6: `category:<n>`, set by the service for a tile that names one of the document's groups. */
+  tone?: string
 }
 export type BentoPattern = '1+2' | '2+1' | 'hero+3' | '3+2'
 export interface BentoProps extends Record<string, unknown> {
@@ -230,22 +232,31 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       return
     }
     const anchor = i === firstStat
-    const cp = anchor ? { fill: { type: 'solid', color: accent } as Paint, surface: { type: 'solid', color: accent } as Paint, styled: true } : cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
+    // C6: a (non-anchor) tile of a named group — tinted and rimmed, its marks in the group's colour
+    const page = ctx.resolveColor('surface').color
+    const tint = anchor ? undefined : categoryTint(ctx, t.tone, page)
+    const cp = anchor
+      ? { fill: { type: 'solid', color: accent } as Paint, surface: { type: 'solid', color: accent } as Paint, styled: true }
+      : tint
+        ? { ...cardPaint(ctx), fill: { type: 'solid', color: tint } as Paint, stroke: { color: categoryInk(ctx, t.tone, page)!, width: 3 }, surface: { type: 'solid', color: tint } as Paint, topRule: undefined }
+        : cardPaint(ctx, { fill: { type: 'solid', color: ctx.resolveColor('surfaceAlt').color } })
     pieces.push({ id: `tile[${i}]`, raw: cardNodes(cp, c, radius), box: c })
     const on = onSurface(cp.surface)
+    const catInk = tint ? categoryInk(ctx, t.tone, tint) : undefined
     const ink = anchor ? onColor(ctx, accent) : undefined
+    const mark = ink ?? catInk ?? accent
     // icon (point): a tinted disc at the top left
     let top = inner.y
     let room = inner.height
     if (t.kind === 'point' && str(t.icon)) {
       const disc = Math.round(Math.max(56, Math.min(112, Math.min(c.width, c.height) * 0.26)))
       const glyph = Math.round(disc * 0.56)
-      const bg = tintOf(ctx.resolveColor('surfaceAlt').color, accent, 0.18)
+      const bg = tintOf(tint ?? ctx.resolveColor('surfaceAlt').color, catInk ?? accent, 0.18)
       pieces.push({
         id: `icon[${i}]`,
         raw: [
           { k: 'rect', box: { x: inner.x, y: inner.y, width: disc, height: disc }, fill: { type: 'solid', color: bg }, radius: disc / 2 } as LayoutNode,
-          iconLeaf(t.icon, { x: inner.x + (disc - glyph) / 2, y: inner.y + (disc - glyph) / 2, width: glyph, height: glyph }, accent),
+          iconLeaf(t.icon, { x: inner.x + (disc - glyph) / 2, y: inner.y + (disc - glyph) / 2, width: glyph, height: glyph }, catInk ?? accent),
         ],
         box: { x: inner.x, y: inner.y, width: disc, height: disc },
       })
@@ -257,7 +268,7 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       const mw = Math.round(Math.max(40, Math.min(72, c.height * 0.16)))
       pieces.push({
         id: `mark[${i}]`,
-        raw: [{ k: 'path', box: { x: 0, y: 0, width: W, height: H }, d: scaledGlyphPath(mw / 100, inner.x, inner.y), fill: { type: 'solid', color: ink ?? accent } } as LayoutNode],
+        raw: [{ k: 'path', box: { x: 0, y: 0, width: W, height: H }, d: scaledGlyphPath(mw / 100, inner.x, inner.y), fill: { type: 'solid', color: mark } } as LayoutNode],
         box: { x: inner.x, y: inner.y, width: mw, height: mw * 0.8 },
       })
       top += mw * 0.8 + ctx.tokens.space.sm
@@ -279,7 +290,7 @@ export function layoutBento(props: BentoProps, ctx: LayoutContext): LayoutNode {
       const fits = (sz: number) => ctx.measureText(str(t.value), { ...base, size: sz }, 1e6).width <= inner.width
       while (size > ctx.resolveText('subheading').size && !fits(size)) size *= 0.94
       size = Math.max(ctx.resolveText('subheading').size, Math.floor(size))
-      const style = { ...base, size, color: ink ?? accent }
+      const style = { ...base, size, color: mark }
       const m = ctx.measureText(str(t.value), style, inner.width)
       const under = gap + Math.round(size * GAP_EM)
       let y = Math.max(top, inner.y + inner.height - (m.height + (label ? under + lh : 0)))

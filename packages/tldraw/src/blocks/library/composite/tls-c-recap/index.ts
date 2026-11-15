@@ -13,6 +13,7 @@ import { blockWord } from '../../../labels'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { onSurface, composeFlat, measureHeights, pick, richItems, toMeasurable, type Piece } from '../_kit'
+import { categoryInk, categoryTint } from '../../text/_engine/color'
 
 export const RECAP_MIN = 2
 export const RECAP_MAX = 5
@@ -21,12 +22,15 @@ export interface RecapProps extends Record<string, unknown> {
   points: Array<string | RichText>
   takeaway?: string
   style?: 'numbered' | 'cards'
+  /** C6: per point, `category:<n>` (set by the service) — a cards-style panel in the group's colour. */
+  pointTones?: string[]
 }
 
 export const schema: BlockSchema = {
   points: { type: { kind: 'list', of: { kind: 'richText', maxChars: 140 }, min: RECAP_MIN, max: RECAP_MAX }, role: 'content', label: 'Key points', required: true, guidance: 'One sentence each; **bold** the key term.' },
   takeaway: { type: { kind: 'text', maxChars: 140 }, role: 'content', label: 'Takeaway', guidance: 'The one thing to remember.' },
   style: enumSlot(['numbered', 'cards'], 'Style', 'cards = one panel per point.'),
+  pointTones: { type: { kind: 'list', of: { kind: 'text', maxChars: 12 } }, role: 'option', label: 'Point colours', help: 'Per point: `category:<n>` draws the panel in the colour the document gives its group (set by the service).' },
 }
 
 export const defaults: RecapProps = {
@@ -78,16 +82,23 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
     const textType = n >= 4 ? 'tls.t.caption' : 'tls.t.body'
     const textHs = measureHeights(ctx, pts.map((t, i) => ({ id: `p${i}`, type: textType, props: { text: toMeasurable(t) } })), inner)
     bodyH = 2 * pad + numH + ctx.tokens.space.sm + Math.max(0, ...textHs)
-    const fill = ctx.resolveColor('surfaceAlt').color
-    const on = onSurface({ type: 'solid', color: fill })
+    const base = ctx.resolveColor('surfaceAlt').color
+    const page = ctx.resolveColor('surface').color
+    const tones = Array.isArray(props.pointTones) ? props.pointTones : []
     pts.forEach((t, i) => {
       const x = i * (pw + g)
+      // C6: a point of a named group — the panel tinted and rimmed, the number in the group's colour
+      const tint = categoryTint(ctx, tones[i], page)
+      const fill = tint ?? base
+      const on = onSurface({ type: 'solid', color: fill })
+      const ink = categoryInk(ctx, tones[i], fill)
+      const rim = tint ? categoryInk(ctx, tones[i], page) : undefined
       content.push({
         id: `card[${i}]`,
-        raw: [{ k: 'rect', box: { x, y: 0, width: pw, height: bodyH }, fill: { type: 'solid', color: fill }, radius: ctx.tokens.radius.lg } as LayoutNode],
+        raw: [{ k: 'rect', box: { x, y: 0, width: pw, height: bodyH }, fill: { type: 'solid', color: fill }, ...(rim ? { stroke: { color: rim, width: 3 } } : {}), radius: ctx.tokens.radius.lg } as LayoutNode],
         box: { x, y: 0, width: pw, height: bodyH },
       })
-      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'title', color: 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
+      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'title', color: ink ?? 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
       content.push({ id: `point[${i}]`, spec: { id: `p${i}`, type: textType, props: { text: toMeasurable(t), ...on } }, box: { x: x + pad, y: pad + numH + ctx.tokens.space.sm, width: inner, height: textHs[i] } })
     })
   }

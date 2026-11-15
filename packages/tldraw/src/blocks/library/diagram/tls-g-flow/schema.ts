@@ -54,6 +54,8 @@ export interface FlowNode {
   id: string
   label: string
   kind?: 'step' | 'decision' | 'start' | 'end'
+  /** C6: `category:<n>`, set by the service for a node that names one of the document's groups. */
+  tone?: string
 }
 
 export interface FlowEdge {
