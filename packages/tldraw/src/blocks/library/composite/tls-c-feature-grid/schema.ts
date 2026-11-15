@@ -146,8 +146,8 @@ export function circleIcon(cellW: number): { disc: number; glyph: number } {
  */
 export interface FgTier {
   roomy: boolean
-  title: 'heading' | 'subheading'
-  desc: 'lead' | 'body'
+  title: 'heading' | 'subheading' | 'lead'
+  desc: 'lead' | 'body' | 'caption'
   icon: number
   pad: number
   /** Card rows are this many times their content (claimed up front, so the choice is a fixed point). */
@@ -159,6 +159,10 @@ export const FG_TIERS: readonly FgTier[] = [
   // review 2026-11-08 (memphis s9: refused the roomy tier for a cut word, the base tier left the grid a thin
   // band): the middle tier — base-size titles, roomy descriptions, padding and stretch — is tried between them
   { roomy: true, title: 'subheading', desc: 'lead', icon: 56, pad: 32, stretch: 1.25 },
+  // spro sprint 2026-11c S29 7b (21 of 236 stored overflow answers were feature grids, 6-9 cards with long
+  // descriptions): the compact tier — lead titles, caption descriptions, a 40 icon, 20 padding — is taken
+  // when the base tier is taller than its box, so a full grid shrinks before it spills
+  { roomy: false, title: 'lead', desc: 'caption', icon: 40, pad: 20, stretch: 1 },
 ]
 /** Cells narrower than this keep the base tier (heading titles need the measure). */
 export const FG_ROOMY_MIN_CELL = 400

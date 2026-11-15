@@ -81,7 +81,9 @@ export function template(props: FeatureGridProps, ctx: HtmlTemplateContext): str
       ? FG_TIERS[0]
       : d0 && Math.abs(d0.style.size - sizeOf(FG_TIERS[2].desc)) < 0.5 && Math.abs(d0.style.size - sizeOf(FG_TIERS[1].desc)) >= 0.5
         ? FG_TIERS[2]
-        : FG_TIERS[1]
+        : d0 && Math.abs(d0.style.size - sizeOf(FG_TIERS[3].desc)) < 0.5 && Math.abs(d0.style.size - sizeOf(FG_TIERS[1].desc)) >= 0.5
+          ? FG_TIERS[3]
+          : FG_TIERS[1]
   const disc = tierCircleIcon(cellW, tier)
   const iconBox = circle ? disc.disc : tier.icon
   const glyph = circle ? disc.glyph : tier.icon

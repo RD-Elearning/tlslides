@@ -22,7 +22,7 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   // AC3 pre-item: the roomy tier when it fits the box (see FG_TIERS); a ladder of fixed-height
   // candidates, so laid out again at its own height the grid picks the same tier.
   const H = ctx.box.height
-  const [roomy, base, middle] = FG_TIERS
+  const [roomy, base, middle, compact] = FG_TIERS
   const cols = effectiveColumns(ctx.box.width, props.columns, props.gap ?? 24, (props.cells ?? []).length)
   const cellW = (ctx.box.width - (cols - 1) * (props.gap ?? 24)) / cols
   if (H > 0 && cellW >= FG_ROOMY_MIN_CELL) {
@@ -33,7 +33,11 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
     const mid = posterAt(props, ctx, middle)
     if (mid.box.height <= H + 0.5 && !breaksWord(mid)) return mid
   }
-  return posterAt(props, ctx, base)
+  const node = posterAt(props, ctx, base)
+  // S29 7b: a grid taller than its box at the base tier takes the compact tier (it still reports an
+  // overflow when even that does not fit; laid out again at its own height it chooses the same)
+  if (H > 0 && node.box.height > H + 0.5) return posterAt(props, ctx, compact)
+  return node
 }
 
 function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): LayoutNode {
