@@ -7,7 +7,7 @@
  */
 import type { DeckSpec, SlideSpec } from './types'
 import { analyzeDeck } from './layout-report'
-import { placeDeckMotifs } from './motif-zone'
+import { placeDeckMotifs, isDeckMotif } from './motif-zone'
 import { deckSpecToDocument } from './deck-document'
 import { documentToDeckSpec } from './slide-decompiler'
 
@@ -103,7 +103,7 @@ describe('motifZone auto', () => {
   const doodle = (zone?: 'auto'): DeckSpec => ({ ...deck('doodle', [cover]), ...(zone ? { motifZone: zone } : {}) })
   const textBoxes = (d: DeckSpec) => analyzeDeck(d)[0].blocks.flatMap((b) => b.text.map((t) => t.painted))
   const hits = (a: { x: number; y: number; width: number; height: number }, b: typeof a) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
-  const motifOf = (d: DeckSpec, id: string) => analyzeDeck(d)[0].blocks.find((b) => b.id === id)?.painted
+  const motifOf = (d: DeckSpec, id: string) => analyzeDeck(d)[0].blocks.find((b) => (id === 'deck-motif' ? isDeckMotif(b.id) : b.id === id))?.painted
 
   it('a fixed master star lands on a top-left title', () => {
     const star = motifOf(doodle(), 'style:star')!
@@ -119,7 +119,7 @@ describe('motifZone auto', () => {
     expect(m).toBeDefined()
     expect(textBoxes(placed).some((t) => hits(m, t))).toBe(false)
     // idempotent: placing again keeps the one motif
-    expect(placeDeckMotifs(placed).slides[0].free!.filter((f) => f.block.id === 'deck-motif')).toHaveLength(1)
+    expect(placeDeckMotifs(placed).slides[0].free!.filter((f) => isDeckMotif(f.block.id))).toHaveLength(1)
   })
 
   it("auto: the content master keeps its page furniture (paper, rules) but not its ornaments", () => {
@@ -138,7 +138,7 @@ describe('motifZone auto', () => {
     // the document places the motif itself; the round trip returns it as a free block, placed once
     const back = documentToDeckSpec(deckSpecToDocument(doodle('auto')).document).spec
     expect(back.motifZone).toBe('auto')
-    expect(back.slides[0].free!.filter((f) => f.block.id === 'deck-motif')).toHaveLength(1)
-    expect(placeDeckMotifs(back).slides[0].free!.filter((f) => f.block.id === 'deck-motif')).toHaveLength(1)
+    expect(back.slides[0].free!.filter((f) => isDeckMotif(f.block.id))).toHaveLength(1)
+    expect(placeDeckMotifs(back).slides[0].free!.filter((f) => isDeckMotif(f.block.id))).toHaveLength(1)
   })
 })

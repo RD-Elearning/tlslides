@@ -8,7 +8,7 @@ import { validateDeckSpec } from '../validate-deck-spec'
 import { analyzeDeck } from '../layout-report'
 import { BUILT_IN_STYLES, deckMotif, styleMasters } from './index'
 import type { DeckSpec } from '../types'
-import { DECK_MOTIF_ID, placeDeckMotifs } from '../motif-zone'
+import { isDeckMotif, placeDeckMotifs } from '../motif-zone'
 
 const deck = (style: string, motif?: string): DeckSpec =>
   ({
@@ -77,7 +77,7 @@ describe('deck motif (F1)', () => {
 })
 
 describe('S20-g deck motif icons', () => {
-  const placed = (d: DeckSpec) => placeDeckMotifs(d).slides.map((s) => s.free?.find((f) => f.block.id === DECK_MOTIF_ID)?.block)
+  const placed = (d: DeckSpec) => placeDeckMotifs(d).slides.map((s) => s.free?.find((f) => isDeckMotif(f.block.id))?.block)
 
   it('under motifZone auto the signature draws the deck motif icons, rotating by page', () => {
     const d = { ...deck('doodle'), motifZone: 'auto' as const, motifs: { icons: ['coffee', 'zzz-unknown', 'pizza'] } }

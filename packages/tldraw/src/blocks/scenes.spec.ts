@@ -3,7 +3,8 @@
  * text, degrade along the fallback chain, idempotent, kept by the round trip, drawn in both looks.
  */
 import { placeScenes, freeZone, SCENE_IDS, SCENE_PREFIX, type SceneId } from './scenes'
-import { placeDeckMotifs } from './motif-zone'
+import { placeDeckMotifs, isDeckMotif } from './motif-zone'
+import { validateDeckSpec } from './validate-deck-spec'
 import { analyzeDeck } from './layout-report'
 import { deckSpecToDocument } from './deck-document'
 import { documentToDeckSpec } from './slide-decompiler'
@@ -72,8 +73,20 @@ describe('S26-a scenes', () => {
       ({ id, role: 'cover', layout: 'blank', ...(scene ? { scene: { id: scene } } : {}), regions: { content: [{ id: `${id}-h`, type: 'tls.c.hero', props: { title: 'Món ngon' } }] } }) as SlideSpec
     const d = { ...deck('doodle', [hero('s1', 'ghost-mark'), hero('s2')]), motifZone: 'auto' as const }
     const placed = placeDeckMotifs(d)
-    expect(placed.slides[0].free?.some((f) => f.block.id === 'deck-motif') ?? false).toBe(false)
-    expect(placed.slides[1].free?.some((f) => f.block.id === 'deck-motif')).toBe(true)
+    expect(placed.slides[0].free?.some((f) => isDeckMotif(f.block.id)) ?? false).toBe(false)
+    expect(placed.slides[1].free?.some((f) => isDeckMotif(f.block.id))).toBe(true)
+  })
+
+  test('C9: several pages with a signature motif or the same scene keep block ids unique across the deck', () => {
+    const hero = (id: string, scene?: SceneId): SlideSpec =>
+      ({ id, role: 'cover', layout: 'blank', ...(scene ? { scene: { id: scene } } : {}), regions: { content: [{ id: `${id}-h`, type: 'tls.c.hero', props: { title: 'Món ngon' } }] } }) as SlideSpec
+    const d = { ...deck('doodle', [hero('s1'), hero('s2', 'ghost-mark'), hero('s3'), hero('s4', 'ghost-mark')]), motifZone: 'auto' as const }
+    const placed = placeDeckMotifs(d)
+    const ids = placed.slides.flatMap((s) => (s.free ?? []).map((f) => f.block.id))
+    expect(ids.filter(isDeckMotif)).toHaveLength(2)
+    expect(ids.filter((i) => i.startsWith(SCENE_PREFIX))).toHaveLength(2)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(validateDeckSpec(placed).filter((v) => v.rule === 'block/duplicate-id')).toEqual([])
   })
 
   test('every scene on a light and a dark look: no new layout errors', () => {

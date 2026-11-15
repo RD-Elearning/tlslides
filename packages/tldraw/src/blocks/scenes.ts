@@ -173,7 +173,9 @@ export function placeScenes(deck: DeckSpec): DeckSpec {
       if (got) {
         if (!got.length) return slide
         changed = true
-        return { ...slide, free: [...(slide.free ?? []), ...got] }
+        // block ids are unique across the deck: each page's scene blocks carry its slide id
+        const own = got.map((f) => ({ ...f, block: { ...f.block, id: `${f.block.id}-${slide.id}` } }))
+        return { ...slide, free: [...(slide.free ?? []), ...own] }
       }
       id = SCENE_FALLBACK[id]
     }

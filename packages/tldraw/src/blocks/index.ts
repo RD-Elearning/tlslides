@@ -226,7 +226,7 @@ export type { BlockBudget, SlotBudget, RegionClass } from './pipeline/textBudget
 export { slotFill, FILL_FLOOR } from './pipeline/budgets'
 export type { SlotFill } from './pipeline/budgets'
 export type { GateProfile } from './pipeline/quality'
-export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID } from './motif-zone'
+export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID, isDeckMotif } from './motif-zone'
 export { placeScenes, sceneBlocks, freeZone, SCENE_IDS, SCENE_NEEDS, SCENE_FALLBACK, SCENE_PREFIX } from './scenes'
 export type { SceneId } from './scenes'
 export { deckMotifIcons } from './backdrops'

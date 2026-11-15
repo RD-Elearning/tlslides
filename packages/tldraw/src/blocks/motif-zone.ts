@@ -20,8 +20,11 @@ import { deckMotifIcons } from './backdrops'
 import { placeScenes } from './scenes'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, SlideSpec } from './types'
 
-/** The id of the placed signature motif. */
+/** The id of the placed signature motif; each page's block adds its slide id (`deck-motif-s01`),
+ *  because block ids are unique across the whole deck. */
 export const DECK_MOTIF_ID = 'deck-motif'
+/** A placed signature motif (any page's, or an older deck's bare `deck-motif`). */
+export const isDeckMotif = (id: string | undefined): boolean => !!id && (id === DECK_MOTIF_ID || id.startsWith(DECK_MOTIF_ID + '-'))
 /** A corner keeps clear of text from this distance (slide units). */
 export const MOTIF_CLEARANCE = 48
 /** The gutter `_place.ts` builds its placing splits with (`3xs`). */
@@ -100,13 +103,13 @@ function placeSignatures(deck: DeckSpec): DeckSpec {
     if (slide.scene && slide.scene.id !== 'type-only') return slide
     // the rotation counts every signature page, placed before or not, so an edited deck keeps it
     const n = page++
-    if (slide.free?.some((f) => f.block?.id === DECK_MOTIF_ID)) return slide
+    if (slide.free?.some((f) => isDeckMotif(f.block?.id))) return slide
     // the page as the masters draw it under `auto` (no signature): where its text is
     const report = analyzeDeck({ ...deck, slides: [slide] })[0]
     const text = report.blocks.filter((b) => b.layer !== 'backdrop').flatMap((b) => b.text.map((t) => t.painted))
     const leaf = icons.length ? withMotifIcon(sig.leaf, icons[n % icons.length]) : sig.leaf
     const placed: PlacedBlock = {
-      block: { ...leaf, id: DECK_MOTIF_ID, layer: 'backdrop' },
+      block: { ...leaf, id: `${DECK_MOTIF_ID}-${slide.id}`, layer: 'backdrop' },
       box: motifBox(sig.box, text, frame),
     }
     changed = true
