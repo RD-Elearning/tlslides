@@ -17,6 +17,9 @@ export const SVG_EXPORT_PADDING = 16
 export const BINDING_DISTANCE = 16
 export const CLONING_DISTANCE = 32
 export const FIT_TO_SCREEN_PADDING = 128
+/** spro C7 (S27-h): a slide frame is fitted with 28 units each side horizontally (the strip's inset is separate);
+ *  vertically it keeps FIT_TO_SCREEN_PADDING for the editor's top and bottom bars. */
+export const FIT_FRAME_PADDING_X = 56
 // ctrl/⌘ + wheel and trackpad pinch: wheel pixels per e-fold of zoom (was a linear 1/50 per px,
 // which felt twitchy on a trackpad and jumped the whole range on one mouse-wheel notch)
 export const WHEEL_ZOOM_SPEED = 65

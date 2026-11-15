@@ -426,7 +426,8 @@ const StyledControls = styled('div', {
 })
 
 const StyledScrollArea = styled(ScrollAreaPrimitive.Root, {
-  maxHeight: 370,
+  // spro C7 (S27-h): the strip runs down the canvas (six slides at a 900-px window), not a 370-px box
+  maxHeight: 'max(370px, calc(100vh - 250px))',
   overflow: 'hidden',
 })
 

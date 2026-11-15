@@ -75,6 +75,7 @@ import { SessionArgsOfType, getSession, TldrawSession } from './sessions'
 import {
   USER_COLORS,
   FIT_TO_SCREEN_PADDING,
+  FIT_FRAME_PADDING_X,
   MAX_ZOOM_STEP,
   WHEEL_ZOOM_SPEED,
   GRID_SIZE,
@@ -2800,7 +2801,7 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     const width = rendererBounds.width - inset
     const zoom = TLDR.getCameraZoom(
       Math.min(
-        (width - FIT_TO_SCREEN_PADDING) / commonBounds.width,
+        (width - (frame ? FIT_FRAME_PADDING_X : FIT_TO_SCREEN_PADDING)) / commonBounds.width,
         (rendererBounds.height - FIT_TO_SCREEN_PADDING) / commonBounds.height
       )
     )
