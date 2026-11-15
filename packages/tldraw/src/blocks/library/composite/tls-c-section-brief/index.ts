@@ -54,7 +54,7 @@ export function restatesTitle(title: unknown, question: unknown): boolean {
 
 function cells(props: SectionBriefProps): { main: Cell[]; opts: PosterOptions } {
   const v = pick(props.variant, VARIANTS, 'left-rail')
-  const points = strings(props.points).slice(0, 4)
+  const points = strings(props.points, 4)
   const title: Cell = { spec: { id: 'title', type: 'tls.t.title', props: { text: props.title, size: 'title' } } }
   const question: Cell | null = props.question && !restatesTitle(props.title, props.question) ? { spec: { id: 'question', type: 'tls.t.body', props: { text: props.question, size: 'lead' } } } : null
   const list: Cell | null = points.length

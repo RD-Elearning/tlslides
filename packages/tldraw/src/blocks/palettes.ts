@@ -215,13 +215,13 @@ const toneCache = new WeakMap<object, Map<string, unknown>>()
  * accents and status colours are re-solved to 3:1 on the new ground. Pure; memoised per theme object,
  * so React memos keyed on the result stay stable. `base` / absent returns the theme itself.
  */
-export function slideTheme<T extends { id: string; colors: Record<string, string | undefined> }>(theme: T, tone?: SlideToneName | string): T {
+export function slideTheme<T extends { id: string; colors: object }>(theme: T, tone?: SlideToneName | string): T {
   if (tone !== 'deep' && tone !== 'accent') return theme
   let byTone = toneCache.get(theme)
   if (!byTone) toneCache.set(theme, (byTone = new Map()))
   const hit = byTone.get(tone)
   if (hit) return hit as T
-  const c = theme.colors as Record<string, string>
+  const c = theme.colors as unknown as Record<string, string>
   const bg = c.background
   const darkDeck = lum(bg) < 0.2
   const accent2 = c.accent2 ?? c.accent1
