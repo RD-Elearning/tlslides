@@ -718,7 +718,7 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
 const PICTURES_SECTION = [
   '## Pictures',
   '',
-  'Icon slots also take `lib:<pack>/<name>` library pictures, and `tls.m.asset` draws one large — only ids the slide lists as candidates; otherwise `auto: <meaning>`.',
+  'Write an icon slot as `auto: <English object>`: code picks a picture by meaning (a `lib:<pack>/<name>` library picture when the deck has one); `tls.m.asset` draws one large. Never invent a `lib:` id.',
   '',
 ]
 

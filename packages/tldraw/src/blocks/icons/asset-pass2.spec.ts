@@ -5,7 +5,7 @@
 import type { DeckAsset, LayoutContext, LayoutNode } from '../types'
 import { layoutBlock } from '../layout/layout-child'
 import { tlsMIcon } from '../library/media/tls-m-icon'
-import { tlsMAsset, lint as assetLint } from '../library/media/tls-m-asset'
+import { tlsMAsset } from '../library/media/tls-m-asset'
 import { tlsCFeatureReveal } from '../library/composite/tls-c-feature-reveal'
 import { template as revealTemplate } from '../library/composite/tls-c-feature-reveal/template'
 import { ctxNoAssets } from '../library/media/media-test'
@@ -64,18 +64,18 @@ describe('S20 pass 2 — look treatments reach a library picture', () => {
 
 describe('S20 pass 2 — tls.m.asset', () => {
   it('draws the library picture square, as large as its box, aligned', () => {
-    const t = layoutBlock(tlsMAsset, { asset: 'lib:tabler/bowl', align: 'start' }, ctx(400, 200))
+    const t = layoutBlock(tlsMAsset, { icon: 'lib:tabler/bowl', align: 'start' }, ctx(400, 200))
     const [img] = images(t)
     expect(img.box).toEqual({ x: 0, y: 0, width: 200, height: 200 })
-    const c = images(layoutBlock(tlsMAsset, { asset: 'lib:tabler/bowl' }, ctx(400, 200)))[0]
+    const c = images(layoutBlock(tlsMAsset, { icon: 'lib:tabler/bowl' }, ctx(400, 200)))[0]
     expect(c.box.x).toBe(100)
   })
 
-  it('a built-in name or a ref the table lacks draws nothing; the lint names the built-in case', () => {
-    expect(images(layoutBlock(tlsMAsset, { asset: 'coffee' }, ctx()))).toHaveLength(0)
-    expect(images(layoutBlock(tlsMAsset, { asset: 'lib:tabler/none' }, ctx()))).toHaveLength(0)
-    expect(assetLint({ asset: 'coffee' })[0].rule).toBe('asset/not-library')
-    expect(assetLint({ asset: 'lib:tabler/bowl' })).toEqual([])
+  it('a built-in name draws the engine glyph (a deck without the library); no icon or a ref the table lacks draws nothing', () => {
+    const glyph = layoutBlock(tlsMAsset, { icon: 'coffee' }, ctx())
+    expect(all(glyph).some((x) => x.k === 'icon')).toBe(true)
+    expect(all(layoutBlock(tlsMAsset, { icon: '' }, ctx())).filter((x) => x.k === 'icon' || x.k === 'image')).toHaveLength(0)
+    expect(images(layoutBlock(tlsMAsset, { icon: 'lib:tabler/none' }, ctx()))).toHaveLength(0)
   })
 })
 

@@ -6880,14 +6880,14 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 
 ### \`tls.m.asset\` — Library picture
 
-One picture from the deck's asset library, large, in the deck colours. _(family: media; keywords: picture, asset, library, spot illustration, pictogram, graphic)_
+One picture of the slide's subject, large, in the deck colours (a library picture when the deck has one). _(family: media; keywords: picture, asset, library, spot illustration, pictogram, graphic)_
 
-**When:** A slide that needs one large picture of its subject and no photo: beside a hook, a divider or a closing. Only with a lib: id the slide offers.
-**Avoid:** A small glyph next to text (use tls.m.icon); a real photograph (use tls.m.image); a built-in icon name (use tls.m.icon).
+**When:** A slide that needs one large picture of its subject and no photo: beside a hook, a divider or a closing.
+**Avoid:** A small glyph next to text (use tls.m.icon); a real photograph (use tls.m.image); several pictures (use tls.m.icon-list or cards).
 
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
-| \`asset\` | yes | icon | A library picture id (lib:<pack>/<name>) from the slide's picture candidates. |
+| \`icon\` | yes | icon | auto: <the English object to show> — code picks the picture by meaning. |
 | \`color\` | no | enum: accent \\\\| accent2 \\\\| text | Colour of a one-colour picture (default accent). |
 | \`align\` | no | enum: start \\\\| center \\\\| end | Where the square picture sits in a wider or taller box. |
 | \`alt\` | no | text (max 80 chars) | What the picture shows, for screen readers. |
@@ -6897,7 +6897,7 @@ One picture from the deck's asset library, large, in the deck colours. _(family:
   \\"id\\": \\"b_asset\\",
   \\"type\\": \\"tls.m.asset\\",
   \\"props\\": {
-    \\"asset\\": \\"lib:tabler/coffee\\",
+    \\"icon\\": \\"coffee\\",
     \\"color\\": \\"accent\\"
   }
 }
@@ -9106,6 +9106,6 @@ Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-
 
 ## Pictures
 
-Icon slots also take \`lib:<pack>/<name>\` library pictures, and \`tls.m.asset\` draws one large — only ids the slide lists as candidates; otherwise \`auto: <meaning>\`.
+Write an icon slot as \`auto: <English object>\`: code picks a picture by meaning (a \`lib:<pack>/<name>\` library picture when the deck has one); \`tls.m.asset\` draws one large. Never invent a \`lib:\` id.
 "
 `;
