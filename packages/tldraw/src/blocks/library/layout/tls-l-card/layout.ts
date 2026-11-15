@@ -12,6 +12,9 @@ import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
 import { containerSurface } from '../_style'
+import { cardNodes, cardPaint } from '../../composite/_kit'
+import { categoryColor, lumOf, tintOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { collectPaintedLeaves, paintedBounds } from '../../../layout/measure-block'
 import type { BlockSpec } from '../../../types'
 
@@ -60,7 +63,19 @@ function build(props: CardProps, ctx: LayoutContext): { node: LayoutNode; hug?: 
   // paint the card leaves under its content is passed to the children, so their text solves
   // against the card (a dark or accent card gets light ink), not against the slide.
   const roleSurface = typeof ctx.style?.surface === 'string' && !['surface', 'surfaceAlt'].includes(ctx.style.surface)
-  const { nodes: background, surface: under } = containerSurface(ctx, outerBox, surfaceFill, 'background', !(explicit || roleSurface))
+  // spro sprint 2026-11c C6: a card of a named group (`tone: category:<n>`, set by the service) — a light tint of the
+  // group's colour and a rim in it, as `tls.c.cards` draws one (the rim in the line colour for a white group on a
+  // white page); an instance `style` still wins
+  const cat = ctx.style ? undefined : categoryColor(ctx, props.tone)
+  const surfaceOf = (box: { x: number; y: number; width: number; height: number }) => {
+    if (!cat) return containerSurface(ctx, box, surfaceFill, 'background', !(explicit || roleSurface))
+    const page = ctx.resolveColor('surface').color
+    const rim = contrastRatio(lumOf(cat), lumOf(page)) < 1.3 ? ctx.resolveColor('line').color : cat
+    const tint: Paint = { type: 'solid', color: tintOf(page, cat, 0.14) }
+    const cp = { ...cardPaint(ctx), fill: tint, stroke: { color: rim, width: 3 }, surface: tint, topRule: undefined }
+    return { nodes: cardNodes(cp, box, ctx.tokens.radius.md, 'background'), surface: tint }
+  }
+  const { nodes: background, surface: under } = surfaceOf(outerBox)
 
   let childNodes: LayoutNode[]
   if (children.length > 1) {
@@ -84,7 +99,7 @@ function build(props: CardProps, ctx: LayoutContext): { node: LayoutNode; hug?: 
   // keep the full box.
   const hug = hugBottom(ctx, children, childNodes, contentBox, padding)
   if (hug === undefined) childNodes = centreLoose(ctx, children, childNodes, contentBox)
-  const bg = hug !== undefined ? containerSurface(ctx, { x: 0, y: 0, width: W, height: hug }, surfaceFill, 'background', !(explicit || roleSurface)).nodes : background
+  const bg = hug !== undefined ? surfaceOf({ x: 0, y: 0, width: W, height: hug }).nodes : background
 
   return {
     node: {

@@ -200,3 +200,30 @@ describe('RV06 — example fits its box (review G06)', () => {
     assertExampleFits(tlsDTable)
   })
 })
+
+describe('tls.d.table — rows of a named group in its colour (spro sprint 2026-11c C6)', () => {
+  const { createLayoutContext } = require('../../../layout/layout-child')
+  const { TEST_TOKENS, TEST_SURFACE } = require('../../layout/test-helpers')
+  const tokens = { ...TEST_TOKENS, categorical: ['#3E8E4E', '#4A4F55', '#FFFFFF'] }
+  const BAGS = { columns: [{ label: 'Nhóm' }, { label: 'Túi' }], rows: [['Rác tái chế', 'Túi trắng'], ['Rác thực phẩm', 'Túi xanh lá'], ['Rác còn lại', 'Túi xám']] }
+  const at = (props: Record<string, unknown>) =>
+    tlsDTable.layout({ ...(tlsDTable.defaults as any), ...props } as any, createLayoutContext({ box: SZ, tokens, surface: TEST_SURFACE }))
+  const tones = (t: any) => absoluteLeaves(t).filter((l: any) => /^tone\[\d\]/.test(l.part ?? ''))
+
+  it('tints a toned row and bars it in the group colour; a white group on a white page in the line colour', () => {
+    const plain = at(BAGS)
+    const t = at({ ...BAGS, rowTones: ['category:2', 'category:0', 'category:1'] })
+    const bars = tones(t).filter((l: any) => l.part.endsWith('.bar'))
+    expect(bars.map((l: any) => l.part)).toEqual(['tone[0].bar', 'tone[1].bar', 'tone[2].bar'])
+    expect(bars[1].node.fill.color.toUpperCase()).toBe('#3E8E4E')
+    expect(bars[0].node.fill.color.toUpperCase()).not.toBe('#FFFFFF')
+    // the text does not move
+    const texts = (x: any) => absoluteLeaves(x).filter((l: any) => l.k === 'text').map((l: any) => [l.part, Math.round(l.x), Math.round(l.y)])
+    expect(texts(t)).toEqual(texts(plain))
+  })
+
+  it('no tone, an unknown tone or an index past the ramp draws nothing', () => {
+    expect(tones(at({ ...BAGS, rowTones: ['', 'green', 'category:9'] }))).toEqual([])
+    expect(tones(at(BAGS))).toEqual([])
+  })
+})

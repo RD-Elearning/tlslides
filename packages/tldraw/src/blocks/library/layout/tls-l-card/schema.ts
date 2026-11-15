@@ -11,6 +11,8 @@ export const schema: BlockSchema = {
     label: 'Padding',
     help: 'Inner padding of the card.',
   },
+  // spro sprint 2026-11c C6: set by the service when the card names one of the document's coloured groups
+  tone: { type: { kind: 'text', maxChars: 12 }, role: 'option', label: 'Group colour', help: '`category:<n>`: the card in the colour the document gives its group (set by the service).' },
   children: {
     type: { kind: 'blocks', allow: ['layout', 'text', 'data', 'diagram', 'composite', 'media'] },
     role: 'content',
@@ -21,6 +23,8 @@ export const schema: BlockSchema = {
 
 export interface CardProps extends Record<string, unknown> {
   padding: string
+  /** C6: `category:<n>` — the card in its group's colour (set by the service). */
+  tone?: string
   children?: BlockSpec[]
 }
 

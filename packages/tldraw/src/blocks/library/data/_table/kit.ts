@@ -30,6 +30,8 @@ import {
   type TableSpec,
 } from '../../../layout/table'
 import { iconLeaf } from '../../text/_engine/icon'
+import { categoryColor, lumOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK, withRealWidths } from '../_chart/kit'
 import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 
@@ -240,6 +242,9 @@ export interface TableInput {
   header?: 'filled' | 'bold' | 'none'
   emphasisRow?: number
   emphasisCol?: number
+  /** spro sprint 2026-11c C6: per body row, `category:<n>` — a tint and a left bar in the group's colour (the
+   *  text is not moved: the bar sits in the cell padding). */
+  rowTones?: ReadonlyArray<unknown>
   /** Part name of the emphasised column tint (`emphasis` -> `emphasis.col`; anything else is used as is). */
   emphasisName?: string
   /** Also paint the emphasised column's header cell in the accent (compare-table `winner`). */
@@ -450,6 +455,18 @@ function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): T
     if (o.emphasisHead && measure.headHeight > 0) {
       backs.push({ k: 'rect', part: `${name === 'emphasis' ? 'emphasis' : name}.head`, box: { x, y: 0, width: widths[emphCol] ?? 0, height: top }, fill: { type: 'solid', color: c.accent } })
     }
+  }
+  for (let r = 0; r < nBody; r++) {
+    const cat = categoryColor(ctx, o.rowTones?.[r])
+    const b = cat ? rowBox.get(`row-${r}`) : undefined
+    if (!cat || !b) continue
+    const y = b.y - rowGap / 2
+    const h = b.height + rowGap
+    backs.push({ k: 'rect', part: `tone[${r}]`, box: { x: 0, y, width: W, height: h }, fill: { type: 'solid', color: tintOf(c.surface, cat, 0.14) } })
+    // a group whose colour is the page's own (a white bag on a white page) is outlined in the line colour
+    const bar = contrastRatio(lumOf(cat), lumOf(c.surface)) < 1.3 ? c.line : cat
+    const bw = Math.max(4, Math.min(8, Math.round(cellPad / 3)))
+    backs.push({ k: 'rect', part: `tone[${r}].bar`, box: { x: 0, y, width: bw, height: h }, fill: { type: 'solid', color: bar } })
   }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
   // the most lines a body row's text takes at this tier (rows grown by `rowGrow` not counted)

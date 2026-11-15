@@ -37,6 +37,7 @@ function read(props: TableProps, width: number): { input: TableInput; rows: numb
     header: enumOf(props.header, ['filled', 'bold', 'none'] as const, 'filled'),
     emphasisRow: numOrNull(props.emphasisRow) ?? -1,
     emphasisCol: numOrNull(props.emphasisCol) ?? -1,
+    rowTones: asArr<unknown>(props.rowTones),
     format: typeof props.format === 'string' ? props.format : undefined,
   }
   return { input, rows: rowsRaw.length, cols: colsRaw.length }

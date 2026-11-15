@@ -4475,6 +4475,7 @@ Table with header, aligned numbers, status dots, ratings and a totals row. _(fam
 | \`header\` | no | enum: filled \\\\| bold \\\\| none |  |
 | \`emphasisRow\` | no | number (min -1) |  |
 | \`emphasisCol\` | no | number (min -1) |  |
+| \`rowTones\` | no | list of text (max 12 chars) | Per body row: \`category:<n>\` draws the row in the colour the document gives its group (set by the service). |
 | \`density\` | no | enum: default \\\\| compact |  |
 | \`format\` | no | enum: plain \\\\| compact \\\\| percent \\\\| currency |  |
 | \`showFooter\` | no | boolean |  |
@@ -6308,6 +6309,7 @@ Filled container with configurable padding. _(family: layout; keywords: card, co
 | Slot | Required | Type | Guidance |
 |---|---|---|---|
 | \`padding\` | no | enum: 3xs \\\\| 2xs \\\\| xs \\\\| sm \\\\| md \\\\| lg \\\\| xl \\\\| 2xl \\\\| 3xl \\\\| 4xl | Inner padding of the card. |
+| \`tone\` | no | text (max 12 chars) | \`category:<n>\`: the card in the colour the document gives its group (set by the service). |
 | \`children\` | no | blocks (allow: layout, text, data, diagram, composite, media) | Child blocks laid out inside the card. |
 
 \`\`\`json
