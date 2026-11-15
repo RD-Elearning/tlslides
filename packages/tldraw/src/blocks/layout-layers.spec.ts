@@ -331,7 +331,7 @@ describe('LO2 — validation, JSON schema, digest', () => {
 
   it('the capability index names the non-content layers and the stacking rule, within budget', () => {
     const md = capabilityIndex()
-    expect(md.length).toBeLessThanOrEqual(29000) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178; sprint 2026-11b S08–S10: 223 (28.7k)
+    expect(md.length).toBeLessThanOrEqual(29400) // vivid V4: 144 blocks; spro creative CR8: 160, CR9: 162, CR13: 178; sprint 2026-11b S08–S10: 223 (28.7k); 2026-11c S20 pass 2 + S25 route/screen: 228 (29.4k, same ceiling as capability-digest.spec)
     // the index a model reads is the tier-1 one (20.2k at 223 blocks): it has its own ratchet
     expect(capabilityIndex(undefined, { tier: 1 }).length).toBeLessThanOrEqual(20500)
     expect(md).toContain('tls.m.decoration · decoration · element · backdrop — ')
