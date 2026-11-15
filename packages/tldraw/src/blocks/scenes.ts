@@ -168,7 +168,7 @@ export function sceneBlocks(id: SceneId, icons: string[], ink: Box[], frame: { w
         const step = (frame.width - 2 * PAD) / Math.max(1, Math.max(n, 6))
         const count = Math.floor((frame.width - 2 * PAD + step - side) / step)
         const boxes = Array.from({ length: count }, (_, k) => ({ x: Math.round(PAD + k * step + (step - side) / 2), y: Math.round(y), width: side, height: side }))
-        if (boxes.some((b) => ink.some((t) => gap(b, t) < CLEAR / 2))) continue
+        if (boxes.some((b) => ink.some((t) => gap(b, t) < CLEAR - 0.5))) continue
         return boxes.map((box, k) => ({ block: block(`strip-${k}`, 'tls.m.icon', { icon: pick(k), size: 'md', iconStyle: 'plain', color: k % 2 ? 'accent2' : 'accent' }), box }))
       }
       return undefined
