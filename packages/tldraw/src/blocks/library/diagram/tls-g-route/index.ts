@@ -102,7 +102,8 @@ export function layout(props: RouteProps, ctx: LayoutContext): LayoutNode {
   const whole = (t: readonly [TypeToken, TypeToken]) => {
     const ns = style(ctx, t[0])
     const ms = mutedStyle(ctx, t[1])
-    return items.every((s) => linesNeeded(ctx, s.name, ns, inner) <= NAME_LINES && (!s.note || linesNeeded(ctx, s.note, ms, inner) <= NOTE_LINES))
+    // a place name reads as one name on one line ("Đồng / Văn" split read as two places); the last tier may wrap it
+    return items.every((s) => linesNeeded(ctx, s.name, ns, inner) <= 1 && (!s.note || linesNeeded(ctx, s.note, ms, inner) <= NOTE_LINES))
   }
   // the wave needs room: two label bands, the marks and a wave of at least one leg label's height
   const room = (t: readonly [TypeToken, TypeToken]) => 2 * labelH(t) + 2 * 18 + 40 + 2 * lineH(legS) <= H

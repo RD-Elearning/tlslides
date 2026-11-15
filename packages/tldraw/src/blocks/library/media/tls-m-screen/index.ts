@@ -16,7 +16,7 @@ export const SCREEN_PARTS = ['bar', 'search', 'tabs', 'media', 'cards', 'list', 
 export type ScreenPartKind = (typeof SCREEN_PARTS)[number]
 export const PARTS_MIN = 2
 export const PARTS_MAX = 8
-const GAP = 40
+const GAP = 60
 const NOTE_LINES = 2
 
 export interface ScreenPart extends Record<string, unknown> {
@@ -266,7 +266,8 @@ export function layout(props: ScreenProps, ctx: LayoutContext): LayoutNode {
   for (const a of anchors) {
     const by = Math.max(a.y - B / 2, lastY + B + 2)
     lastY = by
-    marks.push(...badge(number.get(a.i) ?? 0, Math.min(devW - B / 2, a.x - B / 2), by, `badge[${a.i}]`))
+    // just outside the frame's right edge, level with its part: on the screen it would cover the part's own icons
+    marks.push(...badge(number.get(a.i) ?? 0, devW + 8, by, `badge[${a.i}]`))
   }
   nodes.push(slot('badges', { width: W, height: H }, marks))
 
