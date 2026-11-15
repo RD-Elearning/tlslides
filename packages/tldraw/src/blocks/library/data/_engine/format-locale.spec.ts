@@ -35,8 +35,18 @@ describe('number formatting by deck locale', () => {
   })
   it('a big stat in plain format keeps its zeros (300 was shown as "3")', () => {
     expect(bigStat({ value: 300, format: 'plain' } as never)).toBe('300')
-    expect(bigStat({ value: 120000, format: 'plain' } as never)).toBe('120000')
+    expect(bigStat({ value: 120000, format: 'plain' } as never)).toBe('120,000')
     expect(bigStat({ value: 2.5, format: 'plain' } as never)).toBe('2.5')
+  })
+  it('spro c10: a plain number groups its thousands in the deck language; a year stays as written', () => {
+    expect(bigStat({ value: 1380, format: 'plain' } as never, 'vi')).toBe('1.380')
+    expect(bigStat({ value: 5500, format: 'plain', suffix: '°C' } as never, 'vi')).toBe('5.500°C')
+    expect(bigStat({ value: 1234.5, format: 'plain' } as never, 'vi')).toBe('1.234,5')
+    expect(bigStat({ value: 2027, format: 'plain' } as never, 'vi')).toBe('2027')
+    expect(bigStat({ value: 1380, format: 'plain' } as never, 'en')).toBe('1,380')
+    expect(formatValue(1380, undefined, { locale: 'vi' })).toBe('1.380')
+    expect(formatValue(2025, undefined, { locale: 'vi' })).toBe('2025')
+    expect(formatValue(980, undefined, { locale: 'vi' })).toBe('980')
   })
   it('sprint 2026-11c c0: a value the author wrote with its own separator, sign or unit is drawn as written', () => {
     // a KPI tile of a Vietnamese deck: "1.200" (m²) used to come out as the English "1,200"

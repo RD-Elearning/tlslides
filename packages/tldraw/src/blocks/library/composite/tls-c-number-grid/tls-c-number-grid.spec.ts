@@ -13,3 +13,18 @@ wave1Suite({
   long: { stats: [0, 1, 2, 3, 4, 5].map((i) => ({ value: '1.240,5', unit: 'triệu', label: S(40, i), text: S(110, i) })) },
   parts: ['value', 'item'],
 })
+
+describe('spro c10: text past its cap is cut at a word break, with an ellipsis', () => {
+  const { clip } = jest.requireActual('../_rich-block') as typeof import('../_rich-block')
+  it('lumo s11: never mid-word', () => {
+    const line = 'Approve $6M: $3.5M for the lending pilot (loan book and risk models) and $2.5M for the Indonesia licence and local entity. Both start in Q4.'
+    const out = clip(line, 110)
+    expect(out.length).toBeLessThanOrEqual(110)
+    expect(out.endsWith('…')).toBe(true)
+    expect(out).toBe('Approve $6M: $3.5M for the lending pilot (loan book and risk models) and $2.5M for the Indonesia licence and…')
+  })
+  it('a text within its cap is untouched; one long word is still cut', () => {
+    expect(clip('Ngắn gọn.', 110)).toBe('Ngắn gọn.')
+    expect(clip('x'.repeat(20), 10)).toBe('x'.repeat(9) + '…')
+  })
+})

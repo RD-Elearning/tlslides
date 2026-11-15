@@ -108,9 +108,22 @@ export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBloc
 
 /** Text of a prop (string or rich text), '' otherwise. */
 export function txt(v: unknown, max = 640): string {
-  if (typeof v === 'string') return v.slice(0, max)
-  if (v && typeof v === 'object' && Array.isArray((v as { runs?: unknown }).runs)) return (v as { runs: Array<{ text?: string }> }).runs.map((r) => r.text ?? '').join('').slice(0, max)
+  if (typeof v === 'string') return clip(v, max)
+  if (v && typeof v === 'object' && Array.isArray((v as { runs?: unknown }).runs)) return clip((v as { runs: Array<{ text?: string }> }).runs.map((r) => r.text ?? '').join(''), max)
   return ''
+}
+
+/**
+ * `text` at most `max` characters. A longer one is cut at the last word break (when that keeps ≥ 60 % of it) and ends
+ * in "…", never mid-word — spro c10 (2026-11-15): lumo s11's 168-character number-grid line was drawn as "…for the
+ * Indonesia licence and l".
+ */
+export function clip(text: string, max: number): string {
+  if (text.length <= max) return text
+  let cut = text.slice(0, Math.max(1, max - 1))
+  const space = cut.search(/\s\S*$/)
+  if (space >= max * 0.6) cut = cut.slice(0, space)
+  return cut.replace(/[\s,;:.\-–—(]+$/, '') + '…'
 }
 
 /** Objects of a list prop (hostile input: anything else dropped). */

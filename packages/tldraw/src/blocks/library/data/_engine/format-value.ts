@@ -86,6 +86,21 @@ function formatValueEn(value: number, format: ValueFormat | string | undefined, 
     case 'currency':
       return `${opts.currency ?? '$'}${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
     default:
-      return String(value)
+      return plainNumber(value)
   }
+}
+
+/**
+ * A plain number in English form with its thousands grouped ("1380" → "1,380", then `localizeNumber` makes it the
+ * deck's "1.380"). A four-digit whole number that reads as a year (1800–2199) stays as it is, so "2027" is not drawn
+ * "2,027". spro c10 (2026-11-15): coffee s04 "1380 tấn" and solar s07 "5500 °C" lost the Vietnamese thousands dot the
+ * documents wrote (1.380, 5.500).
+ */
+export function plainNumber(value: number): string {
+  const text = String(Number(value.toFixed(10)))
+  const abs = Math.abs(value)
+  if (abs < 1000 || !Number.isFinite(value) || /e/i.test(text)) return text
+  if (abs < 10000 && Number.isInteger(value) && abs >= 1800 && abs < 2200) return text
+  const [int, frac] = text.split('.')
+  return int.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (frac !== undefined ? `.${frac}` : '')
 }

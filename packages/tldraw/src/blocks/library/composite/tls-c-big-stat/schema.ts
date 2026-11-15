@@ -10,7 +10,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
-import { localizeNumber } from '../../data/_engine/format-value'
+import { localizeNumber, plainNumber } from '../../data/_engine/format-value'
 
 export interface BigStatProps extends Record<string, unknown> {
   /** The headline number. */
@@ -75,7 +75,7 @@ export function formatValue(props: BigStatProps, locale?: string): string {
       // Special-case zero so it does not become an empty string.
       // Number#toString already drops a decimal's trailing zeros; stripping zeros from the
       // string as well turned 300 into "3" and 120000 into "12".
-      formatted = String(Number(value.toFixed(10)))
+      formatted = plainNumber(value)  // thousands grouped, a year kept (spro c10)
       break
     }
   }
