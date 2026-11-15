@@ -171,6 +171,7 @@ export const BLOCK_SIZE_HINTS: Record<string, string> = {
   'tls.l.section': 'h≈193+53/L@840',
   'tls.l.spacer': 'h≈0@840',
   'tls.l.stack': 'h=fill',
+  'tls.m.asset': 'h=fill',
   'tls.m.avatar': 'h≈293@840',
   'tls.m.avatar-group': 'h≈80@840',
   'tls.m.backdrop': 'h=fill',

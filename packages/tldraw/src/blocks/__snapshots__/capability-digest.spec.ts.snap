@@ -6878,6 +6878,31 @@ Vertical stack with gap. _(family: layout; keywords: stack, vertical, column, ga
 }
 \`\`\`
 
+### \`tls.m.asset\` — Library picture
+
+One picture from the deck's asset library, large, in the deck colours. _(family: media; keywords: picture, asset, library, spot illustration, pictogram, graphic)_
+
+**When:** A slide that needs one large picture of its subject and no photo: beside a hook, a divider or a closing. Only with a lib: id the slide offers.
+**Avoid:** A small glyph next to text (use tls.m.icon); a real photograph (use tls.m.image); a built-in icon name (use tls.m.icon).
+
+| Slot | Required | Type | Guidance |
+|---|---|---|---|
+| \`asset\` | yes | icon | A library picture id (lib:<pack>/<name>) from the slide's picture candidates. |
+| \`color\` | no | enum: accent \\\\| accent2 \\\\| text | Colour of a one-colour picture (default accent). |
+| \`align\` | no | enum: start \\\\| center \\\\| end | Where the square picture sits in a wider or taller box. |
+| \`alt\` | no | text (max 80 chars) | What the picture shows, for screen readers. |
+
+\`\`\`json
+{
+  \\"id\\": \\"b_asset\\",
+  \\"type\\": \\"tls.m.asset\\",
+  \\"props\\": {
+    \\"asset\\": \\"lib:tabler/coffee\\",
+    \\"color\\": \\"accent\\"
+  }
+}
+\`\`\`
+
 ### \`tls.m.avatar\` — Avatar
 
 Portrait in a circle, rounded or square frame with name and role; initials when there is no photo. _(family: media; keywords: avatar, portrait, person, speaker, author, profile, headshot)_
@@ -8550,7 +8575,7 @@ Zero coordinates, zero colour values, zero font sizes. Region names come from th
 
 exports[`R7 — capability digest v2 snapshot test digest structured data matches snapshot 1`] = `
 Object {
-  "blockCount": 225,
+  "blockCount": 226,
   "blockTypes": Array [
     "tls.a.choice",
     "tls.a.fill-blank",
@@ -8726,6 +8751,7 @@ Object {
     "tls.l.spacer",
     "tls.l.split",
     "tls.l.stack",
+    "tls.m.asset",
     "tls.m.avatar",
     "tls.m.avatar-group",
     "tls.m.backdrop",
@@ -9030,7 +9056,7 @@ tls.c.image-full · media · slide — Full-slide photo with a headline panel [h
 tls.c.image-text · media · group — Image beside or above a kicker, title and body [h=fill] knobs: placement=left|right|top, gutter=xs|sm|md|lg|xl
 tls.m.image · media · element — Single image with cover/contain fit, focal point, optional caption [h=fill] knobs: fit=cover|contain
 tls.m.image-grid · media · group · 2–9 items — Grid of images in even cells or a feature pattern, with captions [h=fill] knobs: pattern=even|feature-left|feature-top|mosaic, cols=auto|2|3|4, captions=below|overlay|none
-also: tls.c.gallery-wall, tls.c.image-notes, tls.c.photo-essay, tls.d.swatches, tls.g.annotated, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
+also: tls.c.gallery-wall, tls.c.image-notes, tls.c.photo-essay, tls.d.swatches, tls.g.annotated, tls.m.asset, tls.m.device-mock, tls.m.emoji, tls.m.icon, tls.m.icon-label, tls.m.illustration, tls.m.image-compare
 
 ## People
 tls.c.team · people · group · 2–8 items — Grid of team members, each with photo, name, role and optional bio [h 501–845@1728] knobs: cols=auto|2|3|4, card=plain|card, showBio
@@ -9077,5 +9103,9 @@ also: tls.g.arrow, tls.l.field, tls.m.icon-cluster, tls.m.ornament, tls.m.patter
 ## Icons
 
 Valid icon names: zap, shield, globe, check, arrow-right, trending-up, trending-down, users, clock, alert, arrow-left, arrow-up, arrow-down, chevron-right, refresh, check-circle, x-circle, alert-triangle, info, help-circle, plus, minus, briefcase, building, chart-bar, chart-line, chart-pie, target, trophy, award, dollar, wallet, credit-card, shopping-cart, handshake, rocket, flag, gauge, user, user-plus, heart, smile, message, mail, phone, cpu, database, server, cloud, code, terminal, lock, key, wifi, smartphone, laptop, settings, layers, git-branch, bug, book, book-open, graduation-cap, lightbulb, pencil, clipboard, file-text, library, brain, puzzle, calendar, hourglass, map-pin, home, star, sparkles, leaf, sun, eye, search, filter, link, download, share, image, video, mic (+1202 by meaning)
+
+## Pictures
+
+Icon slots also take \`lib:<pack>/<name>\` library pictures, and \`tls.m.asset\` draws one large — only ids the slide lists as candidates; otherwise \`auto: <meaning>\`.
 "
 `;

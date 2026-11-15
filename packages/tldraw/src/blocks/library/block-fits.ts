@@ -267,6 +267,7 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.t.speech-bubble': f(['quote', 'story', 'people'], null, 'lines', 'lively', { families: ['playful', 'classroom'] }),
   // spro creative CR9
   'tls.m.emoji': f(['statement', 'question'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
+  'tls.m.asset': f(['statement', 'story', 'question'], null, 'labels', 'calm'),
   'tls.m.illustration': f(['statement', 'story', 'people'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
 
   // spro creative CR13: waves 2 and 3 (PLAN Appendix C.3/C.4)
@@ -299,7 +300,7 @@ const FITS_ROWS: Record<string, BlockFits> = {
  *  `tls.t.qa` is `info` (it shows questions WITH their answers). */
 export const USE_DECOR: ReadonlySet<string> = new Set([
   'tls.m.decoration', 'tls.m.icon-cluster', 'tls.m.pattern', 'tls.m.ornament', 'tls.x.rule', 'tls.g.arrow',
-  'tls.m.emoji', 'tls.m.illustration', 'tls.m.shape', 'tls.t.badge', 'tls.t.kicker', 'tls.t.marker',
+  'tls.m.emoji', 'tls.m.illustration', 'tls.m.asset', 'tls.m.shape', 'tls.t.badge', 'tls.t.kicker', 'tls.t.marker',
 ])
 export const USE_FRAME: ReadonlySet<string> = new Set([
   'tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title', 'tls.c.poster-cover', 'tls.c.split-cover', 'tls.c.hook-cover',

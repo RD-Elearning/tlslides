@@ -305,6 +305,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── spro creative CR9: emoji and illustrations ──
   'tls.m.emoji': t2(['size', 'backing']),
   'tls.m.illustration': t2(['accent', 'flip']),
+  // spro sprint 2026-11c S20-C: a library picture as a block (tier 2: only with candidates the slide lists)
+  'tls.m.asset': t2(['color', 'align']),
 
   // ── spro creative CR13: waves 2 and 3 ──
   'tls.g.decision-tree': t2(['variant', 'outcomes']),

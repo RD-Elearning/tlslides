@@ -73,6 +73,7 @@ export function resolveLibIcons(node: LayoutNode, ctx: LayoutContext): LayoutNod
       const image: LayoutNode = {
         k: 'image', box: x.box, ...(x.part ? { part: x.part } : {}), assetId: x.name,
         alt: x.name.slice(4).split('/').pop()!.replace(/-/g, ' '), fit: 'contain', url: assetUrl(asset, colour, slots),
+        ...(asset.colourMode === 'mono' ? { ink: colour } : {}),
       }
       const alpha = ink?.alpha ?? 1
       if (alpha >= 0.999) return image

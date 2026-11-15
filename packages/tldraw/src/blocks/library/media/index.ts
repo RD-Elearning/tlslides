@@ -23,6 +23,7 @@ import { tlsMOrnament } from './tls-m-ornament'
 import { tlsMShape } from './tls-m-shape'
 import { tlsMEmoji } from './tls-m-emoji'
 import { tlsMIllustration } from './tls-m-illustration'
+import { tlsMAsset } from './tls-m-asset'
 
 /** All built-in media block definitions. */
 export const mediaBlocks: BlockDefinition[] = [
@@ -45,6 +46,7 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMShape,
   tlsMEmoji,
   tlsMIllustration,
+  tlsMAsset,
 ]
 
 export { tlsMImage } from './tls-m-image'
@@ -66,3 +68,4 @@ export { tlsMBackdrop } from './tls-m-backdrop'
 export { tlsMOrnament } from './tls-m-ornament'
 export { tlsMEmoji } from './tls-m-emoji'
 export { tlsMIllustration } from './tls-m-illustration'
+export { tlsMAsset } from './tls-m-asset'

@@ -340,6 +340,70 @@ function treatIcon(node: Extract<LayoutNode, { k: 'icon' }>, t: RenderTreatment,
   }
 }
 
+const SVG_URL = 'data:image/svg+xml;charset=utf-8,'
+
+/** A library picture's SVG with `edit` applied (its data URL decoded and encoded again); unchanged when not ours. */
+function editSvg(url: string | undefined, edit: (svg: string) => string): string | undefined {
+  if (!url || !url.startsWith(SVG_URL)) return undefined
+  return SVG_URL + encodeURIComponent(edit(decodeURIComponent(url.slice(SVG_URL.length))))
+}
+
+/** spro sprint 2026-11c S20 (carry-over pass 2) — `look.icon` on a LIBRARY picture (a `lib:` icon the resolver
+ *  turned into an SVG image): the same treatments as a built-in glyph, drawn around the picture. `thin` thins its
+ *  strokes, `duotone` / `blob` / `hand` put the pale shape behind, `sticker` a white die-cut backing with a soft
+ *  shadow, `tile` a tile of the glyph colour with the picture in white (a multi-colour picture: a pale tile, the
+ *  picture as drawn), `emoji` the subject's emoji when the name has one. `filled` is the library voice's job. */
+function treatLibImage(node: Extract<LayoutNode, { k: 'image' }>, t: RenderTreatment, seed: number): LayoutNode {
+  const v = t.icon
+  if (!v || v === 'outline' || v === 'filled') return node
+  const w = node.box.width
+  const h = node.box.height
+  if (w < 4 || h < 4) return node
+  const name = node.assetId.slice(4).split('/').pop() ?? ''
+  if (v === 'emoji') {
+    const e = emojiForIcon(name)
+    const url = e ? emojiUrl(e) : undefined
+    return url ? { ...node, assetId: `emoji:${e}`, alt: e!.replace(/-/g, ' '), url } : node
+  }
+  if (v === 'thin') {
+    const url = editSvg(node.url, (s) => s.replace(/stroke-width="([\d.]+)"/g, (_, n: string) => `stroke-width="${Math.max(0.75, Number(n) * 0.55)}"`))
+    return url ? { ...node, url } : node
+  }
+  const color = node.ink && HEX.test(node.ink) ? node.ink : '#333333'
+  const pale = mixHex(color, '#ffffff', 0.8)
+  const local = { ...node, box: { x: 0, y: 0, width: w, height: h } }
+  delete (local as { part?: string }).part
+  const scaled = (k: number, over: Partial<Extract<LayoutNode, { k: 'image' }>> = {}): LayoutNode => ({ ...local, box: { x: (w - w * k) / 2, y: (h - h * k) / 2, width: w * k, height: h * k }, ...over })
+  const at = (children: LayoutNode[]): LayoutNode => ({ k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children })
+  switch (v) {
+    case 'duotone': {
+      const r = Math.min(w, h) * 0.36
+      const d = `M${0.58 * w - r} ${0.58 * h} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`
+      return at([{ k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d, fill: { type: 'solid', color: mixHex(color, '#ffffff', 0.72) } }, local])
+    }
+    case 'blob':
+    case 'hand': {
+      const s = v === 'hand' ? Math.min(w, h) * 0.94 : Math.min(w, h)
+      const back: LayoutNode = { k: 'path', part: 'shape', box: { x: w - s, y: h - s, width: s, height: s }, d: blobPath(s / 2, s / 2, s / 2, seed + (v === 'hand' ? 1 : 0), 0), fill: { type: 'solid', color: pale } }
+      return at([back, scaled(0.7)])
+    }
+    case 'sticker': {
+      const s = Math.min(w, h) * 0.92
+      const box = { x: (w - s) / 2, y: (h - s) / 2, width: s, height: s }
+      const shadow: LayoutNode = { k: 'rect', part: 'shape', box: { ...box, x: box.x + w * 0.03, y: box.y + h * 0.04 }, fill: { type: 'solid', color: '#0000002E' }, radius: s * 0.3 }
+      const white: LayoutNode = { k: 'rect', part: 'shape', box, fill: { type: 'solid', color: '#FFFFFF' }, radius: s * 0.3 }
+      return at([shadow, white, scaled(0.68)])
+    }
+    case 'tile': {
+      const white = node.ink ? editSvg(node.url, (s) => s.split(node.ink!).join('#FFFFFF')) : undefined
+      const tile: LayoutNode = { k: 'rect', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, fill: { type: 'solid', color: white ? color : pale }, radius: Math.min(w, h) * 0.24 }
+      return at([tile, scaled(0.6, white ? { url: white } : {})])
+    }
+    default:
+      return node
+  }
+}
+
 /**
  * The tree drawn in treatment `t` (unchanged when `t` asks for nothing). `key` seeds the sketch
  * (the block's type or id), so the same block always wobbles the same way.
@@ -364,6 +428,8 @@ export function treatTree(node: LayoutNode, t: RenderTreatment | undefined, key 
         return treatText(x, t!, seed)
       case 'icon':
         return treatIcon(x, t!, seed)
+      case 'image':
+        return x.assetId.startsWith('lib:') ? treatLibImage(x, t!, seed) : x
       default:
         return x
     }

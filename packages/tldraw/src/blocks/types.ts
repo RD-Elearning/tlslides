@@ -883,7 +883,7 @@ export type LayoutNode =
        *  see all of it (`text/truncated`). */
       truncated?: true
     }
-  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
+  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string; /** spro S20: the glyph colour a `lib:` picture was resolved in (look treatments re-tint it). */ ink?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true; /** creative CR9: the icon's name, so a look can redraw it (filled weight, emoji). */ name?: string }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | {

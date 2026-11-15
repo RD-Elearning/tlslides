@@ -264,6 +264,7 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
   slides.forEach((slide, index) => {
     validateSlide(slide, index, frame, tokens, reg, seenSlideIds, seenBlockIds, findings)
   })
+  checkLibAssets(s.assets, slides, findings)
 
   return findings
 }
@@ -1265,6 +1266,29 @@ function checkBudget(
     default:
       break
   }
+}
+
+/**
+ * spro sprint 2026-11c S20 (carry-over pass 2) — `asset/missing` (warning; spro keeps it soft): a `lib:` ref in a slide
+ * whose deck carries an asset table (`DeckSpec.assets`) that does not hold it — the resolver draws NOTHING there (an
+ * empty slot where the author meant a picture). A deck with no table yet (a slide checked before `assemble` embeds the
+ * pictures) is not checked: every ref would look missing.
+ */
+function checkLibAssets(assets: unknown, slides: unknown[], findings: DeckFinding[]): void {
+  if (!isRecord(assets) || Object.keys(assets).length === 0) return
+  const walk = (v: unknown, path: string): void => {
+    if (isLibRef(v)) {
+      if (!Object.prototype.hasOwnProperty.call(assets, v.slice(4))) {
+        findings.push({ level: 'warning', rule: 'asset/missing', path, message: `The picture "${v}" is not in the deck's asset table, so nothing is drawn there. Use another icon or leave the slot empty.` })
+      }
+    } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`))
+    else if (isRecord(v)) for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`)
+  }
+  slides.forEach((slide, i) => {
+    if (!isRecord(slide)) return
+    if (slide.regions !== undefined) walk(slide.regions, `slides[${i}].regions`)
+    if (slide.free !== undefined) walk(slide.free, `slides[${i}].free`)
+  })
 }
 
 /**

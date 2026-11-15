@@ -308,6 +308,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.t.speech-bubble': [v('round', 'a round speech bubble', { variant: 'round' }), v('shout', 'a loud bubble', { variant: 'shout' })],
   // spro creative CR9
   'tls.m.emoji': [v('sticker', 'an emoji on a white sticker', { backing: 'sticker', size: 'lg' }), v('bare', 'a bare emoji', { backing: 'none' })],
+  'tls.m.asset': [v('accent', 'a library picture in accent', { color: 'accent' }), v('quiet', 'a library picture in accent 2', { color: 'accent2' })],
   'tls.m.illustration': [v('scene', 'a scene in accent', { accent: 'accent' }), v('facing', 'a mirrored scene in accent 2', { accent: 'accent2', flip: true })],
 
   // spro creative CR13: waves 2 and 3
