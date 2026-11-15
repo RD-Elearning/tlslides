@@ -1,4 +1,4 @@
-import { CopyIcon, PlusIcon } from '@radix-ui/react-icons'
+import { ChevronLeftIcon, ChevronRightIcon, CopyIcon, PlusIcon } from '@radix-ui/react-icons'
 import { TLPageState } from '@tlslides/core'
 import * as React from 'react'
 import { DeckContextMenu } from '~components/DeckContextMenu'
@@ -22,6 +22,21 @@ const DECK_WIDTH = 200
 const DECK_SLIDE_PADDING_X = 20
 const DECK_SLIDE_PADDING_Y = 5
 const DECK_SLIDE_WIDTH = DECK_WIDTH - DECK_SLIDE_PADDING_X * 2
+/** spro C7 (S27-h): the collapsed strip is one button this wide; the remembered choice per browser. */
+const DECK_COLLAPSED_WIDTH = 56
+const COLLAPSED_KEY = 'tls.deck.stripCollapsed'
+
+function initialCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const kept = window.localStorage?.getItem(COLLAPSED_KEY)
+    if (kept === '1' || kept === '0') return kept === '1'
+  } catch {
+    // storage blocked: fall back to the width rule
+  }
+  // a phone: the strip would cover half the canvas, so it starts folded
+  return !!window.matchMedia?.('(max-width: 500px)').matches
+}
 
 const sortedSelector = (s: TDSnapshot) =>
   Object.values(s.document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
@@ -47,15 +62,28 @@ export const Deck = React.memo(function Deck(): JSX.Element {
   const basic = useEditorProfile() === 'basic'
   const t = useMsg()
 
+  // spro C7 (S27-h): the strip folds to one button (remembered per browser; folded at first on a phone)
+  const [collapsed, setCollapsed] = React.useState<boolean>(initialCollapsed)
+  const toggleCollapsed = React.useCallback(() => {
+    setCollapsed((c) => {
+      try {
+        window.localStorage?.setItem(COLLAPSED_KEY, c ? '0' : '1')
+      } catch {
+        // storage blocked: the choice lasts for this page only
+      }
+      return !c
+    })
+  }, [])
+
   // The strip floats over the canvas's right edge: fitting a slide leaves that edge free.
   React.useEffect(() => {
     const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 500px)').matches // stitches '@micro'
-    app.setFitInsets({ right: (narrow ? 150 : DECK_WIDTH) + 16 })
+    app.setFitInsets({ right: (collapsed ? DECK_COLLAPSED_WIDTH : narrow ? 150 : DECK_WIDTH) + 16 })
     app.zoomToFit()
     return () => {
       app.setFitInsets({ right: 0 })
     }
-  }, [app])
+  }, [app, collapsed])
 
   const handleDuplicatePage = React.useCallback(() => {
     app.duplicatePage(app.currentPageId)
@@ -131,11 +159,33 @@ export const Deck = React.memo(function Deck(): JSX.Element {
     setDropIndex(null)
   }, [])
 
+  const currentIndex = sortedPages.findIndex((p) => p.id === app.currentPageId)
+
+  if (collapsed) {
+    return (
+      <StyledDeckContainer>
+        <StyledCenterWrap id="TD-Deck">
+          <StyledPanel side="lr" id="TD-DeckPanel" data-collapsed="" css={{ width: DECK_COLLAPSED_WIDTH, '@micro': { width: DECK_COLLAPSED_WIDTH } }}>
+            <StyledFoldButton type="button" aria-label={t('strip.expand')} title={t('strip.expand')} aria-expanded={false} data-strip-toggle="" onClick={toggleCollapsed}>
+              <ChevronLeftIcon />
+              <span>
+                {currentIndex + 1}/{sortedPages.length}
+              </span>
+            </StyledFoldButton>
+          </StyledPanel>
+        </StyledCenterWrap>
+      </StyledDeckContainer>
+    )
+  }
+
   return (
     <StyledDeckContainer>
       <StyledCenterWrap id="TD-Deck">
         {/* Slide Island */}
         <StyledPanel side="lr" id="TD-DeckPanel">
+          <StyledFoldButton type="button" aria-label={t('strip.collapse')} title={t('strip.collapse')} aria-expanded data-strip-toggle="" onClick={toggleCollapsed} css={{ alignSelf: 'flex-end', marginRight: 8, flexDirection: 'row' }}>
+            <ChevronRightIcon />
+          </StyledFoldButton>
           {/* Slide Strips Container */}
           <StyledScrollArea>
             <StyledViewport>
@@ -275,6 +325,24 @@ const StyledSlideNumber = styled('span', {
   backgroundColor: '$panel',
   opacity: 0.85,
   pointerEvents: 'none',
+})
+
+const StyledFoldButton = styled('button', {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 2,
+  minWidth: 32,
+  minHeight: 32,
+  padding: '6px 4px',
+  border: 'none',
+  borderRadius: 8,
+  background: 'transparent',
+  color: '$text',
+  font: '500 12px/16px system-ui, sans-serif',
+  cursor: 'pointer',
+  '&:hover': { background: '$hover' },
+  '&:focus-visible': { outline: '2px solid $selected', outlineOffset: 1 },
 })
 
 const StyledCount = styled('div', {

@@ -115,4 +115,23 @@ describe('editor E01 — editorProfile', () => {
     expect(document.body.textContent).toContain('1 slide')
     expect(document.querySelector('[aria-label="Slide actions"]')).not.toBeNull()
   })
+
+  test('spro S27-h: the strip folds to one button and back, and remembers it', async () => {
+    window.localStorage.removeItem('tls.deck.stripCollapsed')
+    await mount('basic')
+    const hide = document.querySelector('[aria-label="Hide slides"]') as HTMLButtonElement
+    expect(hide).not.toBeNull()
+    act(() => {
+      hide.click()
+    })
+    expect(document.querySelector('[aria-label="Slide actions"]')).toBeNull()
+    expect(document.querySelector('#TD-DeckPanel[data-collapsed]')?.textContent).toContain('1/1')
+    expect(window.localStorage.getItem('tls.deck.stripCollapsed')).toBe('1')
+    act(() => {
+      ;(document.querySelector('[aria-label="Show slides"]') as HTMLButtonElement).click()
+    })
+    expect(document.querySelector('[aria-label="Slide actions"]')).not.toBeNull()
+    expect(window.localStorage.getItem('tls.deck.stripCollapsed')).toBe('0')
+    window.localStorage.removeItem('tls.deck.stripCollapsed')
+  })
 })

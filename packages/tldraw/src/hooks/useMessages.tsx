@@ -19,6 +19,8 @@ export const DEFAULT_MESSAGES = {
   'strip.moveDown': 'Move down',
   'strip.more': 'Slide actions',
   'strip.count': '{n} slides',
+  'strip.collapse': 'Hide slides',
+  'strip.expand': 'Show slides',
   'strip.deleteConfirm': 'Delete slide {n}?',
   'inspector.content': 'Content',
   'inspector.style': 'Style',
