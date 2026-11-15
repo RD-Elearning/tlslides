@@ -72,7 +72,8 @@ function build(props: CardProps, ctx: LayoutContext): { node: LayoutNode; hug?: 
     const page = ctx.resolveColor('surface').color
     const rim = contrastRatio(lumOf(cat), lumOf(page)) < 1.3 ? ctx.resolveColor('line').color : cat
     const tint: Paint = { type: 'solid', color: tintOf(page, cat, 0.14) }
-    const cp = { ...cardPaint(ctx), fill: tint, stroke: { color: rim, width: 3 }, surface: tint, topRule: undefined }
+    // a band of the colour itself along the top: the group reads at a glance (a palette card shows its swatch)
+    const cp = { ...cardPaint(ctx), fill: tint, stroke: { color: rim, width: 3 }, surface: tint, topRule: { color: cat, width: Math.max(8, ctx.tokens.space.xs) } }
     return { nodes: cardNodes(cp, box, ctx.tokens.radius.md, 'background'), surface: tint }
   }
   const { nodes: background, surface: under } = surfaceOf(outerBox)

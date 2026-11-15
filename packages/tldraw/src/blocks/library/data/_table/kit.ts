@@ -465,7 +465,7 @@ function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): T
     backs.push({ k: 'rect', part: `tone[${r}]`, box: { x: 0, y, width: W, height: h }, fill: { type: 'solid', color: tintOf(c.surface, cat, 0.14) } })
     // a group whose colour is the page's own (a white bag on a white page) is outlined in the line colour
     const bar = contrastRatio(lumOf(cat), lumOf(c.surface)) < 1.3 ? c.line : cat
-    const bw = Math.max(4, Math.min(8, Math.round(cellPad / 3)))
+    const bw = Math.max(6, Math.min(10, Math.round(cellPad / 2)))
     backs.push({ k: 'rect', part: `tone[${r}].bar`, box: { x: 0, y, width: bw, height: h }, fill: { type: 'solid', color: bar } })
   }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
