@@ -33,7 +33,7 @@ describe('S26-a scenes', () => {
     expect(placeScenes(d)).toBe(d)
   })
 
-  test.each(['sticker-burst', 'tile-row', 'tile-corner'] as const)('%s keeps its art clear of the text', (id) => {
+  test.each(['sticker-burst', 'tile-row', 'tile-corner', 'icon-arc', 'tile-column', 'edge-strip'] as const)('%s keeps its art clear of the text', (id) => {
     const d = deck('corporate', [cover('s1', id)])
     const placed = placeScenes(d)
     const s = placed.slides[0]
@@ -103,5 +103,22 @@ describe('S26-a scenes', () => {
     const z = freeZone([{ x: 100, y: 300, width: 700, height: 200 }], { width: 1920, height: 1080 })!
     expect(z.x).toBeGreaterThan(800)
     expect(freeZone([], { width: 1920, height: 1080 })!.width).toBeGreaterThan(1700)
+  })
+})
+
+describe('S26 carry-over pass 2: icon-arc, tile-column, edge-strip', () => {
+  test('two icons are too few: each falls back along its chain', () => {
+    for (const id of ['icon-arc', 'tile-column', 'edge-strip'] as const) {
+      const got = sceneBlocks(placeScenes(deck('corporate', [cover('s1', id)], ['coffee', 'leaf'])).slides[0])
+      expect(got.length).toBeLessThanOrEqual(1)
+    }
+  })
+  test('icon-arc draws three to five icons of falling size; edge-strip a row of equal small icons', () => {
+    const arc = sceneBlocks(placeScenes(deck('corporate', [cover('s1', 'icon-arc')])).slides[0])
+    expect(arc.length).toBeGreaterThanOrEqual(3)
+    expect(arc[0].box.width).toBeGreaterThan(arc[arc.length - 1].box.width)
+    const strip = sceneBlocks(placeScenes(deck('corporate', [cover('s1', 'edge-strip')])).slides[0])
+    expect(strip.length).toBeGreaterThanOrEqual(6)
+    expect(new Set(strip.map((b) => b.box.width)).size).toBe(1)
   })
 })

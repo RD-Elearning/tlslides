@@ -15,7 +15,7 @@ import { resolveDeckFrame } from './deck-document'
 import { deckMotifIcons } from './backdrops'
 import type { BlockSpec, Box, DeckSpec, PlacedBlock, SlideSpec } from './types'
 
-export const SCENE_IDS = ['ghost-mark', 'sticker-burst', 'tile-row', 'tile-corner', 'icon-field', 'type-only'] as const
+export const SCENE_IDS = ['ghost-mark', 'sticker-burst', 'tile-row', 'tile-corner', 'icon-field', 'type-only', 'icon-arc', 'tile-column', 'edge-strip'] as const
 export type SceneId = (typeof SCENE_IDS)[number]
 
 /** What a scene needs: motif icons, and the free zone its art takes (slide units). */
@@ -26,6 +26,10 @@ export const SCENE_NEEDS: Readonly<Record<SceneId, { icons: number; zone?: { w: 
   'tile-corner': { icons: 1, zone: { w: 200, h: 200 } },
   'icon-field': { icons: 2 },
   'type-only': { icons: 0 },
+  // spro sprint 2026-11c S26 (carry-over pass 2): three more scenes from the same motif icons, no art or photo needed
+  'icon-arc': { icons: 3 },
+  'tile-column': { icons: 3, zone: { w: 150, h: 420 } },
+  'edge-strip': { icons: 3 },
 }
 
 /** The next scene to try when one's needs are not met. */
@@ -36,6 +40,9 @@ export const SCENE_FALLBACK: Readonly<Record<SceneId, SceneId>> = {
   'icon-field': 'ghost-mark',
   'ghost-mark': 'type-only',
   'type-only': 'type-only',
+  'icon-arc': 'tile-corner',
+  'tile-column': 'tile-corner',
+  'edge-strip': 'ghost-mark',
 }
 
 /** Id prefix of the blocks a scene places. */
@@ -119,6 +126,52 @@ export function sceneBlocks(id: SceneId, icons: string[], ink: Box[], frame: { w
       const box = { x: Math.round(z.x + (z.width - w) / 2), y: Math.round(z.y + (z.height - h) / 2), width: Math.round(w), height: Math.round(h) }
       const list = [0, 1, 2, 3, 4].slice(0, Math.min(5, icons.length)).map(pick)
       return [{ block: block('cluster', 'tls.m.icon-cluster', { icons: list, tone: 'mixed', opacity: 'strong', backing: 'disc', seed }), box }]
+    }
+    case 'icon-arc': {
+      // three to five icons of falling size on a quarter circle round the frame corner farthest from the ink
+      const side = Math.round(frame.height * 0.62)
+      const { corner } = farCorner(ink, frame, side)
+      const n = Math.min(5, icons.length)
+      const R = side - 90
+      const cx = corner.endsWith('left') ? 0 : frame.width
+      const cy = corner.startsWith('top') ? 0 : frame.height
+      const out: PlacedBlock[] = []
+      for (let k = 0; k < n; k++) {
+        const a = ((k + 0.5) / n) * (Math.PI / 2)
+        const s = Math.round(150 - k * 18)
+        const x = cx + (corner.endsWith('left') ? 1 : -1) * Math.cos(a) * R - s / 2
+        const y = cy + (corner.startsWith('top') ? 1 : -1) * Math.sin(a) * R - s / 2
+        const box = { x: Math.round(Math.max(PAD / 2, Math.min(frame.width - s - PAD / 2, x))), y: Math.round(Math.max(PAD / 2, Math.min(frame.height - s - PAD / 2, y))), width: s, height: s }
+        if (ink.some((t) => gap(box, t) < CLEAR - 0.5)) return undefined
+        out.push({ block: block(`arc-${k}`, 'tls.m.icon', { icon: pick(k), size: 'lg', iconStyle: k % 2 ? 'plain' : 'tile', color: k % 2 ? 'accent2' : 'accent' }), box })
+      }
+      return out
+    }
+    case 'tile-column': {
+      // tiles stacked in the side band beside the ink (a cover with a left text column gets a right-hand column)
+      const z = zone!
+      const side = Math.min(120, z.width)
+      const n = Math.min(icons.length, 4, Math.floor((z.height + 28) / (side + 28)))
+      if (n < 3) return undefined
+      const y0 = z.y + (z.height - (n * (side + 28) - 28)) / 2
+      const x = z.x + (z.width - side) / 2
+      return Array.from({ length: n }, (_, k) => ({
+        block: block(`col-${k}`, 'tls.m.icon', { icon: pick(k), size: 'lg', iconStyle: 'tile', color: k % 2 ? 'accent2' : 'accent' }),
+        box: { x: Math.round(x), y: Math.round(y0 + k * (side + 28)), width: side, height: side },
+      }))
+    }
+    case 'edge-strip': {
+      // a row of small outline icons along the bottom edge (else the top), only where the band is clear of ink
+      const side = 64
+      const n = Math.min(icons.length, 8)
+      for (const y of [frame.height - PAD / 2 - side, PAD / 2]) {
+        const step = (frame.width - 2 * PAD) / Math.max(1, Math.max(n, 6))
+        const count = Math.floor((frame.width - 2 * PAD + step - side) / step)
+        const boxes = Array.from({ length: count }, (_, k) => ({ x: Math.round(PAD + k * step + (step - side) / 2), y: Math.round(y), width: side, height: side }))
+        if (boxes.some((b) => ink.some((t) => gap(b, t) < CLEAR / 2))) continue
+        return boxes.map((box, k) => ({ block: block(`strip-${k}`, 'tls.m.icon', { icon: pick(k), size: 'md', iconStyle: 'plain', color: k % 2 ? 'accent2' : 'accent' }), box }))
+      }
+      return undefined
     }
     case 'tile-row': {
       const z = zone!
