@@ -17,6 +17,17 @@ describe('number formatting by deck locale', () => {
     expect(formatValue(1240, 'currency', { locale: 'vi', currency: '₫' })).toBe('₫1.240')
     expect(localizeNumber('1,240.5 units', 'vi-VN')).toBe('1.240,5 units')
   })
+  it('S01: other decimal-comma languages swap the separators, keep the scale letters', () => {
+    expect(localizeNumber('1,240.5', 'de')).toBe('1.240,5')
+    expect(localizeNumber('1,240.5', 'fr')).toBe('1\u00a0240,5')
+    expect(localizeNumber('1,240,500', 'pl-PL')).toBe('1\u00a0240\u00a0500')
+    expect(formatValue(4.2e6, 'compact', { locale: 'es' })).toBe('4,2M')
+    expect(formatValue(12.4, 'percent', { locale: 'it' })).toBe('12,4%')
+    expect(formatValue(1240, 'currency', { locale: 'pt', currency: '€' })).toBe('€1.240')
+    expect(localizeNumber('1,240.5', 'en')).toBe('1,240.5')
+    expect(localizeNumber('1,240.5', 'ms')).toBe('1,240.5')
+    expect(localizeNumber('1,240.5', 'xx')).toBe('1,240.5')
+  })
   it('chart axes and big stats follow the same rule', () => {
     expect(fmtNum(2500000, 'compact', 'vi')).toBe('2,5 triệu')
     expect(fmtSigned(-3.5, 'percent', 'vi')).toBe('-3,5%')
@@ -24,7 +35,31 @@ describe('number formatting by deck locale', () => {
   })
   it('a big stat in plain format keeps its zeros (300 was shown as "3")', () => {
     expect(bigStat({ value: 300, format: 'plain' } as never)).toBe('300')
-    expect(bigStat({ value: 120000, format: 'plain' } as never)).toBe('120000')
+    expect(bigStat({ value: 120000, format: 'plain' } as never)).toBe('120,000')
     expect(bigStat({ value: 2.5, format: 'plain' } as never)).toBe('2.5')
+  })
+  it('spro c10: a plain number groups its thousands in the deck language; a year stays as written', () => {
+    expect(bigStat({ value: 1380, format: 'plain' } as never, 'vi')).toBe('1.380')
+    expect(bigStat({ value: 5500, format: 'plain', suffix: '°C' } as never, 'vi')).toBe('5.500°C')
+    expect(bigStat({ value: 1234.5, format: 'plain' } as never, 'vi')).toBe('1.234,5')
+    expect(bigStat({ value: 2027, format: 'plain' } as never, 'vi')).toBe('2027')
+    expect(bigStat({ value: 1380, format: 'plain' } as never, 'en')).toBe('1,380')
+    expect(formatValue(1380, undefined, { locale: 'vi' })).toBe('1.380')
+    expect(formatValue(2025, undefined, { locale: 'vi' })).toBe('2025')
+    expect(formatValue(980, undefined, { locale: 'vi' })).toBe('980')
+  })
+  it('sprint 2026-11c c0: a value the author wrote with its own separator, sign or unit is drawn as written', () => {
+    // a KPI tile of a Vietnamese deck: "1.200" (m²) used to come out as the English "1,200"
+    expect(formatValue('1.200', undefined, { locale: 'vi' })).toBe('1.200')
+    expect(formatValue('2,70', 'plain', { locale: 'vi' })).toBe('2,70')
+    expect(formatValue('1.200', undefined, { locale: 'en' })).toBe('1.200')
+    expect(formatValue('−8%', 'percent', { locale: 'vi' })).toBe('−8%')
+    expect(formatValue('3 lần', undefined, { locale: 'vi' })).toBe('3 lần')
+    // bare digits stay a number, formatted in the deck's language
+    expect(formatValue('4200000', 'compact', { locale: 'vi' })).toBe('4,2 triệu')
+    expect(formatValue(' 64 ', undefined, { locale: 'vi' })).toBe('64')
+    // percent keeps the precision it was given
+    expect(formatValue(38, 'percent', { locale: 'vi' })).toBe('38%')
+    expect(formatValue(23.5, 'percent', { locale: 'vi' })).toBe('23,5%')
   })
 })

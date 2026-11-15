@@ -19,7 +19,7 @@
 import { documentDeckTokens, getDeckStyle } from './styles'
 import type { TDAssets, TDDocument, SlideBackground } from '~types'
 import { DEFAULT_SLIDE_SIZE } from '~constants'
-import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
+import { pageTheme } from '~state/shapes/shared/deck-theme'
 import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { createLayoutContext } from './layout'
 import { BLOCK_PROP_KEY } from './shape-bridge'
@@ -42,6 +42,11 @@ const SAFE_DATA_IMAGE_RE = /^data:image\/(png|jpeg|gif|webp)[;,]/
  * Option B, with the "or URL" half of the schema's own contract implemented here rather than
  * inside the block, which stays asset-scheme-agnostic as its file doc already promises).
  */
+/** S20-a — a deck's library asset by `lib:<pack>/<name>` or bare id. */
+export function libAssetOf(id: string, table: TDDocument['libAssets']): import('./types').DeckAsset | undefined {
+  return table?.[id.startsWith('lib:') ? id.slice(4) : id]
+}
+
 export function resolveAssetUrl(id: string, assets: TDAssets | undefined): string | undefined {
   if (ABSOLUTE_URL_RE.test(id)) return id
   // AC4: an inline raster image (png/jpeg/gif/webp) is a URL too, the same set the testimonial
@@ -79,9 +84,11 @@ export function deckLayoutContext(
     registry?: BlockRegistry
     /** CMP1: the block sits on a layered image backdrop (`$block.overImage`). */
     overImage?: boolean
+    /** S13-a: the page's tone (`TDPage.tone`) — colours resolve through the derived slide theme. */
+    tone?: string
   }
 ): LayoutContext {
-  const theme = activeDeckTheme(doc.theme)
+  const theme = pageTheme(doc.theme, { tone: opts.tone })
   const tokens = resolveTokens(theme, documentDeckTokens(doc))
   const pageSize: [number, number] = [
     doc.defaultPageSize?.[0] ?? DEFAULT_SLIDE_SIZE[0],
@@ -109,6 +116,7 @@ export function deckLayoutContext(
     // dashed fallback frame. G8.2: also accepts an already-absolute URL, per the schema's own
     // documented "asset id or URL" contract — see `resolveAssetUrl` above.
     resolveAsset: (id: string) => resolveAssetUrl(id, doc.assets),
+    ...(doc.libAssets ? { libAsset: (id: string) => libAssetOf(id, doc.libAssets) } : {}),
     // The asset table records each image's natural size; `ctx.asset()` hands it to blocks that
     // need an aspect ratio (logo, logo-wall), so they never have to guess it.
     asset: (id: string) => {
@@ -140,6 +148,8 @@ export function contextForBlock(
     depth?: number
     /** Block registry, so container blocks' `layoutChild` can resolve their children. */
     registry?: BlockRegistry
+    /** S13-a: defaults to the tone of the shape's page (`shape.parentId`). */
+    tone?: string
   }
 ): LayoutContext {
   const box: Box = {
@@ -153,5 +163,6 @@ export function contextForBlock(
     | undefined
   const style = meta?.style as BlockStyleSpec | undefined
   const overImage = meta?.overImage === true
-  return deckLayoutContext(doc, box, { ...opts, style, ...(overImage ? { overImage } : {}) })
+  const tone = opts.tone ?? doc.pages?.[shape.parentId]?.tone
+  return deckLayoutContext(doc, box, { ...opts, style, ...(overImage ? { overImage } : {}), ...(tone ? { tone } : {}) })
 }

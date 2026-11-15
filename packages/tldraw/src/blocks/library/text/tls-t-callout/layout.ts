@@ -28,11 +28,21 @@ export function variantOf(v: unknown): CalloutVariant {
   return typeof v === 'string' && v in VARIANTS ? (v as CalloutVariant) : 'info'
 }
 
+/** The strength of a solid `success` callout's tint (see `calloutColors`). */
+export const SUCCESS_SOLID_TINT = 0.22
+
 /** The resolved colours of one variant/fill pair: what the tests and the layout both use. */
 export function calloutColors(ctx: LayoutContext, variant: unknown, fill: unknown) {
   const role = ctx.resolveColor(VARIANTS[variantOf(variant)].role).color
   const surface = ctx.resolveColor('surface').color
   const text = ctx.resolveColor('text').color
+  // review 2026-11-08 (ecoride s6: a solid green band on a peach slide, "phối màu lộn xộn"): good news is not an
+  // alarm — a solid `success` callout is a strong tint of its role, the band stays in the deck's colours; warning
+  // and danger keep the solid fill
+  if (fill === 'solid' && variantOf(variant) === 'success') {
+    const bg = tintOf(surface, role, SUCCESS_SOLID_TINT)
+    return { fill: bg as string | undefined, stroke: undefined as string | undefined, text: readableOn(text, bg), title: readableOn(role, bg), icon: readableOn(role, bg, 3) }
+  }
   if (fill === 'solid') {
     const ink = readableOn(onColor(ctx, role), role)
     return { fill: role as string | undefined, stroke: undefined as string | undefined, text: ink, title: ink, icon: ink }

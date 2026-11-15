@@ -4,7 +4,7 @@
  */
 
 import type { HtmlTemplateContext } from '../../../types'
-import { iconSvg, roleVar } from '../_showcase'
+import { iconHtml, roleVar } from '../_showcase'
 import type { FeatureRevealProps } from './schema'
 import { geometry, itemsOf, REVEAL } from './schema'
 import { posterText } from '../../../html-block'
@@ -35,7 +35,7 @@ export function template(props: FeatureRevealProps, ctx: HtmlTemplateContext): s
         `box-sizing:border-box;padding:${px(g.pad)}px;border-radius:24px;background:${card};overflow:hidden;` +
         `box-shadow:0 18px 40px -24px rgba(0,0,0,0.35);backface-visibility:hidden;">` +
         `<div data-part="icon[${i}]" style="width:${px(g.icon)}px;height:${px(g.icon)}px;border-radius:50%;display:flex;align-items:center;justify-content:center;` +
-        `background:color-mix(in srgb, ${accent} 16%, transparent);">${iconSvg(m.icon ?? '', g.icon * 0.55, accent)}</div>` +
+        `background:color-mix(in srgb, ${accent} 16%, transparent);">${iconHtml(ctx, m.icon ?? '', g.icon * 0.55, accent, `icon[${i}]`)}</div>` +
         `<div data-part="title[${i}]" style="margin-top:${px(g.pad * 0.6)}px;${pt.css(`items.${i}.title`, `font-size:${titleSize}px;line-height:${REVEAL.titleLH};`)}` +
         `font-weight:700;color:${ctx.cssVar('on')};">${pt.html(`items.${i}.title`, ctx.esc(m.title), false)}</div>` +
         (m.text

@@ -18,6 +18,17 @@ import { PLAYFAIR_DISPLAY_METRICS } from './playfair-display'
 import { PLUS_JAKARTA_SANS_METRICS } from './plus-jakarta-sans'
 import { SOURCE_CODE_PRO_METRICS } from './source-code-pro'
 import { SOURCE_SERIF_4_METRICS } from './source-serif-4'
+import { LEXEND_METRICS } from './lexend'
+import { MONTSERRAT_METRICS } from './montserrat'
+import { JOSEFIN_SANS_METRICS } from './josefin-sans'
+import { OSWALD_METRICS } from './oswald'
+import { LORA_METRICS } from './lora'
+import { MERRIWEATHER_METRICS } from './merriweather'
+import { EB_GARAMOND_METRICS } from './eb-garamond'
+import { QUICKSAND_METRICS } from './quicksand'
+import { BALOO_2_METRICS } from './baloo-2'
+import { PANGOLIN_METRICS } from './pangolin'
+import { JETBRAINS_MONO_METRICS } from './jetbrains-mono'
 import { INTER_KERN } from './inter-kern'
 
 export type { FaceMetrics } from './types'
@@ -46,6 +57,17 @@ export const FONT_FACES: readonly FaceMetrics[] = [
   PLUS_JAKARTA_SANS_METRICS,
   SOURCE_CODE_PRO_METRICS,
   SOURCE_SERIF_4_METRICS,
+  LEXEND_METRICS,
+  MONTSERRAT_METRICS,
+  JOSEFIN_SANS_METRICS,
+  OSWALD_METRICS,
+  LORA_METRICS,
+  MERRIWEATHER_METRICS,
+  EB_GARAMOND_METRICS,
+  QUICKSAND_METRICS,
+  BALOO_2_METRICS,
+  PANGOLIN_METRICS,
+  JETBRAINS_MONO_METRICS,
 ]
 
 const BY_KEY = new Map(FONT_FACES.map((f) => [f.key, f]))

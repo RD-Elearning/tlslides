@@ -268,3 +268,23 @@ describe('tls.t.title / tls.t.body align (spro demo T16)', () => {
     expect(Math.abs(lines[0].box.x + lines[0].box.width / 2 - W / 2)).toBeLessThan(2)
   })
 })
+
+describe('tls.t.title keeps words whole (spro sprint 2026-11c c1, MĂM s13)', () => {
+  const { brokenWords } = require('../../../layout/words')
+  const lines = (n: any): Array<{ text: string }> => (n.k === 'group' ? n.children.flatMap(lines) : n.k === 'text' ? n.lines : [])
+  it('a long word in a narrow card title shrinks until it fits, where it can', () => {
+    const ctx = makeCtx({ width: 340, height: 400 }, makeRegistry())
+    const big = tlsTTitle.layout({ text: 'Deliverables', size: 'display' } as never, ctx)
+    const fits = tlsTTitle.layout({ text: 'Deliverables', size: 'heading' } as never, ctx)
+    expect(brokenWords(lines(fits))).toBe(0)
+    // at the floor (0.75) a word still too wide stays cut: the size is never shrunk past the floor
+    const sizes = (n: any): number[] => (n.k === 'group' ? n.children.flatMap(sizes) : n.k === 'text' ? [n.style.size] : [])
+    expect(Math.min(...sizes(big))).toBeGreaterThanOrEqual(ctx.resolveText('display').size * 0.75 - 0.5)
+  })
+  it('a short title that fits keeps its size', () => {
+    const ctx = makeCtx({ width: 1600, height: 400 }, makeRegistry())
+    const n: any = tlsTTitle.layout({ text: 'Deliverables', size: 'title' } as never, ctx)
+    const s = (x: any): number[] => (x.k === 'group' ? x.children.flatMap(s) : x.k === 'text' ? [x.style.size] : [])
+    expect(Math.max(...s(n))).toBeCloseTo(ctx.resolveText('title').size, 1)
+  })
+})

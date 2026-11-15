@@ -16,6 +16,7 @@ import { hasStrong, str, toMeasurable } from '../_engine/rich'
 import { tintOf } from '../_engine/color'
 import { isShown } from '../../../schema-helpers'
 import { tableMetrics } from '../../../layout/measure'
+import { loudTextCap } from '../../../layout/loud-text'
 
 /**
  * Run offsets for the underline / highlight rects come from the per-glyph advance table, not
@@ -49,6 +50,9 @@ export const LADDER: Array<{ id: 'display' | 'xl' | 'lg' | 'md'; token: TypeToke
 
 /** Hint reported to the planner when the text cannot fit even at md. */
 export const SHORTEN_HINT_CHARS = 100
+
+/** A `circle` emphasis loops a run at most this many line heights wide; a wider run is underlined. */
+export const CIRCLE_MAX_ASPECT = 4
 
 /** Most lines the display rung may take before the ladder steps down to xl. */
 export const DISPLAY_MAX_LINES = 3
@@ -95,6 +99,7 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     attrBlock = sp.md + placed.height
   }
 
+  const chars = plainLength(props.text)
   let chosen = rung(props.size)
   let result: { placed: PlacedText; style: ResolvedTextStyle } | undefined
   for (let r = chosen; r < LADDER.length; r++) {
@@ -103,6 +108,9 @@ function fit(props: StatementProps, ctx: LayoutContext, width: number, height: n
     result = { placed, style }
     chosen = r
     const tooLong = LADDER[r].id === 'display' && placed.lineCount > DISPLAY_MAX_LINES && r < LADDER.length - 1
+    // review 2026-11-08: a long sentence never takes a rung larger than its length allows
+    const loud = style.size > loudTextCap(chars) + 0.5 && r < LADDER.length - 1
+    if (loud) continue
     if (!tooLong && markBlock + placed.height + attrBlock <= height + 0.5) break
   }
   const { placed, style } = result!
@@ -195,7 +203,10 @@ export function layout(props: StatementProps, ctx: LayoutContext): LayoutNode {
         const w = runWidth(run.text, f.style, !!run.bold)
         if (run.bold && shown.trim().length > 0) {
           const sw = Math.min(runWidth(shown, f.style, true), Math.max(0, width - cursor))
-          if (emphasis === 'circle') {
+          // review 2026-11-08 (chalkboard s12, notebook cover: a loop around a whole sentence read as a strike-through —
+          // a flat ellipse narrows at its ends and runs through the first and last letters): a run wider than
+          // CIRCLE_MAX_ASPECT of its line height is underlined instead
+          if (emphasis === 'circle' && sw <= CIRCLE_MAX_ASPECT * g.height) {
             // vivid V4: a hand-drawn loop around the run — an ellipse a little larger than the
             // words, tilted, its ends overshooting; kept inside the block box
             const rx = Math.max(4, Math.min(sw / 2 + size * 0.12, width / 2))

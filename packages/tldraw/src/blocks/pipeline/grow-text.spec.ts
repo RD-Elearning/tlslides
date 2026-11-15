@@ -16,9 +16,11 @@ const registry = new BlockRegistry()
 registerBuiltInBlocks(registry)
 const FRAME = { width: 1920, height: 1080 }
 const T: BlockSpec = { id: 't', type: 'tls.t.title', props: { text: 'Three ways to walk a tree' } }
+// S06: a list opts out of `style.fill` here, so growText is what grows it (a filled list: below)
 const list = (n: number, text = 'Visit the node, then its children'): BlockSpec => ({
   id: 'l',
   type: 'tls.t.bullets',
+  style: { fill: false },
   props: { items: Array.from({ length: n }, (_, i) => ({ text: `${text} ${i + 1}` })) },
 })
 const slide = (body: BlockSpec[], valign?: 'auto'): SlideSpec => ({ id: 's', layout: 'title-content', ...(valign ? { valign } : {}), regions: { title: [T], content: body } }) as SlideSpec
@@ -67,9 +69,38 @@ describe('growText (L5)', () => {
   })
 
   it('the decompiler returns the authored style; renderers keep the scale', () => {
-    const shape = compileSlide(slide([{ ...list(3), style: { align: 'start' } }], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
+    const shape = compileSlide(slide([{ ...list(3), style: { align: 'start', fill: false } }], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
     expect(shapeToBlock(shape)?.style?.textScale).toBeGreaterThan(1)
-    expect(shapeToAuthoredBlock(shape)?.style).toEqual({ align: 'start' })
+    expect(shapeToAuthoredBlock(shape)?.style).toEqual({ align: 'start', fill: false })
+  })
+
+  it('S06: a list that fills its region is not scaled again', () => {
+    const { style: _, ...filled } = list(3)
+    expect(grownIds(slide([filled], 'auto'))).toEqual([])
+    const shape = compileSlide(slide([filled], 'auto'), FRAME, TEST_TOKENS, registry).shapes.find((sh) => (sh.props.$block as { id?: string }).id === 'l')!
+    expect((shape.props.$block as { filled?: boolean }).filled).toBe(true)
+  })
+})
+
+describe('a sparse poster grows past ×1.3 (review 2026-11-08 round 4)', () => {
+  const closing = (role: 'closing' | 'cover'): SlideSpec =>
+    ({
+      id: 's', layout: 'poster', role,
+      regions: { poster: [
+        { id: 'q', type: 'tls.t.statement', props: { text: 'What is an instant rate?', size: 'xl', align: 'start', showMark: false } },
+        { id: 'a', type: 'tls.t.takeaway', props: { text: 'The derivative at a point: the slope of the tangent.', size: 'lead', label: 'Answer', variant: 'line' } },
+      ] },
+    }) as SlideSpec
+  const display = TEST_TOKENS.type.display.size
+
+  it('a closing question and its answer take a larger step, never past the display size', () => {
+    const g = new Map(grownOf(closing('closing')) as [string, number | undefined][])
+    expect(g.get('q') ?? 1).toBeGreaterThan(1.3)
+    expect(Math.max(...fonts(closing('closing')).map((f) => f.size))).toBeLessThanOrEqual(display + 1)
+  })
+
+  it('a cover keeps the ordinary steps', () => {
+    expect(new Map(grownOf(closing('cover')) as [string, number | undefined][]).get('q') ?? 1).toBeLessThanOrEqual(1.3)
   })
 })
 
@@ -205,5 +236,21 @@ describe('an opaque backdrop motif clears the content (2026-10-24)', () => {
     }
     const blob = at('blob')!
     expect(blob.size[0]).toBeGreaterThan(300)
+  })
+})
+
+describe('growText never cuts a word (spro sprint 2026-11c c1, MĂM s13)', () => {
+  const { createLayoutContext } = require('../layout/layout-child')
+  const { layoutBlock } = require('../layout')
+  const { cutWordsIn: cut } = require('../layout/words')
+  const CARDS = [['Vai trò', 'Senior Product Designer + Mobile UX Architect, không sao chép giao diện app nào.'], ['Deliverables', 'Màn hình high-fidelity, prototype clickable, design system, mock data thống nhất.'], ['Tài liệu kèm', 'Tóm tắt IA/UX, ghi chú mock vs API, đề xuất MVP và tính năng phase sau.'], ['Chất lượng', 'Visual concept trước, viewport 390 x 844 px, kiểm tra empty/loading/error.']].map(([title, text]) => ({ icon: 'user', title, text }))
+  it('four cards on a balanced timeline slide keep "Deliverables" whole', () => {
+    const s = { id: 's', layout: 'timeline', valign: 'auto', regions: { title: [T], timeline: [{ id: 'c', type: 'tls.c.cards', style: { fill: false }, props: { lead: 'icon', align: 'center', cards: CARDS } }] } } as unknown as SlideSpec
+    const sh = compileSlide(s, FRAME, TEST_TOKENS, registry).shapes.find((x) => (x.props.$block as { id?: string }).id === 'c')!
+    const meta = sh.props.$block as { style?: object }
+    const props = { ...sh.props } as Record<string, unknown>
+    delete props.$block
+    const ctx = createLayoutContext({ box: { width: sh.size[0], height: sh.size[1] }, tokens: TEST_TOKENS, surface: { behind: { type: 'solid', color: '#ffffff' }, luminance: 1 }, registry, ...(meta.style ? { style: meta.style } : {}) })
+    expect(cut(layoutBlock(registry.get('tls.c.cards'), props, ctx))).toBe(0)
   })
 })

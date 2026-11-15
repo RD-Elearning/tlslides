@@ -132,6 +132,14 @@ export interface TDSnapshot {
     // resets on every slide change (`TldrawApp.changePage`) and is never touched by undo/redo —
     // see `advancePresentation`/`previousPresentation` for the read/write side.
     presentationBuildStep: number
+    /** Editor E01 — the block whose inspector is open (basic profile opens it on demand only). */
+    inspectorFor?: string
+    inspectorTab?: 'content' | 'style' | 'motion'
+    inspectorField?: string
+    /** Editor E04 — the list item / child block selected inside the selected block. */
+    blockItem?: { shapeId: string; itemPath: string }
+    /** Editor E04 — an inline text editor is open (hosts hide their floating bars). */
+    editingText?: string
   }
   document: TDDocument
   room?: {
@@ -198,6 +206,12 @@ export interface TDDocument {
   motionPersonality?: 'calm' | 'lively' | 'cinematic'
   // V5 (spro vivid) — the deck's `DeckSpec.ambient` (`false` = no ambient loops), for the round trip.
   ambient?: boolean
+  /** S13-b — the deck's `DeckSpec.backdrops`, for the round trip. */
+  backdrops?: Partial<Record<'deep' | 'accent' | 'calm' | 'quiet', { kind: string; intensity?: 'soft' | 'medium' }>>
+  /** S20-g — the deck's `DeckSpec.motifs`, for the round trip. */
+  motifs?: { icons?: string[] }
+  /** S20-a — the deck's `DeckSpec.assets` (library pictures by id), for the layout context and the round trip. */
+  libAssets?: Record<string, import('~blocks/types').DeckAsset>
 }
 
 /** One named brand palette. A shape or background never stores one of these hex values directly —
@@ -255,6 +269,9 @@ export interface DeckTheme {
     bodyFamily?: string
   }
   shapeDefaults?: Partial<ShapeStyles>
+  /** S13-a — set on a theme derived for a toned slide (`palettes.ts::slideTheme`); `resolveTokens` then
+   *  ignores the deck's colour/categorical token overrides, which were picked for the base ground. */
+  tone?: 'deep' | 'accent'
 }
 
 // The shape of a single page in the Tldraw document
@@ -282,8 +299,14 @@ export interface TDPage extends TLPage<TDShape, TDBinding> {
   intent?: 'poster' | 'diagram' | 'dense'
   // CR7b — the authored `SlideSpec.look`, carried back by `documentToDeckSpec`.
   look?: LookAxes
+  /** S13-a — the slide's tone (`SlideSpec.tone`); renderers resolve colours through `pageTheme`. */
+  tone?: 'base' | 'deep' | 'accent'
+  /** S13-b — the authored `SlideSpec.backdrop`, carried back by `documentToDeckSpec`. */
+  backdrop?: { kind?: string; tone?: 'deep' | 'accent' | 'calm' | 'quiet'; intensity?: 'soft' | 'medium'; seed?: number }
+  /** S26-a — the slide's `SlideSpec.scene`, for the round trip. */
+  scene?: { id: string; seed?: number }
   // CR10 — the authored `SlideSpec.transition` (the viewer plays it) and `choreography`.
-  transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'; dir?: 'left' | 'right' | 'up' | 'down' }
+  transition?: { kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip' | 'zoom' | 'cover' | 'reveal' | 'split' | 'morph'; dir?: 'left' | 'right' | 'up' | 'down' }
   choreography?: string
 }
 

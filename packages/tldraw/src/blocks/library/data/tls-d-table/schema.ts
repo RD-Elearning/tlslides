@@ -46,6 +46,8 @@ export const schema: BlockSchema = {
   header: enumSlot(['filled', 'bold', 'none'], 'Header style'),
   emphasisRow: { type: { kind: 'number', min: -1 }, role: 'option', label: 'Emphasised row (-1 none)' },
   emphasisCol: { type: { kind: 'number', min: -1 }, role: 'option', label: 'Emphasised column (-1 none)' },
+  // spro sprint 2026-11c C6: set by the service when a row names one of the document's coloured groups
+  rowTones: { type: { kind: 'list', of: { kind: 'text', maxChars: 12 } }, role: 'option', label: 'Row colours', help: 'Per body row: `category:<n>` draws the row in the colour the document gives its group (set by the service).' },
   density: enumSlot(['default', 'compact'], 'Density'),
   format: formatSlot(),
   showFooter: { type: { kind: 'boolean' }, role: 'option', label: 'Show footer', toggles: 'footer' },
@@ -67,6 +69,8 @@ export interface TableProps extends Record<string, unknown> {
   header?: 'filled' | 'bold' | 'none'
   emphasisRow?: number
   emphasisCol?: number
+  /** C6: per body row, `category:<n>` (or empty) — the row in its group's colour. */
+  rowTones?: string[]
   density?: 'default' | 'compact'
   format?: 'plain' | 'compact' | 'percent' | 'currency'
   showFooter?: boolean

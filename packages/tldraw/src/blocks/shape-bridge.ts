@@ -82,6 +82,8 @@ interface BlockMetadata {
   grown?: number
   /** The `style.typeStep` `compileSlide` gave the block (`harmonizeTypes`); dropped like `grown`. */
   stepped?: number
+  /** S06 — `compileSlide` gave the block `style.fill` (a `spread` region's main block); dropped like `grown`. */
+  filled?: boolean
 }
 
 /** LO8 — see `BlockMetadata.placed`. */
@@ -331,6 +333,11 @@ export function shapeToAuthoredBlock(shape: unknown): BlockSpec | undefined {
   const stepped = blockMetaOf(shape)?.stepped
   if (spec?.style && typeof stepped === 'number' && spec.style.typeStep === stepped) {
     const { typeStep: _stepped, ...rest } = spec.style
+    if (Object.keys(rest).length) spec.style = rest
+    else delete spec.style
+  }
+  if (spec?.style && blockMetaOf(shape)?.filled === true && spec.style.fill === true) {
+    const { fill: _fill, ...rest } = spec.style
     if (Object.keys(rest).length) spec.style = rest
     else delete spec.style
   }

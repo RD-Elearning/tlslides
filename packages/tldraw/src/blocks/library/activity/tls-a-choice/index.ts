@@ -12,6 +12,7 @@
  * said square boxes); `why` (per-option feedback) is validated and shown in the live block only.
  */
 
+import { fillPoster } from '../../../layout/fill'
 import type { BlockDefinition, BlockSchema, LayoutContext, LayoutNode, LintFinding } from '../../../types'
 import { capacityOf } from '../../diagram/_kit'
 import { enumSlot } from '../../data/_chart/schema-kit'
@@ -87,7 +88,14 @@ export const toQuizProps = (props: ChoiceBlockProps): QuizProps => ({
  *  for the explanation when the block has one). Honest about height: the live block fills the band. */
 export function poster(props: Record<string, unknown>, ctx: LayoutContext): LayoutNode {
   const p = props as ChoiceBlockProps
-  const base = layoutQuiz(toQuizProps(p), ctx)
+  const n = Array.isArray(p.options) ? Math.min(p.options.length, QUIZ_MAX) : 0
+  const rows = p.layout === 'grid' && n > 1 ? Math.ceil(n / 2) : n
+  // S06-D: a filled poster: larger type, then taller option rows (each at most 72 units more)
+  return fillPoster(ctx, (c, grow) => posterAt(p, c, grow), rows, 72)
+}
+
+function posterAt(p: ChoiceBlockProps, ctx: LayoutContext, grow: number): LayoutNode {
+  const base = layoutQuiz(toQuizProps(p), ctx, grow)
   const extra = ctx.tokens.space.md * 1.5 + FOOTER_H + (p.explanation ? EXPLANATION_H : 0)
   const height = base.box.height + extra
   if (base.k !== 'group') return base
@@ -137,6 +145,7 @@ export const tlsAChoice: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [1500, 860], min: [1050, 640] },
+  fillPolicy: ['type', 'stretch'],
   layout: layout as BlockDefinition['layout'],
   poster,
   html: { template, interact: interact as NonNullable<BlockDefinition['html']>['interact'] },

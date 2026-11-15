@@ -53,6 +53,8 @@ export type ChecklistState = 'done' | 'open' | 'blocked'
 export interface ChecklistItem {
   text: string
   state?: ChecklistState
+  /** C6: `category:<n>`, set by the service for an item that names one of the document's groups. */
+  tone?: string
 }
 
 export interface ChecklistProps extends Record<string, unknown> {

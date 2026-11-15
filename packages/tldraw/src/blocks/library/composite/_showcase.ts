@@ -17,6 +17,7 @@
 import type { BlockMotionRuntime, HtmlTemplateContext, LayoutContext, LayoutNode, ResolvedTokens } from '../../types'
 import type { MotionHandle, MotionKeyframes, MotionOptions } from '../../motion/driver'
 import { FALLBACK_ICON, getIcon, iconPaintAttrs } from '../../icons'
+import { isLibRef } from '../../icons/resolve'
 import { lineWidth } from './_kit'
 
 /* ── GSAP, typed structurally (the package never imports gsap) ─────────────────────────── */
@@ -140,6 +141,22 @@ export function iconSvg(name: string, size: number, color: string): string {
     `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="display:block;overflow:visible" aria-hidden="true">` +
     `<path d="${icon.path}" ${iconPaintAttrs(icon, color, 1.75)}/></svg>`
   )
+}
+
+/** S20 (carry-over pass 2): an icon for an HTML template — a `lib:` picture paints the URL the poster resolved for
+ *  `part` (the resolver runs after layout; the template never reads the asset table), else the inline glyph. A
+ *  library ref the poster does not hold draws nothing, as in the poster. */
+export function iconHtml(ctx: HtmlTemplateContext, name: string, size: number, color: string, part: string): string {
+  if (!isLibRef(name)) return iconSvg(name, size, color)
+  let url: string | undefined
+  const walk = (n: LayoutNode): void => {
+    if (url) return
+    if (n.k === 'image' && n.assetId === name && (n.part === part || !n.part)) url = n.url
+    for (const c of (n as { children?: LayoutNode[] }).children ?? []) walk(c)
+    if (n.k === 'host' && n.poster) walk(n.poster)
+  }
+  if (ctx.poster) walk(ctx.poster)
+  return url ? `<img src="${url.replace(/"/g, '&quot;')}" width="${size}" height="${size}" alt="" style="display:block" aria-hidden="true"/>` : ''
 }
 
 /** Font sizes from the deck's type scale (slide units = CSS px inside the frame). */

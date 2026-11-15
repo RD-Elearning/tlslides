@@ -6,7 +6,7 @@
  * seed.
  */
 
-import type { BlockDefinition, BlockFits, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from './types'
+import type { BlockDefinition, BlockFits, ContentShape, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from './types'
 
 export type Creativity = 'safe' | 'balanced' | 'bold'
 type Asset = NonNullable<BlockFits['needs']>[number]
@@ -19,9 +19,19 @@ export interface ShortlistSlide {
   items?: number
   data?: FitsData
   textLoad?: FitsTextLoad
+  /** spro sprint 2026-11b S05-D: at a `paragraphs` load, a `lines` block loses less (× 0.85, not
+   *  × 0.75) — it can carry two-line descriptions. Sent by spro under its `DECK_TEXT_BUDGETS` flag. */
+  softLoad?: boolean
   energy?: FitsEnergy
   /** Set for a frame slide: only frame blocks of that role are ranked. */
   frame?: FrameRole
+  /** spro sprint 2026-11b S10-C: an activity slide of a learning deck — only `activity` blocks are ranked
+   *  (content diagrams outranked `tls.a.order` / `tls.a.sort` on their own slide). Sent under the
+   *  teaching flag. */
+  activity?: boolean
+  /** spro sprint 2026-11c S25-b: content shapes code found in the slide's passages (hex colours, a price per option,
+   *  a day or time per row). A block that draws one ranks high; a `shapeOnly` block needs one. */
+  shapes?: ContentShape[]
 }
 
 export interface ShortlistOptions {
@@ -39,6 +49,35 @@ export interface ShortlistOptions {
   /** Best candidates (default 8) and stretch candidates (default 2). */
   best?: number
   stretch?: number
+  /** spro sprint 2026-11b S07-b (D32): a learning deck's purpose. Under `in_class`/`self_study` a content
+   *  slide's main is an `info` or `activity` block; a `highlight` only when the slide has the number
+   *  (data single/share/series) or its first relation is `quote`; `tls.t.statement` never in self-study,
+   *  in class only for a quote/question/statement slide. Absent or `general` = today's ranking. */
+  purpose?: 'in_class' | 'self_study' | 'general'
+  /** Highlight mains the deck may still take (S07-b: ceil(content / 6)); 0 = none left. */
+  highlightsLeft?: number
+  /** spro sprint 2026-11b S10-a: the deck is presented by a teacher (reading mode `presentation`).
+   *  Interactive reveal blocks are offered only with `purpose: 'in_class'` and this set. */
+  presented?: boolean
+}
+
+const NUMBER_DATA = new Set<FitsData>(['single', 'share', 'series'])
+
+/** S07-b — why a learning deck's content slide may not take this main (null = it may). */
+export function learningBlock(type: string, use: string | undefined, slide: ShortlistSlide, o: ShortlistOptions): string | null {
+  if (!o.purpose || o.purpose === 'general' || slide.frame) return null
+  if (use === 'decor' || use === 'frame') return `a ${use} block`
+  if (type === 'tls.t.statement') {
+    if (o.purpose === 'self_study') return 'no statement slides in self-study'
+    if (!['quote', 'question', 'statement'].includes(slide.relations[0] ?? '')) return 'a statement only for a quote, question or statement slide'
+    return null // on its own kind of slide: the deck's statement cap is the direction's (spro), not a number highlight
+  }
+  if (use === 'highlight') {
+    const quote = slide.relations[0] === 'quote'
+    if (!quote && !NUMBER_DATA.has(slide.data ?? 'none')) return 'a highlight needs the slide\'s number'
+    if (o.highlightsLeft !== undefined && o.highlightsLeft <= 0) return 'the deck has its highlights'
+  }
+  return null
 }
 
 export interface ShortlistEntry {
@@ -104,6 +143,10 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
   if (slide.frame) {
     if (!f.frames?.includes(slide.frame)) return null
   } else if (!f.relations.length) return null
+  if (learningBlock(def.type, f.use, slide, o)) return null
+  // S10-a: a reveal block only where a teacher clicks through it; S10-C: an activity slide takes an activity
+  if (f.interactive && !(o.purpose === 'in_class' && o.presented)) return null
+  if (slide.activity && !slide.frame && f.use !== 'activity') return null
 
   const why: string[] = []
   let score: number
@@ -115,10 +158,17 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
     if (rel.fit) score += 0.2 * rel.fit
   } else {
     const rel = relationScore(slide.relations, f.relations)
-    if (!rel.fit) return null
-    score = rel.fit
-    rank = rel.rank
-    why.push(`shows ${rel.rel}`)
+    // S25-g: a shape-only block is offered only where its shape is; the shape stands in for the relation
+    const shape = f.shapes?.find((x) => slide.shapes?.includes(x))
+    if (f.shapeOnly && !shape) return null
+    if (!rel.fit && !shape) return null
+    score = Math.max(rel.fit, shape ? 0.8 : 0)
+    rank = rel.fit ? rel.rank : 0
+    if (rel.fit) why.push(`shows ${rel.rel}`)
+    if (shape) {
+      score *= 1.5
+      why.push(`draws the ${shape === 'colours' ? 'colours' : shape === 'tiers' ? 'price tiers' : 'schedule'}`)
+    }
   }
   // data: a series needs a chart-capable block; no data → no chart
   const data = slide.data ?? 'none'
@@ -139,13 +189,20 @@ function scoreOne(def: BlockDefinition, slide: ShortlistSlide, o: ShortlistOptio
   // text load
   if (slide.textLoad) {
     const d = Math.abs(LOADS.indexOf(slide.textLoad) - LOADS.indexOf(f.textLoad))
-    score *= [1, 0.75, 0.45][d]
+    const soft = slide.softLoad && slide.textLoad === 'paragraphs' && f.textLoad === 'lines'
+    score *= soft ? 0.85 : [1, 0.75, 0.45][d]
   }
   // family and energy
   if (o.family && f.families && !f.families.includes(o.family)) score *= 0.6
   if (slide.energy && slide.energy !== f.energy) score *= slide.energy === 'neutral' || f.energy === 'neutral' ? 0.92 : 0.8
   // the curated core (tier 1) wins a tie: its blocks are the best default of their kind
   if (def.aiTier === 1) score *= 1.03
+  // S10-a: in a presented in-class deck a reveal block is the paced form of its content (the only decks
+  // it reaches; its text is shown a part at a time, so a `labels` slide does not hold it back)
+  if (f.interactive) {
+    score *= 1.2
+    why.push('unfolds in class')
+  }
   // variety and novelty
   if (o.used?.includes(def.type)) {
     score *= 0.7

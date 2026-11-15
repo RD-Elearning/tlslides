@@ -665,6 +665,14 @@ describe('validateDeckSpec — icon/unknown warning (P0.5)', () => {
     expect(byRule(f, 'icon/unknown')).toHaveLength(0)
   })
 
+  it('does not warn for a library picture (`lib:` ref, spro S20-E), nested lists included', () => {
+    const f = findingsOf(deckWith([
+      { id: 'i1', type: 'tls.m.icon', props: { icon: 'lib:tabler/bowl' } },
+      { id: 'g', type: 'tls.c.feature-grid', props: { cells: [{ title: 'Bún', icon: 'lib:ph/bowl-food' }, { title: 'x', icon: 'zap' }] } },
+    ]))
+    expect(byRule(f, 'icon/unknown')).toHaveLength(0)
+  })
+
   it('reaches icons nested inside list-of-object slots', () => {
     const f = findingsOf(
       deckWith([

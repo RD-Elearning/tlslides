@@ -13,11 +13,17 @@ import {
   TldrawComponentsRegistry,
   BlockRegistryContext,
   HostRegistryContext,
+  EditorProfileContext,
+  MessagesContext,
+  DEFAULT_MESSAGES,
+  useBlockSelectionReport,
 } from '~hooks'
+import type { EditorProfile, TldrawMessages, TldrawLabels } from '~hooks'
+import type { BlockSelection } from '~state/block-edit/BlockEdit'
 import type { BlockRegistry } from '~blocks/registry'
 import type { HostRegistry } from '~blocks/host-registry'
 import { shapeUtils } from '~state/shapes'
-import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
+import { resolveSlideBackground, pageTheme } from '~state/shapes/shared'
 import { ToolsPanel } from '~components/ToolsPanel'
 import { TopPanel } from '~components/TopPanel'
 import { ContextMenu } from '~components/ContextMenu'
@@ -109,6 +115,37 @@ export interface TldrawProps extends TDCallbacks {
   readOnly?: boolean
 
   /**
+   * (optional) Editor E01 — `'basic'` = the touch-up editor for AI-generated decks (spro): no
+   * TopPanel, no tools panel, no block inserter/layers panel, no rotate/clone handles, gated
+   * hotkeys, a short context menu, safe paste, and an inspector that opens only through
+   * `app.openInspector`. Only operations that survive `documentToDeckSpec` stay reachable.
+   * Defaults to `'full'` (the whole editor, unchanged).
+   */
+  editorProfile?: EditorProfile
+
+  /**
+   * (optional) Editor E04 — the selected block (and item) with its screen rect and the actions
+   * that fit it, every time it changes; `null` when nothing is selected or during a drag. The host
+   * draws its floating bars from it and acts through `app.blockEdit`.
+   */
+  onBlockSelection?: (app: TldrawApp, sel: BlockSelection | null) => void
+
+  /** (optional) Editor E04 — the camera after every pan/zoom (rAF-throttled). */
+  onCameraChange?: (app: TldrawApp, camera: { point: number[]; zoom: number }) => void
+
+  /** (optional) Editor E06 — the host's own items in each slide's menu (basic profile). */
+  slideMenuItems?: TldrawApp['slideMenuItems']
+
+  /** (optional) Editor E06 — how to ask before deleting a slide (default `window.confirm`). */
+  confirmAction?: TldrawApp['confirmAction']
+
+  /** (optional) Editor E08 — chrome strings (English defaults in `DEFAULT_MESSAGES`). */
+  messages?: Partial<TldrawMessages>
+
+  /** (optional) Editor E08 — names from the schema in the host's language. */
+  labels?: TldrawLabels
+
+  /**
    * (optional) Force the app's dark mode on or off. Omit to leave it alone (the app's own
    * default, or whatever the user has toggled via `toggleDarkMode`/the menu) — this only takes
    * effect when explicitly set to `true` or `false`, and stays reactive to prop changes.
@@ -177,6 +214,13 @@ export function Tldraw({
   showStyles = true,
   showUI = true,
   readOnly = false,
+  editorProfile = 'full',
+  onBlockSelection,
+  onCameraChange,
+  messages,
+  labels,
+  slideMenuItems,
+  confirmAction,
   darkMode,
   showSponsorLink = false,
   disableAssets = false,
@@ -203,6 +247,7 @@ export function Tldraw({
   onAssetCreate,
   onAssetDelete,
   onExport,
+  onBlocked,
 }: TldrawProps) {
   const [sId, setSId] = React.useState(id)
 
@@ -227,6 +272,7 @@ export function Tldraw({
       onChangePage,
       onAssetDelete,
       onAssetCreate,
+      onBlocked,
     })
     return app
   })
@@ -254,6 +300,7 @@ export function Tldraw({
       onAssetDelete,
       onAssetCreate,
       onExport,
+      onBlocked,
     })
     setSId(id)
 
@@ -301,6 +348,18 @@ export function Tldraw({
   React.useEffect(() => {
     app.readOnly = readOnly
   }, [app, readOnly])
+
+  // Editor E01 — commands, hotkeys and paste read the profile off the app.
+  app.profile = editorProfile
+  app.slideMenuItems = slideMenuItems
+  app.confirmAction = confirmAction
+
+  useBlockSelectionReport(app, onBlockSelection, onCameraChange)
+
+  const messagesValue = React.useMemo(
+    () => ({ messages: { ...DEFAULT_MESSAGES, ...(messages ?? {}) }, labels: labels ?? {} }),
+    [messages, labels]
+  )
 
   // Phase 14 — `darkMode` used to be declared here but never read anywhere in this component, a
   // silent no-op for any caller that passed it (found while building `DeckViewer`, which needs
@@ -373,6 +432,7 @@ export function Tldraw({
       onAssetDelete,
       onAssetCreate,
       onExport,
+      onBlocked,
     }
   }, [
     onMount,
@@ -394,6 +454,7 @@ export function Tldraw({
     onAssetDelete,
     onAssetCreate,
     onExport,
+    onBlocked,
   ])
 
   React.useLayoutEffect(() => {
@@ -415,6 +476,8 @@ export function Tldraw({
       <BlockRegistryContext.Provider value={blockRegistry}>
         <HostRegistryContext.Provider value={hostRegistry}>
           <TldrawComponentsContext.Provider value={components}>
+            <EditorProfileContext.Provider value={editorProfile}>
+            <MessagesContext.Provider value={messagesValue}>
             <InnerTldraw
             key={sId || 'Tldraw'}
             id={sId}
@@ -429,7 +492,10 @@ export function Tldraw({
             showUI={showUI}
             showSponsorLink={showSponsorLink}
             readOnly={readOnly}
+            profile={editorProfile}
           />
+            </MessagesContext.Provider>
+            </EditorProfileContext.Provider>
         </TldrawComponentsContext.Provider>
           </HostRegistryContext.Provider>
       </BlockRegistryContext.Provider>
@@ -450,6 +516,7 @@ interface InnerTldrawProps {
   showTools: boolean
   showSponsorLink: boolean
   readOnly: boolean
+  profile: EditorProfile
 }
 
 const InnerTldraw = React.memo(function InnerTldraw({
@@ -465,7 +532,9 @@ const InnerTldraw = React.memo(function InnerTldraw({
   showSponsorLink,
   readOnly,
   showUI,
+  profile,
 }: InnerTldrawProps) {
+  const basic = profile === 'basic'
   const app = useTldrawApp()
 
   const rWrapper = React.useRef<HTMLDivElement>(null)
@@ -481,6 +550,26 @@ const InnerTldraw = React.memo(function InnerTldraw({
 
   const isSelecting = state.appState.activeTool === 'select'
 
+  // Editor E01: the basic editor always shows the whole slide — on resize and on slide change.
+  const currentPageIdForFit = state.appState.currentPageId
+  React.useEffect(() => {
+    if (!basic) return
+    const el = rWrapper.current
+    let t: ReturnType<typeof setTimeout> | undefined
+    const fit = () => {
+      if (t) clearTimeout(t)
+      t = setTimeout(() => app.zoomToFit(), 100)
+    }
+    fit()
+    if (!el || typeof ResizeObserver === 'undefined') return () => t && clearTimeout(t)
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      if (t) clearTimeout(t)
+    }
+  }, [app, basic, currentPageIdForFit])
+
   const page = document.pages[appState.currentPageId]
   const pageState = document.pageStates[page.id]
   const assets = document.assets
@@ -491,8 +580,8 @@ const InnerTldraw = React.memo(function InnerTldraw({
   // the background or the asset table actually changes, not on every render (a gradient's `stops`
   // array would otherwise get a fresh `<defs>` id-stable-but-object-unstable prop each frame).
   const frameBackground = React.useMemo(
-    () => resolveSlideBackground(page.background, page.id, assets, activeDeckTheme(document.theme)),
-    [page.background, page.id, assets, document.theme]
+    () => resolveSlideBackground(page.background, page.id, assets, pageTheme(document.theme, page)),
+    [page.background, page.id, page.tone, assets, document.theme]
   )
 
   const isHideBoundsShape =
@@ -510,8 +599,8 @@ const InnerTldraw = React.memo(function InnerTldraw({
   // the one place a document-level theme needs to be threaded for every shape to resolve its own
   // colour tokens (see `getShapeStyle`'s `deckTheme` parameter).
   const meta = React.useMemo(() => {
-    return { isDarkMode: settings.isDarkMode, deckTheme: activeDeckTheme(document.theme) }
-  }, [settings.isDarkMode, document.theme])
+    return { isDarkMode: settings.isDarkMode, deckTheme: pageTheme(document.theme, page) }
+  }, [settings.isDarkMode, document.theme, page.tone])
 
   const showDashedBrush = settings.isCadSelectMode
     ? !appState.selectByContain
@@ -579,7 +668,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
   return (
     <StyledLayout ref={rWrapper} tabIndex={-0} className={settings.isDarkMode ? dark : ''}>
       <Loading />
-      <OneOff focusableRef={rWrapper} autofocus={autofocus} showPresent={showPresent} />
+      <OneOff focusableRef={rWrapper} autofocus={autofocus} showPresent={showPresent} profile={profile} />
       <ContextMenu>
         <Renderer
           id={id}
@@ -599,9 +688,10 @@ const InnerTldraw = React.memo(function InnerTldraw({
           hideHandles={hideHandles}
           hideResizeHandles={isHideResizeHandlesShape}
           hideIndicators={hideIndicators}
-          hideBindingHandles={!settings.showBindingHandles}
-          hideCloneHandles={hideCloneHandles}
-          hideRotateHandles={!settings.showRotateHandles}
+          // Editor E01: rotation, clones and arrow bindings are not saved by the deck spec
+          hideBindingHandles={basic || !settings.showBindingHandles}
+          hideCloneHandles={basic || hideCloneHandles}
+          hideRotateHandles={basic || !settings.showRotateHandles}
           hideGrid={!settings.showGrid}
           showDashedBrush={showDashedBrush}
           performanceMode={app.session?.performanceMode}
@@ -665,7 +755,7 @@ const InnerTldraw = React.memo(function InnerTldraw({
               !settings.isPresentationMode && <FocusButton onSelect={app.toggleFocusMode} />
             ) : (
               <>
-                <TopPanel
+                {!basic && <TopPanel
                   readOnly={readOnly}
                   showPages={showPages}
                   showMenu={showMenu}
@@ -674,25 +764,26 @@ const InnerTldraw = React.memo(function InnerTldraw({
                   showStyles={showStyles}
                   showZoom={showZoom}
                   showSponsorLink={showSponsorLink}
-                />
+                />}
                 <StyledSpacer />
-                {showTools && !readOnly && <ToolsPanel />}
+                {showTools && !readOnly && !basic && <ToolsPanel />}
               </>
             )}
           </StyledUI>
           {!settings.isFocusMode &&
             !settings.isPresentationMode &&
-            settings.showDeck &&
+            (settings.showDeck || basic) &&
             showPages && <Deck />}
           {!settings.isFocusMode &&
             !settings.isPresentationMode &&
             settings.showLayers &&
             showPages &&
-            !readOnly && <LayersPanel />}
+            !readOnly &&
+            !basic && <LayersPanel />}
           {!settings.isFocusMode && !settings.isPresentationMode && !readOnly && (
             <>
               <BlockInspectorPanel />
-              <BlockInserterPanel />
+              {!basic && <BlockInserterPanel />}
             </>
           )}
           {settings.isPresentationMode && (
@@ -714,12 +805,14 @@ const OneOff = React.memo(function OneOff({
   focusableRef,
   autofocus,
   showPresent,
+  profile,
 }: {
   autofocus?: boolean
   showPresent: boolean
   focusableRef: React.RefObject<HTMLDivElement>
+  profile: EditorProfile
 }) {
-  useKeyboardShortcuts(focusableRef, showPresent)
+  useKeyboardShortcuts(focusableRef, showPresent, profile)
   useStylesheet()
 
   React.useEffect(() => {

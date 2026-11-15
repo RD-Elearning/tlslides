@@ -23,6 +23,7 @@ import { connectorFromBlock, CONNECTOR_BLOCK_TYPE } from './connectors'
 import { BLOCK_PROP_KEY, shapePlacement, shapeToAuthoredBlock } from './shape-bridge'
 import { getSlideLayout, type SlideLayoutId } from './slide-layouts'
 import { resolveTokens } from './tokens'
+import { slideTheme } from './palettes'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Finding type                                                                     */
@@ -406,6 +407,9 @@ export function pageToSlideSpec(
   if (page.look !== undefined) {
     spec.look = page.look
   }
+  if (page.tone !== undefined) spec.tone = page.tone
+  if (page.backdrop !== undefined) spec.backdrop = page.backdrop
+  if (page.scene !== undefined) spec.scene = page.scene
 
   return { spec, findings }
 }
@@ -457,6 +461,12 @@ export function documentToDeckSpec(
       if (master?.background && JSON.stringify(master.background) === JSON.stringify(spec.background)) delete spec.background
       delete spec.masterId
     }
+    // S13-H: the solid ground a toned slide was given (`tonePageBackground`) was filled in, not authored
+    if (spec.tone && spec.background && (spec.tone === 'deep' || spec.tone === 'accent')) {
+      const g = slideTheme(theme, spec.tone).colors.background
+      const bg = spec.background as { type?: string; color?: string }
+      if (bg.type === 'solid' && bg.color === g) delete spec.background
+    }
     slides.push(spec)
     findings.push(...pageFindings)
 
@@ -496,5 +506,8 @@ export function documentToDeckSpec(
   if (doc.look !== undefined) deckSpec.look = doc.look
   if (doc.motionPersonality !== undefined) deckSpec.motionPersonality = doc.motionPersonality
   if (doc.ambient !== undefined) deckSpec.ambient = doc.ambient
+  if (doc.backdrops !== undefined) deckSpec.backdrops = doc.backdrops
+  if (doc.motifs !== undefined) deckSpec.motifs = doc.motifs
+  if (doc.libAssets !== undefined) deckSpec.assets = doc.libAssets
   return { spec: deckSpec, findings }
 }

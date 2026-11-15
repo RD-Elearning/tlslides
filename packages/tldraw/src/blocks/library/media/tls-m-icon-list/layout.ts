@@ -15,6 +15,7 @@ import { asArray, spacingGap, str } from '../../text/_engine/rich'
 import { iconLeaf } from '../../text/_engine/icon'
 import { isShown } from '../../../schema-helpers'
 import { growText } from '../../text/_engine/grow'
+import { categoryColor, categoryInk, tintOf } from '../../text/_engine/color'
 
 function toneRole(tone: unknown): ColorRole {
   return tone === 'accent2' ? 'accent2' : tone === 'text' ? 'text' : 'accent'
@@ -57,6 +58,11 @@ function compute(props: IconListProps, ctx: LayoutContext, width: number, rung: 
     const stack = tm.height + (dm ? innerGap + dm.height : 0)
     const rowH = Math.max(shape, stack)
     const iconTop = y
+    // C6: a point of a named group — its icon (and its shape's tint) in the group's colour
+    const itemTone = item && typeof item === 'object' ? (item as { tone?: unknown }).tone : undefined
+    const cat = categoryColor(ctx, itemTone)
+    const fillI = cat && style !== 'plain' ? tintOf(shapeFill, cat, 0.18) : shapeFill
+    const toneI = categoryInk(ctx, itemTone, style === 'plain' ? ctx.resolveColor('surface').color : fillI) ?? tone
     const stackTop = y + Math.max(0, (rowH - stack) / 2)
 
     if (style !== 'plain') {
@@ -64,11 +70,17 @@ function compute(props: IconListProps, ctx: LayoutContext, width: number, rung: 
         k: 'rect',
         part: `iconbg[${i}]`,
         box: { x: 0, y: iconTop, width: shape, height: shape },
-        fill: { type: 'solid', color: shapeFill },
+        fill: { type: 'solid', color: fillI },
         radius: style === 'circle' ? shape / 2 : Math.round(shape * 0.22),
       })
     }
-    nodes.push(iconLeaf(field(item, 'icon'), { x: (shape - glyph) / 2, y: iconTop + (shape - glyph) / 2, width: glyph, height: glyph }, tone, `icon[${i}]`))
+    const name = field(item, 'icon')
+    if (name.trim()) nodes.push(iconLeaf(name, { x: (shape - glyph) / 2, y: iconTop + (shape - glyph) / 2, width: glyph, height: glyph }, toneI, `icon[${i}]`))
+    else {
+      // S22-C: an item with no icon (none fits its meaning) takes a dot in the icon's place, never the warning glyph
+      const r = Math.max(3, glyph * 0.18)
+      nodes.push({ k: 'rect', part: `icon[${i}]`, box: { x: shape / 2 - r, y: iconTop + shape / 2 - r, width: 2 * r, height: 2 * r }, fill: { type: 'solid', color: toneI }, radius: r })
+    }
     nodes.push({
       k: 'text',
       part: `title[${i}]`,

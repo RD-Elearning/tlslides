@@ -13,18 +13,18 @@
  * - `needs` equals the asset needs the picker uses (`recipes.ts` `TYPE_NEEDS`).
  */
 
-import type { BlockFits, FitsData, FitsEnergy, FitsTextLoad, FrameRole, LookFamily, Relation } from '../types'
+import type { BlockFits, FitsData, FitsEnergy, FitsTextLoad, FitsUse, FrameRole, LookFamily, Relation } from '../types'
 
 /** Containers and editing aids: arranged by the AI through layouts and compositions, never
  *  chosen as a slide's main block; page chrome is placed by the style masters. */
 export const EDITOR_ONLY: ReadonlySet<string> = new Set([
-  'tls.l.card', 'tls.l.footer', 'tls.l.grid', 'tls.l.grid-guide', 'tls.l.overlay', 'tls.l.repeater',
+  'tls.l.card', 'tls.l.panel', 'tls.l.footer', 'tls.l.grid', 'tls.l.grid-guide', 'tls.l.overlay', 'tls.l.repeater',
   'tls.l.row', 'tls.l.safe-area', 'tls.l.section', 'tls.l.sidebar', 'tls.l.spacer', 'tls.l.split',
-  'tls.l.stack', 'tls.l.field', 'tls.g.connector',
+  'tls.l.stack', 'tls.l.field', 'tls.g.connector', 'tls.m.backdrop',
   'tls.x.footer-text', 'tls.x.header', 'tls.x.logo-mark', 'tls.x.page-number', 'tls.x.watermark',
 ])
 
-type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs'] }
+type Extra = { data?: FitsData; families?: LookFamily[]; frames?: FrameRole[]; needs?: BlockFits['needs']; interactive?: true; shapes?: BlockFits['shapes']; shapeOnly?: true }
 
 const f = (
   relations: Relation[],
@@ -43,7 +43,7 @@ const f = (
 const PLAYFUL: LookFamily[] = ['playful', 'classroom', 'modern']
 const SERIOUS: LookFamily[] = ['academic', 'professional', 'elegant', 'modern']
 
-export const BLOCK_FITS: Record<string, BlockFits> = {
+const FITS_ROWS: Record<string, BlockFits> = {
   // ── heading ──
   'tls.t.title': f(['statement'], null, 'lines', 'neutral', { frames: ['cover', 'divider', 'closing'] }),
   'tls.t.subtitle': f(['statement'], null, 'lines', 'calm'),
@@ -65,7 +65,7 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.m.icon-list': f(['group', 'recap', 'terms'], [3, 6], 'lines', 'neutral', { frames: ['agenda', 'summary'] }),
   'tls.t.bullets': f(['group', 'recap'], [2, 7], 'lines', 'calm'),
   'tls.t.checklist': f(['recap', 'action', 'question'], [3, 7], 'lines', 'neutral', { frames: ['summary', 'closing'] }),
-  'tls.t.kv-list': f(['terms', 'definition'], [3, 8], 'lines', 'calm'),
+  'tls.t.kv-list': f(['terms', 'definition'], [3, 8], 'lines', 'calm', { shapes: ['schedule'] }),
   'tls.t.numbered': f(['sequence', 'recap', 'ranking'], [3, 7], 'lines', 'calm', { frames: ['agenda', 'summary'] }),
   'tls.t.tags': f(['group', 'terms'], [3, 12], 'labels', 'neutral'),
 
@@ -103,8 +103,8 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.d.funnel-chart': f(['sequence', 'share'], [3, 6], 'labels', 'neutral', { data: 'series' }),
   'tls.d.grouped-bar': f(['series', 'contrast'], [3, 8], 'labels', 'neutral', { data: 'table' }),
   'tls.d.heatmap': f(['matrix', 'series'], [3, 10], 'labels', 'calm', { data: 'table', families: SERIOUS }),
-  'tls.d.lollipop': f(['ranking', 'series', 'contrast'], [3, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
-  'tls.d.dot-plot': f(['ranking', 'series', 'contrast'], [4, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], families: SERIOUS }),
+  'tls.d.lollipop': f(['ranking', 'series', 'contrast'], [3, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], shapes: ['scores'] }),
+  'tls.d.dot-plot': f(['ranking', 'series', 'contrast'], [4, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], families: SERIOUS, shapes: ['scores'] }),
   'tls.d.treemap': f(['share', 'hierarchy'], [4, 12], 'labels', 'calm', { data: 'share', needs: ['chartData'] }),
   'tls.d.annotated-line': f(['series', 'timeline', 'cause-effect'], [1, 4], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
   'tls.d.line': f(['series', 'timeline'], [4, 24], 'labels', 'neutral', { data: 'series' }),
@@ -126,7 +126,11 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.comparison': f(['contrast', 'group'], [2, 3], 'lines', 'neutral'),
   'tls.c.problem-solution': f(['contrast', 'cause-effect'], [2, 2], 'paragraphs', 'neutral'),
   'tls.d.compare-table': f(['contrast', 'matrix'], [3, 8], 'labels', 'calm', { data: 'table' }),
-  'tls.d.pricing': f(['contrast', 'action'], [2, 4], 'labels', 'neutral', { needs: ['prices'], families: ['professional', 'modern', 'elegant'] }),
+  // spro sprint 2026-11c S25: a palette, offered only where the passages give colour values
+  'tls.d.swatches': f(['group', 'terms'], [2, 10], 'labels', 'calm', { shapes: ['colours'], shapeOnly: true }),
+  // S25: a plan by day (a tour, a multi-day event), offered only where the passages lay one out
+  'tls.d.itinerary': f(['sequence', 'group'], [2, 6], 'labels', 'calm', { shapes: ['days'], shapeOnly: true }),
+  'tls.d.pricing': f(['contrast', 'action'], [2, 4], 'labels', 'neutral', { needs: ['prices'], families: ['professional', 'modern', 'elegant'], shapes: ['tiers'], shapeOnly: true }),
   'tls.g.before-after': f(['contrast', 'story', 'cause-effect'], [2, 2], 'lines', 'lively'),
   'tls.g.iceberg': f(['contrast', 'hierarchy', 'cause-effect'], [2, 8], 'labels', 'lively'),
   'tls.g.matrix-2x2': f(['matrix', 'contrast'], [4, 4], 'labels', 'neutral'),
@@ -138,7 +142,9 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.steps': f(['sequence', 'action', 'worked-example'], [3, 5], 'lines', 'neutral', { frames: ['agenda', 'closing'] }),
   'tls.g.chevrons': f(['sequence', 'timeline'], [3, 6], 'labels', 'lively', { frames: ['agenda'] }),
   'tls.g.cycle': f(['cycle'], [3, 6], 'labels', 'lively'),
-  'tls.g.flow': f(['sequence', 'cause-effect', 'network', 'worked-example'], [3, 8], 'labels', 'neutral'),
+  // review 2026-11-08 (rv2): offered for `sequence` / `worked-example`, it drew three parallel examples and three
+  // traversal orders as a chain of arrows — its own `avoid` sends straight sequences to steps / chevrons
+  'tls.g.flow': f(['cause-effect', 'network'], [3, 8], 'labels', 'neutral'),
   'tls.g.funnel': f(['sequence', 'hierarchy'], [3, 5], 'lines', 'neutral'),
   'tls.g.staircase': f(['sequence', 'hierarchy'], [3, 5], 'lines', 'lively', { families: PLAYFUL.concat(['professional']) }),
   'tls.g.steps': f(['sequence'], [3, 6], 'labels', 'neutral'),
@@ -148,6 +154,8 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.g.milestones': f(['timeline', 'sequence'], [3, 7], 'labels', 'neutral'),
   'tls.g.roadmap': f(['timeline', 'action'], [3, 8], 'labels', 'calm', { families: SERIOUS }),
   'tls.g.timeline': f(['timeline', 'sequence', 'story'], [3, 6], 'lines', 'neutral'),
+  // S25 (carry-over pass 2): places in travel order, offered only where the passages name a route
+  'tls.g.route': f(['sequence', 'story'], [2, 8], 'labels', 'neutral', { shapes: ['route'], shapeOnly: true }),
 
   // ── hierarchy ──
   'tls.g.breakdown': f(['hierarchy', 'share', 'number'], [2, 6], 'labels', 'neutral'),
@@ -169,6 +177,8 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.image-full': f(['image-led', 'story'], null, 'lines', 'lively', { needs: ['images'], frames: ['cover', 'divider', 'closing'] }),
   'tls.c.image-text': f(['image-led', 'story', 'definition'], null, 'paragraphs', 'neutral', { needs: ['images'] }),
   'tls.m.device-mock': f(['image-led'], null, 'labels', 'neutral', { needs: ['images'], families: ['professional', 'modern'] }),
+  // S25 (carry-over pass 2): one app/web screen described part by part
+  'tls.m.screen': f(['group', 'terms'], [2, 8], 'labels', 'neutral', { shapes: ['screen'], shapeOnly: true }),
   'tls.m.icon': f(['statement'], null, 'labels', 'neutral'),
   'tls.m.icon-label': f(['group'], null, 'labels', 'neutral'),
   'tls.m.image': f(['image-led'], null, 'labels', 'calm', { needs: ['images'] }),
@@ -220,6 +230,38 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.c.hook-cover': f(['question', 'number'], null, 'labels', 'lively', { frames: ['cover'] }),
   'tls.c.route-agenda': f(['sequence', 'timeline', 'story'], [3, 7], 'labels', 'lively', { frames: ['agenda', 'divider'] }),
   'tls.c.chapter-divider': f(['statement', 'question'], null, 'labels', 'neutral', { frames: ['divider'] }),
+  'tls.c.section-brief': f([], [2, 4], 'lines', 'calm', { frames: ['divider'] }),
+  // spro sprint 2026-11b S08 — wave A, text-rich teaching blocks (use: info)
+  'tls.c.key-points': f(['group', 'recap', 'cause-effect'], [2, 5], 'paragraphs', 'calm'),
+  'tls.c.explainer': f(['definition', 'cause-effect', 'story'], null, 'paragraphs', 'calm'),
+  'tls.c.frayer': f(['definition', 'terms', 'contrast'], null, 'lines', 'calm'),
+  'tls.c.worked-example': f(['worked-example', 'sequence', 'formula'], [2, 6], 'paragraphs', 'neutral'),
+  'tls.c.cornell': f(['recap', 'question', 'definition'], [2, 5], 'paragraphs', 'calm', { families: ['classroom', 'academic', 'playful', 'professional'] }),
+  'tls.c.faq': f(['question', 'definition'], [2, 5], 'paragraphs', 'neutral'),
+  'tls.c.glossary': f(['terms', 'definition'], [4, 8], 'paragraphs', 'calm'),
+  'tls.c.timeline-detail': f(['timeline', 'story', 'sequence'], [3, 6], 'paragraphs', 'neutral'),
+  'tls.c.process-detail': f(['sequence', 'action', 'worked-example'], [3, 6], 'paragraphs', 'neutral'),
+  'tls.c.compare-detail': f(['contrast', 'group'], [2, 3], 'paragraphs', 'neutral'),
+  'tls.c.summary-sheet': f(['recap'], [3, 6], 'paragraphs', 'calm', { frames: ['summary'] }),
+  'tls.c.sidenotes': f(['story', 'definition', 'cause-effect'], null, 'paragraphs', 'calm', { families: ['academic', 'elegant', 'professional', 'classroom'] }),
+  // spro sprint 2026-11b S09 — wave B, visual / diagram / number blocks
+  'tls.c.stat-explain': f(['number', 'share', 'cause-effect'], null, 'lines', 'lively', { data: 'single' }),
+  'tls.c.number-grid': f(['number', 'group'], [3, 6], 'lines', 'lively', { data: 'single' }),
+  'tls.c.infographic-row': f(['group', 'number', 'sequence'], [3, 5], 'labels', 'lively'),
+  'tls.c.split-statement': f(['statement', 'cause-effect', 'contrast'], [2, 4], 'lines', 'neutral'),
+  'tls.c.quote-context': f(['quote', 'story', 'people'], null, 'lines', 'calm'),
+  'tls.g.concept-map': f(['network', 'hierarchy', 'cause-effect'], [4, 9], 'labels', 'neutral'),
+  'tls.g.cycle-detail': f(['cycle', 'sequence'], [3, 6], 'lines', 'neutral'),
+  'tls.g.cause-chain': f(['cause-effect'], [1, 4], 'lines', 'neutral'),
+  'tls.g.number-line': f(['formula', 'ranking', 'number'], [1, 6], 'labels', 'calm', { families: ['classroom', 'academic', 'playful'] }),
+  'tls.c.image-notes': f(['image-led', 'terms', 'worked-example'], [2, 5], 'lines', 'neutral', { needs: ['images'] }),
+  'tls.c.cover-masthead': f(['statement'], null, 'labels', 'neutral', { frames: ['cover'] }),
+  'tls.c.closing-recap': f(['recap', 'action'], [2, 3], 'lines', 'neutral', { frames: ['closing', 'summary'] }),
+  // spro sprint 2026-11b S10 — wave C, in-class reveal blocks (interactive: in-class presented learning decks only)
+  'tls.c.tabs': f(['group', 'contrast', 'terms'], [2, 5], 'lines', 'neutral', { interactive: true }),
+  'tls.c.accordion': f(['question', 'group', 'definition'], [3, 6], 'lines', 'calm', { interactive: true }),
+  'tls.c.step-through': f(['sequence', 'worked-example'], [3, 6], 'lines', 'neutral', { interactive: true }),
+  'tls.c.hotspots': f(['image-led', 'terms'], [2, 6], 'lines', 'lively', { needs: ['images'], interactive: true }),
   'tls.c.sticky-board': f(['group', 'terms', 'recap'], [2, 8], 'labels', 'lively', { families: ['playful', 'classroom'] }),
   'tls.c.question-wall': f(['question'], [3, 8], 'labels', 'lively', { frames: ['qa'] }),
   'tls.c.homework': f(['action', 'group'], [1, 4], 'lines', 'neutral', { frames: ['closing'], families: ['classroom', 'playful', 'academic'] }),
@@ -229,6 +271,7 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.t.speech-bubble': f(['quote', 'story', 'people'], null, 'lines', 'lively', { families: ['playful', 'classroom'] }),
   // spro creative CR9
   'tls.m.emoji': f(['statement', 'question'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
+  'tls.m.asset': f(['statement', 'story', 'question'], null, 'labels', 'calm'),
   'tls.m.illustration': f(['statement', 'story', 'people'], null, 'labels', 'lively', { families: ['playful', 'classroom'] }),
 
   // spro creative CR13: waves 2 and 3 (PLAN Appendix C.3/C.4)
@@ -256,3 +299,34 @@ export const BLOCK_FITS: Record<string, BlockFits> = {
   'tls.m.ornament': f([], null, 'labels', 'calm', { families: ['elegant'] }),
   'tls.x.rule': f([], null, 'labels', 'calm'),
 }
+
+/** spro sprint 2026-11b S07-a (D32): the `use` of each block, by list; every other rankable block is `info`.
+ *  `tls.t.qa` is `info` (it shows questions WITH their answers). */
+export const USE_DECOR: ReadonlySet<string> = new Set([
+  'tls.m.decoration', 'tls.m.icon-cluster', 'tls.m.pattern', 'tls.m.ornament', 'tls.x.rule', 'tls.g.arrow',
+  'tls.m.emoji', 'tls.m.illustration', 'tls.m.asset', 'tls.m.shape', 'tls.t.badge', 'tls.t.kicker', 'tls.t.marker',
+])
+export const USE_FRAME: ReadonlySet<string> = new Set([
+  'tls.c.cover', 'tls.c.hero', 'tls.c.kinetic-title', 'tls.c.poster-cover', 'tls.c.split-cover', 'tls.c.hook-cover',
+  'tls.c.title-card', 'tls.c.full-bleed-type', 'tls.c.divider', 'tls.c.chapter-divider', 'tls.c.agenda',
+  'tls.c.route-agenda', 'tls.c.closing', 'tls.c.cta', 'tls.c.callback', 'tls.c.contact', 'tls.c.one-question',
+  'tls.c.takeaway-poster', 'tls.c.section-brief', 'tls.c.cover-masthead', 'tls.c.closing-recap',
+])
+export const USE_HIGHLIGHT: ReadonlySet<string> = new Set([
+  'tls.c.big-stat', 'tls.t.hero-number', 'tls.c.stat-spotlight', 'tls.c.stat-card', 'tls.c.kpi-tile', 'tls.c.kpi-row',
+  'tls.c.number-story', 'tls.d.icon-array', 'tls.d.gauge', 'tls.d.progress-ring', 'tls.d.trend-badge',
+  'tls.d.stat-compare', 'tls.c.stat-explain', 'tls.c.number-grid', 'tls.t.statement', 'tls.t.quote', 'tls.t.pull-quote', 'tls.c.quote-image', 'tls.c.testimonial',
+])
+
+export function useOf(type: string): FitsUse {
+  if (USE_DECOR.has(type)) return 'decor'
+  if (USE_FRAME.has(type)) return 'frame'
+  if (USE_HIGHLIGHT.has(type)) return 'highlight'
+  if (type.startsWith('tls.a.') || type === 'tls.c.quiz' || type === 'tls.c.question-wall') return 'activity'
+  return 'info'
+}
+
+export const BLOCK_FITS: Record<string, BlockFits> = Object.fromEntries(
+  Object.entries(FITS_ROWS).map(([type, row]) => [type, { ...row, use: row.use ?? useOf(type) }])
+)
+

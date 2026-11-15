@@ -18,12 +18,15 @@ import { tlsMAvatarGroup } from './tls-m-avatar-group'
 import { tlsMDecoration } from './tls-m-decoration'
 import { tlsMIconCluster } from './tls-m-icon-cluster'
 import { tlsMPattern } from './tls-m-pattern'
+import { tlsMBackdrop } from './tls-m-backdrop'
 import { tlsMOrnament } from './tls-m-ornament'
 import { tlsMShape } from './tls-m-shape'
 import { tlsMEmoji } from './tls-m-emoji'
 import { tlsMIllustration } from './tls-m-illustration'
+import { tlsMAsset } from './tls-m-asset'
 
 /** All built-in media block definitions. */
+import { tlsMScreen } from './tls-m-screen'
 export const mediaBlocks: BlockDefinition[] = [
   tlsMImage,
   tlsMIcon,
@@ -39,10 +42,13 @@ export const mediaBlocks: BlockDefinition[] = [
   tlsMDecoration,
   tlsMIconCluster,
   tlsMPattern,
+  tlsMBackdrop,
   tlsMOrnament,
   tlsMShape,
   tlsMEmoji,
   tlsMIllustration,
+  tlsMAsset,
+  tlsMScreen,
 ]
 
 export { tlsMImage } from './tls-m-image'
@@ -60,6 +66,9 @@ export { tlsMAvatarGroup } from './tls-m-avatar-group'
 export { tlsMShape } from './tls-m-shape'
 export { tlsMDecoration } from './tls-m-decoration'
 export { tlsMPattern } from './tls-m-pattern'
+export { tlsMBackdrop } from './tls-m-backdrop'
 export { tlsMOrnament } from './tls-m-ornament'
 export { tlsMEmoji } from './tls-m-emoji'
 export { tlsMIllustration } from './tls-m-illustration'
+export { tlsMAsset } from './tls-m-asset'
+export { tlsMScreen } from './tls-m-screen'

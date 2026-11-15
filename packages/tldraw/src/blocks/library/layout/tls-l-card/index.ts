@@ -7,7 +7,7 @@
 
 import type { BlockDefinition } from '../../../types'
 import { schema, defaults } from './schema'
-import { layout } from './layout'
+import { intrinsicSize, layout } from './layout'
 import { motion } from './motion'
 import { label } from '../_example'
 
@@ -36,5 +36,6 @@ export const tlsLCard: BlockDefinition = {
   defaults,
   size: { preferred: [640, 300], min: [360, 260] },
   layout: layout as BlockDefinition['layout'],
+  intrinsicSize: intrinsicSize as BlockDefinition['intrinsicSize'],
   motion,
 }

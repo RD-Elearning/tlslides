@@ -9,9 +9,12 @@
 
 import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode, RichText } from '../../../types'
 import { defineCompositeBlock } from '../../../layout/define-composite'
+import { blockWord } from '../../../labels'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { onSurface, composeFlat, measureHeights, pick, richItems, toMeasurable, type Piece } from '../_kit'
+import { categoryInk, categoryTint } from '../../text/_engine/color'
+import { growText } from '../../text/_engine/grow'
 
 export const RECAP_MIN = 2
 export const RECAP_MAX = 5
@@ -20,12 +23,15 @@ export interface RecapProps extends Record<string, unknown> {
   points: Array<string | RichText>
   takeaway?: string
   style?: 'numbered' | 'cards'
+  /** C6: per point, `category:<n>` (set by the service) — a cards-style panel in the group's colour. */
+  pointTones?: string[]
 }
 
 export const schema: BlockSchema = {
   points: { type: { kind: 'list', of: { kind: 'richText', maxChars: 140 }, min: RECAP_MIN, max: RECAP_MAX }, role: 'content', label: 'Key points', required: true, guidance: 'One sentence each; **bold** the key term.' },
   takeaway: { type: { kind: 'text', maxChars: 140 }, role: 'content', label: 'Takeaway', guidance: 'The one thing to remember.' },
   style: enumSlot(['numbered', 'cards'], 'Style', 'cards = one panel per point.'),
+  pointTones: { type: { kind: 'list', of: { kind: 'text', maxChars: 12 } }, role: 'option', label: 'Point colours', help: 'Per point: `category:<n>` draws the panel in the colour the document gives its group (set by the service).' },
 }
 
 export const defaults: RecapProps = {
@@ -41,8 +47,9 @@ export const defaults: RecapProps = {
 
 const STYLES = ['numbered', 'cards'] as const
 
-const takeawaySpec = (props: RecapProps): BlockSpec | undefined =>
-  props.takeaway ? { id: 'takeaway', type: 'tls.t.takeaway', props: { text: props.takeaway, tone: 'accent', label: 'Remember' } } : undefined
+// sprint 2026-11c T30: the takeaway's label in the deck's language
+const takeawaySpec = (props: RecapProps, locale?: string): BlockSpec | undefined =>
+  props.takeaway ? { id: 'takeaway', type: 'tls.t.takeaway', props: { text: props.takeaway, tone: 'accent', label: blockWord('remember', locale) } } : undefined
 
 export function buildRecap(props: RecapProps): BlockSpec {
   const list: BlockSpec = { id: 'points', type: 'tls.t.numbered', props: { items: richItems(props.points, RECAP_MAX), markerStyle: 'badge', spacing: 'roomy' } }
@@ -55,7 +62,7 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
   const style = pick(props.style, STYLES, 'numbered')
   const pts = richItems(props.points, RECAP_MAX)
   const gap = ctx.tokens.space.lg
-  const take = takeawaySpec(props)
+  const take = takeawaySpec(props, ctx.tokens.locale)
   const pieces: Piece[] = []
   const cw = Math.min(W, 1500)
   const x0 = style === 'numbered' ? 0 : 0
@@ -76,16 +83,23 @@ export function layoutRecap(props: RecapProps, ctx: LayoutContext): LayoutNode {
     const textType = n >= 4 ? 'tls.t.caption' : 'tls.t.body'
     const textHs = measureHeights(ctx, pts.map((t, i) => ({ id: `p${i}`, type: textType, props: { text: toMeasurable(t) } })), inner)
     bodyH = 2 * pad + numH + ctx.tokens.space.sm + Math.max(0, ...textHs)
-    const fill = ctx.resolveColor('surfaceAlt').color
-    const on = onSurface({ type: 'solid', color: fill })
+    const base = ctx.resolveColor('surfaceAlt').color
+    const page = ctx.resolveColor('surface').color
+    const tones = Array.isArray(props.pointTones) ? props.pointTones : []
     pts.forEach((t, i) => {
       const x = i * (pw + g)
+      // C6: a point of a named group — the panel tinted and rimmed, the number in the group's colour
+      const tint = categoryTint(ctx, tones[i], page)
+      const fill = tint ?? base
+      const on = onSurface({ type: 'solid', color: fill })
+      const ink = categoryInk(ctx, tones[i], fill)
+      const rim = tint ? categoryInk(ctx, tones[i], page) : undefined
       content.push({
         id: `card[${i}]`,
-        raw: [{ k: 'rect', box: { x, y: 0, width: pw, height: bodyH }, fill: { type: 'solid', color: fill }, radius: ctx.tokens.radius.lg } as LayoutNode],
+        raw: [{ k: 'rect', box: { x, y: 0, width: pw, height: bodyH }, fill: { type: 'solid', color: fill }, ...(rim ? { stroke: { color: rim, width: 3 } } : {}), radius: ctx.tokens.radius.lg } as LayoutNode],
         box: { x, y: 0, width: pw, height: bodyH },
       })
-      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'title', color: 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
+      content.push({ id: `number[${i}]`, spec: { id: `n${i}`, type: 'tls.t.title', props: { text: String(i + 1), size: 'title', color: ink ?? 'accent', ...on } }, box: { x: x + pad, y: pad, width: inner, height: numH } })
       content.push({ id: `point[${i}]`, spec: { id: `p${i}`, type: textType, props: { text: toMeasurable(t), ...on } }, box: { x: x + pad, y: pad + numH + ctx.tokens.space.sm, width: inner, height: textHs[i] } })
     })
   }
@@ -158,6 +172,8 @@ function capacity(props: RecapProps): CapacityReport {
 export const tlsCRecap: BlockDefinition = {
   ...composite,
   intrinsicSize: undefined,
-  layout: ((props: RecapProps, ctx: LayoutContext): LayoutNode => layoutRecap(props, ctx)) as BlockDefinition['layout'],
+  // spro S29 7c (S24: 3 of 18 small-in-space slides were a recap alone in a tall region): the
+  // points and the takeaway step their type up while the recap still shows whole in its box
+  layout: ((props: RecapProps, ctx: LayoutContext): LayoutNode => growText(ctx, (c) => layoutRecap(props, c))) as BlockDefinition['layout'],
   capacity: capacity as BlockDefinition['capacity'],
 }

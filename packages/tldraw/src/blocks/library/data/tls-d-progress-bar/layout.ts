@@ -17,6 +17,10 @@ import {
 } from '../_chart/kit'
 
 const THICK = { sm: 10, md: 18, lg: 30 } as const
+/** A larger label size is taken while the rows fill at most this share of the box. */
+export const ROOMY_SHARE = 0.6
+/** Each gap between spread rows grows by at most this many label lines. */
+export const SPREAD_LINES = 1.5
 
 interface Row {
   label: string
@@ -38,28 +42,45 @@ function readRows(props: ProgressBarProps): Row[] {
   return rows
 }
 
-function plan(props: ProgressBarProps, ctx: LayoutContext, width: number) {
+function plan(props: ProgressBarProps, ctx: LayoutContext, width: number, token: 'caption' | 'body' | 'lead' = 'caption') {
   const rows = readRows(props)
-  const thick = THICK[enumOf(props.thickness, ['md', 'sm', 'lg'] as const, 'md')]
+  const thick = Math.round(THICK[enumOf(props.thickness, ['md', 'sm', 'lg'] as const, 'md')] * (token === 'lead' ? 1.5 : token === 'body' ? 1.25 : 1))
   const labelPos = enumOf(props.labelPos, ['above', 'left'] as const, 'above')
-  const ls = style(ctx, 'caption', ctx.resolveColor('text').color)
+  const ls = style(ctx, token, ctx.resolveColor('text').color)
   const rowGap = ctx.tokens.space.sm
   const showValue = enumOf(props.showValue, ['percent', 'value', 'none'] as const, 'percent')
   const valueText = (r: Row) => (showValue === 'percent' ? `${Math.round(r.pct)}%` : showValue === 'value' ? fmtNum(r.value, props.format, ctx.tokens.locale) : '')
   const valueW = showValue === 'none' ? 0 : Math.ceil(Math.max(0, ...rows.map((r) => realWidth(valueText(r), ls))) * 1.04) + 4
-  const labelW =
-    labelPos === 'left'
-      ? Math.min(width * 0.35, Math.ceil(Math.max(0, ...rows.map((r) => realWidth(r.label, ls))) * 1.04))
-      : 0
+  const widest = Math.ceil(Math.max(0, ...rows.map((r) => realWidth(r.label, ls))) * 1.04)
+  const labelW = labelPos === 'left' ? Math.min(width * 0.35, widest) : 0
+  // a label cut to its column (left) or to the row (above)
+  const clipped = labelPos === 'left' ? widest > width * 0.35 : widest > width - valueW
   const lh = lineH(ls)
   const rowH = labelPos === 'above' ? lh + ctx.tokens.space['2xs'] + thick : Math.max(lh, thick)
   const total = rows.length === 0 ? 0 : rows.length * rowH + (rows.length - 1) * rowGap
-  return { rows, thick, labelPos, ls, rowGap, showValue, valueText, valueW, labelW, lh, rowH, total }
+  return { rows, thick, labelPos, ls, rowGap, showValue, valueText, valueW, labelW, lh, rowH, total, clipped }
 }
 
 export function layout(props: ProgressBarProps, ctx: LayoutContext): LayoutNode {
   const W = Math.max(1, ctx.box.width)
-  const p = plan(props, ctx, W)
+  const H = Math.max(ctx.box.height, 0)
+  let p = plan(props, ctx, W)
+  // review 2026-11-08 (notebook s8: two 18-unit bars with 22-unit labels at the top of a 380-unit
+  // box): a box taller than the rows takes a larger label size (and a thicker track) while the rows
+  // stay under `ROOMY_SHARE` of it, then the rows spread (each gap by at most `SPREAD_LINES` label
+  // lines) and sit centred in the box
+  if (!ctx.tokens.measuring && p.total > 0 && p.total < H * ROOMY_SHARE) {
+    for (const t of ['lead', 'body'] as const) {
+      const q = plan(props, ctx, W, t)
+      if (q.total <= H * ROOMY_SHARE && !q.clipped) {
+        p = q
+        break
+      }
+    }
+  }
+  const room = ctx.tokens.measuring ? 0 : Math.max(0, H - p.total)
+  const extra = p.rows.length > 1 ? Math.min(SPREAD_LINES * p.lh, (room * 0.5) / (p.rows.length - 1)) : 0
+  const top = room > 1 ? Math.round((H - p.total - extra * (p.rows.length - 1)) / 2) : 0
   const c = chartColors(ctx)
   const nodes: LayoutNode[] = []
   const gap = ctx.tokens.space.xs
@@ -67,7 +88,7 @@ export function layout(props: ProgressBarProps, ctx: LayoutContext): LayoutNode 
   const accent = ctx.resolveColor('accent').color
 
   p.rows.forEach((r, i) => {
-    const y = i * (p.rowH + p.rowGap)
+    const y = top + i * (p.rowH + p.rowGap + extra)
     const frac = clamp(r.pct / 100, 0, 1)
     const color =
       props.tone === 'status'
@@ -94,8 +115,7 @@ export function layout(props: ProgressBarProps, ctx: LayoutContext): LayoutNode 
     if (showTrack) nodes.push(solidRect({ x: trackX, y: trackY, width: trackW, height: p.thick }, c.track, `row[${i}].track`, p.thick / 2))
     if (frac > 0) nodes.push(solidRect({ x: trackX, y: trackY, width: Math.max(p.thick, trackW * frac), height: p.thick }, color, `row[${i}].fill`, p.thick / 2))
   })
-  const h = Math.max(ctx.box.height, 0)
-  return { ...root(ctx, nodes), box: { x: 0, y: 0, width: W, height: h } }
+  return { ...root(ctx, nodes), box: { x: 0, y: 0, width: W, height: H } }
 }
 
 export function capacity(props: ProgressBarProps, box: Size, ctx: LayoutContext): CapacityReport {

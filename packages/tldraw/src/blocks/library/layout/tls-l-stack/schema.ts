@@ -17,6 +17,12 @@ export const schema: BlockSchema = {
     label: 'Children',
     help: 'Child blocks stacked vertically.',
   },
+  justify: {
+    type: { kind: 'enum', values: ['start', 'center', 'end', 'between'] },
+    role: 'option',
+    label: 'Justify',
+    help: 'S11: with sizing content, where the children sit along the main axis (between = the free space between them).',
+  },
   sizing: {
     type: { kind: 'enum', values: ['equal', 'content'] },
     role: 'option',
@@ -29,6 +35,8 @@ export interface StackProps extends Record<string, unknown> {
   gap: string
   children?: BlockSpec[]
   sizing?: 'equal' | 'content'
+  /** S11: with sizing content, main-axis placement (no stretch to fill). */
+  justify?: 'start' | 'center' | 'end' | 'between'
 }
 
 export const defaults: StackProps = {

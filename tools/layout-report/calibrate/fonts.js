@@ -29,11 +29,33 @@ const FONT_SET = [
   { key: 'source-serif-4', family: 'Source Serif 4', pkg: '@fontsource-variable/source-serif-4', css: ['index.css'], generic: 'serif' },
   { key: 'crimson-pro', family: 'Crimson Pro', pkg: '@fontsource-variable/crimson-pro', css: ['index.css'], generic: 'serif' },
   { key: 'source-code-pro', family: 'Source Code Pro', pkg: '@fontsource-variable/source-code-pro', css: ['index.css'], generic: 'monospace' },
+  // sprint 2026-11b S14: measured from the engine's own TTFs (slide-engine/fonts, google/fonts at the pinned commit,
+  // instanced at wght 400/700 opsz 14) — the same designs the browser loads from the matching @fontsource package.
+  ...[
+    ['lexend', 'Lexend', 'Lexend', 'sans-serif', true],
+    ['montserrat', 'Montserrat', 'Montserrat', 'sans-serif', true],
+    ['josefin-sans', 'Josefin Sans', 'JosefinSans', 'sans-serif', true],
+    ['oswald', 'Oswald', 'Oswald', 'sans-serif', true],
+    ['lora', 'Lora', 'Lora', 'serif', true],
+    ['merriweather', 'Merriweather', 'Merriweather', 'serif', true],
+    ['eb-garamond', 'EB Garamond', 'EBGaramond', 'serif', true],
+    ['quicksand', 'Quicksand', 'Quicksand', 'sans-serif', true],
+    ['baloo-2', 'Baloo 2', 'Baloo2', 'sans-serif', true],
+    ['pangolin', 'Pangolin', 'Pangolin', 'cursive', false],
+    ['jetbrains-mono', 'JetBrains Mono', 'JetBrainsMono', 'monospace', true],
+  ].map(([key, family, stem, generic, variable]) => ({
+    key, family, generic, variable, ttf: variable ? { 400: `${stem}-400.ttf`, 700: `${stem}-700.ttf` } : { 400: `${stem}-400.ttf` },
+    pkg: `slide-engine/fonts/${stem}-*.ttf`,
+  })),
 ]
+
+const TTF_DIR = path.resolve(ROOT, '../slide-engine/fonts')
+const GF_COMMIT = 'bd8f81dd'
 
 const SUBSETS = ['latin', 'latin-ext', 'vietnamese']
 
 function pkgDir(f) {
+  if (f.ttf) return TTF_DIR
   const dir = path.join(NM, f.pkg)
   if (!fs.existsSync(dir)) throw new Error(`${dir} missing: run COREPACK_ENABLE_STRICT=0 pnpm install`)
   return dir
@@ -41,6 +63,7 @@ function pkgDir(f) {
 
 /** Licence and subsets from the package metadata (recorded in the plan's AC3 notes). */
 function fontMeta(f) {
+  if (f.ttf) return { family: f.family, version: GF_COMMIT, license: 'OFL-1.1 (google/fonts)', subsets: ['latin', 'latin-ext', 'vietnamese', 'greek'], variable: f.variable }
   const m = JSON.parse(fs.readFileSync(path.join(pkgDir(f), 'metadata.json'), 'utf8'))
   const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir(f), 'package.json'), 'utf8'))
   return { family: m.family, version: pkg.version, license: (m.license && m.license.type) || m.license, subsets: m.subsets, variable: !!m.variable }
@@ -52,6 +75,13 @@ function fontFaceCss(keys) {
   for (const f of FONT_SET) {
     if (keys && !keys.includes(f.key)) continue
     const dir = pkgDir(f)
+    if (f.ttf) {
+      for (const [w, file] of Object.entries(f.ttf)) {
+        const data = fs.readFileSync(path.join(dir, file)).toString('base64')
+        out += `@font-face { font-family: '${f.family}'; font-style: normal; font-weight: ${w}; src: url(data:font/ttf;base64,${data}) format('truetype'); }\n`
+      }
+      continue
+    }
     for (const file of f.css) {
       const css = fs.readFileSync(path.join(dir, file), 'utf8')
       for (const block of css.match(/@font-face\s*{[^}]*}/g) || []) {

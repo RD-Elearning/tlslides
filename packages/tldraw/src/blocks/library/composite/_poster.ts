@@ -191,8 +191,27 @@ export function posterHeight(ctx: LayoutContext, main: Cell[], opts: PosterOptio
  *  number or list in a band of the slide (spro creative Phase R: nova s3, digital-uni s3). */
 export function posterFit(ctx: LayoutContext, rungs: Array<{ main: Cell[]; opts: PosterOptions }>, fill = 0.9): LayoutNode {
   const H = Math.max(0, ctx.box.height) || 0
-  const pick = rungs.find((r) => posterHeight(ctx, r.main, r.opts) <= H * fill) ?? rungs[rungs.length - 1]
-  return posterLayout(ctx, pick.main, pick.opts)
+  // spro S17 (nova s3 "85,0 / 00", "Mont / h14"): a rung whose type cuts a word in two does not fit either —
+  // a number or a word wider than its cell is never broken while a smaller rung keeps it whole
+  const laid = (r: { main: Cell[]; opts: PosterOptions }) => posterLayout(ctx, r.main, r.opts)
+  // (overflowing the box is worse than a cut word: with no rung both whole and within the box, the first that fits wins)
+  const fits = rungs.filter((r) => posterHeight(ctx, r.main, r.opts) <= H * fill)
+  for (const r of fits) {
+    const node = laid(r)
+    if (!breaksWord(node)) return node
+  }
+  return laid(fits[0] ?? rungs[rungs.length - 1])
+}
+
+/** A text of `node` that wraps inside a word: a line that is not the last ends without a break
+ *  opportunity (soft breaks keep their space on the line, `layout/measure.ts`) and the next one goes
+ *  on with a letter or digit — the wrapper found no break in a word wider than its box. */
+export function breaksWord(node: LayoutNode): boolean {
+  if (node.k === 'text') {
+    const ls = node.lines
+    return ls.some((l, i) => i < ls.length - 1 && /[\p{L}\p{N}.,%$€£]$/u.test(l.text) && !/[\u3000-\u9fff\uac00-\ud7af]$/u.test(l.text) && /^[\p{L}\p{N}.,%]/u.test(ls[i + 1].text))
+  }
+  return node.k === 'group' ? node.children.some(breaksWord) : false
 }
 
 /** The poster layout: `main` (and `opts.side`) as measured, centred stacks. */

@@ -20,7 +20,7 @@ export const tlsTStatement: BlockDefinition = {
   related: ['tls.t.quote', 'tls.t.takeaway', 'tls.t.hero-number', 'tls.x.watermark'],
   describe: {
     when: "A single claim or conclusion that should fill the slide's attention.",
-    avoid: 'A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway).',
+    avoid: 'A quotation from a person (use tls.t.quote); a takeaway beside other content (use tls.t.takeaway); a claim with its evidence (use tls.c.split-statement).',
     example: {
       id: 'b_statement',
       type: 'tls.t.statement',

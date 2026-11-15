@@ -12,7 +12,7 @@ import {
   resolveFont,
   unquoteFontFamily,
 } from '~state/shapes/shared/shape-styles'
-import { activeDeckTheme } from '~state/shapes/shared/deck-theme'
+import { pageTheme } from '~state/shapes/shared/deck-theme'
 import { resolveSlideBackground } from '~state/shapes/shared/background'
 import { getTextAlign } from '~state/shapes/shared/getTextAlign'
 import { applyListMarkers } from '~state/shapes/shared/textList'
@@ -205,7 +205,8 @@ export function resolvePageSize(page: TDPage, defaultPageSize?: number[]): [numb
  */
 export function renderPageToSvg(page: TDPage, opts: RenderPageToSvgOptions = {}): string {
   const assets = opts.assets ?? {}
-  const theme = activeDeckTheme(opts.theme)
+  // S13-a: a toned page paints with its derived slide theme
+  const theme = pageTheme(opts.theme, page)
   const isDarkMode = opts.isDarkMode ?? false
   const [width, height] = resolvePageSize(page, opts.defaultPageSize)
 

@@ -848,3 +848,37 @@ describe('spro creative R3: no orphan card on the last row', () => {
     expect(effectiveColumns(400, 3, 24, 5)).toBe(1) // one column fits: no orphan to avoid
   })
 })
+
+describe('spro S29 7b — a full grid takes the compact tier before it spills', () => {
+  const desc = 'Mô tả dài cho một tính năng, đủ để chiếm ba bốn dòng trong một ô hẹp của lưới, như câu trả lời thật của mô hình khi viết đầy đủ ý cho từng thẻ.'
+  const props = {
+    ...(tlsCFeatureGrid.defaults as any),
+    columns: 2,
+    cell: 'card',
+    cells: Array.from({ length: 6 }, (_, i) => ({ icon: 'leaf', title: `Tính năng số ${i + 1}`, desc })),
+  }
+  const descSize = (n: LayoutNode): number => {
+    const found: any[] = []
+    const walk = (x: any): void => {
+      if (x.k === 'text' && /^cells?[.[]0\]?\.desc$/.test(x.part ?? '')) found.push(x)
+      for (const k of x.children ?? []) walk(k)
+    }
+    walk(n)
+    return found[0].style.size
+  }
+  it('is shorter than the base tier, uses caption descriptions, and the template reads it back', () => {
+    const roomyBox = poster(props, ctx({ width: 742, height: 4000 }))
+    const tight = poster(props, ctx({ width: 742, height: 742 }))
+    expect(tight.box.height).toBeLessThan(roomyBox.box.height)
+    const c = ctx({ width: 742, height: 742 })
+    expect(descSize(tight)).toBeCloseTo((c.tokens.type as any).caption.size, 0)
+    const html = template(props, { ...makeTemplateCtx(c), box: { x: 0, y: 0, width: 742, height: 742 }, poster: tight } as any)
+    expect(html).toContain(`font-size:${(c.tokens.type as any).caption.size}px`)
+    expect(html).toContain('padding:20px')
+  })
+  it('a grid that fits at the base tier keeps it', () => {
+    const c = ctx({ width: 1600, height: 1000 })
+    const p = poster(tlsCFeatureGrid.defaults as any, c)
+    expect(descSize(p)).not.toBeCloseTo((c.tokens.type as any).caption.size, 0)
+  })
+})

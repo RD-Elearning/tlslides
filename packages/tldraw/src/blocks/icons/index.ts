@@ -321,7 +321,8 @@ export function getIcon(name: string): Icon | undefined {
  * Check if an icon name is known.
  */
 export function hasIcon(name: string): boolean {
-  return getIcon(name) !== undefined
+  // S20-b: a `lib:<pack>/<name>` ref is a valid icon value; the deck's asset table resolves it after layout
+  return getIcon(name) !== undefined || (name.startsWith('lib:') && name.length > 4)
 }
 
 /**

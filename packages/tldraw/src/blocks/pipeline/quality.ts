@@ -42,7 +42,7 @@ import { resolveDeckTheme } from '../deck-document'
 import type { DeckSpec, SlideIntent } from '../types'
 import { DESIGN_CODES, type DesignCode } from '../design-checks'
 
-export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | 'quality/min-type' | DesignCode
+export type QualityCode = 'quality/sparse' | 'quality/thin-region' | 'quality/small-type' | 'quality/unbalanced' | 'quality/floating-body' | 'quality/thin-diagram' | 'quality/min-type' | 'quality/image-strip' | DesignCode
 
 /** CR7a (spro creative PLAN §6.8): the profile a slide is judged by, from `SlideSpec.intent`. */
 export type GateProfile = 'default' | SlideIntent
@@ -87,8 +87,45 @@ export interface SlideQuality {
   /** The slide title's painted text (left x, top y, width, font size), for title drift across
    *  slides; absent when the slide has no `title` region text. */
   title?: { x: number; y: number; width: number; fontSize: number }
+  /** spro sprint 2026-11b S04: painted text area of the body's blocks (title, decorative and backdrop
+   *  blocks excluded) / the sum of their box areas, 0-1 — how much of the body's boxes is words. */
+  bodyInk: number
+  /** S04: characters of reading text outside the title region (decorative and backdrop excluded). */
+  bodyChars: number
+  /** S04: card-like boxes stretched far past their content (`INK_GATE`): a row of cards with a
+   *  2-word title each in a full-height region. Measured, not a finding (S05/S06 act on it). */
+  hollow: HollowBox[]
   findings: QualityFinding[]
 }
+
+/** S04: one card-like box with little text in a lot of height. */
+export interface HollowBox {
+  /** Slide-level block id, or the nested child's path (`g1/c2`). */
+  block: string
+  type: string
+  /** Painted text area / box area. */
+  ink: number
+  /** Block: its box height / its painted cards' height (informational). Nested card: its height / its text span. */
+  stretch: number
+}
+
+/** S04 (sprint 2026-11b) — what makes a card-like box hollow. Calibrated 2026-11-05 on the 147 card-like
+ *  boxes of the 41 fixed spro decks (contact sheets): a card-like block's cards are drawn at their
+ *  natural height (painted / natural = 1 on all 97 blocks — the spare height is an empty band under
+ *  them, which `bottomGap` measures), so a block is hollow by its ink over its painted cards alone:
+ *  under 0.22 the sheet showed cards holding a 2-word title and one small line (10 of 97). A nested
+ *  `tls.l.card` is stretched by its row: hollow when its ink is under 0.22 and its height is more than
+ *  1.6 × its text span (5 of 50; its padding alone gives ≈ 1.9 at ink ≈ 0.3). */
+export const INK_GATE = {
+  hollowInk: 0.22,
+  hollowStretch: 1.6,
+} as const
+
+/** Blocks whose cells are cards (S04-b); nested `tls.l.card` children are judged one by one. */
+export const CARD_LIKE = new Set([
+  'tls.c.cards', 'tls.c.feature-grid', 'tls.c.recap', 'tls.c.comparison', 'tls.c.steps', 'tls.c.kpi-row',
+  'tls.c.sticky-board', 'tls.c.flashcards', 'tls.c.do-dont',
+])
 
 /** learning L01: the smallest size (slide units on 1920) each kind of reading text may have. */
 export interface TypeFloors {
@@ -152,6 +189,10 @@ export const QUALITY_GATE = {
    *  0.6 it also took cards and icon rows whose panels fill the band. */
   floatingLead: 0.5,
   floatingCover: 0.55,
+  /** spro sprint 2026-11c S24-d: two side-by-side body regions whose ink areas differ by more than `pairInk` times and
+   *  whose largest text differs by more than `pairType` times read as one heavy side and one footnote (`balance` only). */
+  pairInk: 3,
+  pairType: 1.6,
   /** CR7a `diagram` profile: the diagrams must paint this share of the regions that hold them. */
   minDiagramFill: 0.45,
   /** CR7a `poster` profile: the lead must reach this share of the deck's title size. */
@@ -164,7 +205,14 @@ export const QUALITY_GATE = {
   /** A poster whose content hugs one side: the left and right empty bands differ by more than this
    *  share of the safe width (flags 9 of those 398; 0.3 flags 52, mostly left-aligned section titles). */
   posterMaxSideExcess: 0.4,
+  /** spro sprint 2026-11c C11 (solar s12: a night-side Earth photo squeezed to an 800 × 120 band under a
+   *  section brief — a black strip): a photo block whose box is longer than this many times its other side
+   *  shows a sliver of the picture. */
+  maxImageAspect: 3.5,
 } as const
+
+/** C11: the blocks that show one photo in their box. */
+const PHOTO_BLOCKS = new Set(['tls.m.image', 'tls.c.image-full'])
 
 /** CR7a: blocks that are a diagram or a chart for the `diagram` profile (connectors are lines). */
 const isDiagram = (type: string) => (type.startsWith('tls.g.') || type.startsWith('tls.d.')) && type !== 'tls.g.connector'
@@ -265,6 +313,8 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     title = { x: Math.round(t.painted.x), y: Math.round(t.painted.y), width: Math.round(t.painted.width), fontSize: Math.round(t.fontSize * (t.scale || 1)) }
   }
 
+  const ink = inkMeasures(content)
+
   const diagrams = flow.filter((b) => isDiagram(b.type) && b.region !== 'title' && b.region !== 'free')
   const diagramRegions = union(Object.entries(report.regions).filter(([name]) => diagrams.some((b) => b.region === name)).map(([, box]) => box))
   const diagramFill = diagrams.length && diagramRegions ? Math.min(1, area(union(diagrams.map((b) => b.painted))) / Math.max(1, area(diagramRegions))) : 1
@@ -308,11 +358,23 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     } else if (innerGap > QUALITY_GATE.maxInnerGap) {
       findings.push({ code: 'quality/unbalanced', message: `an empty band of ${pct(innerGap)} of the page between blocks: keep the blocks of a region together, or put them side by side` })
     }
+    const pair = unbalancedPair(report, content)
+    if (pair) findings.push({ code: 'quality/unbalanced', message: pair })
     if (opts.titleSize && bodyLead > 0 && bodyLead <= opts.titleSize * QUALITY_GATE.floatingLead && bodyCover < QUALITY_GATE.floatingCover) {
       findings.push({
         code: 'quality/floating-body',
         message: `the body is a strip of small text (largest ${Math.round(bodyLead)} units under a ${Math.round(opts.titleSize)} title) covering ${pct(bodyCover)} of its region: one column instead of two, a block that fills the region (cards, a grid, objectives), a split with a visual or an accent, or a lead size`,
       })
+    }
+  }
+  // C11: a photo squeezed to a band (any profile; a backdrop photo fills the slide and is not judged)
+  for (const b of content) {
+    if (!PHOTO_BLOCKS.has(b.type) || b.layer === 'backdrop' || b.outOfFlow) continue
+    const w = b.box.width
+    const h = b.box.height
+    if (w > 0 && h > 0 && Math.max(w / h, h / w) > QUALITY_GATE.maxImageAspect) {
+      findings.push({ code: 'quality/image-strip', message: `the photo \`${b.id}\` is squeezed to a ${Math.round(w)} × ${Math.round(h)} band and shows a sliver of the picture: give it its own region beside the text (a split or two-column layout), or a layout where it fills the side` })
+      break
     }
   }
   // learning L01 (D10): the smallest reading text against its floor, one finding naming the worst run
@@ -340,8 +402,83 @@ export function slideQuality(report: LayoutReport, opts: { titleSize?: number; b
     if (f.severity === 'info' || !(DESIGN_CODES as readonly string[]).includes(f.code)) continue
     findings.push({ code: f.code as DesignCode, message: f.message + (f.fix ? ` FIX: ${f.fix}` : '') })
   }
-  return { profile, diagramFill, fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, leftGap, rightGap, bodyLead, bodyCover, ...(title ? { title } : {}), findings }
+  return { profile, diagramFill, fill, regionFill, thinRegion, lead, bottomGap, topGap, innerGap, leftGap, rightGap, bodyLead, bodyCover, ...(title ? { title } : {}), ...ink, findings }
 }
+
+const boxArea = (b: { width: number; height: number }) => Math.max(0, b.width) * Math.max(0, b.height)
+
+/**
+ * S04 — ink and hollow boxes, from the report alone (no new measuring). Body = the painted
+ * non-title blocks that are neither decorative nor backdrops.
+ */
+/**
+ * S24-d: two text regions side by side (overlapping in height by half the shorter one) where one paints over
+ * `pairInk` times the other's area AND its largest text is over `pairType` times the other's — a heavy side beside a
+ * footnote. A picture region is left out (no text to weigh). The message names both regions and the remedy.
+ */
+export function unbalancedPair(report: LayoutReport, content: LayoutReport['blocks']): string | null {
+  const sides = Object.entries(report.regions)
+    .filter(([name]) => name !== 'title' && name !== 'foot' && name !== 'free')
+    .map(([name, box]) => {
+      const own = content.filter((b) => b.region === name && !b.outOfFlow && b.painted)
+      let lead = 0
+      for (const b of own) for (const t of b.text) lead = Math.max(lead, t.fontSize * (t.scale || 1))
+      return { name, box, ink: area(union(own.map((b) => b.painted))), lead }
+    })
+    .filter((x) => x.ink > 0 && x.lead > 0)
+  for (let i = 0; i < sides.length; i++) {
+    for (let j = 0; j < sides.length; j++) {
+      const a = sides[i]
+      const b = sides[j]
+      if (a === b || a.box.x + a.box.width > b.box.x + 1) continue // a left of b
+      const overlap = Math.min(a.box.y + a.box.height, b.box.y + b.box.height) - Math.max(a.box.y, b.box.y)
+      if (overlap < 0.5 * Math.min(a.box.height, b.box.height)) continue
+      const [big, small] = a.ink >= b.ink ? [a, b] : [b, a]
+      if (big.ink > QUALITY_GATE.pairInk * small.ink && big.lead > QUALITY_GATE.pairType * small.lead) {
+        return `region "${small.name}" is a small strip of ${Math.round(small.lead)}-unit text beside "${big.name}" (${Math.round(big.ink / Math.max(1, small.ink))}× its ink, ${Math.round(big.lead)}-unit text): stack them in one wide region, or give the small side the callout treatment (a lead size, a panel)`
+      }
+    }
+  }
+  return null
+}
+
+export function inkMeasures(content: LayoutReport['blocks']): Pick<SlideQuality, 'bodyInk' | 'bodyChars' | 'hollow'> {
+  const body = content.filter((b) => b.region !== 'title' && b.layer !== 'backdrop' && !DECORATIVE.has(b.type))
+  let painted = 0
+  let boxes = 0
+  let bodyChars = 0
+  const hollow: HollowBox[] = []
+  for (const b of body) {
+    boxes += boxArea(b.box)
+    for (const t of b.text) {
+      painted += boxArea(t.painted)
+      bodyChars += t.chars
+    }
+    if (CARD_LIKE.has(b.type) && b.painted) {
+      // judged on the cards it draws; `stretch` reports the box it was given against them
+      const a = boxArea(b.painted)
+      const own = b.text.reduce((n, t) => n + boxArea(t.painted), 0)
+      const inkB = a > 0 ? own / a : 1
+      const stretch = b.painted.height > 0 ? b.box.height / b.painted.height : 1
+      if (inkB < INK_GATE.hollowInk) hollow.push({ block: b.id, type: b.type, ink: round3(inkB), stretch: round3(stretch) })
+    }
+    for (const c of b.children ?? []) {
+      if (c.type !== 'tls.l.card' || c.layer === 'backdrop') continue
+      const texts = b.text.filter((t) => t.block === c.path || t.block?.startsWith(c.path + '/'))
+      const a = boxArea(c.box)
+      if (!texts.length || a <= 0) continue
+      const own = texts.reduce((n, t) => n + boxArea(t.painted), 0)
+      const top = Math.min(...texts.map((t) => t.painted.y))
+      const bottom = Math.max(...texts.map((t) => t.painted.y + t.painted.height))
+      const inkC = own / a
+      const stretch = bottom > top ? c.box.height / (bottom - top) : 1
+      if (inkC < INK_GATE.hollowInk && stretch > INK_GATE.hollowStretch) hollow.push({ block: c.path, type: c.type, ink: round3(inkC), stretch: round3(stretch) })
+    }
+  }
+  return { bodyInk: boxes > 0 ? round3(Math.min(1, painted / boxes)) : 0, bodyChars, hollow }
+}
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000
 
 /**
  * The deck's slide-title size (theme + style + deck tokens), for the lead-type rule: the type token

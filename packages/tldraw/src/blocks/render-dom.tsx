@@ -8,6 +8,7 @@
  * `.tl-positioned-div` sets `overflow: hidden` — overlays must portal.
  */
 
+import { markHtmlEditPaths } from './html-edit-paths'
 import * as React from 'react'
 import { rectShadowSpec, shadowCss } from './shadow'
 import type {
@@ -50,6 +51,36 @@ export interface HostLayoutContextValue {
 }
 
 export const HostLayoutContext = React.createContext<HostLayoutContextValue | undefined>(undefined)
+
+/**
+ * spro sprint 2026-11b S10 — wraps a layout block's DOM in the viewer and runs its `reveal` hook when
+ * the host is interactive (`HostLayoutContext.activity`, set by DeckViewer only). `display: contents`:
+ * the wrapper adds no box, the block's parts keep their positions. Elsewhere it renders the children
+ * as they are (the static form).
+ */
+export function RevealMount({ def, props, blockKey, children }: { def: BlockDefinition; props: Record<string, unknown>; blockKey: string; children: React.ReactNode }): React.ReactElement {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const hctx = React.useContext(HostLayoutContext)
+  const factory = hctx?.activity
+  // the viewer re-renders on every slide tick: a new props object or runtime factory must not tear the block down
+  // (that would reset the open tab / step); only a real content change re-mounts the reveal
+  const latest = React.useRef({ props, factory })
+  latest.current = { props, factory }
+  const propsKey = React.useMemo(() => JSON.stringify(props), [props])
+  const live = !!factory
+  useIsomorphicLayoutEffect(() => {
+    const el = ref.current
+    const { props: p, factory: f } = latest.current
+    if (!el || !def.reveal || !f) return
+    return def.reveal(el, f(blockKey), p as never)
+  }, [def, propsKey, live, blockKey])
+  if (!def.reveal || !factory) return <React.Fragment>{children}</React.Fragment>
+  return (
+    <div ref={ref} data-reveal={def.type} style={{ display: 'contents' }}>
+      {children}
+    </div>
+  )
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Paint → CSS helpers                                                             */
@@ -242,6 +273,8 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
+      // Editor E02: the template's text elements carry the prop paths they paint (inline edit, items).
+      if (!hctx.headless) markHtmlEditPaths(root, hctx.props, hctx.poster)
 
       // R0.5 item 3: hide parts immediately so they don't flash at full opacity
       // between the layout effect (mount) and the reveal trigger. animate()'s
@@ -289,6 +322,8 @@ function createHtmlBlockRenderer(def: BlockDefinition): HostRenderer {
       }
       const html = def.html!.template(hctx.props, tplCtx)
       root.innerHTML = html
+      // Editor E02: the template's text elements carry the prop paths they paint (inline edit, items).
+      if (!hctx.headless) markHtmlEditPaths(root, hctx.props, hctx.poster)
       // L03: the DOM was replaced, so the activity's listeners are gone: wire it again.
       if (hctx.interactive && hctx.activity && def.html!.interact) {
         ACTIVITY_DISPOSERS.get(root)?.()
@@ -527,6 +562,8 @@ export function renderNodeToDom(node: LayoutNode): React.ReactNode {
           {...(part ? { 'data-part': part } : {})}
           // CMP3: a nested block's wrapper (CMP1 X2) — nested motion finds the child's recipe by it.
           {...(node.blockId !== undefined ? { 'data-nested-id': node.blockId } : {})}
+          // Editor E02: the list item this nested block is, in the slide-level block's props
+          {...(node.itemPath !== undefined ? { 'data-item-path': node.itemPath } : {})}
           {...(node.type !== undefined ? { 'data-nested-type': node.type } : {})}
         >
           {node.children.map((child, i) => (

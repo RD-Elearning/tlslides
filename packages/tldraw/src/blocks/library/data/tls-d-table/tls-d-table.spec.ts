@@ -124,9 +124,11 @@ describe('tls.d.table', () => {
     expect(absoluteLeaves(r).some((l) => l.k === 'line')).toBe(false)
   })
 
-  it('compact density is shorter and uses smaller text', () => {
-    const a = lay({ density: 'default' })
-    const b = lay({ density: 'compact' })
+  it('compact density is shorter and uses smaller text (a box the default does not fit)', () => {
+    // a box too short for any tier: the compact build's own height
+    const tight = { width: SZ.width, height: lay({ density: 'compact' }, { width: SZ.width, height: 1 }).box.height }
+    const a = lay({ density: 'default' }, tight)
+    const b = lay({ density: 'compact' }, tight)
     expect(b.box.height).toBeLessThan(a.box.height)
     expect((exact(b, 'row[0].c0').node as any).style.size).toBeLessThan((exact(a, 'row[0].c0').node as any).style.size)
   })
@@ -159,6 +161,21 @@ describe('tls.d.table', () => {
     expect((exact(t, 'row[0].c0').node as any).lines.length).toBe(1)
   })
 
+  it('g1 (clinic s14): a two-column table of sentences in a tall box takes a larger tier, its text wrapping ≤ 3 lines', () => {
+    const props = { columns: [{ label: 'Hiểu lầm' }, { label: 'Sự thật' }], density: 'compact', footer: undefined, showFooter: false, rows: [
+      ['Phải kiêng hẳn cơm', 'Cần đúng lượng, không cần bỏ hẳn'],
+      ['Thuốc tây hại thận, uống thuốc nam cho lành', 'Đường huyết cao mới hại thận; thuốc nam không rõ thành phần có thể gây hạ đường huyết hoặc hại gan'],
+      ['Tiêm insulin nghĩa là bệnh đã rất nặng', 'Insulin là một cách điều trị, có người cần dùng sớm'],
+      ['Trái cây lành nên ăn bao nhiêu cũng được', 'Trái cây vẫn có đường — ăn một nắm tay mỗi lần'],
+    ] }
+    const tall = lay(props, { width: 1728, height: 596 })
+    const short = lay(props, { width: 1728, height: 280 })
+    const size = (t: any) => (exact(t, 'row[1].c1').node as any).style.size
+    expect(size(tall)).toBeGreaterThan(size(short))
+    expect(tall.box.height).toBeLessThanOrEqual(596.5)
+    expect((exact(tall, 'row[1].c1').node as any).lines.length).toBeLessThanOrEqual(3)
+  })
+
   it('rating dots and icons sit on the vertical centre of the text line', () => {
     const t = lay({ columns: [{ label: 'Name' }, { label: 'R', kind: 'rating' }, { label: 'C', kind: 'check' }], rows: [['Alpha', '3', 'yes']], showFooter: false })
     const text = exact(t, 'row[0].c0')
@@ -181,5 +198,32 @@ describe('tls.d.table', () => {
 describe('RV06 — example fits its box (review G06)', () => {
   it('the example fits size.preferred and size.min, every label as wide as its glyphs', () => {
     assertExampleFits(tlsDTable)
+  })
+})
+
+describe('tls.d.table — rows of a named group in its colour (spro sprint 2026-11c C6)', () => {
+  const { createLayoutContext } = require('../../../layout/layout-child')
+  const { TEST_TOKENS, TEST_SURFACE } = require('../../layout/test-helpers')
+  const tokens = { ...TEST_TOKENS, categorical: ['#3E8E4E', '#4A4F55', '#FFFFFF'] }
+  const BAGS = { columns: [{ label: 'Nhóm' }, { label: 'Túi' }], rows: [['Rác tái chế', 'Túi trắng'], ['Rác thực phẩm', 'Túi xanh lá'], ['Rác còn lại', 'Túi xám']] }
+  const at = (props: Record<string, unknown>) =>
+    tlsDTable.layout({ ...(tlsDTable.defaults as any), ...props } as any, createLayoutContext({ box: SZ, tokens, surface: TEST_SURFACE }))
+  const tones = (t: any) => absoluteLeaves(t).filter((l: any) => /^tone\[\d\]/.test(l.part ?? ''))
+
+  it('tints a toned row and bars it in the group colour; a white group on a white page in the line colour', () => {
+    const plain = at(BAGS)
+    const t = at({ ...BAGS, rowTones: ['category:2', 'category:0', 'category:1'] })
+    const bars = tones(t).filter((l: any) => l.part.endsWith('.bar'))
+    expect(bars.map((l: any) => l.part)).toEqual(['tone[0].bar', 'tone[1].bar', 'tone[2].bar'])
+    expect(bars[1].node.fill.color.toUpperCase()).toBe('#3E8E4E')
+    expect(bars[0].node.fill.color.toUpperCase()).not.toBe('#FFFFFF')
+    // the text does not move
+    const texts = (x: any) => absoluteLeaves(x).filter((l: any) => l.k === 'text').map((l: any) => [l.part, Math.round(l.x), Math.round(l.y)])
+    expect(texts(t)).toEqual(texts(plain))
+  })
+
+  it('no tone, an unknown tone or an index past the ramp draws nothing', () => {
+    expect(tones(at({ ...BAGS, rowTones: ['', 'green', 'category:9'] }))).toEqual([])
+    expect(tones(at(BAGS))).toEqual([])
   })
 })

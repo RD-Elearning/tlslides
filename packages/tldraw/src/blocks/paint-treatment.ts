@@ -18,7 +18,10 @@
 import { roughOutline, roughPaths } from './library/media/tls-m-decoration/rough'
 import { blobPath } from './library/media/tls-m-decoration/layout'
 import type { LayoutNode, Paint, Stroke } from './types'
-import { mixHex } from './color-math'
+import { hexToRgb, mixHex, relativeLuminance } from './color-math'
+
+/** Ink lighter than this (relative luminance) is light text: no highlighter band under it. */
+export const LIGHT_INK = 0.4
 import { editorMetrics } from './layout/measure'
 import { paintsAnything, type Treatment } from './look'
 import { emojiForIcon, emojiUrl, getIcon } from './icons'
@@ -124,9 +127,18 @@ function stackSheets(W: number, H: number, fill: Paint | undefined, radius: numb
   return [sheet(2, 0.14), sheet(1, 0.07)]
 }
 
+/** A glow: a gradient fill that fades to clear (`tls.m.pattern` mesh, backdrop glows, spotlights). It is light, not
+ *  an object — spro S17 review: the look's shadow and corner radius turned the gradient deck's three mesh glows into
+ *  overlapping glass cards behind the cover title. */
+export function isGlow(fill: Paint | undefined): boolean {
+  if (!fill || (fill.type !== 'radialGradient' && fill.type !== 'linearGradient')) return false
+  return fill.stops.some((s) => /^transparent$/i.test(s.color) || /,\s*0(\.0+)?\s*\)$/.test(s.color) || /^#[0-9a-f]{6}00$/i.test(s.color))
+}
+
 function treatRect(node: Extract<LayoutNode, { k: 'rect' }>, t: RenderTreatment, seed: number): LayoutNode {
   const { width: W, height: H } = node.box
   if (W < 4 || H < 4) return node
+  if (isGlow(node.fill)) return node
   const p = pen(t)
   const sketch = !!p && sketchable(node.stroke)
   const fillHex = solid(node.fill)
@@ -200,10 +212,16 @@ function treatPath(node: Extract<LayoutNode, { k: 'path' }>, t: RenderTreatment,
 /** Hand marks on each bold run of a text node (emphasis `highlighter | underline | box | circle |
  *  color`), in the node's box, behind the text (a ring or a box over it, never covering glyphs). */
 function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment, seed: number): LayoutNode {
-  const e = t.emphasis
-  if (!e || e === 'bold' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
-  const color = t.highlight ?? '#FFE066'
   const ink = node.style.color && /^#[0-9a-f]{6}$/i.test(node.style.color) ? node.style.color : '#333333'
+  // review 2026-11-08 (notebook cover: a yellow marker under light ink on the navy ground read as a strike):
+  // a highlighter is for dark ink on a light page; light ink takes the hand underline in its own colour
+  const e = t.emphasis === 'highlighter' && relativeLuminance(hexToRgb(ink)) > LIGHT_INK ? 'underline' : t.emphasis
+  if (!e || e === 'bold' || !node.lines.some((l) => l.runs?.some((r) => r.bold && r.text.trim()))) return node
+  // S29 (c9 waste s05: a marker chip behind every column head of a table): a table head is set bold as its weight
+  // (`_table/kit` boldHeader), not words stressed inside a sentence — no marks. Not "every run bold": a centred
+  // title is placed one node per line, and a line that is all bold words keeps its marks
+  if (/^head\[\d+\]/.test(node.part ?? '')) return node
+  const color = t.highlight ?? '#FFE066'
   const fs = (node.style.size ?? 32) * (node.style.scale ?? 1)
   const lh = fs * (node.style.lineHeight ?? 1.3)
   const marks: LayoutNode[] = []
@@ -212,7 +230,9 @@ function treatText(node: Extract<LayoutNode, { k: 'text' }>, t: RenderTreatment,
     let x = 0
     const top = line.top ?? i * lh
     for (const run of line.runs ?? []) {
-      const w = editorMetrics(run.text, node.style).width * (node.style.scale ?? 1)
+      // a bold run is measured bold (S24-k, T34: measured at the regular weight, each mark was narrower than its words
+      // and every mark after a bold run sat further left — "máy sấy 6 tấn/mẻ" boxed half a word early)
+      const w = editorMetrics({ runs: [{ text: run.text, ...(run.bold ? { bold: true } : {}) }] }, node.style).width * (node.style.scale ?? 1)
       if (run.bold && run.text.trim()) {
         const pad = fs * 0.12
         const s2 = seed + 31 * k++
@@ -320,6 +340,70 @@ function treatIcon(node: Extract<LayoutNode, { k: 'icon' }>, t: RenderTreatment,
   }
 }
 
+const SVG_URL = 'data:image/svg+xml;charset=utf-8,'
+
+/** A library picture's SVG with `edit` applied (its data URL decoded and encoded again); unchanged when not ours. */
+function editSvg(url: string | undefined, edit: (svg: string) => string): string | undefined {
+  if (!url || !url.startsWith(SVG_URL)) return undefined
+  return SVG_URL + encodeURIComponent(edit(decodeURIComponent(url.slice(SVG_URL.length))))
+}
+
+/** spro sprint 2026-11c S20 (carry-over pass 2) — `look.icon` on a LIBRARY picture (a `lib:` icon the resolver
+ *  turned into an SVG image): the same treatments as a built-in glyph, drawn around the picture. `thin` thins its
+ *  strokes, `duotone` / `blob` / `hand` put the pale shape behind, `sticker` a white die-cut backing with a soft
+ *  shadow, `tile` a tile of the glyph colour with the picture in white (a multi-colour picture: a pale tile, the
+ *  picture as drawn), `emoji` the subject's emoji when the name has one. `filled` is the library voice's job. */
+function treatLibImage(node: Extract<LayoutNode, { k: 'image' }>, t: RenderTreatment, seed: number): LayoutNode {
+  const v = t.icon
+  if (!v || v === 'outline' || v === 'filled') return node
+  const w = node.box.width
+  const h = node.box.height
+  if (w < 4 || h < 4) return node
+  const name = node.assetId.slice(4).split('/').pop() ?? ''
+  if (v === 'emoji') {
+    const e = emojiForIcon(name)
+    const url = e ? emojiUrl(e) : undefined
+    return url ? { ...node, assetId: `emoji:${e}`, alt: e!.replace(/-/g, ' '), url } : node
+  }
+  if (v === 'thin') {
+    const url = editSvg(node.url, (s) => s.replace(/stroke-width="([\d.]+)"/g, (_, n: string) => `stroke-width="${Math.max(0.75, Number(n) * 0.55)}"`))
+    return url ? { ...node, url } : node
+  }
+  const color = node.ink && HEX.test(node.ink) ? node.ink : '#333333'
+  const pale = mixHex(color, '#ffffff', 0.8)
+  const local = { ...node, box: { x: 0, y: 0, width: w, height: h } }
+  delete (local as { part?: string }).part
+  const scaled = (k: number, over: Partial<Extract<LayoutNode, { k: 'image' }>> = {}): LayoutNode => ({ ...local, box: { x: (w - w * k) / 2, y: (h - h * k) / 2, width: w * k, height: h * k }, ...over })
+  const at = (children: LayoutNode[]): LayoutNode => ({ k: 'group', box: node.box, ...(node.part ? { part: node.part } : {}), children })
+  switch (v) {
+    case 'duotone': {
+      const r = Math.min(w, h) * 0.36
+      const d = `M${0.58 * w - r} ${0.58 * h} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`
+      return at([{ k: 'path', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, d, fill: { type: 'solid', color: mixHex(color, '#ffffff', 0.72) } }, local])
+    }
+    case 'blob':
+    case 'hand': {
+      const s = v === 'hand' ? Math.min(w, h) * 0.94 : Math.min(w, h)
+      const back: LayoutNode = { k: 'path', part: 'shape', box: { x: w - s, y: h - s, width: s, height: s }, d: blobPath(s / 2, s / 2, s / 2, seed + (v === 'hand' ? 1 : 0), 0), fill: { type: 'solid', color: pale } }
+      return at([back, scaled(0.7)])
+    }
+    case 'sticker': {
+      const s = Math.min(w, h) * 0.92
+      const box = { x: (w - s) / 2, y: (h - s) / 2, width: s, height: s }
+      const shadow: LayoutNode = { k: 'rect', part: 'shape', box: { ...box, x: box.x + w * 0.03, y: box.y + h * 0.04 }, fill: { type: 'solid', color: '#0000002E' }, radius: s * 0.3 }
+      const white: LayoutNode = { k: 'rect', part: 'shape', box, fill: { type: 'solid', color: '#FFFFFF' }, radius: s * 0.3 }
+      return at([shadow, white, scaled(0.68)])
+    }
+    case 'tile': {
+      const white = node.ink ? editSvg(node.url, (s) => s.split(node.ink!).join('#FFFFFF')) : undefined
+      const tile: LayoutNode = { k: 'rect', part: 'shape', box: { x: 0, y: 0, width: w, height: h }, fill: { type: 'solid', color: white ? color : pale }, radius: Math.min(w, h) * 0.24 }
+      return at([tile, scaled(0.6, white ? { url: white } : {})])
+    }
+    default:
+      return node
+  }
+}
+
 /**
  * The tree drawn in treatment `t` (unchanged when `t` asks for nothing). `key` seeds the sketch
  * (the block's type or id), so the same block always wobbles the same way.
@@ -344,6 +428,8 @@ export function treatTree(node: LayoutNode, t: RenderTreatment | undefined, key 
         return treatText(x, t!, seed)
       case 'icon':
         return treatIcon(x, t!, seed)
+      case 'image':
+        return x.assetId.startsWith('lib:') ? treatLibImage(x, t!, seed) : x
       default:
         return x
     }

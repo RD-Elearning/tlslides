@@ -513,6 +513,42 @@ export const MOTION_PRESETS: Readonly<Record<string, MotionPreset>> = {
   },
 }
 
+// --- S15-a: twelve more entrance / emphasis presets ------------------------------------------
+//
+// sprint 2026-11b S15 — all inside ALLOWED_PROPERTIES. They are registered NON-ENUMERABLE on
+// `MOTION_PRESETS`: `MOTION_PRESETS[id]` / `getPreset(id)` resolve them (a spec may name one), but
+// `Object.keys` — hence `PRESET_IDS`, `ACTIVE_PRESET_IDS`, the capability digest the AI reads and the
+// inspector list — stay exactly as they were, so no prompt changes until a flag offers them (S17).
+// Two values differ from the plan's numbers because the token scales have no entry for them: blur 8 px
+// (BLUR_TOKENS.large, plan 12) and scale 0.94 is written as a literal.
+
+const PRESETS_V2: readonly MotionPreset[] = [
+  { id: 'blur-in', properties: ['opacity', 'filter'], keyframes: { opacity: [0, 1], filter: [`blur(${BLUR_TOKENS.large}px)`, 'blur(0px)'] }, duration: 'slow', easing: 'smoothOut' },
+  { id: 'scale-in-soft', properties: ['opacity', 'scale'], keyframes: { opacity: [0, 1], scale: [0.94, 1] }, duration: 'slow', easing: 'smoothOut' },
+  { id: 'slide-in-left', properties: ['opacity', 'translate', 'clip-path'], keyframes: { opacity: [0, 1], translate: ['-48px 0', '0 0'], clipPath: ['inset(0% 40% 0% 0%)', 'inset(0% 0% 0% 0%)'] }, duration: 'slow', easing: 'smoothOut' },
+  { id: 'slide-in-right', properties: ['opacity', 'translate', 'clip-path'], keyframes: { opacity: [0, 1], translate: ['48px 0', '0 0'], clipPath: ['inset(0% 0% 0% 40%)', 'inset(0% 0% 0% 0%)'] }, duration: 'slow', easing: 'smoothOut' },
+  // children rise one after another; the offset is wider than a plain stagger so the wave reads
+  { id: 'rise-wave', properties: ['opacity', 'translate'], keyframes: { opacity: [0, 1], translate: [`0 ${DISTANCE_TOKENS.medium}px`, '0 0'] }, duration: 'slow', easing: 'smoothOut', staggerMs: DURATION_TOKENS.stagger * 2 },
+  { id: 'iris-in', properties: ['opacity', 'clip-path'], keyframes: { opacity: [0, 1], clipPath: ['circle(0% at 50% 50%)', 'circle(75% at 50% 50%)'] }, duration: 'slow', easing: 'smoothOut' },
+  // text lines uncovered from below, per line
+  { id: 'mask-up', properties: ['clip-path', 'translate'], keyframes: { clipPath: ['inset(100% 0% 0% 0%)', 'inset(0% 0% 0% 0%)'], translate: [`0 ${DISTANCE_TOKENS.small}px`, '0 0'] }, duration: 'slow', easing: 'smoothOut', staggerMs: DURATION_TOKENS.stagger },
+  // emphasis: the highlight part behind a bold run grows left to right
+  { id: 'marker-sweep', properties: ['clip-path'], keyframes: { clipPath: ['inset(0% 100% 0% 0%)', 'inset(0% 0% 0% 0%)'] }, duration: 'medium', easing: 'smoothOut', origin: '0% 50%' },
+  // emphasis: the underline part draws on (same `%` marker as draw-path)
+  { id: 'underline-draw', properties: ['stroke-dashoffset'], keyframes: { strokeDashoffset: ['100%', '0%'] }, duration: 'medium', easing: 'smoothOut' },
+  // click-driven: the active item at full strength, the others dimmed
+  { id: 'spotlight', properties: ['opacity'], keyframes: { opacity: [0.35, 1] }, duration: 'fast', easing: 'smoothOut' },
+  // checklist marks draw on
+  { id: 'tick-in', properties: ['stroke-dashoffset', 'opacity'], keyframes: { opacity: [0, 1], strokeDashoffset: ['100%', '0%'] }, duration: 'medium', easing: 'smoothOut', staggerMs: DURATION_TOKENS.stagger },
+  // icon tiles pop with a small overshoot
+  { id: 'pop-stagger', properties: ['opacity', 'scale'], keyframes: { opacity: [0, 1], scale: [0.8, 1.04, 1] }, duration: 'medium', easing: 'bounce', staggerMs: DURATION_TOKENS.stagger },
+]
+
+for (const p of PRESETS_V2) Object.defineProperty(MOTION_PRESETS, p.id, { value: Object.freeze(p), enumerable: false })
+
+/** The S15-a preset ids (resolvable, but not in `PRESET_IDS` / the digest until a flag offers them). */
+export const PRESET_IDS_V2: readonly string[] = Object.freeze(PRESETS_V2.map((p) => p.id))
+
 // Deep-freeze the record and every preset object for runtime immutability.
 Object.freeze(MOTION_PRESETS)
 for (const id of Object.keys(MOTION_PRESETS)) {

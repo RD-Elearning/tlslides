@@ -10,7 +10,7 @@ import {
   EASING_TOKENS,
 } from './tokens'
 import { ALLOWED_PROPERTIES } from './driver'
-import { MOTION_PRESETS, PRESET_IDS, getPreset } from './presets'
+import { MOTION_PRESETS, PRESET_IDS, PRESET_IDS_V2, getPreset } from './presets'
 import type { MotionPreset } from './presets'
 
 // ---------------------------------------------------------------------------
@@ -309,5 +309,31 @@ describe('preset immutability', () => {
 
   it('PRESET_IDS is frozen', () => {
     expect(Object.isFrozen(PRESET_IDS)).toBe(true)
+  })
+})
+
+describe('S15-a presets (non-enumerable)', () => {
+  const v2 = ['blur-in', 'scale-in-soft', 'slide-in-left', 'slide-in-right', 'rise-wave', 'iris-in', 'mask-up', 'marker-sweep', 'underline-draw', 'spotlight', 'tick-in', 'pop-stagger']
+  it('resolve by id but stay out of PRESET_IDS / ACTIVE_PRESET_IDS (the digest is unchanged)', () => {
+    expect([...PRESET_IDS_V2]).toEqual(v2)
+    for (const id of v2) {
+      expect(getPreset(id)?.id).toBe(id)
+      expect(PRESET_IDS as readonly string[]).not.toContain(id)
+      expect(Object.keys(MOTION_PRESETS)).not.toContain(id)
+    }
+    expect(PRESET_IDS).toHaveLength(36)
+  })
+  it('use only allowed properties and token durations / easings', () => {
+    const allowed = new Set<string>(ALLOWED_PROPERTIES)
+    for (const id of v2) {
+      const p = getPreset(id)!
+      for (const prop of p.properties) expect(allowed.has(prop)).toBe(true)
+      expect(Object.keys(DURATION_TOKENS)).toContain(p.duration)
+      expect(Object.keys(EASING_TOKENS)).toContain(p.easing)
+      for (const key of Object.keys(p.keyframes)) {
+        const kebab = /^scale[XY]$/.test(key) ? 'scale' : key.replace(/([A-Z])/g, '-$1').toLowerCase()
+        expect(allowed.has(kebab)).toBe(true)
+      }
+    }
   })
 })

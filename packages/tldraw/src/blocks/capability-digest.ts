@@ -129,7 +129,7 @@ export const CONNECTORS_LINE =
   'text out of its path. Never place `tls.g.connector` yourself.'
 
 /** AC1 — editor-only guides the AI never places (AC0 deferred item). */
-export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector']
+export const AI_HIDDEN_TYPES: readonly string[] = ['tls.l.grid-guide', 'tls.l.safe-area', 'tls.g.connector', 'tls.m.backdrop']
 
 export interface CapabilityDetailOptions {
   /** Only these block types. When any option is given, the markdown contains the block detail only. */
@@ -704,6 +704,7 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
   lines.push('')
   lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
   lines.push('')
+  lines.push(...PICTURES_SECTION)
   return lines.join('\n')
 }
 
@@ -713,6 +714,14 @@ export function capabilityIndex(registry?: BlockRegistry, opts?: CapabilityIndex
  * and the tier-2 blocks as one `also:` line of bare type names (the planner can still ask for
  * their detail). Budget: ≤ 16k chars (spec).
  */
+/** spro sprint 2026-11c S20-F (carry-over pass 2): how library pictures reach a slide — short, both indexes. */
+const PICTURES_SECTION = [
+  '## Pictures',
+  '',
+  'Write an icon slot as `auto: <English object>`: code picks a picture by meaning (a `lib:<pack>/<name>` library picture when the deck has one); `tls.m.asset` draws one large. Never invent a `lib:` id.',
+  '',
+]
+
 function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityIndexOptions): string {
   const style = getDeckStyle(given.style)
   const opts: CapabilityIndexOptions = style
@@ -828,6 +837,7 @@ function tierOneIndex(registry: BlockRegistry | undefined, given: CapabilityInde
   lines.push('')
   lines.push(`Valid icon names: ${CORE_ICON_NAMES.join(', ')} (+${Object.keys(ICONS).length - CORE_ICON_NAMES.length} by meaning)`)
   lines.push('')
+  lines.push(...PICTURES_SECTION)
   return lines.join('\n')
 }
 

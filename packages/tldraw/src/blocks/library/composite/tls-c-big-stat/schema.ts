@@ -10,7 +10,7 @@
  */
 
 import type { BlockSchema } from '../../../types'
-import { localizeNumber } from '../../data/_engine/format-value'
+import { localizeNumber, plainNumber } from '../../data/_engine/format-value'
 
 export interface BigStatProps extends Record<string, unknown> {
   /** The headline number. */
@@ -75,7 +75,7 @@ export function formatValue(props: BigStatProps, locale?: string): string {
       // Special-case zero so it does not become an empty string.
       // Number#toString already drops a decimal's trailing zeros; stripping zeros from the
       // string as well turned 300 into "3" and 120000 into "12".
-      formatted = String(Number(value.toFixed(10)))
+      formatted = plainNumber(value)  // thousands grouped, a year kept (spro c10)
       break
     }
   }
@@ -200,12 +200,15 @@ export function splitGeometry(
   valueText: string,
   display: { size: number },
   tracking: number,
-  measure: (text: string, style: { size: number; letterSpacing: number }) => number
+  measure: (text: string, style: { size: number; letterSpacing: number }) => number,
+  start = false
 ): { valueW: number; valueSize: number; colX: number; colW: number; gap: number } | null {
   const rw = measure(valueText, { size: display.size, letterSpacing: tracking }) * 1.04 + 4
   const max = width * SPLIT.share
   const valueSize = rw > max ? (display.size * max) / rw : display.size
-  const valueW = Math.ceil(Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
+  // review 2026-11-08 (notebook s8: `align: start` drawn across the middle): an explicit `start` keeps the pair
+  // at the left edge — the number at its own width, the column right after it
+  const valueW = Math.ceil(start ? Math.min(rw, max) : Math.max(Math.min(rw, max), (width - SPLIT.gap) / 2))
   const colX = valueW + SPLIT.gap
   const colW = width - colX
   return colW >= SPLIT.minCol ? { valueW, valueSize, colX, colW, gap: SPLIT.gap } : null

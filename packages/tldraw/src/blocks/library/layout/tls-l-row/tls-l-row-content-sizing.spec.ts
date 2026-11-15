@@ -74,4 +74,24 @@ describe('tls.l.row — sizing: content', () => {
     const [c0, c1]: LayoutNode[] = node.children
     expect(c0.box.width).toBeCloseTo(c1.box.width, 5)
   })
+
+  it.each([['start'], ['center'], ['end'], ['between']])('S11 justify %s keeps short children at their natural width and places them', (justify) => {
+    const box = { width: 1600, height: 200 }
+    const node = tlsLRow.layout(
+      { gap: 'md', sizing: 'content', justify, children: [0, 1, 2].map((i) => ({ id: `c${i}`, type: 'tls.t.body', props: { text: 'Short' } })) } as any,
+      makeCtx(box, registry)
+    )
+    const b = node.children.map((c) => c.box)
+    const used = b.reduce((a, x) => a + x.width, 0) + 48
+    expect(used).toBeLessThan(box.width * 0.6) // not stretched
+    const left = b[0].x
+    const right = box.width - (b[2].x + b[2].width)
+    if (justify === 'start') expect(left).toBe(0)
+    if (justify === 'end') expect(right).toBeCloseTo(0)
+    if (justify === 'center') expect(left).toBeCloseTo(right)
+    if (justify === 'between') {
+      expect(left).toBe(0)
+      expect(right).toBeCloseTo(0)
+    }
+  })
 })

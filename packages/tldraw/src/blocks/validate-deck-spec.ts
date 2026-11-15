@@ -13,6 +13,7 @@
  */
 
 import { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
+import { isLibRef } from './icons/resolve'
 import { SLIDE_ASPECT_PRESETS } from '~constants'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME } from '~state/shapes/shared/deck-theme'
 import { BUILT_IN_STYLES, getDeckStyle, stylePaletteIds } from './styles'
@@ -263,6 +264,7 @@ function validateDeckSpecInner(spec: unknown, registry?: BlockRegistry): DeckFin
   slides.forEach((slide, index) => {
     validateSlide(slide, index, frame, tokens, reg, seenSlideIds, seenBlockIds, findings)
   })
+  checkLibAssets(s.assets, slides, findings)
 
   return findings
 }
@@ -355,6 +357,11 @@ function validateSlide(
   checkIntent(slide.intent, `${slidePath}.intent`, `Slide "${slideLabel}"`, findings)
   for (const f of lookProblems((slide as { look?: unknown }).look, `${slidePath}.look`, `Slide "${slideLabel}"`)) findings.push({ level: 'error', ...f })
   checkTransition((slide as { transition?: unknown }).transition, `${slidePath}.transition`, `Slide "${slideLabel}"`, findings)
+  // S13-a: a slide tone outside base | deep | accent is ignored (the deck theme)
+  const tone = (slide as { tone?: unknown }).tone
+  if (tone !== undefined && tone !== 'base' && tone !== 'deep' && tone !== 'accent') {
+    findings.push({ level: 'warning', rule: 'slide/unknown-tone', path: `${slidePath}.tone`, message: `Slide "${slideLabel}" has tone ${stringifyForMessage(tone)}; use base | deep | accent. It paints with the deck theme.` })
+  }
 
   const regionBoxes = layout ? safeCompile(layout, frame, tokens) : undefined
   const knownRegionNames = regionBoxes ? Object.keys(regionBoxes) : []
@@ -966,7 +973,7 @@ function validateProps(
 
   // learning L03/L05: an activity block's own checks (an answer index that points at nothing, a bin no item
   // uses, duplicate options) are validation errors, so the repair loop and the hard-stop see them
-  if (def.activity && typeof def.lint === 'function') {
+  if ((def.activity || def.lintIsValidation) && typeof def.lint === 'function') {
     for (const f of def.lint(props as never, {} as never)) {
       if (f.level === 'info') continue
       findings.push({ level: f.level, rule: f.rule, path: `${blockPath}.props${f.part ? '.' + f.part : ''}`, message: f.message })
@@ -1262,6 +1269,29 @@ function checkBudget(
 }
 
 /**
+ * spro sprint 2026-11c S20 (carry-over pass 2) — `asset/missing` (warning; spro keeps it soft): a `lib:` ref in a slide
+ * whose deck carries an asset table (`DeckSpec.assets`) that does not hold it — the resolver draws NOTHING there (an
+ * empty slot where the author meant a picture). A deck with no table yet (a slide checked before `assemble` embeds the
+ * pictures) is not checked: every ref would look missing.
+ */
+function checkLibAssets(assets: unknown, slides: unknown[], findings: DeckFinding[]): void {
+  if (!isRecord(assets) || Object.keys(assets).length === 0) return
+  const walk = (v: unknown, path: string): void => {
+    if (isLibRef(v)) {
+      if (!Object.prototype.hasOwnProperty.call(assets, v.slice(4))) {
+        findings.push({ level: 'warning', rule: 'asset/missing', path, message: `The picture "${v}" is not in the deck's asset table, so nothing is drawn there. Use another icon or leave the slot empty.` })
+      }
+    } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`))
+    else if (isRecord(v)) for (const [k, x] of Object.entries(v)) walk(x, `${path}.${k}`)
+  }
+  slides.forEach((slide, i) => {
+    if (!isRecord(slide)) return
+    if (slide.regions !== undefined) walk(slide.regions, `slides[${i}].regions`)
+    if (slide.free !== undefined) walk(slide.free, `slides[${i}].free`)
+  })
+}
+
+/**
  * `icon/unknown` (warning): an `icon`-kind slot, at any depth inside list/object slots, names an
  * icon that is not in the icon set. Empty strings mean "no icon" and are fine. The message
  * carries the nearest valid name so the AI repair loop can fix it in one step.
@@ -1274,6 +1304,10 @@ function checkIcons(
   findings: DeckFinding[]
 ): void {
   if (type.kind === 'icon') {
+    // spro S20-E: a `lib:` ref names a picture of the deck's asset table (`DeckSpec.assets`), drawn by
+    // `icons/resolve.ts` (nothing when the table lacks it) — not an icon of the built-in set (c9 mam: 11 of 16 slides
+    // fell back on this warning once designed slides took library icons)
+    if (isLibRef(value)) return
     if (typeof value === 'string' && value.trim() !== '' && !Object.prototype.hasOwnProperty.call(ICONS, value)) {
       const suggestion = nearestName(value, Object.keys(ICONS))
       findings.push({

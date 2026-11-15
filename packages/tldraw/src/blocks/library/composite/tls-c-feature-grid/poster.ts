@@ -11,8 +11,10 @@
 import type { LayoutContext, LayoutNode } from '../../../types'
 import { effectiveColumns, featureGridColors, FG_CARD_RADIUS, FG_ROOMY_MIN_CELL, FG_TIERS, tierCircleIcon, type FeatureGridProps, type FgTier } from './schema'
 import { alignText, cardNodes, cardPaint } from '../_kit'
+import { breaksWord } from '../_poster'
 import { getIcon, iconStroke } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
+import { isLibRef } from '../../../icons/resolve'
 import { cssTextHeight } from '../../../html-block'
 import { FG_ICON_GAP, FG_LH, FG_TITLE_GAP } from './template'
 
@@ -20,14 +22,22 @@ export function poster(props: FeatureGridProps, ctx: LayoutContext): LayoutNode 
   // AC3 pre-item: the roomy tier when it fits the box (see FG_TIERS); a ladder of fixed-height
   // candidates, so laid out again at its own height the grid picks the same tier.
   const H = ctx.box.height
-  const [roomy, base] = FG_TIERS
+  const [roomy, base, middle, compact] = FG_TIERS
   const cols = effectiveColumns(ctx.box.width, props.columns, props.gap ?? 24, (props.cells ?? []).length)
   const cellW = (ctx.box.width - (cols - 1) * (props.gap ?? 24)) / cols
   if (H > 0 && cellW >= FG_ROOMY_MIN_CELL) {
     const node = posterAt(props, ctx, roomy)
-    if (node.box.height <= H + 0.5) return node
+    // review 2026-11-08 (memphis s9 "Three-min / ute story", "experimen / t"): the roomy tier never cuts a
+    // word the base tier keeps whole
+    if (node.box.height <= H + 0.5 && !breaksWord(node)) return node
+    const mid = posterAt(props, ctx, middle)
+    if (mid.box.height <= H + 0.5 && !breaksWord(mid)) return mid
   }
-  return posterAt(props, ctx, base)
+  const node = posterAt(props, ctx, base)
+  // S29 7b: a grid taller than its box at the base tier takes the compact tier (it still reports an
+  // overflow when even that does not fit; laid out again at its own height it chooses the same)
+  if (H > 0 && node.box.height > H + 0.5) return posterAt(props, ctx, compact)
+  return node
 }
 
 function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): LayoutNode {
@@ -110,14 +120,17 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
     const iconX = center ? ix + (innerW - iconSize) / 2 : ix
 
     // Icon - use icon node kind, or fallback rect for unknown icons
-    const iconDef = getIcon(cell.icon as string)
+    // S20-b: a `lib:` ref draws an empty icon node the slide's `resolveLibIcons` swaps for the deck's picture
+    const lib = isLibRef(cell.icon)
+    const iconDef = lib ? { name: String(cell.icon), path: '' } : getIcon(cell.icon as string)
     if (circle) {
       children.push({ k: 'rect', part: `cell[${i}].icon`, box: { x: iconX, y: iy, width: iconSize, height: iconSize }, fill: { type: 'solid', color: colors.disc }, radius: iconSize / 2 })
       const g = tierCircleIcon(cellW, tier).glyph
       const gb = { x: iconX + (iconSize - g) / 2, y: iy + (iconSize - g) / 2, width: g, height: g }
       // creative CR7a: the icons are Lucide/Tabler outlines — stroked, as `iconLeaf` draws them (a
       // filled outline turned a globe into a dot)
-      if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, name: cell.icon as string, ...iconStroke(iconDef, Math.max(1.5, (1.5 * g) / 24)) })
+      if (lib) children.push({ k: 'icon', part: `cell[${i}].glyph`, box: gb, icon: '', fill: iconColor, name: cell.icon as string })
+      else if (iconDef) children.push({ k: 'icon', box: gb, icon: scaleIconPath(iconDef.path, g / 24), fill: iconColor, name: cell.icon as string, ...iconStroke(iconDef, Math.max(1.5, (1.5 * g) / 24)) })
     } else if (iconDef) {
       children.push({
         k: 'icon',
@@ -129,7 +142,7 @@ function posterAt(props: FeatureGridProps, ctx: LayoutContext, tier: FgTier): La
         icon: scaleIconPath(iconDef.path, iconSize / 24),
         fill: iconColor,
         name: cell.icon as string,
-        ...iconStroke(iconDef, Math.max(1.5, (1.5 * iconSize) / 24)),
+        ...(lib ? {} : iconStroke(iconDef, Math.max(1.5, (1.5 * iconSize) / 24))),
       })
     } else {
       // Fallback rect for unknown icon names

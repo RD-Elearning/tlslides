@@ -8,7 +8,7 @@
 import type { HtmlTemplateContext } from '../../../types'
 import { contrastRatio } from '../../../color-math'
 import { lumOf } from '../../text/_engine/color'
-import { partBox } from '../../../activity/poster-parts'
+import { partBox, partTextSize } from '../../../activity/poster-parts'
 import { FOOTER_H } from './index'
 import type { ChoiceBlockProps } from './index'
 
@@ -28,8 +28,10 @@ export function template(props: ChoiceBlockProps, ctx: HtmlTemplateContext): str
   const c = tokens.color
   const options = (Array.isArray(props.options) ? props.options : []).slice(0, 5)
   const q = partBox(ctx.poster, 'question')
-  const body = tokens.type.body
+  // S06: a filled poster stepped its question and option type up (`fillPoster`); the live text follows
+  const body = { ...tokens.type.body, size: Math.max(tokens.type.body.size, partTextSize(ctx.poster, 'option[0]') ?? 0) }
   const sub = tokens.type.subheading
+  const qSize = Math.max(sub.size, partTextSize(ctx.poster, 'question') ?? 0)
   const gap = tokens.space.md
   const last = options.reduce((m, _, i) => Math.max(m, (partBox(ctx.poster, `optionbg[${i}]`)?.y ?? 0) + (partBox(ctx.poster, `optionbg[${i}]`)?.height ?? 0)), 0)
   const footTop = last + gap * 1.5
@@ -51,7 +53,7 @@ export function template(props: ChoiceBlockProps, ctx: HtmlTemplateContext): str
   const css =
     `[data-activity="choice"]{position:relative;width:${px(box.width)};height:${px(box.height)};font-family:var(--tls-font-body,var(--tls-font-family));color:var(--tls-on)}` +
     `[data-activity="choice"] button{font:inherit;color:inherit;cursor:pointer;text-align:left}` +
-    `[data-activity="choice"] .tlsa-q{position:absolute;font-family:var(--tls-font-heading,var(--tls-font-family));font-weight:700;font-size:${px(sub.size)};line-height:${sub.lineHeight}}` +
+    `[data-activity="choice"] .tlsa-q{position:absolute;font-family:var(--tls-font-heading,var(--tls-font-family));font-weight:700;font-size:${px(qSize)};line-height:${sub.lineHeight}}` +
     `[data-activity="choice"] .tlsa-opt{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:${px(gap)};padding:0 ${px(tokens.space.lg)};border:3px solid transparent;border-radius:${px(tokens.radius.lg)};background:${c.surfaceAlt};font-size:${px(body.size)};line-height:${body.lineHeight}}` +
     `[data-activity="choice"] .tlsa-opt:focus-visible{outline:4px solid ${c.accent};outline-offset:2px}` +
     `[data-activity="choice"] .tlsa-opt[aria-pressed="true"]{border-color:${c.accent}}` +
@@ -62,13 +64,13 @@ export function template(props: ChoiceBlockProps, ctx: HtmlTemplateContext): str
     `[data-activity="choice"] .tlsa-opt[data-state="correct"] .tlsa-mark::before,[data-activity="choice"] .tlsa-opt[data-state="missed"] .tlsa-mark::before{content:"✓";color:${c.positive}}` +
     `[data-activity="choice"] .tlsa-opt[data-state="wrong"]{border-color:${c.negative};background:color-mix(in srgb,${c.negative} 14%,${c.surface})}` +
     `[data-activity="choice"] .tlsa-opt[data-state="wrong"] .tlsa-mark::before{content:"✗";color:${c.negative}}` +
-    `[data-activity="choice"] .tlsa-foot{position:absolute;left:0;width:100%;height:${px(FOOTER_H)};display:flex;align-items:center;gap:${px(gap)};font-size:${px(body.size * 0.9)}}` +
+    `[data-activity="choice"] .tlsa-foot{position:absolute;left:0;width:100%;height:${px(FOOTER_H)};display:flex;align-items:center;gap:${px(gap)};font-size:${px(tokens.type.body.size * 0.9)}}` +
     `[data-activity="choice"] .tlsa-fb{flex:1;min-width:0;font-weight:700}` +
     `[data-activity="choice"] .tlsa-fb[data-ok="true"]{color:${c.positive}}[data-activity="choice"] .tlsa-fb[data-ok="false"]{color:${c.negative}}` +
     `[data-activity="choice"] .tlsa-btn{border:2px solid ${c.accent};border-radius:${px(tokens.radius.md)};background:transparent;padding:8px 20px;font-weight:700}` +
     `[data-activity="choice"] .tlsa-btn.primary{background:${c.accent};color:${onAccent}}` +
     `[data-activity="choice"] .tlsa-btn:disabled{opacity:.45;cursor:default}[data-activity="choice"] [hidden]{display:none!important}` +
-    `[data-activity="choice"] .tlsa-expl{position:absolute;left:0;width:100%;font-size:${px(body.size * 0.9)};line-height:${body.lineHeight};color:var(--tls-text-muted)}`
+    `[data-activity="choice"] .tlsa-expl{position:absolute;left:0;width:100%;font-size:${px(tokens.type.body.size * 0.9)};line-height:${body.lineHeight};color:var(--tls-text-muted)}`
   const expl = props.explanation ? `<div class="tlsa-expl" data-part="explanation" style="top:${px(footTop + FOOTER_H)}" hidden>${esc(String(props.explanation))}</div>` : ''
   return (
     `<div data-activity="choice" data-part="root"><style>${css}</style>` +

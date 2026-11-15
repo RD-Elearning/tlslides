@@ -186,18 +186,18 @@ export type { CompositionPattern, ComposedSlide } from './patterns'
 export { checkGrammar, nearestPattern, validateFreeComposition, GRAMMAR_CONTAINERS, GRAMMAR_MAX_DEPTH, GRAMMAR_MAX_CHILDREN, GRAMMAR_STYLE_FIELDS } from './composition-grammar'
 export type { GrammarFinding } from './composition-grammar'
 export { generateCompositions, runRandomCompositions, COMPOSE_KINDS } from './pipeline/composeRun'
-export { iconsFor, queryWords } from './icons/search'
-export { composeKit, composeCard, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
+export { iconsFor, queryWords, iconCatalog } from './icons/search'
+export { composeKit, composeCard, compositionV2Card, styleConcept, styleConceptCard, iconCard, SLIDE_SHAPES, SHAPE_FAMILIES, COMPOSE_LAYOUTS, COMPOSE_LAYOUTS_V2, ACCENT_BLOCKS, DECORATION_BLOCKS } from './compose-kit'
 export { SUBJECT_SHAPES } from './library/media/tls-m-decoration/subjects'
 export type { SlideShape, ComposeKit, ComposeKitOptions } from './compose-kit'
 // spro creative CR2: capability cards, moves and the shortlist
 export { cardText } from './capability-digest'
 export { DESIGN_MOVES, findMove, movesFor, movesOfBlock } from './moves'
 export type { DesignMove, MoveIntent } from './moves'
-export { shortlist, blockKind } from './shortlist'
+export { shortlist, blockKind, learningBlock } from './shortlist'
 export type { ShortlistSlide, ShortlistOptions, ShortlistEntry, Creativity } from './shortlist'
 export { RELATIONS, LOOK_FAMILIES, FRAME_ROLES } from './types'
-export type { Relation, LookFamily, FrameRole, BlockFits, VariantPreset } from './types'
+export type { Relation, LookFamily, FrameRole, BlockFits, VariantPreset, ContentShape } from './types'
 export type { Composition, ComposeKind, ComposeRunResult } from './pipeline/composeRun'
 export type { SlideRecipe, RecipeBlock, RecipeRole, RecipeVariant, AssetKind, SlideAssets } from './recipes'
 export { AI_CURATION } from './library/ai-curation'
@@ -220,16 +220,23 @@ export {
   CALM_WEIGHT,
 } from './pipeline/variety'
 export type { LookCandidate, DeckLook, PickContext } from './pipeline/variety'
-export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, geometryProblems, slideProblems } from './pipeline/quality'
+export { slideQuality, deckQuality, deckTitleSize, QUALITY_GATE, INK_GATE, CARD_LIKE, inkMeasures, geometryProblems, slideProblems } from './pipeline/quality'
+export { textBudgets, blockBudget, budgetLine, REGION_CLASSES, SHORT_FIELD } from './pipeline/textBudgets'
+export type { BlockBudget, SlotBudget, RegionClass } from './pipeline/textBudgets'
+export { slotFill, FILL_FLOOR } from './pipeline/budgets'
+export type { SlotFill } from './pipeline/budgets'
 export type { GateProfile } from './pipeline/quality'
-export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID } from './motif-zone'
+export { placeDeckMotifs, motifBox, placedLeaf, DECK_MOTIF_ID, isDeckMotif } from './motif-zone'
+export { placeScenes, sceneBlocks, freeZone, SCENE_IDS, SCENE_NEEDS, SCENE_FALLBACK, SCENE_PREFIX } from './scenes'
+export type { SceneId } from './scenes'
+export { deckMotifIcons } from './backdrops'
 // spro creative CR7b — look axes (`look.ts`)
 export { LOOK_VALUES, LOOK_AXES, LOOK_PAINTED, resolveLook, blockTreatment, lookProblems, lookRangeProblems } from './look'
 export type { LookAxis, Treatment } from './look'
 // CS0 — content stress + design capacity (`reviews/blocks/content-stress/README.md`).
 export { STRESS_LEVELS, STRESS_TEXT, stressSlide, soloDeck, soloProblems, designCapacity, runContentStress, plainText } from './pipeline/contentStress'
 export type { StressLevel, StressLang, StressCase, StressRow, DesignCapacity, ListCapacity } from './pipeline/contentStress'
-export type { SlideQuality, QualityFinding, QualityCode } from './pipeline/quality'
+export type { SlideQuality, QualityFinding, QualityCode, HollowBox } from './pipeline/quality'
 
 // LO0/LO1 — the layout oracle: a block's natural size read off its layout tree, and a slide's
 // geometry report (overlaps, overflow, text collisions, numeric fixes) as JSON and as compact
@@ -310,6 +317,8 @@ export type { DeckSpec } from './types'
 export {
   BUILT_IN_STYLES,
   STYLE_MASTER_PREFIX,
+  STYLE_LAYOUTS,
+  styleLayouts,
   getDeckStyle,
   stylePaletteById,
   stylePaletteIds,
@@ -325,3 +334,13 @@ export {
   stylePreference,
 } from './styles'
 export type { DeckStyle, FontRef, StyleConcept, StyleSurface } from './types'
+
+// spro v2 V3.1/V3.2 — palettes around one colour (pure colour maths: the deck dialogs and the sidecar)
+export { derivePalettes, partnerPalettes, paletteColors, hexToOklch, oklchToHex, hexContrast, slideTheme, groundFor } from './palettes'
+export type { SlideToneName } from './palettes'
+export type { DerivedPalette, PaletteBase, PaletteHarmony } from './palettes'
+// S13-b: the deck's backdrop set per slide role
+export { slideBackdrop, backdropBlock, MASTER_TEXTURE_TYPES } from './backdrops'
+export type { ResolvedBackdrop } from './backdrops'
+export { backdropEnvelope, backdropBusy, INKS as BACKDROP_INKS } from './library/media/tls-m-backdrop/layout'
+export { BACKDROP_KINDS, BACKDROP_TONES } from './library/media/tls-m-backdrop/schema'

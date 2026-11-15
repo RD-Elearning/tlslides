@@ -1,5 +1,6 @@
 import type { DeckTheme, DeckThemeColors } from '~types'
 import { FontStyle } from '~types'
+import { slideTheme } from '~blocks/palettes'
 
 // ---------------------------------------------------------------------------------------------
 // T12.1 — the token-reference design
@@ -232,4 +233,13 @@ export const DEFAULT_DECK_THEME = BUILT_IN_DECK_THEMES.find((theme) => theme.id 
  */
 export function activeDeckTheme(theme: DeckTheme | undefined): DeckTheme {
   return theme ?? DEFAULT_DECK_THEME
+}
+
+/**
+ * S13-a — the theme one page paints with: the deck theme, or its `deep` / `accent` derivation when the
+ * page carries a `tone` (`palettes.ts::slideTheme`, memoised so the result is identity-stable). Every
+ * renderer that resolves colours for a page goes through here.
+ */
+export function pageTheme(theme: DeckTheme | undefined, page: { tone?: string } | undefined): DeckTheme {
+  return slideTheme(activeDeckTheme(theme), page?.tone)
 }

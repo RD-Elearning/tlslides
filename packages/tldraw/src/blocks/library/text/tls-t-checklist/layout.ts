@@ -13,7 +13,7 @@ import type { ChecklistProps, ChecklistState } from './schema'
 import { CHECKLIST_MAX_ITEMS } from './schema'
 import { layoutMarkerRows, markerCapacity } from '../_engine/marker-rows'
 import { asArray, spacingGap, str } from '../_engine/rich'
-import { onColor } from '../_engine/color'
+import { categoryInk, categoryTint, onColor } from '../_engine/color'
 import { getIcon } from '../../../icons'
 import { scaleIconPath } from '../../../icons/scale-path'
 import { growText } from '../_engine/grow'
@@ -64,6 +64,11 @@ function compute(props: ChecklistProps, ctx: LayoutContext, width: number) {
       const state = stateOf(items[i])
       const radius = Math.round(markSize * 0.25)
       if (state === 'open') {
+        // C6: an open item of a named group — its box rimmed and tinted in the group's colour
+        const tone = (items[i] as { tone?: unknown } | undefined)?.tone
+        const page = ctx.resolveColor('surface').color
+        const ink = categoryInk(ctx, tone, page)
+        if (ink) return [{ k: 'rect', part, box, fill: { type: 'solid', color: categoryTint(ctx, tone, page)! }, stroke: { color: ink, width: 2 }, radius }]
         return [{ k: 'rect', part, box, stroke: { color: line, width: 2 }, radius }]
       }
       const fill = state === 'done' ? positive : negative

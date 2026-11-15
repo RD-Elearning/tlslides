@@ -42,12 +42,13 @@ import type {
 } from './types'
 import type { ComponentShape, DeckTheme } from '~types'
 import { resolveThemeColor } from '~state/shapes/shared'
+import { tonePageBackground } from './tone-ground'
 import { designFindings, inspectBlock, type BlockInspection, type DesignBlock, type DesignCode } from './design-checks'
 import { paintAt, parseInk, type Background } from './layout/paint-model'
 import { shapeToRevealBlock } from './shape-bridge'
 import type { BlockRegistry } from './registry'
 import { BLOCK_PROP_KEY } from './shape-bridge'
-import { compileSlide, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
+import { compileSlide, layoutPaintBlocks, splitLayeredBlocks, type CompileFinding } from './slide-compiler'
 import { CONNECTOR_BLOCK_TYPE } from './connectors'
 import { connectorRoute, CONNECTOR_WEIGHT, MIN_CONNECTOR_LENGTH, polylineHitsBox } from './layout/connector-route'
 import { blockLayer } from './block-layer'
@@ -55,9 +56,12 @@ import { getSlideLayout, SLIDE_LAYOUTS } from './slide-layouts'
 import { imageSurface, resolveTokens, surfaceFromBackground } from './tokens'
 import { MAX_NESTING_DEPTH } from './types'
 import { resolveDeckFrame, resolveDeckTheme } from './deck-document'
+import { slideTheme } from './palettes'
+import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { defaultBlockRegistry } from './validate-deck-spec'
 import { createLayoutContext, layoutBlock } from './layout/layout-child'
 import { editorMetrics, estimateMetrics, type MeasureTextProvider } from './layout/measure'
+import { cutWordsIn, propsText } from './layout/words'
 import {
   collectPaintedLeaves,
   measureBlock,
@@ -92,6 +96,8 @@ export type LayoutFindingCode =
   | 'text/shrunk'
   // enhance: a block cut its text to fit; a chart drew its empty state
   | 'text/truncated'
+  // S24-b: a line end that cuts a word in two (`Delivera|bles`)
+  | 'text/cut-word'
   | 'data/empty'
   | 'capacity/exceeded'
   // LO5b composition hints (no geometry error; help an LLM compose without a screenshot).
@@ -189,6 +195,8 @@ export interface BlockReport {
   /** How far painted content leaves the box (0 = inside). */
   contentOverflow: { dx: number; dy: number }
   text: TextLeafReport[]
+  /** S24-b: line ends that cut a word in two at the final box (`layout/words.ts`); absent = none. */
+  cutWords?: number
   /** `def.capacity()` at the final box, when the block defines it. */
   capacity?: CapacityReport
   confidence: MeasureConfidence
@@ -506,6 +514,8 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   const free = spec.free ?? []
   free.forEach((entry, i) => placed.push({ block: entry.block, path: `free[${i}]`, region: 'free' }))
   if (split) placed.push(...layeredPlaced(split.overlays))
+  // spro sprint 2026-11b S12: the surfaces the layout paints (header band, aside panel, frame) are style-owned backdrops
+  for (const lp of layoutPaintBlocks(spec.layout, frame, tokens)) placed.push({ block: lp.block, path: `layout.${lp.name}`, region: 'free' })
 
   const findings: LayoutFinding[] = []
   const visual: VisualCheck[] = []
@@ -638,6 +648,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
 
     const confidence: MeasureConfidence = failed ? 'low' : measure.confidence
     const reason = failed ? `layout threw: ${failed}` : measure.reason
+    const cutWords = root ? cutWordsIn(root, propsText(props)) : 0
     blocks.push({
       ...base,
       natural: measure.natural,
@@ -647,6 +658,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
       ...(p.block.type === 'tls.m.decoration' && (props as { shape?: unknown }).shape === 'icon' ? { lineInk: true } : {}),
       contentOverflow,
       text,
+      ...(cutWords > 0 ? { cutWords } : {}),
       ...(capacity ? { capacity } : {}),
       confidence,
       ...(reason ? { reason } : {}),
@@ -772,7 +784,7 @@ export function analyzeSlide(authored: SlideSpec, opts: AnalyzeSlideOptions = {}
   // guide that content crosses by design (swiss columns), not a separator; a full-bleed slide's
   // picture runs under the chrome by design too.
   const clearance = tokens.space.sm
-  for (const rule of spec.layout === 'full-bleed' ? [] : blocks) {
+  for (const rule of spec.layout === 'full-bleed' || spec.layout === 'hero-top' ? [] : blocks) {
     if (!styleOwned(rule) || !rule.painted) continue
     const p = rule.painted
     const horizontal = p.height <= RULE_THICKNESS && p.width >= p.height * 8 && p.width < frame.width
@@ -952,16 +964,22 @@ export function analyzeDeck(
   // (`deckSpecToDocument`); the report sees them as free backdrop blocks under the slide's flow.
   const masters = Object.fromEntries(styleMasters(style, deck.motif, deck.motifZone).map((m) => [m.name, m]))
   const withMaster = (s: SlideSpec): SlideSpec => {
+    // S13-b: the slide's backdrop goes under everything and replaces the master's texture blocks
+    const backdrop = slideBackdrop({ backdrops: deck.backdrops ?? style?.backdrops, motifs: deck.motifs }, s)
+    const drawn = backdropBlock(backdrop, frame)
+    const under = drawn ? [{ block: { ...drawn.block, id: `${STYLE_MASTER_PREFIX}backdrop` }, box: drawn.box }] : []
     const id = styleMasterFor(style, s)
     const master = id ? masters[id] : undefined
-    if (!id || !master || !Object.keys(master.blocks).length) return s
+    if (!id || !master || !Object.keys(master.blocks).length) return under.length ? { ...s, free: [...under, ...(s.free ?? [])] } : s
     const shapes = resolveMaster(id, masters, frame, tokens)?.shapes ?? []
     const names = Object.keys(master.blocks).filter((k) => !isEditorOnly(master.blocks[k].type))
-    const free = names.map((name, i) => ({
-      block: { ...master.blocks[name], id: `${STYLE_MASTER_PREFIX}${name}`, layer: 'backdrop' as const },
-      box: { x: shapes[i].point[0], y: shapes[i].point[1], width: shapes[i].size[0], height: shapes[i].size[1] },
-    }))
-    return { ...s, free: [...(s.free ?? []), ...free] }
+    const free = names
+      .map((name, i) => ({
+        block: { ...master.blocks[name], id: `${STYLE_MASTER_PREFIX}${name}`, layer: 'backdrop' as const },
+        box: { x: shapes[i].point[0], y: shapes[i].point[1], width: shapes[i].size[0], height: shapes[i].size[1] },
+      }))
+      .filter((b) => !(backdrop && MASTER_TEXTURE_TYPES.has(b.block.type)))
+    return { ...s, free: [...under, ...(s.free ?? []), ...free] }
   }
   // CMP2: the page background (the slide's own, else its style master's) and the deck theme, so the
   // report lays blocks out on the real page and `contrast/low` composites down to it.
@@ -970,15 +988,19 @@ export function analyzeDeck(
   const backgroundOf = (s: SlideSpec): Paint | undefined => {
     if (s.background) return s.background
     const id = styleMasterFor(style, s)
-    return id ? masters[id]?.background : undefined
+    const master = id ? masters[id]?.background : undefined
+    // S13-H: a deep / accent slide's page is the master's when the tone's text reads on it, else the tone's ground
+    return s.tone === 'deep' || s.tone === 'accent' ? tonePageBackground(master, slideTheme(theme, s.tone)) : master
   }
   return deck.slides.map((s) => {
     const background = backgroundOf(s)
+    // S13-a: a toned slide is checked (contrast) against its derived theme
+    const slideTh = slideTheme(theme, s.tone)
     return analyzeSlide(withMaster(s), {
       ...opts,
       frame,
-      tokens,
-      theme,
+      tokens: slideTh === theme ? tokens : resolveTokens(slideTh, deckSpecTokens(deck)),
+      theme: slideTh,
       ...(background ? { background } : {}),
       ...(motionStyle ? { motionStyle } : {}),
       ...(style ? { family: style.family } : {}),
@@ -1260,6 +1282,16 @@ function blockFindings(
       blockIds: [b.id],
       message: `${b.id} cut ${cut.length === 1 ? `\`${textName(cut[0])}\`` : `${cut.length} labels`} to fit (an ellipsis or dropped lines).`,
       fix: `shorten ${cut.map(textName).slice(0, 4).join(', ')} or give ${b.id} more room`,
+    })
+  }
+  // S24-b: a word split across two lines reads as two broken words
+  if ((b.cutWords ?? 0) > 0) {
+    out.push({
+      code: 'text/cut-word',
+      severity: 'warning',
+      blockIds: [b.id],
+      message: `${b.id} cuts ${b.cutWords === 1 ? 'a word' : `${b.cutWords} words`} across a line end: the column is narrower than the word.`,
+      fix: `give ${b.id} fewer columns or more width, or use a shorter word`,
     })
   }
   // enhance: a chart with no usable data draws "No data"

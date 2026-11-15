@@ -83,6 +83,13 @@ describe('render treatment', () => {
     expect(roundedRectPath(100, 50, 0)).toBe('M0 0 L100 0 L100 50 L0 50 Z')
   })
 
+  it('a table head (bold as its weight) gets no marks; a line of bold words elsewhere keeps them', () => {
+    const line: LayoutNode = { k: 'text', box: { x: 0, y: 0, width: 200, height: 30 }, lines: [{ text: 'Mặt Trời', top: 0, baseline: 20, width: 90, runs: [{ text: 'Mặt Trời', bold: true }] }], style: { family: 'Inter', size: 20, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
+    expect(treatTree(line, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k')).not.toBe(line)
+    const head: LayoutNode = { k: 'text', part: 'head[0]', box: { x: 0, y: 0, width: 200, height: 30 }, lines: [{ text: 'Nhóm rác', top: 0, baseline: 20, width: 90, runs: [{ text: 'Nhóm rác', bold: true }] }], style: { family: 'Inter', size: 20, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
+    expect(treatTree(head, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k')).toBe(head)
+  })
+
   it('highlighter puts a band behind each bold run, under the text', () => {
     const text: LayoutNode = { k: 'text', box: { x: 100, y: 50, width: 600, height: 60 }, lines: [{ text: 'Tree is a graph', top: 0, baseline: 40, width: 300, runs: [{ text: 'Tree ' }, { text: 'is a graph', bold: true }] }], style: { family: 'Inter', size: 40, lineHeight: 1.3, letterSpacing: 0, color: '#111111' } }
     const out = treatTree(text, { emphasis: 'highlighter', highlight: '#FFE066' }, 'k') as Extract<LayoutNode, { k: 'group' }>
@@ -94,5 +101,22 @@ describe('render treatment', () => {
     expect(inner).toMatchObject({ k: 'text', box: { x: 0, y: 0 } })
     const plain: LayoutNode = { ...text, lines: [{ ...text.lines[0], runs: [{ text: 'Tree is a graph' }] }] } as LayoutNode
     expect(treatTree(plain, { emphasis: 'highlighter' }, 'k')).toBe(plain)
+  })
+
+  it('S24-k: a mark after a bold run starts where the laid-out text does (bold runs measured bold)', () => {
+    const { editorMetrics } = require('./layout/measure')
+    const style = { family: 'Inter', size: 48, lineHeight: 1.2, letterSpacing: 0, color: '#111111' }
+    const runs = [{ text: 'Xưởng: ' }, { text: '2 máy xát, 64', bold: true }, { text: ', thêm ' }, { text: 'máy sấy 6 tấn/mẻ', bold: true }]
+    const laid = editorMetrics({ runs }, style)
+    const text: LayoutNode = { k: 'text', box: { x: 0, y: 0, width: 1800, height: 60 }, lines: laid.lines, style }
+    const out = treatTree(text, { emphasis: 'box' }, 'k') as Extract<LayoutNode, { k: 'group' }>
+    const marks = out.children.filter((c) => c.part === 'highlight')
+    expect(marks).toHaveLength(2)
+    // where the second bold run really starts: the width of everything before it, as the layout measured it
+    const before = editorMetrics({ runs: runs.slice(0, 3) }, style).width
+    const pad = 48 * 0.12
+    expect(Math.abs(marks[1].box.x + 2 * pad - before)).toBeLessThan(4)
+    const wBold = editorMetrics({ runs: [runs[3]] }, style).width
+    expect(Math.abs(marks[1].box.width - 4 * pad - wBold)).toBeLessThan(4)
   })
 })

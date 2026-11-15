@@ -8,6 +8,7 @@ import { validateDeckSpec } from '../validate-deck-spec'
 import { analyzeDeck } from '../layout-report'
 import { BUILT_IN_STYLES, deckMotif, styleMasters } from './index'
 import type { DeckSpec } from '../types'
+import { isDeckMotif, placeDeckMotifs } from '../motif-zone'
 
 const deck = (style: string, motif?: string): DeckSpec =>
   ({
@@ -72,5 +73,43 @@ describe('deck motif (F1)', () => {
     expect(documentToDeckSpec(document).spec.motif).toBe('tree')
     const report = analyzeDeck(deck('doodle', 'tree'))
     expect(report[1].blocks.some((b) => b.id.startsWith('style:') && b.type === 'tls.l.split')).toBe(true)
+  })
+})
+
+describe('S20-g deck motif icons', () => {
+  const placed = (d: DeckSpec) => placeDeckMotifs(d).slides.map((s) => s.free?.find((f) => isDeckMotif(f.block.id))?.block)
+
+  it('under motifZone auto the signature draws the deck motif icons, rotating by page', () => {
+    const d = { ...deck('doodle'), motifZone: 'auto' as const, motifs: { icons: ['coffee', 'zzz-unknown', 'pizza'] } }
+    d.slides = [...d.slides, { ...d.slides[1], id: 's3' }]
+    const marks = placed(d)
+    expect(marks.map((b) => (b?.props as { shape?: string })?.shape)).toEqual(['icon', 'icon', 'icon'])
+    expect(marks.map((b) => (b?.props as { icon?: string })?.icon)).toEqual(['coffee', 'pizza', 'coffee'])
+    // idempotent: a second pass leaves the placed motifs alone
+    expect(placeDeckMotifs(placeDeckMotifs(d))).toEqual(placeDeckMotifs(d))
+  })
+
+  it('without motif icons the signature is the style shape, as before', () => {
+    const d = { ...deck('doodle'), motifZone: 'auto' as const }
+    expect(placed(d).map((b) => (b?.props as { shape?: string })?.shape)).toEqual(['star', 'star'])
+    expect(placed({ ...d, motifs: { icons: ['zzz'] } })).toEqual(placed(d))
+  })
+
+  it('the round trip keeps motifs', () => {
+    const d = { ...deck('doodle'), motifZone: 'auto' as const, motifs: { icons: ['coffee'] } }
+    const back = documentToDeckSpec(deckSpecToDocument(d).document).spec
+    expect(back.motifs).toEqual({ icons: ['coffee'] })
+  })
+})
+
+describe('S12 style layouts', () => {
+  const { STYLE_LAYOUTS, styleLayouts, BUILT_IN_STYLES } = require('./index') as typeof import('./index')
+  const { getSlideLayout } = require('../slide-layouts') as typeof import('../slide-layouts')
+  it('every style resolves an entry (variants by family); every named layout exists; prefer and avoid never overlap', () => {
+    for (const s of BUILT_IN_STYLES) expect([s.id, styleLayouts(s.id).prefer.length > 0]).toEqual([s.id, true])
+    for (const [id, e] of Object.entries(STYLE_LAYOUTS)) {
+      for (const l of [...e.prefer, ...e.avoid]) expect([id, l, !!getSlideLayout(l as never)]).toEqual([id, l, true])
+      expect(e.prefer.filter((l) => e.avoid.includes(l))).toEqual([])
+    }
   })
 })

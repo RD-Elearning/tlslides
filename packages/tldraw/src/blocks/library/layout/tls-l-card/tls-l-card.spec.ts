@@ -61,3 +61,26 @@ describe('tls.l.card', () => {
     })
   })
 })
+
+describe('tls.l.card — a named group in its colour (spro sprint 2026-11c C6)', () => {
+  const { createLayoutContext } = require('../../../layout/layout-child')
+  const { TEST_TOKENS, TEST_SURFACE } = require('../test-helpers')
+  const tokens = { ...TEST_TOKENS, categorical: ['#C4623A', '#FFFFFF'] }
+  const box = { width: 400, height: 300 }
+  const at = (props: Record<string, unknown>, style?: unknown) =>
+    tlsLCard.layout({ padding: 'md', children: makeChildren(1), ...props } as any, createLayoutContext({ box, tokens, surface: TEST_SURFACE, registry: makeRegistry(), style }))
+  const bg = (n: any) => n.children.find((c: any) => c.part === 'background')
+
+  it('tints the card and rims it in the group colour; a white group on a white page in the line colour', () => {
+    expect(bg(at({ tone: 'category:0' })).stroke?.color?.toUpperCase()).toBe('#C4623A')
+    expect(bg(at({ tone: 'category:1' })).stroke?.color?.toUpperCase()).not.toBe('#FFFFFF')
+    expect(bg(at({ tone: 'category:0' })).fill).not.toEqual(bg(at({})).fill)
+  })
+
+  it('no tone, an unknown one or an instance style keeps the plain card', () => {
+    expect(bg(at({ tone: 'category:9' }))).toEqual(bg(at({})))
+    expect(bg(at({ tone: 'green' }))).toEqual(bg(at({})))
+    const styled = { tone: 'outline' }
+    expect(bg(at({ tone: 'category:0' }, styled))).toEqual(bg(at({}, styled)))
+  })
+})

@@ -24,7 +24,7 @@ export const schema: BlockSchema = {
   nodes: { type: { kind: 'list', of: { kind: 'object', fields: {
     id: { type: { kind: 'text', maxChars: 12 }, role: 'content', label: 'Id', required: true },
     parent: { type: { kind: 'text', maxChars: 12 }, role: 'content', label: 'Parent id (none = the root)' },
-    edge: { type: { kind: 'text', maxChars: 12 }, role: 'content', label: 'Edge (yes/no)' },
+    edge: { type: { kind: 'text', maxChars: 24 }, role: 'content', label: 'Edge (yes/no)' },
     text: { type: { kind: 'text', maxChars: 48 }, role: 'content', label: 'Text', required: true },
     outcome: { type: { kind: 'boolean' }, role: 'content', label: 'Outcome' },
   } }, min: 3, max: 9 }, role: 'content', label: 'Nodes', required: true },
@@ -47,10 +47,11 @@ function cells(props: DecisionTreeProps): { main: Cell[]; opts: PosterOptions } 
       .map((n) => {
         const id = str(n.id, 12)
         const below = id && id !== parent ? kids(id, depth + 1) : []
-        return { label: str(n.text, 30), ...(str(n.edge, 12) ? { sub: str(n.edge, 12) } : {}), ...(below.length ? { children: below } : {}) }
+        // the node shows what the schema lets it hold, with a quarter of slack over its guidance (it cut a 48-char text at 30 and an edge at 12)
+        return { label: str(n.text, 60), ...(str(n.edge, 24) ? { sub: str(n.edge, 24) } : {}), ...(below.length ? { children: below } : {}) }
       })
-  const root: TreeNode = { label: str(props.root, 30) || '?', children: kids('', 1) }
-  const outcomes = nodes.filter((n) => n.outcome === true).map((n) => str(n.text, 30))
+  const root: TreeNode = { label: str(props.root, 60) || '?', children: kids('', 1) }
+  const outcomes = nodes.filter((n) => n.outcome === true).map((n) => str(n.text, 48))
   const tree = { id: 'tree', type: 'tls.g.tree', props: { root, direction: v === 'left-right' ? 'LR' : 'TB', nodeStyle: props.outcomes === 'badges' ? 'pill' : 'card', highlight: outcomes } }
   return { main: [{ spec: tree as BlockSpec, grow: true }], opts: {} }
 }

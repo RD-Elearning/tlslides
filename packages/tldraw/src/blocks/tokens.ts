@@ -70,6 +70,9 @@ export interface DeckTokens {
   /** Literal-hex overrides per role. Whatever isn't listed here falls back to the theme-derived
    *  default in `resolveTokens` (see its doc comment for what that default is per role). */
   color?: Partial<Record<ColorRole, string>>
+  /** spro sprint 2026-11c S21-c — the page background over the palette's own (a document's cream, a theme's
+   *  sand). The caller makes sure the theme's text reads on it (`groundFor` / `derivePalettes(…, { ground })`). */
+  ground?: string
   /** Replaces the generated 6-hue categorical ramp wholesale — "or overridden wholesale by a
    *  host brand kit" (doc 02 §2.2). Not merged per-index: a host that cares about its chart
    *  colours supplies the whole list. */
@@ -193,8 +196,11 @@ function mergeMotionScale(overrides?: DeckTokens['motion']): MotionScale {
  * object by reference" rule this whole module follows).
  */
 export function resolveTokens(theme: DeckTheme, tokens?: DeckTokens): ResolvedTokens {
-  const color = resolveColorRoles(theme, tokens?.color)
-  const categorical = tokens?.categorical
+  // S13-a: a toned slide's theme already folds the brand accents in; the deck's colour overrides (a
+  // derived palette's light surface, its chart ramp) were picked for the base ground, not this one
+  const toned = theme.tone !== undefined
+  const color = resolveColorRoles(theme, toned ? undefined : tokens?.color)
+  const categorical = !toned && tokens?.categorical
     ? [...tokens.categorical]
     : generateCategoricalRamp(theme.colors.accent1, theme.colors.accent2)
   const type = mergeTypeScale(tokens?.type)

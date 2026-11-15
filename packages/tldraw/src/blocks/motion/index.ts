@@ -29,6 +29,7 @@ export type {
 export {
   MOTION_PRESETS,
   PRESET_IDS,
+  PRESET_IDS_V2,
   ACTIVE_PRESET_IDS,
   getPreset,
 } from './presets'

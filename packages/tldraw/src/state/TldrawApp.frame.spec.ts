@@ -1,6 +1,6 @@
 import { mockDocument, TldrawTestApp } from '~test'
 import { TDExport, TDExportTypes, TDDocument } from '~types'
-import { SLIDE_ASPECT_PRESETS, FIT_TO_SCREEN_PADDING, MAX_ZOOM_STEP, WHEEL_ZOOM_SPEED } from '~constants'
+import { SLIDE_ASPECT_PRESETS, FIT_FRAME_PADDING_X, MAX_ZOOM_STEP, WHEEL_ZOOM_SPEED } from '~constants'
 import { TLDR } from '~state/TLDR'
 
 // `loadDocument`/`migrate` mutate the document object they're given in place (and `migrate`
@@ -34,7 +34,7 @@ describe('Frame-aware zoomToFit', () => {
     // exactly the viewport width minus the fit padding, centered in the remaining space.
     const screenWidth = 1920 * camera.zoom
     const screenLeft = camera.point[0] * camera.zoom
-    expect(screenWidth).toBeCloseTo(1000 - FIT_TO_SCREEN_PADDING, 0)
+    expect(screenWidth).toBeCloseTo(1000 - FIT_FRAME_PADDING_X, 0)
     expect(screenLeft).toBeCloseTo((1000 - screenWidth) / 2, 0)
   })
 
@@ -72,7 +72,7 @@ describe('zoomToFit with a docked panel', () => {
     const { camera } = app.pageState
     const screenWidth = 1920 * camera.zoom
     const screenLeft = camera.point[0] * camera.zoom
-    expect(screenWidth).toBeCloseTo(1000 - 216 - FIT_TO_SCREEN_PADDING, 0)
+    expect(screenWidth).toBeCloseTo(1000 - 216 - FIT_FRAME_PADDING_X, 0)
     expect(screenLeft).toBeCloseTo((1000 - 216 - screenWidth) / 2, 0)
     expect(screenLeft + screenWidth).toBeLessThanOrEqual(1000 - 216)
   })
@@ -83,7 +83,7 @@ describe('zoomToFit with a docked panel', () => {
     app.setPageSize(app.page.id, [...SLIDE_ASPECT_PRESETS.widescreen])
     app.updateBounds(VIEWPORT_BOUNDS)
     app.setFitInsets({ right: 700 }).zoomToFit()
-    expect(1920 * app.pageState.camera.zoom).toBeCloseTo(1000 - FIT_TO_SCREEN_PADDING, 0)
+    expect(1920 * app.pageState.camera.zoom).toBeCloseTo(1000 - FIT_FRAME_PADDING_X, 0)
   })
 })
 
@@ -207,7 +207,7 @@ describe('Zoom-out floor on a slide frame', () => {
 
   it('is the fit-to-frame zoom', () => {
     const app = fitted()
-    expect(app.minZoom).toBeCloseTo((1000 - FIT_TO_SCREEN_PADDING) / 1920)
+    expect(app.minZoom).toBeCloseTo((1000 - FIT_FRAME_PADDING_X) / 1920)
     expect(app.minZoom).toBeCloseTo(app.pageState.camera.zoom)
   })
 
@@ -258,5 +258,16 @@ describe('Wheel zoom step', () => {
     app.zoomBy(-4 / WHEEL_ZOOM_SPEED, [500, 500]) // a trackpad pinch tick
     expect(app.pageState.camera.zoom).toBeCloseTo(Math.exp(MAX_ZOOM_STEP + 4 / WHEEL_ZOOM_SPEED), 2)
     jest.useRealTimers()
+  })
+})
+
+describe('patchLibAssets (spro C7, S27-e)', () => {
+  it('adds library pictures to the deck table, keeping the ones it had', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    const a = { kind: 'icon', viewBox: '0 0 24 24', body: '<path d="M0 0h24v24z"/>', colourMode: 'mono' }
+    app.patchLibAssets({ 'tabler/coffee': a as never })
+    app.patchLibAssets({ 'tabler/leaf': a as never })
+    expect(Object.keys(app.document.libAssets ?? {}).sort()).toEqual(['tabler/coffee', 'tabler/leaf'])
   })
 })

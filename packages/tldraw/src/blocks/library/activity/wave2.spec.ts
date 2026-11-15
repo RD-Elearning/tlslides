@@ -190,3 +190,21 @@ describe('activity lints reach the deck validator', () => {
     expect(found[0].path).toContain('slides[0]')
   })
 })
+
+describe('S24-h (K7): the timer clock is a centred chip, not a full-width bar', () => {
+  it('in a wide box the clock cell is at most 520 wide and centred', () => {
+    const W = 1728
+    const post: any = tlsATimer.poster!(tlsATimer.defaults as any, makeCtx({ width: W, height: 700 }, registry()))
+    const cell = (function find(n: any, ox = 0, oy = 0): any {
+      if (n.part === 'cell[0]' || n.id === 'cell[0]') return { ...n.box, x: n.box.x + ox }
+      for (const ch of n.children ?? []) {
+        const r = find(ch, ox + (n.k === 'group' && n !== post ? n.box.x : 0), oy)
+        if (r) return r
+      }
+      return undefined
+    })(post)
+    expect(cell).toBeDefined()
+    expect(cell.width).toBeLessThanOrEqual(520)
+    expect(Math.abs(cell.x + cell.width / 2 - W / 2)).toBeLessThan(2)
+  })
+})

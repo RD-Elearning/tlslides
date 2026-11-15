@@ -42,9 +42,19 @@ const words = (s: string) => (s.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).fi
 /** The English words a slide text is about: its own words plus the Vietnamese map's. */
 export function queryWords(text: string): Set<string> {
   const low = text.toLowerCase()
-  const plain = strip(low)
+  const toks = low.match(/[\p{L}\p{N}]+/gu) ?? []
+  // sprint 2026-11c T39: a table entry matches whole words only. A substring of the tone-stripped text added
+  // `pizza` to "quanh", "hành tinh", "thời trang" ("ăn" -> "an"). Without tones only for entries of >= 2 words,
+  // where a sentence typed without tones is still meant ("he mat troi" is not; "co so du lieu" is).
+  const at = (hay: string, needle: string) => ` ${hay} `.includes(` ${needle} `)
+  // English plurals read as their singular too ("Robots" -> robot); no Vietnamese word ends in "s"
+  const accented = toks.map((t) => (t.length > 3 && t.endsWith('s') && !t.endsWith('ss') ? `${t} ${t.slice(0, -1)}` : t)).join(' ')
+  const plain = strip(accented)
   const out = new Set(words(low))
-  for (const [vi, en] of VI) if (low.includes(vi) || plain.includes(strip(vi))) en.forEach((w) => out.add(w))
+  for (const [vi, en] of VI) {
+    const phrase = (vi.match(/[\p{L}\p{N}]+/gu) ?? []).join(' ')
+    if (at(accented, phrase) || (phrase.includes(' ') && at(plain, strip(phrase)))) en.forEach((w) => out.add(w))
+  }
   return out
 }
 
@@ -77,4 +87,20 @@ export function iconsFor(text: string, n = 40): string[] {
 export function iconGroupOf(name: string): string {
   for (const [g, names] of Object.entries(ICON_GROUPS)) if (names.includes(name)) return g
   return 'misc'
+}
+
+/**
+ * spro sprint 2026-11c S19 phase 0: every pickable icon with what an embedding search reads — its name, its title
+ * (the icon's human name), its meaning group and its tags (Tabler's or Phosphor's; the Lucide set has its name only).
+ * One row per icon in `ICON_GROUPS`, in group order; `number-*` / `letter-*` glyphs are left out (no subject).
+ */
+export function iconCatalog(): Array<{ name: string; title: string; group: string; tags: string[] }> {
+  const out: Array<{ name: string; title: string; group: string; tags: string[] }> = []
+  for (const [group, names] of Object.entries(ICON_GROUPS)) {
+    for (const name of names) {
+      if (/^(number|letter)-/.test(name)) continue
+      out.push({ name, title: ICONS[name]?.name ?? name, group, tags: iconTags(name) })
+    }
+  }
+  return out
 }

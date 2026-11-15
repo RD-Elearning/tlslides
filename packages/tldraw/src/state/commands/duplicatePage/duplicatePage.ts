@@ -2,6 +2,7 @@ import type { TldrawCommand } from '~types'
 import { Utils } from '@tlslides/core'
 import type { TldrawApp } from '../../internal'
 import { getNextChildIndex } from '../shared/getNextChildIndex'
+import { collectDeckIds, freshId, remintBlockIds } from '~blocks/remint-ids'
 
 /**
  * Duplicate a page.
@@ -24,16 +25,32 @@ export function duplicatePage(
   const pageState = app.getPageState(pageId)
   const { camera } = pageState
 
+  // Editor E00: the copy sits right after its source (not at the end of the deck), and gets its
+  // own slide id and block ids — copied ids made the deck fail validation (`slide/duplicate-id`,
+  // `block/duplicate-id`) and every save after a duplicate was rejected.
+  const pages = app.state.document.pages
+  const srcIndex = page.childIndex ?? 0
+  const after = Object.values(pages)
+    .map((p) => p.childIndex ?? 0)
+    .filter((i) => i > srcIndex)
+    .sort((a, b) => a - b)[0]
+  const childIndex = after === undefined ? getNextChildIndex(pages) : (srcIndex + after) / 2
+  const taken = collectDeckIds(app.state.document as never)
+  const slideSpecId = freshId(page.slideSpecId ?? page.id, taken, 'copy')
+  const reminted = remintBlockIds(Object.values(page.shapes), taken).shapes
+
   const nextPage = {
     ...page,
     id: newId,
+    slideSpecId,
     name: page.name + ' Copy',
-    childIndex: getNextChildIndex(app.state.document.pages),
+    childIndex,
     // Copied, not shared: the spread above would alias the source page's size array, so resizing
     // either slide would silently resize the other.
     size: page.size ? [...page.size] : undefined,
     shapes: Object.fromEntries(
-      Object.entries(page.shapes).map(([id, shape]) => {
+      reminted.map((shape) => {
+        const id = shape.id
         return [
           id,
           {

@@ -1,0 +1,142 @@
+/**
+ * spro sprint 2026-11b S08 — one definition shape for the wave-A text-rich blocks: a block maps its
+ * props to rich cells (`_rich.ts`) plus head / foot sections; the factory gives it the layout, the build
+ * tree, capacity, motion (one stagger over the cells) and the S06 fill policy.
+ */
+import type { BlockCategory, BlockDefinition, BlockSchema, BlockSpec, FillStep, LayoutContext, LayoutNode, PartMotionRecipe, SlotSpec, SlotType } from '../../types'
+import { defineCompositeBlock } from '../../layout/define-composite'
+import { schemaCapacity } from './_poster'
+import { richBuild, richLayout, type RichItem, type RichOptions, type RichSection } from './_rich'
+
+export interface RichShape {
+  items: RichItem[]
+  opts: RichOptions
+  head?: RichSection[]
+  foot?: RichSection[]
+  /** Lay the block out yourself (a two-column block); the default is `richLayout`. */
+  layout?: (ctx: LayoutContext) => LayoutNode
+}
+
+export interface RichBlockConfig<P extends Record<string, unknown>> {
+  type: string
+  name: string
+  summary: string
+  keywords: string[]
+  category: BlockCategory
+  shortDescription: string
+  related: string[]
+  schema: BlockSchema
+  defaults: P
+  size: { preferred: [number, number]; min: [number, number] }
+  describe: { when: string; avoid: string; example: BlockSpec }
+  /** The block's cells and sections for these props. */
+  shape: (props: P) => RichShape
+  /** S06 (default `['type', 'spacing']`; a grid of cells: `['type']`). */
+  fillPolicy?: readonly FillStep[]
+  /** Motion parts of the head / foot sections (shown before / after the cells). */
+  sections?: { head?: string[]; foot?: string[] }
+  /** S09: figures (`value[i]` parts) count up as their cells arrive. */
+  countUp?: boolean
+  /** S10: the viewer-only reveal hook (`BlockDefinition.reveal`). */
+  reveal?: BlockDefinition['reveal']
+}
+
+const BUILDERS = new WeakMap<BlockDefinition, (props: Record<string, unknown>) => BlockSpec>()
+
+/** The build tree function of a text-rich block (specs and the structure view). */
+export function richBuilder(def: BlockDefinition): (props: Record<string, unknown>) => BlockSpec {
+  return BUILDERS.get(def)!
+}
+
+/**
+ * The defaults a rendered block may take under its props: options only (variant, visual…). Content
+ * defaults are the catalog's sample ("Study of 1,200 first-year students") — filled under an authored
+ * spec they print a fact nobody gave (spro sprint 2026-11c c0: a board deck's NRR stat carried that
+ * source line). An empty content prop stays empty, as `layoutChild` does for every other block.
+ */
+export function optionDefaults<P extends Record<string, unknown>>(schema: BlockSchema, defaults: P): Partial<P> {
+  return Object.fromEntries(Object.entries(defaults).filter(([k]) => schema[k]?.role === 'option')) as Partial<P>
+}
+
+export function defineRichBlock<P extends Record<string, unknown>>(cfg: RichBlockConfig<P>): BlockDefinition {
+  const id = cfg.type.replace(/^tls\.c\./, '').replace(/-/g, '_')
+  const options = optionDefaults(cfg.schema, cfg.defaults)
+  const build = (props: P): BlockSpec => {
+    const s = cfg.shape({ ...options, ...props } as P)
+    return richBuild(id, s.items, s.opts, s.head, s.foot)
+  }
+  const head = cfg.sections?.head ?? []
+  const foot = cfg.sections?.foot ?? []
+  const partMotion: Record<string, PartMotionRecipe> = {}
+  head.forEach((p, i) => (partMotion[p] = { preset: 'fade-up', delay: i * 120, stagger: 60 }))
+  partMotion.item = { preset: 'fade-up', delay: head.length * 120, stagger: 110 }
+  foot.forEach((p, i) => (partMotion[p] = { preset: 'fade-up', delay: (head.length + 2 + i) * 120, stagger: 60 }))
+  const countParts: string[] = cfg.countUp ? ['value'] : []
+  if (cfg.countUp) partMotion.value = { preset: 'count-up', delay: head.length * 120 + 80, stagger: 110 }
+  const composite = defineCompositeBlock<P>({
+    type: cfg.type,
+    name: cfg.name,
+    family: 'composite',
+    tier: 'A',
+    summary: cfg.summary,
+    keywords: cfg.keywords,
+    category: cfg.category,
+    scope: 'slide',
+    related: cfg.related,
+    schema: cfg.schema,
+    defaults: cfg.defaults,
+    size: cfg.size,
+    describe: cfg.describe,
+    motion: { parts: [...head, ...countParts, 'item', ...foot], preset: 'fade-up', partMotion },
+    build,
+  })
+  const def: BlockDefinition = {
+    ...composite,
+    shortDescription: cfg.shortDescription,
+    intrinsicSize: undefined,
+    fillPolicy: cfg.fillPolicy ?? ['type', 'spacing'],
+    layout: ((props: P, ctx: LayoutContext): LayoutNode => {
+      const s = cfg.shape({ ...options, ...props } as P)
+      return s.layout ? s.layout(ctx) : richLayout(ctx, s.items, s.opts, s.head, s.foot)
+    }) as BlockDefinition['layout'],
+    capacity: ((props: P) => schemaCapacity(cfg.schema, props)) as BlockDefinition['capacity'],
+    ...(cfg.reveal ? { reveal: cfg.reveal } : {}),
+  }
+  BUILDERS.set(def, build as (props: Record<string, unknown>) => BlockSpec)
+  return def
+}
+
+/** Text of a prop (string or rich text), '' otherwise. */
+export function txt(v: unknown, max = 640): string {
+  if (typeof v === 'string') return clip(v, max)
+  if (v && typeof v === 'object' && Array.isArray((v as { runs?: unknown }).runs)) return clip((v as { runs: Array<{ text?: string }> }).runs.map((r) => r.text ?? '').join(''), max)
+  return ''
+}
+
+/**
+ * `text` at most `max` characters. A longer one is cut at the last word break (when that keeps ≥ 60 % of it) and ends
+ * in "…", never mid-word — spro c10 (2026-11-15): lumo s11's 168-character number-grid line was drawn as "…for the
+ * Indonesia licence and l".
+ */
+export function clip(text: string, max: number): string {
+  if (text.length <= max) return text
+  let cut = text.slice(0, Math.max(1, max - 1))
+  const space = cut.search(/\s\S*$/)
+  if (space >= max * 0.6) cut = cut.slice(0, space)
+  return cut.replace(/[\s,;:.\-–—(]+$/, '') + '…'
+}
+
+/** Objects of a list prop (hostile input: anything else dropped). */
+export function rows<T extends Record<string, unknown>>(v: unknown, max: number): T[] {
+  return (Array.isArray(v) ? v : []).filter((x): x is T => !!x && typeof x === 'object' && !Array.isArray(x)).slice(0, max)
+}
+
+/** Strings of a list prop. */
+export function strs(v: unknown, max: number): string[] {
+  return (Array.isArray(v) ? v : []).map((x) => txt(x)).filter((x) => x.trim()).slice(0, max)
+}
+
+/** An object slot type from compact field types (each field a content slot labelled by its key). */
+export function objectOf(fields: Record<string, SlotType>): SlotType {
+  return { kind: 'object', fields: Object.fromEntries(Object.entries(fields).map(([k, t]) => [k, { type: t, role: 'content', label: k }])) as Record<string, SlotSpec> }
+}

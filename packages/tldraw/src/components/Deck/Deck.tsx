@@ -1,4 +1,4 @@
-import { CopyIcon, PlusIcon } from '@radix-ui/react-icons'
+import { ChevronLeftIcon, ChevronRightIcon, CopyIcon, PlusIcon } from '@radix-ui/react-icons'
 import { TLPageState } from '@tlslides/core'
 import * as React from 'react'
 import { DeckContextMenu } from '~components/DeckContextMenu'
@@ -8,7 +8,7 @@ import { Panel } from '~components/Primitives/Panel'
 import { RowButton } from '~components/Primitives/RowButton'
 import { SmallIcon } from '~components/Primitives/SmallIcon'
 import { ReadOnlyEditor } from '~components/ReadOnlyEditor'
-import { useTldrawApp } from '~hooks'
+import { useTldrawApp, useEditorProfile, useMsg } from '~hooks'
 import { styled } from '~styles'
 import { TDPage, TDSnapshot } from '~types'
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area'
@@ -22,6 +22,21 @@ const DECK_WIDTH = 200
 const DECK_SLIDE_PADDING_X = 20
 const DECK_SLIDE_PADDING_Y = 5
 const DECK_SLIDE_WIDTH = DECK_WIDTH - DECK_SLIDE_PADDING_X * 2
+/** spro C7 (S27-h): the collapsed strip is one button this wide; the remembered choice per browser. */
+const DECK_COLLAPSED_WIDTH = 56
+const COLLAPSED_KEY = 'tls.deck.stripCollapsed'
+
+function initialCollapsed(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const kept = window.localStorage?.getItem(COLLAPSED_KEY)
+    if (kept === '1' || kept === '0') return kept === '1'
+  } catch {
+    // storage blocked: fall back to the width rule
+  }
+  // a phone: the strip would cover half the canvas, so it starts folded
+  return !!window.matchMedia?.('(max-width: 500px)').matches
+}
 
 const sortedSelector = (s: TDSnapshot) =>
   Object.values(s.document.pages).sort((a, b) => (a.childIndex || 0) - (b.childIndex || 0))
@@ -33,18 +48,42 @@ function getSlideHeight(page: TDPage): number {
   return (DECK_SLIDE_WIDTH * height) / width + DECK_SLIDE_PADDING_Y * 2
 }
 
+/** Editor E06 — open a thumbnail's slide menu from its `⋯` button (the same menu as right-click). */
+function openSlideMenu(e: React.MouseEvent<HTMLElement>) {
+  e.preventDefault()
+  e.stopPropagation()
+  const trigger = (e.currentTarget.closest('[data-page-id]') as HTMLElement | null)?.querySelector('[data-slide-menu-trigger]')
+  const r = e.currentTarget.getBoundingClientRect()
+  trigger?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: r.left, clientY: r.bottom + 4 }))
+}
+
 export const Deck = React.memo(function Deck(): JSX.Element {
   const app = useTldrawApp()
+  const basic = useEditorProfile() === 'basic'
+  const t = useMsg()
+
+  // spro C7 (S27-h): the strip folds to one button (remembered per browser; folded at first on a phone)
+  const [collapsed, setCollapsed] = React.useState<boolean>(initialCollapsed)
+  const toggleCollapsed = React.useCallback(() => {
+    setCollapsed((c) => {
+      try {
+        window.localStorage?.setItem(COLLAPSED_KEY, c ? '0' : '1')
+      } catch {
+        // storage blocked: the choice lasts for this page only
+      }
+      return !c
+    })
+  }, [])
 
   // The strip floats over the canvas's right edge: fitting a slide leaves that edge free.
   React.useEffect(() => {
     const narrow = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 500px)').matches // stitches '@micro'
-    app.setFitInsets({ right: (narrow ? 150 : DECK_WIDTH) + 16 })
+    app.setFitInsets({ right: (collapsed ? DECK_COLLAPSED_WIDTH : narrow ? 150 : DECK_WIDTH) + 16 })
     app.zoomToFit()
     return () => {
       app.setFitInsets({ right: 0 })
     }
-  }, [app])
+  }, [app, collapsed])
 
   const handleDuplicatePage = React.useCallback(() => {
     app.duplicatePage(app.currentPageId)
@@ -120,11 +159,33 @@ export const Deck = React.memo(function Deck(): JSX.Element {
     setDropIndex(null)
   }, [])
 
+  const currentIndex = sortedPages.findIndex((p) => p.id === app.currentPageId)
+
+  if (collapsed) {
+    return (
+      <StyledDeckContainer>
+        <StyledCenterWrap id="TD-Deck">
+          <StyledPanel side="lr" id="TD-DeckPanel" data-collapsed="" css={{ width: DECK_COLLAPSED_WIDTH, '@micro': { width: DECK_COLLAPSED_WIDTH } }}>
+            <StyledFoldButton type="button" aria-label={t('strip.expand')} title={t('strip.expand')} aria-expanded={false} data-strip-toggle="" onClick={toggleCollapsed}>
+              <ChevronLeftIcon />
+              <span>
+                {currentIndex + 1}/{sortedPages.length}
+              </span>
+            </StyledFoldButton>
+          </StyledPanel>
+        </StyledCenterWrap>
+      </StyledDeckContainer>
+    )
+  }
+
   return (
     <StyledDeckContainer>
       <StyledCenterWrap id="TD-Deck">
         {/* Slide Island */}
         <StyledPanel side="lr" id="TD-DeckPanel">
+          <StyledFoldButton type="button" aria-label={t('strip.collapse')} title={t('strip.collapse')} aria-expanded data-strip-toggle="" onClick={toggleCollapsed} css={{ alignSelf: 'flex-end', marginRight: 8, flexDirection: 'row' }}>
+            <ChevronRightIcon />
+          </StyledFoldButton>
           {/* Slide Strips Container */}
           <StyledScrollArea>
             <StyledViewport>
@@ -153,7 +214,9 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                             index={index}
                             count={sortedPages.length}
                           >
-                            <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                            <div data-slide-menu-trigger="" style={{ width: '100%', height: '100%' }}>
+                              <ReadOnlyEditor page={page} pageState={boringPageState(page)} />
+                            </div>
                           </DeckContextMenu>
                         </StyledSlideContent>
                         {/* Visible without opening the context menu, so scanning the deck panel
@@ -161,12 +224,27 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                         {page.skipInPresentation && (
                           <StyledSkipBadge>Skipped</StyledSkipBadge>
                         )}
+                        {basic && (
+                          <StyledSlideNumber>{index + 1}</StyledSlideNumber>
+                        )}
+                        {basic && (
+                          <StyledMoreButton
+                            type="button"
+                            aria-label={t('strip.more')}
+                            title={t('strip.more')}
+                            onClick={openSlideMenu}
+                            onPointerDown={(e) => e.stopPropagation()}
+                          >
+                            ⋯
+                          </StyledMoreButton>
+                        )}
                       </StyledSlideContainerInner>
                     </StyledSlideContainer>
                   </React.Fragment>
                 ))}
                 {dropIndex === sortedPages.length && <StyledDropIndicator data-drop-indicator="" />}
-                <StyledSlideContainer
+                {/* editor E06: a new slide from a template is not in the basic editor (the AI adds slides) */}
+                {!basic && <StyledSlideContainer
                   style={{
                     height:
                       (DECK_SLIDE_WIDTH * DEFAULT_SLIDE_SIZE[1]) / DEFAULT_SLIDE_SIZE[0] +
@@ -180,7 +258,7 @@ export const Deck = React.memo(function Deck(): JSX.Element {
                       </IconButton>
                     </TemplatePicker>
                   </StyledAddPage>
-                </StyledSlideContainer>
+                </StyledSlideContainer>}
               </StyledSlideStripContainer>
             </StyledViewport>
             <StyledScrollbar orientation="vertical">
@@ -188,7 +266,10 @@ export const Deck = React.memo(function Deck(): JSX.Element {
             </StyledScrollbar>
           </StyledScrollArea>
 
-          {/* Slide Controls */}
+          {/* Slide Controls (editor E06: per-slide `⋯` menus instead, in basic) */}
+          {basic ? (
+            <StyledCount>{t('strip.count', { n: sortedPages.length })}</StyledCount>
+          ) : (
           <StyledControls>
             <RowButton onClick={handleDuplicatePage}>
               <span>Duplicate Slide</span>
@@ -203,10 +284,73 @@ export const Deck = React.memo(function Deck(): JSX.Element {
               </SmallIcon>
             </RowButton>
           </StyledControls>
+          )}
         </StyledPanel>
       </StyledCenterWrap>
     </StyledDeckContainer>
   )
+})
+
+const StyledMoreButton = styled('button', {
+  position: 'absolute',
+  top: 4,
+  right: 4,
+  // above the thumbnail's own painted shapes (positioned, later in the DOM)
+  zIndex: 2,
+  width: 24,
+  height: 20,
+  border: 'none',
+  borderRadius: 6,
+  cursor: 'pointer',
+  font: '700 14px/20px system-ui, sans-serif',
+  color: '$text',
+  backgroundColor: '$panel',
+  boxShadow: '$panel',
+  opacity: 0,
+  transition: 'opacity .12s',
+  '[data-page-id]:hover &, &:focus-visible': { opacity: 1 },
+})
+
+const StyledSlideNumber = styled('span', {
+  position: 'absolute',
+  left: 4,
+  bottom: 4,
+  zIndex: 2,
+  minWidth: 18,
+  padding: '0 4px',
+  borderRadius: 4,
+  font: '600 11px/16px system-ui, sans-serif',
+  textAlign: 'center',
+  color: '$text',
+  backgroundColor: '$panel',
+  opacity: 0.85,
+  pointerEvents: 'none',
+})
+
+const StyledFoldButton = styled('button', {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: 2,
+  minWidth: 32,
+  minHeight: 32,
+  padding: '6px 4px',
+  border: 'none',
+  borderRadius: 8,
+  background: 'transparent',
+  color: '$text',
+  font: '500 12px/16px system-ui, sans-serif',
+  cursor: 'pointer',
+  '&:hover': { background: '$hover' },
+  '&:focus-visible': { outline: '2px solid $selected', outlineOffset: 1 },
+})
+
+const StyledCount = styled('div', {
+  padding: '6px 8px 2px',
+  font: '500 12px/16px system-ui, sans-serif',
+  color: '$text',
+  opacity: 0.7,
+  textAlign: 'center',
 })
 
 const StyledDeckContainer = styled('div', {
@@ -350,7 +494,8 @@ const StyledControls = styled('div', {
 })
 
 const StyledScrollArea = styled(ScrollAreaPrimitive.Root, {
-  maxHeight: 370,
+  // spro C7 (S27-h): the strip runs down the canvas (six slides at a 900-px window), not a 370-px box
+  maxHeight: 'max(370px, calc(100vh - 250px))',
   overflow: 'hidden',
 })
 

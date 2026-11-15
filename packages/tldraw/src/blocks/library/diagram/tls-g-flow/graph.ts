@@ -11,7 +11,7 @@ import { FLOW_MAX_EDGES, FLOW_MAX_NODES } from './schema'
 export type FlowKind = 'step' | 'decision' | 'start' | 'end'
 
 export interface Graph {
-  nodes: Array<{ id: string; key: string; label: string; kind: FlowKind }>
+  nodes: Array<{ id: string; key: string; label: string; kind: FlowKind; tone?: string }>
   /** Drawable edges; `index` is the position in the original `edges` slot. */
   edges: Array<{ from: string; to: string; label: string; index: number }>
   unknown: Array<{ index: number; id: string }>
@@ -33,7 +33,7 @@ export function readGraph(props: FlowProps): Graph {
     }
     seen.add(id)
     const kind = (['step', 'decision', 'start', 'end'] as const).find((k) => k === n.kind) ?? 'step'
-    nodes.push({ id, key: safeId(id), label: str(n.label), kind })
+    nodes.push({ id, key: safeId(id), label: str(n.label), kind, ...(str(n.tone) ? { tone: str(n.tone) } : {}) })
   }
   const edges: Graph['edges'] = []
   const unknown: Graph['unknown'] = []

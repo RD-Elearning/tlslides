@@ -7,7 +7,7 @@
  * Charts with a single series should use direct labels instead (see `directLabel`).
  */
 
-import type { Box, LayoutContext, LayoutNode } from '../../../types'
+import type { Box, LayoutContext, LayoutNode, TypeToken } from '../../../types'
 import { realWidth } from '../_chart/inter-width'
 
 export type LegendPlacement = 'top' | 'bottom' | 'right' | 'none'
@@ -33,13 +33,16 @@ export function layoutLegend(
   items: ReadonlyArray<LegendItem>,
   box: Box,
   ctx: LegendCtx,
-  placement: LegendPlacement
+  placement: LegendPlacement,
+  token: TypeToken = 'footnote'
 ): { nodes: LayoutNode[]; plotBox: Box } {
   if (placement === 'none' || items.length === 0) return { nodes: [], plotBox: { ...box } }
 
-  const style = ctx.resolveText('footnote')
-  const rowH = Math.max(LEGEND_SWATCH, Math.ceil(style.size * style.lineHeight))
-  const maxLabelW = placement === 'right' ? Math.max(0, box.width * MAX_RIGHT_FRACTION - LEGEND_SWATCH - SWATCH_GAP) : box.width
+  const style = ctx.resolveText(token)
+  // the swatch keeps its size next to footnote text and grows with a larger legend
+  const sw = Math.max(LEGEND_SWATCH, Math.round(style.size * 0.5))
+  const rowH = Math.max(sw, Math.ceil(style.size * style.lineHeight))
+  const maxLabelW = placement === 'right' ? Math.max(0, box.width * MAX_RIGHT_FRACTION - sw - SWATCH_GAP) : box.width
   const measured = items.map((it) => {
     // Browser-true width (RV05): the flat estimate is 25% narrow on figures, so "2024" and "Web"
     // got boxes narrower than their glyphs. A label that fits by that width never wraps.
@@ -58,7 +61,7 @@ export function layoutLegend(
     let y = 0
     measured.forEach((e, i) => {
       placed.push({ i, x: 0, y, w: e.w })
-      width = Math.max(width, LEGEND_SWATCH + SWATCH_GAP + e.w)
+      width = Math.max(width, sw + SWATCH_GAP + e.w)
       y += rowH + ROW_GAP
     })
     height = y - ROW_GAP
@@ -66,7 +69,7 @@ export function layoutLegend(
     let x = 0
     let y = 0
     measured.forEach((e, i) => {
-      const entryW = LEGEND_SWATCH + SWATCH_GAP + e.w
+      const entryW = sw + SWATCH_GAP + e.w
       if (x > 0 && x + entryW > box.width) {
         x = 0
         y += rowH + ROW_GAP
@@ -90,14 +93,14 @@ export function layoutLegend(
     const y = originY + p.y
     nodes.push({
       k: 'rect',
-      box: { x, y: y + (rowH - LEGEND_SWATCH) / 2, width: LEGEND_SWATCH, height: LEGEND_SWATCH },
+      box: { x, y: y + (rowH - sw) / 2, width: sw, height: sw },
       part: `legend/swatch-${p.i}`,
       fill: { type: 'solid', color: e.it.color },
       radius: 2,
     })
     nodes.push({
       k: 'text',
-      box: { x: x + LEGEND_SWATCH + SWATCH_GAP, y, width: p.w, height: rowH },
+      box: { x: x + sw + SWATCH_GAP, y, width: p.w, height: rowH },
       part: `legend/label-${p.i}`,
       lines: e.m.lines,
       style,

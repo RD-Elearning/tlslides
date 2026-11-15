@@ -30,6 +30,7 @@
 import type { BlockDefinition, BlockSpec, Box, DeckStyle, LayoutNode, Pt, ResolvedTokens } from './types'
 import type { BlockRegistry } from './registry'
 import { blockLayer } from './block-layer'
+import { backdropBusy } from './library/media/tls-m-backdrop/layout'
 import { collectPaint, floorOf, hexOf, inkContrast, parseInk, type Background, type InkLeaf, type PaintOp } from './layout/paint-model'
 import { relativeLuminance, rgbToHsl, solveForContrast } from './color-math'
 import { resolveBlockMotion, resolvePartMotion } from './motion/resolve-motion'
@@ -64,6 +65,8 @@ export const DESIGN_THRESHOLDS = {
   /** `contrast/low`: ink this translucent (alpha × opacity) is decoration (a watermark), not text. */
   decorativeAlpha: 0.3,
 } as const
+
+export { LOUD_TEXT_CAPS, loudTextCap } from './layout/loud-text'
 
 /** `accent/overuse`: accent uses a slide may make, per deck-style family (P10; luxury and
  *  editorial say "one accent", playful styles are colourful by design). No style: `default`. */
@@ -370,7 +373,11 @@ function contrastChecks(blocks: DesignBlock[], ctx: DesignContext, out: Draft[])
     // A decoration's image is a texture (a pattern's grain tile, mostly transparent), not a photo:
     // it is left out of what text sits on. A photo backdrop is a media block (`tls.m.image`).
     const texture = ctx.registry.get(b.type)?.category === 'decoration'
-    const ops = b.inspection ? (texture ? b.inspection.ops.map((op) => (op.kind === 'unknown' ? { ...op, alpha: 0 } : op)) : b.inspection.ops) : []
+    let ops = b.inspection ? (texture ? b.inspection.ops.map((op) => (op.kind === 'unknown' ? { ...op, alpha: 0 } : op)) : b.inspection.ops) : []
+    // S13-b: a busy backdrop (halftone, topo at medium) is as unreadable under text as a photo — text
+    // on it needs a panel (the photo finding and its scrim / surface fix)
+    const bp = b.spec.props as Record<string, unknown> | undefined
+    if (b.type === 'tls.m.backdrop' && backdropBusy(bp?.kind, bp?.intensity)) ops = [{ kind: 'unknown', box: b.box, alpha: 1 }]
     offsets.set(b, all.length)
     all.push(...ops)
   }
@@ -492,9 +499,11 @@ function peerChecks(b: DesignBlock, out: Draft[]): void {
     for (const [type, peers] of byType) {
       if (peers.length < 2) continue
       // rows: peers side by side (same top)
+      // S11: a grid with wide cells (`spans`) has unequal widths by design; heights still count
+      const spanned = c.type === 'tls.l.grid' && hasSpans(specAt(b.spec, c.path))
       for (const row of cluster(peers, (p) => p.box.y, DESIGN_THRESHOLDS.alignDrift)) {
         if (row.length < 2) continue
-        unequal(b, c.path, type, row, peers.length, out)
+        unequal(b, c.path, type, row, peers.length, out, spanned)
         misaligned(b, c.path, type, row, peers.length, 'y', out)
       }
       // columns: peers stacked (same left)
@@ -506,7 +515,19 @@ function peerChecks(b: DesignBlock, out: Draft[]): void {
   }
 }
 
-function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], total: number, out: Draft[]): void {
+/** The authored spec at an id path (`g1/c2`) under a slide-level block. */
+function specAt(root: BlockSpec | undefined, path: string): BlockSpec | undefined {
+  const ids = path.split('/')
+  let cur: BlockSpec | undefined = root && root.id === ids[0] ? root : undefined
+  for (const id of ids.slice(1)) {
+    const kids = (cur?.props as { children?: BlockSpec[] } | undefined)?.children
+    cur = Array.isArray(kids) ? kids.find((k) => k?.id === id) : undefined
+  }
+  return cur
+}
+const hasSpans = (spec: BlockSpec | undefined): boolean => ((spec?.props as { spans?: unknown } | undefined)?.spans as unknown[] | undefined)?.some?.((v) => Number(v) > 1) ?? false
+
+function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], total: number, out: Draft[], spanned = false): void {
   const sizes = row.map((p) => (paintsSurface(b, p) ? subPainted(b, p) ?? p.box : p.box))
   const spread = (vals: number[]) => {
     const lo = Math.min(...vals)
@@ -515,7 +536,7 @@ function unequal(b: DesignBlock, parent: string, type: string, row: SubBlock[], 
   }
   const w = sizes.map((s) => s.width)
   const h = sizes.map((s) => s.height)
-  const sw = spread(w)
+  const sw = spanned ? 0 : spread(w)
   const sh = spread(h)
   if (sw > DESIGN_THRESHOLDS.peerSpread || sh > DESIGN_THRESHOLDS.peerSpread) {
     const axis = sw >= sh ? 'widths' : 'heights'
@@ -539,7 +560,10 @@ function misaligned(b: DesignBlock, parent: string, type: string, peers: SubBloc
     const types = new Map((b.inspection?.subs ?? []).map((s) => [s.path, short(s.type)]))
     for (const { i, t, owner } of subTexts(b, p)) {
       // the owner's type names the leaf: a card's `title text` and `body text` are different leaves
-      const name = `${owner === p.path ? short(p.type) : types.get(owner) ?? ''} ${t.propPath ?? t.part ?? 'text'}`.trim()
+      // editor E02: paths name the slide-level block's props (`children.2.props.text`) — peers match
+      // on the path with item indices blanked
+      const leafKey = (t.propPath ?? t.part ?? 'text').replace(/(^|\.)\d+(?=\.|$)/g, '$1#')
+      const name = `${owner === p.path ? short(p.type) : types.get(owner) ?? ''} ${leafKey}`.trim()
       const n = counts.get(name) ?? 0
       counts.set(name, n + 1)
       m.set(`${name}#${n}`, { t, align: b.inspection?.textAlign[i] ?? 'start' })

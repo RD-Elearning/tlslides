@@ -60,6 +60,8 @@ export interface IconListItem {
   icon: string
   title: string
   text?: string
+  /** C6: `category:<n>`, set by the service for a point that names one of the document's groups. */
+  tone?: string
 }
 
 export interface IconListProps extends Record<string, unknown> {

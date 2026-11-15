@@ -55,7 +55,20 @@ export function layout(props: RowProps, ctx: LayoutContext): LayoutNode {
     
     const totalIntrinsic = intrinsicSizes.reduce((sum, s) => sum + s.width, 0)
     
-    if (totalIntrinsic > 0) {
+    // S11 (sprint 2026-11b): an authored `justify` keeps the children at their natural widths (shrunk only
+    // when they do not fit) and places them: start / center / end, or the free space between them
+    const justify = (props as { justify?: string }).justify
+    if (totalIntrinsic > 0 && justify) {
+      const scale = Math.min(1, contextWidth / totalIntrinsic)
+      const free = Math.max(0, contextWidth - totalIntrinsic * scale)
+      const spread = justify === 'between' && n > 1 ? free / (n - 1) : 0
+      let currentX = justify === 'center' ? free / 2 : justify === 'end' ? free : 0
+      for (let i = 0; i < n; i++) {
+        const w = intrinsicSizes[i].width * scale
+        sizes.push({ width: w, x: currentX })
+        currentX += w + gap + spread
+      }
+    } else if (totalIntrinsic > 0) {
       // Scale to fill available space
       const scale = contextWidth / totalIntrinsic
       let currentX = 0

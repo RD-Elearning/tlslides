@@ -30,7 +30,10 @@ import {
   type TableSpec,
 } from '../../../layout/table'
 import { iconLeaf } from '../../text/_engine/icon'
+import { categoryColor, lumOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { fmtNum, isNum, longestWord, onColor, tintOf, TEXT_SLACK, withRealWidths } from '../_chart/kit'
+import { DEFAULT_PROBE_HEIGHT } from '../../../layout/measure-block'
 
 export type ColKind = 'text' | 'number' | 'status' | 'rating' | 'check' | 'checkOrRating' | 'ratingOrCheck'
 /** The kinds an author may name (the two `...Or...` kinds are internal: compare-table cells). */
@@ -89,6 +92,11 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
   const text = cellText(raw)
   switch (kind) {
     case 'number': {
+      // A string the author wrote with a separator or a sign of its own ("1.086", "2,70", "68.500", "$9", "12%") is
+      // drawn exactly as written: "." and "," mean opposite things in Vietnamese and English, so re-formatting it
+      // changed the number (sprint 2026-11c T28: 1.086 tấn -> 1,09; 2,70 -> 270). The column kind only aligns it.
+      // A JSON number, or a bare digit string, is still formatted in the deck's language.
+      if (typeof raw === 'string' && !/^\s*[-+]?\d+\s*$/.test(raw)) return { kind: 'text', text }
       const n = parseNumber(raw)
       if (!n) return { kind: 'text', text }
       const f = n.format ?? (format && format !== 'plain' ? format : undefined)
@@ -99,8 +107,9 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       return role ? { kind: 'status', status: role, label: text } : { kind: 'text', text }
     }
     case 'rating': {
+      // a percent or an amount is a measurement, never a score (S29, c9 lookbook s11: "9%" drew five squares)
       const n = parseNumber(raw)
-      return n && n.value >= 0 && n.value <= 10 ? { kind: 'rating', value: n.value } : { kind: 'text', text }
+      return n && !n.format && n.value >= 0 && n.value <= 10 ? { kind: 'rating', value: n.value } : { kind: 'text', text }
     }
     case 'checkOrRating':
     case 'ratingOrCheck': {
@@ -108,6 +117,9 @@ export function parseCell(raw: unknown, kind: ColKind, part: string, ctx: Layout
       const second = first === 'check' ? 'rating' : 'check'
       const a = parseCell(raw, first, part, ctx, format, place)
       if (typeof a === 'object' && a.kind !== 'text') return a
+      // the default kind (the author did not ask for ratings) reads only a whole score 0-5 as dots: "1.7" / "2.0" units per
+      // transaction are figures to print (S29, c9 lookbook s11 drew them as two squares each)
+      if (second === 'rating' && !(isNum(raw) ? Number.isInteger(raw) && raw >= 0 && raw <= 5 : /^\s*[0-5]\s*$/.test(text))) return { kind: 'text', text }
       return parseCell(raw, second, part, ctx, format, place)
     }
     case 'check': {
@@ -221,11 +233,18 @@ export interface TableInput {
   /** AC3 pre-item: the box height; a default-density table that fits it one type step larger (and
    *  as wide) is laid out roomy. A ladder of fixed-height candidates, so it is a fixed point. */
   fitHeight?: number
+  /** Review 2026-11-08: the table fills `fitHeight` (it is a slide's main block, `style.fill`): any
+   *  authored density may take the larger tiers that fit, then its body rows grow taller, each by
+   *  at most `STRETCH_ROW_LINES` body lines, so the rows spread over the room. */
+  stretch?: boolean
   zebra?: boolean
   rules?: 'none' | 'head' | 'rows'
   header?: 'filled' | 'bold' | 'none'
   emphasisRow?: number
   emphasisCol?: number
+  /** spro sprint 2026-11c C6: per body row, `category:<n>` — a tint and a left bar in the group's colour (the
+   *  text is not moved: the bar sits in the cell padding). */
+  rowTones?: ReadonlyArray<unknown>
   /** Part name of the emphasised column tint (`emphasis` -> `emphasis.col`; anything else is used as is). */
   emphasisName?: string
   /** Also paint the emphasised column's header cell in the accent (compare-table `winner`). */
@@ -276,18 +295,52 @@ function boldHeader(node: LayoutNode, color: string): LayoutNode {
  * to the compact density (smaller text and padding) before words start wrapping letter by letter.
  */
 export function buildTable(ctx0: LayoutContext, o: TableInput): TableBuilt {
-  if ((o.density ?? 'default') === 'default' && (o.fitHeight ?? 0) > 0) {
-    const grand = buildCore(ctx0, { ...o, density: 'grand' })
-    if (grand.natural <= Math.max(1, o.width) + 0.5 && grand.tree.box.height <= (o.fitHeight as number) + 0.5) return grand
-    const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
-    if (roomy.natural <= Math.max(1, o.width) + 0.5 && roomy.tree.box.height <= (o.fitHeight as number) + 0.5) return roomy
-  }
-  const first = buildCore(ctx0, o)
-  if (o.density !== 'compact' && first.natural > Math.max(1, o.width) + 0.5) return buildCore(ctx0, { ...o, density: 'compact' })
-  return first
+  const built = buildTiers(ctx0, o)
+  const H = o.fitHeight ?? 0
+  const n = built.measure.rowHeights.length
+  if (!o.stretch || H <= 0 || n === 0 || built.tree.box.height >= H - 1) return built
+  const line = ctx0.resolveText('body')
+  const cap = STRETCH_ROW_LINES * line.size * line.lineHeight
+  const grow = Math.min(cap, Math.floor((H - built.tree.box.height) / n))
+  if (grow < 2) return built
+  const density = built.density
+  return buildCore(ctx0, { ...o, density, rowGrow: grow })
 }
 
-function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: number } {
+/** Review 2026-11-08: a stretched table's row grows by at most this many body lines. */
+export const STRETCH_ROW_LINES = 1.5
+
+function buildTiers(ctx0: LayoutContext, o: TableInput): TableBuilt & { density: TableInput['density'] } {
+  const W = Math.max(1, o.width)
+  const fitH = o.fitHeight ?? 0
+  // sprint 2026-11c (g1: 5 of 8 decks had tables at the reading minimum in tall boxes): a tier is taken when it fits the
+  // box's height and its columns sit side by side on one line OR its text wraps to at most WRAP_LINES lines per cell —
+  // a sentence column used to bar every larger tier and even push a default table down to compact. An authored
+  // `compact` (the composer's guess that the table is long) takes a larger tier too when that fits.
+  // …only in a real box: in a measuring pass (a probe box of any height) a wrapping tier would ask the region for more
+  // height and squeeze its siblings (corpus: callouts 36 → 28 px, overflow) — there the old one-line rule holds
+  const sized = !ctx0.tokens.measuring && fitH < DEFAULT_PROBE_HEIGHT
+  const fits = (b: { natural: number; lines: number; tree: LayoutNode }) =>
+    b.tree.box.height <= fitH + 0.5 && (b.natural <= W + 0.5 || (sized && b.lines <= WRAP_LINES))
+  if (fitH > 0 && (sized || (o.density ?? 'default') === 'default' || o.stretch === true)) {
+    const grand = buildCore(ctx0, { ...o, density: 'grand' })
+    if (fits(grand)) return { ...grand, density: 'grand' }
+    const roomy = buildCore(ctx0, { ...o, density: 'roomy' })
+    if (fits(roomy)) return { ...roomy, density: 'roomy' }
+    if (o.density === 'compact' && sized) {
+      const plain = buildCore(ctx0, { ...o, density: 'default' })
+      if (fits(plain)) return { ...plain, density: 'default' }
+    }
+  }
+  const first = buildCore(ctx0, o)
+  if (o.density !== 'compact' && first.natural > W + 0.5 && !(fitH > 0 && fits(first))) return { ...buildCore(ctx0, { ...o, density: 'compact' }), density: 'compact' }
+  return { ...first, density: o.density }
+}
+
+/** The most lines a cell may wrap to at a larger type tier (a sentence column of a two-column table). */
+export const WRAP_LINES = 3
+
+function buildCore(ctx0: LayoutContext, o: TableInput & { rowGrow?: number }): TableBuilt & { natural: number; /** body lines of the tallest row; Infinity when a non-text column would wrap */ lines: number } {
   const rename = renamer(o.cellNames)
   const compact = o.density === 'compact'
   const grand = o.density === 'grand'
@@ -309,7 +362,7 @@ function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: 
   const head: TableCell[] | undefined = o.head && header !== 'none' ? Array.from({ length: cols }, (_, c) => ({ kind: 'text' as const, text: cellText(o.head![c]) })) : undefined
   const rows = footRow ? [...bodyRows, footRow] : bodyRows
 
-  const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none' } as const
+  const base = { head, rows, cellPad, rowGap, align: aligns, zebra: o.zebra, rules: o.rules ?? 'none', rowGrow: o.rowGrow ?? 0 } as const
   const measured = measureColumns({ head, rows, cellPad }, ctx).map((w) => w * 1.06)
   const bodyStyle = ctx.resolveText('body')
   const lineHeightOf = bodyStyle.size * bodyStyle.lineHeight
@@ -403,8 +456,25 @@ function buildCore(ctx0: LayoutContext, o: TableInput): TableBuilt & { natural: 
       backs.push({ k: 'rect', part: `${name === 'emphasis' ? 'emphasis' : name}.head`, box: { x, y: 0, width: widths[emphCol] ?? 0, height: top }, fill: { type: 'solid', color: c.accent } })
     }
   }
+  for (let r = 0; r < nBody; r++) {
+    const cat = categoryColor(ctx, o.rowTones?.[r])
+    const b = cat ? rowBox.get(`row-${r}`) : undefined
+    if (!cat || !b) continue
+    const y = b.y - rowGap / 2
+    const h = b.height + rowGap
+    backs.push({ k: 'rect', part: `tone[${r}]`, box: { x: 0, y, width: W, height: h }, fill: { type: 'solid', color: tintOf(c.surface, cat, 0.14) } })
+    // a group whose colour is the page's own (a white bag on a white page) is outlined in the line colour
+    const bar = contrastRatio(lumOf(cat), lumOf(c.surface)) < 1.3 ? c.line : cat
+    const bw = Math.max(6, Math.min(10, Math.round(cellPad / 2)))
+    backs.push({ k: 'rect', part: `tone[${r}].bar`, box: { x: 0, y, width: bw, height: h }, fill: { type: 'solid', color: bar } })
+  }
   const tree: LayoutNode = { k: 'group', part: 'root', box: { x: 0, y: 0, width: W, height: H }, children: [...backs, ...content] }
-  return { tree, measure, widths, rowGap, natural: measured.reduce((a, b) => a + b, 0) }
+  // the most lines a body row's text takes at this tier (rows grown by `rowGrow` not counted)
+  const padY = Math.round(cellPad / 2)
+  const lines = Math.max(1, ...measure.rowHeights.map((h) => Math.round((h - (o.rowGrow ?? 0) - padY * 2) / lineHeightOf)))
+  // only text wraps: a number, status, rating or check column must keep its one-line width
+  const wraps = widths.every((w, c) => (o.kinds[c] ?? 'text') === 'text' || w + 0.5 >= (measured[c] ?? 0))
+  return { tree, measure, widths, rowGap, natural: measured.reduce((a, b) => a + b, 0), lines: wraps ? lines : Infinity }
 }
 
 /* ───────────────────────────── capacity ───────────────────────────── */

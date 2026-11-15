@@ -47,10 +47,10 @@ exports[`LO1 — committed text snapshot demo-deck sl_08 1`] = `
 regions: content 96,96 1728x888
 blocks (box x,y wxh; nat = painted content size at box width; fill = sizes to its box):
 A b_08_title tls.t.title @content 96,96 1728x76 nat 511x74 | text 1L×74 ~54c/L
-B b_08_donut tls.d.donut @content 96,196 1728x614 fill | 4 text leaves 4L, longest legend/label-0 1L×24 ~18c/L
+B b_08_donut tls.d.donut @content 96,196 1728x614 fill | 4 text leaves 4L, longest legend/label-0 1L×41 ~18c/L
 C b_08_steps tls.g.steps @content 96,834 1728x150 nat 1471x125 | 12 text leaves 12L, longest steps.1.description 1L×31 ~39c/L
 findings: none
-margins t96 r96 b108 l96 | free 52%
+margins t96 r353 b108 l96 | free 62%
 screenshot: not needed
 map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overlap, ! = spill out of box, . = free
 ................................................
@@ -58,21 +58,21 @@ map 48x27, 1 char = 40 units; A = block paints, a = its box but empty, # = overl
 ..AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
 ..AAAAAAAAAAAAAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa..
 ................................................
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
-..bbbbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
+..bbbbbbbbbbBBBBBBBBBBBBBBBBBBBBBBBBbbbbbbbbbb..
 ................................................
 ..CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCccccccc..
 ..CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCccccccc..

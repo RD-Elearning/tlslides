@@ -36,6 +36,8 @@ export interface StairStep {
   label: string
   text?: string
   icon?: string
+  /** C6: `category:<n>`, set by the service for a step that names one of the document's groups. */
+  tone?: string
 }
 
 export interface StaircaseProps extends Record<string, unknown> {

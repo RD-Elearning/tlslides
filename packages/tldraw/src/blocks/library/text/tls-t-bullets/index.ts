@@ -42,6 +42,7 @@ export const tlsTBullets: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [700, 300], min: [520, 170] },
+  fillPolicy: ['type', 'spacing'],
   layout: layout as BlockDefinition['layout'],
   motion,
 }

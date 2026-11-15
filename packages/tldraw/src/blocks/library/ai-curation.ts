@@ -47,6 +47,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.l.split': t2(['gutter', 'axis']),
   'tls.l.overlay': t2(),
   'tls.l.card': t2(['padding']),
+  'tls.l.panel': t2(['surface', 'emphasis', 'padding']),
   'tls.l.section': t2(['showTitle', 'showDivider', 'gap']),
   'tls.l.repeater': t2(['direction', 'gap']),
   'tls.l.spacer': t2(),
@@ -62,6 +63,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.g.connector': t2(),
   'tls.m.decoration': t1(['shape', 'tone', 'opacity']),
   'tls.m.pattern': t2(['pattern', 'scale', 'tone', 'opacity']),
+  // S13-b: placed by the style masters and the backdrop rhythm; AI-hidden (capability-digest AI_HIDDEN_TYPES).
+  'tls.m.backdrop': t2(['kind', 'tone', 'intensity']),
   'tls.m.ornament': t2(['shape', 'variant', 'tone', 'opacity']),
   // vivid V3: topic icons scattered as the slide's decoration (reached through the style concept)
   'tls.m.icon-cluster': t2(['tone', 'opacity', 'backing']),
@@ -165,6 +168,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── comparison ──
   'tls.d.compare-table': t1(['cellKind', 'zebra', 'density']),
   'tls.d.pricing': t1(['featuredStyle', 'align']),
+  'tls.d.swatches': t2(['shape']),
+  'tls.d.itinerary': t2([]),
   'tls.g.matrix-2x2': t1(['highlight', 'style', 'showItems'], ['tls.g.swot']),
   'tls.g.swot': t2(['style', 'letters']),
   'tls.g.pros-cons': t1(['style', 'balance', 'showVerdict']),
@@ -185,6 +190,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.steps': t1(['orientation'], ['tls.g.steps', 'tls.g.cycle', 'tls.g.flow']),
 
   // ── timeline ──
+  'tls.g.route': t2([]),
   'tls.g.timeline': t1(['axis', 'alternate', 'nodeStyle'], ['tls.g.milestones', 'tls.c.journey']),
   'tls.g.roadmap': t1(['statusColors', 'laneLabels']),
   'tls.g.milestones': t2(['axis', 'labels']),
@@ -224,6 +230,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.image-grid': t1(['pattern', 'cols', 'captions']),
   'tls.m.image-compare': t2(['mode', 'divider']),
   'tls.m.device-mock': t2(['device', 'tone', 'shadow']),
+  'tls.m.screen': t2(['device']),
 
   // ── agenda ──
   // AC6: asymmetric tile grid (list category)
@@ -261,6 +268,35 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.hook-cover': t2(['variant']),
   'tls.c.route-agenda': t2(['variant']),
   'tls.c.chapter-divider': t2(['variant']),
+  'tls.c.section-brief': t2(['variant']), // spro sprint 2026-11b S07-c
+  'tls.c.key-points': t2(['variant', 'numbering']), // spro sprint 2026-11b S08
+  'tls.c.stat-explain': t2(['variant', 'visual']), // spro sprint 2026-11b S09
+  'tls.c.number-grid': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.infographic-row': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.split-statement': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.quote-context': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.g.concept-map': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.g.cycle-detail': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.g.cause-chain': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.g.number-line': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.image-notes': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.cover-masthead': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.closing-recap': t2(['variant']), // spro sprint 2026-11b S09
+  'tls.c.tabs': t2(['variant']), // spro sprint 2026-11b S10
+  'tls.c.accordion': t2([]), // spro sprint 2026-11b S10
+  'tls.c.step-through': t2([]), // spro sprint 2026-11b S10
+  'tls.c.hotspots': t2(['variant']), // spro sprint 2026-11b S10
+  'tls.c.explainer': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.frayer': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.worked-example': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.cornell': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.faq': t2(['variant', 'columns']), // spro sprint 2026-11b S08
+  'tls.c.glossary': t2(['variant', 'marker']), // spro sprint 2026-11b S08
+  'tls.c.timeline-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.process-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.compare-detail': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.summary-sheet': t2(['variant']), // spro sprint 2026-11b S08
+  'tls.c.sidenotes': t2(['variant']), // spro sprint 2026-11b S08
   'tls.c.sticky-board': t2(['variant']),
   'tls.c.question-wall': t2(['variant']),
   'tls.c.homework': t2(['variant']),
@@ -271,6 +307,8 @@ export const AI_CURATION: Record<string, AiCuration> = {
   // ── spro creative CR9: emoji and illustrations ──
   'tls.m.emoji': t2(['size', 'backing']),
   'tls.m.illustration': t2(['accent', 'flip']),
+  // spro sprint 2026-11c S20-C: a library picture as a block (tier 2: only with candidates the slide lists)
+  'tls.m.asset': t2(['color', 'align']),
 
   // ── spro creative CR13: waves 2 and 3 ──
   'tls.g.decision-tree': t2(['variant', 'outcomes']),

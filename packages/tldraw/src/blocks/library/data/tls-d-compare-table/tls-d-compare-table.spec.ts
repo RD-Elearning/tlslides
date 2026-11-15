@@ -48,6 +48,14 @@ describe('tls.d.compare-table', () => {
     expect(exact(c, 'row[0].c2/dot-0')).toBeDefined()
   })
 
+  it('figures stay figures: a percent, an amount or a decimal is never drawn as dots (spro S29, c9 lookbook s11)', () => {
+    const c = lay({ options: ['2026', '2027'], criteria: ['Units per transaction', 'Returns', 'Score'], cells: [['1.7', '2.0'], ['11%', '9%'], ['3', '4']], winner: -1 })
+    expect(textsOf(c)).toEqual(expect.arrayContaining(['1.7', '2.0', '11%', '9%']))
+    expect(exact(c, 'row[2].c1/dot-0')).toBeDefined()
+    const r = lay({ options: ['A', 'B'], criteria: ['x'], cells: [['9%', '$4']], cellKind: 'rating', winner: -1 })
+    expect(textsOf(r)).toEqual(expect.arrayContaining(['9%', '$4']))
+  })
+
   it('free text stays text, and cellKind: text writes everything as written', () => {
     const t = lay({ options: ['A', 'B'], criteria: ['x', 'y'], cells: [['Unlimited', 'yes'], ['5 GB', 'no']], cellKind: 'text', winner: -1 })
     expect(textsOf(t)).toEqual(expect.arrayContaining(['Unlimited', 'yes', '5 GB', 'no']))

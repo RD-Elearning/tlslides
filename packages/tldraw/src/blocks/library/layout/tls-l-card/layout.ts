@@ -12,10 +12,29 @@ import type { CardProps } from './schema'
 import { tagChildren } from '../_motion'
 import { insetBox } from '../../../layout/box-model'
 import { containerSurface } from '../_style'
+import { cardNodes, cardPaint } from '../../composite/_kit'
+import { categoryColor, lumOf, tintOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { collectPaintedLeaves, paintedBounds } from '../../../layout/measure-block'
 import type { BlockSpec } from '../../../types'
 
 export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
+  return build(props, ctx).node
+}
+
+/**
+ * S24 (sprint 2026-11c): the card's natural height — what `hugBottom` paints — for a content-sized
+ * container (`tls.l.stack` / `tls.l.row` `sizing: 'content'`). Without it the container read the
+ * root box, which keeps the cell it was given: six one-line token cards in a stack measured 732
+ * each and were laid 758 units apart, five of them off the slide (MĂM p1 s05). A card that keeps
+ * its box (a composite's, a chart inside, `style.align`) still measures its box.
+ */
+export function intrinsicSize(props: CardProps, ctx: LayoutContext): { width: number; height: number } {
+  const { hug } = build(props, ctx)
+  return { width: ctx.box.width, height: hug ?? ctx.box.height }
+}
+
+function build(props: CardProps, ctx: LayoutContext): { node: LayoutNode; hug?: number } {
   const paddingToken = (props.padding ?? 'md') as SpaceToken
   const padding = ctx.tokens.space[paddingToken] ?? ctx.tokens.space.md
   const children = props.children ?? []
@@ -44,7 +63,20 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   // paint the card leaves under its content is passed to the children, so their text solves
   // against the card (a dark or accent card gets light ink), not against the slide.
   const roleSurface = typeof ctx.style?.surface === 'string' && !['surface', 'surfaceAlt'].includes(ctx.style.surface)
-  const { nodes: background, surface: under } = containerSurface(ctx, outerBox, surfaceFill, 'background', !(explicit || roleSurface))
+  // spro sprint 2026-11c C6: a card of a named group (`tone: category:<n>`, set by the service) — a light tint of the
+  // group's colour and a rim in it, as `tls.c.cards` draws one (the rim in the line colour for a white group on a
+  // white page); an instance `style` still wins
+  const cat = ctx.style ? undefined : categoryColor(ctx, props.tone)
+  const surfaceOf = (box: { x: number; y: number; width: number; height: number }) => {
+    if (!cat) return containerSurface(ctx, box, surfaceFill, 'background', !(explicit || roleSurface))
+    const page = ctx.resolveColor('surface').color
+    const rim = contrastRatio(lumOf(cat), lumOf(page)) < 1.3 ? ctx.resolveColor('line').color : cat
+    const tint: Paint = { type: 'solid', color: tintOf(page, cat, 0.14) }
+    // a band of the colour itself along the top: the group reads at a glance (a palette card shows its swatch)
+    const cp = { ...cardPaint(ctx), fill: tint, stroke: { color: rim, width: 3 }, surface: tint, topRule: { color: cat, width: Math.max(8, ctx.tokens.space.xs) } }
+    return { nodes: cardNodes(cp, box, ctx.tokens.radius.md, 'background'), surface: tint }
+  }
+  const { nodes: background, surface: under } = surfaceOf(outerBox)
 
   let childNodes: LayoutNode[]
   if (children.length > 1) {
@@ -67,21 +99,45 @@ export function layout(props: CardProps, ctx: LayoutContext): LayoutNode {
   // card, a card with `style.align`, a chart or a photo inside, or content that fills the box
   // keep the full box.
   const hug = hugBottom(ctx, children, childNodes, contentBox, padding)
-  const bg = hug !== undefined ? containerSurface(ctx, { x: 0, y: 0, width: W, height: hug }, surfaceFill, 'background', !(explicit || roleSurface)).nodes : background
+  if (hug === undefined) childNodes = centreLoose(ctx, children, childNodes, contentBox)
+  const bg = hug !== undefined ? surfaceOf({ x: 0, y: 0, width: W, height: hug }).nodes : background
 
   return {
-    k: 'group',
-    box: outerBox,
-    part: 'root',
-    children: [
-      ...bg,
-      ...childNodes,
-    ],
+    node: {
+      k: 'group',
+      box: outerBox,
+      part: 'root',
+      children: [
+        ...bg,
+        ...childNodes,
+      ],
+    },
+    ...(hug !== undefined ? { hug } : {}),
   }
 }
 
 /** Children that fill their box (a chart, a photo, a nested grid): a card holding one keeps its box. */
 const FILLS = /^tls\.(d\.|m\.(image|decoration|pattern|image-grid|device-mock|logo-wall)$|l\.(grid|row|split|overlay|field|repeater)$)/
+
+/** A kept box whose content paints under this share of its height has the content centred in it. */
+export const CARD_CENTRE_BELOW = 0.7
+
+/**
+ * Review 2026-11-08 — a card that keeps its box (a composite's card stretched to its region: a
+ * stat card beside a tall comparison) with content-sized children packed at the top paints a large
+ * empty band under them. The content is centred in the box instead. Not for a card with
+ * `style.align`, peer tracks (peers line up), or a child that fills its box.
+ */
+function centreLoose(ctx: LayoutContext, children: BlockSpec[], nodes: LayoutNode[], content: { x: number; y: number; width: number; height: number }): LayoutNode[] {
+  if (!children.length || ctx.style?.align !== undefined || contextTracks(ctx)) return nodes
+  if (children.some((c) => !c || typeof c.type !== 'string' || FILLS.test(c.type))) return nodes
+  const size = { width: ctx.box.width, height: ctx.box.height }
+  const b = paintedBounds(collectPaintedLeaves({ k: 'group', box: { x: 0, y: 0, ...size }, children: nodes }, size))
+  if (!b || b.height >= CARD_CENTRE_BELOW * content.height) return nodes
+  const dy = Math.round(content.y + (content.height - b.height) / 2 - b.y)
+  if (dy <= 1) return nodes
+  return nodes.map((n) => ({ ...n, box: { ...n.box, y: n.box.y + dy } }) as LayoutNode)
+}
 
 /** The card height that hugs its laid-out content, or `undefined` to keep the box (see above). */
 function hugBottom(ctx: LayoutContext, children: BlockSpec[], nodes: LayoutNode[], content: { y: number; height: number }, padding: number): number | undefined {

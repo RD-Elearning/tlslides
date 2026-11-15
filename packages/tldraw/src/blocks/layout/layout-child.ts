@@ -7,6 +7,10 @@
  * Pure and DOM-free: no `document`, `window`, `Date.now()`, `Math.random()`.
  */
 
+import { resolveLibIcons } from '../icons/resolve'
+import type { DeckAsset } from '../types'
+import { fillLayout } from './fill'
+import { currentProps, dropUnresolved, inferLeafPaths, mapChildPaths, withCurrentProps } from './edit-scope'
 import type {
   BlockDefinition,
   BlockSpec,
@@ -36,6 +40,7 @@ import { imageSurface, isColorRole, resolveColor as solveColor, surfaceFromPaint
 import { guardInk, opaqueHex } from './ink-guard'
 import { collectPaint, greyOfLuminance, parseInk } from './paint-model'
 import { relativeLuminance, rgbToHex } from '../color-math'
+import { stepType } from './type-ladder'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
 /* Default font family for block text                                              */
@@ -72,6 +77,8 @@ export interface CreateLayoutContextOptions {
   asset?: (assetId: string) => AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Returns `undefined` by default. */
   resolveAsset?: (id: string) => string | undefined
+  /** S20-a — the deck's library asset by id (`DeckSpec.assets`, `lib:` refs). */
+  libAsset?: (id: string) => DeckAsset | undefined
   /** Icon lookup. Returns `undefined` by default. */
   icon?: (id: string) => IconPath | undefined
   /** Current nesting depth. Defaults to 0. */
@@ -105,6 +112,11 @@ export interface CreateLayoutContextOptions {
    *  the style sets one; `layoutChild` passes `false` when the surface came only from a
    *  composite's private `$block.style` (a surface *context*, not a request to paint). */
   paintSurface?: boolean
+  /** spro S29 7c — type ladder steps this context adds to every token it resolves (`withTypeStep`,
+   *  `layoutChild`'s `typeStep`). Kept by `withBox`; a child inherits it through `resolveText`. */
+  typeLift?: number
+  /** spro S29 7c — the steps the given `resolveText` already carries (internal). */
+  liftedBefore?: number
 }
 
 /** CMP1 — the per-context nesting state `layoutChild` / `layoutBlock` share (never on `ctx`). */
@@ -141,6 +153,23 @@ export function contextPeerStep(ctx: LayoutContext): number | undefined {
   return PEER_STEP.get(ctx)
 }
 
+/**
+ * S11 (sprint 2026-11b) — the same context with another `style` (a block that is another block with a
+ * derived style, as `tls.l.panel` is a card): nesting, peer tracks and options carry over.
+ */
+export function withStyle(ctx: LayoutContext, style: BlockStyleSpec | undefined): LayoutContext {
+  const out = { ...ctx, style } as LayoutContext
+  const nest = NEST.get(ctx)
+  if (nest) NEST.set(out, nest)
+  const tracks = TRACKS.get(ctx)
+  if (tracks) TRACKS.set(out, tracks)
+  const step = PEER_STEP.get(ctx)
+  if (step !== undefined) PEER_STEP.set(out, step)
+  const opts = OPTIONS.get(ctx)
+  if (opts) OPTIONS.set(out, opts)
+  return out
+}
+
 /** CMP2 — the options a context was built from (to rebuild it with another surface). */
 const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
 
@@ -151,6 +180,7 @@ const OPTIONS = new WeakMap<LayoutContext, CreateLayoutContextOptions>()
  */
 export const SURFACE_PAINTERS: ReadonlySet<string> = new Set([
   'tls.l.card',
+  'tls.l.panel', // S11: a card with a derived surface
   'tls.l.section',
   'tls.l.overlay',
   'tls.l.field',
@@ -164,6 +194,23 @@ function nestOptions(ctx: LayoutContext): Partial<CreateLayoutContextOptions> {
   return st
     ? { nestLevel: st.level, authoredBlock: st.authoredBlock, authored: st.authored, literalInks: st.literalInks, ...(st.blockDefaults ? { blockDefaults: st.blockDefaults } : {}) }
     : {}
+}
+
+/**
+ * S06 — `ctx` with every type token `n` steps up `ladder` (sizes stay on the scale), for the block
+ * and every child it lays out (a composed activity poster): the context is rebuilt from its options
+ * with the shifted type scale. A hand-built context (no options) gets a `resolveText` shift only.
+ */
+export function shiftTypeContext(ctx: LayoutContext, n: number, ladder: readonly TypeToken[]): LayoutContext {
+  if (n <= 0) return ctx
+  const up = (t: TypeToken): TypeToken => {
+    const i = ladder.indexOf(t)
+    return i < 0 ? t : ladder[Math.min(ladder.length - 1, i + n)]
+  }
+  const opts = OPTIONS.get(ctx)
+  if (!opts) return { ...ctx, resolveText: (t, over) => ctx.resolveText(up(t), over) }
+  const type = Object.fromEntries(Object.keys(ctx.tokens.type).map((k) => [k, { ...ctx.tokens.type[up(k as TypeToken)] }])) as ResolvedTokens['type']
+  return createLayoutContext({ ...opts, box: { width: ctx.box.width, height: ctx.box.height }, tokens: { ...ctx.tokens, type }, surface: ctx.surface, ...(ctx.style ? { style: ctx.style } : {}), ...nestOptions(ctx) })
 }
 
 /**
@@ -377,7 +424,9 @@ export function createLayoutContext(
   }
   const typeStep = typeStepOf(instanceStyle)
   if (typeStep !== undefined) tokens.typeStep = typeStep
-  const givenResolveText = options.resolveText
+  const lift = Math.max(0, options.typeLift ?? 0)
+  const rawResolveText = options.resolveText
+  const givenResolveText = rawResolveText && lift ? (token: TypeToken, over?: Partial<TextStyleSpec>) => rawResolveText(stepType(token, lift), over) : rawResolveText
   const resolveTextFn: (token: TypeToken, over?: Partial<TextStyleSpec>) => ResolvedTextStyle = givenResolveText
     ? Math.abs(scaleBy - 1) > 1e-6
       ? (token, over) => {
@@ -385,10 +434,12 @@ export function createLayoutContext(
           return over?.size !== undefined ? r : { ...r, size: Math.round(r.size * scaleBy * 100) / 100 }
         }
       : givenResolveText
-    : (token, over) => defaultResolveText(token, over, tokens)
+    : (token, over) => defaultResolveText(stepType(token, lift), over, tokens)
+  const typeLifted = (options.liftedBefore ?? 0) + lift
 
   const assetFn = options.asset ?? (() => undefined)
   const resolveAssetFn = options.resolveAsset
+  const libAssetFn = options.libAsset
   const iconFn = options.icon ?? (() => undefined)
   const depth = options.depth ?? 0
   const headless = options.headless ?? false
@@ -442,7 +493,7 @@ export function createLayoutContext(
     resolveColor: wrappedResolveColor,
     resolveText: resolveTextFn,
     measureText,
-    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode => {
+    layoutChild: (spec: BlockSpec, box: Box, childOpts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number; typeStep?: number }): LayoutNode => {
       const newDepth = depth + 1
       // X2: the wrapper group names the child block (id + type) for exporters and the report.
       const ident = {
@@ -506,8 +557,12 @@ export function createLayoutContext(
         // child's own style overrides must not inherit the parent's `on`/`accent`/`surface`.
         resolveColor: baseResolveColor,
         resolveText: resolveTextFn,
+        // S29 7c: the parent's steps ride in `resolveText`; a container may add its own for this child
+        liftedBefore: typeLifted,
+        ...(childOpts?.typeStep ? { typeLift: childOpts.typeStep } : {}),
         asset: assetFn,
         resolveAsset: resolveAssetFn,
+        ...(libAssetFn ? { libAsset: libAssetFn } : {}),
         icon: iconFn,
         depth: newDepth,
         headless,
@@ -533,7 +588,9 @@ export function createLayoutContext(
       const raw = spec.props as Record<string, unknown>
       const props = authoredChild ? filledProps(def, raw, nest.blockDefaults) : raw
       const childNode = layoutBlock(def, props, childCtx)
-      return { k: 'group' as const, box, ...ident, children: [childNode] }
+      // Editor E02: the child's text paths, mapped into this block's props (or dropped)
+      const itemPath = mapChildPaths(childNode, spec, props, currentProps())
+      return { k: 'group' as const, box, ...ident, ...(itemPath ? { itemPath } : {}), children: [childNode] }
     },
     // G8.5: bound the same way `layoutChild` above is — `registry` stays a closure variable,
     // never a raw field a block can read off `ctx` (matches this file's own `layoutChild`
@@ -563,8 +620,20 @@ export function createLayoutContext(
       if (step !== undefined) PEER_STEP.set(next, step)
       return next
     },
+    // spro S29 7c: this context with every type token `n` ladder steps up — its children, its
+    // measures and its padded boxes included (a composite's own spec tree grows with it)
+    withTypeStep: (n: number): LayoutContext => {
+      const next = createLayoutContext({ ...options, typeLift: lift + Math.max(0, n) })
+      const tracks = TRACKS.get(ctx)
+      if (tracks) TRACKS.set(next, tracks)
+      const step = PEER_STEP.get(ctx)
+      if (step !== undefined) PEER_STEP.set(next, step)
+      return next
+    },
+    typeLifted,
     asset: assetFn,
     resolveAsset: resolveAssetFn,
+    ...(libAssetFn ? { libAsset: libAssetFn } : {}),
     icon: iconFn,
     depth,
     headless,
@@ -644,6 +713,9 @@ export function measureIntrinsicSize(
     ...nestOptions(outer),
     ...(st ? { nestLevel: authoredChild ? st.level + 1 : st.level, authoredBlock: authoredChild } : {}),
     depth: outer.depth + 1,
+    // S29 7c: `outer.resolveText` already carries the outer steps (never `typeLift` them again)
+    typeLift: 0,
+    liftedBefore: outer.typeLifted ?? 0,
   })
   const def = registry?.get(spec.type)
   const props = def && authoredChild ? filledProps(def, spec.props as Record<string, unknown>, st?.blockDefaults) : spec.props
@@ -652,7 +724,7 @@ export function measureIntrinsicSize(
   // via the cache carried on LayoutContext. Style must be in the key because two children with
   // the same props but different padding share a cache slot otherwise (B3-H2).
   const boxKey = `${ctx.box.width}:${ctx.box.height}`
-  const cacheKey = `${spec.type}:${hashValue(props)}:${hashValue(ctx.style ?? null)}:${boxKey}`
+  const cacheKey = `${spec.type}:${hashValue(props)}:${hashValue(ctx.style ?? null)}:${boxKey}${ctx.typeLifted ? `:up${ctx.typeLifted}` : ''}`
 
   if (ctx.intrinsicSizeCache) {
     const cached = ctx.intrinsicSizeCache.get(cacheKey)
@@ -854,11 +926,19 @@ export function layoutBlock(
   props: Record<string, unknown>,
   ctx: LayoutContext
 ): LayoutNode {
-  const node = layoutBlockInner(def, props, ctx)
+  const node = withCurrentProps(props, () => layoutBlockInner(def, props, ctx))
+  // Editor E02: a slide-level block keeps only the edit paths that resolve in its own props
+  if (ctx.depth === 0) {
+    dropUnresolved(node, props)
+    // Editor E07: texts drawn straight from a prop without naming it get its path (unique match)
+    inferLeafPaths(node, props)
+  }
   // CMP2: a slide-level block (depth 0, authored level 1) — the ink guard re-solves derived ink
   // that fails contrast on what the block itself painted under it.
   const nest = NEST.get(ctx)
   if (ctx.depth === 0 && (!nest || nest.level <= 1)) guardInk(node, ctx.surface, nest?.literalInks ?? new Set())
+  // S20-b: `lib:` icons become the deck's library pictures, recoloured from the theme (no table = no-op)
+  if (ctx.depth === 0) return resolveLibIcons(node, ctx)
   return node
 }
 
@@ -947,7 +1027,8 @@ function layoutBlockInner(
 
   // Identity invariant: no style override → call layout directly, zero geometry change.
   if (!hasPadding && !hasAlign) {
-    return def.layout(props, ctx)
+    // S06: a `spread` region's main block uses its room by its `fillPolicy` (`style.fill`)
+    return fillLayout(def, props, ctx)
   }
 
   // Resolve padding into [vertical, horizontal].
@@ -977,6 +1058,7 @@ function layoutBlockInner(
           resolveText: ctx.resolveText,
           asset: ctx.asset,
           resolveAsset: ctx.resolveAsset,
+          ...(ctx.libAsset ? { libAsset: ctx.libAsset } : {}),
           icon: ctx.icon,
           depth: ctx.depth,
           headless: ctx.headless,

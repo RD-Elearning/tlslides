@@ -6,7 +6,7 @@
 import type { ActivityLabels, Box, HtmlTemplateContext, LayoutNode } from '../types'
 import { contrastRatio } from '../color-math'
 import { lumOf } from '../library/text/_engine/color'
-import { partBox } from './poster-parts'
+import { partBox, partTextSize } from './poster-parts'
 
 export const px = (n: number) => `${Math.round(n * 100) / 100}px`
 export const at = (b: Box) => `left:${px(b.x)};top:${px(b.y)};width:${px(b.width)};height:${px(b.height)};`
@@ -30,13 +30,16 @@ export function css(kind: string, ctx: HtmlTemplateContext, footH: number): stri
   const c = tokens.color
   const body = tokens.type.body
   const sub = tokens.type.subheading
+  // S06: a filled poster stepped its question and cell type up (`fillPoster`); the live text follows
+  const qSize = Math.max(sub.size, partTextSize(ctx.poster, 'question') ?? 0)
+  const cellSize = Math.max(body.size, partTextSize(ctx.poster, 'celltext[0]') ?? 0)
   const on = contrastRatio(lumOf(c.surface), lumOf(c.accent)) >= contrastRatio(lumOf(c.text), lumOf(c.accent)) ? c.surface : c.text
   const R = `[data-activity="${kind}"]`
   return (
     `${R}{position:relative;width:${px(box.width)};height:${px(box.height)};font-family:var(--tls-font-body,var(--tls-font-family));color:var(--tls-on)}` +
     `${R} button{font:inherit;color:inherit;cursor:pointer;text-align:left}` +
-    `${R} .tlsa-q{position:absolute;font-family:var(--tls-font-heading,var(--tls-font-family));font-weight:700;font-size:${px(sub.size)};line-height:${sub.lineHeight}}` +
-    `${R} .tlsa-cell{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:${px(tokens.space.md)};padding:0 ${px(tokens.space.lg)};border:3px solid transparent;border-radius:${px(tokens.radius.lg)};background:${c.surfaceAlt};font-size:${px(body.size)};line-height:${body.lineHeight}}` +
+    `${R} .tlsa-q{position:absolute;font-family:var(--tls-font-heading,var(--tls-font-family));font-weight:700;font-size:${px(qSize)};line-height:${sub.lineHeight}}` +
+    `${R} .tlsa-cell{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:${px(tokens.space.md)};padding:0 ${px(tokens.space.lg)};border:3px solid transparent;border-radius:${px(tokens.radius.lg)};background:${c.surfaceAlt};font-size:${px(cellSize)};line-height:${body.lineHeight}}` +
     `${R} .tlsa-cell:focus-visible,${R} .tlsa-btn:focus-visible{outline:4px solid ${c.accent};outline-offset:2px}` +
     // a chosen answer must LOOK chosen before it is checked: the ✓/✗ buttons already carry an accent border,
     // so the border alone showed nothing (spro deck a51aeac7 s10) — fill the button, tint the option row

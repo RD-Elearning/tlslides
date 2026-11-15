@@ -109,3 +109,20 @@ describe('tls.g.timeline example', () => {
   it('fits size.preferred and size.min', () => assertExampleFits(tlsGTimeline))
   it('motion parts exist in the layout and use presets that animate', () => assertMotionTargetsExist(tlsGTimeline, { optional: /^rail-y$/ }))
 })
+
+describe('S24-c: a row of 4+ events alternates sides when that gives larger type', () => {
+  const size = (t: any, re: RegExp) =>
+    Math.min(...absoluteLeaves(t).filter((l) => l.k === 'text' && re.test(l.part ?? '')).map((l) => (l.node as any).style.size as number))
+  const six = Array.from({ length: 6 }, (_, i) => ({ date: `${2020 + i}`, title: `Phase ${i + 1} of the plan`, text: 'Two short lines of note about this phase of the work' }))
+  it('auto: larger titles than the one-sided row, cards never overlap', () => {
+    const auto = lay({ events: six }, { width: 1000, height: 500 })
+    const one = lay({ events: six, alternate: false }, { width: 1000, height: 500 })
+    expect(size(auto, /^title\[/)).toBeGreaterThan(size(one, /^title\[/))
+    assertNoOverlap(cards(auto, 6))
+  })
+  it('an explicit alternate: false is kept', () => {
+    const one = lay({ events: six, alternate: false }, { width: 1000, height: 500 })
+    const ys = rectsOf(one, /^title\[\d+\]$/).map((r) => Math.round(r.y))
+    expect(new Set(ys).size).toBe(1)
+  })
+})

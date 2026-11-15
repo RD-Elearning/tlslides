@@ -10,6 +10,7 @@ import { tlsLGrid } from './tls-l-grid'
 import { tlsLSplit } from './tls-l-split'
 import { tlsLOverlay } from './tls-l-overlay'
 import { tlsLCard } from './tls-l-card'
+import { tlsLPanel } from './tls-l-panel'
 import { tlsLSection } from './tls-l-section'
 import { tlsLRepeater } from './tls-l-repeater'
 import { tlsLSpacer } from './tls-l-spacer'
@@ -25,6 +26,7 @@ export { tlsLGrid } from './tls-l-grid'
 export { tlsLSplit } from './tls-l-split'
 export { tlsLOverlay } from './tls-l-overlay'
 export { tlsLCard } from './tls-l-card'
+export { tlsLPanel } from './tls-l-panel'
 export { tlsLSection } from './tls-l-section'
 export { tlsLRepeater } from './tls-l-repeater'
 export { tlsLSpacer } from './tls-l-spacer'
@@ -41,6 +43,7 @@ export const layoutBlocks: BlockDefinition[] = [
   tlsLSplit,
   tlsLOverlay,
   tlsLCard,
+  tlsLPanel,
   tlsLSection,
   tlsLRepeater,
   tlsLSpacer,

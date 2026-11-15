@@ -88,6 +88,18 @@ export const COMPOSE_LAYOUTS: ReadonlyArray<{ id: string; regions: string; when:
   { id: 'offset-grid', regions: 'title, a, b, c', when: 'a large cell on the left, two smaller offset cells on the right (bento-like, three different things)' },
 ]
 
+/** spro sprint 2026-11b S12: the page skeletons v2 (offered behind spro's DECK_LAYOUTS_V2). */
+export const COMPOSE_LAYOUTS_V2: ReadonlyArray<{ id: string; regions: string; when: string }> = [
+  { id: 'header-band', regions: 'title, content', when: 'a dense slide whose title sits on a painted band (the run of content slides gets its own face)' },
+  { id: 'magazine', regions: 'title, main, side-a, side-b', when: 'a main text or figure (2/3) and two short side items stacked (a number, a quote, a note)' },
+  { id: 'mosaic', regions: 'title, lead, a, b', when: 'one large lead item (0.58) and two smaller ones stacked beside it' },
+  { id: 'two-rows', regions: 'title, top, bottom-left, bottom-right', when: 'a wide top row (a chart, a process) and two halves under it (what it means, what to do)' },
+  { id: 'hero-top', regions: 'visual, title, content', when: 'a picture, chart or diagram across the top 42 %, the title and a short text under it' },
+  { id: 'framed', regions: 'title, content', when: 'a statement, a quote or one idea in an inset panel (elegant looks)' },
+  { id: 'aside', regions: 'title, main, aside', when: 'the explanation (0.68) beside a painted side panel for a note, a term or a number' },
+  { id: 'stage', regions: 'title, content, strip', when: 'the main structure with a short strip under it: a takeaway, a source, a formula' },
+]
+
 /** Blocks that stand out beside the main structure (B2): at most one per slide. */
 export const ACCENT_BLOCKS: readonly string[] = ['tls.t.takeaway', 'tls.t.callout', 'tls.t.hero-number', 'tls.t.badge', 'tls.t.kicker', 'tls.t.quote', 'tls.t.footnote']
 /** Purely decorative blocks (B6): at most one per slide. */
@@ -155,14 +167,38 @@ export function styleConceptCard(style: DeckStyle): string {
   return lines.join('\n')
 }
 
+/**
+ * spro sprint 2026-11b S11-D — the v2 composition section (spro `DECK_COMPOSITION_V2`, a slide whose main
+ * block is `composition`): the v2 containers and fields, and one short example per idiom. The examples
+ * show structure, never content to copy.
+ */
+export function compositionV2Card(): string {
+  return [
+    '## Composing your own (grammar v2)',
+    'The brief asks you to design this slide yourself. Use structure, not decoration: one focal panel or number, peers as one template, a ratio that makes one side lead, everything from the passages.',
+    '- `tls.l.panel` (`surface`: base | alt | accent | inverted | glass | outline; `emphasis`: none | band | corner) — a card in a deck surface; at most ONE accent or inverted panel per slide.',
+    '- `tls.l.split` `ratio`: 0.33 | 0.4 | 0.5 | 0.6 | 0.67. `tls.l.grid` `columns` 2-4 and `spans` (1 or 2 per child, in order; rows grow). `tls.l.row` / `tls.l.stack` `justify` (start | center | end | between, with `sizing: "content"`).',
+    '- Cells of a row or grid repeat ONE template (the same parts in the same order); 8 children per container; at least 60 % of the parts carry content (a kicker or a rule is decoration).',
+    '- Lead text: `tls.t.body` `size: "lead"`; an eyebrow: `tls.t.kicker`; a big number: `tls.t.hero-number` (`value`, `unit`); an icon chip: `tls.m.icon` `iconStyle: "disc"`.',
+    'Idioms (shape only):',
+    '- claim + evidence: `split` 0.4 [stack: kicker, heading, body | panel alt: 3 × body]',
+    '- number band: `stack` [body lead, panel accent: hero-number, body lead, body source]',
+    '- KPI grid: `grid` 3 cols `spans` [2,1,1,1,1] of panels [heading value, body] (the first accent)',
+    '- matrix: `grid` 3×2 of panels outline [heading, body]',
+    '- sidebar note: `split` 0.67 [stack: heading, 2 × body | panel alt: kicker, 2 × body]',
+    '- two-tone: `split` 0.5 [panel inverted: kicker, heading, body | stack justify center: 3 × body]',
+    '- definition: `panel` base emphasis band [kicker, heading term, body lead, 2 × body example]',
+  ].join('\n')
+}
+
 /** The composition card for a slide the model composes (not "prefer a pattern": it composes). */
-export function composeCard(): string {
+export function composeCard(v2 = false, layoutsV2 = false): string {
   return [
     '# Composing a slide',
     'You design the slide: pick a layout, then the blocks for each of its regions. The engine lays it out, checks it and draws it in the deck style.',
     '',
     '## Layouts',
-    ...COMPOSE_LAYOUTS.map((l) => `- \`${l.id}\` (regions ${l.regions}) — ${l.when}`),
+    ...[...COMPOSE_LAYOUTS, ...(layoutsV2 ? COMPOSE_LAYOUTS_V2 : [])].map((l) => `- \`${l.id}\` (regions ${l.regions}) — ${l.when}`),
     '',
     '## Grammar (checked; a break is sent back to you)',
     '- A region holds a list of blocks, top to bottom. A composite (`tls.c.*`, a diagram `tls.g.*`, a chart, a table) is a region block of its own, never inside a container.',
@@ -179,6 +215,7 @@ export function composeCard(): string {
     `- At most one accent beside it: ${ACCENT_BLOCKS.map((t) => `\`${t}\``).join(', ')} — e.g. a takeaway under a diagram, a hero number beside a short text. Never a second focal point.`,
     `- At most one decorative element (${DECORATION_BLOCKS.map((t) => `\`${t}\``).join(', ')}), only where the style concept allows, never over text.`,
     '- Fill the slide: a short text alone in a wide region looks empty; a lead size or a split with a visual fixes it.',
+    ...(v2 ? ['', compositionV2Card()] : []),
   ].join('\n')
 }
 
@@ -211,6 +248,10 @@ export interface ComposeKitOptions {
   budget?: number
   /** The slide's words: the icon card lists the icons that fit them (absent = a note only). */
   iconText?: string
+  /** spro sprint 2026-11b S11-D: add the v2 composition section (the slide's main is `composition`). */
+  compositionV2?: boolean
+  /** spro sprint 2026-11b S12: list the v2 page skeletons too (the brief may name one). */
+  layoutsV2?: boolean
 }
 
 export interface ComposeKit {
@@ -243,7 +284,7 @@ export function composeKit(opts: ComposeKitOptions, registry?: BlockRegistry): C
   }
   // the generic detail header and icon line are replaced by the kit's own sections
   detail = detail.replace(/^Valid icon names:.*$/m, '').trim()
-  const markdown = [composeCard(), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
+  const markdown = [composeCard(opts.compositionV2, opts.layoutsV2), styleConceptCard(opts.style), detail, iconCard(opts.iconText)].join('\n\n')
   return { markdown, types, shape: opts.shape }
 }
 
@@ -265,6 +306,6 @@ function typesKit(opts: ComposeKitOptions, reg: BlockRegistry): ComposeKit {
   const main = types[0]
   const layouts = [...new Set(DESIGN_MOVES.filter((m) => main && m.main.includes(main)).flatMap((m) => m.layouts))]
   const variantCard = lines.length ? ['## Variants (set the knobs of the one the brief names)', ...lines].join('\n') : ''
-  const markdown = [composeCard(), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
+  const markdown = [composeCard(opts.compositionV2, opts.layoutsV2), styleConceptCard(opts.style), detail, variantCard, iconCard(opts.iconText)].filter(Boolean).join('\n\n')
   return { markdown, types, variants, layouts }
 }

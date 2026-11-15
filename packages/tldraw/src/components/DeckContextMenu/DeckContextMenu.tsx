@@ -2,7 +2,7 @@ import * as React from 'react'
 import { dark, styled } from '~styles'
 import * as RadixContextMenu from '@radix-ui/react-context-menu'
 import { CheckIcon } from '@radix-ui/react-icons'
-import { useTheme, useTldrawApp } from '~hooks'
+import { useTheme, useTldrawApp, useEditorProfile, useMsg } from '~hooks'
 import { Divider } from '~components/Primitives/Divider'
 import { MenuContent } from '~components/Primitives/MenuContent'
 import { RowButton, RowButtonProps } from '~components/Primitives/RowButton'
@@ -52,10 +52,17 @@ const InnerMenu = React.memo(function InnerMenu({
 }: InnerContextMenuProps) {
   const app = useTldrawApp()
   const { theme } = useTheme()
+  const basic = useEditorProfile() === 'basic'
+  const t = useMsg()
 
-  const handleDelete = React.useCallback(() => {
+  const handleDelete = React.useCallback(async () => {
+    // editor E06: the basic editor asks first (undo is easy to miss)
+    if (basic) {
+      const ok = await (app.confirmAction ?? ((m: string) => window.confirm(m)))(t('strip.deleteConfirm', { n: index + 1 }))
+      if (!ok) return
+    }
     app.deletePage(page.id)
-  }, [app])
+  }, [app, basic, index, page.id, t])
 
   const handleDuplicate = React.useCallback(() => {
     app.duplicatePage(page.id)
@@ -97,6 +104,30 @@ const InnerMenu = React.memo(function InnerMenu({
       onBlur={onBlur}
       className={theme === 'dark' ? dark : ''}
     >
+      {basic ? (
+        // editor E06: what a deck spec saves (no rename / skip), in the host's words, plus the
+        // host's own slide actions (spro: "other designs" for this slide)
+        <MenuContent id="TD-ContextMenu">
+          <CMRowButton onClick={handleDuplicate} id="TD-Deck-ContextMenu-Duplicate">
+            {t('strip.duplicate')}
+          </CMRowButton>
+          <CMRowButton onClick={handleMoveUp} disabled={index === 0} id="TD-Deck-ContextMenu-MoveUp">
+            {t('strip.moveUp')}
+          </CMRowButton>
+          <CMRowButton onClick={handleMoveDown} disabled={index === count - 1} id="TD-Deck-ContextMenu-MoveDown">
+            {t('strip.moveDown')}
+          </CMRowButton>
+          <CMRowButton onClick={handleDelete} id="TD-Deck-ContextMenu-Delete">
+            {t('strip.delete')}
+          </CMRowButton>
+          {(app.slideMenuItems?.(page.slideSpecId ?? page.id, page.id) ?? []).length > 0 && <Divider />}
+          {(app.slideMenuItems?.(page.slideSpecId ?? page.id, page.id) ?? []).map((item) => (
+            <CMRowButton key={item.id} onClick={item.onSelect} disabled={item.disabled} id={`TD-Deck-ContextMenu-${item.id}`}>
+              {item.label}
+            </CMRowButton>
+          ))}
+        </MenuContent>
+      ) : (
       <MenuContent id="TD-ContextMenu">
         <CMRowButton onClick={handleRename} id="TD-Deck-ContextMenu-Rename">
           Rename
@@ -137,6 +168,7 @@ const InnerMenu = React.memo(function InnerMenu({
           </RowButton>
         </RadixContextMenu.CheckboxItem>
       </MenuContent>
+      )}
     </RadixContextMenu.Content>
   )
 })

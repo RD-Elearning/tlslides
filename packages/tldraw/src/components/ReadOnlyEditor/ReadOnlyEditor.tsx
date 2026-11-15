@@ -3,7 +3,7 @@ import React from 'react'
 import { Tldraw } from '../../Tldraw'
 import { useTldrawApp } from '~hooks'
 import { shapeUtils } from '~state/shapes'
-import { resolveSlideBackground, activeDeckTheme } from '~state/shapes/shared'
+import { resolveSlideBackground, pageTheme } from '~state/shapes/shared'
 import { styled } from '~styles'
 import { TDPage } from '~types'
 import { TldrawApp } from '~state'
@@ -23,15 +23,15 @@ export function ReadOnlyEditor({ page, pageState }: ReadOnlyEditorProps) {
   // Deck thumbnails render through this same component (see the Phase 11 comment just below), so a
   // slide's theme-tokened colours need to resolve here exactly as they do in the main canvas.
   const meta = React.useMemo(() => {
-    return { isDarkMode: settings.isDarkMode, deckTheme: activeDeckTheme(document.theme) }
-  }, [settings.isDarkMode, document.theme])
+    return { isDarkMode: settings.isDarkMode, deckTheme: pageTheme(document.theme, page) }
+  }, [settings.isDarkMode, document.theme, page.tone])
 
   // Phase 11 — Deck thumbnails render through this same component, so a slide's background must
   // resolve here too, not just in the main `Tldraw.tsx` canvas — see the Phase 11 report for how
   // this was verified.
   const frameBackground = React.useMemo(
-    () => resolveSlideBackground(page.background, page.id, document.assets, activeDeckTheme(document.theme)),
-    [page.background, page.id, document.assets, document.theme]
+    () => resolveSlideBackground(page.background, page.id, document.assets, pageTheme(document.theme, page)),
+    [page.background, page.id, page.tone, document.assets, document.theme]
   )
 
   // Custom theme, based on darkmode

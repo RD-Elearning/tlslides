@@ -17,7 +17,8 @@
 import type { ComponentShape, DeckTheme, TDDocument, TDPage } from '~types'
 import { BUILT_IN_DECK_THEMES, DEFAULT_DECK_THEME, activeDeckTheme } from '~state/shapes/shared/deck-theme'
 import { compileSlide, stampAmbient, type CompileFinding } from './slide-compiler'
-import { BLOCK_PROP_KEY } from './shape-bridge'
+import { BLOCK_PROP_KEY, blockToShape } from './shape-bridge'
+import { backdropBlock, MASTER_TEXTURE_TYPES, slideBackdrop } from './backdrops'
 import { effectiveMotionStyle } from './motion/motion-style'
 import { resolveTokens, type DeckTokens } from './tokens'
 import type { DeckSpec, DeckStyle, Paint, ResolvedTokens, SlideSpec } from './types'
@@ -25,6 +26,8 @@ import { BlockRegistry } from './registry'
 import { registerBuiltInBlocks } from './library'
 import { deckSpecTokens, getDeckStyle, STYLE_MASTER_PREFIX, styleMasterFor, styleMasters, stylePaletteById, styleTheme } from './styles'
 import { resolveMaster } from './master-renderer'
+import { slideTheme } from './palettes'
+import { tonePageBackground } from './tone-ground'
 import { placeDeckMotifs } from './motif-zone'
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -104,8 +107,10 @@ function resolveBaseTheme(theme: DeckSpec['theme'], styleId?: string): DeckTheme
 function withBrandAccents(theme: DeckTheme, tokens?: DeckTokens): DeckTheme {
   const a1 = tokens?.color?.accent
   const a2 = tokens?.color?.accent2
-  if (!a1 && !a2) return theme
-  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}) } }
+  // spro sprint 2026-11c S21-c: the deck's ground is the page background (style masters paint `background`)
+  const g = typeof tokens?.ground === 'string' && /^#[0-9a-fA-F]{6}$/.test(tokens.ground) ? tokens.ground : undefined
+  if (!a1 && !a2 && !g) return theme
+  return { ...theme, colors: { ...theme.colors, ...(a1 ? { accent1: a1 } : {}), ...(a2 ? { accent2: a2 } : {}), ...(g ? { background: g } : {}) } }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────── */
@@ -134,10 +139,13 @@ export function styleMasterPage(
   /** enhance F1: the deck's `motif` (the cover and section masters draw it). */
   motif?: string,
   /** CR7a: the deck's `motifZone` (`auto`: the page carries the signature motif, not the master). */
-  zone?: DeckSpec['motifZone']
+  zone?: DeckSpec['motifZone'],
+  /** S13-b: the slide paints a deck backdrop — the master's own texture blocks are left out. */
+  dropTextures?: boolean
 ): { masterId?: string; background?: Paint; shapes: ComponentShape[] } {
   const masterId = styleMasterFor(style, slideSpec)
-  const master = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
+  const found = masterId ? styleMasters(style, motif, zone).find((m) => m.name === masterId) : undefined
+  const master = found && dropTextures ? { ...found, blocks: Object.fromEntries(Object.entries(found.blocks).filter(([, b]) => !MASTER_TEXTURE_TYPES.has(b.type))) } : found
   if (!masterId || !master) return { shapes: [] }
   const shapes: ComponentShape[] = []
   // block ids `style:<name>`, as `analyzeDeck` reports them (the calibration harness pairs by id)
@@ -190,7 +198,15 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     })
     // AC1: a slide with no master gets the style's (`style:cover|section|content`), and with no
     // background that master's background. The decompiler drops both again (`documentToDeckSpec`).
-    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone)
+    // S13-b: the slide's backdrop (the deck's set by role, or its own) replaces the master's texture
+    const backdrop = slideBackdrop({ backdrops: spec.backdrops ?? style?.backdrops, motifs: spec.motifs }, slideSpec)
+    const sm = styleMasterPage(style, slideSpec, pageId, frame, tokens, spec.motif, spec.motifZone, backdrop !== undefined)
+    const drawn = backdropBlock(backdrop, frame)
+    if (drawn) {
+      const sh = blockToShape(drawn.block, drawn.box, { id: `${STYLE_MASTER_PREFIX}backdrop:${pageId}`, childIndex: 1e-6 })
+      ;(sh as { isLocked?: boolean }).isLocked = true
+      sm.shapes.unshift(sh)
+    }
     // vivid V3: the master's motifs (a corner sparkle, a doodle) loop with the slide's motion style
     stampAmbient(sm.shapes, effectiveMotionStyle(slideSpec.motionStyle, motionStyle), registry)
     findings.push(...result.findings)
@@ -216,7 +232,8 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
       shapes,
       bindings: {},
       size: [frame.width, frame.height],
-      background: result.background ?? sm.background,
+      // S13-H: a deep / accent slide paints its tone's ground unless the master's own page already carries the tone's text
+      background: result.background ?? (slideSpec.tone === 'deep' || slideSpec.tone === 'accent' ? tonePageBackground(sm.background, slideTheme(theme, slideSpec.tone)) : sm.background),
       notes: result.notes,
       skipInPresentation: result.skipInPresentation,
       layout: result.layout,
@@ -227,6 +244,9 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
     if (slideSpec.valign !== undefined) page.valign = slideSpec.valign
     if (slideSpec.intent !== undefined) page.intent = slideSpec.intent
     if (slideSpec.look !== undefined) page.look = slideSpec.look
+    if (slideSpec.tone !== undefined) page.tone = slideSpec.tone
+    if (slideSpec.backdrop !== undefined) page.backdrop = slideSpec.backdrop
+    if (slideSpec.scene !== undefined) page.scene = slideSpec.scene
     if (slideSpec.transition !== undefined) page.transition = slideSpec.transition
     if (slideSpec.choreography !== undefined) page.choreography = slideSpec.choreography
     pages[pageId] = page
@@ -261,6 +281,9 @@ export function deckSpecToDocument(authored: DeckSpec): DeckDocumentResult {
   if (spec.look !== undefined) document.look = spec.look
   if (spec.motionPersonality !== undefined) document.motionPersonality = spec.motionPersonality
   if (spec.ambient !== undefined) document.ambient = spec.ambient
+  if (spec.backdrops !== undefined) document.backdrops = spec.backdrops
+  if (spec.motifs !== undefined) document.motifs = spec.motifs
+  if (spec.assets !== undefined) document.libAssets = spec.assets
 
   return { document, findings }
 }

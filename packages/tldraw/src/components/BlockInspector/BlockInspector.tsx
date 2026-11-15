@@ -17,7 +17,7 @@
 
 import * as React from 'react'
 import { styled } from '../../styles'
-import { useTldraw, useBlockRegistry } from '../../hooks'
+import { useTldraw, useBlockRegistry, useMsg, useLabels } from '../../hooks'
 import type {
   BlockSchema,
   BlockStyleSpec,
@@ -43,12 +43,37 @@ import { BlockPreview } from '../BlockInserter/BlockPreview'
 export interface BlockInspectorProps {
   selectedShapeId: string | null
   onPlayReveal?: (shapeId: string) => void
+  /** Editor E01 — the tab to open on, and whether the Motion tab is offered (basic hides it). */
+  initialTab?: 'content' | 'style' | 'motion'
+  hideMotion?: boolean
+  /** Editor E01 — a close button in the header (basic profile). */
+  onClose?: () => void
+  /** Editor E04 — scroll to and focus this field (a slot key) when the inspector opens. */
+  focusField?: string
 }
 
-export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId, onPlayReveal }) => {
+export const BlockInspector: React.FC<BlockInspectorProps> = ({
+  selectedShapeId,
+  onPlayReveal,
+  initialTab,
+  hideMotion,
+  onClose,
+  focusField,
+}) => {
   const tldraw = useTldraw()
   const blockRegistry = useBlockRegistry()
-  const [activeTab, setActiveTab] = React.useState<'content' | 'style' | 'motion'>('content')
+  const t = useMsg()
+  const labels = useLabels()
+  const [activeTab, setActiveTab] = React.useState<'content' | 'style' | 'motion'>(
+    initialTab && !(hideMotion && initialTab === 'motion') ? initialTab : 'content'
+  )
+  const contentRef = React.useRef<HTMLDivElement>(null)
+  React.useEffect(() => {
+    if (!focusField) return
+    const el = contentRef.current?.querySelector(`[data-field="${focusField}"]`) as HTMLElement | null
+    el?.scrollIntoView({ block: 'center' })
+    ;(el?.querySelector('input, textarea, select') as HTMLElement | null)?.focus()
+  }, [focusField])
 
   const rawShape = selectedShapeId ? tldraw.getShape(selectedShapeId) : undefined
   const shape = rawShape?.type === TDShapeType.Component ? (rawShape as ComponentShape) : undefined
@@ -147,7 +172,7 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
       <InspectorContainer>
         <InspectorHeader>Block Inspector</InspectorHeader>
         <InspectorContent>
-          <EmptyState>Select a block to edit its properties</EmptyState>
+          <EmptyState>{t('inspector.empty')}</EmptyState>
         </InspectorContent>
       </InspectorContainer>
     )
@@ -156,21 +181,30 @@ export const BlockInspector: React.FC<BlockInspectorProps> = ({ selectedShapeId,
   return (
     <InspectorContainer>
       <InspectorHeader>
-        <InspectorTitle>{blockDef.name}</InspectorTitle>
+        <InspectorTitleRow>
+          <InspectorTitle>{labels.block?.(blockDef.type, blockDef.name) ?? blockDef.name}</InspectorTitle>
+          {onClose && (
+            <CloseButton type="button" onClick={onClose} aria-label={t('inspector.close')} title={t('inspector.close')}>
+              ×
+            </CloseButton>
+          )}
+        </InspectorTitleRow>
         <TabContainer>
           <TabButton active={activeTab === 'content'} onClick={() => setActiveTab('content')}>
-            Content
+            {t('inspector.content')}
           </TabButton>
           <TabButton active={activeTab === 'style'} onClick={() => setActiveTab('style')}>
-            Style
+            {t('inspector.style')}
           </TabButton>
-          <TabButton active={activeTab === 'motion'} onClick={() => setActiveTab('motion')}>
-            Motion
-          </TabButton>
+          {!hideMotion && (
+            <TabButton active={activeTab === 'motion'} onClick={() => setActiveTab('motion')}>
+              {t('inspector.motion')}
+            </TabButton>
+          )}
         </TabContainer>
       </InspectorHeader>
 
-      <InspectorContent>
+      <InspectorContent ref={contentRef}>
         {activeTab === 'content' && (
           <ContentTab
             schema={blockDef.schema}
@@ -218,7 +252,10 @@ interface ContentTabProps {
 }
 
 function ContentTab({ schema, blockDef, props, onUpdate }: ContentTabProps) {
+  const labels = useLabels()
+  const t = useMsg()
   if (!props) return null
+  const label = (key: string, spec: SlotSpec) => labels.field?.(blockDef.type, key, spec.label ?? key) ?? spec.label
 
   // Partition schema slots into content, option, and toggles.
   const contentSlots: Array<[string, SlotSpec]> = []
@@ -239,31 +276,33 @@ function ContentTab({ schema, blockDef, props, onUpdate }: ContentTabProps) {
   return (
     <ContentSection>
       {contentSlots.map(([key, spec]) => (
-        <ContentField
-          key={key}
-          name={key}
-          spec={spec}
-          value={props[key]}
-          onChange={(value) => onUpdate(key, value)}
-        />
+        <div key={key} data-field={key}>
+          <ContentField
+            name={key}
+            spec={{ ...spec, label: label(key, spec) }}
+            value={props[key]}
+            onChange={(value) => onUpdate(key, value)}
+          />
+        </div>
       ))}
 
       {optionSlots.length > 0 && (
-        <CollapsibleSection label="Options" defaultOpen={false}>
+        <CollapsibleSection label={t('inspector.options')} defaultOpen={false}>
           {optionSlots.map(([key, spec]) => (
-            <ContentFieldCompact
-              key={key}
-              name={key}
-              spec={spec}
-              value={props[key]}
-              onChange={(value) => onUpdate(key, value)}
-            />
+            <div key={key} data-field={key}>
+              <ContentFieldCompact
+                name={key}
+                spec={{ ...spec, label: label(key, spec) }}
+                value={props[key]}
+                onChange={(value) => onUpdate(key, value)}
+              />
+            </div>
           ))}
         </CollapsibleSection>
       )}
 
       {toggleSlots.length > 0 && (
-        <ElementsSection label="Elements">
+        <ElementsSection label={t('inspector.elements')}>
           {toggleSlots.map(([key, spec]) => {
             const currentValue = props[key]
             // A toggle is "on" (visible) when the boolean value is true or undefined
@@ -273,7 +312,7 @@ function ContentTab({ schema, blockDef, props, onUpdate }: ContentTabProps) {
               <ElementToggle
                 key={key}
                 name={key}
-                label={spec.label}
+                label={label(key, spec) ?? key}
                 checked={isChecked}
                 onChange={(checked) => onUpdate(key, checked ? undefined : false)}
               />
@@ -618,6 +657,25 @@ const InspectorHeader = styled('div', {
   padding: '12px 16px',
   borderBottom: '1px solid $border',
   backgroundColor: '$headerBg',
+})
+
+const InspectorTitleRow = styled('div', {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '8px',
+})
+
+const CloseButton = styled('button', {
+  border: 'none',
+  background: 'transparent',
+  cursor: 'pointer',
+  fontSize: '20px',
+  lineHeight: 1,
+  padding: '0 4px',
+  color: '$text',
+  opacity: 0.7,
+  '&:hover': { opacity: 1 },
 })
 
 const InspectorTitle = styled('h3', {

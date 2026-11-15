@@ -38,6 +38,8 @@ export const tlsDTable: BlockDefinition = {
   schema,
   defaults,
   size: { preferred: [1200, 520], min: [480, 240] },
+  // review 2026-11-08: a table under a title spreads its rows over the room (`stretch` in _table/kit)
+  fillPolicy: ['stretch'],
   layout: layout as BlockDefinition['layout'],
   motion,
   capacity: capacity as BlockDefinition['capacity'],

@@ -156,6 +156,11 @@ export interface BlockStyleSpec {
   /** 2026-10-24: steps down a block's own type tiers (`fitTier`), 1-3. `compileSlide` sets it when
    *  the blocks that pick their type by box would give the slide more than five text sizes. */
   typeStep?: number
+  /** spro sprint 2026-11b S06-a: `compileSlide` sets it on a region's main block when the region is
+   *  placed with `spread` (under a heading, the body anchored at the top): the block may take the
+   *  whole room it is given and uses it by its `fillPolicy` (`layout/fill.ts`). Never authored;
+   *  recorded as `$block.filled` so the decompiler drops it. */
+  fill?: boolean
   /** @deprecated CMP1: no layout reads it and the digest no longer lists it; use `padding` / `gap`. */
   density?: 'compact' | 'default' | 'roomy'
 }
@@ -279,7 +284,28 @@ export interface BlockFits {
   moves?: string[]
   /** What it cannot do without (the picker's asset needs). */
   needs?: Array<'images' | 'logos' | 'portraits' | 'chartData' | 'prices'>
+  /** spro sprint 2026-11b S07-a (D32) — what the block is for on a slide: `info` shows information,
+   *  `highlight` makes one number or quote stand out, `decor` ornaments, `frame` carries a cover,
+   *  divider, agenda or closing, `activity` asks the audience. A learning deck's content slide takes an
+   *  `info` or `activity` main (a `highlight` only with the number). */
+  use?: FitsUse
+  /** spro sprint 2026-11b S10-a — the block unfolds under the presenter's control in the viewer (tabs,
+   *  accordion, step-through, hotspots; `BlockDefinition.reveal`). Offered only for in-class presented
+   *  learning decks; every other render shows its static form. */
+  interactive?: true
+  /** spro sprint 2026-11c S25-b/g — content shapes the block draws (a palette, price tiers, a schedule). A slide whose
+   *  passages carry one of them (`ShortlistSlide.shapes`, detected by code) ranks the block high; with `shapeOnly` the
+   *  block is offered only on such a slide. */
+  shapes?: ContentShape[]
+  shapeOnly?: true
 }
+
+/** S25: content shapes code can see in a slide's passages. */
+export type ContentShape = 'colours' | 'tiers' | 'schedule' | 'days' | 'route' | 'screen' | 'scores'
+export const CONTENT_SHAPES: readonly ContentShape[] = ['colours', 'tiers', 'schedule', 'days', 'route', 'screen', 'scores']
+
+export type FitsUse = 'info' | 'highlight' | 'decor' | 'frame' | 'activity'
+export const FITS_USES: readonly FitsUse[] = ['info', 'highlight', 'decor', 'frame', 'activity']
 
 /** spro creative CR2 — a named preset over a block's look knobs (PLAN §6.2). */
 export interface VariantPreset {
@@ -501,6 +527,15 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   scope?: BlockScope
   /** Sibling block types worth considering instead. Each must resolve in the registry. */
   related?: string[]
+  /** Editor E04 — optional tweaks of the actions the basic editor derives from the schema. */
+  editor?: {
+    /** Actions never offered for this block (`'variant'`, `'item-add'`, …). */
+    hide?: string[]
+    /** The list slots that are user items (default: every content list / blocks slot). */
+    lists?: string[]
+    /** The text path "Edit text" opens first. */
+    primaryText?: string
+  }
   /** LO2 — paint layer. Absent = derived: category `decoration` → `backdrop`, else `content`.
    *  Set it only where the derivation is wrong. See `BlockLayer`. */
   layer?: BlockLayer
@@ -547,6 +582,11 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
    *  that is centred / bottom-aligned, the block keeps its content height instead of taking the
    *  leftover (for a block that only centres itself in a taller box — spro demo T19). */
   size: { preferred: [number, number]; min: [number, number]; aspect?: number; hug?: boolean }
+  /** spro sprint 2026-11b S06-b — what the block does with height beyond its natural height when
+   *  `compileSlide` gives it the room (`style.fill`), in order: `type` (its type tiers step up),
+   *  `spacing` (the gaps between its items grow), `stretch` (its rows grow taller). Absent = the
+   *  block cannot use more height: its region stays centred under the title. See `layout/fill.ts`. */
+  fillPolicy?: readonly FillStep[]
 
   /** Pure layout function. No DOM, no React, no `document`, no `Date.now()`, no throwing.
    *  This is the single source of truth for what the block looks like.
@@ -584,6 +624,15 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
 
   /** Run static design lint rules. */
   lint?(props: P, ctx: LintContext): LintFinding[]
+  /** spro sprint 2026-11b S10 — a layout block that unfolds in the viewer (DeckViewer only, via
+   *  `RevealMount`): `root` holds the block's rendered DOM (`data-part` on every part); the hook adds
+   *  its controls and state and returns a disposer. The static layout (every part visible) is what the
+   *  editor, thumbnails, exports and the checks see. State is the hook's own and resets when the slide is
+   *  left (the root remounts). */
+  reveal?(root: HTMLElement, rt: ActivityRuntime, props: P): () => void
+  /** spro sprint 2026-11b S09 — `lint` checks props that refer to each other (a concept map's link ids):
+   *  its findings are validation findings, as an activity's are (the model's error goes back to it). */
+  lintIsValidation?: boolean
 
   /** Escape hatch: return a TDShape array when a block cannot be expressed as LayoutNode. */
   toShapes?(props: P, box: Box, ctx: LayoutContext): TDShape[]
@@ -796,6 +845,9 @@ export type LayoutNode =
        *  `id` and `type`. Lets an exporter, connectors and the report find a nested block. */
       blockId?: string
       type?: string
+      /** Editor E02: on a nested block's wrapper — the list item it is, in the slide-level block's
+       *  props (`children.2`, `items.1`). The editor selects and outlines items by it. */
+      itemPath?: string
       children: LayoutNode[]
     }
   | {
@@ -831,7 +883,7 @@ export type LayoutNode =
        *  see all of it (`text/truncated`). */
       truncated?: true
     }
-  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string }
+  | { k: 'image'; box: Box; part?: string; assetId: string; alt: string; fit: 'cover' | 'contain'; focal?: [number, number]; radius?: number; url?: string; /** spro S20: the glyph colour a `lib:` picture was resolved in (look treatments re-tint it). */ ink?: string }
   | { k: 'icon'; box: Box; part?: string; icon: string; fill: string; strokeWidth?: number; /** CMP2: see the text node's `solved`. */ solved?: true; /** creative CR9: the icon's name, so a look can redraw it (filled weight, emoji). */ name?: string }
   | { k: 'line'; box: Box; part?: string; from: Pt; to: Pt; stroke: Stroke; marker?: MarkerSpec }
   | {
@@ -999,6 +1051,9 @@ export interface IconPath {
  * The layout function is pure: given the same props, box, and context, it returns
  * the same tree. No `document`, no `window`, no `Date.now()`, no throwing.
  */
+/** S06-b — one step of a block's `fillPolicy`. */
+export type FillStep = 'type' | 'spacing' | 'stretch'
+
 export interface LayoutContext {
   /** The box this block must fill, in slide units. Origin at top-left (0,0). */
   box: Size
@@ -1021,7 +1076,7 @@ export interface LayoutContext {
    *  (`tls.l.overlay` over an image) — an image surface, text solves light. Absent = what is
    *  behind the container. `opts.tracks` (CMP4): shared child heights for peer cards.
    *  `opts.peerStep` (CS1): the lowest label step for a peer `tls.m.shape`. */
-  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode
+  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number; typeStep?: number }): LayoutNode
   /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
    *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
    *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
@@ -1036,11 +1091,18 @@ export interface LayoutContext {
    *  original `options.box` — a spread copy would leak the outer box into them). Optional so
    *  hand-built test contexts don't have to implement it. */
   withBox?(size: Size): LayoutContext
+  /** spro S29 7c: this context with every type token `n` ladder steps up, children and measures
+   *  included (`promoteType` uses it). Optional so hand-built test contexts don't need it. */
+  withTypeStep?(n: number): LayoutContext
+  /** spro S29 7c: the type ladder steps this context's `resolveText` carries (absent = 0). */
+  typeLifted?: number
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided
    *  or the asset is missing — the renderers show a dashed frame with alt text instead. */
   resolveAsset?(id: string): string | undefined
+  /** S20-a — the deck's library asset for a `lib:<pack>/<name>` ref (or the bare id); undefined without a table. */
+  libAsset?(id: string): DeckAsset | undefined
   /** Icon lookup: returns a path, or undefined (block must degrade gracefully). */
   icon(id: string): IconPath | undefined
   /** Layout hops from the slide-level block (every `layoutChild` call, internal ones included).
@@ -1117,6 +1179,8 @@ export interface ResolvedTokens {
   /** CR7a: set on an intrinsic measure (`measureIntrinsicSize`): list text keeps its authored type
    *  there (`growText`), so a container sizes it as authored and grows it only in the room it gives. */
   measuring?: boolean
+  /** S06: set while `fillLayout` drives a block's type (a list's own `growText` then stays out). */
+  filling?: boolean
   /** Elevation scale: exactly 3 levels, per doc 02 §2.3 — a discipline, not a palette. */
   elevation: Record<0 | 1 | 2, ElevationValue>
   /** Motion/animation scale. See `MotionScale`'s comment for what P19 does and doesn't cover. */
@@ -1306,6 +1370,9 @@ export interface PlacedBlock {
  * A slide authored by AI or human. Pure JSON — round-trips through
  * `JSON.parse(JSON.stringify(...))` unchanged.
  */
+/** S13-a — a slide's tone (`SlideSpec.tone`). */
+export type SlideTone = 'base' | 'deep' | 'accent'
+
 export interface SlideSpec {
   /** Unique slide identifier. */
   id: string
@@ -1326,6 +1393,15 @@ export interface SlideSpec {
   intent?: SlideIntent
   /** spro creative CR7b — the look of every block on this slide, over the deck's (`blocks/look.ts`). */
   look?: LookAxes
+  /** spro sprint 2026-11b S13-a — the slide's tone: `deep` (a dark ground with light text) or `accent`
+   *  (the accent as the ground), derived from the deck theme by `palettes.ts::slideTheme`. Every block
+   *  reads its colours through roles, so the whole page follows. Absent / `base` = the deck theme. */
+  tone?: SlideTone
+  /** S13-b — this slide's backdrop over the deck's set (`DeckSpec.backdrops`). */
+  backdrop?: SlideBackdrop
+  /** spro sprint 2026-11c S26-a — the frame's scene (`scenes.ts`): art from the deck's motif icons placed
+   *  clear of the page's text (`placeScenes`, run with `placeDeckMotifs`). Absent = no scene. */
+  scene?: { id: string; seed?: number }
   /** Named regions, each holding an array of BlockSpecs stacked vertically. */
   regions: Record<string, BlockSpec[]>
   /** Free-positioned blocks placed outside named regions. */
@@ -1465,11 +1541,58 @@ export interface DeckSpec {
    *  ambient loops: floating decorations, turning rings, a zooming backdrop photo) while the slides
    *  still build in. Absent = the host decides (`DeckViewer` `ambient`). */
   ambient?: boolean
+  /** spro sprint 2026-11b S13-b — the deck's backdrop set, by role: a slide paints the one of its tone
+   *  (`deep` / `accent`, else `calm`; `quiet` when the slide's `backdrop.tone` says so) as a full-bleed
+   *  `tls.m.backdrop` under everything, in place of the style master's own texture. */
+  backdrops?: DeckBackdrops
+  /** spro sprint 2026-11c S20-g — the deck's motifs from its theme: `icons` (2-4 built-in icon names, the
+   *  subject's objects) are tiled by the `icon-field` backdrop and drawn in a style's signature slot on
+   *  cover and section pages (`placeDeckMotifs`, rotating by page). Absent = today's drawing. */
+  motifs?: DeckMotifs
+  /** spro sprint 2026-11c S20-a — the library pictures this deck uses, by id (`<pack>/<name>`); a block's icon prop
+   *  refers to one as `lib:<pack>/<name>`. Filled by the host from its asset library; the engine never fetches.
+   *  Absent = today's drawing. */
+  assets?: Record<string, DeckAsset>
+}
+
+/** S20-a — one library picture embedded in a deck: a cleaned SVG body (no `<svg>` wrapper) on `viewBox`.
+ *  `mono` paints with `currentColor`; `slots` with `var(--paper|ink|accent|accent2|soft)`, mapped to the theme
+ *  (lightness order kept); `fixed` is drawn as it is. */
+export interface DeckAsset {
+  kind: 'icon' | 'emoji' | 'sticker' | 'illustration' | 'pattern'
+  viewBox: string
+  body: string
+  colourMode: 'mono' | 'slots' | 'fixed'
+  style?: string
+  /** licence + attribution for the deck's credits (tier B) */
+  credit?: string
+}
+
+/** S20-g — `DeckSpec.motifs`. */
+export interface DeckMotifs {
+  icons?: string[]
+}
+
+/** S13-b — a backdrop role. */
+export type BackdropRole = 'deep' | 'accent' | 'calm' | 'quiet'
+/** S13-b — one backdrop: a `tls.m.backdrop` kind and how strong it is. */
+export interface BackdropChoice {
+  kind: string
+  intensity?: 'soft' | 'medium'
+}
+/** S13-b — `DeckSpec.backdrops`. */
+export type DeckBackdrops = Partial<Record<BackdropRole, BackdropChoice>>
+/** S13-b — `SlideSpec.backdrop`: the slide's own kind / role / intensity over the deck's set. */
+export interface SlideBackdrop {
+  kind?: string
+  tone?: BackdropRole
+  intensity?: 'soft' | 'medium'
+  seed?: number
 }
 
 /** spro creative CR10 — a slide transition (`SlideSpec.transition`). */
 export interface SlideTransition {
-  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip'
+  kind: 'none' | 'fade' | 'push' | 'wipe' | 'flip' | 'zoom' | 'cover' | 'reveal' | 'split' | 'morph'
   dir?: 'left' | 'right' | 'up' | 'down'
 }
 
@@ -1577,4 +1700,7 @@ export interface DeckStyle {
   /** spro enhance S1 — the family style this one is a variant of (`'doodle'` for
    *  `doodle-geo3d`); absent = a family's own base style. */
   variantOf?: string
+  /** spro sprint 2026-11b S13-D — the style's own backdrop set by role, used when the deck names none
+   *  (`DeckSpec.backdrops` wins). */
+  backdrops?: DeckBackdrops
 }

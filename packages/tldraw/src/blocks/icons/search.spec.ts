@@ -49,3 +49,23 @@ describe('icon set v2', () => {
     expect(iconsFor('Tổng sigma của dãy số')).toEqual(expect.arrayContaining(['sigma']))
   })
 })
+
+describe('icon search — whole words (sprint 2026-11c T39)', () => {
+  // the probe phrases that returned `pizza` although they have nothing to do with food
+  const notFood = ['đèo núi quanh co', 'hồ sơ cá nhân', 'hệ mặt trời và hành tinh', 'cửa hàng thời trang', 'payment terminal for merchants', 'vải lanh, quần áo mùa hè', 'phạt tiền vi phạm', 'chăm sóc bàn chân', 'mưa trái mùa']
+  it.each(notFood)('"%s" gets no food icons', (t) => {
+    expect(queryWords(t).has('pizza')).toBe(false)
+    expect(iconsFor(t)).not.toContain('pizza')
+  })
+
+  it('the word itself still maps', () => {
+    expect(queryWords('ăn uống lành mạnh').has('food')).toBe(true)
+    expect(queryWords('quán ăn đường phố').has('food')).toBe(true)
+  })
+
+  it('a multi-word entry typed without tones still maps; a one-word entry does not', () => {
+    expect(queryWords('co so du lieu cua truong').has('database')).toBe(true)
+    expect(queryWords('an toan').has('shield')).toBe(true)
+    expect(queryWords('lan can').has('food')).toBe(false)
+  })
+})

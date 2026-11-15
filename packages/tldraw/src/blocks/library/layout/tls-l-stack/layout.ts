@@ -92,11 +92,15 @@ export function layout(props: StackProps, ctx: LayoutContext): LayoutNode {
       // card holding an icon, a number and a body no longer opens voids between them (composition
       // README CMP2 c). Other content stacks (the composites' own) keep scaling to fill.
       const free = availableHeight - totalIntrinsic
-      const align = ctx.style?.align
-      let currentY = align === 'center' ? free / 2 : align === 'end' ? free : 0
+      // S11 (sprint 2026-11b): an authored `justify` places packed content like `style.align`, and
+      // `between` spreads the free space between the children (first at the top, last at the bottom)
+      const justify = (props as unknown as { justify?: string }).justify
+      const align = justify && justify !== 'between' ? justify : ctx.style?.align
+      const spread = justify === 'between' && n > 1 && free > 0 ? free / (n - 1) : 0
+      let currentY = spread ? 0 : align === 'center' ? free / 2 : align === 'end' ? free : 0
       for (let i = 0; i < n; i++) {
         sizes.push({ height: intrinsicSizes[i].height, y: currentY })
-        currentY += intrinsicSizes[i].height + gap
+        currentY += intrinsicSizes[i].height + gap + spread
       }
     } else if (totalIntrinsic > 0) {
       // Too much content: scale down to fit (as before)

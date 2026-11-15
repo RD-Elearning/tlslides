@@ -27,7 +27,8 @@ function leaves(n: LayoutNode): Leaf[] {
 export function growStep(ctx: LayoutContext, lay: (c: LayoutContext) => LayoutNode, opts: GrowOptions = {}): number {
   // a natural-size measure (an intrinsic size, a size card, `measureBlock`'s tall probe) is the
   // authored type: a list grows only in the room a slide gives it
-  if (ctx.tokens.measuring || ctx.box.height >= DEFAULT_PROBE_HEIGHT) return 0
+  // S06: a block `fillLayout` drives takes its type from there
+  if (ctx.tokens.measuring || ctx.tokens.filling || ctx.box.height >= DEFAULT_PROBE_HEIGHT) return 0
   // a list inside a container (a card, a stack) keeps its authored type: the container sized it
   // and the report re-measures it there (corpus 2026-10-26: a checklist in a card overflowed)
   if ((ctx.depth ?? 0) > 0) return 0

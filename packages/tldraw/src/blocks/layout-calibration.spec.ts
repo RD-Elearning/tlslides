@@ -12,7 +12,9 @@ import { INTER_BOLD_FACTOR, interCharEm } from './layout/inter-metrics'
 import { pathBounds } from './layout/measure-block'
 
 const FIXTURES_DIR = path.resolve(__dirname, '__fixtures__')
-const FIXTURE_FILES = fs.readdirSync(FIXTURES_DIR).filter((f) => f.endsWith('.json'))
+/** The four decks the LO5 ratchets were calibrated on (95 slides); decks added later (activity-tour, basic-editor)
+ *  are reported by LO1 but would change what these shares mean. */
+const CALIBRATION_FILES = ['demo-deck.json', 'colorful-blocks-demo.json', 'block-library-tour.json', 'motion-showcase.json']
 const loadDeck = (file: string): DeckSpec => JSON.parse(fs.readFileSync(path.join(FIXTURES_DIR, file), 'utf-8'))
 
 const style = (letterSpacing = 0, size = 100) => ({ family: '"Inter"', size, lineHeight: 1.2, letterSpacing, color: '#000' })
@@ -105,7 +107,7 @@ describe('LO5 — needsVisualCheck', () => {
   })
 
   it('a minority of fixture slides need a screenshot', () => {
-    const all = FIXTURE_FILES.flatMap((f) => analyzeDeck(loadDeck(f)))
+    const all = CALIBRATION_FILES.flatMap((f) => analyzeDeck(loadDeck(f)))
     const flagged = all.filter((r) => r.needsVisualCheck.length > 0)
     // 21 / 95 at LO5, 9 / 95 at LO6 (only html posters left), 0 / 95 at LO7 (html templates paint
     // their poster; layout-oracle §3); a ratchet, not an exact pin.
@@ -154,7 +156,7 @@ describe('LO5b — composition hints', () => {
   })
 
   it('does not spam: counts on the 4 fixture decks (95 slides)', () => {
-    const findings = FIXTURE_FILES.flatMap((f) => analyzeDeck(loadDeck(f))).flatMap((r) => r.findings)
+    const findings = CALIBRATION_FILES.flatMap((f) => analyzeDeck(loadDeck(f))).flatMap((r) => r.findings)
     const count = (code: string) => findings.filter((f) => f.code === code).length
     expect(count('layout/unbalanced')).toBeLessThanOrEqual(13)
     expect(count('region/empty')).toBeLessThanOrEqual(3)

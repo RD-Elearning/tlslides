@@ -15,7 +15,7 @@
 import type { BlockSpec, LayoutContext, SpaceToken } from '../types'
 
 /** Peer containers whose children can share tracks. */
-const TRACKED = new Set(['tls.l.card', 'tls.l.stack'])
+const TRACKED = new Set(['tls.l.card', 'tls.l.panel', 'tls.l.stack']) // S11: a panel is a card
 
 const kidsOf = (spec: BlockSpec): BlockSpec[] => {
   const kids = (spec?.props as { children?: unknown } | undefined)?.children
@@ -28,7 +28,7 @@ function innerWidth(spec: BlockSpec, width: number, ctx: LayoutContext): number 
   const sp = spec.style?.padding
   const styleH = sp === undefined ? 0 : typeof sp === 'number' ? sp : Array.isArray(sp) ? sp[1] : ctx.tokens.space[sp] ?? 0
   const inner = Math.max(1, width - 2 * styleH)
-  if (spec.type !== 'tls.l.card') return inner
+  if (spec.type !== 'tls.l.card' && spec.type !== 'tls.l.panel') return inner
   const token = ((spec.props as { padding?: SpaceToken } | undefined)?.padding ?? 'md') as SpaceToken
   const pad = ctx.tokens.space[token] ?? ctx.tokens.space.md
   return Math.max(1, inner - 2 * pad)

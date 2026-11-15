@@ -19,7 +19,9 @@ import { parseFormula, type Seg } from './parse'
  *  to its few sizes — `type/too-many-sizes`). */
 const SCALE: TypeToken[] = ['display', 'title', 'heading', 'subheading', 'lead', 'body', 'caption', 'footnote']
 export const MAX_LINES = 4
-const LADDER: TypeToken[] = ['display', 'title', 'heading']
+const LADDER: TypeToken[] = ['display', 'title', 'heading', 'subheading', 'lead']
+/** The ladder stops at heading unless the author starts below it (S08: a line of working in a step). */
+const FLOOR = 2
 
 function lines(props: FormulaProps): Seg[][] {
   return str(props.expression)
@@ -47,7 +49,8 @@ export function layout(props: FormulaProps, ctx: LayoutContext): LayoutNode {
     return { base, script, widthOf, widest: Math.max(0, ...rows.map(rowWidth)), rowWidth }
   }
   let pick = styled(LADDER[start])
-  for (let r = start + 1; pick.widest > width && r < LADDER.length; r++) pick = styled(LADDER[r])
+  const last = Math.max(FLOOR, start)
+  for (let r = start + 1; pick.widest > width && r <= last; r++) pick = styled(LADDER[r])
   const { base, script, widthOf, rowWidth } = pick
 
   const rise = Math.round(base.size * 0.38) // room above the line for a superscript

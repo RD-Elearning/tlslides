@@ -5,7 +5,9 @@
  * `defineCompositeBlock` supplies metadata and `build()` (a row of card > stack); `layout()` places the
  * same content by hand: a rounded rect per card (the card block has no stroke or radius) and
  * title/text/image pieces flattened to absolute leaves, so the tree stays 1 level deep and passes
- * DOM/SVG parity. Equal-height cards; content is top aligned.
+ * DOM/SVG parity. Equal-height cards; content is top aligned, except that the air a tall region adds
+ * goes between a numeral/icon lead and the words (C11: the words sit at the card's foot, not a
+ * half-empty card under them).
  */
 
 import type { BlockDefinition, BlockSchema, BlockSpec, CapacityReport, LayoutContext, LayoutNode, Paint, Size } from '../../../types'
@@ -13,7 +15,8 @@ import { defineCompositeBlock } from '../../../layout/define-composite'
 import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { iconLeaf } from '../../text/_engine/icon'
-import { onColor, readableOn } from '../../text/_engine/color'
+import { categoryColor, lumOf, onColor, readableOn, tintOf } from '../../text/_engine/color'
+import { contrastRatio } from '../../../color-math'
 import { objs, str } from '../../media/_kit'
 import { cardNodes, cardPaint, composeFlat, measureHeights, onSurface, pick, type Piece } from '../_kit'
 
@@ -26,6 +29,9 @@ export interface CardItem {
   image?: string
   title: string
   text?: string
+  /** S21-j: `category:<n>` — the card shows the colour the document gives its group (set by the
+   *  service when the card names the group; not offered to the composer). */
+  tone?: string
 }
 
 export interface CardsProps extends Record<string, unknown> {
@@ -84,13 +90,16 @@ const GIANT_STEPS = ['display', 'title'] as const
 type NumeralStep = (typeof GIANT_STEPS)[number] | 'heading'
 const TONES = ['surface', 'alt', 'outline', 'accent-first'] as const
 
-const itemsOf = (props: CardsProps): CardItem[] =>
-  objs(props.cards)
+const itemsOf = (props: CardsProps): CardItem[] => {
+  const cards = objs(props.cards)
     .filter((c) => str(c.title) !== '')
     .slice(0, CARDS_MAX)
-    // AC5: with `lead: number` a card that names no number is numbered by its position ("01", "02", …),
-    // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content.
-    .map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined }))
+  // AC5: with `lead: number` cards that name no number are numbered by their position ("01", "02", …),
+  // so a style that leads cards with numerals (luxury, editorial, swiss) works on any content. S29 (c9 coffee s12:
+  // "1, 2, 3, 04"): once the author numbers some cards, a card left without one is not an item of the count — no numeral.
+  const authored = cards.some((c) => str(c.number) !== '')
+  return cards.map((c, i) => ({ icon: str(c.icon) || undefined, number: str(c.number) || (props.lead === 'number' && !authored ? String(i + 1).padStart(2, '0') : undefined), image: str(c.image) || undefined, title: str(c.title), text: str(c.text) || undefined, tone: str(c.tone) || undefined }))
+}
 
 /** The reference tree (a row of card > stack > leaves): 4 levels at most. Used for depth and measure checks. */
 export function buildCards(props: CardsProps): BlockSpec {
@@ -212,6 +221,9 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
   const sm = ctx.tokens.space.sm
   // Cards hug their content with a little air; a tall region no longer stretches them to 460 (RV03).
   const total = p.roomy ? p.needed : Math.max(p.needed, Math.min(H, Math.round(p.needed * 1.3)))
+  // C11: the stretch is air under the tallest card's words; with a numeral or icon lead it goes
+  // between the lead and the title instead, so the words end at the card's foot.
+  const slack = Math.max(0, Math.floor(total - (p.roomy ? p.needed / ROOMY_STRETCH : p.needed)))
   const accent = ctx.resolveColor('accent').color
   const pieces: Piece[] = []
   const small = p.small
@@ -225,15 +237,28 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
     const cardBox = { x, y: 0, width: p.cw, height: total }
     // AC4: a neutral card (tone alt / surface, the non-accent cards of accent-first) takes the deck
     // surface (`cardPaint`); `outline` and the accent card keep the look their knob asks for.
+    // S21-j: a card of a named group — a light tint of the group's colour and a rim in it (the rim in
+    // the line colour when the group's colour is the page's own, a white bag on a white page)
+    const cat = filled ? undefined : categoryColor(ctx, c.tone)
+    const page = ctx.resolveColor('surface').color
+    const catRim = cat ? (contrastRatio(lumOf(cat), lumOf(page)) < 1.3 ? ctx.resolveColor('line').color : cat) : undefined
     const cp =
-      tone === 'outline'
+      tone === 'outline' && !cat
         ? undefined
         : filled
           ? undefined
-          : cardPaint(ctx, { fill: { type: 'solid', color: fillColor }, ...(tone === 'surface' ? { stroke: { color: ctx.resolveColor('line').color, width: 2 } } : {}) })
+          : cat
+            ? (() => {
+                // over the deck's card look (glass, ghost…): the group's colour is the point of the card
+                const tint: Paint = { type: 'solid', color: tintOf(page, cat, 0.14) }
+                return { ...cardPaint(ctx), fill: tint, stroke: { color: catRim!, width: 3 }, surface: tint, topRule: undefined }
+              })()
+            : cardPaint(ctx, { fill: { type: 'solid', color: fillColor }, ...(tone === 'surface' ? { stroke: { color: ctx.resolveColor('line').color, width: 2 } } : {}) })
     const surf: Paint = cp ? cp.surface : { type: 'solid', color: tone === 'outline' ? ctx.resolveColor('surface').color : fillColor }
     const on = onSurface(surf)
     const col = fg ? { color: fg } : {}
+    const surfHex0 = surf.type === 'solid' ? surf.color : page
+    const leadInk = fg ?? (cat ? (contrastRatio(lumOf(cat), lumOf(surfHex0)) >= 3 ? cat : readableOn(cat, surfHex0, 3)) : accent)
     const bg: LayoutNode[] = cp
       ? cardNodes(cp, cardBox, ctx.tokens.radius.lg)
       : [
@@ -253,19 +278,19 @@ export function layoutCards(props: CardsProps, ctx: LayoutContext): LayoutNode {
       const lbox = { x: ix, y, width: p.inner, height: p.leadH }
       if (lead === 'icon' && c.icon) {
         const size = p.iconSize
-        pieces.push({ id: `lead[${i}]`, raw: [iconLeaf(c.icon, { x: center ? ix + (p.inner - size) / 2 : ix, y: y + (p.leadH - size) / 2, width: size, height: size }, fg ?? accent)], box: lbox })
+        pieces.push({ id: `lead[${i}]`, raw: [iconLeaf(c.icon, { x: center ? ix + (p.inner - size) / 2 : ix, y: y + (p.leadH - size) / 2, width: size, height: size }, leadInk)], box: lbox })
       } else if (lead === 'number' && c.number) {
         if (p.numeral !== 'heading') {
-          const st = numeralStyle(ctx, p.numeral, fg ?? accent)
+          const st = numeralStyle(ctx, p.numeral, leadInk)
           const m = ctx.measureText(c.number, st, p.inner)
           pieces.push({ id: `lead[${i}]`, raw: [{ k: 'text', box: { x: ix, y, width: p.inner, height: m.height }, lines: m.lines, style: st }], box: lbox, align: al })
         } else {
-          pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? 'accent', ...on } }, box: lbox, align: al })
+          pieces.push({ id: `lead[${i}]`, spec: { id: `number-${i}`, type: 'tls.t.title', props: { text: c.number, size: 'heading', color: fg ?? (cat ? leadInk : 'accent'), ...on } }, box: lbox, align: al })
         }
       } else if (lead === 'image' && c.image) {
         pieces.push({ id: `lead[${i}]`, spec: { id: `image-${i}`, type: 'tls.m.image', props: { src: c.image, alt: c.title, fit: 'cover' } }, box: lbox })
       }
-      y += p.leadH + sm * 1.5
+      y += p.leadH + sm * 1.5 + (lead === 'image' ? 0 : slack)
     }
     pieces.push({ id: `title[${i}]`, spec: { id: `title-${i}`, type: 'tls.t.title', props: { text: c.title, size: p.titleSize, ...col, ...on } }, box: { x: ix, y, width: p.inner, height: p.titleH[i] }, align: al })
     y += p.titleH[i] + sm
