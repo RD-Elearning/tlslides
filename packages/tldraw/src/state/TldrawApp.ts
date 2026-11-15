@@ -4341,6 +4341,19 @@ export class TldrawApp extends StateManager<TDSnapshot> {
     return this
   }
 
+  /**
+   * spro C7 (S27-e): add library pictures (`lib:<pack>/<name>` without the prefix → the asset) to the deck's asset
+   * table, so a block whose icon slot the person just set to one draws it (and the saved spec carries it, S20-a).
+   */
+  patchLibAssets(assets: NonNullable<TDDocument['libAssets']>) {
+    this.patchState({
+      document: {
+        libAssets: { ...(this.document.libAssets ?? {}), ...assets },
+      },
+    })
+    return this
+  }
+
   async exportAllShapesAs(type: TDExportTypes) {
     const initialSelectedIds = [...this.selectedIds]
     this.selectAll()

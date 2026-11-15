@@ -260,3 +260,14 @@ describe('Wheel zoom step', () => {
     jest.useRealTimers()
   })
 })
+
+describe('patchLibAssets (spro C7, S27-e)', () => {
+  it('adds library pictures to the deck table, keeping the ones it had', () => {
+    const app = new TldrawTestApp()
+    app.loadDocument(freshDocument())
+    const a = { kind: 'icon', viewBox: '0 0 24 24', body: '<path d="M0 0h24v24z"/>', colourMode: 'mono' }
+    app.patchLibAssets({ 'tabler/coffee': a as never })
+    app.patchLibAssets({ 'tabler/leaf': a as never })
+    expect(Object.keys(app.document.libAssets ?? {}).sort()).toEqual(['tabler/coffee', 'tabler/leaf'])
+  })
+})
