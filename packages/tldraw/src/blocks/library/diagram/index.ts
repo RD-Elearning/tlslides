@@ -38,7 +38,8 @@ import { tlsGConnector } from './tls-g-connector'
 import { tlsGGraph } from './tls-g-graph'
 
 /** All built-in diagram block definitions. */
-export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg, tlsGMindmap, tlsGConnector, tlsGGraph, tlsGStaircase, tlsGTarget, tlsGOrbit, tlsGMythFact, tlsGConceptMap, tlsGCycleDetail, tlsGCauseChain, tlsGNumberLine]
+import { tlsGRoute } from './tls-g-route'
+export const diagramBlocks: BlockDefinition[] = [tlsGSteps, tlsGChevrons, tlsGCycle, tlsGTimeline, tlsGRoadmap, tlsGFunnel, tlsGMilestones, tlsGFlow, tlsGTree, tlsGPyramid, tlsGMatrix2x2, tlsGSwot, tlsGProsCons, tlsGVenn, tlsGHubSpoke, tlsGLayers, tlsGBeforeAfter, tlsGBreakdown, tlsGBracket, tlsGArrow, tlsGIceberg, tlsGMindmap, tlsGConnector, tlsGGraph, tlsGStaircase, tlsGTarget, tlsGOrbit, tlsGMythFact, tlsGConceptMap, tlsGCycleDetail, tlsGCauseChain, tlsGNumberLine, tlsGRoute]
 
 export { tlsGSteps } from './tls-g-steps'
 export { tlsGChevrons } from './tls-g-chevrons'
@@ -72,3 +73,4 @@ export { tlsGIceberg } from './tls-g-iceberg'
 export { tlsGMindmap } from './tls-g-mindmap'
 export { tlsGConnector, CONNECTOR_TYPE } from './tls-g-connector'
 export { tlsGGraph } from './tls-g-graph'
+export { tlsGRoute } from './tls-g-route'

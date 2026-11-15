@@ -190,6 +190,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.c.steps': t1(['orientation'], ['tls.g.steps', 'tls.g.cycle', 'tls.g.flow']),
 
   // ── timeline ──
+  'tls.g.route': t2([]),
   'tls.g.timeline': t1(['axis', 'alternate', 'nodeStyle'], ['tls.g.milestones', 'tls.c.journey']),
   'tls.g.roadmap': t1(['statusColors', 'laneLabels']),
   'tls.g.milestones': t2(['axis', 'labels']),
@@ -229,6 +230,7 @@ export const AI_CURATION: Record<string, AiCuration> = {
   'tls.m.image-grid': t1(['pattern', 'cols', 'captions']),
   'tls.m.image-compare': t2(['mode', 'divider']),
   'tls.m.device-mock': t2(['device', 'tone', 'shadow']),
+  'tls.m.screen': t2(['device']),
 
   // ── agenda ──
   // AC6: asymmetric tile grid (list category)

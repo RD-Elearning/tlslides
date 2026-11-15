@@ -224,6 +224,7 @@ export const BLOCK_VARIANTS: Record<string, VariantPreset[]> = {
   'tls.c.image-full': [v('corner', 'the headline in a corner panel', { panel: 'bottom-left', scrim: 'medium' }), v('band', 'the headline on a band', { panel: 'band' }), v('split', 'the photo and a panel beside it', { panel: 'split' }), v('framed', 'the photo inside a frame', { panel: 'left', frame: true })],
   'tls.c.image-text': [v('left', 'the image first', { placement: 'left' }), v('right', 'the text first', { placement: 'right' }), v('top', 'the image over the text', { placement: 'top' })],
   'tls.m.device-mock': [v('browser', 'a web page', { device: 'browser' }), v('phone', 'an app screen', { device: 'phone', shadow: true }), v('laptop', 'a desktop app', { device: 'laptop', tone: 'dark' })],
+  'tls.m.screen': [v('phone', 'an app screen', { device: 'phone' }), v('tablet', 'a tablet screen', { device: 'tablet' }), v('browser', 'a web page', { device: 'browser' })],
   'tls.m.icon': [v('plain', 'a bare icon', { iconStyle: 'plain' }), v('disc', 'an icon on a disc', { iconStyle: 'disc', size: 'lg' })],
   'tls.m.icon-label': [v('small', 'a small icon and label', { size: 'sm' }), v('large', 'a large icon and label', { size: 'lg' })],
   'tls.m.image': [v('cover', 'the picture fills its box', { fit: 'cover' }), v('contain', 'the whole figure, never cropped', { fit: 'contain' })],

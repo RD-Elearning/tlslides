@@ -103,8 +103,8 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.d.funnel-chart': f(['sequence', 'share'], [3, 6], 'labels', 'neutral', { data: 'series' }),
   'tls.d.grouped-bar': f(['series', 'contrast'], [3, 8], 'labels', 'neutral', { data: 'table' }),
   'tls.d.heatmap': f(['matrix', 'series'], [3, 10], 'labels', 'calm', { data: 'table', families: SERIOUS }),
-  'tls.d.lollipop': f(['ranking', 'series', 'contrast'], [3, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
-  'tls.d.dot-plot': f(['ranking', 'series', 'contrast'], [4, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], families: SERIOUS }),
+  'tls.d.lollipop': f(['ranking', 'series', 'contrast'], [3, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], shapes: ['scores'] }),
+  'tls.d.dot-plot': f(['ranking', 'series', 'contrast'], [4, 10], 'labels', 'calm', { data: 'series', needs: ['chartData'], families: SERIOUS, shapes: ['scores'] }),
   'tls.d.treemap': f(['share', 'hierarchy'], [4, 12], 'labels', 'calm', { data: 'share', needs: ['chartData'] }),
   'tls.d.annotated-line': f(['series', 'timeline', 'cause-effect'], [1, 4], 'labels', 'calm', { data: 'series', needs: ['chartData'] }),
   'tls.d.line': f(['series', 'timeline'], [4, 24], 'labels', 'neutral', { data: 'series' }),
@@ -154,6 +154,8 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.g.milestones': f(['timeline', 'sequence'], [3, 7], 'labels', 'neutral'),
   'tls.g.roadmap': f(['timeline', 'action'], [3, 8], 'labels', 'calm', { families: SERIOUS }),
   'tls.g.timeline': f(['timeline', 'sequence', 'story'], [3, 6], 'lines', 'neutral'),
+  // S25 (carry-over pass 2): places in travel order, offered only where the passages name a route
+  'tls.g.route': f(['sequence', 'story'], [2, 8], 'labels', 'neutral', { shapes: ['route'], shapeOnly: true }),
 
   // ── hierarchy ──
   'tls.g.breakdown': f(['hierarchy', 'share', 'number'], [2, 6], 'labels', 'neutral'),
@@ -175,6 +177,8 @@ const FITS_ROWS: Record<string, BlockFits> = {
   'tls.c.image-full': f(['image-led', 'story'], null, 'lines', 'lively', { needs: ['images'], frames: ['cover', 'divider', 'closing'] }),
   'tls.c.image-text': f(['image-led', 'story', 'definition'], null, 'paragraphs', 'neutral', { needs: ['images'] }),
   'tls.m.device-mock': f(['image-led'], null, 'labels', 'neutral', { needs: ['images'], families: ['professional', 'modern'] }),
+  // S25 (carry-over pass 2): one app/web screen described part by part
+  'tls.m.screen': f(['group', 'terms'], [2, 8], 'labels', 'neutral', { shapes: ['screen'], shapeOnly: true }),
   'tls.m.icon': f(['statement'], null, 'labels', 'neutral'),
   'tls.m.icon-label': f(['group'], null, 'labels', 'neutral'),
   'tls.m.image': f(['image-led'], null, 'labels', 'calm', { needs: ['images'] }),
