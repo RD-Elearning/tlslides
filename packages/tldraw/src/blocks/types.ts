@@ -1076,7 +1076,7 @@ export interface LayoutContext {
    *  (`tls.l.overlay` over an image) — an image surface, text solves light. Absent = what is
    *  behind the container. `opts.tracks` (CMP4): shared child heights for peer cards.
    *  `opts.peerStep` (CS1): the lowest label step for a peer `tls.m.shape`. */
-  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number }): LayoutNode
+  layoutChild(spec: BlockSpec, box: Box, opts?: { surface?: Paint; overImage?: boolean; tracks?: number[]; peerStep?: number; typeStep?: number }): LayoutNode
   /** G8.5: measure a child's intrinsic (content-preferred) size without laying it out or
    *  assigning it a final position — flex-like containers (`tls.l.row`/`stack`/`grid`'s
    *  `sizing: 'content'` mode) use this to weight children by their natural size. Bound the same
@@ -1091,6 +1091,11 @@ export interface LayoutContext {
    *  original `options.box` — a spread copy would leak the outer box into them). Optional so
    *  hand-built test contexts don't have to implement it. */
   withBox?(size: Size): LayoutContext
+  /** spro S29 7c: this context with every type token `n` ladder steps up, children and measures
+   *  included (`promoteType` uses it). Optional so hand-built test contexts don't need it. */
+  withTypeStep?(n: number): LayoutContext
+  /** spro S29 7c: the type ladder steps this context's `resolveText` carries (absent = 0). */
+  typeLifted?: number
   /** Asset lookup: intrinsic size when known. */
   asset(assetId: string): AssetInfo | undefined
   /** Resolve an asset id to a renderable URL. Undefined when no resolver is provided

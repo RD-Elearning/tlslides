@@ -12,6 +12,7 @@
 
 import type { Box, LayoutContext, LayoutNode, ResolvedTextStyle, TypeToken } from '../../types'
 import { mixHex, rgbToHsl, tryHexToRgb } from '../../color-math'
+import { stepType } from '../../layout/type-ladder'
 import { clipLines, ellipsize, fullBox, lineH, pathNode, solidRect, withRealWidths } from '../data/_chart/kit'
 
 export { TEXT_SLACK, asArr, clamp, enumOf, numOrNull, root, str, style, mutedStyle, lineH, chartColors, tintOf, onColor, readableOn, solidRect, pathNode, emptyState, capacityOf, dot } from '../data/_chart/kit'
@@ -140,17 +141,25 @@ export function tierStart(ctx: LayoutContext | undefined, count: number): number
   return Math.max(0, Math.min(count - 1, ctx?.tokens.typeStep ?? 0))
 }
 
-/** The type ladder `promoteToFit` steps along (diagram text never passes `heading`). */
-const LADDER: readonly TypeToken[] = ['footnote', 'caption', 'body', 'lead', 'subheading', 'heading']
-
 /** `ctx` with every type token `n` steps up the ladder (sizes stay on the scale: no new odd sizes). */
 export function promoteType(ctx: LayoutContext, n: number): LayoutContext {
   if (n <= 0) return ctx
-  const up = (t: TypeToken): TypeToken => {
-    const i = LADDER.indexOf(t)
-    return i < 0 ? t : LADDER[Math.min(LADDER.length - 1, i + n)]
+  // spro S29 7c: a real context lifts its children and measures too (a composite's spec tree, a
+  // container's cards), not only the text it sets itself; the rest of `ctx` (a spread box, tokens)
+  // stays as the caller had it
+  if (ctx.withTypeStep) {
+    const l = ctx.withTypeStep(n)
+    return {
+      ...ctx,
+      resolveText: l.resolveText,
+      layoutChild: l.layoutChild,
+      ...(l.measureIntrinsicSize ? { measureIntrinsicSize: l.measureIntrinsicSize } : {}),
+      ...(l.withBox ? { withBox: l.withBox } : {}),
+      withTypeStep: l.withTypeStep,
+      typeLifted: l.typeLifted,
+    }
   }
-  return { ...ctx, resolveText: (t, over) => ctx.resolveText(up(t), over) }
+  return { ...ctx, resolveText: (t, over) => ctx.resolveText(stepType(t, n), over) }
 }
 
 type TextSummary = { chars: number; lines: number; cut: boolean; boxes: Box[]; outside: boolean }

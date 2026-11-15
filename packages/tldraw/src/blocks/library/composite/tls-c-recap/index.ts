@@ -14,6 +14,7 @@ import { enumSlot } from '../../data/_chart/schema-kit'
 import { capacityOf } from '../../diagram/_kit'
 import { onSurface, composeFlat, measureHeights, pick, richItems, toMeasurable, type Piece } from '../_kit'
 import { categoryInk, categoryTint } from '../../text/_engine/color'
+import { growText } from '../../text/_engine/grow'
 
 export const RECAP_MIN = 2
 export const RECAP_MAX = 5
@@ -171,6 +172,8 @@ function capacity(props: RecapProps): CapacityReport {
 export const tlsCRecap: BlockDefinition = {
   ...composite,
   intrinsicSize: undefined,
-  layout: ((props: RecapProps, ctx: LayoutContext): LayoutNode => layoutRecap(props, ctx)) as BlockDefinition['layout'],
+  // spro S29 7c (S24: 3 of 18 small-in-space slides were a recap alone in a tall region): the
+  // points and the takeaway step their type up while the recap still shows whole in its box
+  layout: ((props: RecapProps, ctx: LayoutContext): LayoutNode => growText(ctx, (c) => layoutRecap(props, c))) as BlockDefinition['layout'],
   capacity: capacity as BlockDefinition['capacity'],
 }
